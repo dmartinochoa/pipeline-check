@@ -33,9 +33,20 @@ jobs:
           terraform_version: "1.9.0"
 
       - name: Start LocalStack
-        uses: LocalStack/setup-localstack@v0.2.2
-        with:
-          image-tag: "latest"
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e DEBUG=0 \
+            localstack/localstack:latest
+          echo "Waiting for LocalStack to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4566/_localstack/health | grep -q '"running"'; then
+              echo "LocalStack ready after ${i}s"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Apply Terraform via tflocal
         working-directory: infra
