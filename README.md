@@ -5,14 +5,15 @@ A CLI tool that scans your AWS CI/CD pipeline against the [OWASP Top 10 CI/CD Se
 - [What it checks](#what-it-checks)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Lambda](#lambda)
 - [Adding a new check](#adding-a-new-aws-check)
 - [Adding a new provider](#adding-a-new-provider-gcp-github-azure-)
-- [Development](#development)
 - [CI / LocalStack integration test](#ci--localstack-integration-test)
 
+
 ![HTML report showing per-check results, severity breakdown, and an overall grade](docs/localstack-report.png)
-*Self-contained HTML report — one file, no external dependencies, generated with `--output html`.*
+*HTML report sample generated with `--output html`.*
+
+---
 
 ## What it checks
 
@@ -24,6 +25,8 @@ A CLI tool that scans your AWS CI/CD pipeline against the [OWASP Top 10 CI/CD Se
 - **S3** — public access block, encryption, versioning, access logging (S3-001–004)
 
 Findings are scored 0–100 and graded A–D. Exit code `1` when grade is D, so it works as a CI gate.
+
+---
 
 ## Architecture
 
@@ -67,6 +70,7 @@ tests/
     ├── test_s3.py
     └── test_owasp_pipeline.py  # end-to-end integration test
 ```
+---
 
 ## Installation
 
@@ -75,7 +79,7 @@ git clone https://github.com/your-org/pipeline-check.git
 cd pipeline-check
 pip install -e .
 ```
-
+---
 ## Usage
 
 ```bash
@@ -127,8 +131,13 @@ pipeline_check --output both
 | `0` | Grade A/B/C |
 | `1` | Grade D |
 | `2` | AWS API error |
+---
+## Lambda packaging
 
-## Lambda
+```bash
+bash scripts/build_lambda.sh
+# Output: dist/pipeline_check-lambda.zip
+```
 
 Deploy `pipeline_check.lambda_handler.handler` as the handler.
 
@@ -182,6 +191,7 @@ Omit to fall back to `AWS_REGION`.
 }
 ```
 
+---
 ## Check rule files
 
 Each service has a YAML file under `pipeline_check/core/checks/aws/rules/` with metadata for every check it defines:
@@ -201,6 +211,8 @@ Each service has a YAML file under `pipeline_check/core/checks/aws/rules/` with 
 ```
 
 The HTML reporter picks these up automatically if `pyyaml` is installed. Without it the report still works — it falls back to the descriptions embedded in each `Finding`.
+
+---
 
 ## Adding a new AWS check
 
@@ -230,6 +242,7 @@ _CHECK_CLASSES = [..., MyServiceChecks]
 
 Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`).
 
+---
 ## Adding a new provider (GCP, GitHub, Azure, …)
 
 1. Create `pipeline_check/core/checks/<provider>/` with a `base.py` that subclasses `BaseCheck` and sets `PROVIDER = "<provider>"`.
@@ -240,12 +253,8 @@ Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`).
 
 Checks only run when `--pipeline <provider>` is passed.
 
-## Development
 
-```bash
-pip install -r requirements-dev.txt
-pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
-```
+---
 
 ## CI / LocalStack integration test
 
@@ -259,12 +268,4 @@ The `LocalStack Integration Test` workflow (`.github/workflows/localstack-test.y
 
 Add it under **Settings → Secrets and variables → Actions → New repository secret**.
 
-## Lambda packaging
-
-```bash
-bash scripts/build_lambda.sh
-# Output: dist/pipeline_check-lambda.zip
-```
-
-## License
-MIT
+---
