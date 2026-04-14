@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["score", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "score": {
+      "type": "object",
+      "required": ["score", "grade", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D"]
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "CRITICAL": { "$ref": "#/definitions/sev_summary" },
+            "HIGH":     { "$ref": "#/definitions/sev_summary" },
+            "MEDIUM":   { "$ref": "#/definitions/sev_summary" },
+            "LOW":      { "$ref": "#/definitions/sev_summary" },
+            "INFO":     { "$ref": "#/definitions/sev_summary" }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/finding" }
+    }
+  },
+  "definitions": {
+    "sev_summary": {
+      "type": "object",
+      "required": ["passed", "failed"],
+      "additionalProperties": false,
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "check_id", "title", "severity", "resource",
+        "description", "recommendation", "owasp_cicd", "passed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "check_id":       { "type": "string", "pattern": "^[A-Z]+-[0-9]{3}$" },
+        "title":          { "type": "string", "minLength": 1 },
+        "severity":       { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] },
+        "resource":       { "type": "string", "minLength": 1 },
+        "description":    { "type": "string", "minLength": 1 },
+        "recommendation": { "type": "string", "minLength": 1 },
+        "owasp_cicd":     { "type": "string", "pattern": "^CICD-SEC-[0-9]+:" },
+        "passed":         { "type": "boolean" }
+      }
+    }
+  }
+}
