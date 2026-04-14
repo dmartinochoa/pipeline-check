@@ -1,8 +1,7 @@
 import abc
 from dataclasses import dataclass
 from enum import Enum
-
-import boto3
+from typing import Any
 
 
 class Severity(str, Enum):
@@ -52,19 +51,21 @@ class Finding:
 
 
 class BaseCheck(abc.ABC):
-    """Abstract base for all check modules.
+    """Provider-agnostic base for all check modules.
 
-    Each subclass declares a PROVIDER class attribute so the Scanner can
-    route it to the correct pipeline environment.  AWS checks receive a
-    boto3 Session; future providers should override __init__ to accept
-    whatever client/credentials object they need.
+    Subclasses declare a PROVIDER class attribute so the Scanner can route
+    them to the correct pipeline environment, and accept whatever context
+    object their provider requires (e.g. a boto3 Session for AWS, a
+    google-auth credential for GCP, a token for GitHub).
     """
 
     #: Pipeline environment this check targets.  Override in subclasses.
-    PROVIDER: str = "aws"
+    PROVIDER: str = ""
 
-    def __init__(self, session: boto3.Session) -> None:
-        self.session = session
+    def __init__(self, context: Any, target: str | None = None) -> None:
+        self.context = context
+        #: Optional resource name to scope the scan to (e.g. a pipeline name).
+        self.target = target
 
     @abc.abstractmethod
     def run(self) -> list["Finding"]:

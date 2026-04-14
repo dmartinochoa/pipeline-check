@@ -13,7 +13,7 @@ import json
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 _CICD_SERVICE_PRINCIPALS = {
     "codebuild.amazonaws.com",
@@ -37,7 +37,7 @@ def _has_wildcard_action(policy_doc: dict) -> bool:
     return False
 
 
-class IAMChecks(BaseCheck):
+class IAMChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
         client = self.session.client("iam")

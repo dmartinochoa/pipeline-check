@@ -2,9 +2,9 @@
 
 from unittest.mock import MagicMock
 
-from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.codebuild import CodeBuildChecks
-from tests.conftest import make_paginator
+from pipeline_check.core.checks.aws.base import Severity
+from pipeline_check.core.checks.aws.codebuild import CodeBuildChecks
+from tests.aws.conftest import make_paginator
 
 
 def _project(

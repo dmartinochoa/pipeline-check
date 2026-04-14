@@ -58,7 +58,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     logger.info("Starting PipelineGuard scan in region %s", region)
 
     # Run scan
-    scanner = Scanner(region=region)
+    scanner = Scanner(pipeline="aws", region=region)
     findings = scanner.run()
     score_result = score(findings)
 

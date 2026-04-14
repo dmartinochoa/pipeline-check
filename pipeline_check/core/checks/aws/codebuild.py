@@ -11,7 +11,7 @@ import re
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 # Environment variable names that suggest a secret is stored in plaintext.
 _SECRET_NAME_RE = re.compile(
@@ -30,7 +30,7 @@ _LATEST_STANDARD_VERSION = 7
 _MAX_SENSIBLE_TIMEOUT = 480  # minutes (AWS maximum)
 
 
-class CodeBuildChecks(BaseCheck):
+class CodeBuildChecks(AWSBaseCheck):
     """Runs all CB-XXX checks across every CodeBuild project in the region."""
 
     def run(self) -> list[Finding]:

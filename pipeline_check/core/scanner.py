@@ -1,14 +1,13 @@
 """Scanner — orchestrates all check modules.
 
-Adding a new check module:
-    1. Create pipeline_check/core/checks/<service>.py with a class that
-       subclasses BaseCheck, sets PROVIDER, and implements run() -> list[Finding].
+Adding a new AWS check module:
+    1. Create pipeline_check/core/checks/aws/<service>.py subclassing AWSBaseCheck.
     2. Import it here and add it to _CHECK_CLASSES.
 
-Adding support for a new provider (e.g. gcp, github, azure):
-    1. Create check modules with PROVIDER = "<provider>".
-    2. Add a branch in Scanner.__init__ to build the appropriate context for
-       that provider and pass it when instantiating check classes.
+Adding a new provider (e.g. gcp, github, azure):
+    1. Create pipeline_check/core/checks/<provider>/ with a base class and checks.
+    2. Add a context-building branch in Scanner.__init__.
+    3. Import and register the check classes in _CHECK_CLASSES.
 """
 
 from __future__ import annotations
@@ -18,12 +17,12 @@ from typing import Any, Optional
 import boto3
 
 from .checks.base import Finding
-from .checks.codebuild import CodeBuildChecks
-from .checks.codedeploy import CodeDeployChecks
-from .checks.codepipeline import CodePipelineChecks
-from .checks.ecr import ECRChecks
-from .checks.iam import IAMChecks
-from .checks.s3 import S3Checks
+from .checks.aws.codebuild import CodeBuildChecks
+from .checks.aws.codedeploy import CodeDeployChecks
+from .checks.aws.codepipeline import CodePipelineChecks
+from .checks.aws.ecr import ECRChecks
+from .checks.aws.iam import IAMChecks
+from .checks.aws.s3 import S3Checks
 
 _CHECK_CLASSES = [
     CodeBuildChecks,
@@ -69,7 +68,11 @@ class Scanner:
         else:
             self._context = None
 
-    def run(self, checks: Optional[list[str]] = None) -> list[Finding]:
+    def run(
+        self,
+        checks: Optional[list[str]] = None,
+        target: Optional[str] = None,
+    ) -> list[Finding]:
         """Execute every registered check module for the active provider.
 
         Parameters
@@ -77,6 +80,10 @@ class Scanner:
         checks:
             Optional allowlist of check IDs (e.g. ``["CB-001", "CB-003"]``).
             When provided, only findings whose ``check_id`` matches are kept.
+        target:
+            Optional resource name to scope the scan to (e.g. a CodePipeline
+            pipeline name).  Checks that support targeting will restrict their
+            API calls accordingly; others run over the full region.
         """
         provider_classes = [
             cls for cls in _CHECK_CLASSES if cls.PROVIDER == self.pipeline
@@ -84,7 +91,7 @@ class Scanner:
 
         findings: list[Finding] = []
         for check_class in provider_classes:
-            checker = check_class(self._context)
+            checker = check_class(self._context, target=target)
             findings.extend(checker.run())
 
         if checks:

@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.ecr import ECRChecks
-from tests.conftest import make_paginator
+from pipeline_check.core.checks.aws.base import Severity
+from pipeline_check.core.checks.aws.ecr import ECRChecks
+from tests.aws.conftest import make_paginator
 
 
 def _repo(name="my-repo", scan_on_push=True, mutability="IMMUTABLE"):

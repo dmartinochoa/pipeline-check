@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.s3 import S3Checks
-from tests.conftest import make_paginator
+from pipeline_check.core.checks.aws.base import Severity
+from pipeline_check.core.checks.aws.s3 import S3Checks
+from tests.aws.conftest import make_paginator
 
 
 def _client_error(code):
