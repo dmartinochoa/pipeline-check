@@ -42,10 +42,16 @@ jobs:
           echo "Waiting for LocalStack to be ready..."
           READY=false
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:4566/_localstack/health > /dev/null 2>&1; then
+            STATUS=$(curl -s http://localhost:4566/_localstack/health 2>&1 || true)
+            if echo "$STATUS" | grep -q '"edition"'; then
               READY=true
               echo "LocalStack ready after $((i * 2))s"
+              echo "$STATUS"
               break
+            fi
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Still waiting (${i}x2s)... last response: $STATUS"
+              docker logs --tail 20 localstack
             fi
             sleep 2
           done

@@ -270,6 +270,20 @@ pip install -r requirements-dev.txt
 pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
 ```
 
+## CI / LocalStack Integration Test
+
+The `LocalStack Integration Test` GitHub Actions workflow (`.github/workflows/localstack-test.yml`) runs on every pull request targeting `master`. It provisions AWS resources via Terraform against a LocalStack Pro container and asserts that all checks pass.
+
+### Required repository secret
+
+| Secret | Description |
+|---|---|
+| `LOCALSTACK_AUTH_TOKEN` | LocalStack Pro auth token. Obtain from [app.localstack.cloud](https://app.localstack.cloud) → Auth Token. |
+
+The workflow uses `localstack/localstack-pro:3.8`. Without a valid auth token the container will exit during startup and the workflow will fail.
+
+To add the secret: **Settings → Secrets and variables → Actions → New repository secret**.
+
 ## Lambda Packaging
 
 ```bash
