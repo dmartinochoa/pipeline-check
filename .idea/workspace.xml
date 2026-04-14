@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3b9bcede-7bb1-4df0-a5e0-af0e5d3d80e9" name="Changes" comment="core engine setup">
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-01-Insufficient-Flow-Control-Mechanisms.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-02-Inadequate-Identity-And-Access-Management.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-05-Insufficient-PBAC.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-06-Insufficient-Credential-Hygiene.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-07-Insecure-System-Configuration.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-08-Ungoverned-Usage-of-3rd-Party-Services.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-09-Improper-Artifact-Integrity-Validation.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/owasp-top-10-cicd-security-risks/CICD-SEC-10-Insufficient-Logging-And-Visibility.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/cli.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/codebuild.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/codedeploy.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/codepipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/ecr.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/iam.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/checks/s3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/reporter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/scanner.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/core/scorer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipelineguard/lambda_handler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements-dev.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/build_lambda.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_codebuild.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_codepipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_ecr.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_iam.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_reporter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_s3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_scorer.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "dmartinochoa"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/dmartinochoa/pipeline-check.git",
+    "accountId": "a6e21aed-f696-4572-9b4a-7ffbd98ddba3"
+  }
+}]]></component>
+  <component name="MaliciousPackageCheckinHandlerState">
+    <option name="packageCheck" value="true" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3CLX7IIqIvz1d8UgQN2o9fiAM35" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showMembers" value="true" />
+    <option name="showVisibilityIcons" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/dmart/PycharmProjects/pipeline-check/docs/owasp-top-10-cicd-security-risks&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\dmart\PycharmProjects\pipeline-check\docs\owasp-top-10-cicd-security-risks" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-b63d5a1f7c97-b61e75351b1f-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-261.22158.340" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3b9bcede-7bb1-4df0-a5e0-af0e5d3d80e9" name="Changes" comment="" />
+      <created>1776165654806</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1776165654806</updated>
+      <workItem from="1776165655840" duration="301000" />
+      <workItem from="1776165973770" duration="107000" />
+      <workItem from="1776166088648" duration="2910000" />
+    </task>
+    <task id="LOCAL-00001" summary="added ignore">
+      <option name="closed" value="true" />
+      <created>1776166441350</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1776166441350</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Gitignore expanded">
+      <option name="closed" value="true" />
+      <created>1776168638205</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1776168638205</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
+    <MESSAGE value="addded ignore" />
+    <MESSAGE value="added ignore" />
+    <MESSAGE value="Gitignore expanded" />
+    <MESSAGE value="core engine setup" />
+    <option name="LAST_COMMIT_MESSAGE" value="core engine setup" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+</project>
