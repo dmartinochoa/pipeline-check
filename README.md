@@ -249,7 +249,7 @@ pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
 
 ## CI / LocalStack integration test
 
-The `LocalStack Integration Test` workflow (`.github/workflows/localstack-test.yml`) runs on every PR to `master`. It spins up a LocalStack Pro container, applies the Terraform fixture in `infra/`, runs a full scan, and fails if the grade drops to D.
+The `LocalStack Integration Test` workflow (`.github/workflows/localstack-test.yml`) is triggered manually from **Actions → LocalStack Integration Test → Run workflow**. It spins up a LocalStack Pro container, applies the Terraform fixture in `infra/`, runs a full scan against a known-good config and a deliberately bad config, and fails if either assertion fails.
 
 ### Required secret
 
