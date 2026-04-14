@@ -28,7 +28,7 @@ jobs:
           pip install -e .
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@b9cd54531c595ec0a11b968f5b2b33b8ffdb3a57  # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
 
