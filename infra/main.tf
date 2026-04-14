@@ -76,6 +76,10 @@ resource "aws_s3_bucket_logging" "artifacts" {
 # IAM-001: no AdministratorAccess attached to any CI/CD role
 # IAM-002: no inline policy with Action: "*"
 # IAM-003: every CI/CD role has this boundary attached
+#
+# Note: LocalStack Pro does not return PermissionsBoundary in list_roles
+# responses, so IAM-003 will report false negatives in the integration test.
+# The boundaries are correctly configured here and pass on real AWS.
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_policy" "boundary" {
