@@ -54,9 +54,14 @@ class Finding:
 class BaseCheck(abc.ABC):
     """Abstract base for all check modules.
 
-    Each subclass receives a boto3 Session so it can create any service
-    client it needs without the Scanner caring about which services are used.
+    Each subclass declares a PROVIDER class attribute so the Scanner can
+    route it to the correct pipeline environment.  AWS checks receive a
+    boto3 Session; future providers should override __init__ to accept
+    whatever client/credentials object they need.
     """
+
+    #: Pipeline environment this check targets.  Override in subclasses.
+    PROVIDER: str = "aws"
 
     def __init__(self, session: boto3.Session) -> None:
         self.session = session

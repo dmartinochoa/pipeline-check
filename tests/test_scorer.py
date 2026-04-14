@@ -1,7 +1,7 @@
 """Unit tests for scorer.py — no mocking required."""
 
-from pipelineguard.core.checks.base import Finding, Severity
-from pipelineguard.core.scorer import score
+from pipeline_check.core.checks.base import Finding, Severity
+from pipeline_check.core.scorer import score
 
 
 def _finding(severity: Severity, passed: bool) -> Finding:

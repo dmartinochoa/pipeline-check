@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from pipelineguard.core.checks.base import Severity
-from pipelineguard.core.checks.ecr import ECRChecks
+from pipeline_check.core.checks.base import Severity
+from pipeline_check.core.checks.ecr import ECRChecks
 from tests.conftest import make_paginator
 
 

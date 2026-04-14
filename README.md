@@ -1,10 +1,14 @@
 # Pipeline-Check
 
-AWS CI/CD Security Posture Scanner — currenty analyses AWS-native pipeline configurations and scores them against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/).
+CI/CD Security Posture Scanner — analyses pipeline configurations and scores them against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/).
+
+Currently supports **AWS** (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3). Support for **GCP**, **GitHub Actions**, and **Azure Pipelines** is planned.
 
 ## Features
 
-- Scans CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, and S3
+- Multi-provider architecture: select your pipeline environment with `--pipeline`
+- Scans CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, and S3 (AWS)
+- Run targeted scans with `--checks` to focus on specific check IDs
 - Scores findings on a 0–100 scale with letter grade (A–D)
 - Cross-compatible: same core logic runs as a CLI tool or AWS Lambda function
 - Rich terminal output and machine-readable JSON
@@ -33,44 +37,49 @@ pipelineguard/
 ## Installation
 
 ```bash
-pip install pipelineguard
+pip install pipeline_check
 ```
 
 Or install from source:
 
 ```bash
 git clone https://github.com/your-org/pipelineguard.git
-cd pipelineguard
+cd pipeline_check
 pip install -e .
 ```
 
 ## CLI Usage
 
 ```bash
-# Scan us-east-1 with default settings
-pipelineguard
+# Scan AWS us-east-1 with default settings
+pipeline_check
 
-# Scan a different region using a named AWS profile
-pipelineguard --region eu-west-1 --profile my-profile
+# Scan a specific AWS region using a named profile
+pipeline_check --pipeline aws --region eu-west-1 --profile my-profile
+
+# Run only specific checks
+pipeline_check --checks CB-001 --checks IAM-001
 
 # Output JSON only (suitable for piping to jq or storing as an artifact)
-pipelineguard --output json
+pipeline_check --output json
 
 # Show terminal report AND save JSON simultaneously
-pipelineguard --output both
+pipeline_check --output both
 
 # Only show HIGH and CRITICAL findings
-pipelineguard --severity-threshold HIGH
+pipeline_check --severity-threshold HIGH
 ```
 
 ### Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--region` | `us-east-1` | AWS region to scan |
-| `--profile` | None | AWS CLI named profile |
+| `--pipeline` | `aws` | Pipeline environment: `aws`, `gcp`, `github`, `azure` |
+| `--checks` | _(all)_ | Check ID(s) to run — repeat for multiple (e.g. `--checks CB-001 --checks CB-003`) |
+| `--region` | `us-east-1` | Region to scan (AWS only) |
+| `--profile` | None | AWS CLI named profile (AWS only) |
 | `--output` | `terminal` | `terminal`, `json`, or `both` |
-| `--severity-threshold` | `LOW` | Minimum severity to display |
+| `--severity-threshold` | `INFO` | Minimum severity to display |
 
 ### Exit codes
 
@@ -108,7 +117,7 @@ If omitted, `AWS_REGION` is used.
   "score": 78,
   "total_findings": 22,
   "critical_failures": 0,
-  "report_s3_key": "reports/20240501T120000Z/pipelineguard-report.json"
+  "report_s3_key": "reports/20240501T120000Z/pipeline_check-report.json"
 }
 ```
 
@@ -221,7 +230,7 @@ An additional **−5 points** is deducted per CRITICAL failure to prevent critic
 | C | ≥ 60 |
 | D | < 60 |
 
-## Adding a New Check Module
+## Adding a New Check Module (AWS)
 
 1. Create `pipelineguard/core/checks/<service>.py`:
 
@@ -229,6 +238,8 @@ An additional **−5 points** is deducted per CRITICAL failure to prevent critic
 from .base import BaseCheck, Finding, Severity
 
 class MyServiceChecks(BaseCheck):
+    PROVIDER = "aws"  # inherited default — can omit for AWS checks
+
     def run(self) -> list[Finding]:
         client = self.session.client("myservice")
         # ... collect resources, run checks ...
@@ -250,18 +261,40 @@ _CHECK_CLASSES = [
 
 Check IDs follow the convention `<PREFIX>-<NNN>` where `NNN` is zero-padded to three digits.
 
+## Adding a New Provider (GCP, GitHub, Azure, …)
+
+1. Add a branch in `Scanner.__init__` (`scanner.py`) that builds the appropriate client/credentials object for the provider and stores it as `self._context`.
+
+2. Create check modules with `PROVIDER = "<provider>"` and override `__init__` to accept the context type your provider uses:
+
+```python
+from .base import BaseCheck, Finding, Severity
+
+class GitHubActionsChecks(BaseCheck):
+    PROVIDER = "github"
+
+    def __init__(self, context) -> None:
+        self.client = context  # e.g. a PyGithub client
+
+    def run(self) -> list[Finding]:
+        # ...
+        return findings
+```
+
+3. Register the class in `_CHECK_CLASSES`. It will only run when `--pipeline github` is passed.
+
 ## Development
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests/ -v --cov=pipelineguard --cov-report=term-missing
+pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
 ```
 
 ## Lambda Packaging
 
 ```bash
 bash scripts/build_lambda.sh
-# Output: dist/pipelineguard-lambda.zip
+# Output: dist/pipeline_check-lambda.zip
 ```
 
 ## License

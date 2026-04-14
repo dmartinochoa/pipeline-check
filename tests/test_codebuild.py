@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock
 
-from pipelineguard.core.checks.base import Severity
-from pipelineguard.core.checks.codebuild import CodeBuildChecks
+from pipeline_check.core.checks.base import Severity
+from pipeline_check.core.checks.codebuild import CodeBuildChecks
 from tests.conftest import make_paginator
 
 

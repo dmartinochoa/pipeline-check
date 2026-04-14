@@ -4,9 +4,9 @@ import json
 
 from rich.console import Console
 
-from pipelineguard.core.checks.base import Finding, Severity
-from pipelineguard.core.reporter import report_json, report_terminal
-from pipelineguard.core.scorer import score
+from pipeline_check.core.checks.base import Finding, Severity
+from pipeline_check.core.reporter import report_json, report_terminal
+from pipeline_check.core.scorer import score
 
 
 def _f(check_id, severity, passed, resource="proj"):

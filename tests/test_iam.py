@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock
 
-from pipelineguard.core.checks.base import Severity
-from pipelineguard.core.checks.iam import IAMChecks
+from pipeline_check.core.checks.base import Severity
+from pipeline_check.core.checks.iam import IAMChecks
 from tests.conftest import make_paginator
 
 _CB_TRUST = {
