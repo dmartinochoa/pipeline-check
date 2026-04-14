@@ -1,4 +1,4 @@
-# Pipeline-Check
+# pipeline-check
 
 AWS CI/CD Security Posture Scanner — currenty analyses AWS-native pipeline configurations and scores them against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/).
 
