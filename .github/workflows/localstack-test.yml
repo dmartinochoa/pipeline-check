@@ -39,14 +39,26 @@ jobs:
             -p 4566:4566 \
             -e DEBUG=0 \
             localstack/localstack:latest
+
           echo "Waiting for LocalStack to be ready..."
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:4566/_localstack/health | grep -q '"running"'; then
-              echo "LocalStack ready after ${i}s"
+          READY=false
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:4566/_localstack/health > /dev/null 2>&1; then
+              READY=true
+              echo "LocalStack ready after $((i * 2))s"
               break
             fi
             sleep 2
           done
+
+          if [ "$READY" != "true" ]; then
+            echo "LocalStack failed to start within 120s"
+            docker logs localstack
+            exit 1
+          fi
+
+          # Give services a few extra seconds to finish initialising
+          sleep 5
 
       - name: Apply Terraform via tflocal
         working-directory: infra
