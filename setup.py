@@ -4,7 +4,7 @@ with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="pipelineguard",
+    name="pipeline_check",
     version="0.1.0",
     description="AWS CI/CD Security Posture Scanner — scores pipelines against OWASP Top 10 CI/CD Risks",
     long_description=long_description,
@@ -19,7 +19,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "pipelineguard=pipelineguard.cli:scan",
+            "pipeline_check=pipeline_check.cli:scan",
         ],
     },
     classifiers=[

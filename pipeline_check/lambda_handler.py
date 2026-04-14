@@ -4,7 +4,7 @@ Environment variables
 ---------------------
 PIPELINEGUARD_RESULTS_BUCKET
     S3 bucket where JSON reports are stored.
-    Reports are written to: reports/<timestamp>/pipelineguard-report.json
+    Reports are written to: reports/<timestamp>/pipeline_check-report.json
     If unset, the report is not persisted to S3.
 
 PIPELINEGUARD_SNS_TOPIC_ARN
@@ -25,7 +25,7 @@ Return value
         "score": 78,
         "total_findings": 12,
         "critical_failures": 0,
-        "report_s3_key": "reports/20240501T120000Z/pipelineguard-report.json"
+        "report_s3_key": "reports/20240501T120000Z/pipeline_check-report.json"
     }
 """
 
@@ -71,7 +71,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     report = report_json(findings, score_result)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    s3_key = f"reports/{timestamp}/pipelineguard-report.json"
+    s3_key = f"reports/{timestamp}/pipeline_check-report.json"
 
     # Persist to S3
     if results_bucket:

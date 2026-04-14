@@ -2,11 +2,11 @@
 
 Usage
 -----
-    pipelineguard [OPTIONS]
+    pipeline_check [OPTIONS]
 
-    pipelineguard --region eu-west-1 --output both --severity-threshold HIGH
+    pipeline_check --pipeline aws --region eu-west-1 --output both --severity-threshold HIGH
+    pipeline_check --pipeline aws --checks CB-001 --checks CB-003
 """
-
 import sys
 
 import click
@@ -21,18 +21,36 @@ _SEVERITY_CHOICES = [
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
 ]
 
+_PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
+
 
 @click.command()
+@click.option(
+    "--pipeline",
+    type=click.Choice(_PIPELINE_CHOICES, case_sensitive=False),
+    default="aws",
+    show_default=True,
+    help="Pipeline environment to scan.",
+)
+@click.option(
+    "--checks",
+    multiple=True,
+    metavar="CHECK_ID",
+    help=(
+        "Run only the specified check ID(s).  Repeat to include multiple "
+        "(e.g. --checks CB-001 --checks CB-003).  Omit to run all checks."
+    ),
+)
 @click.option(
     "--region",
     default="us-east-1",
     show_default=True,
-    help="AWS region to scan.",
+    help="Region to scan (AWS only).",
 )
 @click.option(
     "--profile",
     default=None,
-    help="AWS CLI named profile (defaults to the environment default).",
+    help="AWS CLI named profile (AWS only; defaults to the environment default).",
 )
 @click.option(
     "--output",
@@ -44,22 +62,29 @@ _SEVERITY_CHOICES = [
 @click.option(
     "--severity-threshold",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
-    default="LOW",
+    default="INFO",
     show_default=True,
     help="Minimum severity to display (e.g. HIGH shows only HIGH and CRITICAL).",
 )
-def scan(region: str, profile: str | None, output: str, severity_threshold: str) -> None:
-    """PipelineGuard -- AWS CI/CD Security Posture Scanner.
+def scan(
+    pipeline: str,
+    checks: tuple[str, ...],
+    region: str,
+    profile: str | None,
+    output: str,
+    severity_threshold: str,
+) -> None:
+    """PipelineGuard — CI/CD Security Posture Scanner.
 
-    Analyses AWS-native CI/CD configurations and scores them against the
+    Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
     threshold = Severity(severity_threshold.upper())
 
-    scanner = Scanner(region=region, profile=profile)
+    scanner = Scanner(pipeline=pipeline, region=region, profile=profile)
 
     try:
-        findings = scanner.run()
+        findings = scanner.run(checks=list(checks) if checks else None)
     except Exception as exc:
         click.echo(f"[error] Scan failed: {exc}", err=True)
         sys.exit(2)

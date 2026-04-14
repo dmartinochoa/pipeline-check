@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from pipelineguard.core.checks.base import Severity
-from pipelineguard.core.checks.s3 import S3Checks
+from pipeline_check.core.checks.base import Severity
+from pipeline_check.core.checks.s3 import S3Checks
 from tests.conftest import make_paginator
 
 
