@@ -1,8 +1,7 @@
 name: LocalStack Integration Test
 
 on:
-  pull_request:
-    branches: ["master"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -120,6 +119,57 @@ jobs:
               sys.exit(1)
 
           print("\nAll checks passed or grade acceptable.")
+          EOF
+
+      - name: Apply bad Terraform fixture
+        working-directory: infra/bad
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Run PipelineCheck against bad fixture
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output json \
+            | tee pipeline-check-bad-report.json || true
+
+      - name: Assert bad fixture check failures detected
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-bad-report.json") as f:
+              report = json.load(f)
+
+          # Every check ID that the bad fixture is designed to trigger.
+          # IAM-001 and ECR-003 are excluded — they cannot be reliably triggered
+          # in LocalStack (managed policy ARNs differ from real AWS).
+          EXPECTED_FAILURES = {
+              "IAM-002", "IAM-003",
+              "S3-001", "S3-002", "S3-003", "S3-004",
+              "CP-001", "CP-002", "CP-003",
+              "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
+              "ECR-001", "ECR-002", "ECR-004",
+              "CD-001", "CD-002", "CD-003",
+          }
+
+          failed = {f["check_id"] for f in report["findings"] if not f["passed"]}
+          missing = EXPECTED_FAILURES - failed
+
+          print(f"Failures detected ({len(failed)}): {', '.join(sorted(failed))}")
+
+          if missing:
+              print(f"\nExpected failures NOT detected: {', '.join(sorted(missing))}")
+              sys.exit(1)
+
+          print(f"\nAll {len(EXPECTED_FAILURES)} expected check failures detected.")
           EOF
 
       - name: Upload HTML report

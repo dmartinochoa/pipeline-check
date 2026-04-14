@@ -1,19 +1,29 @@
 # Pipeline-Check
 
-CI/CD Security Posture Scanner — analyses pipeline configurations and scores.
+A CLI tool that scans your AWS CI/CD pipeline against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and gives it a score. Currently covers CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, and S3. GCP, GitHub Actions, and Azure Pipelines support is planned.
 
-Currently supports **AWS** [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) through aws cli (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3). Support for **GCP**, **GitHub Actions**, and **Azure Pipelines** is planned.
+- [What it checks](#what-it-checks)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Lambda](#lambda)
+- [Adding a new check](#adding-a-new-aws-check)
+- [Adding a new provider](#adding-a-new-provider-gcp-github-azure-)
+- [Development](#development)
+- [CI / LocalStack integration test](#ci--localstack-integration-test)
 
-## Features
+![HTML report showing per-check results, severity breakdown, and an overall grade](docs/localstack-report.png)
+*Self-contained HTML report — one file, no external dependencies, generated with `--output html`.*
 
-- Multi-provider architecture: select your pipeline environment with `--pipeline`
-- Scans CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, and S3 (AWS)
-- Run targeted scans with `--checks` to focus on specific check IDs
-- Scores findings on a 0–100 scale with letter grade (A–D)
-- Cross-compatible: same core logic runs as a CLI tool or AWS Lambda function
-- Rich terminal output, machine-readable JSON, and self-contained HTML reports
-- Per-check YAML rule files with description, severity, and recommended actions
-- CI-gate friendly: exits with code `1` when grade is D
+## What it checks
+
+- **CodeBuild** — plaintext secrets, privileged mode, logging, timeouts, image freshness (CB-001–005)
+- **CodePipeline** — manual approval gates, KMS encryption, event-driven vs polling triggers (CP-001–003)
+- **CodeDeploy** — auto rollback, deployment strategy, CloudWatch alarm monitoring (CD-001–003)
+- **ECR** — scan on push, tag immutability, public access, lifecycle policies (ECR-001–004)
+- **IAM** — AdministratorAccess, wildcard inline policies, permission boundaries (IAM-001–003)
+- **S3** — public access block, encryption, versioning, access logging (S3-001–004)
+
+Findings are scored 0–100 and graded A–D. Exit code `1` when grade is D, so it works as a CI gate.
 
 ## Architecture
 
@@ -27,8 +37,8 @@ pipeline_check/
     ├── reporter.py             # terminal (rich) + JSON output
     ├── html_reporter.py        # self-contained HTML report
     └── checks/
-        ├── base.py             # Finding dataclass, Severity enum, BaseCheck ABC (no cloud SDK imports)
-        └── aws/                # AWS-specific checks
+        ├── base.py             # Finding dataclass, Severity enum, BaseCheck ABC
+        └── aws/
             ├── base.py         # AWSBaseCheck — wires boto3 Session into self.session
             ├── codebuild.py    # CB-001 … CB-005
             ├── codepipeline.py # CP-001 … CP-003
@@ -36,7 +46,7 @@ pipeline_check/
             ├── ecr.py          # ECR-001 … ECR-004
             ├── iam.py          # IAM-001 … IAM-003
             ├── s3.py           # S3-001 … S3-004
-            └── rules/          # YAML check metadata (id, severity, description, recommended_actions)
+            └── rules/          # per-check YAML metadata
                 ├── codebuild.yml
                 ├── codepipeline.yml
                 ├── codedeploy.yml
@@ -45,55 +55,53 @@ pipeline_check/
                 └── s3.yml
 
 tests/
-├── test_scorer.py              # generic scoring tests
-├── test_reporter.py            # generic reporter tests
-└── aws/                        # AWS-specific tests
-    ├── conftest.py             # make_session, make_paginator helpers
+├── test_scorer.py
+├── test_reporter.py
+└── aws/
+    ├── conftest.py
     ├── test_codebuild.py
     ├── test_codepipeline.py
     ├── test_codedeploy.py
     ├── test_ecr.py
     ├── test_iam.py
     ├── test_s3.py
-    └── test_owasp_pipeline.py  # end-to-end integration test across all AWS services
+    └── test_owasp_pipeline.py  # end-to-end integration test
 ```
 
 ## Installation
 
 ```bash
 git clone https://github.com/your-org/pipeline-check.git
-cd pipeline_check
+cd pipeline-check
 pip install -e .
 ```
 
-## CLI Usage
+## Usage
 
 ```bash
-# Scan the whole of AWS us-east-1 with default settings
+# Scan everything in us-east-1
 pipeline_check
 
-# Scan a specific CodePipeline pipeline (scopes CP and S3 checks to that pipeline)
+# Scope to a specific pipeline
 pipeline_check --target my-production-pipeline
 
-# Scan a specific pipeline and only show HIGH+ severity findings
+# Only show HIGH and above
 pipeline_check --target my-production-pipeline --severity-threshold HIGH
 
-# Scan a specific AWS region using a named profile
+# Different region, named profile
 pipeline_check --pipeline aws --region eu-west-1 --profile my-profile
 
-# Run only specific check IDs
+# Run specific checks only
 pipeline_check --checks CB-001 --checks IAM-001
 
-# Output JSON only (suitable for piping to jq or storing as an artifact)
+# JSON output (pipe to jq, save as artifact, etc.)
 pipeline_check --output json
 
-# Generate an HTML report (written to pipeline-check-report.html by default)
+# HTML report
 pipeline_check --output html
-
-# Write the HTML report to a specific path
 pipeline_check --output html --output-file /tmp/report.html
 
-# Show terminal report AND save JSON simultaneously
+# Terminal + JSON at the same time
 pipeline_check --output both
 ```
 
@@ -102,42 +110,42 @@ pipeline_check --output both
 | Flag | Default | Description |
 |---|---|---|
 | `--pipeline` | `aws` | Pipeline environment: `aws`, `gcp`, `github`, `azure` |
-| `--target` | _(all)_ | Scope scan to a named resource (e.g. a CodePipeline name). Omit to scan the whole region. |
-| `--checks` | _(all)_ | Check ID(s) to run — repeat for multiple (e.g. `--checks CB-001 --checks CB-003`) |
-| `--region` | `us-east-1` | Region to scan (AWS only) |
-| `--profile` | None | AWS CLI named profile (AWS only) |
+| `--target` | _(all)_ | Scope to a named resource (e.g. a CodePipeline name) |
+| `--checks` | _(all)_ | Check ID(s) to run — repeat for multiple |
+| `--region` | `us-east-1` | AWS region |
+| `--profile` | None | AWS CLI named profile |
 | `--output` | `terminal` | `terminal`, `json`, `html`, or `both` |
-| `--output-file` | `pipeline-check-report.html` | File path for HTML report (used with `--output html`) |
-| `--severity-threshold` | `INFO` | Minimum severity to display |
+| `--output-file` | `pipeline-check-report.html` | Output path for the HTML report |
+| `--severity-threshold` | `INFO` | Minimum severity to include |
 
-> **How `--target` works:** `CodePipelineChecks` fetches only the named pipeline rather than listing all pipelines in the region. `S3Checks` discovers the artifact bucket directly from that pipeline instead of enumerating all pipelines. Other checks (CodeBuild, CodeDeploy, ECR, IAM) still run over the full region — combine with `--checks` to narrow further.
+> **`--target` scoping:** CodePipeline fetches only the named pipeline; S3 checks discover the artifact bucket from it. CodeBuild, CodeDeploy, ECR, and IAM still scan the full region — use `--checks` to narrow those further.
 
 ### Exit codes
 
 | Code | Meaning |
 |---|---|
-| `0` | Scan succeeded, grade A/B/C |
-| `1` | Scan succeeded, grade D |
-| `2` | Scan failed (AWS API error) |
+| `0` | Grade A/B/C |
+| `1` | Grade D |
+| `2` | AWS API error |
 
-## Lambda Usage
+## Lambda
 
-Deploy `pipeline_check.lambda_handler.handler` as the Lambda handler.
+Deploy `pipeline_check.lambda_handler.handler` as the handler.
 
 ### Environment variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `PIPELINE_CHECK_RESULTS_BUCKET` | No | S3 bucket where JSON reports are stored under `reports/<timestamp>/` |
-| `PIPELINE_CHECK_SNS_TOPIC_ARN` | No | SNS topic ARN — receives an alert when CRITICAL findings are detected |
+| Variable | Description |
+|---|---|
+| `PIPELINE_CHECK_RESULTS_BUCKET` | S3 bucket for JSON reports (stored under `reports/<timestamp>/`) |
+| `PIPELINE_CHECK_SNS_TOPIC_ARN` | SNS topic to alert when CRITICAL findings are found |
 
-### Event payload (optional)
+### Event payload
 
 ```json
 { "region": "eu-west-1" }
 ```
 
-If omitted, `AWS_REGION` is used.
+Omit to fall back to `AWS_REGION`.
 
 ### Return value
 
@@ -157,38 +165,26 @@ If omitted, `AWS_REGION` is used.
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "codebuild:ListProjects",
-        "codebuild:BatchGetProjects",
-        "codepipeline:ListPipelines",
-        "codepipeline:GetPipeline",
-        "codedeploy:ListApplications",
-        "codedeploy:ListDeploymentGroups",
-        "codedeploy:BatchGetDeploymentGroups",
-        "ecr:DescribeRepositories",
-        "ecr:GetRepositoryPolicy",
-        "ecr:GetLifecyclePolicy",
-        "iam:ListRoles",
-        "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies",
-        "iam:GetRolePolicy",
-        "s3:GetPublicAccessBlock",
-        "s3:GetEncryptionConfiguration",
-        "s3:GetBucketVersioning",
-        "s3:GetBucketLogging"
-      ],
-      "Resource": "*"
-    }
-  ]
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "codebuild:ListProjects", "codebuild:BatchGetProjects",
+      "codepipeline:ListPipelines", "codepipeline:GetPipeline",
+      "codedeploy:ListApplications", "codedeploy:ListDeploymentGroups",
+      "codedeploy:BatchGetDeploymentGroups",
+      "ecr:DescribeRepositories", "ecr:GetRepositoryPolicy", "ecr:GetLifecyclePolicy",
+      "iam:ListRoles", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies", "iam:GetRolePolicy",
+      "s3:GetPublicAccessBlock", "s3:GetEncryptionConfiguration",
+      "s3:GetBucketVersioning", "s3:GetBucketLogging"
+    ],
+    "Resource": "*"
+  }]
 }
 ```
 
-## Check Rule Files
+## Check rule files
 
-Each AWS service has a YAML file in `pipeline_check/core/checks/aws/rules/` that defines the static metadata for its checks. These are used to enrich the HTML report with structured descriptions and recommended actions.
+Each service has a YAML file under `pipeline_check/core/checks/aws/rules/` with metadata for every check it defines:
 
 ```yaml
 - id: CB-001
@@ -196,7 +192,7 @@ Each AWS service has a YAML file in `pipeline_check/core/checks/aws/rules/` that
   severity: CRITICAL
   description: >
     Checks for environment variables whose names match common secret patterns
-    that are stored with type PLAINTEXT...
+    stored with type PLAINTEXT...
   recommended_actions:
     - Move secrets to AWS Secrets Manager or SSM Parameter Store.
     - Update the CodeBuild environment variable type to SECRETS_MANAGER or PARAMETER_STORE.
@@ -204,10 +200,9 @@ Each AWS service has a YAML file in `pipeline_check/core/checks/aws/rules/` that
   owasp_cicd: "CICD-SEC-6: Insufficient Credential Hygiene"
 ```
 
-The HTML reporter loads these files automatically when `pyyaml` is installed. Without it the report still renders fully — it uses the dynamic descriptions embedded in each `Finding`.
+The HTML reporter picks these up automatically if `pyyaml` is installed. Without it the report still works — it falls back to the descriptions embedded in each `Finding`.
 
-## Adding a New AWS Check Module
-
+## Adding a new AWS check
 
 1. Create `pipeline_check/core/checks/aws/<service>.py`:
 
@@ -217,7 +212,7 @@ from .base import AWSBaseCheck, Finding, Severity
 class MyServiceChecks(AWSBaseCheck):
     def run(self) -> list[Finding]:
         client = self.session.client("myservice")
-        # ... collect resources, run checks ...
+        # ...
         return findings
 ```
 
@@ -226,42 +221,24 @@ class MyServiceChecks(AWSBaseCheck):
 ```python
 from .checks.aws.myservice import MyServiceChecks
 
-_CHECK_CLASSES = [
-    ...
-    MyServiceChecks,
-]
+_CHECK_CLASSES = [..., MyServiceChecks]
 ```
 
-3. Add a rule file at `pipeline_check/core/checks/aws/rules/<service>.yml` with an entry for each check ID (see [Check Rule Files](#check-rule-files) above).
+3. Add a rule file at `pipeline_check/core/checks/aws/rules/<service>.yml`.
 
 4. Add tests in `tests/aws/test_myservice.py`.
 
-Check IDs follow the convention `<PREFIX>-<NNN>` where `NNN` is zero-padded to three digits.
+Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`).
 
-## Adding a New Provider (GCP, GitHub, Azure, …)
+## Adding a new provider (GCP, GitHub, Azure, …)
 
-1. Create a `pipeline_check/core/checks/<provider>/` sub-package with its own `base.py` that subclasses `BaseCheck`, sets `PROVIDER = "<provider>"`, and accepts whatever credentials object the provider SDK uses.
+1. Create `pipeline_check/core/checks/<provider>/` with a `base.py` that subclasses `BaseCheck` and sets `PROVIDER = "<provider>"`.
 
-2. Add a context-building branch in `Scanner.__init__`:
+2. Add a branch in `Scanner.__init__` to build the provider context.
 
-```python
-elif self.pipeline == "github":
-    self._context = GitHubClient(token=os.environ["GITHUB_TOKEN"])
-```
+3. Write check modules, register them in `_CHECK_CLASSES`, add tests under `tests/<provider>/`.
 
-3. Create check modules in the sub-package:
-
-```python
-from .base import GitHubBaseCheck, Finding, Severity
-
-class GitHubActionsChecks(GitHubBaseCheck):
-    def run(self) -> list[Finding]:
-        ...
-```
-
-4. Register the classes in `_CHECK_CLASSES` and add tests under `tests/<provider>/`.
-
-They will only run when `--pipeline <provider>` is passed.
+Checks only run when `--pipeline <provider>` is passed.
 
 ## Development
 
@@ -270,21 +247,19 @@ pip install -r requirements-dev.txt
 pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
 ```
 
-## CI / LocalStack Integration Test
+## CI / LocalStack integration test
 
-The `LocalStack Integration Test` GitHub Actions workflow (`.github/workflows/localstack-test.yml`) runs on every pull request targeting `master`. It provisions AWS resources via Terraform against a LocalStack Pro container and asserts that all checks pass.
+The `LocalStack Integration Test` workflow (`.github/workflows/localstack-test.yml`) is triggered manually from **Actions → LocalStack Integration Test → Run workflow**. It spins up a LocalStack Pro container, applies the Terraform fixture in `infra/`, runs a full scan against a known-good config and a deliberately bad config, and fails if either assertion fails.
 
-### Required repository secret
+### Required secret
 
-| Secret | Description |
+| Secret | Where to get it |
 |---|---|
-| `LOCALSTACK_AUTH_TOKEN` | LocalStack Pro auth token. Obtain from [app.localstack.cloud](https://app.localstack.cloud) → Auth Token. |
+| `LOCALSTACK_AUTH_TOKEN` | [app.localstack.cloud](https://app.localstack.cloud) → CI Auth Tokens |
 
-The workflow uses `localstack/localstack-pro:3.8`. Without a valid auth token the container will exit during startup and the workflow will fail.
+Add it under **Settings → Secrets and variables → Actions → New repository secret**.
 
-To add the secret: **Settings → Secrets and variables → Actions → New repository secret**.
-
-## Lambda Packaging
+## Lambda packaging
 
 ```bash
 bash scripts/build_lambda.sh
