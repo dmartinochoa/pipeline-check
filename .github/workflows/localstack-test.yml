@@ -37,7 +37,7 @@ jobs:
             -p 4566:4566 \
             -e DEBUG=0 \
             -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
-            localstack/localstack-pro:3.8
+            localstack/localstack-pro:latest
 
           echo "Waiting for LocalStack to be ready..."
           READY=false
