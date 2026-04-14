@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# PipelineGuard LocalStack fixture
+# PipelineCheck LocalStack fixture
 #
-# Every resource here is intentionally configured to pass all PipelineGuard
+# Every resource here is intentionally configured to pass all PipelineCheck
 # checks (CB-001…CB-005, CP-001…CP-003, CD-001…CD-003, ECR-001…ECR-004,
 # IAM-001…IAM-003, S3-001…S3-004).
 # ---------------------------------------------------------------------------
@@ -11,7 +11,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_kms_key" "pipeline" {
-  description             = "PipelineGuard pipeline artifact encryption"
+  description             = "PipelineCheck pipeline artifact encryption"
   deletion_window_in_days = 7
   enable_key_rotation     = true
 }
@@ -21,17 +21,17 @@ resource "aws_kms_key" "pipeline" {
 # ---------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "logs" {
-  bucket        = "pipelineguard-logs"
+  bucket        = "pipeline-check-logs"
   force_destroy = true
 }
 
 resource "aws_s3_bucket" "source" {
-  bucket        = "pipelineguard-source"
+  bucket        = "pipeline-check-source"
   force_destroy = true
 }
 
 resource "aws_s3_bucket" "artifacts" {
-  bucket        = "pipelineguard-artifacts"
+  bucket        = "pipeline-check-artifacts"
   force_destroy = true
 }
 
@@ -79,7 +79,7 @@ resource "aws_s3_bucket_logging" "artifacts" {
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_policy" "boundary" {
-  name = "PipelineGuardCICDBoundary"
+  name = "PipelineCheckCicdBoundary"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -98,7 +98,7 @@ resource "aws_iam_policy" "boundary" {
 
 # CodeBuild service role
 resource "aws_iam_role" "codebuild" {
-  name                 = "pipelineguard-codebuild-role"
+  name                 = "pipeline-check-codebuild-role"
   permissions_boundary = aws_iam_policy.boundary.arn  # IAM-003
 
   assume_role_policy = jsonencode({
@@ -139,7 +139,7 @@ resource "aws_iam_role_policy" "codebuild" {
 
 # CodePipeline service role
 resource "aws_iam_role" "codepipeline" {
-  name                 = "pipelineguard-codepipeline-role"
+  name                 = "pipeline-check-codepipeline-role"
   permissions_boundary = aws_iam_policy.boundary.arn  # IAM-003
 
   assume_role_policy = jsonencode({
@@ -192,7 +192,7 @@ resource "aws_iam_role_policy" "codepipeline" {
 
 # CodeDeploy service role
 resource "aws_iam_role" "codedeploy" {
-  name                 = "pipelineguard-codedeploy-role"
+  name                 = "pipeline-check-codedeploy-role"
   permissions_boundary = aws_iam_policy.boundary.arn  # IAM-003
 
   assume_role_policy = jsonencode({
@@ -224,7 +224,7 @@ resource "aws_iam_role_policy" "codedeploy" {
 
 # ECR-001: scan on push; ECR-002: immutable tags; ECR-003: no public policy (none attached)
 resource "aws_ecr_repository" "app" {
-  name                 = "pipelineguard-app"
+  name                 = "pipeline-check-app"
   image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
@@ -268,13 +268,13 @@ resource "aws_ecr_lifecycle_policy" "app" {
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "codebuild" {
-  name              = "/aws/codebuild/pipelineguard-app"
+  name              = "/aws/codebuild/pipeline-check-app"
   retention_in_days = 30
 }
 
 # CD-003: CloudWatch alarm attached to deployment group
 resource "aws_cloudwatch_metric_alarm" "deploy_errors" {
-  alarm_name          = "pipelineguard-deploy-errors"
+  alarm_name          = "pipeline-check-deploy-errors"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "1"
   metric_name         = "Errors"
@@ -290,7 +290,7 @@ resource "aws_cloudwatch_metric_alarm" "deploy_errors" {
 # ---------------------------------------------------------------------------
 
 resource "aws_codebuild_project" "app" {
-  name          = "pipelineguard-app"
+  name          = "pipeline-check-app"
   service_role  = aws_iam_role.codebuild.arn
   build_timeout = 60  # CB-004: < 480 minutes
 
@@ -317,7 +317,7 @@ resource "aws_codebuild_project" "app" {
       phases:
         build:
           commands:
-            - echo "PipelineGuard LocalStack fixture build"
+            - echo "PipelineCheck LocalStack fixture build"
     BUILDSPEC
   }
 
@@ -331,13 +331,13 @@ resource "aws_codebuild_project" "app" {
 # ---------------------------------------------------------------------------
 
 resource "aws_codedeploy_app" "app" {
-  name             = "pipelineguard-app"
+  name             = "pipeline-check-app"
   compute_platform = "Server"
 }
 
 resource "aws_codedeploy_deployment_group" "app" {
   app_name              = aws_codedeploy_app.app.name
-  deployment_group_name = "pipelineguard-deployment-group"
+  deployment_group_name = "pipeline-check-deployment-group"
   service_role_arn      = aws_iam_role.codedeploy.arn
 
   # CD-002: not AllAtOnce — use a graduated deployment strategy
@@ -359,7 +359,7 @@ resource "aws_codedeploy_deployment_group" "app" {
     ec2_tag_filter {
       key   = "Name"
       type  = "KEY_AND_VALUE"
-      value = "pipelineguard-app"
+      value = "pipeline-check-app"
     }
   }
 }
@@ -369,7 +369,7 @@ resource "aws_codedeploy_deployment_group" "app" {
 # ---------------------------------------------------------------------------
 
 resource "aws_codepipeline" "pipeline" {
-  name     = "pipelineguard-pipeline"
+  name     = "pipeline-check-pipeline"
   role_arn = aws_iam_role.codepipeline.arn
 
   # CP-002: artifact store encrypted with customer-managed KMS key

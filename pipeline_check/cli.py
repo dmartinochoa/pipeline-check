@@ -92,7 +92,7 @@ def scan(
     output_file: str | None,
     severity_threshold: str,
 ) -> None:
-    """PipelineGuard — CI/CD Security Posture Scanner.
+    """PipelineCheck — CI/CD Security Posture Scanner.
 
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
@@ -116,7 +116,7 @@ def scan(
         click.echo(report_json(findings, score_result))
 
     if output == "html":
-        dest = output_file or "pipelineguard-report.html"
+        dest = output_file or "pipeline-check-report.html"
         report_html(findings, score_result, region=region, target=target or "", output_path=dest)
         click.echo(f"HTML report written to {dest}", err=True)
 

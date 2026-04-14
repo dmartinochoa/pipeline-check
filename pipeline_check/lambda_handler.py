@@ -2,12 +2,12 @@
 
 Environment variables
 ---------------------
-PIPELINEGUARD_RESULTS_BUCKET
+PIPELINE_CHECK_RESULTS_BUCKET
     S3 bucket where JSON reports are stored.
     Reports are written to: reports/<timestamp>/pipeline_check-report.json
     If unset, the report is not persisted to S3.
 
-PIPELINEGUARD_SNS_TOPIC_ARN
+PIPELINE_CHECK_SNS_TOPIC_ARN
     SNS topic ARN to notify when CRITICAL findings are detected.
     If unset, no SNS alert is sent.
 
@@ -52,10 +52,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         or os.environ.get("AWS_REGION")
         or "us-east-1"
     )
-    results_bucket: str | None = os.environ.get("PIPELINEGUARD_RESULTS_BUCKET")
-    sns_topic_arn: str | None = os.environ.get("PIPELINEGUARD_SNS_TOPIC_ARN")
+    results_bucket: str | None = os.environ.get("PIPELINE_CHECK_RESULTS_BUCKET")
+    sns_topic_arn: str | None = os.environ.get("PIPELINE_CHECK_SNS_TOPIC_ARN")
 
-    logger.info("Starting PipelineGuard scan in region %s", region)
+    logger.info("Starting PipelineCheck scan in region %s", region)
 
     # Run scan
     scanner = Scanner(pipeline="aws", region=region)
@@ -101,7 +101,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             for f in critical_failures
         )
         message = (
-            f"PipelineGuard detected {len(critical_failures)} CRITICAL finding(s) "
+            f"PipelineCheck detected {len(critical_failures)} CRITICAL finding(s) "
             f"in region {region}.\n\n"
             f"Grade : {score_result['grade']}\n"
             f"Score : {score_result['score']}/100\n\n"
@@ -115,7 +115,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             sns.publish(
                 TopicArn=sns_topic_arn,
                 Subject=(
-                    f"[PipelineGuard] CRITICAL alert -- "
+                    f"[PipelineCheck] CRITICAL alert -- "
                     f"Grade {score_result['grade']} in {region}"
                 ),
                 Message=message,

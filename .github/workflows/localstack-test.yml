@@ -55,7 +55,7 @@ jobs:
           tflocal init
           tflocal apply -auto-approve
 
-      - name: Run PipelineGuard against LocalStack
+      - name: Run PipelineCheck against LocalStack
         env:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
@@ -66,19 +66,19 @@ jobs:
             --pipeline aws \
             --region us-east-1 \
             --output html \
-            --output-file pipelineguard-report.html
+            --output-file pipeline-check-report.html
           pipeline_check \
             --pipeline aws \
             --region us-east-1 \
             --output json \
-            | tee pipelineguard-report.json
+            | tee pipeline-check-report.json
 
       - name: Assert grade is not D
         run: |
           python - <<'EOF'
           import json, sys
 
-          with open("pipelineguard-report.json") as f:
+          with open("pipeline-check-report.json") as f:
               report = json.load(f)
 
           score  = report["score"]
@@ -110,6 +110,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pipelineguard-report
-          path: pipelineguard-report.html
+          name: pipeline-check-report
+          path: pipeline-check-report.html
           retention-days: 30

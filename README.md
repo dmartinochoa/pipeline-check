@@ -61,7 +61,7 @@ tests/
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/pipelineguard.git
+git clone https://github.com/your-org/pipeline-check.git
 cd pipeline_check
 pip install -e .
 ```
@@ -87,7 +87,7 @@ pipeline_check --checks CB-001 --checks IAM-001
 # Output JSON only (suitable for piping to jq or storing as an artifact)
 pipeline_check --output json
 
-# Generate an HTML report (written to pipelineguard-report.html by default)
+# Generate an HTML report (written to pipeline-check-report.html by default)
 pipeline_check --output html
 
 # Write the HTML report to a specific path
@@ -107,7 +107,7 @@ pipeline_check --output both
 | `--region` | `us-east-1` | Region to scan (AWS only) |
 | `--profile` | None | AWS CLI named profile (AWS only) |
 | `--output` | `terminal` | `terminal`, `json`, `html`, or `both` |
-| `--output-file` | `pipelineguard-report.html` | File path for HTML report (used with `--output html`) |
+| `--output-file` | `pipeline-check-report.html` | File path for HTML report (used with `--output html`) |
 | `--severity-threshold` | `INFO` | Minimum severity to display |
 
 > **How `--target` works:** `CodePipelineChecks` fetches only the named pipeline rather than listing all pipelines in the region. `S3Checks` discovers the artifact bucket directly from that pipeline instead of enumerating all pipelines. Other checks (CodeBuild, CodeDeploy, ECR, IAM) still run over the full region — combine with `--checks` to narrow further.
@@ -128,8 +128,8 @@ Deploy `pipeline_check.lambda_handler.handler` as the Lambda handler.
 
 | Variable | Required | Description |
 |---|---|---|
-| `PIPELINEGUARD_RESULTS_BUCKET` | No | S3 bucket where JSON reports are stored under `reports/<timestamp>/` |
-| `PIPELINEGUARD_SNS_TOPIC_ARN` | No | SNS topic ARN — receives an alert when CRITICAL findings are detected |
+| `PIPELINE_CHECK_RESULTS_BUCKET` | No | S3 bucket where JSON reports are stored under `reports/<timestamp>/` |
+| `PIPELINE_CHECK_SNS_TOPIC_ARN` | No | SNS topic ARN — receives an alert when CRITICAL findings are detected |
 
 ### Event payload (optional)
 
