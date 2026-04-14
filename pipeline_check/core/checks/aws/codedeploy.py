@@ -7,7 +7,7 @@ CD-003  No CloudWatch alarm monitoring on deployment     MEDIUM  CICD-SEC-10
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 # Deployment configs that deploy to all targets simultaneously with no traffic shifting.
 _ALL_AT_ONCE_CONFIGS = {
@@ -17,7 +17,7 @@ _ALL_AT_ONCE_CONFIGS = {
 }
 
 
-class CodeDeployChecks(BaseCheck):
+class CodeDeployChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
         client = self.session.client("codedeploy")

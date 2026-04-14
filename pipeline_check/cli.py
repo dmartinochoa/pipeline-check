@@ -33,6 +33,15 @@ _PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
     help="Pipeline environment to scan.",
 )
 @click.option(
+    "--target",
+    default=None,
+    metavar="NAME",
+    help=(
+        "Scope the scan to a specific resource (e.g. a CodePipeline pipeline name).  "
+        "Omit to scan the entire region."
+    ),
+)
+@click.option(
     "--checks",
     multiple=True,
     metavar="CHECK_ID",
@@ -68,6 +77,7 @@ _PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
 )
 def scan(
     pipeline: str,
+    target: str | None,
     checks: tuple[str, ...],
     region: str,
     profile: str | None,
@@ -84,7 +94,7 @@ def scan(
     scanner = Scanner(pipeline=pipeline, region=region, profile=profile)
 
     try:
-        findings = scanner.run(checks=list(checks) if checks else None)
+        findings = scanner.run(checks=list(checks) if checks else None, target=target)
     except Exception as exc:
         click.echo(f"[error] Scan failed: {exc}", err=True)
         sys.exit(2)

@@ -10,10 +10,10 @@ import json
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 
-class ECRChecks(BaseCheck):
+class ECRChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
         client = self.session.client("ecr")

@@ -11,10 +11,10 @@ S3-004  Artifact bucket access logging not enabled             LOW       CICD-SE
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 
-class S3Checks(BaseCheck):
+class S3Checks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
         buckets = self._discover_artifact_buckets()
@@ -28,31 +28,37 @@ class S3Checks(BaseCheck):
         return findings
 
     def _discover_artifact_buckets(self) -> set[str]:
-        """Collect artifact bucket names from CodePipeline configurations."""
+        """Collect artifact bucket names from CodePipeline configurations.
+
+        When self.target is set only that pipeline's artifact store is inspected;
+        otherwise all pipelines in the region are enumerated.
+        """
         buckets: set[str] = set()
         cp = self.session.client("codepipeline")
 
+        def _extract_buckets(pipeline: dict) -> None:
+            store = pipeline.get("artifactStore", {})
+            if store.get("type") == "S3" and store.get("location"):
+                buckets.add(store["location"])
+            for store in pipeline.get("artifactStores", {}).values():
+                if store.get("type") == "S3" and store.get("location"):
+                    buckets.add(store["location"])
+
         try:
-            paginator = cp.get_paginator("list_pipelines")
-            for page in paginator.paginate():
-                for summary in page.get("pipelines", []):
-                    try:
-                        resp = cp.get_pipeline(name=summary["name"])
-                        pipeline = resp["pipeline"]
-                    except ClientError:
-                        continue
-
-                    # Single-region artifact store
-                    store = pipeline.get("artifactStore", {})
-                    if store.get("type") == "S3" and store.get("location"):
-                        buckets.add(store["location"])
-
-                    # Multi-region artifact stores
-                    for store in pipeline.get("artifactStores", {}).values():
-                        if store.get("type") == "S3" and store.get("location"):
-                            buckets.add(store["location"])
+            if self.target:
+                resp = cp.get_pipeline(name=self.target)
+                _extract_buckets(resp["pipeline"])
+            else:
+                paginator = cp.get_paginator("list_pipelines")
+                for page in paginator.paginate():
+                    for summary in page.get("pipelines", []):
+                        try:
+                            resp = cp.get_pipeline(name=summary["name"])
+                            _extract_buckets(resp["pipeline"])
+                        except ClientError:
+                            continue
         except ClientError:
-            pass  # If CodePipeline is inaccessible, return empty (no findings)
+            pass  # CodePipeline inaccessible — return empty
 
         return buckets
 

@@ -7,30 +7,33 @@ CP-003  Source stage using polling instead of events     LOW     CICD-SEC-4
 
 from botocore.exceptions import ClientError
 
-from .base import BaseCheck, Finding, Severity
+from .base import AWSBaseCheck, Finding, Severity
 
 
-class CodePipelineChecks(BaseCheck):
+class CodePipelineChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
         client = self.session.client("codepipeline")
 
-        try:
-            pipelines = self._list_pipelines(client)
-        except ClientError as exc:
-            return [Finding(
-                check_id="CP-000",
-                title="CodePipeline API access failed",
-                severity=Severity.INFO,
-                resource="codepipeline",
-                description=f"Could not list pipelines: {exc}. CP checks skipped.",
-                recommendation=(
-                    "Ensure the IAM principal has codepipeline:ListPipelines and "
-                    "codepipeline:GetPipeline permissions."
-                ),
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
-                passed=False,
-            )]
+        if self.target:
+            pipelines = [self.target]
+        else:
+            try:
+                pipelines = self._list_pipelines(client)
+            except ClientError as exc:
+                return [Finding(
+                    check_id="CP-000",
+                    title="CodePipeline API access failed",
+                    severity=Severity.INFO,
+                    resource="codepipeline",
+                    description=f"Could not list pipelines: {exc}. CP checks skipped.",
+                    recommendation=(
+                        "Ensure the IAM principal has codepipeline:ListPipelines and "
+                        "codepipeline:GetPipeline permissions."
+                    ),
+                    owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
+                    passed=False,
+                )]
 
         findings: list[Finding] = []
         for name in pipelines:

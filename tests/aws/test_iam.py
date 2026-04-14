@@ -2,9 +2,9 @@
 
 from unittest.mock import MagicMock
 
-from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.iam import IAMChecks
-from tests.conftest import make_paginator
+from pipeline_check.core.checks.aws.base import Severity
+from pipeline_check.core.checks.aws.iam import IAMChecks
+from tests.aws.conftest import make_paginator
 
 _CB_TRUST = {
     "Statement": [{
