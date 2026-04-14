@@ -11,7 +11,8 @@ Currently supports **AWS** [OWASP Top 10 CI/CD Security Risks](https://owasp.org
 - Run targeted scans with `--checks` to focus on specific check IDs
 - Scores findings on a 0–100 scale with letter grade (A–D)
 - Cross-compatible: same core logic runs as a CLI tool or AWS Lambda function
-- Rich terminal output and machine-readable JSON
+- Rich terminal output, machine-readable JSON, and self-contained HTML reports
+- Per-check YAML rule files with description, severity, and recommended actions
 - CI-gate friendly: exits with code `1` when grade is D
 
 ## Architecture
@@ -24,6 +25,7 @@ pipeline_check/
     ├── scanner.py              # provider-agnostic orchestrator
     ├── scorer.py               # weighted scoring + grading
     ├── reporter.py             # terminal (rich) + JSON output
+    ├── html_reporter.py        # self-contained HTML report
     └── checks/
         ├── base.py             # Finding dataclass, Severity enum, BaseCheck ABC (no cloud SDK imports)
         └── aws/                # AWS-specific checks
@@ -33,7 +35,14 @@ pipeline_check/
             ├── codedeploy.py   # CD-001 … CD-003
             ├── ecr.py          # ECR-001 … ECR-004
             ├── iam.py          # IAM-001 … IAM-003
-            └── s3.py           # S3-001 … S3-004
+            ├── s3.py           # S3-001 … S3-004
+            └── rules/          # YAML check metadata (id, severity, description, recommended_actions)
+                ├── codebuild.yml
+                ├── codepipeline.yml
+                ├── codedeploy.yml
+                ├── ecr.yml
+                ├── iam.yml
+                └── s3.yml
 
 tests/
 ├── test_scorer.py              # generic scoring tests
@@ -78,6 +87,12 @@ pipeline_check --checks CB-001 --checks IAM-001
 # Output JSON only (suitable for piping to jq or storing as an artifact)
 pipeline_check --output json
 
+# Generate an HTML report (written to pipelineguard-report.html by default)
+pipeline_check --output html
+
+# Write the HTML report to a specific path
+pipeline_check --output html --output-file /tmp/report.html
+
 # Show terminal report AND save JSON simultaneously
 pipeline_check --output both
 ```
@@ -91,7 +106,8 @@ pipeline_check --output both
 | `--checks` | _(all)_ | Check ID(s) to run — repeat for multiple (e.g. `--checks CB-001 --checks CB-003`) |
 | `--region` | `us-east-1` | Region to scan (AWS only) |
 | `--profile` | None | AWS CLI named profile (AWS only) |
-| `--output` | `terminal` | `terminal`, `json`, or `both` |
+| `--output` | `terminal` | `terminal`, `json`, `html`, or `both` |
+| `--output-file` | `pipelineguard-report.html` | File path for HTML report (used with `--output html`) |
 | `--severity-threshold` | `INFO` | Minimum severity to display |
 
 > **How `--target` works:** `CodePipelineChecks` fetches only the named pipeline rather than listing all pipelines in the region. `S3Checks` discovers the artifact bucket directly from that pipeline instead of enumerating all pipelines. Other checks (CodeBuild, CodeDeploy, ECR, IAM) still run over the full region — combine with `--checks` to narrow further.
@@ -170,6 +186,26 @@ If omitted, `AWS_REGION` is used.
 }
 ```
 
+## Check Rule Files
+
+Each AWS service has a YAML file in `pipeline_check/core/checks/aws/rules/` that defines the static metadata for its checks. These are used to enrich the HTML report with structured descriptions and recommended actions.
+
+```yaml
+- id: CB-001
+  title: Secrets in plaintext environment variables
+  severity: CRITICAL
+  description: >
+    Checks for environment variables whose names match common secret patterns
+    that are stored with type PLAINTEXT...
+  recommended_actions:
+    - Move secrets to AWS Secrets Manager or SSM Parameter Store.
+    - Update the CodeBuild environment variable type to SECRETS_MANAGER or PARAMETER_STORE.
+    - Rotate any credentials that may have been exposed in plaintext.
+  owasp_cicd: "CICD-SEC-6: Insufficient Credential Hygiene"
+```
+
+The HTML reporter loads these files automatically when `pyyaml` is installed. Without it the report still renders fully — it uses the dynamic descriptions embedded in each `Finding`.
+
 ## Adding a New AWS Check Module
 
 1. Create `pipeline_check/core/checks/aws/<service>.py`:
@@ -195,7 +231,9 @@ _CHECK_CLASSES = [
 ]
 ```
 
-3. Add tests in `tests/aws/test_myservice.py`.
+3. Add a rule file at `pipeline_check/core/checks/aws/rules/<service>.yml` with an entry for each check ID (see [Check Rule Files](#check-rule-files) above).
+
+4. Add tests in `tests/aws/test_myservice.py`.
 
 Check IDs follow the convention `<PREFIX>-<NNN>` where `NNN` is zero-padded to three digits.
 
