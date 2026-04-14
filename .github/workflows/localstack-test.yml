@@ -1,0 +1,131 @@
+name: LocalStack Integration Test
+
+on:
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-dev.txt
+          pip install pyyaml
+          pip install -e .
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Start LocalStack
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e DEBUG=0 \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
+            localstack/localstack-pro:latest
+
+          echo "Waiting for LocalStack to be ready..."
+          READY=false
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s http://localhost:4566/_localstack/health 2>&1 || true)
+            if echo "$STATUS" | grep -q '"edition"'; then
+              READY=true
+              echo "LocalStack ready after $((i * 2))s"
+              echo "$STATUS"
+              break
+            fi
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Still waiting (${i}x2s)... last response: $STATUS"
+              docker logs --tail 20 localstack
+            fi
+            sleep 2
+          done
+
+          if [ "$READY" != "true" ]; then
+            echo "LocalStack failed to start within 120s"
+            docker logs localstack
+            exit 1
+          fi
+
+          # Give services a few extra seconds to finish initialising
+          sleep 5
+
+      - name: Apply Terraform
+        working-directory: infra
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Run PipelineCheck against LocalStack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output html \
+            --output-file pipeline-check-report.html
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output json \
+            | tee pipeline-check-report.json
+
+      - name: Assert grade is not D
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-report.json") as f:
+              report = json.load(f)
+
+          score  = report["score"]
+          grade  = score["grade"]
+          points = score["score"]
+          summary = score.get("summary", {})
+
+          print(f"Grade: {grade}  Score: {points}/100")
+          for sev, data in summary.items():
+              if data["failed"] > 0:
+                  print(f"  {sev}: {data['failed']} failed / {data['passed']} passed")
+
+          failed_checks = [
+              f["check_id"]
+              for f in report["findings"]
+              if not f["passed"]
+          ]
+          if failed_checks:
+              print(f"\nFailed checks: {', '.join(sorted(failed_checks))}")
+
+          if grade == "D":
+              print("\nGrade D — integration test failed.")
+              sys.exit(1)
+
+          print("\nAll checks passed or grade acceptable.")
+          EOF
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-check-report
+          path: pipeline-check-report.html
+          retention-days: 30

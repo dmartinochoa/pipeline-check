@@ -1,0 +1,41 @@
+- id: IAM-001
+  title: CI/CD role has AdministratorAccess policy attached
+  severity: CRITICAL
+  description: >
+    Checks whether any IAM role with a CI/CD service trust (CodeBuild, CodePipeline,
+    or CodeDeploy) has the AWS-managed AdministratorAccess policy attached. This
+    grants unrestricted access to all AWS services and resources; a compromised
+    pipeline can perform any action in the account.
+  recommended_actions:
+    - Replace AdministratorAccess with least-privilege policies scoped to the specific actions the role requires.
+    - Use IAM Access Analyzer to identify and remove unused permissions.
+    - Apply Service Control Policies (SCPs) at the AWS Organizations level to further constrain CI/CD role capabilities.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"
+
+- id: IAM-002
+  title: CI/CD role has wildcard Action in inline policy
+  severity: HIGH
+  description: >
+    Checks whether any inline policy on a CI/CD service role contains an Allow
+    statement with Action: '*'. Wildcard actions grant unrestricted access to one
+    or more AWS services, violating least-privilege and widening the blast radius
+    of a compromised build or deployment.
+  recommended_actions:
+    - Replace wildcard actions with the specific IAM actions the role actually requires.
+    - Use CloudTrail last-access data and IAM Access Analyzer to identify the minimal required action set.
+    - Periodically review and tighten inline policies as pipeline requirements evolve.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"
+
+- id: IAM-003
+  title: CI/CD role has no permission boundary
+  severity: MEDIUM
+  description: >
+    Checks whether CI/CD service roles have a permissions boundary attached.
+    Without a boundary, the role's effective permissions are limited only by its
+    attached policies, and there is no guardrail preventing privilege escalation
+    if a policy is accidentally over-permissioned or modified by an attacker.
+  recommended_actions:
+    - Attach a permissions boundary to each CI/CD service role defining the maximum permissions it can ever be granted.
+    - Create a managed boundary policy that excludes sensitive actions (e.g. iam:CreateRole, iam:AttachRolePolicy without conditions).
+    - Enforce boundary attachment through an SCP or IAM condition on role creation.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"

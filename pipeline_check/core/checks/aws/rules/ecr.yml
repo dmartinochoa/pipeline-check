@@ -1,0 +1,55 @@
+- id: ECR-001
+  title: Image scanning on push not enabled
+  severity: HIGH
+  description: >
+    Checks whether the ECR repository has imageScanningConfiguration.scanOnPush
+    enabled. Without scan-on-push, vulnerabilities in base images or dependencies
+    are not detected at push time, allowing unvetted images to propagate through
+    the pipeline and into production.
+  recommended_actions:
+    - Enable imageScanningConfiguration.scanOnPush on the repository.
+    - Consider enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
+    - Integrate scan results into your CI/CD pipeline and fail builds on HIGH or CRITICAL findings.
+  owasp_cicd: "CICD-SEC-3: Dependency Chain Abuse"
+
+- id: ECR-002
+  title: Image tags are mutable
+  severity: HIGH
+  description: >
+    Checks whether the repository has imageTagMutability set to IMMUTABLE. With
+    mutable tags, any principal with ecr:PutImage can silently overwrite an existing
+    tag (e.g. :latest or a semver tag), allowing a malicious or accidental image
+    swap to affect all deployments that pull by tag without verifying a digest.
+  recommended_actions:
+    - Set imageTagMutability=IMMUTABLE on the repository.
+    - Reference container images by digest (sha256:...) in deployment manifests for the strongest immutability guarantees.
+    - Enforce digest-pinning in your container admission controller or policy engine.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
+
+- id: ECR-003
+  title: Repository policy allows public access
+  severity: CRITICAL
+  description: >
+    Checks whether the repository resource-based policy contains any Allow statement
+    with a wildcard principal (Principal: '*'). Such statements expose the repository
+    to unauthenticated or cross-account access, potentially allowing unauthorised
+    image pulls or pushes.
+  recommended_actions:
+    - Remove wildcard principals from the repository policy.
+    - Grant pull access only to specific AWS account IDs or IAM principals that require it.
+    - If cross-account access is needed, use explicit account principal ARNs with the minimum necessary actions.
+  owasp_cicd: "CICD-SEC-8: Ungoverned Usage of 3rd-Party Services"
+
+- id: ECR-004
+  title: No lifecycle policy configured
+  severity: LOW
+  description: >
+    Checks whether the ECR repository has a lifecycle policy defined. Without
+    automated image cleanup, old and potentially vulnerable images accumulate
+    indefinitely, increasing storage costs and the attack surface for anyone
+    able to pull older tagged images.
+  recommended_actions:
+    - Add a lifecycle policy that expires untagged images after a short period (e.g. 7 days).
+    - Limit the number of tagged image versions retained (e.g. keep the last 10 tagged images).
+    - Test the lifecycle policy in a non-production repository before applying it to critical repos.
+  owasp_cicd: "CICD-SEC-7: Insecure System Configuration"

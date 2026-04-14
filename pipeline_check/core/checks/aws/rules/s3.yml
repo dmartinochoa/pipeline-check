@@ -1,0 +1,54 @@
+- id: S3-001
+  title: Artifact bucket public access block not fully enabled
+  severity: CRITICAL
+  description: >
+    Checks whether all four S3 Block Public Access settings are enabled on
+    CodePipeline artifact buckets: BlockPublicAcls, IgnorePublicAcls,
+    BlockPublicPolicy, and RestrictPublicBuckets. Missing settings could expose
+    pipeline artifacts if a bucket ACL or policy is accidentally permissive.
+  recommended_actions:
+    - Enable all four Block Public Access settings on every artifact bucket.
+    - Apply the same settings at the AWS account level as a catch-all default.
+    - Use AWS Config rule s3-bucket-public-read-prohibited to continuously audit public access.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
+
+- id: S3-002
+  title: Artifact bucket server-side encryption not configured
+  severity: HIGH
+  description: >
+    Checks whether the CodePipeline artifact bucket has a default server-side
+    encryption rule configured. Without encryption at rest, pipeline artifacts
+    (source zips, compiled binaries, deployment packages) are stored unencrypted,
+    increasing exposure if S3 access controls are misconfigured.
+  recommended_actions:
+    - Enable default bucket encryption using at minimum AES256 (SSE-S3).
+    - For stronger key control, use SSE-KMS with a customer-managed key.
+    - Enforce encryption-in-transit by adding a bucket policy that denies requests without aws:SecureTransport.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
+
+- id: S3-003
+  title: Artifact bucket versioning not enabled
+  severity: MEDIUM
+  description: >
+    Checks whether versioning is enabled on the CodePipeline artifact bucket.
+    Without versioning, overwritten or deleted artifacts cannot be recovered,
+    making it impossible to roll back to a known-good build artifact after an
+    incident or accidental overwrite.
+  recommended_actions:
+    - Enable S3 versioning on every artifact bucket.
+    - Pair versioning with a lifecycle rule that expires non-current versions after your retention period.
+    - Consider enabling MFA Delete for additional protection against accidental or malicious deletion.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
+
+- id: S3-004
+  title: Artifact bucket access logging not enabled
+  severity: LOW
+  description: >
+    Checks whether S3 server access logging is enabled on CodePipeline artifact
+    buckets. Without access logs it is not possible to audit who accessed,
+    downloaded, or tampered with pipeline artifacts during an investigation.
+  recommended_actions:
+    - Enable S3 server access logging and direct logs to a separate, centralised logging bucket.
+    - Restrict write access to the logging bucket so log entries cannot be tampered with.
+    - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
+  owasp_cicd: "CICD-SEC-10: Insufficient Logging and Visibility"
