@@ -1,0 +1,104 @@
+name: LocalStack Integration Test
+
+on:
+  push:
+    branches: ["master", "dev"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-dev.txt
+          pip install pyyaml
+          pip install -e .
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54531c595ec0a11b968f5b2b33b8ffdb3a57  # v3.1.2
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Start LocalStack
+        uses: LocalStack/setup-localstack@v0.2.2
+        with:
+          image-tag: "latest"
+
+      - name: Apply Terraform via tflocal
+        working-directory: infra
+        run: |
+          pip install terraform-local
+          tflocal init
+          tflocal apply -auto-approve
+
+      - name: Run PipelineGuard against LocalStack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output html \
+            --output-file pipelineguard-report.html
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output json \
+            | tee pipelineguard-report.json
+
+      - name: Assert grade is not D
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipelineguard-report.json") as f:
+              report = json.load(f)
+
+          score  = report["score"]
+          grade  = score["grade"]
+          points = score["score"]
+          summary = score.get("summary", {})
+
+          print(f"Grade: {grade}  Score: {points}/100")
+          for sev, data in summary.items():
+              if data["failed"] > 0:
+                  print(f"  {sev}: {data['failed']} failed / {data['passed']} passed")
+
+          failed_checks = [
+              f["check_id"]
+              for f in report["findings"]
+              if not f["passed"]
+          ]
+          if failed_checks:
+              print(f"\nFailed checks: {', '.join(sorted(failed_checks))}")
+
+          if grade == "D":
+              print("\nGrade D — integration test failed.")
+              sys.exit(1)
+
+          print("\nAll checks passed or grade acceptable.")
+          EOF
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipelineguard-report
+          path: pipelineguard-report.html
+          retention-days: 30
