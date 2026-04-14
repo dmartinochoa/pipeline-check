@@ -1,0 +1,66 @@
+- id: CB-001
+  title: Secrets in plaintext environment variables
+  severity: CRITICAL
+  description: >
+    Checks for environment variables whose names match common secret patterns
+    (PASSWORD, TOKEN, API_KEY, etc.) that are stored with type PLAINTEXT.
+    Plaintext values are visible in the AWS console, CloudTrail logs, and
+    build logs to anyone with read access.
+  recommended_actions:
+    - Move secrets to AWS Secrets Manager or SSM Parameter Store (SecureString).
+    - Update the CodeBuild environment variable type to SECRETS_MANAGER or PARAMETER_STORE.
+    - Rotate any credentials that may have been exposed in plaintext.
+  owasp_cicd: "CICD-SEC-6: Insufficient Credential Hygiene"
+
+- id: CB-002
+  title: Privileged mode enabled
+  severity: HIGH
+  description: >
+    Checks whether the CodeBuild project runs with Docker privileged mode enabled.
+    Privileged mode grants the build container root-level access to the Docker
+    daemon on the underlying host, which is required for Docker-in-Docker builds
+    but significantly increases the blast radius of a compromised build.
+  recommended_actions:
+    - Disable privileged mode unless the project explicitly requires Docker-in-Docker builds.
+    - If privileged mode is required, ensure the buildspec is peer-reviewed and sourced from a protected branch.
+    - Consider using Kaniko or AWS CodeBuild's native Docker layer caching instead of DinD.
+  owasp_cicd: "CICD-SEC-7: Insecure System Configuration"
+
+- id: CB-003
+  title: Build logging not enabled
+  severity: MEDIUM
+  description: >
+    Checks whether the CodeBuild project sends build output logs to CloudWatch Logs
+    or S3. Without logs, build activity cannot be audited, security incidents cannot
+    be investigated, and anomalous build behaviour goes undetected.
+  recommended_actions:
+    - Enable CloudWatch Logs in the project's logsConfig.cloudWatchLogs setting.
+    - Alternatively, enable S3 logging to a protected bucket with restricted write access.
+    - Set a log retention period appropriate for your compliance requirements.
+  owasp_cicd: "CICD-SEC-10: Insufficient Logging and Visibility"
+
+- id: CB-004
+  title: No build timeout configured
+  severity: LOW
+  description: >
+    Checks whether the CodeBuild project has a build timeout below the AWS maximum
+    of 480 minutes. Projects left at the default ceiling allow runaway or abused
+    builds to consume resources and delay detection of a compromised pipeline stage.
+  recommended_actions:
+    - Set a build timeout appropriate for your expected build duration (typically 15–60 minutes).
+    - Use build phase reports and CloudWatch alarms to alert on builds that approach their timeout.
+  owasp_cicd: "CICD-SEC-7: Insecure System Configuration"
+
+- id: CB-005
+  title: Outdated managed build image
+  severity: MEDIUM
+  description: >
+    Checks whether projects using the AWS-managed CodeBuild standard image are on
+    the latest major version. Older managed images may contain unpatched OS packages,
+    runtimes, or build tools that introduce supply-chain risk into every artifact
+    produced by the pipeline.
+  recommended_actions:
+    - Update the environment image to the latest aws/codebuild/standard:X.0 version.
+    - Pin custom or third-party images to a specific digest rather than a mutable tag.
+    - Subscribe to AWS CodeBuild release notifications to stay informed of new image versions.
+  owasp_cicd: "CICD-SEC-7: Insecure System Configuration"

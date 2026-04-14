@@ -12,6 +12,7 @@ import sys
 import click
 
 from .core.checks.base import Severity
+from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
 from .core.scanner import Scanner
 from .core.scorer import score
@@ -63,10 +64,16 @@ _PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
 )
 @click.option(
     "--output",
-    type=click.Choice(["terminal", "json", "both"], case_sensitive=False),
+    type=click.Choice(["terminal", "json", "html", "both"], case_sensitive=False),
     default="terminal",
     show_default=True,
     help="Output format.",
+)
+@click.option(
+    "--output-file",
+    default=None,
+    metavar="PATH",
+    help="Write HTML report to this file (used with --output html).",
 )
 @click.option(
     "--severity-threshold",
@@ -82,6 +89,7 @@ def scan(
     region: str,
     profile: str | None,
     output: str,
+    output_file: str | None,
     severity_threshold: str,
 ) -> None:
     """PipelineGuard — CI/CD Security Posture Scanner.
@@ -106,6 +114,11 @@ def scan(
 
     if output in ("json", "both"):
         click.echo(report_json(findings, score_result))
+
+    if output == "html":
+        dest = output_file or "pipelineguard-report.html"
+        report_html(findings, score_result, region=region, target=target or "", output_path=dest)
+        click.echo(f"HTML report written to {dest}", err=True)
 
     # Non-zero exit when the grade is D so CI pipelines can gate on the result.
     if score_result["grade"] == "D":

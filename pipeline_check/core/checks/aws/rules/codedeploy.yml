@@ -1,0 +1,41 @@
+- id: CD-001
+  title: Automatic rollback on failure not enabled
+  severity: MEDIUM
+  description: >
+    Checks whether the CodeDeploy deployment group has autoRollbackConfiguration
+    enabled with the DEPLOYMENT_FAILURE event. Without automatic rollback, a failed
+    deployment leaves the environment in an inconsistent or partially-deployed state
+    until a developer manually intervenes.
+  recommended_actions:
+    - Enable autoRollbackConfiguration on the deployment group with at least the DEPLOYMENT_FAILURE event.
+    - Consider also adding DEPLOYMENT_STOP_ON_ALARM to roll back when health metrics degrade.
+    - Test rollback behaviour in a non-production environment to validate the configuration.
+  owasp_cicd: "CICD-SEC-1: Insufficient Flow Control Mechanisms"
+
+- id: CD-002
+  title: AllAtOnce deployment config — no canary or rolling strategy
+  severity: HIGH
+  description: >
+    Checks whether the deployment group uses an AllAtOnce configuration
+    (CodeDeployDefault.AllAtOnce, LambdaAllAtOnce, or ECSAllAtOnce). This strategy
+    routes 100% of traffic to the new revision simultaneously, meaning a defective
+    build immediately impacts all users with no canary validation window.
+  recommended_actions:
+    - Switch to a canary deployment configuration (e.g. CodeDeployDefault.LambdaCanary10Percent5Minutes).
+    - For EC2/on-premises workloads, use a rolling or half-at-a-time deployment config.
+    - Pair the graduated deployment with CloudWatch alarms to trigger automatic rollback on error spikes.
+  owasp_cicd: "CICD-SEC-1: Insufficient Flow Control Mechanisms"
+
+- id: CD-003
+  title: No CloudWatch alarm monitoring on deployment group
+  severity: MEDIUM
+  description: >
+    Checks whether the CodeDeploy deployment group has at least one CloudWatch alarm
+    configured in its alarmConfiguration. Without alarm-based monitoring, error rate
+    spikes or latency regressions introduced by a deployment will not automatically
+    halt or roll back the release.
+  recommended_actions:
+    - Add CloudWatch alarms covering error rate, 5xx response count, or latency p99 to the deployment group.
+    - Enable alarmConfiguration.enabled and set ignoreAlarmMembershipErrors to false.
+    - Combine with auto-rollback on DEPLOYMENT_STOP_ON_ALARM to create a self-healing deployment pipeline.
+  owasp_cicd: "CICD-SEC-10: Insufficient Logging and Visibility"

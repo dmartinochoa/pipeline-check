@@ -1,0 +1,39 @@
+- id: CP-001
+  title: No approval action before deploy stages
+  severity: HIGH
+  description: >
+    Checks whether every Deploy stage in the pipeline is preceded by at least one
+    Manual approval action. Without an approval gate, any code change can reach
+    production automatically with no human review, violating flow control principles.
+  recommended_actions:
+    - Add a Manual approval action to a stage that precedes every Deploy stage targeting production.
+    - Integrate approval notifications with your team's communication tool (e.g. Slack, email).
+    - Consider using AWS CodePipeline approval rules for automated quality gates in addition to manual reviews.
+  owasp_cicd: "CICD-SEC-1: Insufficient Flow Control Mechanisms"
+
+- id: CP-002
+  title: Artifact store not encrypted with customer-managed KMS key
+  severity: MEDIUM
+  description: >
+    Checks whether the pipeline artifact store (S3 bucket) uses a customer-managed
+    KMS key rather than the default AWS-managed key (SSE-S3). Default encryption
+    reduces auditability and control over who can decrypt pipeline artifacts.
+  recommended_actions:
+    - Create a customer-managed KMS key and assign it as the encryptionKey in each artifact store configuration.
+    - Apply a key policy that restricts decrypt access to only the pipeline execution role.
+    - Enable CloudTrail logging of KMS API calls to audit all artifact decryption events.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
+
+- id: CP-003
+  title: Source stage using polling instead of event-driven trigger
+  severity: LOW
+  description: >
+    Checks whether any Source action has PollForSourceChanges=true, meaning the
+    pipeline polls for changes rather than being triggered by an event. Polling
+    increases API quota consumption, introduces latency, and may miss rapid
+    successive changes.
+  recommended_actions:
+    - Set PollForSourceChanges=false on all Source actions.
+    - Configure an Amazon EventBridge rule or CodeCommit trigger to start the pipeline on change.
+    - For GitHub sources, use a CodeStar connection with webhook-based triggering.
+  owasp_cicd: "CICD-SEC-4: Poisoned Pipeline Execution"
