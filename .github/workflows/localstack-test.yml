@@ -58,12 +58,11 @@ jobs:
           # Give services a few extra seconds to finish initialising
           sleep 5
 
-      - name: Apply Terraform via tflocal
+      - name: Apply Terraform
         working-directory: infra
         run: |
-          pip install terraform-local
-          tflocal init
-          tflocal apply -auto-approve
+          terraform init
+          terraform apply -auto-approve
 
       - name: Run PipelineCheck against LocalStack
         env:
