@@ -19,6 +19,8 @@ and the ``managed_policy_arns`` attribute on the role.
 """
 from __future__ import annotations
 
+from typing import Iterable
+
 from .base import TerraformBaseCheck, TerraformResource
 from ..base import Finding, Severity
 from .._iam_policy import (

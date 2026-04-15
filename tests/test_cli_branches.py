@@ -46,7 +46,7 @@ class TestListStandards:
         assert "cis_aws_foundations" in result.output
         assert "slsa" in result.output
         # URLs should render too
-        assert "owasp.org" in result.output
+        assert "https://owasp.org/www-project-top-10-ci-cd-security-risks/" in result.output
 
 
 class TestProviderUsageErrors:
