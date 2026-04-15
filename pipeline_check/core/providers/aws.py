@@ -22,6 +22,7 @@ from ..checks.aws.codedeploy import CodeDeployChecks
 from ..checks.aws.codepipeline import CodePipelineChecks
 from ..checks.aws.ecr import ECRChecks
 from ..checks.aws.iam import IAMChecks
+from ..checks.aws.pbac import PBACChecks
 from ..checks.aws.s3 import S3Checks
 from ..checks.base import BaseCheck
 
@@ -48,5 +49,6 @@ class AWSProvider(BaseProvider):
             CodeDeployChecks,
             ECRChecks,
             IAMChecks,
+            PBACChecks,
             S3Checks,
         ]

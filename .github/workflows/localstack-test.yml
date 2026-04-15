@@ -7,7 +7,73 @@ permissions:
   contents: read
 
 jobs:
-  integration:
+  # ---------------------------------------------------------------------------
+  # Job 1: pytest integration suite
+  #
+  # Creates AWS resources directly via boto3, runs the scanner against them,
+  # and tears them down. Uses its own LocalStack instance so any leftover
+  # resources from a failed teardown can't pollute the Terraform job below.
+  # ---------------------------------------------------------------------------
+  pytest-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-dev.txt
+          pip install -e .
+
+      - name: Start LocalStack
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e DEBUG=0 \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
+            localstack/localstack-pro:latest
+
+          echo "Waiting for LocalStack to be ready..."
+          READY=false
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s http://localhost:4566/_localstack/health 2>&1 || true)
+            if echo "$STATUS" | grep -q '"edition"'; then
+              READY=true
+              echo "LocalStack ready after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$READY" != "true" ]; then
+            echo "LocalStack failed to start within 120s"
+            docker logs localstack
+            exit 1
+          fi
+          sleep 5
+
+      - name: Run pytest integration suite against LocalStack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: pytest tests/integration/ -v
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Terraform fixture scans
+  #
+  # Applies the good/bad Terraform fixtures and verifies the CLI produces the
+  # expected report grades and check failures. Runs on its own LocalStack so
+  # it starts from a clean slate, independent of job 1.
+  # ---------------------------------------------------------------------------
+  terraform-fixture:
     runs-on: ubuntu-latest
 
     steps:
@@ -60,17 +126,15 @@ jobs:
             docker logs localstack
             exit 1
           fi
-
-          # Give services a few extra seconds to finish initialising
           sleep 5
 
-      - name: Apply Terraform
+      - name: Apply good Terraform fixture
         working-directory: infra
         run: |
           terraform init
           terraform apply -auto-approve
 
-      - name: Run PipelineCheck against LocalStack
+      - name: Run pipeline_check against good fixture
         env:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
@@ -127,7 +191,7 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Run PipelineCheck against bad fixture
+      - name: Run pipeline_check against bad fixture
         env:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
@@ -158,6 +222,7 @@ jobs:
               "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
               "ECR-001", "ECR-002", "ECR-004",
               "CD-001", "CD-002", "CD-003",
+              "PBAC-001", "PBAC-002",
           }
 
           failed = {f["check_id"] for f in report["findings"] if not f["passed"]}

@@ -12,6 +12,7 @@ from typing import Any
 
 from .checks.base import Finding
 from . import providers as _providers
+from . import standards as _standards
 
 
 class Scanner:
@@ -54,6 +55,7 @@ class Scanner:
         self,
         checks: list[str] | None = None,
         target: str | None = None,
+        standards: list[str] | None = None,
     ) -> list[Finding]:
         """Execute every registered check class for the active provider.
 
@@ -66,6 +68,10 @@ class Scanner:
             Optional resource name to scope the scan to (e.g. a CodePipeline
             pipeline name).  Checks that support targeting restrict their API
             calls accordingly; others run over the full region.
+        standards:
+            Optional list of standard names (e.g. ``["owasp_cicd_top_10"]``)
+            to annotate findings with. When ``None``, every registered
+            standard is used.
         """
         findings: list[Finding] = []
         for check_class in self._check_classes:
@@ -75,5 +81,9 @@ class Scanner:
         if checks:
             normalised = {c.upper() for c in checks}
             findings = [f for f in findings if f.check_id.upper() in normalised]
+
+        active_standards = _standards.resolve(standards)
+        for f in findings:
+            f.controls = _standards.resolve_for_check(f.check_id, active_standards)
 
         return findings

@@ -1,7 +1,9 @@
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+
+from ..standards.base import ControlRef
 
 
 class Severity(str, Enum):
@@ -34,8 +36,11 @@ class Finding:
     resource: str
     description: str
     recommendation: str
-    owasp_cicd: str
     passed: bool
+    #: Compliance controls this finding evidences. Populated by the Scanner
+    #: from the standards registry after a check runs; checks never set this
+    #: directly.
+    controls: list[ControlRef] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -45,8 +50,8 @@ class Finding:
             "resource": self.resource,
             "description": self.description,
             "recommendation": self.recommendation,
-            "owasp_cicd": self.owasp_cicd,
             "passed": self.passed,
+            "controls": [c.to_dict() for c in self.controls],
         }
 
 

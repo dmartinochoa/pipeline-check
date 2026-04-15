@@ -12,7 +12,6 @@ def _finding(severity: Severity, passed: bool) -> Finding:
         resource="res",
         description="",
         recommendation="",
-        owasp_cicd="",
         passed=passed,
     )
 

@@ -290,12 +290,41 @@ resource "aws_cloudwatch_metric_alarm" "deploy_errors" {
 }
 
 # ---------------------------------------------------------------------------
-# CodeBuild — project (CB-001…CB-005)
+# VPC — network segmentation for CodeBuild (PBAC-001)
+# ---------------------------------------------------------------------------
+
+resource "aws_vpc" "build" {
+  cidr_block = "10.0.0.0/16"
+  tags       = { Name = "pipeline-check-build-vpc" }
+}
+
+resource "aws_subnet" "build" {
+  vpc_id            = aws_vpc.build.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-east-1a"
+  tags              = { Name = "pipeline-check-build-subnet" }
+}
+
+resource "aws_security_group" "build" {
+  name        = "pipeline-check-build-sg"
+  description = "Egress control for CodeBuild nodes"
+  vpc_id      = aws_vpc.build.id
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# ---------------------------------------------------------------------------
+# CodeBuild — project (CB-001…CB-005, PBAC-001, PBAC-002)
 # ---------------------------------------------------------------------------
 
 resource "aws_codebuild_project" "app" {
   name          = "pipeline-check-app"
-  service_role  = aws_iam_role.codebuild.arn
+  service_role  = aws_iam_role.codebuild.arn  # PBAC-002: dedicated role
   build_timeout = 60  # CB-004: < 480 minutes
 
   environment {
@@ -312,6 +341,13 @@ resource "aws_codebuild_project" "app" {
       status     = "ENABLED"
       group_name = aws_cloudwatch_log_group.codebuild.name
     }
+  }
+
+  # PBAC-001: build runs inside a VPC with controlled egress
+  vpc_config {
+    vpc_id             = aws_vpc.build.id
+    subnets            = [aws_subnet.build.id]
+    security_group_ids = [aws_security_group.build.id]
   }
 
   source {

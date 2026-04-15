@@ -54,7 +54,6 @@ class IAMChecks(AWSBaseCheck):
                 recommendation=(
                     "Ensure the IAM principal has iam:ListRoles permission."
                 ),
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )]
 
@@ -108,7 +107,6 @@ class IAMChecks(AWSBaseCheck):
                 resource=role_name,
                 description=f"Could not list attached policies: {exc}",
                 recommendation="Ensure iam:ListAttachedRolePolicies permission.",
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )
 
@@ -132,7 +130,6 @@ class IAMChecks(AWSBaseCheck):
                 "only the specific actions and resources required by the pipeline. "
                 "Use IAM Access Analyzer to identify unused permissions."
             ),
-            owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
             passed=not has_admin,
         )
 
@@ -149,7 +146,6 @@ class IAMChecks(AWSBaseCheck):
                 resource=role_name,
                 description=f"Could not list inline policies: {exc}",
                 recommendation="Ensure iam:ListRolePolicies permission.",
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )
 
@@ -188,7 +184,6 @@ class IAMChecks(AWSBaseCheck):
                 "actually requires. Use CloudTrail and IAM Access Analyzer last-access "
                 "data to identify the minimal required action set."
             ),
-            owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
             passed=passed,
         )
 
@@ -221,6 +216,5 @@ class IAMChecks(AWSBaseCheck):
                 "the maximum permissions it can ever be granted, even if its policies "
                 "are accidentally over-permissioned."
             ),
-            owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
             passed=passed,
         )

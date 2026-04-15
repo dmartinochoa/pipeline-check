@@ -7,6 +7,7 @@ from rich.console import Console
 from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.reporter import report_json, report_terminal
 from pipeline_check.core.scorer import score
+from pipeline_check.core.standards.base import ControlRef
 
 
 def _f(check_id, severity, passed, resource="proj"):
@@ -17,8 +18,13 @@ def _f(check_id, severity, passed, resource="proj"):
         resource=resource,
         description="desc",
         recommendation="rec",
-        owasp_cicd="CICD-SEC-1",
         passed=passed,
+        controls=[ControlRef(
+            standard="owasp_cicd_top_10",
+            standard_title="OWASP Top 10 CI/CD Security Risks",
+            control_id="CICD-SEC-1",
+            control_title="Insufficient Flow Control Mechanisms",
+        )],
     )
 
 
@@ -46,7 +52,7 @@ class TestReportJson:
         data = json.loads(output)
         f = data["findings"][0]
         for key in ("check_id", "title", "severity", "resource",
-                    "description", "recommendation", "owasp_cicd", "passed"):
+                    "description", "recommendation", "controls", "passed"):
             assert key in f, f"Missing field: {key}"
 
     def test_severity_serialised_as_string(self):

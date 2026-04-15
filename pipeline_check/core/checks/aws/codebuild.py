@@ -52,7 +52,6 @@ class CodeBuildChecks(AWSBaseCheck):
                     "Ensure the IAM principal has codebuild:ListProjects and "
                     "codebuild:BatchGetProjects permissions."
                 ),
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )]
 
@@ -132,7 +131,6 @@ class CodeBuildChecks(AWSBaseCheck):
                 "reference them using type SECRETS_MANAGER or PARAMETER_STORE in "
                 "the CodeBuild environment variable configuration."
             ),
-            owasp_cicd="CICD-SEC-6: Insufficient Credential Hygiene",
             passed=passed,
         )
 
@@ -162,7 +160,6 @@ class CodeBuildChecks(AWSBaseCheck):
                 "tightly controlled, peer-reviewed, and sourced from a trusted "
                 "repository with branch protection."
             ),
-            owasp_cicd="CICD-SEC-7: Insecure System Configuration",
             passed=not privileged,
         )
 
@@ -198,7 +195,6 @@ class CodeBuildChecks(AWSBaseCheck):
                 "configuration to maintain a durable audit trail of all build "
                 "activity."
             ),
-            owasp_cicd="CICD-SEC-10: Insufficient Logging and Visibility",
             passed=passed,
         )
 
@@ -230,7 +226,6 @@ class CodeBuildChecks(AWSBaseCheck):
                 "(typically 15–60 minutes) to limit the blast radius of a runaway "
                 "or abused build."
             ),
-            owasp_cicd="CICD-SEC-7: Insecure System Configuration",
             passed=passed,
         )
 
@@ -274,6 +269,5 @@ class CodeBuildChecks(AWSBaseCheck):
                 f"aws/codebuild/standard:{_LATEST_STANDARD_VERSION}.0 or later "
                 f"to ensure the build environment receives the latest security patches."
             ),
-            owasp_cicd="CICD-SEC-7: Insecure System Configuration",
             passed=passed,
         )

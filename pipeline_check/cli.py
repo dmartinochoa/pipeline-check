@@ -12,6 +12,7 @@ import sys
 import click
 
 from .core import providers as _providers
+from .core import standards as _standards
 from .core.checks.base import Severity
 from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
@@ -80,6 +81,22 @@ _PIPELINE_CHOICES = _providers.available()
     help="Write HTML report to this file (used with --output html).",
 )
 @click.option(
+    "--standard",
+    "standards",
+    multiple=True,
+    metavar="NAME",
+    help=(
+        "Annotate findings with controls from the named standard. Repeat to "
+        "enable multiple (e.g. --standard owasp_cicd_top_10 --standard "
+        "cis_aws_foundations). Omit to include every registered standard."
+    ),
+)
+@click.option(
+    "--list-standards",
+    is_flag=True,
+    help="List every registered compliance standard and exit.",
+)
+@click.option(
     "--severity-threshold",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default="INFO",
@@ -94,6 +111,8 @@ def scan(
     profile: str | None,
     output: str,
     output_file: str | None,
+    standards: tuple[str, ...],
+    list_standards: bool,
     severity_threshold: str,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
@@ -101,12 +120,23 @@ def scan(
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
+    if list_standards:
+        for std in _standards.resolve():
+            click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
+            if std.url:
+                click.echo(f"    {std.url}")
+        return
+
     threshold = Severity(severity_threshold.upper())
 
     scanner = Scanner(pipeline=pipeline, region=region, profile=profile)
 
     try:
-        findings = scanner.run(checks=list(checks) if checks else None, target=target)
+        findings = scanner.run(
+            checks=list(checks) if checks else None,
+            target=target,
+            standards=list(standards) if standards else None,
+        )
     except Exception as exc:
         click.echo(f"[error] Scan failed: {exc}", err=True)
         sys.exit(2)

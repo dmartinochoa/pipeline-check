@@ -255,13 +255,29 @@ def _finding_row(finding: Finding, rule: dict) -> str:
             f'</div>'
         )
 
-    # OWASP mapping
-    sections.append(
-        f'<div class="d-section">'
-        f'<div class="d-label">OWASP CI/CD Risk</div>'
-        f'<div class="d-value"><span class="owasp-tag">{_e(finding.owasp_cicd)}</span></div>'
-        f'</div>'
-    )
+    # Compliance controls — one tag per ControlRef, grouped by standard.
+    if finding.controls:
+        by_std: dict[str, list] = {}
+        for c in finding.controls:
+            by_std.setdefault(c.standard_title, []).append(c)
+        groups_html = ""
+        for std_title, refs in by_std.items():
+            tags = "".join(
+                f'<span class="owasp-tag" title="{_e(r.control_title)}">'
+                f'{_e(r.control_id)}: {_e(r.control_title)}</span> '
+                for r in refs
+            )
+            groups_html += (
+                f'<div style="margin-top:6px">'
+                f'<strong style="font-size:11px">{_e(std_title)}</strong><br>{tags}'
+                f'</div>'
+            )
+        sections.append(
+            f'<div class="d-section">'
+            f'<div class="d-label">Compliance Controls</div>'
+            f'<div class="d-value">{groups_html}</div>'
+            f'</div>'
+        )
 
     detail_html = "".join(sections)
 

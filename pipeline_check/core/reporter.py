@@ -89,18 +89,19 @@ def report_terminal(
     table.add_column("Status", no_wrap=True, width=6)
     table.add_column("Resource", overflow="fold", max_width=30)
     table.add_column("Title")
-    table.add_column("OWASP CI/CD", overflow="fold", max_width=36)
+    table.add_column("Controls", overflow="fold", max_width=36)
 
     for f in visible:
         style = _SEVERITY_STYLE.get(f.severity, "white")
         status = "[green]PASS[/green]" if f.passed else "[red]FAIL[/red]"
+        controls_cell = ", ".join(c.control_id for c in f.controls) or "-"
         table.add_row(
             f.check_id,
             f"[{style}]{f.severity.value}[/{style}]",
             status,
             f.resource,
             f.title,
-            f.owasp_cicd,
+            controls_cell,
         )
 
     console.print(table)
@@ -113,10 +114,18 @@ def report_terminal(
     console.print("\n[bold]Failure Details[/bold]")
     for f in failures:
         style = _SEVERITY_STYLE.get(f.severity, "white")
+        controls_text = (
+            "\n".join(
+                f"  - [{c.standard_title}] {c.label()}" for c in f.controls
+            )
+            if f.controls
+            else "  (none mapped)"
+        )
         console.print(
             Panel(
                 f"[bold]Description:[/bold]\n{f.description}\n\n"
-                f"[bold]Recommendation:[/bold]\n{f.recommendation}",
+                f"[bold]Recommendation:[/bold]\n{f.recommendation}\n\n"
+                f"[bold]Compliance controls:[/bold]\n{controls_text}",
                 title=(
                     f"[{style}][{f.check_id}] {f.title}[/{style}]"
                     f"  --  {f.resource}"
