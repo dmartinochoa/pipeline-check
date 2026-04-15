@@ -201,6 +201,11 @@ jobs:
           pipeline_check \
             --pipeline aws \
             --region us-east-1 \
+            --output html \
+            --output-file pipeline-check-bad-report.html || true
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
             --output json \
             | tee pipeline-check-bad-report.json || true
 
@@ -237,10 +242,117 @@ jobs:
           print(f"\nAll {len(EXPECTED_FAILURES)} expected check failures detected.")
           EOF
 
-      - name: Upload HTML report
+      - name: Assert compliance standards enrich findings
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-bad-report.json") as f:
+              report = json.load(f)
+
+          findings_by_id = {}
+          for fd in report["findings"]:
+              findings_by_id.setdefault(fd["check_id"], []).append(fd)
+
+          # 1. Every finding carries at least one OWASP ControlRef.
+          no_owasp = [
+              fd["check_id"] for fd in report["findings"]
+              if not any(
+                  c["standard"] == "owasp_cicd_top_10"
+                  for c in fd.get("controls", [])
+              )
+          ]
+          if no_owasp:
+              print(f"Findings missing OWASP mapping: {sorted(set(no_owasp))}")
+              sys.exit(1)
+
+          # 2. Every CIS-mapped check that failed carries its CIS ControlRef.
+          # Mirrors pipeline_check/core/standards/data/cis_aws_foundations.py.
+          EXPECTED_CIS = {
+              "IAM-002": "1.16",
+              "S3-001":  "2.1.4",
+              "S3-002":  "2.1.1",
+              "S3-003":  "2.1.2",
+              "S3-004":  "3.6",
+          }
+
+          missing_cis = []
+          for check_id, ctrl_id in EXPECTED_CIS.items():
+              matches = findings_by_id.get(check_id, [])
+              if not matches:
+                  missing_cis.append(f"{check_id} (no finding emitted)")
+                  continue
+              has_cis = any(
+                  c["standard"] == "cis_aws_foundations" and c["control_id"] == ctrl_id
+                  for fd in matches for c in fd.get("controls", [])
+              )
+              if not has_cis:
+                  missing_cis.append(f"{check_id} (expected CIS {ctrl_id})")
+
+          if missing_cis:
+              print("CIS enrichment missing for:")
+              for m in missing_cis:
+                  print(f"  - {m}")
+              sys.exit(1)
+
+          print(f"CIS AWS Foundations enrichment verified for {len(EXPECTED_CIS)} checks.")
+          EOF
+
+      - name: Run pipeline_check with --standard cis_aws_foundations
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --standard cis_aws_foundations \
+            --output json \
+            | tee pipeline-check-bad-cis-report.json || true
+
+      - name: Assert --standard filter restricts ControlRefs to CIS
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-bad-cis-report.json") as f:
+              report = json.load(f)
+
+          # When --standard cis_aws_foundations is the only active standard,
+          # no finding may carry an OWASP ControlRef.
+          leaked = []
+          for fd in report["findings"]:
+              for c in fd.get("controls", []):
+                  if c["standard"] != "cis_aws_foundations":
+                      leaked.append((fd["check_id"], c["standard"]))
+
+          if leaked:
+              print("Non-CIS controls leaked through --standard filter:")
+              for cid, std in leaked[:10]:
+                  print(f"  {cid} -> {std}")
+              sys.exit(1)
+
+          # At least one CIS-mapped check must have produced a CIS ControlRef.
+          any_cis = any(
+              c["standard"] == "cis_aws_foundations"
+              for fd in report["findings"]
+              for c in fd.get("controls", [])
+          )
+          if not any_cis:
+              print("No CIS ControlRefs produced — standards filter produced empty annotation.")
+              sys.exit(1)
+
+          print("--standard cis_aws_foundations filter correctly restricts ControlRefs.")
+          EOF
+
+      - name: Upload HTML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pipeline-check-report
-          path: pipeline-check-report.html
+          name: pipeline-check-reports
+          path: |
+            pipeline-check-report.html
+            pipeline-check-bad-report.html
           retention-days: 30
