@@ -94,35 +94,6 @@ class TestIAMIntegration:
             if boundary:
                 _safe(iam.delete_policy, PolicyArn=boundary)
 
-    @pytest.fixture(scope="class")
-    def insecure_role(self, ls_session: boto3.Session, run_id: str):
-        iam = ls_session.client("iam")
-        role_name = f"pc-cb-bad-{run_id}"
-
-        try:
-            iam.create_role(
-                RoleName=role_name,
-                AssumeRolePolicyDocument=json.dumps(_CB_TRUST),
-                # no PermissionsBoundary → IAM-003 fail
-            )
-            iam.put_role_policy(
-                RoleName=role_name,
-                PolicyName="WildcardInline",
-                PolicyDocument=json.dumps({
-                    "Version": "2012-10-17",
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Action": "*",  # IAM-002 fail
-                        "Resource": "*",
-                    }],
-                }),
-            )
-
-            yield role_name
-        finally:
-            _safe(iam.delete_role_policy, RoleName=role_name, PolicyName="WildcardInline")
-            _safe(iam.delete_role, RoleName=role_name)
-
     def _findings_for(self, ls_session, role_name):
         all_findings = IAMChecks(ls_session).run()
         return [f for f in all_findings if f.resource == role_name]
@@ -180,21 +151,6 @@ class TestECRIntegration:
         finally:
             _safe(ecr.delete_repository, repositoryName=name, force=True)
 
-    @pytest.fixture(scope="class")
-    def insecure_repo(self, ls_session: boto3.Session, run_id: str):
-        ecr = ls_session.client("ecr")
-        name = f"pc-bad-{run_id}"
-        try:
-            ecr.create_repository(
-                repositoryName=name,
-                imageTagMutability="MUTABLE",                         # ECR-002
-                imageScanningConfiguration={"scanOnPush": False},     # ECR-001
-                # no lifecycle policy                                 → ECR-004
-            )
-            yield name
-        finally:
-            _safe(ecr.delete_repository, repositoryName=name, force=True)
-
     def _findings_for(self, ls_session, repo_name):
         all_findings = ECRChecks(ls_session).run()
         return [f for f in all_findings if f.resource == repo_name]
@@ -217,78 +173,6 @@ class TestECRIntegration:
 # ---------------------------------------------------------------------------
 
 class TestCodeBuildAndPBACIntegration:
-    @pytest.fixture(scope="class")
-    def cb_role(self, ls_session: boto3.Session, run_id: str):
-        """A lightweight IAM role that CodeBuild projects can assume."""
-        iam = ls_session.client("iam")
-        role_name = f"pc-cb-int-{run_id}"
-        try:
-            iam.create_role(
-                RoleName=role_name,
-                AssumeRolePolicyDocument=json.dumps(_CB_TRUST),
-            )
-            resp = iam.get_role(RoleName=role_name)
-            yield resp["Role"]["Arn"], role_name
-        finally:
-            _safe(iam.delete_role, RoleName=role_name)
-
-    @pytest.fixture(scope="class")
-    def bad_project(self, ls_session: boto3.Session, cb_role, run_id: str):
-        """Plaintext secret, privileged, logging off, max timeout, old image, no VPC."""
-        cb = ls_session.client("codebuild")
-        role_arn, _ = cb_role
-        name = f"pc-cb-bad-{run_id}"
-        try:
-            cb.create_project(
-                name=name,
-                source={"type": "NO_SOURCE", "buildspec": "version: 0.2\nphases:\n  build:\n    commands:\n      - echo ok"},
-                artifacts={"type": "NO_ARTIFACTS"},
-                environment={
-                    "type": "LINUX_CONTAINER",
-                    "image": "aws/codebuild/standard:1.0",        # CB-005
-                    "computeType": "BUILD_GENERAL1_SMALL",
-                    "privilegedMode": True,                       # CB-002
-                    "environmentVariables": [
-                        {"name": "SECRET_TOKEN", "value": "x", "type": "PLAINTEXT"},  # CB-001
-                    ],
-                },
-                serviceRole=role_arn,
-                timeoutInMinutes=480,                             # CB-004
-                logsConfig={
-                    "cloudWatchLogs": {"status": "DISABLED"},     # CB-003
-                    "s3Logs": {"status": "DISABLED"},
-                },
-                # no vpcConfig                                    → PBAC-001
-            )
-            yield name
-        finally:
-            _safe(cb.delete_project, name=name)
-
-    @pytest.fixture(scope="class")
-    def shared_role_project(self, ls_session: boto3.Session, cb_role, bad_project, run_id: str):
-        """A second project reusing the same service role — triggers PBAC-002."""
-        cb = ls_session.client("codebuild")
-        role_arn, _ = cb_role
-        name = f"pc-cb-bad2-{run_id}"
-        try:
-            cb.create_project(
-                name=name,
-                source={"type": "NO_SOURCE", "buildspec": "version: 0.2\nphases:\n  build:\n    commands:\n      - echo ok"},
-                artifacts={"type": "NO_ARTIFACTS"},
-                environment={
-                    "type": "LINUX_CONTAINER",
-                    "image": "aws/codebuild/standard:7.0",
-                    "computeType": "BUILD_GENERAL1_SMALL",
-                    "privilegedMode": False,
-                },
-                serviceRole=role_arn,  # shared with bad_project → PBAC-002
-                timeoutInMinutes=60,
-                logsConfig={"cloudWatchLogs": {"status": "ENABLED"}},
-            )
-            yield name
-        finally:
-            _safe(cb.delete_project, name=name)
-
     def test_codebuild_bad_project_fails_expected_checks(
         self, ls_session, bad_project, shared_role_project,
     ):
