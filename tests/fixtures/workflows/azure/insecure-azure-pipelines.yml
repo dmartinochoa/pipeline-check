@@ -1,0 +1,37 @@
+# Realistic insecure azure-pipelines.yml exhibiting every ADO-* failure mode.
+trigger:
+  - main
+
+variables:
+  - name: AWS_ACCESS_KEY_ID
+    value: AKIAIOSFODNN7EXAMPLE
+  - name: DATABASE_PASSWORD
+    value: hunter2
+
+resources:
+  containers:
+    - container: py
+      image: python:latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildApp
+        container: py
+        steps:
+          - task: DotNetCoreCLI@2
+            inputs:
+              command: 'build'
+          - script: echo "Building $(Build.SourceBranchName)"
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: DeployWeb
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  inputs:
+                    appName: 'my-web-app'

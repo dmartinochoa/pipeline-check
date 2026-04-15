@@ -1,0 +1,36 @@
+# Hardened equivalent of insecure-azure-pipelines.yml — every ADO-* passes.
+trigger:
+  - main
+
+variables:
+  - name: buildConfiguration
+    value: Release
+
+resources:
+  containers:
+    - container: py
+      image: python:3.12.1-slim
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildApp
+        container: py
+        steps:
+          - task: DotNetCoreCLI@2.210.0
+            inputs:
+              command: 'build'
+          - script: BRANCH="$(Build.SourceBranchName)"
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: DeployWeb
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1.200.0
+                  inputs:
+                    appName: 'my-web-app'
