@@ -53,17 +53,25 @@ STANDARD = Standard(
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
+        "GHA-006":  ["Build.L2.Signed"],                           # unsigned artifacts
+        "GHA-007":  ["Build.L1.Provenance"],                       # no SBOM / provenance
         # GitLab CI — supply-chain and isolation
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
+        "GL-006":   ["Build.L2.Signed"],
+        "GL-007":   ["Build.L1.Provenance"],
         # Bitbucket Pipelines
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
+        "BB-006":   ["Build.L2.Signed"],
+        "BB-007":   ["Build.L1.Provenance"],
         # Azure DevOps Pipelines
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
         "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
+        "ADO-006":  ["Build.L2.Signed"],
+        "ADO-007":  ["Build.L1.Provenance"],
     },
 )

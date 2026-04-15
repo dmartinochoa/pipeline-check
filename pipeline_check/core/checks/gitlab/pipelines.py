@@ -5,13 +5,15 @@ GL-002  Script injection via untrusted commit/MR context      HIGH      CICD-SEC
 GL-003  Variables contain literal secret values               CRITICAL  CICD-SEC-6
 GL-004  Deploy job lacks manual approval or environment gate  MEDIUM    CICD-SEC-1
 GL-005  include: pulls remote / project without pinned ref    HIGH      CICD-SEC-3
+GL-006  Artifacts not signed                                  MEDIUM    ESF-D-SIGN-ARTIFACTS
+GL-007  SBOM not produced                                     MEDIUM    ESF-D-SBOM
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
-from ..base import Finding, Severity
+from ..base import Finding, Severity, has_sbom, has_signing
 from .base import GitLabBaseCheck, iter_jobs, job_scripts
 
 _DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
@@ -53,7 +55,67 @@ class GitLabPipelineChecks(GitLabBaseCheck):
             self._gl003_literal_secrets(path, doc),
             self._gl004_deploy_gating(path, doc),
             self._gl005_include_pinning(path, doc),
+            self._gl006_signing(path, doc),
+            self._gl007_sbom(path, doc),
         ]
+
+    # ------------------------------------------------------------------
+    # GL-006 — artifact signing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gl006_signing(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_signing(doc)
+        desc = (
+            "Pipeline invokes a signing tool (cosign / sigstore / notation)."
+            if passed else
+            "Pipeline produces build artifacts but does not invoke any signing "
+            "tool (cosign, sigstore, notation). Unsigned artifacts cannot be "
+            "verified downstream, so a tampered build is indistinguishable "
+            "from a legitimate one."
+        )
+        return Finding(
+            check_id="GL-006",
+            title="Artifacts not signed",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add a job that runs `cosign sign` (keyless OIDC with GitLab's "
+                "id_tokens works out of the box) or `notation sign`. Publish "
+                "the signature next to the artifact and verify it on consume."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # GL-007 — SBOM generation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gl007_sbom(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_sbom(doc)
+        desc = (
+            "Pipeline produces an SBOM (CycloneDX / syft / Trivy-SBOM)."
+            if passed else
+            "Pipeline does not produce a software bill of materials (SBOM). "
+            "Without an SBOM, downstream consumers cannot audit the exact set "
+            "of dependencies shipped in the artifact."
+        )
+        return Finding(
+            check_id="GL-007",
+            title="SBOM not produced",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with "
+                "`--format cyclonedx`, or GitLab's built-in CycloneDX "
+                "dependency-scanning template. Attach the SBOM as a pipeline "
+                "artifact."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # GL-001 — image pinning

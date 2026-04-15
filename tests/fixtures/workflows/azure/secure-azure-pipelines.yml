@@ -21,6 +21,8 @@ stages:
             inputs:
               command: 'build'
           - script: BRANCH="$(Build.SourceBranchName)"
+          - script: syft . -o cyclonedx-json > sbom.json
+          - script: cosign sign --yes "registry.example.com/app:$(Build.BuildId)"
 
   - stage: Deploy
     dependsOn: Build

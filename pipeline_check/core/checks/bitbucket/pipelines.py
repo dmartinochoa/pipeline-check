@@ -5,13 +5,15 @@ BB-002  Script injection via attacker-controllable context   HIGH      CICD-SEC-
 BB-003  Variables / definitions contain literal secrets      CRITICAL  CICD-SEC-6
 BB-004  Deploy step missing `deployment:` environment gate   MEDIUM    CICD-SEC-1
 BB-005  Step has no `max-time` — unbounded build             MEDIUM    CICD-SEC-7
+BB-006  Artifacts not signed                                 MEDIUM    ESF-D-SIGN-ARTIFACTS
+BB-007  SBOM not produced                                    MEDIUM    ESF-D-SBOM
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
-from ..base import Finding, Severity
+from ..base import Finding, Severity, has_sbom, has_signing
 from .base import BitbucketBaseCheck, iter_steps, step_scripts
 
 # Bitbucket pipe ref: "org/name:version". Pinned = digest-looking, semver x.y.z,
@@ -54,7 +56,67 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
             self._bb003_literal_secrets(path, doc, steps),
             self._bb004_deploy_env(path, steps),
             self._bb005_max_time(path, steps),
+            self._bb006_signing(path, doc),
+            self._bb007_sbom(path, doc),
         ]
+
+    # ------------------------------------------------------------------
+    # BB-006 — artifact signing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _bb006_signing(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_signing(doc)
+        desc = (
+            "Pipeline invokes a signing tool (cosign / sigstore / notation)."
+            if passed else
+            "Pipeline produces build artifacts but does not invoke any signing "
+            "tool (cosign, sigstore, notation). Unsigned artifacts cannot be "
+            "verified downstream, so a tampered build is indistinguishable "
+            "from a legitimate one."
+        )
+        return Finding(
+            check_id="BB-006",
+            title="Artifacts not signed",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add a step that runs `cosign sign` against the built image or "
+                "archive, using Bitbucket OIDC for keyless signing where "
+                "possible. Publish the signature next to the artifact and "
+                "verify it at deploy time."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # BB-007 — SBOM generation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _bb007_sbom(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_sbom(doc)
+        desc = (
+            "Pipeline produces an SBOM (CycloneDX / syft / Trivy-SBOM)."
+            if passed else
+            "Pipeline does not produce a software bill of materials (SBOM). "
+            "Without an SBOM, downstream consumers cannot audit the exact set "
+            "of dependencies shipped in the artifact."
+        )
+        return Finding(
+            check_id="BB-007",
+            title="SBOM not produced",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with "
+                "`--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the "
+                "SBOM as a build artifact."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # BB-001 — pipe pinning

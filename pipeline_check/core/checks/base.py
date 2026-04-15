@@ -75,3 +75,49 @@ class BaseCheck(abc.ABC):
     @abc.abstractmethod
     def run(self) -> list["Finding"]:
         """Execute all checks in this module and return findings."""
+
+
+def walk_strings(node: Any):
+    """Recursively yield every string scalar found under a dict/list tree."""
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for v in node.values():
+            yield from walk_strings(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from walk_strings(v)
+
+
+# Case-insensitive substring tokens; a workflow passes the signing check if
+# any token appears anywhere in its string content.
+SIGN_TOKENS = (
+    "cosign", "sigstore", "slsa-github-generator",
+    "slsa-framework/slsa-", "notation-sign",
+)
+
+# SBOM tokens: direct hits pass on their own. Trivy only passes when combined
+# with "sbom" or "cyclonedx" in the same blob.
+SBOM_DIRECT_TOKENS = (
+    "cyclonedx", "syft", "anchore/sbom-action",
+    "spdx-sbom-generator", "microsoft/sbom-tool",
+)
+
+
+def blob_lower(doc: Any) -> str:
+    """Concatenate all string values in ``doc`` into one lowercase blob."""
+    return "\n".join(walk_strings(doc)).lower()
+
+
+def has_signing(doc: Any) -> bool:
+    blob = blob_lower(doc)
+    return any(tok in blob for tok in SIGN_TOKENS)
+
+
+def has_sbom(doc: Any) -> bool:
+    blob = blob_lower(doc)
+    if any(tok in blob for tok in SBOM_DIRECT_TOKENS):
+        return True
+    if "trivy" in blob and ("sbom" in blob or "cyclonedx" in blob):
+        return True
+    return False

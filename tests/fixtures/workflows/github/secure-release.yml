@@ -28,7 +28,17 @@ jobs:
           role-to-assume: arn:aws:iam::123456789012:role/release-oidc
           aws-region: us-east-1
 
+      - name: Install cosign
+        uses: sigstore/cosign-installer@c56c2d3e59e4281cc41dea2217323ba5694b171e
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@61119d458adab75f756bc0b9e4bde25725f86a7a
+        with:
+          format: cyclonedx-json
+
       - name: Publish
         env:
           TAG: ${{ github.ref_name }}
-        run: npm run deploy -- --tag "$TAG"
+        run: |
+          npm run deploy -- --tag "$TAG"
+          cosign sign --yes "ghcr.io/example/app:$TAG"

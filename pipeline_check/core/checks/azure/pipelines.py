@@ -5,13 +5,15 @@ ADO-002  Script injection via attacker-controllable context       HIGH      CICD
 ADO-003  Variables contain literal secret values                  CRITICAL  CICD-SEC-6
 ADO-004  Deployment job missing environment binding               MEDIUM    CICD-SEC-1
 ADO-005  Container image not pinned to specific version           HIGH      CICD-SEC-3
+ADO-006  Artifacts not signed                                     MEDIUM    ESF-D-SIGN-ARTIFACTS
+ADO-007  SBOM not produced                                        MEDIUM    ESF-D-SBOM
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
-from ..base import Finding, Severity
+from ..base import Finding, Severity, has_sbom, has_signing
 from .base import AzureBaseCheck, iter_jobs, iter_steps
 
 # `- task: Org.Task@N.M.P` — pinned; `@N` alone is floating-major.
@@ -59,7 +61,67 @@ class AzurePipelineChecks(AzureBaseCheck):
             self._ado003_literal_secrets(path, doc, jobs),
             self._ado004_deployment_env(path, jobs),
             self._ado005_container_pinning(path, doc, jobs),
+            self._ado006_signing(path, doc),
+            self._ado007_sbom(path, doc),
         ]
+
+    # ------------------------------------------------------------------
+    # ADO-006 — artifact signing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ado006_signing(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_signing(doc)
+        desc = (
+            "Pipeline invokes a signing tool (cosign / sigstore / notation)."
+            if passed else
+            "Pipeline produces build artifacts but does not invoke any signing "
+            "tool (cosign, sigstore, notation). Unsigned artifacts cannot be "
+            "verified downstream, so a tampered build is indistinguishable "
+            "from a legitimate one."
+        )
+        return Finding(
+            check_id="ADO-006",
+            title="Artifacts not signed",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add a task that runs `cosign sign` or `notation sign` — Azure "
+                "Pipelines' workload identity federation enables keyless "
+                "signing. Publish the signature to the artifact feed and "
+                "verify it at deploy time."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # ADO-007 — SBOM generation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ado007_sbom(path: str, doc: dict[str, Any]) -> Finding:
+        passed = has_sbom(doc)
+        desc = (
+            "Pipeline produces an SBOM (CycloneDX / syft / Microsoft sbom-tool)."
+            if passed else
+            "Pipeline does not produce a software bill of materials (SBOM). "
+            "Without an SBOM, downstream consumers cannot audit the exact set "
+            "of dependencies shipped in the artifact."
+        )
+        return Finding(
+            check_id="ADO-007",
+            title="SBOM not produced",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add an SBOM step — `microsoft/sbom-tool`, `syft . -o "
+                "cyclonedx-json`, or `anchore/sbom-action`. Publish the SBOM "
+                "as a pipeline artifact so downstream consumers can ingest it."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # ADO-001 — task version pinning
