@@ -28,7 +28,7 @@ and **Bitbucket Pipelines** — all without an API token.
 
 ## What it checks
 
-Covered surfaces (**67 checks** total: 32 AWS + 8 GitHub Actions + 9 GitLab CI + 9 Bitbucket Pipelines + 9 Azure DevOps Pipelines, severity-weighted):
+Covered surfaces (**79 checks** total: 32 AWS + 8 GitHub Actions + 9 GitLab CI + 9 Bitbucket Pipelines + 9 Azure DevOps Pipelines + 12 Jenkins, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -43,6 +43,7 @@ Covered surfaces (**67 checks** total: 32 AWS + 8 GitHub Actions + 9 GitLab CI +
 | GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning | `GL-001…009`     |
 | Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning | `BB-001…009`     |
 | Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning | `ADO-001…009`    |
+| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*`, `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk | `JF-001…012`     |
 
 Cross-cutting capabilities layered on top:
 
@@ -74,9 +75,10 @@ Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
 Supported providers: **AWS** (live, via boto3), **Terraform** (plan
-JSON), **GitHub Actions**, **GitLab CI**, **Bitbucket Pipelines**, and
-**Azure DevOps Pipelines** (all YAML — no API token required).
-Planned: **Jenkins**.
+JSON), **GitHub Actions**, **GitLab CI**, **Bitbucket Pipelines**,
+**Azure DevOps Pipelines** (all YAML), and **Jenkins** (Declarative
+or Scripted Pipeline text — no Groovy interpreter, no controller
+access). All providers run without an API token.
 
 ---
 
@@ -111,6 +113,9 @@ pipeline_check --pipeline bitbucket
 
 # Scan an Azure DevOps pipeline (--azure-path auto-detected)
 pipeline_check --pipeline azure
+
+# Scan a Jenkinsfile (--jenkinsfile-path auto-detected if ./Jenkinsfile exists)
+pipeline_check --pipeline jenkins
 
 # Scan everything in us-east-1 (live AWS account)
 pipeline_check
@@ -194,16 +199,18 @@ Precedence: CLI > env > file > defaults. Full reference:
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
 | `--config`              | _(auto)_                      | Config file (TOML or YAML); auto-discovers `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml` |
-| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure` |
+| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins` |
 | `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
 | `--gha-path`            | _(auto: `.github/workflows`)_ | Path to workflows dir; auto-detected from cwd when omitted     |
 | `--gitlab-path`         | _(auto: `.gitlab-ci.yml`)_    | Path to `.gitlab-ci.yml`; auto-detected from cwd when omitted  |
 | `--bitbucket-path`      | _(auto: `bitbucket-pipelines.yml`)_ | Path to `bitbucket-pipelines.yml`; auto-detected from cwd |
 | `--azure-path`          | _(auto: `azure-pipelines.yml`)_ | Path to `azure-pipelines.yml`; auto-detected from cwd       |
+| `--jenkinsfile-path`    | _(auto: `Jenkinsfile`)_       | Path to a Jenkinsfile (or directory); auto-detected from cwd  |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
 | `--list-standards`      | _(flag)_                      | Print every registered standard and exit                      |
+| `--man`                 | _(flag, optional TOPIC)_      | Print extended documentation for TOPIC and exit. `--man` alone lists topics. Topics: `gate`, `autofix`, `diff`, `secrets`, `standards`, `config`, `output`, `lambda`, `recipes`. |
 | `--region`              | `us-east-1`                   | AWS region                                                    |
 | `--profile`             | _(env)_                       | AWS CLI named profile                                         |
 | `--output`              | `terminal`                    | `terminal`, `json`, `html`, `sarif`, or `both`                |

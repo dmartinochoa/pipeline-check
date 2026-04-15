@@ -15,6 +15,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 | `gitlab`    | stable | `GitLabContext` — parsed `.gitlab-ci.yml`               | [gitlab.md](gitlab.md)         |
 | `bitbucket` | stable | `BitbucketContext` — parsed `bitbucket-pipelines.yml`   | [bitbucket.md](bitbucket.md)   |
 | `azure`     | stable | `AzureContext` — parsed `azure-pipelines.yml`           | [azure.md](azure.md)           |
+| `jenkins`   | stable | `JenkinsContext` — parsed `Jenkinsfile` text            | [jenkins.md](jenkins.md)       |
 
 ## Adding a new provider
 

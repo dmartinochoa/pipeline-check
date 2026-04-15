@@ -21,6 +21,8 @@ from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
 from pipeline_check.core.checks.azure.base import AzureContext
 from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
+from pipeline_check.core.checks.jenkins.base import JenkinsContext
+from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "workflows"
@@ -154,6 +156,38 @@ class TestAzureFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Jenkins
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestJenkinsFixtures:
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 13)}
+
+    def _scan(self, filename: str):
+        ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
+        assert ctx.files, f"fixture {filename} produced no parsed Jenkinsfiles"
+        return _finding_map(JenkinsfileChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("Jenkinsfile.insecure")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every JF check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("Jenkinsfile.secure")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every JF check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Cross-provider sanity — findings carry control refs from enabled standards
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -169,6 +203,8 @@ class TestAzureFixtures:
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
      {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005", "ADO-006", "ADO-007", "ADO-008", "ADO-009"}),
+    ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
+     {f"JF-{i:03d}" for i in range(1, 13)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

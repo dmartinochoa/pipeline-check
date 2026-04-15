@@ -18,6 +18,7 @@ from .azure import AzureProvider
 from .bitbucket import BitbucketProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
+from .jenkins import JenkinsProvider
 from .terraform import TerraformProvider
 
 _REGISTRY: dict[str, BaseProvider] = {}
@@ -47,3 +48,4 @@ register(GitHubProvider())
 register(GitLabProvider())
 register(BitbucketProvider())
 register(AzureProvider())
+register(JenkinsProvider())

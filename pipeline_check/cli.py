@@ -181,6 +181,15 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--jenkinsfile-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Jenkinsfile or a directory containing one "
+        "(required when --pipeline jenkins). Auto-detects ./Jenkinsfile."
+    ),
+)
+@click.option(
     "--output",
     type=click.Choice(["terminal", "json", "html", "sarif", "both"], case_sensitive=False),
     default="terminal",
@@ -208,6 +217,20 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "--list-standards",
     is_flag=True,
     help="List every registered compliance standard and exit.",
+)
+@click.option(
+    "--man",
+    "man_topic",
+    is_flag=False,
+    flag_value="index",
+    default=None,
+    metavar="[TOPIC]",
+    help=(
+        "Print extended documentation for TOPIC and exit. Without "
+        "TOPIC, prints the index of available topics. Topics: "
+        "gate, autofix, diff, secrets, standards, config, output, "
+        "lambda, recipes."
+    ),
 )
 @click.option(
     "--standard-report",
@@ -352,10 +375,12 @@ def scan(
     gitlab_path: str | None,
     bitbucket_path: str | None,
     azure_path: str | None,
+    jenkinsfile_path: str | None,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
     list_standards: bool,
+    man_topic: str | None,
     standard_report: str | None,
     config_check: bool,
     severity_threshold: str,
@@ -376,6 +401,11 @@ def scan(
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
+    if man_topic is not None:
+        from .core import manual as _manual
+        click.echo(_manual.render(man_topic), nl=False)
+        return
+
     if list_standards:
         for std in _standards.resolve():
             click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
@@ -482,6 +512,17 @@ def scan(
             )
         if not os.path.exists(azure_path):
             raise click.UsageError(f"--azure-path not found: {azure_path}")
+    elif pipeline_lc == "jenkins":
+        if not jenkinsfile_path and os.path.isfile("Jenkinsfile"):
+            jenkinsfile_path = "Jenkinsfile"
+            click.echo(f"[auto] using --jenkinsfile-path {jenkinsfile_path}", err=True)
+        if not jenkinsfile_path:
+            raise click.UsageError(
+                "--jenkinsfile-path PATH is required when --pipeline jenkins "
+                "(no Jenkinsfile found in the current directory)."
+            )
+        if not os.path.exists(jenkinsfile_path):
+            raise click.UsageError(f"--jenkinsfile-path not found: {jenkinsfile_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -509,6 +550,7 @@ def scan(
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
         azure_path=azure_path,
+        jenkinsfile_path=jenkinsfile_path,
     )
 
     try:
