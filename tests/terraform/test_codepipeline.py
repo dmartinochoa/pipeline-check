@@ -76,3 +76,27 @@ class TestCP003:
                                            "configuration": {"PollForSourceChanges": "false"}}]},
         ], [{"location": "b", "encryption_key": [{"id": "k"}]}])])
         assert _by(_run(plan), "CP-003").passed
+
+
+class TestCP004:
+    def test_legacy_thirdparty_github_fails(self):
+        plan = _plan([_pipeline("p", [
+            {"name": "Source", "action": [{
+                "name": "s", "category": "Source",
+                "owner": "ThirdParty", "provider": "GitHub",
+            }]},
+        ], [{"location": "b", "encryption_key": [{"id": "k"}]}])])
+        assert not _by(_run(plan), "CP-004").passed
+
+    def test_codestar_connection_passes(self):
+        plan = _plan([_pipeline("p", [
+            {"name": "Source", "action": [{
+                "name": "s", "category": "Source",
+                "owner": "AWS", "provider": "CodeStarSourceConnection",
+            }]},
+        ], [{"location": "b", "encryption_key": [{"id": "k"}]}])])
+        assert _by(_run(plan), "CP-004").passed
+
+    def test_no_source_action_passes(self):
+        plan = _plan([_pipeline("p", [], [{"location": "b", "encryption_key": [{"id": "k"}]}])])
+        assert _by(_run(plan), "CP-004").passed

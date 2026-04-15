@@ -96,3 +96,24 @@ class TestECR004:
     def test_lifecycle_passes(self):
         plan = _plan([_repo("r"), _lifecycle("r")])
         assert _by(_run(plan), "ECR-004").passed
+
+
+class TestECR005:
+    def test_default_aes256_fails(self):
+        plan = _plan([_repo("r")])
+        assert not _by(_run(plan), "ECR-005").passed
+
+    def test_explicit_aes256_fails(self):
+        plan = _plan([_repo("r", encryption_configuration=[{"encryption_type": "AES256"}])])
+        assert not _by(_run(plan), "ECR-005").passed
+
+    def test_kms_without_key_fails(self):
+        plan = _plan([_repo("r", encryption_configuration=[{"encryption_type": "KMS"}])])
+        assert not _by(_run(plan), "ECR-005").passed
+
+    def test_kms_with_cmk_passes(self):
+        plan = _plan([_repo("r", encryption_configuration=[{
+            "encryption_type": "KMS",
+            "kms_key": "arn:aws:kms:us-east-1:123:key/abc",
+        }])])
+        assert _by(_run(plan), "ECR-005").passed

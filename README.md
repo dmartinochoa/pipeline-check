@@ -27,17 +27,17 @@ provisioned.
 
 ## What it checks
 
-Covered AWS services (**29 checks**, severity-weighted):
+Covered AWS services (**37 checks**, severity-weighted):
 
-| Service       | Focus                                                                       | IDs               |
-|---------------|-----------------------------------------------------------------------------|-------------------|
-| CodeBuild     | Plaintext secrets, privileged mode, logging, timeouts, image freshness      | `CB-001…005`      |
-| CodePipeline  | Manual approval gates, KMS encryption, event-driven vs polling triggers     | `CP-001…003`      |
-| CodeDeploy    | Auto rollback, deployment strategy, CloudWatch alarm monitoring             | `CD-001…003`      |
-| ECR           | Scan-on-push, tag immutability, public access, lifecycle policies           | `ECR-001…004`     |
-| IAM           | `AdministratorAccess`, wildcard inline policies, permission boundaries      | `IAM-001…003`     |
-| PBAC          | Build project VPC isolation, service-role sharing                           | `PBAC-001…002`    |
-| S3            | Public access block, encryption, HTTPS-only policy, access logging          | `S3-001…004`      |
+| Service       | Focus                                                                                              | IDs              |
+|---------------|----------------------------------------------------------------------------------------------------|------------------|
+| CodeBuild     | Plaintext secrets (name + value patterns), privileged mode, logging, timeouts, image freshness, long-lived source tokens, webhook filter groups | `CB-001…007`     |
+| CodePipeline  | Manual approval gates, KMS encryption, event-driven triggers, legacy ThirdParty/GitHub OAuth       | `CP-001…004`     |
+| CodeDeploy    | Auto rollback, deployment strategy, CloudWatch alarm monitoring                                    | `CD-001…003`     |
+| ECR           | Scan-on-push, tag immutability, public access, lifecycle policies, KMS CMK encryption              | `ECR-001…005`    |
+| IAM           | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
+| PBAC          | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
+| S3            | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
 
 Every finding is tagged with the compliance controls it evidences (OWASP
 Top 10 CI/CD + CIS AWS Foundations — see [Compliance standards](#compliance-standards)).

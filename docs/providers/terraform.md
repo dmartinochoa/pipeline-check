@@ -23,13 +23,13 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 | Service       | IDs               | Terraform resources consumed                                                         |
 |---------------|-------------------|--------------------------------------------------------------------------------------|
-| CodeBuild     | `CB-001…005`      | `aws_codebuild_project`                                                              |
-| CodePipeline  | `CP-001…003`      | `aws_codepipeline`                                                                   |
+| CodeBuild     | `CB-001…007`      | `aws_codebuild_project`, `aws_codebuild_source_credential`, `aws_codebuild_webhook`  |
+| CodePipeline  | `CP-001…004`      | `aws_codepipeline`                                                                   |
 | CodeDeploy    | `CD-001…003`      | `aws_codedeploy_deployment_group`                                                    |
-| ECR           | `ECR-001…004`     | `aws_ecr_repository`, `aws_ecr_repository_policy`, `aws_ecr_lifecycle_policy`        |
-| IAM           | `IAM-001…003`     | `aws_iam_role`, `aws_iam_role_policy`, `aws_iam_role_policy_attachment`              |
+| ECR           | `ECR-001…005`     | `aws_ecr_repository`, `aws_ecr_repository_policy`, `aws_ecr_lifecycle_policy`        |
+| IAM           | `IAM-001…006`     | `aws_iam_role`, `aws_iam_role_policy`, `aws_iam_role_policy_attachment`, `aws_iam_policy` |
 | PBAC          | `PBAC-001…002`    | `aws_codebuild_project`                                                              |
-| S3            | `S3-001…004`      | `aws_codepipeline` + `aws_s3_bucket_{public_access_block,server_side_encryption_configuration,versioning,logging}` |
+| S3            | `S3-001…005`      | `aws_codepipeline` + `aws_s3_bucket_{public_access_block,server_side_encryption_configuration,versioning,logging,policy}` |
 
 Child modules are walked recursively; `mode="data"` entries are skipped.
 
@@ -48,6 +48,8 @@ actually reads are listed below.
 | CB-003  | `logs_config[0].cloudwatch_logs[0].status`, `logs_config[0].s3_logs[0].status`       |
 | CB-004  | `build_timeout` (minutes)                                                            |
 | CB-005  | `environment[0].image` (matched against `aws/codebuild/standard:<major>.<minor>`)    |
+| CB-006  | `source[0].{type, auth[0].type}` + `aws_codebuild_source_credential.{server_type, auth_type}` — external VCS with OAUTH/PAT/BASIC_AUTH fails |
+| CB-007  | `aws_codebuild_webhook.{project_name, filter_group[*]}` — no filter group fails      |
 
 ### CodePipeline (`aws_codepipeline`)
 
@@ -56,6 +58,7 @@ actually reads are listed below.
 | CP-001  | `stage[*].action[*].category` — fails if any `Deploy` action precedes any `Approval`           |
 | CP-002  | `artifact_store[*].encryption_key[*]` — non-empty means customer-managed KMS                   |
 | CP-003  | `stage[*].action[*]` where `category="Source"` — fails on `configuration.PollForSourceChanges=true` |
+| CP-004  | `stage[*].action[*]` where `category="Source"` — fails on `owner="ThirdParty"` + `provider="GitHub"` |
 
 ### CodeDeploy (`aws_codedeploy_deployment_group`)
 
@@ -73,6 +76,7 @@ actually reads are listed below.
 | ECR-002 | `aws_ecr_repository.image_tag_mutability`                                          |
 | ECR-003 | `aws_ecr_repository_policy.policy` (JSON) joined on `repository` — fails on `Principal: "*"` |
 | ECR-004 | Presence of an `aws_ecr_lifecycle_policy` joined on `repository`                   |
+| ECR-005 | `aws_ecr_repository.encryption_configuration[0].{encryption_type, kms_key}` — requires KMS + CMK ARN |
 
 ### IAM (only roles trusted by CodeBuild/Pipeline/Deploy)
 
@@ -85,6 +89,9 @@ Scope filter: `aws_iam_role.assume_role_policy` includes
 | IAM-001 | `managed_policy_arns` + `aws_iam_role_policy_attachment.policy_arn` — fails on `AdministratorAccess` |
 | IAM-002 | `aws_iam_role_policy.policy` + `aws_iam_role.inline_policy[*].policy` — fails on `Action: "*"`    |
 | IAM-003 | `aws_iam_role.permissions_boundary`                                                               |
+| IAM-004 | Same policy sources as IAM-002 — fails on `iam:PassRole` / `iam:*` / `*` with `Resource: "*"`    |
+| IAM-005 | `aws_iam_role.assume_role_policy` — external AWS principal without `sts:ExternalId` condition     |
+| IAM-006 | Same policy sources as IAM-002 — fails on sensitive-service actions (s3/kms/secretsmanager/ssm/iam/sts/dynamodb/lambda/ec2) with `Resource: "*"` |
 
 ### PBAC (`aws_codebuild_project`)
 
@@ -104,6 +111,7 @@ Per bucket, the helper resources below are joined by `bucket` name.
 | S3-002  | `aws_s3_bucket_server_side_encryption_configuration`       | `rule[0].apply_server_side_encryption_by_default[0].sse_algorithm`                |
 | S3-003  | `aws_s3_bucket_versioning`                                 | `versioning_configuration[0].status == "Enabled"`                                 |
 | S3-004  | `aws_s3_bucket_logging`                                    | `target_bucket`                                                                   |
+| S3-005  | `aws_s3_bucket_policy`                                     | `policy` (JSON) — requires Deny on `s3:*` where `aws:SecureTransport=false`        |
 
 If a helper resource is absent for a given bucket, the check fails —
 matching the AWS-provider behaviour where the service returns the default

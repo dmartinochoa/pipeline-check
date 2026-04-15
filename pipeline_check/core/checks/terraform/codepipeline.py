@@ -1,7 +1,9 @@
-"""Terraform CodePipeline checks (CP-001 … CP-003).
+"""Terraform CodePipeline checks.
 
-Mirrors the AWS-provider semantics against the ``aws_codepipeline`` resource
-schema emitted by ``terraform show -json``.
+CP-001  No approval action before deploy stages             HIGH      CICD-SEC-1
+CP-002  Artifact store not encrypted with customer KMS key  MEDIUM    CICD-SEC-9
+CP-003  Source stage using polling                          LOW       CICD-SEC-4
+CP-004  Legacy ThirdParty/GitHub (OAuth) source action      HIGH      CICD-SEC-6
 """
 from __future__ import annotations
 
@@ -20,6 +22,7 @@ class CodePipelineChecks(TerraformBaseCheck):
                 _cp001_approval_before_deploy(stages, name),
                 _cp002_artifact_encryption(r.values, name),
                 _cp003_source_polling(stages, name),
+                _cp004_legacy_github(stages, name),
             ])
         return findings
 
@@ -39,9 +42,7 @@ def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:
     desc = (
         "At least one manual approval action exists before all deploy stages."
         if passed else
-        "One or more Deploy stages are reachable without a preceding Manual "
-        "approval action. This allows any code change to reach production "
-        "automatically without human review, violating flow control principles."
+        "One or more Deploy stages are reachable without a preceding Manual approval action."
     )
     return Finding(
         check_id="CP-001",
@@ -50,8 +51,7 @@ def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:
         resource=name,
         description=desc,
         recommendation=(
-            "Add a Manual approval action to a stage that precedes every Deploy "
-            "stage that targets a production or sensitive environment."
+            "Add a Manual approval action to a stage that precedes every Deploy stage."
         ),
         passed=passed,
     )
@@ -59,18 +59,17 @@ def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:
 
 def _cp002_artifact_encryption(values: dict, name: str) -> Finding:
     stores = values.get("artifact_store", []) or []
-    unencrypted = []
-    for s in stores:
-        ek = s.get("encryption_key") or []
-        if not ek:
-            unencrypted.append(s.get("location", "unknown"))
+    unencrypted = [
+        s.get("location", "unknown")
+        for s in stores
+        if not (s.get("encryption_key") or [])
+    ]
     passed = not unencrypted
     desc = (
         "All artifact stores use a customer-managed KMS encryption key."
         if passed else
-        f"Artifact store(s) {unencrypted} rely on default S3 SSE (AWS-managed "
-        f"key) rather than a customer-managed KMS key. This reduces auditability "
-        f"and control over who can decrypt pipeline artifacts."
+        f"Artifact store(s) {unencrypted} rely on default S3 SSE rather than "
+        f"a customer-managed KMS key."
     )
     return Finding(
         check_id="CP-002",
@@ -78,31 +77,26 @@ def _cp002_artifact_encryption(values: dict, name: str) -> Finding:
         severity=Severity.MEDIUM,
         resource=name,
         description=desc,
-        recommendation=(
-            "Configure a customer-managed AWS KMS key as the encryption_key for "
-            "each artifact_store block."
-        ),
+        recommendation="Set encryption_key on each artifact_store block.",
         passed=passed,
     )
 
 
 def _cp003_source_polling(stages: list[dict], name: str) -> Finding:
-    polling_sources: list[str] = []
+    polling = []
     for stage in stages:
         for action in stage.get("action", []) or []:
             if action.get("category") != "Source":
                 continue
             config = action.get("configuration", {}) or {}
             if str(config.get("PollForSourceChanges", "")).lower() == "true":
-                polling_sources.append(action.get("name", "unnamed"))
+                polling.append(action.get("name", "unnamed"))
 
-    passed = not polling_sources
+    passed = not polling
     desc = (
         "All source actions use event-driven change detection."
         if passed else
-        f"Source action(s) {polling_sources} use polling "
-        f"(PollForSourceChanges=true). Polling-based triggers have higher "
-        f"latency, consume API quota, and may miss rapid successive changes."
+        f"Source action(s) {polling} use polling."
     )
     return Finding(
         check_id="CP-003",
@@ -111,8 +105,41 @@ def _cp003_source_polling(stages: list[dict], name: str) -> Finding:
         resource=name,
         description=desc,
         recommendation=(
-            "Set PollForSourceChanges=false and configure an Amazon EventBridge "
-            "rule or CodeCommit trigger to start the pipeline on change."
+            "Set PollForSourceChanges=false and use an EventBridge rule."
+        ),
+        passed=passed,
+    )
+
+
+def _cp004_legacy_github(stages: list[dict], name: str) -> Finding:
+    legacy = []
+    for stage in stages:
+        for action in stage.get("action", []) or []:
+            if action.get("category") != "Source":
+                continue
+            owner = action.get("owner", "")
+            provider = action.get("provider", "")
+            if owner == "ThirdParty" and provider == "GitHub":
+                legacy.append(action.get("name", "unnamed"))
+
+    passed = not legacy
+    desc = (
+        "No legacy ThirdParty/GitHub (v1) source actions detected."
+        if passed else
+        f"Source action(s) {legacy} use the deprecated ThirdParty/GitHub v1 "
+        f"provider, which authenticates via a long-lived OAuth token stored "
+        f"in the pipeline configuration."
+    )
+    return Finding(
+        check_id="CP-004",
+        title="Legacy ThirdParty/GitHub source action (OAuth token)",
+        severity=Severity.HIGH,
+        resource=name,
+        description=desc,
+        recommendation=(
+            "Migrate to owner=AWS, provider=CodeStarSourceConnection and "
+            "reference a CodeConnections connection ARN. This replaces the "
+            "long-lived token with short-lived, revocable credentials."
         ),
         passed=passed,
     )

@@ -6,15 +6,15 @@ supports named AWS CLI profiles via `--profile` and honours the
 
 ## Services covered
 
-| Service       | Check IDs                                  |
-|---------------|--------------------------------------------|
-| CodeBuild     | CB-001, CB-002, CB-003, CB-004, CB-005     |
-| CodePipeline  | CP-001, CP-002, CP-003                     |
-| CodeDeploy    | CD-001, CD-002, CD-003                     |
-| ECR           | ECR-001, ECR-002, ECR-003, ECR-004         |
-| IAM           | IAM-001, IAM-002, IAM-003                  |
-| PBAC (CodeBuild roles/VPC) | PBAC-001, PBAC-002            |
-| S3            | S3-001, S3-002, S3-003, S3-004             |
+| Service       | Check IDs                                                         |
+|---------------|-------------------------------------------------------------------|
+| CodeBuild     | CB-001, CB-002, CB-003, CB-004, CB-005, CB-006, CB-007            |
+| CodePipeline  | CP-001, CP-002, CP-003, CP-004                                    |
+| CodeDeploy    | CD-001, CD-002, CD-003                                            |
+| ECR           | ECR-001, ECR-002, ECR-003, ECR-004, ECR-005                       |
+| IAM           | IAM-001, IAM-002, IAM-003, IAM-004, IAM-005, IAM-006              |
+| PBAC (CodeBuild roles/VPC) | PBAC-001, PBAC-002                                   |
+| S3            | S3-001, S3-002, S3-003, S3-004, S3-005                            |
 
 Per-check detail below is sourced from the rule metadata under
 `pipeline_check/core/checks/aws/rules/*.yml`.
@@ -88,6 +88,32 @@ supply-chain risk into every artifact produced by the pipeline.
 - Pin custom or third-party images to a specific digest rather than a mutable tag.
 - Subscribe to AWS CodeBuild release notifications to stay informed of new image versions.
 
+### CB-006 — Source auth uses long-lived token
+**Severity:** HIGH
+
+Checks whether a CodeBuild project with an external source (GitHub, GitHub
+Enterprise, Bitbucket) authenticates using a long-lived OAuth or personal
+access token rather than an AWS CodeConnections (CodeStar) connection.
+Long-lived tokens don't rotate and are a standing credential-theft target.
+
+**Recommended actions**
+- Replace OAuth/PAT tokens with a CodeConnections (CodeStar) connection and reference it from the project source.
+- Audit `aws_codebuild_source_credential` resources for `PERSONAL_ACCESS_TOKEN` or `OAUTH` auth types.
+- Rotate any exposed tokens and revoke them in the upstream VCS.
+
+### CB-007 — CodeBuild webhook has no filter group
+**Severity:** MEDIUM
+
+Checks whether a CodeBuild webhook defines at least one filter group.
+A webhook without filter groups triggers a build on any push from any
+principal — including pull requests from forks of public repositories —
+enabling poisoned-pipeline execution.
+
+**Recommended actions**
+- Define filter groups that restrict triggers to specific branches and event types.
+- Add an `ACTOR_ACCOUNT_ID` filter to block fork-originated builds for public repositories.
+- Scope `HEAD_REF` filters to trusted branches (main/release/*) only.
+
 ---
 
 ## CodePipeline
@@ -130,6 +156,19 @@ rapid successive changes.
 - Set `PollForSourceChanges=false` on all Source actions.
 - Configure an Amazon EventBridge rule or CodeCommit trigger to start the pipeline on change.
 - For GitHub sources, use a CodeStar connection with webhook-based triggering.
+
+### CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)
+**Severity:** HIGH
+
+Flags Source actions using the deprecated `owner=ThirdParty`,
+`provider=GitHub` configuration. This path authenticates via a long-lived
+OAuth token stored in the pipeline definition, which cannot be rotated
+automatically and is visible to anyone with `codepipeline:GetPipeline`.
+
+**Recommended actions**
+- Migrate to `owner=AWS`, `provider=CodeStarSourceConnection` with a CodeConnections ARN.
+- Revoke the legacy OAuth token once migration is complete.
+- Audit git history for any leaked OAuth tokens committed alongside old pipeline definitions.
 
 ---
 
@@ -234,6 +273,19 @@ able to pull older tagged images.
 - Limit the number of tagged image versions retained (e.g. keep the last 10 tagged images).
 - Test the lifecycle policy in a non-production repository before applying it to critical repos.
 
+### ECR-005 — Repository encrypted with AES256 rather than KMS CMK
+**Severity:** MEDIUM
+
+Checks whether the repository uses `encryptionType=KMS` with a
+customer-managed key. The default AES256 option uses an AWS-managed key
+that cannot be audited via key policy, rotated on a custom schedule, or
+restricted per-principal.
+
+**Recommended actions**
+- Set `encryptionConfiguration.encryptionType=KMS` with a customer-managed CMK ARN.
+- Apply a restrictive key policy limiting decrypt to the pipeline execution role.
+- Enable CloudTrail logging of KMS calls for audit of every image pull that decrypts layers.
+
 ---
 
 ## IAM
@@ -277,6 +329,46 @@ attacker.
 - Attach a permissions boundary to each CI/CD service role defining the maximum permissions it can ever be granted.
 - Create a managed boundary policy that excludes sensitive actions (e.g. `iam:CreateRole`, `iam:AttachRolePolicy` without conditions).
 - Enforce boundary attachment through an SCP or IAM condition on role creation.
+
+### IAM-004 — CI/CD role can PassRole to any role
+**Severity:** HIGH
+
+Checks whether any policy attached to the CI/CD role grants
+`iam:PassRole` (or `iam:*` or `*`) with `Resource: '*'`. A build that can
+pass any role to a service can escalate into every role the account
+trusts, which is a classic CI/CD privilege-escalation path.
+
+**Recommended actions**
+- Restrict `iam:PassRole` to the specific role ARNs the pipeline must hand off to.
+- Add a `Condition` with `iam:PassedToService` restricting the destination service.
+- Use IAM Access Analyzer to confirm the policy surface after tightening.
+
+### IAM-005 — CI/CD role trust policy missing sts:ExternalId
+**Severity:** HIGH
+
+Checks whether the role's trust policy allows assumption by an AWS
+account principal without an `sts:ExternalId` condition. External-account
+trust without an ExternalId is the classic confused-deputy pattern
+described in the IAM Best Practices.
+
+**Recommended actions**
+- Add a `Condition` requiring `sts:ExternalId` for every external-principal statement.
+- Prefer service-linked principals over AWS account principals wherever possible.
+- Rotate ExternalIds on a regular schedule and treat them as secrets.
+
+### IAM-006 — Sensitive actions granted with wildcard Resource
+**Severity:** MEDIUM
+
+Flags Allow statements that scope `Action` (not to `'*'`) but leave
+`Resource` as `'*'` for sensitive services — `s3`, `kms`, `secretsmanager`,
+`ssm`, `iam`, `sts`, `dynamodb`, `lambda`, `ec2`. IAM-002 catches
+`Action:'*'`; this check catches the more common "scoped action, unscoped
+resource" pattern that evades it.
+
+**Recommended actions**
+- Constrain `Resource` to specific ARNs (bucket/\*, key ARN, secret ARN, role ARN).
+- Where wildcards are unavoidable (e.g. `ec2:Describe*`), isolate those statements from write actions.
+- Use IAM Access Analyzer last-access data to produce tighter policies automatically.
 
 ---
 
@@ -368,6 +460,19 @@ investigation.
 - Enable S3 server access logging and direct logs to a separate, centralised logging bucket.
 - Restrict write access to the logging bucket so log entries cannot be tampered with.
 - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
+
+### S3-005 — Artifact bucket missing aws:SecureTransport deny
+**Severity:** MEDIUM
+
+Checks whether the artifact bucket has a bucket policy that denies
+`s3:*` when `aws:SecureTransport` is false. Without this deny, plaintext
+HTTP requests to the bucket succeed, allowing artifact contents to
+traverse the network unencrypted.
+
+**Recommended actions**
+- Attach a bucket policy with a Deny statement for `s3:*` where `Bool aws:SecureTransport=false`.
+- Apply the deny at the AWS account level via an SCP for defence-in-depth.
+- Validate the policy with AWS Access Analyzer before applying to production buckets.
 
 ---
 

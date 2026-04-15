@@ -53,3 +53,17 @@
     - Limit the number of tagged image versions retained (e.g. keep the last 10 tagged images).
     - Test the lifecycle policy in a non-production repository before applying it to critical repos.
   owasp_cicd: "CICD-SEC-7: Insecure System Configuration"
+
+- id: ECR-005
+  title: Repository encrypted with AES256 rather than KMS CMK
+  severity: MEDIUM
+  description: >
+    Checks whether the repository uses encryptionType=KMS with a
+    customer-managed key. The default AES256 option uses an
+    AWS-managed key that cannot be audited via key policy, rotated
+    on a custom schedule, or restricted per-principal.
+  recommended_actions:
+    - Set encryptionConfiguration.encryptionType=KMS with a customer-managed CMK ARN.
+    - Apply a restrictive key policy limiting decrypt to the pipeline execution role.
+    - Enable CloudTrail logging of KMS calls for audit of every image pull that decrypts layers.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"

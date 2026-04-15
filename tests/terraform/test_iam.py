@@ -101,3 +101,87 @@ class TestIAM003:
     def test_boundary_passes(self):
         plan = _plan([_role("r", permissions_boundary="arn:aws:iam::123:policy/boundary")])
         assert _by(_run(plan), "IAM-003").passed
+
+
+class TestIAM004:
+    def test_passrole_wildcard_fails(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "iam:PassRole", "Resource": "*"}]}
+        plan = _plan([_role("r"), _inline("r", "bad", doc)])
+        assert not _by(_run(plan), "IAM-004").passed
+
+    def test_passrole_scoped_resource_passes(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "iam:PassRole",
+                              "Resource": "arn:aws:iam::123:role/target"}]}
+        plan = _plan([_role("r"), _inline("r", "ok", doc)])
+        assert _by(_run(plan), "IAM-004").passed
+
+    def test_iam_wildcard_action_with_wildcard_resource_fails(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "iam:*", "Resource": "*"}]}
+        plan = _plan([_role("r"), _inline("r", "bad", doc)])
+        assert not _by(_run(plan), "IAM-004").passed
+
+    def test_inline_policy_block_on_role_detected(self):
+        doc = json.dumps({"Statement": [{"Effect": "Allow", "Action": "iam:PassRole", "Resource": "*"}]})
+        plan = _plan([_role("r", inline_policy=[{"name": "ip", "policy": doc}])])
+        assert not _by(_run(plan), "IAM-004").passed
+
+
+class TestIAM005:
+    def test_external_aws_principal_without_externalid_fails(self):
+        trust = json.dumps({"Statement": [
+            {"Effect": "Allow",
+             "Principal": {"Service": "codebuild.amazonaws.com"},
+             "Action": "sts:AssumeRole"},
+            {"Effect": "Allow",
+             "Principal": {"AWS": "arn:aws:iam::999:root"},
+             "Action": "sts:AssumeRole"},
+        ]})
+        plan = _plan([_role("r", trust=trust)])
+        assert not _by(_run(plan), "IAM-005").passed
+
+    def test_external_aws_principal_with_externalid_passes(self):
+        trust = json.dumps({"Statement": [
+            {"Effect": "Allow",
+             "Principal": {"Service": "codebuild.amazonaws.com"},
+             "Action": "sts:AssumeRole"},
+            {"Effect": "Allow",
+             "Principal": {"AWS": "arn:aws:iam::999:root"},
+             "Action": "sts:AssumeRole",
+             "Condition": {"StringEquals": {"sts:ExternalId": "secret-value"}}},
+        ]})
+        plan = _plan([_role("r", trust=trust)])
+        assert _by(_run(plan), "IAM-005").passed
+
+    def test_service_only_principal_passes(self):
+        plan = _plan([_role("r")])
+        assert _by(_run(plan), "IAM-005").passed
+
+
+class TestIAM006:
+    def test_sensitive_action_wildcard_resource_fails(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource": "*"}]}
+        plan = _plan([_role("r"), _inline("r", "bad", doc)])
+        assert not _by(_run(plan), "IAM-006").passed
+
+    def test_sensitive_action_scoped_resource_passes(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "s3:GetObject",
+                              "Resource": "arn:aws:s3:::my-bucket/*"}]}
+        plan = _plan([_role("r"), _inline("r", "ok", doc)])
+        assert _by(_run(plan), "IAM-006").passed
+
+    def test_wildcard_action_does_not_double_report(self):
+        # IAM-002 handles Action:"*"; IAM-006 should pass.
+        doc = {"Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]}
+        plan = _plan([_role("r"), _inline("r", "wild", doc)])
+        assert _by(_run(plan), "IAM-006").passed
+
+    def test_customer_managed_via_attachment_detected(self):
+        doc = {"Statement": [{"Effect": "Allow", "Action": "kms:Decrypt", "Resource": "*"}]}
+        pol = {
+            "address": "aws_iam_policy.p", "mode": "managed",
+            "type": "aws_iam_policy", "name": "p",
+            "values": {"name": "p", "arn": "arn:aws:iam::123:policy/p",
+                       "policy": json.dumps(doc)},
+        }
+        plan = _plan([_role("r"), pol, _attach("r", "arn:aws:iam::123:policy/p")])
+        assert not _by(_run(plan), "IAM-006").passed

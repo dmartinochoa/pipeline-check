@@ -15,8 +15,10 @@ def _project(
     s3_logs="DISABLED",
     timeout=60,
     image="aws/codebuild/standard:7.0",
+    source=None,
+    webhook=None,
 ):
-    return {
+    proj = {
         "name": name,
         "environment": {
             "environmentVariables": env_vars or [],
@@ -29,6 +31,11 @@ def _project(
         },
         "timeoutInMinutes": timeout,
     }
+    if source is not None:
+        proj["source"] = source
+    if webhook is not None:
+        proj["webhook"] = webhook
+    return proj
 
 
 def _make_check(projects):
@@ -149,6 +156,58 @@ class TestCB005ImageVersion:
         proj = _project(image="aws/codebuild/standard:1.0")
         findings = _make_check([proj]).run()
         assert not next(f for f in findings if f.check_id == "CB-005").passed
+
+
+class TestCB001ValuePatterns:
+    def test_aws_access_key_value_detected(self):
+        proj = _project(env_vars=[{"name": "X", "type": "PLAINTEXT", "value": "AKIA" + "A" * 16}])
+        cb001 = next(f for f in _make_check([proj]).run() if f.check_id == "CB-001")
+        assert not cb001.passed
+        assert "credential-like values" in cb001.description
+
+    def test_github_pat_value_detected(self):
+        proj = _project(env_vars=[{"name": "X", "type": "PLAINTEXT", "value": "ghp_" + "a" * 40}])
+        assert not next(f for f in _make_check([proj]).run() if f.check_id == "CB-001").passed
+
+    def test_slack_token_value_detected(self):
+        proj = _project(env_vars=[{"name": "X", "type": "PLAINTEXT", "value": "xoxb-abcdefghijk-xyz"}])
+        assert not next(f for f in _make_check([proj]).run() if f.check_id == "CB-001").passed
+
+
+class TestCB006SourceAuth:
+    def test_oauth_auth_fails(self):
+        proj = _project(source={"type": "GITHUB", "auth": {"type": "OAUTH"}})
+        cb006 = next(f for f in _make_check([proj]).run() if f.check_id == "CB-006")
+        assert not cb006.passed
+        assert cb006.severity == Severity.HIGH
+
+    def test_pat_auth_fails(self):
+        proj = _project(source={"type": "GITHUB", "auth": {"type": "PERSONAL_ACCESS_TOKEN"}})
+        assert not next(f for f in _make_check([proj]).run() if f.check_id == "CB-006").passed
+
+    def test_no_auth_on_external_source_passes(self):
+        proj = _project(source={"type": "GITHUB"})
+        assert next(f for f in _make_check([proj]).run() if f.check_id == "CB-006").passed
+
+    def test_non_external_source_passes(self):
+        proj = _project(source={"type": "CODECOMMIT"})
+        assert next(f for f in _make_check([proj]).run() if f.check_id == "CB-006").passed
+
+
+class TestCB007WebhookFilter:
+    def test_no_webhook_passes(self):
+        proj = _project()
+        assert next(f for f in _make_check([proj]).run() if f.check_id == "CB-007").passed
+
+    def test_webhook_without_filter_fails(self):
+        proj = _project(webhook={"url": "https://x"})
+        cb007 = next(f for f in _make_check([proj]).run() if f.check_id == "CB-007")
+        assert not cb007.passed
+        assert cb007.severity == Severity.MEDIUM
+
+    def test_webhook_with_filter_passes(self):
+        proj = _project(webhook={"filterGroups": [[{"type": "EVENT", "pattern": "PUSH"}]]})
+        assert next(f for f in _make_check([proj]).run() if f.check_id == "CB-007").passed
 
 
 class TestNoProjects:

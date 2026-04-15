@@ -10,13 +10,16 @@ from pipeline_check.core.checks.aws.ecr import ECRChecks
 from tests.aws.conftest import make_paginator
 
 
-def _repo(name="my-repo", scan_on_push=True, mutability="IMMUTABLE"):
-    return {
+def _repo(name="my-repo", scan_on_push=True, mutability="IMMUTABLE", encryption=None):
+    repo = {
         "repositoryName": name,
         "repositoryArn": f"arn:aws:ecr:us-east-1:123:{name}",
         "imageScanningConfiguration": {"scanOnPush": scan_on_push},
         "imageTagMutability": mutability,
     }
+    if encryption is not None:
+        repo["encryptionConfiguration"] = encryption
+    return repo
 
 
 def _client_error(code):
@@ -107,6 +110,29 @@ class TestECR004LifecyclePolicy:
     def test_lifecycle_policy_present_passes(self):
         findings = _make_check([_repo()]).run()
         assert next(f for f in findings if f.check_id == "ECR-004").passed
+
+
+class TestECR005KmsEncryption:
+    def test_aes256_fails(self):
+        findings = _make_check([_repo(encryption={"encryptionType": "AES256"})]).run()
+        ecr005 = next(f for f in findings if f.check_id == "ECR-005")
+        assert not ecr005.passed
+        assert ecr005.severity == Severity.MEDIUM
+
+    def test_missing_config_fails(self):
+        findings = _make_check([_repo()]).run()
+        assert not next(f for f in findings if f.check_id == "ECR-005").passed
+
+    def test_kms_without_key_fails(self):
+        findings = _make_check([_repo(encryption={"encryptionType": "KMS"})]).run()
+        assert not next(f for f in findings if f.check_id == "ECR-005").passed
+
+    def test_kms_with_cmk_passes(self):
+        findings = _make_check([_repo(encryption={
+            "encryptionType": "KMS",
+            "kmsKey": "arn:aws:kms:us-east-1:123:key/abc",
+        })]).run()
+        assert next(f for f in findings if f.check_id == "ECR-005").passed
 
 
 class TestNoRepositories:

@@ -5,6 +5,11 @@ CB-002  Privileged mode enabled                         HIGH      CICD-SEC-7
 CB-003  Build logging not enabled                       MEDIUM    CICD-SEC-10
 CB-004  No build timeout configured                     LOW       CICD-SEC-7
 CB-005  Outdated managed build image                    MEDIUM    CICD-SEC-7
+CB-006  Source auth uses long-lived token               HIGH      CICD-SEC-6
+CB-007  Webhook has no filter group                     MEDIUM    CICD-SEC-1
+
+CB-001 matches **either** a secret-like variable name or a value that
+matches a known credential pattern (AKIA/ASIA/ghp_/xoxb-/JWT).
 """
 
 import re
@@ -19,6 +24,21 @@ _SECRET_NAME_RE = re.compile(
     r"SECRET[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|AUTH|AUTHORIZATION)",
     re.IGNORECASE,
 )
+
+# Credential patterns detectable in the value itself — matches even when the
+# variable name doesn't announce it.
+_SECRET_VALUE_RE = re.compile(
+    r"^(?:"
+    r"AKIA[0-9A-Z]{16}|"
+    r"ASIA[0-9A-Z]{16}|"
+    r"gh[pousr]_[A-Za-z0-9]{36,}|"
+    r"xox[abprs]-[A-Za-z0-9-]{10,}|"
+    r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"
+    r")$"
+)
+
+_LONG_LIVED_TOKEN_AUTH = {"OAUTH", "PERSONAL_ACCESS_TOKEN", "BASIC_AUTH"}
+_EXTERNAL_SOURCE_TYPES = {"GITHUB", "GITHUB_ENTERPRISE", "BITBUCKET"}
 
 # AWS CodeBuild standard managed-image pattern: aws/codebuild/standard:X.0
 _MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
@@ -91,6 +111,8 @@ class CodeBuildChecks(AWSBaseCheck):
             self._cb003_logging_enabled(project, name),
             self._cb004_timeout(project, name),
             self._cb005_image_version(project, name),
+            self._cb006_source_auth(project, name),
+            self._cb007_webhook_filter(project, name),
         ]
 
     # ------------------------------------------------------------------
@@ -102,22 +124,32 @@ class CodeBuildChecks(AWSBaseCheck):
         env_vars: list[dict] = project.get("environment", {}).get(
             "environmentVariables", []
         )
-        suspicious = [
-            v["name"]
-            for v in env_vars
-            if v.get("type", "PLAINTEXT") == "PLAINTEXT"
-            and _SECRET_NAME_RE.search(v["name"])
-        ]
-        passed = not suspicious
+        suspicious_names: list[str] = []
+        suspicious_values: list[str] = []
+        for v in env_vars:
+            if v.get("type", "PLAINTEXT") != "PLAINTEXT":
+                continue
+            vname = v.get("name", "")
+            vval = v.get("value", "") or ""
+            if _SECRET_NAME_RE.search(vname):
+                suspicious_names.append(vname)
+            elif isinstance(vval, str) and _SECRET_VALUE_RE.match(vval):
+                suspicious_values.append(vname or "<unnamed>")
+        passed = not (suspicious_names or suspicious_values)
 
         if passed:
-            desc = "No plaintext environment variables with secret-like names detected."
+            desc = "No plaintext environment variables with secret-like names or values detected."
         else:
-            listed = ", ".join(suspicious)
+            parts = []
+            if suspicious_names:
+                parts.append(f"secret-like names: {', '.join(suspicious_names)}")
+            if suspicious_values:
+                parts.append(
+                    f"credential-like values under: {', '.join(suspicious_values)}"
+                )
             desc = (
-                f"The following environment variables appear to store secrets in "
-                f"plaintext: {listed}. Plaintext values are visible in the AWS "
-                f"console, CloudTrail logs, and build logs."
+                f"Plaintext environment variables appear to contain secrets "
+                f"({'; '.join(parts)})."
             )
 
         return Finding(
@@ -268,6 +300,77 @@ class CodeBuildChecks(AWSBaseCheck):
                 f"Update the CodeBuild environment image to "
                 f"aws/codebuild/standard:{_LATEST_STANDARD_VERSION}.0 or later "
                 f"to ensure the build environment receives the latest security patches."
+            ),
+            passed=passed,
+        )
+
+    @staticmethod
+    def _cb006_source_auth(project: dict, name: str) -> Finding:
+        source = project.get("source", {}) or {}
+        src_type = source.get("type", "") or ""
+        if src_type not in _EXTERNAL_SOURCE_TYPES:
+            return Finding(
+                check_id="CB-006",
+                title="CodeBuild source auth uses long-lived token",
+                severity=Severity.HIGH,
+                resource=name,
+                description=(
+                    f"Source type is {src_type or 'not external'}; check not applicable."
+                ),
+                recommendation="No action required.",
+                passed=True,
+            )
+        auth = (source.get("auth") or {}).get("type", "")
+        offending = auth in _LONG_LIVED_TOKEN_AUTH
+        desc = (
+            f"Source ({src_type}) auth type is {auth or 'not set'}."
+            if not offending else
+            f"Source ({src_type}) auth type is {auth}, a long-lived token. "
+            f"These don't rotate and expose the pipeline to credential theft."
+        )
+        return Finding(
+            check_id="CB-006",
+            title="CodeBuild source auth uses long-lived token",
+            severity=Severity.HIGH,
+            resource=name,
+            description=desc,
+            recommendation=(
+                "Switch to an AWS CodeConnections (CodeStar) connection and "
+                "reference it from the source configuration."
+            ),
+            passed=not offending,
+        )
+
+    @staticmethod
+    def _cb007_webhook_filter(project: dict, name: str) -> Finding:
+        webhook = project.get("webhook")
+        if not webhook:
+            return Finding(
+                check_id="CB-007",
+                title="CodeBuild webhook has no filter group",
+                severity=Severity.MEDIUM,
+                resource=name,
+                description="No webhook is attached to this project.",
+                recommendation="No action required.",
+                passed=True,
+            )
+        groups = webhook.get("filterGroups") or []
+        passed = bool(groups)
+        desc = (
+            f"Webhook defines {len(groups)} filter group(s)."
+            if passed else
+            "Webhook is attached but has no filter group. Any push from any "
+            "principal will trigger a build."
+        )
+        return Finding(
+            check_id="CB-007",
+            title="CodeBuild webhook has no filter group",
+            severity=Severity.MEDIUM,
+            resource=name,
+            description=desc,
+            recommendation=(
+                "Define filter groups restricting triggers to specific branches, "
+                "actors, and event types."
             ),
             passed=passed,
         )

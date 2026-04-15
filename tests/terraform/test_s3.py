@@ -1,6 +1,8 @@
 """Terraform S3 tests."""
 from __future__ import annotations
 
+import json
+
 from pipeline_check.core.checks.terraform.base import TerraformContext
 from pipeline_check.core.checks.terraform.s3 import S3Checks
 
@@ -92,3 +94,45 @@ class TestS3004:
                           "target_bucket": "log-bkt", "target_prefix": "p/",
                       })])
         assert _by(_run(plan), "S3-004").passed
+
+
+class TestS3005:
+    def test_no_policy_fails(self):
+        plan = _plan([_pipeline("bkt")])
+        assert not _by(_run(plan), "S3-005").passed
+
+    def test_bool_secure_transport_deny_passes(self):
+        policy = json.dumps({"Statement": [{
+            "Effect": "Deny", "Action": "s3:*", "Resource": "arn:aws:s3:::bkt/*",
+            "Principal": "*",
+            "Condition": {"Bool": {"aws:SecureTransport": "false"}},
+        }]})
+        plan = _plan([_pipeline("bkt"),
+                      _helper("aws_s3_bucket_policy", "bkt", {"policy": policy})])
+        assert _by(_run(plan), "S3-005").passed
+
+    def test_string_equals_secure_transport_deny_passes(self):
+        # Alternative operator; check must still recognise the deny.
+        policy = json.dumps({"Statement": [{
+            "Effect": "Deny", "Action": "s3:*", "Resource": "arn:aws:s3:::bkt/*",
+            "Principal": "*",
+            "Condition": {"StringEquals": {"aws:SecureTransport": "false"}},
+        }]})
+        plan = _plan([_pipeline("bkt"),
+                      _helper("aws_s3_bucket_policy", "bkt", {"policy": policy})])
+        assert _by(_run(plan), "S3-005").passed
+
+    def test_allow_statement_does_not_qualify(self):
+        policy = json.dumps({"Statement": [{
+            "Effect": "Allow", "Action": "s3:*", "Resource": "arn:aws:s3:::bkt/*",
+            "Principal": "*",
+            "Condition": {"Bool": {"aws:SecureTransport": "false"}},
+        }]})
+        plan = _plan([_pipeline("bkt"),
+                      _helper("aws_s3_bucket_policy", "bkt", {"policy": policy})])
+        assert not _by(_run(plan), "S3-005").passed
+
+    def test_invalid_json_policy_fails(self):
+        plan = _plan([_pipeline("bkt"),
+                      _helper("aws_s3_bucket_policy", "bkt", {"policy": "not json"})])
+        assert not _by(_run(plan), "S3-005").passed

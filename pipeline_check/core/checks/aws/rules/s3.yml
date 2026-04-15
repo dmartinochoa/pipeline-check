@@ -52,3 +52,17 @@
     - Restrict write access to the logging bucket so log entries cannot be tampered with.
     - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
   owasp_cicd: "CICD-SEC-10: Insufficient Logging and Visibility"
+
+- id: S3-005
+  title: Artifact bucket missing aws:SecureTransport deny
+  severity: MEDIUM
+  description: >
+    Checks whether the artifact bucket has a bucket policy that denies
+    s3:* when aws:SecureTransport is false. Without this deny, plaintext
+    HTTP requests to the bucket succeed, allowing artifact contents to
+    traverse the network unencrypted.
+  recommended_actions:
+    - Attach a bucket policy with a Deny statement for s3:* where Bool aws:SecureTransport=false.
+    - Apply the deny at the AWS account level via an SCP for defence-in-depth.
+    - Validate the policy with AWS Access Analyzer before applying to production buckets.
+  owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"
