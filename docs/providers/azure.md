@@ -37,6 +37,8 @@ The walker handles every layout ADO supports:
 | ADO-003  | Variables contain literal secret values                 | CRITICAL |
 | ADO-004  | Deployment job missing environment binding              | MEDIUM   |
 | ADO-005  | Container image not pinned to specific version          | HIGH     |
+| ADO-006  | Artifacts not signed                                    | MEDIUM   |
+| ADO-007  | SBOM not produced                                       | MEDIUM   |
 
 ---
 

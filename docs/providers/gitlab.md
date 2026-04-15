@@ -35,6 +35,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GL-003  | Variables contain literal secret values                 | CRITICAL |
 | GL-004  | Deploy job lacks manual approval or environment gate    | MEDIUM   |
 | GL-005  | `include:` pulls remote / project without pinned ref    | HIGH     |
+| GL-006  | Artifacts not signed                                    | MEDIUM   |
+| GL-007  | SBOM not produced                                       | MEDIUM   |
 
 ---
 

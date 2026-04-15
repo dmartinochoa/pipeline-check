@@ -32,6 +32,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GHA-003  | Script injection via untrusted context          | HIGH     |
 | GHA-004  | Workflow has no explicit permissions block      | MEDIUM   |
 | GHA-005  | AWS auth uses long-lived access keys            | MEDIUM   |
+| GHA-006  | Artifacts not signed (no cosign/sigstore step)  | MEDIUM   |
+| GHA-007  | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | MEDIUM |
 
 ---
 

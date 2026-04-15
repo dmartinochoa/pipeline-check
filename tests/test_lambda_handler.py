@@ -93,7 +93,9 @@ class TestS3Persistence:
         s3 = MagicMock()
         with _patch_scanner([_f()]), patch.object(lh, "boto3") as mock_boto3:
             mock_boto3.client.return_value = s3
-            result = lh.handler({}, None)
+            result = lh.handler({"region": "eu-west-2"}, None)
+        # Constructor called with the resolved region — not the default.
+        mock_boto3.client.assert_called_once_with("s3", region_name="eu-west-2")
         s3.put_object.assert_called_once()
         kwargs = s3.put_object.call_args.kwargs
         assert kwargs["Bucket"] == "my-reports"
@@ -138,7 +140,9 @@ class TestSNSAlerts:
         with _patch_scanner([_f(severity=Severity.CRITICAL)]), \
              patch.object(lh, "boto3") as mock_boto3:
             mock_boto3.client.return_value = sns
-            lh.handler({}, None)
+            lh.handler({"region": "ap-south-1"}, None)
+        # Constructor must receive the resolved region.
+        mock_boto3.client.assert_called_once_with("sns", region_name="ap-south-1")
         sns.publish.assert_called_once()
         kwargs = sns.publish.call_args.kwargs
         assert kwargs["TopicArn"].endswith(":alerts")

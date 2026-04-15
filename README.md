@@ -28,7 +28,7 @@ and **Bitbucket Pipelines** — all without an API token.
 
 ## What it checks
 
-Covered surfaces (**52 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI + 5 Bitbucket Pipelines + 5 Azure DevOps Pipelines, severity-weighted):
+Covered surfaces (**60 checks** total: 32 AWS + 7 GitHub Actions + 7 GitLab CI + 7 Bitbucket Pipelines + 7 Azure DevOps Pipelines, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -39,15 +39,16 @@ Covered surfaces (**52 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI +
 | IAM                 | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
 | PBAC                | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
 | S3                  | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
-| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection, missing permissions blocks, long-lived AWS keys | `GHA-001…005`    |
-| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning | `GL-001…005`     |
-| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time` | `BB-001…005`     |
-| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning | `ADO-001…005`    |
+| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection, missing permissions blocks, long-lived AWS keys, artifact signing, SBOM generation | `GHA-001…007`    |
+| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation | `GL-001…007`     |
+| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation | `BB-001…007`     |
+| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation | `ADO-001…007`    |
 
-Every finding is tagged with the compliance controls it evidences — seven
+Every finding is tagged with the compliance controls it evidences — eight
 frameworks are shipped: OWASP Top 10 CI/CD, CIS AWS Foundations, CIS
 Software Supply Chain, NIST SSDF (SP 800-218), NIST SP 800-53, SLSA Build
-Track, and PCI DSS v4.0 (see [Compliance standards](#compliance-standards)).
+Track, PCI DSS v4.0, and NSA/CISA ESF Software Supply Chain (see
+[Compliance standards](#compliance-standards)).
 Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
@@ -248,6 +249,7 @@ multiple frameworks.
 | `nist_800_53`         | NIST SP 800-53 Rev. 5 (CI/CD subset)    | Rev. 5          | [docs/standards/nist_800_53.md](docs/standards/nist_800_53.md)                 |
 | `slsa`                | SLSA Build Track                        | 1.0             | [docs/standards/slsa.md](docs/standards/slsa.md)                               |
 | `pci_dss_v4`          | PCI DSS v4.0 (CI/CD subset)             | 4.0             | [docs/standards/pci_dss_v4.md](docs/standards/pci_dss_v4.md)                   |
+| `esf_supply_chain`    | NSA/CISA ESF — Securing the Software Supply Chain | 2022  | [docs/standards/esf_supply_chain.md](docs/standards/esf_supply_chain.md)       |
 
 Standards are pure data — each one is a Python module under
 `pipeline_check/core/standards/data/` that declares its controls and a
@@ -286,7 +288,8 @@ pipeline_check/
     │       ├── nist_ssdf.py
     │       ├── nist_800_53.py
     │       ├── slsa.py
-    │       └── pci_dss_v4.py
+    │       ├── pci_dss_v4.py
+    │       └── esf_supply_chain.py
     └── checks/
         ├── base.py                # Finding dataclass, Severity enum, BaseCheck ABC
         ├── aws/                   # live-account provider (boto3)

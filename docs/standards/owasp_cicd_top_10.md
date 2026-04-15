@@ -31,5 +31,5 @@
 | CICD-SEC-6   | CB-001, CB-006, CP-004, GHA-005, GL-003, BB-003, ADO-003               |
 | CICD-SEC-7   | CB-002, CB-004, CB-005, ECR-004, BB-005                                |
 | CICD-SEC-8   | ECR-003                                                                |
-| CICD-SEC-9   | CP-002, ECR-002, ECR-005, S3-001, S3-002, S3-003, S3-005               |
+| CICD-SEC-9   | CP-002, ECR-002, ECR-005, S3-001, S3-002, S3-003, S3-005, GHA-006, GHA-007, GL-006, GL-007, BB-006, BB-007, ADO-006, ADO-007 |
 | CICD-SEC-10  | CB-003, CD-003, S3-004                                                 |

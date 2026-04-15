@@ -15,6 +15,7 @@ can evidence controls in multiple standards at once.
 | `nist_800_53`          | NIST SP 800-53 Rev. 5 (CI/CD subset)       | Rev. 5  | [nist_800_53.md](nist_800_53.md) |
 | `slsa`                 | SLSA Build Track                           | 1.0     | [slsa.md](slsa.md) |
 | `pci_dss_v4`           | PCI DSS v4.0 (CI/CD subset)                | 4.0     | [pci_dss_v4.md](pci_dss_v4.md) |
+| `esf_supply_chain`     | NSA/CISA ESF — Securing the Software Supply Chain | 2022 | [esf_supply_chain.md](esf_supply_chain.md) |
 
 List them at runtime with:
 
@@ -71,6 +72,6 @@ automatically.
 - **Easy to audit:** the mapping table lives in one file, not scattered
   across Finding constructor calls.
 - **Easy to extend:** adding SOC 2, ISO 27001, or a bespoke internal
-  policy is one new Python module — the seven registered standards today
+  policy is one new Python module — the eight registered standards today
   (OWASP, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, SLSA, PCI
-  DSS) are all built this way.
+  DSS, NSA/CISA ESF) are all built this way.

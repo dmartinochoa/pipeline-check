@@ -1,24 +1,13 @@
 """Unit tests for the Azure DevOps Pipelines provider and checks."""
 from __future__ import annotations
 
-import textwrap
-
 import pytest
-import yaml
 
 from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.azure.base import AzureContext, Pipeline
-from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 
+from .conftest import azure_ctx as _ctx, run_check as _run
 
-def _ctx(yaml_text: str) -> AzureContext:
-    data = yaml.safe_load(textwrap.dedent(yaml_text))
-    return AzureContext([Pipeline(path="azure-pipelines.yml", data=data)])
-
-
-def _run(yaml_text: str, check_id: str):
-    findings = AzurePipelineChecks(_ctx(yaml_text)).run()
-    return next(f for f in findings if f.check_id == check_id)
+__all__ = ["_ctx", "_run"]
 
 
 class TestADO001TaskPinning:
@@ -122,6 +111,19 @@ class TestADO003LiteralSecrets:
             "ADO-003",
         )
         assert not f.passed
+
+    def test_non_aws_secret_is_high_severity(self):
+        f = _run(
+            """
+            variables:
+              DB_PASSWORD: hunter2
+            steps:
+              - script: make
+            """,
+            "ADO-003",
+        )
+        assert not f.passed
+        assert f.severity == Severity.HIGH
 
     def test_clean_passes(self):
         f = _run(

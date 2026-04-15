@@ -11,8 +11,6 @@ Covers layout branches that the main test file doesn't exercise:
 """
 from __future__ import annotations
 
-import textwrap
-
 import pytest
 import yaml
 
@@ -21,17 +19,15 @@ from pipeline_check.core.checks.azure.base import (
 )
 from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 
+from .conftest import azure_ctx, run_check
+
 
 def _ctx(text: str) -> AzureContext:
-    data = yaml.safe_load(textwrap.dedent(text))
-    return AzureContext([Pipeline(path="t.yml", data=data)])
+    return azure_ctx(text, path="t.yml")
 
 
 def _run(text: str, check_id: str):
-    return next(
-        f for f in AzurePipelineChecks(_ctx(text)).run()
-        if f.check_id == check_id
-    )
+    return run_check(text, check_id)
 
 
 class TestShapeSynthesis:

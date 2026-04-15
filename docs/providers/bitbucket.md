@@ -43,6 +43,8 @@ as e.g. `default[0]`, `branches.main[1].parallel[0]`.
 | BB-003  | Variables / definitions contain literal secrets               | CRITICAL |
 | BB-004  | Deploy step missing `deployment:` environment gate            | MEDIUM   |
 | BB-005  | Step has no `max-time` — unbounded build                      | MEDIUM   |
+| BB-006  | Artifacts not signed                                          | MEDIUM   |
+| BB-007  | SBOM not produced                                             | MEDIUM   |
 
 ---
 

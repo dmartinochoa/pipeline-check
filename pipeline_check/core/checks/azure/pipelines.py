@@ -252,8 +252,9 @@ class AzurePipelineChecks(AzureBaseCheck):
             f"{len(offenders)} variable(s) contain literal credential values: "
             f"{', '.join(offenders[:5])}{'…' if len(offenders) > 5 else ''}."
         )
-        severity = Severity.CRITICAL if any("AWS" in o for o in offenders) else (
-            Severity.HIGH if offenders else Severity.HIGH
+        severity = (
+            Severity.CRITICAL if any("AWS" in o for o in offenders)
+            else Severity.HIGH
         )
         return Finding(
             check_id="ADO-003",
