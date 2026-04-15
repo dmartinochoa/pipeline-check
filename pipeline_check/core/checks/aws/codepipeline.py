@@ -3,6 +3,7 @@
 CP-001  No approval action before deploy stages          HIGH    CICD-SEC-1
 CP-002  Artifact store not encrypted with KMS            MEDIUM  CICD-SEC-9
 CP-003  Source stage using polling instead of events     LOW     CICD-SEC-4
+CP-004  Legacy ThirdParty/GitHub (OAuth token) source    HIGH    CICD-SEC-6
 """
 
 from botocore.exceptions import ClientError
@@ -60,7 +61,36 @@ class CodePipelineChecks(AWSBaseCheck):
             self._cp001_approval_before_deploy(stages, name),
             self._cp002_artifact_encryption(pipeline, name),
             self._cp003_source_polling(stages, name),
+            self._cp004_legacy_github(stages, name),
         ]
+
+    @staticmethod
+    def _cp004_legacy_github(stages: list[dict], name: str) -> Finding:
+        legacy: list[str] = []
+        for stage in stages:
+            for action in stage.get("actions", []):
+                type_id = action.get("actionTypeId", {})
+                if type_id.get("owner") == "ThirdParty" and type_id.get("provider") == "GitHub":
+                    legacy.append(action.get("name", "unnamed"))
+        passed = not legacy
+        desc = (
+            "No legacy ThirdParty/GitHub (v1) source actions detected."
+            if passed else
+            f"Source action(s) {legacy} use the deprecated ThirdParty/GitHub v1 "
+            f"provider, which authenticates via a long-lived OAuth token."
+        )
+        return Finding(
+            check_id="CP-004",
+            title="Legacy ThirdParty/GitHub source action (OAuth token)",
+            severity=Severity.HIGH,
+            resource=name,
+            description=desc,
+            recommendation=(
+                "Migrate to owner=AWS, provider=CodeStarSourceConnection and "
+                "reference a CodeConnections connection ARN."
+            ),
+            passed=passed,
+        )
 
     @staticmethod
     def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:

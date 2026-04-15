@@ -37,3 +37,18 @@
     - Configure an Amazon EventBridge rule or CodeCommit trigger to start the pipeline on change.
     - For GitHub sources, use a CodeStar connection with webhook-based triggering.
   owasp_cicd: "CICD-SEC-4: Poisoned Pipeline Execution"
+
+- id: CP-004
+  title: Legacy ThirdParty/GitHub source action (OAuth token)
+  severity: HIGH
+  description: >
+    Flags Source actions using the deprecated owner=ThirdParty,
+    provider=GitHub configuration. This path authenticates via a
+    long-lived OAuth token stored in the pipeline definition, which
+    cannot be rotated automatically and is visible to anyone with
+    codepipeline:GetPipeline.
+  recommended_actions:
+    - Migrate to owner=AWS, provider=CodeStarSourceConnection with a CodeConnections ARN.
+    - Revoke the legacy OAuth token once migration is complete.
+    - Audit git history for any leaked OAuth tokens committed alongside old pipeline definitions.
+  owasp_cicd: "CICD-SEC-6: Insufficient Credential Hygiene"

@@ -39,3 +39,45 @@
     - Create a managed boundary policy that excludes sensitive actions (e.g. iam:CreateRole, iam:AttachRolePolicy without conditions).
     - Enforce boundary attachment through an SCP or IAM condition on role creation.
   owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"
+
+- id: IAM-004
+  title: CI/CD role can PassRole to any role
+  severity: HIGH
+  description: >
+    Checks whether any policy attached to the CI/CD role grants iam:PassRole
+    (or iam:* or *) with Resource: '*'. A build that can pass any role to a
+    service can escalate into every role the account trusts, which is a
+    classic CI/CD privilege-escalation path.
+  recommended_actions:
+    - Restrict iam:PassRole to the specific role ARNs the pipeline must hand off to.
+    - Add a Condition with iam:PassedToService restricting the destination service.
+    - Use IAM Access Analyzer to confirm the policy surface after tightening.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"
+
+- id: IAM-005
+  title: CI/CD role trust policy missing sts:ExternalId
+  severity: HIGH
+  description: >
+    Checks whether the role's trust policy (AssumeRolePolicyDocument) allows
+    assumption by an AWS account principal without an sts:ExternalId condition.
+    External-account trust without an ExternalId is the classic confused-deputy
+    pattern described in the IAM Best Practices.
+  recommended_actions:
+    - Add a Condition requiring sts:ExternalId for every external-principal statement.
+    - Prefer service-linked principals over AWS account principals wherever possible.
+    - Rotate ExternalIds on a regular schedule and treat them as secrets.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"
+
+- id: IAM-006
+  title: Sensitive actions granted with wildcard Resource
+  severity: MEDIUM
+  description: >
+    Flags Allow statements that scope Action (not to '*') but leave Resource
+    as '*' for sensitive services — s3, kms, secretsmanager, ssm, iam, sts,
+    dynamodb, lambda, ec2. IAM-002 catches Action:'*'; this check catches the
+    more common "scoped action, unscoped resource" pattern that evades it.
+  recommended_actions:
+    - Constrain Resource to specific ARNs (bucket/*, key ARN, secret ARN, role ARN).
+    - Where wildcards are unavoidable (e.g. ec2:Describe*), isolate those statements from write actions.
+    - Use IAM Access Analyzer last-access data to produce tighter policies automatically.
+  owasp_cicd: "CICD-SEC-2: Inadequate Identity and Access Management"

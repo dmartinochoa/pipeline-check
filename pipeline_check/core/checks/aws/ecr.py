@@ -4,6 +4,7 @@ ECR-001  Image scanning on push not enabled              HIGH      CICD-SEC-3
 ECR-002  Image tags are mutable                          HIGH      CICD-SEC-9
 ECR-003  Repository policy allows public access          CRITICAL  CICD-SEC-8
 ECR-004  No lifecycle policy configured                  LOW       CICD-SEC-7
+ECR-005  Repository encrypted with AES256 rather than KMS MEDIUM    CICD-SEC-9
 """
 
 import json
@@ -54,7 +55,32 @@ class ECRChecks(AWSBaseCheck):
             self._ecr002_tag_mutability(repo, name),
             self._ecr003_public_policy(client, name, arn),
             self._ecr004_lifecycle_policy(client, name),
+            self._ecr005_kms_encryption(repo, name),
         ]
+
+    @staticmethod
+    def _ecr005_kms_encryption(repo: dict, name: str) -> Finding:
+        cfg = repo.get("encryptionConfiguration", {}) or {}
+        enc_type = cfg.get("encryptionType") or "AES256"
+        kms_key = cfg.get("kmsKey")
+        passed = enc_type == "KMS" and bool(kms_key)
+        desc = (
+            f"Repository uses KMS encryption with key {kms_key}."
+            if passed else
+            f"Repository encryptionType is {enc_type!r}. AES256 uses an "
+            f"AWS-managed key, which cannot be audited or restricted via key policies."
+        )
+        return Finding(
+            check_id="ECR-005",
+            title="Repository encrypted with AES256 rather than KMS CMK",
+            severity=Severity.MEDIUM,
+            resource=name,
+            description=desc,
+            recommendation=(
+                "Set encryptionType=KMS with a customer-managed key ARN."
+            ),
+            passed=passed,
+        )
 
     @staticmethod
     def _ecr001_scan_on_push(repo: dict, name: str) -> Finding:

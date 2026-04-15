@@ -68,6 +68,24 @@ _PIPELINE_CHOICES = _providers.available()
     help="AWS CLI named profile (AWS only; defaults to the environment default).",
 )
 @click.option(
+    "--tf-plan",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the JSON output of `terraform show -json` "
+        "(Terraform provider only; required when --pipeline terraform)."
+    ),
+)
+@click.option(
+    "--gha-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the GitHub Actions workflows directory, typically "
+        "`.github/workflows` (required when --pipeline github)."
+    ),
+)
+@click.option(
     "--output",
     type=click.Choice(["terminal", "json", "html", "both"], case_sensitive=False),
     default="terminal",
@@ -109,6 +127,8 @@ def scan(
     checks: tuple[str, ...],
     region: str,
     profile: str | None,
+    tf_plan: str | None,
+    gha_path: str | None,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
@@ -129,7 +149,13 @@ def scan(
 
     threshold = Severity(severity_threshold.upper())
 
-    scanner = Scanner(pipeline=pipeline, region=region, profile=profile)
+    scanner = Scanner(
+        pipeline=pipeline,
+        region=region,
+        profile=profile,
+        tf_plan=tf_plan,
+        gha_path=gha_path,
+    )
 
     try:
         findings = scanner.run(

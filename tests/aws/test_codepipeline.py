@@ -117,6 +117,32 @@ class TestCP003SourcePolling:
         assert next(f for f in findings if f.check_id == "CP-003").passed
 
 
+class TestCP004LegacyGitHub:
+    def test_thirdparty_github_fails(self):
+        p = _pipeline("pipe", stages=[
+            {"actions": [{
+                "name": "Src",
+                "actionTypeId": {"category": "Source", "owner": "ThirdParty",
+                                 "provider": "GitHub", "version": "1"},
+                "configuration": {},
+            }]},
+        ])
+        cp004 = next(f for f in _make_check(p).run() if f.check_id == "CP-004")
+        assert not cp004.passed
+        assert cp004.severity == Severity.HIGH
+
+    def test_codestar_connection_passes(self):
+        p = _pipeline("pipe", stages=[
+            {"actions": [{
+                "name": "Src",
+                "actionTypeId": {"category": "Source", "owner": "AWS",
+                                 "provider": "CodeStarSourceConnection", "version": "1"},
+                "configuration": {},
+            }]},
+        ])
+        assert next(f for f in _make_check(p).run() if f.check_id == "CP-004").passed
+
+
 class TestNoPipelines:
     def test_no_pipelines_returns_empty(self):
         session = MagicMock()

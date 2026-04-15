@@ -7,7 +7,10 @@ S3-001  Artifact bucket public access block not fully enabled  CRITICAL  CICD-SE
 S3-002  Artifact bucket server-side encryption not configured  HIGH      CICD-SEC-9
 S3-003  Artifact bucket versioning not enabled                 MEDIUM    CICD-SEC-9
 S3-004  Artifact bucket access logging not enabled             LOW       CICD-SEC-10
+S3-005  Artifact bucket missing aws:SecureTransport deny       MEDIUM    CICD-SEC-9
 """
+
+import json
 
 from botocore.exceptions import ClientError
 
@@ -68,7 +71,75 @@ class S3Checks(AWSBaseCheck):
             self._s3002_encryption(s3, bucket),
             self._s3003_versioning(s3, bucket),
             self._s3004_access_logging(s3, bucket),
+            self._s3005_secure_transport(s3, bucket),
         ]
+
+    @staticmethod
+    def _s3005_secure_transport(s3, bucket: str) -> Finding:
+        try:
+            resp = s3.get_bucket_policy(Bucket=bucket)
+            doc = json.loads(resp.get("Policy", "{}"))
+        except ClientError as exc:
+            code = exc.response.get("Error", {}).get("Code", "")
+            if code in ("NoSuchBucketPolicy", "NoSuchBucket"):
+                return Finding(
+                    check_id="S3-005",
+                    title="Artifact bucket missing aws:SecureTransport deny",
+                    severity=Severity.MEDIUM,
+                    resource=bucket,
+                    description=(
+                        "No bucket policy is attached — plaintext HTTP requests "
+                        "are not explicitly denied."
+                    ),
+                    recommendation=(
+                        "Attach a bucket policy with a Deny for s3:* when "
+                        "aws:SecureTransport is false."
+                    ),
+                    passed=False,
+                )
+            return Finding(
+                check_id="S3-005",
+                title="Artifact bucket missing aws:SecureTransport deny",
+                severity=Severity.MEDIUM,
+                resource=bucket,
+                description=f"Could not retrieve bucket policy: {exc}",
+                recommendation="Ensure s3:GetBucketPolicy permission.",
+                passed=False,
+            )
+        except (ValueError, json.JSONDecodeError):
+            doc = {}
+
+        has_deny = False
+        for stmt in doc.get("Statement", []):
+            if stmt.get("Effect") != "Deny":
+                continue
+            cond = stmt.get("Condition", {}) or {}
+            for operator_block in cond.values():
+                if not isinstance(operator_block, dict):
+                    continue
+                if str(operator_block.get("aws:SecureTransport", "")).lower() == "false":
+                    has_deny = True
+                    break
+            if has_deny:
+                break
+
+        desc = (
+            "Bucket policy denies non-TLS requests via aws:SecureTransport."
+            if has_deny else
+            "Bucket policy does not Deny requests where aws:SecureTransport is false."
+        )
+        return Finding(
+            check_id="S3-005",
+            title="Artifact bucket missing aws:SecureTransport deny",
+            severity=Severity.MEDIUM,
+            resource=bucket,
+            description=desc,
+            recommendation=(
+                "Add a Deny statement for s3:* with Bool "
+                "aws:SecureTransport=false."
+            ),
+            passed=has_deny,
+        )
 
     @staticmethod
     def _s3001_public_access_block(s3, bucket: str) -> Finding:

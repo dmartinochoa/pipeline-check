@@ -85,6 +85,7 @@ def _make_codebuild_client(
     paginator.paginate.side_effect = lambda **kw: iter(_pages)
     client.get_paginator.return_value = paginator
     client.batch_get_projects.return_value = {"projects": projects}
+    client.list_source_credentials.return_value = {"sourceCredentialsInfos": []}
     return client
 
 
@@ -197,14 +198,24 @@ def _make_ecr_client(
     immutable_tags=True,
     public_policy=False,
     lifecycle_policy=True,
+    kms_encryption=True,
 ):
     client = MagicMock()
+
+    if kms_encryption:
+        enc_cfg = {
+            "encryptionType": "KMS",
+            "kmsKey": "arn:aws:kms:us-east-1:123456789:key/abc",
+        }
+    else:
+        enc_cfg = {"encryptionType": "AES256"}
 
     repo = {
         "repositoryName": "my-repo",
         "repositoryArn": "arn:aws:ecr:us-east-1:123456789:repository/my-repo",
         "imageScanningConfiguration": {"scanOnPush": scan_on_push},
         "imageTagMutability": "IMMUTABLE" if immutable_tags else "MUTABLE",
+        "encryptionConfiguration": enc_cfg,
     }
 
     paginator = make_paginator([{"repositories": [repo]}])
@@ -271,12 +282,25 @@ def _make_iam_client(
     return client
 
 
+_SECURE_TRANSPORT_POLICY = json.dumps({
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": "arn:aws:s3:::artifact-bucket/*",
+        "Condition": {"Bool": {"aws:SecureTransport": "false"}},
+    }],
+})
+
+
 def _make_s3_client(
     *,
     public_access_blocked=True,
     encrypted=True,
     versioning_enabled=True,
     logging_enabled=True,
+    secure_transport_deny=True,
 ):
     client = MagicMock()
 
@@ -315,6 +339,11 @@ def _make_s3_client(
         client.get_bucket_logging.return_value = {"LoggingEnabled": {"TargetBucket": "log-bucket"}}
     else:
         client.get_bucket_logging.return_value = {}
+
+    if secure_transport_deny:
+        client.get_bucket_policy.return_value = {"Policy": _SECURE_TRANSPORT_POLICY}
+    else:
+        client.get_bucket_policy.side_effect = _client_error("NoSuchBucketPolicy")
 
     return client
 
@@ -408,6 +437,7 @@ def insecure_session():
             immutable_tags=False,
             public_policy=True,
             lifecycle_policy=False,
+            kms_encryption=False,
         ),
         iam_client=_make_iam_client(
             admin_access=True,
@@ -419,6 +449,7 @@ def insecure_session():
             encrypted=False,
             versioning_enabled=False,
             logging_enabled=False,
+            secure_transport_deny=False,
         ),
     )
 

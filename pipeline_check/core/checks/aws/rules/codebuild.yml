@@ -2,8 +2,10 @@
   title: Secrets in plaintext environment variables
   severity: CRITICAL
   description: >
-    Checks for environment variables whose names match common secret patterns
-    (PASSWORD, TOKEN, API_KEY, etc.) that are stored with type PLAINTEXT.
+    Checks for plaintext environment variables that either (a) have a
+    secret-like name (PASSWORD, TOKEN, API_KEY, …) or (b) have a value
+    matching a known credential pattern (AKIA/ASIA access keys, GitHub
+    tokens prefixed with ghp_/gho_/…, Slack xox* tokens, or JWTs).
     Plaintext values are visible in the AWS console, CloudTrail logs, and
     build logs to anyone with read access.
   recommended_actions:
@@ -64,3 +66,32 @@
     - Pin custom or third-party images to a specific digest rather than a mutable tag.
     - Subscribe to AWS CodeBuild release notifications to stay informed of new image versions.
   owasp_cicd: "CICD-SEC-7: Insecure System Configuration"
+
+- id: CB-006
+  title: Source auth uses long-lived token
+  severity: HIGH
+  description: >
+    Checks whether a CodeBuild project with an external source (GitHub,
+    GitHub Enterprise, Bitbucket) authenticates using a long-lived
+    OAuth or personal access token rather than an AWS CodeConnections
+    (CodeStar) connection. Long-lived tokens don't rotate and are a
+    standing credential-theft target.
+  recommended_actions:
+    - Replace OAuth/PAT tokens with a CodeConnections (CodeStar) connection and reference it from the project source.
+    - Audit aws_codebuild_source_credential resources for PERSONAL_ACCESS_TOKEN or OAUTH auth types.
+    - Rotate any exposed tokens and revoke them in the upstream VCS.
+  owasp_cicd: "CICD-SEC-6: Insufficient Credential Hygiene"
+
+- id: CB-007
+  title: CodeBuild webhook has no filter group
+  severity: MEDIUM
+  description: >
+    Checks whether a CodeBuild webhook (aws_codebuild_webhook) defines at
+    least one filter_group. A webhook without filter groups triggers a
+    build on any push from any principal — including pull requests from
+    forks of public repositories — enabling poisoned-pipeline execution.
+  recommended_actions:
+    - Define filter groups that restrict triggers to specific branches and event types.
+    - Add an ACTOR_ACCOUNT_ID filter to block fork-originated builds for public repositories.
+    - Scope HEAD_REF filters to trusted branches (main/release/*) only.
+  owasp_cicd: "CICD-SEC-1: Insufficient Flow Control Mechanisms"

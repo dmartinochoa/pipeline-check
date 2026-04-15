@@ -30,10 +30,14 @@ STANDARD = Standard(
         "IAM-001": ["1.16"],
         # IAM-002 (wildcard action) ↔ CIS 1.16
         "IAM-002": ["1.16"],
+        # IAM-004/006 scoped wildcard misuse ↔ CIS 1.16
+        "IAM-004": ["1.16"],
+        "IAM-006": ["1.16"],
         # S3 bucket encryption / public access / HTTPS
         "S3-001": ["2.1.4"],  # public access block
         "S3-002": ["2.1.1"],  # encryption at rest
         "S3-003": ["2.1.2"],  # HTTPS-only bucket policy
         "S3-004": ["3.6"],    # access logging
+        "S3-005": ["2.1.2"],  # SecureTransport enforcement
     },
 )

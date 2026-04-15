@@ -6,7 +6,9 @@
 
 Pipeline-Check audits your AWS build, deploy, and artifact infrastructure
 against well-known compliance standards and scores it A–D, so you can gate
-pipelines on the result.
+pipelines on the result. It can scan either a **live AWS account** via boto3
+or a **Terraform plan** (`terraform show -json`) before any resource is
+provisioned.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -25,24 +27,28 @@ pipelines on the result.
 
 ## What it checks
 
-Covered AWS services (**29 checks**, severity-weighted):
+Covered AWS services (**37 checks** for AWS, **5 checks** for GitHub
+Actions — 42 total, severity-weighted):
 
-| Service       | Focus                                                                       | IDs               |
-|---------------|-----------------------------------------------------------------------------|-------------------|
-| CodeBuild     | Plaintext secrets, privileged mode, logging, timeouts, image freshness      | `CB-001…005`      |
-| CodePipeline  | Manual approval gates, KMS encryption, event-driven vs polling triggers     | `CP-001…003`      |
-| CodeDeploy    | Auto rollback, deployment strategy, CloudWatch alarm monitoring             | `CD-001…003`      |
-| ECR           | Scan-on-push, tag immutability, public access, lifecycle policies           | `ECR-001…004`     |
-| IAM           | `AdministratorAccess`, wildcard inline policies, permission boundaries      | `IAM-001…003`     |
-| PBAC          | Build project VPC isolation, service-role sharing                           | `PBAC-001…002`    |
-| S3            | Public access block, encryption, HTTPS-only policy, access logging          | `S3-001…004`      |
+| Service       | Focus                                                                                              | IDs              |
+|---------------|----------------------------------------------------------------------------------------------------|------------------|
+| CodeBuild     | Plaintext secrets (name + value patterns), privileged mode, logging, timeouts, image freshness, long-lived source tokens, webhook filter groups | `CB-001…007`     |
+| CodePipeline  | Manual approval gates, KMS encryption, event-driven triggers, legacy ThirdParty/GitHub OAuth       | `CP-001…004`     |
+| CodeDeploy    | Auto rollback, deployment strategy, CloudWatch alarm monitoring                                    | `CD-001…003`     |
+| ECR           | Scan-on-push, tag immutability, public access, lifecycle policies, KMS CMK encryption              | `ECR-001…005`    |
+| IAM           | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
+| PBAC          | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
+| S3            | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
+| GitHub Actions| Unpinned actions, `pull_request_target` head-checkout, script injection via untrusted context, missing permissions blocks, long-lived AWS keys | `GHA-001…005`    |
 
 Every finding is tagged with the compliance controls it evidences (OWASP
 Top 10 CI/CD + CIS AWS Foundations — see [Compliance standards](#compliance-standards)).
 Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
-Planned providers: **GCP**, **GitHub Actions**, **Azure Pipelines**.
+Supported providers: **AWS** (live, via boto3), **Terraform** (plan JSON),
+and **GitHub Actions** (workflow YAML — 5 checks, `GHA-001…005`).
+Planned: **GCP**, **Azure Pipelines**.
 
 ---
 
@@ -62,7 +68,14 @@ chain (`~/.aws/credentials`, env vars, instance profile, SSO).
 ## Usage
 
 ```bash
-# Scan everything in us-east-1
+# Scan a Terraform plan before provisioning (no AWS creds needed)
+terraform plan -out=tfplan && terraform show -json tfplan > plan.json
+pipeline_check --pipeline terraform --tf-plan plan.json
+
+# Scan GitHub Actions workflows (no network calls, no API token needed)
+pipeline_check --pipeline github --gha-path .github/workflows
+
+# Scan everything in us-east-1 (live AWS account)
 pipeline_check
 
 # Scope to a specific pipeline
@@ -97,7 +110,9 @@ pipeline_check --output both
 
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
-| `--pipeline`            | `aws`                         | Pipeline environment (`aws`; `gcp`, `github`, `azure` planned) |
+| `--pipeline`            | `aws`                         | Provider (`aws`, `terraform`, `github`; `gcp`, `azure` planned) |
+| `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
+| `--gha-path`            | _(none)_                      | Path to workflows dir (required with `--pipeline github`)      |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
@@ -125,6 +140,9 @@ pipeline_check --output both
 | `0`  | Grade A/B/C    |
 | `1`  | Grade D        |
 | `2`  | AWS API error  |
+
+See [docs/scoring_model.md](docs/scoring_model.md) for the full severity
+weights and grade bands.
 
 ---
 
@@ -159,9 +177,11 @@ pipeline_check/
     ├── scorer.py                  # weighted scoring + grading
     ├── reporter.py                # terminal (rich) + JSON output
     ├── html_reporter.py           # self-contained HTML report
-    ├── providers/                 # provider registry (AWS built-in)
+    ├── providers/                 # provider registry (AWS, Terraform, GitHub)
     │   ├── base.py                # BaseProvider ABC
-    │   └── aws.py                 # boto3-backed provider
+    │   ├── aws.py                 # boto3-backed provider
+    │   ├── terraform.py           # plan-JSON provider
+    │   └── github.py              # workflow-YAML provider
     ├── standards/                 # compliance standards (data-driven)
     │   ├── base.py                # ControlRef + Standard dataclasses
     │   ├── registry.py            # register / get / resolve
@@ -170,16 +190,28 @@ pipeline_check/
     │       └── cis_aws_foundations.py
     └── checks/
         ├── base.py                # Finding dataclass, Severity enum, BaseCheck ABC
-        └── aws/
-            ├── base.py            # AWSBaseCheck — wires boto3 Session
-            ├── codebuild.py       # CB-001 … CB-005
-            ├── codepipeline.py    # CP-001 … CP-003
-            ├── codedeploy.py      # CD-001 … CD-003
-            ├── ecr.py             # ECR-001 … ECR-004
-            ├── iam.py             # IAM-001 … IAM-003
-            ├── pbac.py            # PBAC-001 … PBAC-002
-            ├── s3.py              # S3-001 … S3-004
-            └── rules/             # per-check YAML metadata for HTML report
+        ├── aws/                   # live-account provider (boto3)
+        │   ├── base.py            # AWSBaseCheck — wires boto3 Session
+        │   ├── codebuild.py       # CB-001 … CB-007
+        │   ├── codepipeline.py    # CP-001 … CP-004
+        │   ├── codedeploy.py      # CD-001 … CD-003
+        │   ├── ecr.py             # ECR-001 … ECR-005
+        │   ├── iam.py             # IAM-001 … IAM-006
+        │   ├── pbac.py            # PBAC-001 … PBAC-002
+        │   ├── s3.py              # S3-001 … S3-005
+        │   └── rules/             # per-check YAML metadata for HTML report
+        ├── terraform/             # plan-JSON provider (same check IDs)
+        │   ├── base.py            # TerraformContext + TerraformBaseCheck
+        │   ├── codebuild.py
+        │   ├── codepipeline.py
+        │   ├── codedeploy.py
+        │   ├── ecr.py
+        │   ├── iam.py
+        │   ├── pbac.py
+        │   └── s3.py
+        └── github/                # workflow-YAML provider
+            ├── base.py            # GitHubContext + Workflow loader
+            └── workflows.py       # GHA-001 … GHA-005
 ```
 
 See [docs/providers/](docs/providers/) for the provider catalogue and
@@ -233,13 +265,14 @@ Omit to fall back to `AWS_REGION`.
     "Effect": "Allow",
     "Action": [
       "codebuild:ListProjects", "codebuild:BatchGetProjects",
+      "codebuild:ListSourceCredentials",
       "codepipeline:ListPipelines", "codepipeline:GetPipeline",
       "codedeploy:ListApplications", "codedeploy:ListDeploymentGroups",
       "codedeploy:BatchGetDeploymentGroups",
       "ecr:DescribeRepositories", "ecr:GetRepositoryPolicy", "ecr:GetLifecyclePolicy",
       "iam:ListRoles", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies", "iam:GetRolePolicy",
       "s3:GetPublicAccessBlock", "s3:GetEncryptionConfiguration",
-      "s3:GetBucketVersioning", "s3:GetBucketLogging"
+      "s3:GetBucketVersioning", "s3:GetBucketLogging", "s3:GetBucketPolicy"
     ],
     "Resource": "*"
   }]

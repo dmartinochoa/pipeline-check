@@ -5,11 +5,11 @@
 # that the scanner correctly detects bad configurations.
 #
 # Expected failures:
-#   IAM-002, IAM-003
-#   S3-001, S3-002, S3-003, S3-004
+#   IAM-002, IAM-003, IAM-004, IAM-005, IAM-006
+#   S3-001, S3-002, S3-003, S3-004, S3-005
 #   CP-001, CP-002, CP-003
 #   CB-001, CB-002, CB-003, CB-004, CB-005
-#   ECR-001, ECR-002, ECR-004
+#   ECR-001, ECR-002, ECR-004, ECR-005
 #   CD-001, CD-002, CD-003
 #   PBAC-001, PBAC-002
 # ---------------------------------------------------------------------------
@@ -25,19 +25,27 @@ resource "aws_iam_role" "bad" {
   name = "pipeline-check-bad-role"
   # No permissions_boundary — triggers IAM-003
 
+  # IAM-005: external AWS account principal without sts:ExternalId condition
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = {
-        Service = [
-          "codepipeline.amazonaws.com",
-          "codebuild.amazonaws.com",
-          "codedeploy.amazonaws.com"
-        ]
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = [
+            "codepipeline.amazonaws.com",
+            "codebuild.amazonaws.com",
+            "codedeploy.amazonaws.com"
+          ]
+        }
+        Action = "sts:AssumeRole"
+      },
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::999999999999:root" }
+        Action    = "sts:AssumeRole"
       }
-      Action = "sts:AssumeRole"
-    }]
+    ]
   })
 }
 
@@ -45,13 +53,27 @@ resource "aws_iam_role_policy" "bad" {
   name = "BadWildcardPolicy"
   role = aws_iam_role.bad.id
   # IAM-002: Action: "*" in an Allow statement
+  # IAM-004: iam:PassRole with Resource: "*"
+  # IAM-006: sensitive-service action (s3:*) with Resource: "*"
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "*"
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "*"
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject"]
+        Resource = "*"
+      }
+    ]
   })
 }
 

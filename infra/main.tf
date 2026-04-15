@@ -2,8 +2,8 @@
 # PipelineCheck LocalStack fixture
 #
 # Every resource here is intentionally configured to pass all PipelineCheck
-# checks (CB-001…CB-005, CP-001…CP-003, CD-001…CD-003, ECR-001…ECR-004,
-# IAM-001…IAM-003, S3-001…S3-004).
+# checks (CB-001…CB-005, CP-001…CP-003, CD-001…CD-003, ECR-001…ECR-005,
+# IAM-001…IAM-006, S3-001…S3-005).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -68,6 +68,27 @@ resource "aws_s3_bucket_logging" "artifacts" {
   bucket        = aws_s3_bucket.artifacts.id
   target_bucket = aws_s3_bucket.logs.id
   target_prefix = "artifact-access-logs/"
+}
+
+# S3-005: bucket policy denies requests without TLS
+resource "aws_s3_bucket_policy" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "DenyInsecureTransport"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource = [
+        aws_s3_bucket.artifacts.arn,
+        "${aws_s3_bucket.artifacts.arn}/*"
+      ]
+      Condition = {
+        Bool = { "aws:SecureTransport" = "false" }
+      }
+    }]
+  })
 }
 
 # ---------------------------------------------------------------------------
@@ -212,13 +233,21 @@ resource "aws_iam_role" "codedeploy" {
 resource "aws_iam_role_policy" "codedeploy" {
   name = "CodeDeployPolicy"
   role = aws_iam_role.codedeploy.id
+  # IAM-006: sensitive actions (s3, ec2) scoped to specific resources.
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["s3:GetObject", "ec2:DescribeInstances", "tag:GetResources"]
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = ["${aws_s3_bucket.source.arn}/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["tag:GetResources"]
+        Resource = "*"
+      }
+    ]
   })
 }
 
@@ -227,12 +256,24 @@ resource "aws_iam_role_policy" "codedeploy" {
 # ---------------------------------------------------------------------------
 
 # ECR-001: scan on push; ECR-002: immutable tags; ECR-003: no public policy (none attached)
+# ECR-005: customer-managed KMS CMK encryption
+resource "aws_kms_key" "ecr" {
+  description             = "PipelineCheck ECR repository encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+}
+
 resource "aws_ecr_repository" "app" {
   name                 = "pipeline-check-app"
   image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "KMS"
+    kms_key         = aws_kms_key.ecr.arn
   }
 }
 
