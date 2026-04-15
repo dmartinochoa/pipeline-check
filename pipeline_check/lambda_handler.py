@@ -1,15 +1,21 @@
 """AWS Lambda entry point.
 
+Wraps the ``Scanner`` + ``score`` + ``report_json`` pipeline so the same
+scan logic runs from CLI and Lambda without duplication.
+
 Environment variables
 ---------------------
 PIPELINE_CHECK_RESULTS_BUCKET
     S3 bucket where JSON reports are stored.
-    Reports are written to: reports/<timestamp>/pipeline_check-report.json
-    If unset, the report is not persisted to S3.
+    Reports are written to: ``reports/<timestamp>/pipeline_check-report.json``
+    If unset, the report is not persisted to S3 and ``report_s3_key`` is
+    ``null`` in the return payload.
 
 PIPELINE_CHECK_SNS_TOPIC_ARN
     SNS topic ARN to notify when CRITICAL findings are detected.
-    If unset, no SNS alert is sent.
+    If unset, no SNS alert is sent. When set *and* CRITICAL findings exist,
+    one message is published per invocation listing each critical finding
+    and linking to the S3 report (if persisted).
 
 Event payload (optional)
 ------------------------
@@ -27,6 +33,15 @@ Return value
         "critical_failures": 0,
         "report_s3_key": "reports/20240501T120000Z/pipeline_check-report.json"
     }
+
+Failure handling
+----------------
+- S3 ``put_object`` failures are logged and ``report_s3_key`` is reset to
+  ``null`` so downstream consumers can't reference a key that was never
+  written. The function still returns 200 so Lambda does not retry.
+- SNS ``publish`` failures are logged but do not affect the return value.
+- Any error inside the scan itself propagates — Lambda retry behaviour
+  applies per the function's configured event source.
 """
 
 from __future__ import annotations
@@ -37,6 +52,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 from .core.checks.base import Severity
 from .core.reporter import report_json
@@ -86,8 +102,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 ServerSideEncryption="AES256",
             )
             logger.info("Report stored at s3://%s/%s", results_bucket, s3_key)
-        except Exception:
+        except (ClientError, BotoCoreError):
             logger.exception("Failed to write report to S3")
+            s3_key = None
     else:
         s3_key = None
 
@@ -122,7 +139,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 Message=message,
             )
             logger.info("SNS alert sent to %s", sns_topic_arn)
-        except Exception:
+        except (ClientError, BotoCoreError):
             logger.exception("Failed to send SNS alert")
 
     return {

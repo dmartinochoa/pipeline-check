@@ -14,7 +14,7 @@ from .base import AWSBaseCheck, Finding, Severity
 class CodePipelineChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
-        client = self.session.client("codepipeline")
+        client = self.client("codepipeline")
 
         if self.target:
             pipelines = [self.target]

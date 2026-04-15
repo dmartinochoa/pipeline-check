@@ -66,5 +66,17 @@ STANDARD = Standard(
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-004":  ["CICD-SEC-5"],
         "GHA-005":  ["CICD-SEC-6"],
+        # GitLab CI
+        "GL-001":   ["CICD-SEC-3"],
+        "GL-002":   ["CICD-SEC-4"],
+        "GL-003":   ["CICD-SEC-6"],
+        "GL-004":   ["CICD-SEC-1"],
+        "GL-005":   ["CICD-SEC-3"],
+        # Bitbucket Pipelines
+        "BB-001":   ["CICD-SEC-3"],
+        "BB-002":   ["CICD-SEC-4"],
+        "BB-003":   ["CICD-SEC-6"],
+        "BB-004":   ["CICD-SEC-1"],
+        "BB-005":   ["CICD-SEC-7"],
     },
 )

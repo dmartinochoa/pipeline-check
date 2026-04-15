@@ -13,32 +13,15 @@ CB-001 fails on **either** a secret-like variable name (PASSWORD, TOKEN, …)
 """
 from __future__ import annotations
 
-import re
-
 from .base import TerraformBaseCheck
 from ..base import Finding, Severity
-
-_SECRET_NAME_RE = re.compile(
-    r"(PASSWORD|PASSWD|PWD|SECRET|TOKEN|API[_\-]?KEY|ACCESS[_\-]?KEY|"
-    r"SECRET[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|AUTH|AUTHORIZATION)",
-    re.IGNORECASE,
+from .._patterns import (
+    LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
+    MANAGED_IMAGE_RE as _MANAGED_IMAGE_RE,
+    SECRET_NAME_RE as _SECRET_NAME_RE,
+    SECRET_VALUE_RE as _SECRET_VALUE_RE,
 )
 
-# Known credential prefixes. Matching here is high-confidence so even a
-# non-secret-named variable like CI_FLAG gets flagged if the value itself
-# is obviously sensitive.
-_SECRET_VALUE_RE = re.compile(
-    r"^(?:"
-    r"AKIA[0-9A-Z]{16}|"          # AWS access key
-    r"ASIA[0-9A-Z]{16}|"          # AWS temporary access key
-    r"gh[pousr]_[A-Za-z0-9]{36,}|"  # GitHub PAT / OAuth / user-server / refresh
-    r"xox[abprs]-[A-Za-z0-9-]{10,}|"  # Slack tokens
-    r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"  # JWT
-    r")$"
-)
-
-_MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
-_LATEST_STANDARD_VERSION = 7
 _MAX_SENSIBLE_TIMEOUT = 480
 
 

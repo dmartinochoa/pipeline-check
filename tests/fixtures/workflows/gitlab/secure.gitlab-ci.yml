@@ -1,0 +1,30 @@
+# Hardened equivalent of insecure.gitlab-ci.yml — every GL-* check passes.
+include:
+  - project: 'templates/ci'
+    ref: v1.4.2
+
+image: python:3.12.1-slim
+
+variables:
+  DEPLOY_TARGET: production
+  AWS_ROLE_ARN: $OIDC_DEPLOY_ROLE
+
+stages:
+  - test
+  - deploy
+
+unit-tests:
+  stage: test
+  image: node:20.11.1
+  script:
+    - TITLE="$CI_MERGE_REQUEST_TITLE"
+    - npm test
+
+deploy-prod:
+  stage: deploy
+  when: manual
+  environment:
+    name: production
+    url: https://app.example.com
+  script:
+    - ./scripts/deploy.sh

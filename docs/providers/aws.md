@@ -307,13 +307,16 @@ resources; a compromised pipeline can perform any action in the account.
 - Use IAM Access Analyzer to identify and remove unused permissions.
 - Apply Service Control Policies (SCPs) at the AWS Organizations level to further constrain CI/CD role capabilities.
 
-### IAM-002 — CI/CD role has wildcard Action in inline policy
+### IAM-002 — CI/CD role has wildcard Action in attached policy
 **Severity:** HIGH
 
-Checks whether any inline policy on a CI/CD service role contains an
+Checks every reachable policy on a CI/CD service role — inline policies
+and the default version of attached customer-managed policies — for an
 Allow statement with `Action: '*'`. Wildcard actions grant unrestricted
 access to one or more AWS services, violating least-privilege and widening
-the blast radius of a compromised build or deployment.
+the blast radius of a compromised build or deployment. AWS-managed
+policies are intentionally skipped here; IAM-001 handles
+`AdministratorAccess` separately.
 
 **Recommended actions**
 - Replace wildcard actions with the specific IAM actions the role actually requires.
@@ -484,7 +487,8 @@ traverse the network unencrypted.
 
 1. Create `pipeline_check/core/checks/aws/<service>.py` subclassing
    `AWSBaseCheck`. Each public check method should return one or more
-   `Finding` objects.
+   `Finding` objects. Use `self.client("<svc>")` (not
+   `self.session.client(...)`) so clients are cached per session.
 2. Import it and append to `check_classes` in
    `pipeline_check/core/providers/aws.py`.
 3. Add rule metadata to

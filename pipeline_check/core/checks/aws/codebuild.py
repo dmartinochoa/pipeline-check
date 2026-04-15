@@ -12,29 +12,14 @@ CB-001 matches **either** a secret-like variable name or a value that
 matches a known credential pattern (AKIA/ASIA/ghp_/xoxb-/JWT).
 """
 
-import re
-
 from botocore.exceptions import ClientError
 
 from .base import AWSBaseCheck, Finding, Severity
-
-# Environment variable names that suggest a secret is stored in plaintext.
-_SECRET_NAME_RE = re.compile(
-    r"(PASSWORD|PASSWD|PWD|SECRET|TOKEN|API[_\-]?KEY|ACCESS[_\-]?KEY|"
-    r"SECRET[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|AUTH|AUTHORIZATION)",
-    re.IGNORECASE,
-)
-
-# Credential patterns detectable in the value itself — matches even when the
-# variable name doesn't announce it.
-_SECRET_VALUE_RE = re.compile(
-    r"^(?:"
-    r"AKIA[0-9A-Z]{16}|"
-    r"ASIA[0-9A-Z]{16}|"
-    r"gh[pousr]_[A-Za-z0-9]{36,}|"
-    r"xox[abprs]-[A-Za-z0-9-]{10,}|"
-    r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"
-    r")$"
+from .._patterns import (
+    LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
+    MANAGED_IMAGE_RE as _MANAGED_IMAGE_RE,
+    SECRET_NAME_RE as _SECRET_NAME_RE,
+    SECRET_VALUE_RE as _SECRET_VALUE_RE,
 )
 
 _LONG_LIVED_TOKEN_AUTH = {"OAUTH", "PERSONAL_ACCESS_TOKEN", "BASIC_AUTH"}
@@ -48,12 +33,6 @@ _SOURCE_TYPE_TO_SERVER_TYPE = {
     "BITBUCKET": "BITBUCKET",
 }
 
-# AWS CodeBuild standard managed-image pattern: aws/codebuild/standard:X.0
-_MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
-
-# Bump this when AWS releases a new standard image version.
-_LATEST_STANDARD_VERSION = 7
-
 # Projects with a timeout at or above this are considered unconstrained.
 _MAX_SENSIBLE_TIMEOUT = 480  # minutes (AWS maximum)
 
@@ -62,7 +41,7 @@ class CodeBuildChecks(AWSBaseCheck):
     """Runs all CB-XXX checks across every CodeBuild project in the region."""
 
     def run(self) -> list[Finding]:
-        client = self.session.client("codebuild")
+        client = self.client("codebuild")
 
         try:
             project_names = self._list_projects(client)

@@ -7,10 +7,18 @@ from pipeline_check.core.standards.base import ControlRef, Standard
 
 
 class TestRegistry:
-    def test_both_builtin_standards_registered(self):
+    def test_all_builtin_standards_registered(self):
         names = standards.available()
-        assert "owasp_cicd_top_10" in names
-        assert "cis_aws_foundations" in names
+        for expected in (
+            "owasp_cicd_top_10",
+            "cis_aws_foundations",
+            "cis_supply_chain",
+            "nist_ssdf",
+            "nist_800_53",
+            "slsa",
+            "pci_dss_v4",
+        ):
+            assert expected in names
 
     def test_get_returns_standard(self):
         std = standards.get("cis_aws_foundations")
@@ -39,7 +47,15 @@ class TestRegistry:
 class TestStandardIntegrity:
     """Catch typos: every control_id referenced in mappings must be defined."""
 
-    @pytest.mark.parametrize("name", ["owasp_cicd_top_10", "cis_aws_foundations"])
+    @pytest.mark.parametrize("name", [
+        "owasp_cicd_top_10",
+        "cis_aws_foundations",
+        "cis_supply_chain",
+        "nist_ssdf",
+        "nist_800_53",
+        "slsa",
+        "pci_dss_v4",
+    ])
     def test_every_mapped_control_is_defined(self, name):
         std = standards.get(name)
         assert std is not None
@@ -49,12 +65,43 @@ class TestStandardIntegrity:
                     f"{name}: {check_id} maps to undefined control {cid!r}"
                 )
 
-    @pytest.mark.parametrize("name", ["owasp_cicd_top_10", "cis_aws_foundations"])
+    @pytest.mark.parametrize("name", [
+        "owasp_cicd_top_10",
+        "cis_aws_foundations",
+        "cis_supply_chain",
+        "nist_ssdf",
+        "nist_800_53",
+        "slsa",
+        "pci_dss_v4",
+    ])
     def test_standard_has_metadata(self, name):
         std = standards.get(name)
         assert std.title
         assert std.controls
         assert std.mappings
+
+
+class TestCheckIdIntegrity:
+    """Every check_id used by any standard must appear in the canonical OWASP
+    mapping — OWASP covers the full scanner check set, so other standards
+    mapping an unknown ID is a typo."""
+
+    @pytest.mark.parametrize("name", [
+        "cis_aws_foundations",
+        "cis_supply_chain",
+        "nist_ssdf",
+        "nist_800_53",
+        "slsa",
+        "pci_dss_v4",
+    ])
+    def test_check_ids_are_known(self, name):
+        owasp = standards.get("owasp_cicd_top_10")
+        std = standards.get(name)
+        for check_id in std.mappings:
+            assert check_id in owasp.mappings, (
+                f"{name} maps unknown check_id {check_id!r} "
+                "(not present in canonical OWASP mapping)"
+            )
 
 
 class TestCISMappings:
@@ -94,10 +141,12 @@ class TestMultiStandardEnrichment:
         assert refs
         assert {r.standard for r in refs} == {"cis_aws_foundations"}
 
-    def test_pbac_001_only_in_owasp(self):
-        """CIS doesn't evidence PBAC-001; only OWASP should return a ref."""
+    def test_pbac_001_not_in_cis(self):
+        """CIS is AWS-host-focused and doesn't evidence PBAC-001."""
         refs = standards.resolve_for_check("PBAC-001")
-        assert {r.standard for r in refs} == {"owasp_cicd_top_10"}
+        std_names = {r.standard for r in refs}
+        assert "cis_aws_foundations" not in std_names
+        assert "owasp_cicd_top_10" in std_names
 
 
 class TestControlRef:

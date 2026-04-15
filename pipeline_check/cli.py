@@ -4,13 +4,43 @@ Usage
 -----
     pipeline_check [OPTIONS]
 
+Examples
+--------
+    # Scan a live AWS account (default provider).
     pipeline_check --pipeline aws --region eu-west-1 --output both --severity-threshold HIGH
+
+    # Run specific checks only.
     pipeline_check --pipeline aws --checks CB-001 --checks CB-003
+
+    # Scan a Terraform plan — no AWS credentials needed.
+    pipeline_check --pipeline terraform --tf-plan plan.json
+
+    # Scan GitHub Actions workflows on disk.
+    pipeline_check --pipeline github --gha-path .github/workflows
+
+    # Annotate findings with a single standard, or list registered standards.
+    pipeline_check --standard owasp_cicd_top_10
+    pipeline_check --list-standards
+
+    # Print version and exit.
+    pipeline_check --version
+
+Exit codes
+----------
+    0   Grade A / B / C
+    1   Grade D  (use as a CI gate)
+    2   Scanner failure (e.g. AWS API error)
+
+``--tf-plan`` and ``--gha-path`` are validated before the scanner runs:
+missing flag or missing path raises a ``UsageError`` (exit code 2) with a
+clear message, rather than failing deep in the provider.
 """
+import os
 import sys
 
 import click
 
+from . import __version__
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Severity
@@ -31,6 +61,7 @@ _PIPELINE_CHOICES = _providers.available()
 
 
 @click.command()
+@click.version_option(version=__version__, prog_name="pipeline_check")
 @click.option(
     "--pipeline",
     type=click.Choice(_PIPELINE_CHOICES, case_sensitive=False),
@@ -86,6 +117,24 @@ _PIPELINE_CHOICES = _providers.available()
     ),
 )
 @click.option(
+    "--gitlab-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a .gitlab-ci.yml file or a directory containing one "
+        "(required when --pipeline gitlab)."
+    ),
+)
+@click.option(
+    "--bitbucket-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a bitbucket-pipelines.yml file or a directory containing "
+        "one (required when --pipeline bitbucket)."
+    ),
+)
+@click.option(
     "--output",
     type=click.Choice(["terminal", "json", "html", "both"], case_sensitive=False),
     default="terminal",
@@ -129,6 +178,8 @@ def scan(
     profile: str | None,
     tf_plan: str | None,
     gha_path: str | None,
+    gitlab_path: str | None,
+    bitbucket_path: str | None,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
@@ -147,6 +198,36 @@ def scan(
                 click.echo(f"    {std.url}")
         return
 
+    pipeline_lc = pipeline.lower()
+    if pipeline_lc == "terraform":
+        if not tf_plan:
+            raise click.UsageError(
+                "--tf-plan PATH is required when --pipeline terraform."
+            )
+        if not os.path.isfile(tf_plan):
+            raise click.UsageError(f"--tf-plan path not found: {tf_plan}")
+    elif pipeline_lc == "github":
+        if not gha_path:
+            raise click.UsageError(
+                "--gha-path PATH is required when --pipeline github."
+            )
+        if not os.path.isdir(gha_path):
+            raise click.UsageError(f"--gha-path directory not found: {gha_path}")
+    elif pipeline_lc == "gitlab":
+        if not gitlab_path:
+            raise click.UsageError(
+                "--gitlab-path PATH is required when --pipeline gitlab."
+            )
+        if not os.path.exists(gitlab_path):
+            raise click.UsageError(f"--gitlab-path not found: {gitlab_path}")
+    elif pipeline_lc == "bitbucket":
+        if not bitbucket_path:
+            raise click.UsageError(
+                "--bitbucket-path PATH is required when --pipeline bitbucket."
+            )
+        if not os.path.exists(bitbucket_path):
+            raise click.UsageError(f"--bitbucket-path not found: {bitbucket_path}")
+
     threshold = Severity(severity_threshold.upper())
 
     scanner = Scanner(
@@ -155,6 +236,8 @@ def scan(
         profile=profile,
         tf_plan=tf_plan,
         gha_path=gha_path,
+        gitlab_path=gitlab_path,
+        bitbucket_path=bitbucket_path,
     )
 
     try:

@@ -17,7 +17,7 @@ provisioned, or **GitHub Actions workflow YAML** on disk.
 [Extending](#extending) ·
 [CI / LocalStack](#ci--localstack-integration-test)
 
-![HTML report showing per-check results, severity breakdown, and an overall grade](docs/localstack-report.png)
+![HTML report showing per-check results, severity breakdown, and an overall grade](resources/img/localstack-report.png)
 
 <sub><em>HTML report sample — generated with <code>--output html</code>.</em></sub>
 
@@ -27,8 +27,8 @@ provisioned, or **GitHub Actions workflow YAML** on disk.
 
 ## What it checks
 
-Covered surfaces (**37 checks** for AWS, **5 checks** for GitHub
-Actions — 42 total, severity-weighted):
+Covered surfaces (**32 checks** for AWS, **5 checks** for GitHub
+Actions — 37 total, severity-weighted):
 
 | Service       | Focus                                                                                              | IDs              |
 |---------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -122,6 +122,11 @@ pipeline_check --output both
 | `--output`              | `terminal`                    | `terminal`, `json`, `html`, or `both`                         |
 | `--output-file`         | `pipeline-check-report.html`  | Output path — only used with `--output html`                  |
 | `--severity-threshold`  | `INFO`                        | Minimum severity to include                                   |
+| `--version`             | _(flag)_                      | Print version and exit                                        |
+
+`--tf-plan` and `--gha-path` are validated eagerly: the CLI exits with
+`UsageError` if the flag is missing for its provider or if the path does
+not exist on disk.
 
 > **`--target` scoping:** CodePipeline fetches only the named pipeline;
 > S3 checks discover the artifact bucket from it. CodeBuild, CodeDeploy,
@@ -292,7 +297,9 @@ Omit to fall back to `AWS_REGION`.
 
     class MyServiceChecks(AWSBaseCheck):
         def run(self) -> list[Finding]:
-            client = self.session.client("myservice")
+            # self.client() caches clients on the shared session so
+            # repeat lookups across modules are free.
+            client = self.client("myservice")
             ...
             return findings
     ```

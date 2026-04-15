@@ -1,0 +1,36 @@
+# Realistic-looking release workflow exhibiting every GHA-* failure mode.
+# Sourced from patterns commonly seen in public repos; used as a fixture
+# to assert that the scanner flags all five issues in one sweep.
+name: Release
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head (unsafe)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Describe PR
+        run: |
+          echo "Building PR titled: ${{ github.event.pull_request.title }}"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Install
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Publish to AWS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: npm run deploy

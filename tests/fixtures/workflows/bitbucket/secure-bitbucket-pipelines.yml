@@ -1,0 +1,20 @@
+# Hardened equivalent of insecure-bitbucket-pipelines.yml — all BB-* pass.
+pipelines:
+  default:
+    - step:
+        name: Build
+        image: node:20.11.1
+        max-time: 20
+        script:
+          - BRANCH="$BITBUCKET_BRANCH"
+          - npm test
+
+    - step:
+        name: Deploy to production
+        deployment: production
+        max-time: 15
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.4.0
+            variables:
+              AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE
+              S3_BUCKET: 'example-bucket'

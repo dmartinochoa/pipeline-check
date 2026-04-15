@@ -20,7 +20,7 @@ _ALL_AT_ONCE_CONFIGS = {
 class CodeDeployChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
-        client = self.session.client("codedeploy")
+        client = self.client("codedeploy")
 
         try:
             app_names = self._list_applications(client)
