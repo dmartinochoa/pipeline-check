@@ -13,6 +13,7 @@ from typing import Any
 from .checks.base import Finding
 from . import providers as _providers
 from . import standards as _standards
+from . import diff as _diff
 
 
 class Scanner:
@@ -37,6 +38,7 @@ class Scanner:
         pipeline: str = "aws",
         region: str = "us-east-1",
         profile: str | None = None,
+        diff_base: str | None = None,
         **provider_kwargs: Any,
     ) -> None:
         provider = _providers.get(pipeline)
@@ -50,6 +52,8 @@ class Scanner:
         self._context: Any = provider.build_context(
             region=region, profile=profile, **provider_kwargs
         )
+        if diff_base:
+            _filter_context_by_diff(self._context, diff_base)
 
     def run(
         self,
@@ -87,3 +91,33 @@ class Scanner:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
 
         return findings
+
+
+def _filter_context_by_diff(context: Any, base_ref: str) -> None:
+    """Drop workflow/pipeline entries whose file was not changed vs ``base_ref``.
+
+    Only workflow-style providers carry file-scoped context — AWS and
+    Terraform build contexts hold live API clients or a single plan
+    and are left untouched. Workflow providers expose either
+    ``.workflows`` (GitHub) or ``.pipelines`` (GitLab / Bitbucket /
+    Azure), each a list of objects with a ``.path`` attribute; filter
+    those lists in place.
+
+    ``changed_files`` returning ``None`` (git missing / base ref bad)
+    is treated as "no filter" — better to over-scan than to silently
+    skip everything in CI.
+    """
+    allowed = _diff.changed_files(base_ref)
+    if allowed is None:
+        return
+    for attr in ("workflows", "pipelines"):
+        items = getattr(context, attr, None)
+        if not isinstance(items, list):
+            continue
+        paths = [getattr(i, "path", "") for i in items]
+        kept = set(_diff.filter_paths(paths, allowed))
+        setattr(
+            context,
+            attr,
+            [i for i in items if getattr(i, "path", "") in kept],
+        )

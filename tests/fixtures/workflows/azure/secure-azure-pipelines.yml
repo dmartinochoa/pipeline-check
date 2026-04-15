@@ -9,7 +9,7 @@ variables:
 resources:
   containers:
     - container: py
-      image: python:3.12.1-slim
+      image: python@sha256:0000000000000000000000000000000000000000000000000000000000000004
 
 stages:
   - stage: Build

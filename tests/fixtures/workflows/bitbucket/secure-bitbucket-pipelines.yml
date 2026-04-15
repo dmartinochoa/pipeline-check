@@ -16,7 +16,7 @@ pipelines:
         deployment: production
         max-time: 15
         script:
-          - pipe: atlassian/aws-s3-deploy:1.4.0
+          - pipe: atlassian/aws-s3-deploy@sha256:0000000000000000000000000000000000000000000000000000000000000003
             variables:
               AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE
               S3_BUCKET: 'example-bucket'

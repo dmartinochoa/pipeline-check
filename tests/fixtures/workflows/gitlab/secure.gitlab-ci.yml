@@ -3,7 +3,7 @@ include:
   - project: 'templates/ci'
     ref: v1.4.2
 
-image: python:3.12.1-slim
+image: python@sha256:0000000000000000000000000000000000000000000000000000000000000001
 
 variables:
   DEPLOY_TARGET: production
@@ -15,7 +15,7 @@ stages:
 
 unit-tests:
   stage: test
-  image: node:20.11.1
+  image: node@sha256:0000000000000000000000000000000000000000000000000000000000000002
   script:
     - TITLE="$CI_MERGE_REQUEST_TITLE"
     - npm test

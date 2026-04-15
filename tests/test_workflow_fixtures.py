@@ -37,7 +37,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {"GHA-001", "GHA-002", "GHA-003", "GHA-004", "GHA-005", "GHA-006", "GHA-007"}
+    EXPECTED_IDS = {"GHA-001", "GHA-002", "GHA-003", "GHA-004", "GHA-005", "GHA-006", "GHA-007", "GHA-008"}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -69,7 +69,7 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {"GL-001", "GL-002", "GL-003", "GL-004", "GL-005", "GL-006", "GL-007"}
+    EXPECTED_IDS = {"GL-001", "GL-002", "GL-003", "GL-004", "GL-005", "GL-006", "GL-007", "GL-008", "GL-009"}
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -101,7 +101,7 @@ class TestGitLabFixtures:
 
 
 class TestBitbucketFixtures:
-    EXPECTED_IDS = {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005", "BB-006", "BB-007"}
+    EXPECTED_IDS = {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005", "BB-006", "BB-007", "BB-008", "BB-009"}
 
     def _scan(self, filename: str):
         ctx = BitbucketContext.from_path(FIXTURES / "bitbucket" / filename)
@@ -133,7 +133,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005", "ADO-006", "ADO-007"}
+    EXPECTED_IDS = {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005", "ADO-006", "ADO-007", "ADO-008", "ADO-009"}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
@@ -160,15 +160,15 @@ class TestAzureFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {"GHA-001", "GHA-002", "GHA-003", "GHA-004", "GHA-005", "GHA-006", "GHA-007"}),
+     {"GHA-001", "GHA-002", "GHA-003", "GHA-004", "GHA-005", "GHA-006", "GHA-007", "GHA-008"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {"GL-001", "GL-002", "GL-003", "GL-004", "GL-005", "GL-006", "GL-007"}),
+     {"GL-001", "GL-002", "GL-003", "GL-004", "GL-005", "GL-006", "GL-007", "GL-008", "GL-009"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
-     {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005", "BB-006", "BB-007"}),
+     {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005", "BB-006", "BB-007", "BB-008", "BB-009"}),
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
-     {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005", "ADO-006", "ADO-007"}),
+     {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005", "ADO-006", "ADO-007", "ADO-008", "ADO-009"}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

@@ -7,12 +7,15 @@ ADO-004  Deployment job missing environment binding               MEDIUM    CICD
 ADO-005  Container image not pinned to specific version           HIGH      CICD-SEC-3
 ADO-006  Artifacts not signed                                     MEDIUM    ESF-D-SIGN-ARTIFACTS
 ADO-007  SBOM not produced                                        MEDIUM    ESF-D-SBOM
+ADO-008  Credential-shaped literal in pipeline body               CRITICAL  CICD-SEC-6
+ADO-009  Container image pinned by tag rather than sha256 digest  LOW       CICD-SEC-3
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from .._secrets import find_secret_values
 from ..base import Finding, Severity, has_sbom, has_signing
 from .base import AzureBaseCheck, iter_jobs, iter_steps
 
@@ -63,7 +66,97 @@ class AzurePipelineChecks(AzureBaseCheck):
             self._ado005_container_pinning(path, doc, jobs),
             self._ado006_signing(path, doc),
             self._ado007_sbom(path, doc),
+            self._ado008_literal_secrets(path, doc),
+            self._ado009_digest_pinning(path, doc, jobs),
         ]
+
+    # ------------------------------------------------------------------
+    # ADO-009 — prefer sha256 digest over a version tag (containers)
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _ado009_digest_pinning(
+        cls, path: str, doc: dict[str, Any],
+        jobs: list[tuple[str, dict[str, Any]]],
+    ) -> Finding:
+        tagged: list[str] = []
+
+        def _inspect(img: str, where: str) -> None:
+            if _DIGEST_RE.search(img):
+                return
+            tagged.append(f"{where}: {img}")
+
+        resources = doc.get("resources", {})
+        if isinstance(resources, dict):
+            for rc in resources.get("containers", []) or []:
+                if isinstance(rc, dict):
+                    img = rc.get("image")
+                    name = rc.get("container", "")
+                    if isinstance(img, str):
+                        _inspect(img, f"resources.containers[{name}]")
+
+        for job_loc, job in jobs:
+            c = job.get("container")
+            img = None
+            if isinstance(c, str) and (":" in c or "/" in c or "." in c):
+                img = c
+            elif isinstance(c, dict):
+                i = c.get("image")
+                if isinstance(i, str):
+                    img = i
+            if img:
+                _inspect(img, f"{job_loc}.container")
+
+        passed = not tagged
+        desc = (
+            "Every container image is pinned by sha256 digest."
+            if passed else
+            f"{len(tagged)} container image(s) are pinned by version tag "
+            f"rather than digest: {', '.join(tagged[:5])}"
+            f"{'…' if len(tagged) > 5 else ''}."
+        )
+        return Finding(
+            check_id="ADO-009",
+            title="Container image pinned by tag rather than sha256 digest",
+            severity=Severity.LOW,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Resolve each image to its current digest and replace the "
+                "tag with `@sha256:<digest>`. Schedule regular digest bumps "
+                "via Renovate or a scheduled pipeline."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # ADO-008 — credential-shaped literal anywhere in the pipeline
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ado008_literal_secrets(path: str, doc: dict[str, Any]) -> Finding:
+        hits = find_secret_values(doc)
+        passed = not hits
+        desc = (
+            "No string in the pipeline matches a known credential pattern."
+            if passed else
+            f"Pipeline contains {len(hits)} literal value(s) matching known "
+            f"credential patterns: "
+            f"{', '.join(hits[:5])}{'…' if len(hits) > 5 else ''}."
+        )
+        return Finding(
+            check_id="ADO-008",
+            title="Credential-shaped literal in pipeline body",
+            severity=Severity.CRITICAL,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Rotate the exposed credential. Move the value to Azure Key "
+                "Vault or a secret variable group and reference it via "
+                "`$(SECRET_NAME)`."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # ADO-006 — artifact signing

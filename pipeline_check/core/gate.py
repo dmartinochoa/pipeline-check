@@ -40,10 +40,13 @@ filters:
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
+
+import yaml
 
 from .checks.base import Finding, Severity, severity_rank
 
@@ -55,10 +58,24 @@ _GRADES = ("A", "B", "C", "D")
 
 @dataclass(frozen=True)
 class IgnoreRule:
-    """One line of an ignore file."""
+    """One line of an ignore file.
+
+    Suppressions can carry an ``expires`` date (YAML format only). Once
+    the date is in the past, ``is_expired`` returns True and callers
+    skip the rule so suppressions can't rot silently. The flat-text
+    format has no expiry field — those rules never expire.
+    """
 
     check_id: str           # upper-cased
     resource: str | None    # exact match; None means any resource
+    expires: _dt.date | None = None
+    reason: str | None = None
+
+    def is_expired(self, today: _dt.date | None = None) -> bool:
+        if self.expires is None:
+            return False
+        ref = today or _dt.date.today()
+        return ref > self.expires
 
 
 @dataclass
@@ -100,6 +117,9 @@ class GateResult:
     suppressed: list[Finding]
     #: Failing findings already present in the baseline.
     baseline_matched: list[Finding]
+    #: Ignore rules whose ``expires`` date has passed. Reported to the
+    #: user so stale suppressions surface instead of rotting silently.
+    expired_rules: list[IgnoreRule] = field(default_factory=list)
 
     @property
     def exit_code(self) -> int:
@@ -114,13 +134,37 @@ class GateResult:
 def load_ignore_file(path: str | Path) -> list[IgnoreRule]:
     """Parse an ignore file into a list of :class:`IgnoreRule`.
 
-    Missing files return an empty list (common case — the flag is set
-    pointing at an optional default path). Malformed lines are skipped
-    rather than erroring, so a stray blank or comment can't brick CI.
+    Two formats are supported, picked by extension:
+
+    - ``.yml`` / ``.yaml`` — structured list of entries::
+
+          - check_id: GHA-001
+            resource: .github/workflows/release.yml
+            expires: 2026-06-30
+            reason: waiting on upstream Dependabot config
+
+      ``expires`` (ISO date) is optional; once it passes the rule is
+      returned but :py:meth:`IgnoreRule.is_expired` is True and
+      ``evaluate_gate`` refuses to apply it. ``reason`` is metadata
+      only — kept so reviewers can see the justification without
+      crawling git history.
+
+    - Anything else — the flat-text format (one ``CHECK_ID`` or
+      ``CHECK_ID:RESOURCE`` per line, ``#`` for comments). No expiry
+      field; rules in this format never expire.
+
+    Missing files return an empty list rather than raising — the
+    default path is optional.
     """
     p = Path(path)
     if not p.exists():
         return []
+    if p.suffix.lower() in {".yml", ".yaml"}:
+        return _load_ignore_yaml(p)
+    return _load_ignore_flat(p)
+
+
+def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
     rules: list[IgnoreRule] = []
     for raw in p.read_text(encoding="utf-8").splitlines():
         line = raw.split("#", 1)[0].strip()
@@ -134,6 +178,47 @@ def load_ignore_file(path: str | Path) -> list[IgnoreRule]:
             rules.append(IgnoreRule(check_id=line.strip().upper(),
                                     resource=None))
     return rules
+
+
+def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
+    try:
+        doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return []
+    if not isinstance(doc, list):
+        return []
+    rules: list[IgnoreRule] = []
+    for entry in doc:
+        if not isinstance(entry, dict):
+            continue
+        cid = entry.get("check_id") or entry.get("id")
+        if not isinstance(cid, str):
+            continue
+        resource = entry.get("resource")
+        if resource is not None and not isinstance(resource, str):
+            resource = None
+        expires = _coerce_date(entry.get("expires"))
+        reason = entry.get("reason")
+        if reason is not None and not isinstance(reason, str):
+            reason = None
+        rules.append(IgnoreRule(
+            check_id=cid.strip().upper(),
+            resource=resource.strip() if resource else None,
+            expires=expires,
+            reason=reason,
+        ))
+    return rules
+
+
+def _coerce_date(value: object) -> _dt.date | None:
+    if isinstance(value, _dt.date):
+        return value
+    if isinstance(value, str):
+        try:
+            return _dt.date.fromisoformat(value.strip())
+        except ValueError:
+            return None
+    return None
 
 
 def load_baseline(path: str | Path) -> set[tuple[str, str]]:
@@ -166,6 +251,8 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
 
 def _is_ignored(f: Finding, rules: Iterable[IgnoreRule]) -> bool:
     for r in rules:
+        if r.is_expired():
+            continue
         if r.check_id != f.check_id.upper():
             continue
         if r.resource is None or r.resource == f.resource:
@@ -251,12 +338,15 @@ def evaluate_gate(
                 f"--fail-on-check"
             )
 
+    expired_rules = [r for r in config.ignore_rules if r.is_expired()]
+
     return GateResult(
         passed=not reasons,
         reasons=reasons,
         effective=effective,
         suppressed=suppressed,
         baseline_matched=baseline_matched,
+        expired_rules=expired_rules,
     )
 
 

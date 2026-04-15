@@ -7,12 +7,15 @@ BB-004  Deploy step missing `deployment:` environment gate   MEDIUM    CICD-SEC-
 BB-005  Step has no `max-time` — unbounded build             MEDIUM    CICD-SEC-7
 BB-006  Artifacts not signed                                 MEDIUM    ESF-D-SIGN-ARTIFACTS
 BB-007  SBOM not produced                                    MEDIUM    ESF-D-SBOM
+BB-008  Credential-shaped literal in pipeline body           CRITICAL  CICD-SEC-6
+BB-009  pipe: pinned by version rather than sha256 digest    LOW       CICD-SEC-3
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from .._secrets import find_secret_values
 from ..base import Finding, Severity, has_sbom, has_signing
 from .base import BitbucketBaseCheck, iter_steps, step_scripts
 
@@ -58,7 +61,85 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
             self._bb005_max_time(path, steps),
             self._bb006_signing(path, doc),
             self._bb007_sbom(path, doc),
+            self._bb008_literal_secrets(path, doc),
+            self._bb009_digest_pinning(path, steps),
         ]
+
+    # ------------------------------------------------------------------
+    # BB-009 — prefer sha256 digest for pipe refs
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _bb009_digest_pinning(
+        path: str, steps: list[tuple[str, dict[str, Any]]]
+    ) -> Finding:
+        tagged: list[str] = []
+        for loc, step in steps:
+            script = step.get("script")
+            if not isinstance(script, list):
+                continue
+            for entry in script:
+                ref: str | None = None
+                if isinstance(entry, dict) and "pipe" in entry:
+                    v = entry["pipe"]
+                    if isinstance(v, str):
+                        ref = v.strip()
+                elif isinstance(entry, str):
+                    m = re.match(r"\s*pipe:\s*(\S+)", entry)
+                    if m:
+                        ref = m.group(1).strip().strip('"').strip("'")
+                if not ref or "@sha256:" in ref:
+                    continue
+                tagged.append(f"{loc}: {ref}")
+        passed = not tagged
+        desc = (
+            "Every `pipe:` reference is pinned by sha256 digest."
+            if passed else
+            f"{len(tagged)} `pipe:` reference(s) are pinned by version "
+            f"rather than digest: {', '.join(tagged[:5])}"
+            f"{'…' if len(tagged) > 5 else ''}."
+        )
+        return Finding(
+            check_id="BB-009",
+            title="pipe: pinned by version rather than sha256 digest",
+            severity=Severity.LOW,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Resolve each pipe to its digest (`docker buildx imagetools "
+                "inspect bitbucketpipelines/<name>:<ver>`) and reference it "
+                "via `@sha256:<digest>`."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # BB-008 — credential-shaped literal anywhere in the pipeline
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _bb008_literal_secrets(path: str, doc: dict[str, Any]) -> Finding:
+        hits = find_secret_values(doc)
+        passed = not hits
+        desc = (
+            "No string in the pipeline matches a known credential pattern."
+            if passed else
+            f"Pipeline contains {len(hits)} literal value(s) matching known "
+            f"credential patterns (AWS keys, GitHub tokens, Slack tokens, JWTs): "
+            f"{', '.join(hits[:5])}{'…' if len(hits) > 5 else ''}."
+        )
+        return Finding(
+            check_id="BB-008",
+            title="Credential-shaped literal in pipeline body",
+            severity=Severity.CRITICAL,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Rotate the exposed credential. Move the value to a Secured "
+                "Repository or Deployment Variable and reference it by name."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # BB-006 — artifact signing

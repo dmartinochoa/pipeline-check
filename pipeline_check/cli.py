@@ -47,6 +47,7 @@ from . import __version__
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Severity
+from .core import autofix as _autofix
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
@@ -247,6 +248,28 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--fix",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit a unified-diff patch to stdout for every failing finding "
+        "that has a registered autofix. Does not modify files — pipe "
+        "the output into `git apply` to apply. Currently supports: "
+        + ", ".join(_autofix.available_fixers()) + "."
+    ),
+)
+@click.option(
+    "--diff-base",
+    default=None,
+    metavar="REF",
+    help=(
+        "Scan only workflow/pipeline files changed since this git ref "
+        "(e.g. `origin/main`). Uses `git diff --name-only <ref>...HEAD`; "
+        "falls back to a full scan if git is unavailable. Ignored for "
+        "AWS / Terraform providers."
+    ),
+)
+@click.option(
     "--baseline",
     default=None,
     metavar="PATH",
@@ -284,6 +307,8 @@ def scan(
     min_grade: str | None,
     max_failures: int | None,
     fail_on_checks: tuple[str, ...],
+    fix: bool,
+    diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
 ) -> None:
@@ -363,6 +388,7 @@ def scan(
         pipeline=pipeline,
         region=region,
         profile=profile,
+        diff_base=diff_base,
         tf_plan=tf_plan,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
@@ -405,6 +431,9 @@ def scan(
         else:
             click.echo(sarif_text)
 
+    if fix:
+        _emit_fix_patches(findings)
+
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"
     gate_config = GateConfig(
@@ -417,11 +446,39 @@ def scan(
     )
     gate = evaluate_gate(findings, score_result, gate_config)
 
-    if output != "json" and (gate.reasons or gate.baseline_matched or gate.suppressed):
+    if output != "json" and (
+        gate.reasons or gate.baseline_matched or gate.suppressed or gate.expired_rules
+    ):
         _emit_gate_summary(gate)
 
     if not gate.passed:
         sys.exit(1)
+
+
+def _emit_fix_patches(findings) -> None:
+    """Emit one unified-diff patch per failing finding that has a fixer.
+
+    Output goes to stdout so a user can ``pipeline_check --fix | git
+    apply``. File read errors are silently skipped — a missing file is
+    almost always due to a finding with a synthetic resource name
+    (e.g. an AWS check), not a real on-disk workflow.
+    """
+    import os
+    for f in findings:
+        if f.passed:
+            continue
+        path = f.resource
+        if not path or not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                before = fh.read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        after = _autofix.generate_fix(f, before)
+        if after is None:
+            continue
+        click.echo(_autofix.render_patch(path, before, after), nl=False)
 
 
 def _emit_gate_summary(gate) -> None:
@@ -440,5 +497,12 @@ def _emit_gate_summary(gate) -> None:
         msg_lines.append(
             f"[gate] {len(gate.suppressed)} finding(s) suppressed by ignore file"
         )
+    if gate.expired_rules:
+        for r in gate.expired_rules:
+            scope = f":{r.resource}" if r.resource else ""
+            msg_lines.append(
+                f"[gate] ignore rule expired on {r.expires}: "
+                f"{r.check_id}{scope} (no longer suppressing)"
+            )
     for line in msg_lines:
         click.echo(line, err=True)

@@ -7,12 +7,14 @@ GHA-004  Workflow has no explicit permissions block     MEDIUM    CICD-SEC-5
 GHA-005  AWS auth uses long-lived access keys           MEDIUM    CICD-SEC-6
 GHA-006  Artifacts not signed (no cosign/sigstore step) MEDIUM    ESF-D-SIGN-ARTIFACTS
 GHA-007  SBOM not produced (no CycloneDX/syft step)     MEDIUM    ESF-D-SBOM
+GHA-008  Credential-shaped literal in workflow body     CRITICAL  CICD-SEC-6
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from .._secrets import find_secret_values
 from ..base import Finding, Severity, has_sbom, has_signing
 from .base import GitHubBaseCheck, iter_jobs, iter_steps, workflow_triggers
 
@@ -57,7 +59,40 @@ class WorkflowChecks(GitHubBaseCheck):
             self._gha005_aws_long_lived(path, wf),
             self._gha006_signing(path, wf),
             self._gha007_sbom(path, wf),
+            self._gha008_literal_secrets(path, wf),
         ]
+
+    # ------------------------------------------------------------------
+    # GHA-008 — credential-shaped literal anywhere in the workflow
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gha008_literal_secrets(path: str, wf: dict[str, Any]) -> Finding:
+        hits = find_secret_values(wf)
+        passed = not hits
+        desc = (
+            "No string in the workflow matches a known credential pattern."
+            if passed else
+            f"Workflow contains {len(hits)} literal value(s) matching known "
+            f"credential patterns (AWS keys, GitHub tokens, Slack tokens, JWTs): "
+            f"{', '.join(hits[:5])}{'…' if len(hits) > 5 else ''}. "
+            f"Secrets committed to YAML are visible in every fork and in every "
+            f"build log, and must be considered compromised."
+        )
+        return Finding(
+            check_id="GHA-008",
+            title="Credential-shaped literal in workflow body",
+            severity=Severity.CRITICAL,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Rotate the exposed credential immediately. Move the value to "
+                "an encrypted repository or environment secret and reference "
+                "it via `${{ secrets.NAME }}`. For cloud access, prefer OIDC "
+                "federation over long-lived keys."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # GHA-006 — artifact signing

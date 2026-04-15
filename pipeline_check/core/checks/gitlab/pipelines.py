@@ -7,12 +7,15 @@ GL-004  Deploy job lacks manual approval or environment gate  MEDIUM    CICD-SEC
 GL-005  include: pulls remote / project without pinned ref    HIGH      CICD-SEC-3
 GL-006  Artifacts not signed                                  MEDIUM    ESF-D-SIGN-ARTIFACTS
 GL-007  SBOM not produced                                     MEDIUM    ESF-D-SBOM
+GL-008  Credential-shaped literal in pipeline body            CRITICAL  CICD-SEC-6
+GL-009  Image pinned to version tag rather than sha256 digest LOW       CICD-SEC-3
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from .._secrets import find_secret_values
 from ..base import Finding, Severity, has_sbom, has_signing
 from .base import GitLabBaseCheck, iter_jobs, job_scripts
 
@@ -57,7 +60,90 @@ class GitLabPipelineChecks(GitLabBaseCheck):
             self._gl005_include_pinning(path, doc),
             self._gl006_signing(path, doc),
             self._gl007_sbom(path, doc),
+            self._gl008_literal_secrets(path, doc),
+            self._gl009_digest_pinning(path, doc),
         ]
+
+    # ------------------------------------------------------------------
+    # GL-009 — prefer sha256 digest over a version tag
+    # ------------------------------------------------------------------
+    #
+    # GL-001 already fails floating / `:latest` tags at HIGH. GL-009 is
+    # the strictest tier — even an immutable version tag (e.g.
+    # `python:3.12.1-slim`) is LOW-severity because registries can
+    # (rarely) repoint a tag to a different manifest. Teams shipping
+    # production artifacts should pin by `@sha256:…` digest.
+
+    @classmethod
+    def _gl009_digest_pinning(cls, path: str, doc: dict[str, Any]) -> Finding:
+        tagged: list[str] = []
+
+        def _inspect(ref: str, where: str) -> None:
+            if _DIGEST_RE.search(ref):
+                return
+            tagged.append(f"{where}: {ref}")
+
+        top = cls._image_ref(doc.get("image"))
+        if top:
+            _inspect(top, "<top-level>")
+        for name, job in iter_jobs(doc):
+            ref = cls._image_ref(job.get("image"))
+            if ref:
+                _inspect(ref, name)
+
+        passed = not tagged
+        desc = (
+            "Every pinned image uses an sha256 digest."
+            if passed else
+            f"{len(tagged)} image reference(s) are pinned by version tag "
+            f"rather than sha256 digest: {', '.join(tagged[:5])}"
+            f"{'…' if len(tagged) > 5 else ''}. Registry operators or "
+            f"compromised namespaces can repoint a tag; a digest cannot "
+            f"be retargeted."
+        )
+        return Finding(
+            check_id="GL-009",
+            title="Image pinned to version tag rather than sha256 digest",
+            severity=Severity.LOW,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Resolve each image to its current digest (`docker buildx "
+                "imagetools inspect <ref>` prints it) and replace the tag "
+                "with `@sha256:<digest>`. Automate refreshes with a bot "
+                "(Renovate supports digest pinning out of the box)."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # GL-008 — credential-shaped literal anywhere in the pipeline
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gl008_literal_secrets(path: str, doc: dict[str, Any]) -> Finding:
+        hits = find_secret_values(doc)
+        passed = not hits
+        desc = (
+            "No string in the pipeline matches a known credential pattern."
+            if passed else
+            f"Pipeline contains {len(hits)} literal value(s) matching known "
+            f"credential patterns (AWS keys, GitHub tokens, Slack tokens, JWTs): "
+            f"{', '.join(hits[:5])}{'…' if len(hits) > 5 else ''}."
+        )
+        return Finding(
+            check_id="GL-008",
+            title="Credential-shaped literal in pipeline body",
+            severity=Severity.CRITICAL,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Rotate the exposed credential immediately. Move the value to "
+                "a protected + masked CI/CD variable and reference it by name. "
+                "For cloud access prefer short-lived OIDC tokens."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # GL-006 — artifact signing
