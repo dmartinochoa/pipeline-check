@@ -46,6 +46,7 @@ from .core import standards as _standards
 from .core.checks.base import Severity
 from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
+from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
 
@@ -136,7 +137,7 @@ _PIPELINE_CHOICES = _providers.available()
 )
 @click.option(
     "--output",
-    type=click.Choice(["terminal", "json", "html", "both"], case_sensitive=False),
+    type=click.Choice(["terminal", "json", "html", "sarif", "both"], case_sensitive=False),
     default="terminal",
     show_default=True,
     help="Output format.",
@@ -145,7 +146,7 @@ _PIPELINE_CHOICES = _providers.available()
     "--output-file",
     default=None,
     metavar="PATH",
-    help="Write HTML report to this file (used with --output html).",
+    help="Write HTML or SARIF report to this file (used with --output html/sarif).",
 )
 @click.option(
     "--standard",
@@ -266,6 +267,15 @@ def scan(
         dest = output_file or "pipeline-check-report.html"
         report_html(findings, score_result, region=region, target=target or "", output_path=dest)
         click.echo(f"HTML report written to {dest}", err=True)
+
+    if output == "sarif":
+        sarif_text = report_sarif(findings, score_result, tool_version=__version__)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(sarif_text)
+            click.echo(f"SARIF report written to {output_file}", err=True)
+        else:
+            click.echo(sarif_text)
 
     # Non-zero exit when the grade is D so CI pipelines can gate on the result.
     if score_result["grade"] == "D":

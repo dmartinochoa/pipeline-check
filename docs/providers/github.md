@@ -114,5 +114,7 @@ short-lived credentials per workflow run.
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py`.
 3. Add tests under `tests/github/test_workflows.py`.
 
-For a new provider (GCP Cloud Build, Azure Pipelines, …) follow the
-contract documented in `docs/providers/README.md`.
+Similar YAML-based providers exist for **GitLab CI** and **Bitbucket
+Pipelines** — see [gitlab.md](gitlab.md) and [bitbucket.md](bitbucket.md).
+For a new provider (Azure Pipelines, Jenkins, …) follow the contract
+documented in `docs/providers/README.md`.

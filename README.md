@@ -8,7 +8,8 @@ Pipeline-Check audits your CI/CD build, deploy, and artifact infrastructure
 against well-known compliance standards and scores it A–D, so you can gate
 pipelines on the result. It can scan a **live AWS account** via boto3, a
 **Terraform plan** (`terraform show -json`) before any resource is
-provisioned, or **GitHub Actions workflow YAML** on disk.
+provisioned, or CI definition YAML for **GitHub Actions**, **GitLab CI**,
+and **Bitbucket Pipelines** — all without an API token.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -27,28 +28,31 @@ provisioned, or **GitHub Actions workflow YAML** on disk.
 
 ## What it checks
 
-Covered surfaces (**32 checks** for AWS, **5 checks** for GitHub
-Actions — 37 total, severity-weighted):
+Covered surfaces (**47 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI + 5 Bitbucket Pipelines, severity-weighted):
 
-| Service       | Focus                                                                                              | IDs              |
-|---------------|----------------------------------------------------------------------------------------------------|------------------|
-| CodeBuild     | Plaintext secrets (name + value patterns), privileged mode, logging, timeouts, image freshness, long-lived source tokens, webhook filter groups | `CB-001…007`     |
-| CodePipeline  | Manual approval gates, KMS encryption, event-driven triggers, legacy ThirdParty/GitHub OAuth       | `CP-001…004`     |
-| CodeDeploy    | Auto rollback, deployment strategy, CloudWatch alarm monitoring                                    | `CD-001…003`     |
-| ECR           | Scan-on-push, tag immutability, public access, lifecycle policies, KMS CMK encryption              | `ECR-001…005`    |
-| IAM           | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
-| PBAC          | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
-| S3            | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
-| GitHub Actions| Unpinned actions, `pull_request_target` head-checkout, script injection via untrusted context, missing permissions blocks, long-lived AWS keys | `GHA-001…005`    |
+| Service             | Focus                                                                                              | IDs              |
+|---------------------|----------------------------------------------------------------------------------------------------|------------------|
+| CodeBuild           | Plaintext secrets, privileged mode, logging, timeouts, image freshness, long-lived source tokens, webhook filter groups | `CB-001…007`     |
+| CodePipeline        | Manual approval gates, KMS encryption, event-driven triggers, legacy ThirdParty/GitHub OAuth       | `CP-001…004`     |
+| CodeDeploy          | Auto rollback, deployment strategy, CloudWatch alarm monitoring                                    | `CD-001…003`     |
+| ECR                 | Scan-on-push, tag immutability, public access, lifecycle policies, KMS CMK encryption              | `ECR-001…005`    |
+| IAM                 | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
+| PBAC                | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
+| S3                  | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
+| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection, missing permissions blocks, long-lived AWS keys | `GHA-001…005`    |
+| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning | `GL-001…005`     |
+| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time` | `BB-001…005`     |
 
-Every finding is tagged with the compliance controls it evidences (OWASP
-Top 10 CI/CD + CIS AWS Foundations — see [Compliance standards](#compliance-standards)).
+Every finding is tagged with the compliance controls it evidences — seven
+frameworks are shipped: OWASP Top 10 CI/CD, CIS AWS Foundations, CIS
+Software Supply Chain, NIST SSDF (SP 800-218), NIST SP 800-53, SLSA Build
+Track, and PCI DSS v4.0 (see [Compliance standards](#compliance-standards)).
 Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
 Supported providers: **AWS** (live, via boto3), **Terraform** (plan JSON),
-and **GitHub Actions** (workflow YAML — 5 checks, `GHA-001…005`).
-Planned: **GCP**, **Azure Pipelines**.
+**GitHub Actions**, **GitLab CI**, and **Bitbucket Pipelines** (all YAML
+— no API token required). Planned: **Azure Pipelines**, **Jenkins**.
 
 ---
 
@@ -74,6 +78,12 @@ pipeline_check --pipeline terraform --tf-plan plan.json
 
 # Scan GitHub Actions workflows (no network calls, no API token needed)
 pipeline_check --pipeline github --gha-path .github/workflows
+
+# Scan a GitLab CI config
+pipeline_check --pipeline gitlab --gitlab-path .gitlab-ci.yml
+
+# Scan a Bitbucket Pipelines config
+pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
 
 # Scan everything in us-east-1 (live AWS account)
 pipeline_check
@@ -102,6 +112,10 @@ pipeline_check --output json
 # HTML report
 pipeline_check --output html --output-file /tmp/report.html
 
+# SARIF 2.1.0 — upload directly to GitHub code-scanning
+pipeline_check --pipeline github --gha-path .github/workflows \
+    --output sarif --output-file pipeline-check.sarif
+
 # Terminal + JSON at the same time
 pipeline_check --output both
 ```
@@ -110,23 +124,25 @@ pipeline_check --output both
 
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
-| `--pipeline`            | `aws`                         | Provider (`aws`, `terraform`, `github`; `gcp`, `azure` planned) |
+| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket` |
 | `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
 | `--gha-path`            | _(none)_                      | Path to workflows dir (required with `--pipeline github`)      |
+| `--gitlab-path`         | _(none)_                      | Path to `.gitlab-ci.yml` (required with `--pipeline gitlab`)   |
+| `--bitbucket-path`      | _(none)_                      | Path to `bitbucket-pipelines.yml` (required with `--pipeline bitbucket`) |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
 | `--list-standards`      | _(flag)_                      | Print every registered standard and exit                      |
 | `--region`              | `us-east-1`                   | AWS region                                                    |
 | `--profile`             | _(env)_                       | AWS CLI named profile                                         |
-| `--output`              | `terminal`                    | `terminal`, `json`, `html`, or `both`                         |
-| `--output-file`         | `pipeline-check-report.html`  | Output path — only used with `--output html`                  |
+| `--output`              | `terminal`                    | `terminal`, `json`, `html`, `sarif`, or `both`                |
+| `--output-file`         | _(provider-specific default)_ | Output path — used with `--output html` or `--output sarif`   |
 | `--severity-threshold`  | `INFO`                        | Minimum severity to include                                   |
 | `--version`             | _(flag)_                      | Print version and exit                                        |
 
-`--tf-plan` and `--gha-path` are validated eagerly: the CLI exits with
-`UsageError` if the flag is missing for its provider or if the path does
-not exist on disk.
+`--tf-plan`, `--gha-path`, `--gitlab-path`, and `--bitbucket-path` are
+validated eagerly: the CLI exits with `UsageError` if the flag is missing
+for its provider or if the path does not exist on disk.
 
 > **`--target` scoping:** CodePipeline fetches only the named pipeline;
 > S3 checks discover the artifact bucket from it. CodeBuild, CodeDeploy,
@@ -158,15 +174,20 @@ references to controls in registered compliance standards. A single check
 can evidence controls in multiple standards at once, so one scan satisfies
 multiple frameworks.
 
-| Name                  | Title                                   | Version | Docs                                             |
-|-----------------------|-----------------------------------------|---------|--------------------------------------------------|
-| `owasp_cicd_top_10`   | OWASP Top 10 CI/CD Security Risks       | 2022    | [docs/standards/owasp_cicd_top_10.md](docs/standards/owasp_cicd_top_10.md)     |
-| `cis_aws_foundations` | CIS AWS Foundations Benchmark (subset)  | 3.0.0   | [docs/standards/cis_aws_foundations.md](docs/standards/cis_aws_foundations.md) |
+| Name                  | Title                                   | Version         | Docs                                                                           |
+|-----------------------|-----------------------------------------|-----------------|--------------------------------------------------------------------------------|
+| `owasp_cicd_top_10`   | OWASP Top 10 CI/CD Security Risks       | 2022            | [docs/standards/owasp_cicd_top_10.md](docs/standards/owasp_cicd_top_10.md)     |
+| `cis_aws_foundations` | CIS AWS Foundations Benchmark (subset)  | 3.0.0           | [docs/standards/cis_aws_foundations.md](docs/standards/cis_aws_foundations.md) |
+| `cis_supply_chain`    | CIS Software Supply Chain Security Guide| 1.0             | [docs/standards/cis_supply_chain.md](docs/standards/cis_supply_chain.md)       |
+| `nist_ssdf`           | NIST Secure Software Development Framework | SP 800-218 v1.1 | [docs/standards/nist_ssdf.md](docs/standards/nist_ssdf.md)                  |
+| `nist_800_53`         | NIST SP 800-53 Rev. 5 (CI/CD subset)    | Rev. 5          | [docs/standards/nist_800_53.md](docs/standards/nist_800_53.md)                 |
+| `slsa`                | SLSA Build Track                        | 1.0             | [docs/standards/slsa.md](docs/standards/slsa.md)                               |
+| `pci_dss_v4`          | PCI DSS v4.0 (CI/CD subset)             | 4.0             | [docs/standards/pci_dss_v4.md](docs/standards/pci_dss_v4.md)                   |
 
 Standards are pure data — each one is a Python module under
 `pipeline_check/core/standards/data/` that declares its controls and a
-`check_id → [control_id, …]` mapping. Adding SOC 2, NIST 800-53, or a
-bespoke internal policy is one new module; see
+`check_id → [control_id, …]` mapping. Adding SOC 2 or a bespoke internal
+policy is one new module; see
 [docs/standards/README.md](docs/standards/README.md) for the full contract.
 
 ---
@@ -182,17 +203,25 @@ pipeline_check/
     ├── scorer.py                  # weighted scoring + grading
     ├── reporter.py                # terminal (rich) + JSON output
     ├── html_reporter.py           # self-contained HTML report
-    ├── providers/                 # provider registry (AWS, Terraform, GitHub)
+    ├── sarif_reporter.py          # SARIF 2.1.0 output
+    ├── providers/                 # provider registry
     │   ├── base.py                # BaseProvider ABC
     │   ├── aws.py                 # boto3-backed provider
     │   ├── terraform.py           # plan-JSON provider
-    │   └── github.py              # workflow-YAML provider
+    │   ├── github.py              # GitHub Actions workflow-YAML provider
+    │   ├── gitlab.py              # GitLab CI YAML provider
+    │   └── bitbucket.py           # Bitbucket Pipelines YAML provider
     ├── standards/                 # compliance standards (data-driven)
     │   ├── base.py                # ControlRef + Standard dataclasses
     │   ├── registry.py            # register / get / resolve
     │   └── data/
     │       ├── owasp_cicd_top_10.py
-    │       └── cis_aws_foundations.py
+    │       ├── cis_aws_foundations.py
+    │       ├── cis_supply_chain.py
+    │       ├── nist_ssdf.py
+    │       ├── nist_800_53.py
+    │       ├── slsa.py
+    │       └── pci_dss_v4.py
     └── checks/
         ├── base.py                # Finding dataclass, Severity enum, BaseCheck ABC
         ├── aws/                   # live-account provider (boto3)
@@ -214,9 +243,15 @@ pipeline_check/
         │   ├── iam.py
         │   ├── pbac.py
         │   └── s3.py
-        └── github/                # workflow-YAML provider
-            ├── base.py            # GitHubContext + Workflow loader
-            └── workflows.py       # GHA-001 … GHA-005
+        ├── github/                # GitHub Actions workflow-YAML provider
+        │   ├── base.py            # GitHubContext + Workflow loader
+        │   └── workflows.py       # GHA-001 … GHA-005
+        ├── gitlab/                # GitLab CI YAML provider
+        │   ├── base.py            # GitLabContext + Pipeline loader
+        │   └── pipelines.py       # GL-001 … GL-005
+        └── bitbucket/             # Bitbucket Pipelines YAML provider
+            ├── base.py            # BitbucketContext + step walker
+            └── pipelines.py       # BB-001 … BB-005
 ```
 
 See [docs/providers/](docs/providers/) for the provider catalogue and
