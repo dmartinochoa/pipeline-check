@@ -113,11 +113,12 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         if f.check_id in seen:
             continue
         level, score = _LEVEL_MAP.get(f.severity, ("warning", "5.0"))
-        # Tags: "security" for GitHub code-scanning's security filter,
-        # plus every control ID that any standard has mapped this check
-        # to. Deduplicated and stable-sorted for deterministic output.
-        control_tags = sorted({c.control_id for c in f.controls})
+        # Tags: "security" + the standard slugs this check maps to.
+        # Control IDs are NOT included here — GitHub code-scanning caps
+        # tags per rule at 20, and structured control data is already
+        # exposed via ``properties.controls`` for programmatic consumers.
         standard_tags = sorted({c.standard for c in f.controls})
+        tags = ["security", *standard_tags][:20]
         seen[f.check_id] = {
             "id": f.check_id,
             "name": _rule_name(f.check_id, f.title),
@@ -130,7 +131,7 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
             "defaultConfiguration": {"level": level},
             "properties": {
                 "security-severity": score,
-                "tags": ["security", *standard_tags, *control_tags],
+                "tags": tags,
             },
         }
     return list(seen.values())

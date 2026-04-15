@@ -148,13 +148,16 @@ class TestControlsPropagation:
             ),
         ])
 
-    def test_control_ids_appear_in_rule_tags(self):
+    def test_standard_slugs_appear_in_rule_tags(self):
+        # GitHub code-scanning caps tags per rule at 20. We keep only
+        # "security" + the standard slugs here; individual control IDs
+        # live in ``properties.controls`` on each result.
         out = json.loads(report_sarif([self._finding_with_controls()], _score()))
         tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
         assert "security" in tags
-        assert "CICD-SEC-6" in tags
-        assert "IA-5" in tags
         assert "owasp_cicd_top_10" in tags
+        assert "nist_800_53" in tags
+        assert len(tags) <= 20
 
     def test_controls_in_result_properties(self):
         out = json.loads(report_sarif([self._finding_with_controls()], _score()))
