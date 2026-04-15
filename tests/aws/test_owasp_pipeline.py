@@ -85,6 +85,7 @@ def _make_codebuild_client(
     paginator.paginate.side_effect = lambda **kw: iter(_pages)
     client.get_paginator.return_value = paginator
     client.batch_get_projects.return_value = {"projects": projects}
+    client.list_source_credentials.return_value = {"sourceCredentialsInfos": []}
     return client
 
 

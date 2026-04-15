@@ -60,5 +60,11 @@ STANDARD = Standard(
         "S3-003":   ["CICD-SEC-9"],
         "S3-004":   ["CICD-SEC-10"],
         "S3-005":   ["CICD-SEC-9"],
+        # GitHub Actions
+        "GHA-001":  ["CICD-SEC-3"],
+        "GHA-002":  ["CICD-SEC-4"],
+        "GHA-003":  ["CICD-SEC-4"],
+        "GHA-004":  ["CICD-SEC-5"],
+        "GHA-005":  ["CICD-SEC-6"],
     },
 )

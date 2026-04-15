@@ -38,7 +38,7 @@ def _project(
     return proj
 
 
-def _make_check(projects):
+def _make_check(projects, source_credentials=None):
     session = MagicMock()
     client = MagicMock()
     session.client.return_value = client
@@ -46,6 +46,9 @@ def _make_check(projects):
     paginator = make_paginator([{"projects": [p["name"] for p in projects]}])
     client.get_paginator.return_value = paginator
     client.batch_get_projects.return_value = {"projects": projects}
+    client.list_source_credentials.return_value = {
+        "sourceCredentialsInfos": source_credentials or []
+    }
 
     return CodeBuildChecks(session)
 
@@ -192,6 +195,38 @@ class TestCB006SourceAuth:
     def test_non_external_source_passes(self):
         proj = _project(source={"type": "CODECOMMIT"})
         assert next(f for f in _make_check([proj]).run() if f.check_id == "CB-006").passed
+
+    def test_stored_pat_credential_for_matching_server_fails(self):
+        proj = _project(source={"type": "GITHUB"})
+        creds = [{"serverType": "GITHUB", "authType": "PERSONAL_ACCESS_TOKEN",
+                  "arn": "arn:aws:codebuild:us-east-1:123:token/github"}]
+        cb006 = next(f for f in _make_check([proj], source_credentials=creds).run()
+                     if f.check_id == "CB-006")
+        assert not cb006.passed
+        assert "account-level" in cb006.description
+
+    def test_stored_credential_for_other_server_does_not_fail(self):
+        proj = _project(source={"type": "GITHUB"})
+        creds = [{"serverType": "BITBUCKET", "authType": "OAUTH", "arn": "a"}]
+        assert next(
+            f for f in _make_check([proj], source_credentials=creds).run()
+            if f.check_id == "CB-006"
+        ).passed
+
+    def test_list_source_credentials_access_denied_does_not_break(self):
+        from botocore.exceptions import ClientError
+        proj = _project(source={"type": "GITHUB"})
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = make_paginator([{"projects": [proj["name"]]}])
+        client.get_paginator.return_value = paginator
+        client.batch_get_projects.return_value = {"projects": [proj]}
+        client.list_source_credentials.side_effect = ClientError(
+            {"Error": {"Code": "AccessDeniedException", "Message": "msg"}}, "op"
+        )
+        cb006 = next(f for f in CodeBuildChecks(session).run() if f.check_id == "CB-006")
+        assert cb006.passed  # no inline auth, no stored creds visible
 
 
 class TestCB007WebhookFilter:

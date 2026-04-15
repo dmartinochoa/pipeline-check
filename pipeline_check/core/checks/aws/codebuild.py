@@ -40,6 +40,14 @@ _SECRET_VALUE_RE = re.compile(
 _LONG_LIVED_TOKEN_AUTH = {"OAUTH", "PERSONAL_ACCESS_TOKEN", "BASIC_AUTH"}
 _EXTERNAL_SOURCE_TYPES = {"GITHUB", "GITHUB_ENTERPRISE", "BITBUCKET"}
 
+# Map source.type (used on projects) to the serverType values
+# list_source_credentials returns.
+_SOURCE_TYPE_TO_SERVER_TYPE = {
+    "GITHUB": "GITHUB",
+    "GITHUB_ENTERPRISE": "GITHUB_ENTERPRISE",
+    "BITBUCKET": "BITBUCKET",
+}
+
 # AWS CodeBuild standard managed-image pattern: aws/codebuild/standard:X.0
 _MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
 
@@ -78,6 +86,8 @@ class CodeBuildChecks(AWSBaseCheck):
         if not project_names:
             return []
 
+        source_creds = self._list_source_credentials(client)
+
         findings: list[Finding] = []
         # BatchGetProjects accepts up to 100 names per call.
         for i in range(0, len(project_names), 100):
@@ -87,7 +97,7 @@ class CodeBuildChecks(AWSBaseCheck):
             except ClientError:
                 continue
             for project in response.get("projects", []):
-                findings.extend(self._check_project(project))
+                findings.extend(self._check_project(project, source_creds))
 
         return findings
 
@@ -103,7 +113,24 @@ class CodeBuildChecks(AWSBaseCheck):
             names.extend(page.get("projects", []))
         return names
 
-    def _check_project(self, project: dict) -> list[Finding]:
+    @staticmethod
+    def _list_source_credentials(client) -> dict[str, set[str]]:
+        """Return {serverType: {authType, ...}} for account-level stored creds."""
+        by_server: dict[str, set[str]] = {}
+        try:
+            resp = client.list_source_credentials()
+        except ClientError:
+            return by_server
+        for cred in resp.get("sourceCredentialsInfos", []):
+            server = cred.get("serverType", "")
+            auth = cred.get("authType", "")
+            if server and auth:
+                by_server.setdefault(server, set()).add(auth)
+        return by_server
+
+    def _check_project(
+        self, project: dict, source_creds: dict[str, set[str]]
+    ) -> list[Finding]:
         name: str = project["name"]
         return [
             self._cb001_plaintext_secrets(project, name),
@@ -111,7 +138,7 @@ class CodeBuildChecks(AWSBaseCheck):
             self._cb003_logging_enabled(project, name),
             self._cb004_timeout(project, name),
             self._cb005_image_version(project, name),
-            self._cb006_source_auth(project, name),
+            self._cb006_source_auth(project, name, source_creds),
             self._cb007_webhook_filter(project, name),
         ]
 
@@ -305,7 +332,9 @@ class CodeBuildChecks(AWSBaseCheck):
         )
 
     @staticmethod
-    def _cb006_source_auth(project: dict, name: str) -> Finding:
+    def _cb006_source_auth(
+        project: dict, name: str, source_creds: dict[str, set[str]]
+    ) -> Finding:
         source = project.get("source", {}) or {}
         src_type = source.get("type", "") or ""
         if src_type not in _EXTERNAL_SOURCE_TYPES:
@@ -320,14 +349,30 @@ class CodeBuildChecks(AWSBaseCheck):
                 recommendation="No action required.",
                 passed=True,
             )
-        auth = (source.get("auth") or {}).get("type", "")
-        offending = auth in _LONG_LIVED_TOKEN_AUTH
-        desc = (
-            f"Source ({src_type}) auth type is {auth or 'not set'}."
-            if not offending else
-            f"Source ({src_type}) auth type is {auth}, a long-lived token. "
-            f"These don't rotate and expose the pipeline to credential theft."
+        inline_auth = (source.get("auth") or {}).get("type", "")
+        stored_auths = source_creds.get(
+            _SOURCE_TYPE_TO_SERVER_TYPE.get(src_type, src_type), set()
         )
+        stored_offending = sorted(stored_auths & _LONG_LIVED_TOKEN_AUTH)
+        inline_offending = inline_auth in _LONG_LIVED_TOKEN_AUTH
+        passed = not (inline_offending or stored_offending)
+
+        if passed:
+            desc = f"Source ({src_type}) auth type is {inline_auth or 'not set'}."
+        else:
+            parts = []
+            if inline_offending:
+                parts.append(f"inline auth {inline_auth}")
+            if stored_offending:
+                parts.append(
+                    f"account-level source credential(s) "
+                    f"({', '.join(stored_offending)}) for {src_type}"
+                )
+            desc = (
+                f"Source ({src_type}) authenticates via long-lived token(s): "
+                f"{'; '.join(parts)}. These don't rotate and expose the pipeline "
+                f"to credential theft."
+            )
         return Finding(
             check_id="CB-006",
             title="CodeBuild source auth uses long-lived token",
@@ -336,9 +381,11 @@ class CodeBuildChecks(AWSBaseCheck):
             description=desc,
             recommendation=(
                 "Switch to an AWS CodeConnections (CodeStar) connection and "
-                "reference it from the source configuration."
+                "reference it from the source configuration. Delete any stored "
+                "source credentials of type OAUTH, PERSONAL_ACCESS_TOKEN, or "
+                "BASIC_AUTH via delete_source_credentials."
             ),
-            passed=not offending,
+            passed=passed,
         )
 
     @staticmethod

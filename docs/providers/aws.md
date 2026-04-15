@@ -94,11 +94,15 @@ supply-chain risk into every artifact produced by the pipeline.
 Checks whether a CodeBuild project with an external source (GitHub, GitHub
 Enterprise, Bitbucket) authenticates using a long-lived OAuth or personal
 access token rather than an AWS CodeConnections (CodeStar) connection.
-Long-lived tokens don't rotate and are a standing credential-theft target.
+The check inspects both the project's inline `source.auth.type` and the
+account-level credentials returned by
+`codebuild:ListSourceCredentials`, flagging stored `OAUTH`,
+`PERSONAL_ACCESS_TOKEN`, or `BASIC_AUTH` entries for any server type the
+project uses.
 
 **Recommended actions**
 - Replace OAuth/PAT tokens with a CodeConnections (CodeStar) connection and reference it from the project source.
-- Audit `aws_codebuild_source_credential` resources for `PERSONAL_ACCESS_TOKEN` or `OAUTH` auth types.
+- Delete stored source credentials of type `OAUTH`, `PERSONAL_ACCESS_TOKEN`, or `BASIC_AUTH` via `codebuild:DeleteSourceCredentials`.
 - Rotate any exposed tokens and revoke them in the upstream VCS.
 
 ### CB-007 — CodeBuild webhook has no filter group

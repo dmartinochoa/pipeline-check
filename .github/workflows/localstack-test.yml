@@ -227,11 +227,11 @@ jobs:
           #                      doesn't round-trip missing autoRollback/alarm
           #                      fields faithfully, so checks read as passing
           EXPECTED_FAILURES = {
-              "IAM-002", "IAM-003",
-              "S3-003", "S3-004",
+              "IAM-002", "IAM-003", "IAM-004", "IAM-005", "IAM-006",
+              "S3-003", "S3-004", "S3-005",
               "CP-001", "CP-002", "CP-003",
               "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
-              "ECR-001", "ECR-002", "ECR-004",
+              "ECR-001", "ECR-002", "ECR-004", "ECR-005",
               "PBAC-001", "PBAC-002",
           }
 

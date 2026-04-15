@@ -77,6 +77,15 @@ _PIPELINE_CHOICES = _providers.available()
     ),
 )
 @click.option(
+    "--gha-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the GitHub Actions workflows directory, typically "
+        "`.github/workflows` (required when --pipeline github)."
+    ),
+)
+@click.option(
     "--output",
     type=click.Choice(["terminal", "json", "html", "both"], case_sensitive=False),
     default="terminal",
@@ -119,6 +128,7 @@ def scan(
     region: str,
     profile: str | None,
     tf_plan: str | None,
+    gha_path: str | None,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
@@ -144,6 +154,7 @@ def scan(
         region=region,
         profile=profile,
         tf_plan=tf_plan,
+        gha_path=gha_path,
     )
 
     try:

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from .base import BaseProvider
 from .aws import AWSProvider
+from .github import GitHubProvider
 from .terraform import TerraformProvider
 
 _REGISTRY: dict[str, BaseProvider] = {}
@@ -39,3 +40,4 @@ def available() -> list[str]:
 # ── Register built-in providers ───────────────────────────────────────────────
 register(AWSProvider())
 register(TerraformProvider())
+register(GitHubProvider())

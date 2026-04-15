@@ -16,6 +16,7 @@ setup(
         "boto3>=1.34.0",
         "click>=8.1.0",
         "rich>=13.0.0",
+        "PyYAML>=6.0",
     ],
     entry_points={
         "console_scripts": [
