@@ -15,7 +15,15 @@ Severity threshold --fail-on SEV        any effective finding's severity ≥ SEV
 Grade threshold    --min-grade A|B|C|D  overall grade is worse than the bar
 Count cap          --max-failures N     more than N effective failing findings
 Specific check     --fail-on-check ID   a named check is in the effective set
-Legacy default     (none)               grade == D  (preserved when no flags set)
+
+**Default gate when no condition is set:** ``--fail-on CRITICAL``. This
+is a deliberate change from earlier versions, which defaulted to "fail
+iff grade == D". The severity-based default is simpler, strictly tighter
+on the dimension that matters most (a CRITICAL finding should never
+pass silently regardless of overall grade), and matches how tools like
+Trivy, Grype, and ``npm audit`` behave. Loosen with ``--fail-on
+NEVER``-equivalent approaches (e.g. ``--max-failures 999999``) or
+tighten with ``--fail-on HIGH``.
 
 "Effective findings" are the failing findings after two subtractive
 filters:
@@ -200,18 +208,24 @@ def evaluate_gate(
         else:
             effective.append(f)
 
-    # Evaluate conditions
+    # Evaluate conditions. If no explicit gate was configured, default to
+    # --fail-on CRITICAL so a CRITICAL finding never passes silently.
     reasons: list[str] = []
+    fail_on = config.fail_on
+    fail_on_is_default = False
+    if fail_on is None and not config.any_explicit_gate():
+        fail_on = Severity.CRITICAL
+        fail_on_is_default = True
 
-    if config.fail_on is not None:
-        threshold = severity_rank(config.fail_on)
+    if fail_on is not None:
+        threshold = severity_rank(fail_on)
         tripping = [f for f in effective if severity_rank(f.severity) >= threshold]
         if tripping:
             by_sev = sorted({f.severity.value for f in tripping})
+            suffix = "default gate" if fail_on_is_default else f"--fail-on {fail_on.value}"
             reasons.append(
                 f"{len(tripping)} finding(s) at or above "
-                f"{config.fail_on.value} ({', '.join(by_sev)}) — "
-                f"--fail-on {config.fail_on.value}"
+                f"{fail_on.value} ({', '.join(by_sev)}) — {suffix}"
             )
 
     if config.min_grade:
@@ -236,20 +250,6 @@ def evaluate_gate(
                 f"Disallowed check(s) failed: {', '.join(tripped)} — "
                 f"--fail-on-check"
             )
-
-    # Legacy fallback — only when NO explicit gate was configured AND no
-    # filtering was applied. If the user passed --baseline or --ignore-file
-    # without any explicit gate, they clearly want the filter to matter, so
-    # we still don't reapply the grade-D default (which would ignore the
-    # filter).
-    no_filters = not config.baseline_path and not config.ignore_rules
-    if (
-        not reasons
-        and not config.any_explicit_gate()
-        and no_filters
-        and score_result.get("grade") == "D"
-    ):
-        reasons.append("Grade D (legacy default gate)")
 
     return GateResult(
         passed=not reasons,

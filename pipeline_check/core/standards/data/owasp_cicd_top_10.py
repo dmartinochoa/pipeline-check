@@ -78,5 +78,11 @@ STANDARD = Standard(
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
+        # Azure DevOps Pipelines
+        "ADO-001":  ["CICD-SEC-3"],
+        "ADO-002":  ["CICD-SEC-4"],
+        "ADO-003":  ["CICD-SEC-6"],
+        "ADO-004":  ["CICD-SEC-1"],
+        "ADO-005":  ["CICD-SEC-3"],
     },
 )

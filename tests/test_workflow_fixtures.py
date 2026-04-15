@@ -19,6 +19,8 @@ from pipeline_check.core.checks.gitlab.base import GitLabContext
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
 from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
+from pipeline_check.core.checks.azure.base import AzureContext
+from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "workflows"
@@ -126,6 +128,32 @@ class TestBitbucketFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Azure DevOps Pipelines
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestAzureFixtures:
+    EXPECTED_IDS = {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005"}
+
+    def _scan(self, filename: str):
+        ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
+        assert ctx.pipelines, f"fixture {filename} produced no parsed pipelines"
+        return _finding_map(AzurePipelineChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure-azure-pipelines.yml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure-azure-pipelines.yml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Cross-provider sanity — findings carry control refs from enabled standards
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -138,6 +166,9 @@ class TestBitbucketFixtures:
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005"}),
+    ("azure", "azure/insecure-azure-pipelines.yml",
+     AzureContext, AzurePipelineChecks,
+     {"ADO-001", "ADO-002", "ADO-003", "ADO-004", "ADO-005"}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

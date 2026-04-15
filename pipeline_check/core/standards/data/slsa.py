@@ -61,5 +61,9 @@ STANDARD = Standard(
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
+        # Azure DevOps Pipelines
+        "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
+        "ADO-002":  ["Build.L3.Isolated"],                         # script injection
+        "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
     },
 )

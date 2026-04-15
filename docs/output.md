@@ -116,9 +116,9 @@ Regardless of output format, the process exits with:
 
 | Code | Meaning        |
 |------|----------------|
-| `0`  | Grade A/B/C    |
-| `1`  | Grade D        |
+| `0`  | Gate passed    |
+| `1`  | Gate failed    |
 | `2`  | Scanner error  |
 
-so gating a CI job on `pipeline_check`'s exit code works identically
-whether you also request SARIF or JSON for archival.
+Gating is governed by the CI gate, not by the output format — see
+[ci_gate.md](ci_gate.md).

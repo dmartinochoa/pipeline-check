@@ -6,6 +6,11 @@ network calls, no GitLab API token, no runner required.
 ## Producer workflow
 
 ```bash
+# --gitlab-path is auto-detected when .gitlab-ci.yml is present at cwd;
+# the CLI announces the pick on stderr ("[auto] using --gitlab-path …").
+pipeline_check --pipeline gitlab
+
+# …or pass it explicitly.
 pipeline_check --pipeline gitlab --gitlab-path .gitlab-ci.yml
 ```
 

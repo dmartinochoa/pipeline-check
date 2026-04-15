@@ -37,13 +37,17 @@ If every finding is INFO (or there are none), the score is 100.
 
 ## Exit codes
 
-`pipeline_check` exits non-zero on grade D so it works as a CI gate:
-
 | Code | Meaning        |
 |------|----------------|
-| `0`  | Grade A/B/C    |
-| `1`  | Grade D        |
-| `2`  | AWS API error  |
+| `0`  | Gate passed    |
+| `1`  | Gate failed    |
+| `2`  | Scanner error  |
+
+The default gate is `--fail-on CRITICAL` — one CRITICAL finding in the
+effective set (after baseline + ignore filtering) fails CI. The grade
+is *not* the default gate criterion; use `--min-grade` to gate on it
+explicitly. See [ci_gate.md](ci_gate.md) for the full gate contract.
 
 The implementation lives in
-[`pipeline_check/core/scorer.py`](../pipeline_check/core/scorer.py).
+[`pipeline_check/core/scorer.py`](../pipeline_check/core/scorer.py) and
+[`pipeline_check/core/gate.py`](../pipeline_check/core/gate.py).

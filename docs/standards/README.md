@@ -70,5 +70,7 @@ automatically.
   itself knowing about any standard.
 - **Easy to audit:** the mapping table lives in one file, not scattered
   across Finding constructor calls.
-- **Easy to extend:** adding SOC 2, NIST 800-53, or a bespoke internal
-  policy is one new Python module.
+- **Easy to extend:** adding SOC 2, ISO 27001, or a bespoke internal
+  policy is one new Python module — the seven registered standards today
+  (OWASP, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, SLSA, PCI
+  DSS) are all built this way.

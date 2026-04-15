@@ -7,8 +7,10 @@
   - [GitHub Actions](providers/github.md) — scan workflow YAML under `.github/workflows`.
   - [GitLab CI](providers/gitlab.md) — scan `.gitlab-ci.yml`.
   - [Bitbucket Pipelines](providers/bitbucket.md) — scan `bitbucket-pipelines.yml`.
+  - [Azure DevOps Pipelines](providers/azure.md) — scan `azure-pipelines.yml`.
 - [Output formats](output.md) — terminal, JSON, HTML, and SARIF 2.1.0.
 - [CI gate](ci_gate.md) — fine-grained pass/fail control: severity thresholds, baseline diff, ignore files.
+- [Configuration](config.md) — `pyproject.toml` / `.pipeline-check.yml` / env-var surface.
 - [Compliance standards](standards/README.md) — how findings are annotated with control references.
   - [OWASP Top 10 CI/CD Security Risks](standards/owasp_cicd_top_10.md)
   - [CIS AWS Foundations Benchmark (subset)](standards/cis_aws_foundations.md)

@@ -98,5 +98,11 @@ STANDARD = Standard(
         "BB-003":   ["PS.1.1"],
         "BB-004":   ["PO.5.1"],
         "BB-005":   ["PO.5.2", "PW.9.1"],
+        # Azure DevOps Pipelines
+        "ADO-001":  ["PW.4.1", "PW.4.4"],
+        "ADO-002":  ["PW.6.1", "PW.9.1"],
+        "ADO-003":  ["PS.1.1"],
+        "ADO-004":  ["PO.5.1"],
+        "ADO-005":  ["PW.4.1", "PW.4.4"],
     },
 )

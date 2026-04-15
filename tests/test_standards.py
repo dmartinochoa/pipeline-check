@@ -170,7 +170,8 @@ class TestControlRef:
         }
 
     def test_frozen(self):
+        import dataclasses
         r = ControlRef(standard="x", standard_title="X",
                        control_id="c", control_title="t")
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             r.standard = "y"  # type: ignore[misc]

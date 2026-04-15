@@ -14,6 +14,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 | `github`    | stable | `GitHubContext` — parsed GitHub Actions workflow YAML   | [github.md](github.md)         |
 | `gitlab`    | stable | `GitLabContext` — parsed `.gitlab-ci.yml`               | [gitlab.md](gitlab.md)         |
 | `bitbucket` | stable | `BitbucketContext` — parsed `bitbucket-pipelines.yml`   | [bitbucket.md](bitbucket.md)   |
+| `azure`     | stable | `AzureContext` — parsed `azure-pipelines.yml`           | [azure.md](azure.md)           |
 
 ## Adding a new provider
 

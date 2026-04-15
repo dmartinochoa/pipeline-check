@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from .base import BaseProvider
 from .aws import AWSProvider
+from .azure import AzureProvider
 from .bitbucket import BitbucketProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
@@ -45,3 +46,4 @@ register(TerraformProvider())
 register(GitHubProvider())
 register(GitLabProvider())
 register(BitbucketProvider())
+register(AzureProvider())

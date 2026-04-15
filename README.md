@@ -28,7 +28,7 @@ and **Bitbucket Pipelines** — all without an API token.
 
 ## What it checks
 
-Covered surfaces (**47 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI + 5 Bitbucket Pipelines, severity-weighted):
+Covered surfaces (**52 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI + 5 Bitbucket Pipelines + 5 Azure DevOps Pipelines, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -42,6 +42,7 @@ Covered surfaces (**47 checks** total: 32 AWS + 5 GitHub Actions + 5 GitLab CI +
 | GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection, missing permissions blocks, long-lived AWS keys | `GHA-001…005`    |
 | GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning | `GL-001…005`     |
 | Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time` | `BB-001…005`     |
+| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning | `ADO-001…005`    |
 
 Every finding is tagged with the compliance controls it evidences — seven
 frameworks are shipped: OWASP Top 10 CI/CD, CIS AWS Foundations, CIS
@@ -50,9 +51,10 @@ Track, and PCI DSS v4.0 (see [Compliance standards](#compliance-standards)).
 Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
-Supported providers: **AWS** (live, via boto3), **Terraform** (plan JSON),
-**GitHub Actions**, **GitLab CI**, and **Bitbucket Pipelines** (all YAML
-— no API token required). Planned: **Azure Pipelines**, **Jenkins**.
+Supported providers: **AWS** (live, via boto3), **Terraform** (plan
+JSON), **GitHub Actions**, **GitLab CI**, **Bitbucket Pipelines**, and
+**Azure DevOps Pipelines** (all YAML — no API token required).
+Planned: **Jenkins**.
 
 ---
 
@@ -79,11 +81,14 @@ pipeline_check --pipeline terraform --tf-plan plan.json
 # Scan GitHub Actions workflows (no network calls, no API token needed)
 pipeline_check --pipeline github --gha-path .github/workflows
 
-# Scan a GitLab CI config
-pipeline_check --pipeline gitlab --gitlab-path .gitlab-ci.yml
+# Scan a GitLab CI config (--gitlab-path auto-detected if .gitlab-ci.yml is at cwd)
+pipeline_check --pipeline gitlab
 
-# Scan a Bitbucket Pipelines config
-pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
+# Scan a Bitbucket Pipelines config (--bitbucket-path auto-detected)
+pipeline_check --pipeline bitbucket
+
+# Scan an Azure DevOps pipeline (--azure-path auto-detected)
+pipeline_check --pipeline azure
 
 # Scan everything in us-east-1 (live AWS account)
 pipeline_check
@@ -109,7 +114,7 @@ pipeline_check --list-standards
 # JSON output (pipe to jq, save as artifact, etc.)
 pipeline_check --output json
 
-# HTML report
+# HTML report — --output-file is required
 pipeline_check --output html --output-file /tmp/report.html
 
 # SARIF 2.1.0 — upload directly to GitHub code-scanning
@@ -120,15 +125,39 @@ pipeline_check --pipeline github --gha-path .github/workflows \
 pipeline_check --output both
 ```
 
+### Config file
+
+Every flag can be set in `pyproject.toml` so CI stays short and repo
+policy lives with the code:
+
+```toml
+[tool.pipeline_check]
+pipeline = "aws"
+standards = ["owasp_cicd_top_10", "nist_ssdf"]
+output = "sarif"
+output_file = "pipeline-check.sarif"
+
+[tool.pipeline_check.gate]
+fail_on = "HIGH"
+baseline = "artifacts/baseline.json"
+ignore_file = ".pipelinecheckignore"
+```
+
+Also supports `.pipeline-check.yml` and `PIPELINE_CHECK_*` env vars.
+Precedence: CLI > env > file > defaults. Full reference:
+[docs/config.md](docs/config.md).
+
 ### Options
 
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
-| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket` |
+| `--config`              | _(auto)_                      | Config file (TOML or YAML); auto-discovers `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml` |
+| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure` |
 | `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
-| `--gha-path`            | _(none)_                      | Path to workflows dir (required with `--pipeline github`)      |
-| `--gitlab-path`         | _(none)_                      | Path to `.gitlab-ci.yml` (required with `--pipeline gitlab`)   |
-| `--bitbucket-path`      | _(none)_                      | Path to `bitbucket-pipelines.yml` (required with `--pipeline bitbucket`) |
+| `--gha-path`            | _(auto: `.github/workflows`)_ | Path to workflows dir; auto-detected from cwd when omitted     |
+| `--gitlab-path`         | _(auto: `.gitlab-ci.yml`)_    | Path to `.gitlab-ci.yml`; auto-detected from cwd when omitted  |
+| `--bitbucket-path`      | _(auto: `bitbucket-pipelines.yml`)_ | Path to `bitbucket-pipelines.yml`; auto-detected from cwd |
+| `--azure-path`          | _(auto: `azure-pipelines.yml`)_ | Path to `azure-pipelines.yml`; auto-detected from cwd       |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
@@ -136,7 +165,7 @@ pipeline_check --output both
 | `--region`              | `us-east-1`                   | AWS region                                                    |
 | `--profile`             | _(env)_                       | AWS CLI named profile                                         |
 | `--output`              | `terminal`                    | `terminal`, `json`, `html`, `sarif`, or `both`                |
-| `--output-file`         | _(provider-specific default)_ | Output path — used with `--output html` or `--output sarif`   |
+| `--output-file`         | _(none)_                      | Output path — **required** with `--output html`; optional with `--output sarif` |
 | `--severity-threshold`  | `INFO`                        | Minimum severity to include in the report                     |
 | `--fail-on`             | _(unset)_                     | Gate: fail if any finding ≥ this severity                     |
 | `--min-grade`           | _(unset)_                     | Gate: fail if grade is worse than this (A/B/C/D)              |
@@ -162,9 +191,10 @@ for its provider or if the path does not exist on disk.
 
 ### CI gate
 
-By default, `pipeline_check` exits `1` when the grade reaches `D`. For
-finer control you can set explicit gate conditions; any tripped
-condition fails the gate:
+By default, `pipeline_check` exits `1` if any **CRITICAL** finding is
+present after baseline + ignore-file filtering (equivalent to `--fail-on
+CRITICAL`). For finer control, set explicit gate conditions — any
+tripped condition fails the gate:
 
 ```bash
 # Block CRITICAL only
@@ -386,7 +416,7 @@ Omit to fall back to `AWS_REGION`.
 Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`). The Scanner,
 CLI, and reporters pick up the new check automatically.
 
-### Adding a new provider (GCP, GitHub, Azure, …)
+### Adding a new provider (Jenkins, Azure Pipelines, …)
 
 1. Create `pipeline_check/core/providers/<provider>.py` subclassing
    `BaseProvider`, set `NAME`, and implement `build_context()` and

@@ -6,6 +6,11 @@ network calls, no GitHub API token, no installed Actions runner required.
 ## Producer workflow
 
 ```bash
+# --gha-path is auto-detected when .github/workflows exists at cwd;
+# the CLI announces the pick on stderr.
+pipeline_check --pipeline github
+
+# …or pass it explicitly.
 pipeline_check --pipeline github --gha-path .github/workflows
 ```
 

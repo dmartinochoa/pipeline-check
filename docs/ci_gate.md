@@ -11,7 +11,14 @@ fails the gate (logical OR).
 | Grade            | `--min-grade A\|B\|C\|D`  | overall grade is worse than the bar                     |
 | Count cap        | `--max-failures N`        | more than `N` effective failing findings                |
 | Specific check   | `--fail-on-check ID`      | a named check is in the effective set (repeat for many) |
-| Legacy default   | _(no gate flags)_         | grade is `D` (preserved for backward compatibility)     |
+
+**Default gate** when no flag is set: equivalent to `--fail-on CRITICAL`
+— a single CRITICAL finding fails the gate, everything else passes.
+This replaces the earlier "grade == D → fail" fallback, which muddled
+severity with total-count and let CRITICAL findings pass silently on
+sparsely-populated repos. Tighten with `--fail-on HIGH` or loosen by
+setting any explicit condition (e.g. `--max-failures 9999`) that takes
+precedence.
 
 Two subtractive filters narrow what "effective" means:
 
@@ -115,10 +122,13 @@ prints a short summary to **stderr**:
 
 This makes failure diagnosis immediate without parsing the full JSON.
 
-## Interaction with the legacy default
+## How the default interacts with filters
 
-If **no** explicit gate flag is set and no filters are applied,
-pipeline_check falls back to the original behavior: fail iff grade is
-`D`. As soon as any of `--fail-on`, `--min-grade`, `--max-failures`,
-`--fail-on-check`, `--baseline`, or `--ignore-file` is passed, the
-legacy default is off — the explicit gate governs.
+The default `--fail-on CRITICAL` applies to the **effective** set —
+after baseline + ignore-file filtering. So a CRITICAL already in the
+baseline (or explicitly ignored) does not trip the default gate. Only
+as-yet-unacknowledged CRITICALs fail CI.
+
+As soon as any of `--fail-on`, `--min-grade`, `--max-failures`, or
+`--fail-on-check` is passed, those govern and the implicit default is
+suppressed.

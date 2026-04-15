@@ -6,6 +6,11 @@ Bitbucket API token, no runner required.
 ## Producer workflow
 
 ```bash
+# --bitbucket-path is auto-detected when bitbucket-pipelines.yml is present
+# at cwd; the CLI announces the pick on stderr.
+pipeline_check --pipeline bitbucket
+
+# …or pass it explicitly.
 pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
 ```
 

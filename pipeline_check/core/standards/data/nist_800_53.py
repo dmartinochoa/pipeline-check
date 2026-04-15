@@ -115,5 +115,11 @@ STANDARD = Standard(
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-005":   ["CM-6"],
+        # Azure DevOps Pipelines
+        "ADO-001":  ["SR-3", "SR-11", "SI-2"],
+        "ADO-002":  ["SI-7", "SA-11", "CM-6"],
+        "ADO-003":  ["IA-5"],
+        "ADO-004":  ["SA-10", "AC-3"],
+        "ADO-005":  ["SR-3", "SR-11", "CM-2"],
     },
 )

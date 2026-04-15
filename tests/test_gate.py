@@ -36,23 +36,45 @@ def _score(grade="B"):
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# Legacy default (no flags)
+# Default gate (--fail-on CRITICAL, implicit)
 # ────────────────────────────────────────────────────────────────────────────
 
 
-class TestLegacyDefault:
-    def test_grade_d_fails_by_default(self):
-        r = evaluate_gate([_f()], _score("D"), GateConfig())
+class TestDefaultGate:
+    def test_critical_fails_by_default(self):
+        r = evaluate_gate(
+            [_f(severity=Severity.CRITICAL)], _score("A"), GateConfig(),
+        )
         assert not r.passed
         assert r.exit_code == 1
-        assert any("Grade D" in x for x in r.reasons)
+        assert any("default gate" in x for x in r.reasons)
 
-    def test_grade_c_passes_by_default(self):
-        r = evaluate_gate([_f()], _score("C"), GateConfig())
+    def test_high_passes_by_default(self):
+        """Only CRITICAL should trip the default gate — HIGH et al. don't."""
+        r = evaluate_gate(
+            [_f(severity=Severity.HIGH)], _score("D"), GateConfig(),
+        )
+        assert r.passed
+
+    def test_grade_d_no_critical_still_passes(self):
+        """Grade-D repos with no CRITICAL findings pass the default gate.
+        This is a deliberate change from the prior grade-D fallback."""
+        r = evaluate_gate(
+            [_f(severity=Severity.HIGH) for _ in range(10)],
+            _score("D"),
+            GateConfig(),
+        )
         assert r.passed
 
     def test_no_findings_passes(self):
         r = evaluate_gate([], _score("A"), GateConfig())
+        assert r.passed
+
+    def test_passed_critical_does_not_trip_default(self):
+        r = evaluate_gate(
+            [_f(severity=Severity.CRITICAL, passed=True)], _score("A"),
+            GateConfig(),
+        )
         assert r.passed
 
 
@@ -344,10 +366,9 @@ class TestInteractions:
         # All three conditions trip on the same single finding.
         assert len(r.reasons) == 3
 
-    def test_filter_without_explicit_gate_suppresses_legacy_default(self, tmp_path):
-        """If only --baseline / --ignore-file are set and all current failures
-        are filtered out, the gate should PASS — the legacy grade-D fallback
-        must not re-trigger and ignore the user's filter."""
+    def test_baseline_suppresses_critical_against_default_gate(self, tmp_path):
+        """A baseline-matched CRITICAL is not in the effective set and
+        therefore does not trip the default --fail-on CRITICAL gate."""
         baseline = {
             "findings": [
                 {"check_id": "CB-001", "resource": "proj-a", "passed": False},
@@ -356,8 +377,9 @@ class TestInteractions:
         p = tmp_path / "b.json"
         p.write_text(json.dumps(baseline))
         cfg = GateConfig(baseline_path=str(p))
-        # Grade is D but the only finding is in the baseline.
-        r = evaluate_gate([_f()], _score("D"), cfg)
+        r = evaluate_gate(
+            [_f(severity=Severity.CRITICAL)], _score("A"), cfg,
+        )
         assert r.passed
 
     def test_any_explicit_gate_detection(self):
