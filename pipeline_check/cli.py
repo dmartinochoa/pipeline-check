@@ -11,6 +11,8 @@ import sys
 
 import click
 
+from .core import providers as _providers
+from .core import standards as _standards
 from .core.checks.base import Severity
 from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
@@ -22,7 +24,10 @@ _SEVERITY_CHOICES = [
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
 ]
 
-_PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
+# Derived from the provider registry — no manual list to maintain.
+# Registering a new provider in core/providers/__init__.py automatically
+# makes it available here.
+_PIPELINE_CHOICES = _providers.available()
 
 
 @click.command()
@@ -76,6 +81,22 @@ _PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
     help="Write HTML report to this file (used with --output html).",
 )
 @click.option(
+    "--standard",
+    "standards",
+    multiple=True,
+    metavar="NAME",
+    help=(
+        "Annotate findings with controls from the named standard. Repeat to "
+        "enable multiple (e.g. --standard owasp_cicd_top_10 --standard "
+        "cis_aws_foundations). Omit to include every registered standard."
+    ),
+)
+@click.option(
+    "--list-standards",
+    is_flag=True,
+    help="List every registered compliance standard and exit.",
+)
+@click.option(
     "--severity-threshold",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default="INFO",
@@ -90,6 +111,8 @@ def scan(
     profile: str | None,
     output: str,
     output_file: str | None,
+    standards: tuple[str, ...],
+    list_standards: bool,
     severity_threshold: str,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
@@ -97,12 +120,23 @@ def scan(
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
+    if list_standards:
+        for std in _standards.resolve():
+            click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
+            if std.url:
+                click.echo(f"    {std.url}")
+        return
+
     threshold = Severity(severity_threshold.upper())
 
     scanner = Scanner(pipeline=pipeline, region=region, profile=profile)
 
     try:
-        findings = scanner.run(checks=list(checks) if checks else None, target=target)
+        findings = scanner.run(
+            checks=list(checks) if checks else None,
+            target=target,
+            standards=list(standards) if standards else None,
+        )
     except Exception as exc:
         click.echo(f"[error] Scan failed: {exc}", err=True)
         sys.exit(2)
@@ -110,7 +144,11 @@ def scan(
     score_result = score(findings)
 
     if output in ("terminal", "both"):
-        report_terminal(findings, score_result, severity_threshold=threshold)
+        # When emitting both terminal and JSON, send the human-readable report to
+        # stderr so the JSON on stdout remains clean and machine-parseable.
+        from rich.console import Console as _Console  # local import — only needed here
+        console = _Console(stderr=(output == "both"))
+        report_terminal(findings, score_result, severity_threshold=threshold, console=console)
 
     if output in ("json", "both"):
         click.echo(report_json(findings, score_result))

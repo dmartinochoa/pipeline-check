@@ -11,6 +11,7 @@
 #   CB-001, CB-002, CB-003, CB-004, CB-005
 #   ECR-001, ECR-002, ECR-004
 #   CD-001, CD-002, CD-003
+#   PBAC-001, PBAC-002
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -134,11 +135,13 @@ resource "aws_codepipeline" "bad" {
 # CB-003: logging disabled
 # CB-004: timeout at AWS maximum (480 min)
 # CB-005: outdated managed image (standard:5.0)
+# PBAC-001: no vpc_config block (default) — no network segmentation
+# PBAC-002: a second project (below) shares the same service role
 # ---------------------------------------------------------------------------
 
 resource "aws_codebuild_project" "bad" {
   name          = "pipeline-check-bad-app"
-  service_role  = aws_iam_role.bad.arn
+  service_role  = aws_iam_role.bad.arn  # PBAC-002: shared with bad2
   build_timeout = 480  # CB-004: at the AWS maximum
 
   environment {
@@ -173,6 +176,41 @@ resource "aws_codebuild_project" "bad" {
         build:
           commands:
             - echo "bad fixture"
+    BUILDSPEC
+  }
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+}
+
+# Second CodeBuild project sharing the same service role → PBAC-002
+resource "aws_codebuild_project" "bad2" {
+  name          = "pipeline-check-bad-app-2"
+  service_role  = aws_iam_role.bad.arn  # PBAC-002: shared role
+  build_timeout = 60
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = false
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+  }
+
+  source {
+    type      = "NO_SOURCE"
+    buildspec = <<-BUILDSPEC
+      version: 0.2
+      phases:
+        build:
+          commands:
+            - echo "bad2"
     BUILDSPEC
   }
 

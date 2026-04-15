@@ -107,3 +107,30 @@ class TestECR004LifecyclePolicy:
     def test_lifecycle_policy_present_passes(self):
         findings = _make_check([_repo()]).run()
         assert next(f for f in findings if f.check_id == "ECR-004").passed
+
+
+class TestNoRepositories:
+    def test_no_repos_returns_empty(self):
+        findings = _make_check([]).run()
+        assert findings == []
+
+
+class TestErrorHandling:
+    def test_list_repositories_access_denied_returns_ecr000(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = MagicMock()
+        paginator.paginate.side_effect = _client_error("AccessDeniedException")
+        client.get_paginator.return_value = paginator
+
+        findings = ECRChecks(session).run()
+        assert len(findings) == 1
+        assert findings[0].check_id == "ECR-000"
+        assert not findings[0].passed
+
+    def test_policy_other_error_fails_ecr003(self):
+        """A non-RepositoryPolicyNotFoundException error should produce a failed ECR-003."""
+        findings = _make_check([_repo()], policy_error="InternalServerError").run()
+        ecr003 = next(f for f in findings if f.check_id == "ECR-003")
+        assert not ecr003.passed

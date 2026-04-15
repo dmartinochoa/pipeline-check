@@ -9,6 +9,7 @@ import pytest
 from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.reporter import report_json
 from pipeline_check.core.scorer import score
+from pipeline_check.core.standards.base import ControlRef
 
 _SCHEMA = json.loads((Path(__file__).parent / "report_schema.json").read_text())
 
@@ -21,8 +22,13 @@ def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
         resource="test-resource",
         description="Test description.",
         recommendation="Test recommendation.",
-        owasp_cicd="CICD-SEC-1: Test",
         passed=passed,
+        controls=[ControlRef(
+            standard="owasp_cicd_top_10",
+            standard_title="OWASP Top 10 CI/CD Security Risks",
+            control_id="CICD-SEC-1",
+            control_title="Test",
+        )],
     )
 
 

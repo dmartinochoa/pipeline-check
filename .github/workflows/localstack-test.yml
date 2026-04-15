@@ -7,7 +7,73 @@ permissions:
   contents: read
 
 jobs:
-  integration:
+  # ---------------------------------------------------------------------------
+  # Job 1: pytest integration suite
+  #
+  # Creates AWS resources directly via boto3, runs the scanner against them,
+  # and tears them down. Uses its own LocalStack instance so any leftover
+  # resources from a failed teardown can't pollute the Terraform job below.
+  # ---------------------------------------------------------------------------
+  pytest-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-dev.txt
+          pip install -e .
+
+      - name: Start LocalStack
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e DEBUG=0 \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
+            localstack/localstack-pro:latest
+
+          echo "Waiting for LocalStack to be ready..."
+          READY=false
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s http://localhost:4566/_localstack/health 2>&1 || true)
+            if echo "$STATUS" | grep -q '"edition"'; then
+              READY=true
+              echo "LocalStack ready after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$READY" != "true" ]; then
+            echo "LocalStack failed to start within 120s"
+            docker logs localstack
+            exit 1
+          fi
+          sleep 5
+
+      - name: Run pytest integration suite against LocalStack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: pytest tests/integration/ -v
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Terraform fixture scans
+  #
+  # Applies the good/bad Terraform fixtures and verifies the CLI produces the
+  # expected report grades and check failures. Runs on its own LocalStack so
+  # it starts from a clean slate, independent of job 1.
+  # ---------------------------------------------------------------------------
+  terraform-fixture:
     runs-on: ubuntu-latest
 
     steps:
@@ -60,17 +126,15 @@ jobs:
             docker logs localstack
             exit 1
           fi
-
-          # Give services a few extra seconds to finish initialising
           sleep 5
 
-      - name: Apply Terraform
+      - name: Apply good Terraform fixture
         working-directory: infra
         run: |
           terraform init
           terraform apply -auto-approve
 
-      - name: Run PipelineCheck against LocalStack
+      - name: Run pipeline_check against good fixture
         env:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
@@ -127,13 +191,18 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Run PipelineCheck against bad fixture
+      - name: Run pipeline_check against bad fixture
         env:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
           AWS_DEFAULT_REGION: us-east-1
           AWS_ENDPOINT_URL: http://localhost:4566
         run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --output html \
+            --output-file pipeline-check-bad-report.html || true
           pipeline_check \
             --pipeline aws \
             --region us-east-1 \
@@ -158,6 +227,7 @@ jobs:
               "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
               "ECR-001", "ECR-002", "ECR-004",
               "CD-001", "CD-002", "CD-003",
+              "PBAC-001", "PBAC-002",
           }
 
           failed = {f["check_id"] for f in report["findings"] if not f["passed"]}
@@ -172,10 +242,117 @@ jobs:
           print(f"\nAll {len(EXPECTED_FAILURES)} expected check failures detected.")
           EOF
 
-      - name: Upload HTML report
+      - name: Assert compliance standards enrich findings
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-bad-report.json") as f:
+              report = json.load(f)
+
+          findings_by_id = {}
+          for fd in report["findings"]:
+              findings_by_id.setdefault(fd["check_id"], []).append(fd)
+
+          # 1. Every finding carries at least one OWASP ControlRef.
+          no_owasp = [
+              fd["check_id"] for fd in report["findings"]
+              if not any(
+                  c["standard"] == "owasp_cicd_top_10"
+                  for c in fd.get("controls", [])
+              )
+          ]
+          if no_owasp:
+              print(f"Findings missing OWASP mapping: {sorted(set(no_owasp))}")
+              sys.exit(1)
+
+          # 2. Every CIS-mapped check that failed carries its CIS ControlRef.
+          # Mirrors pipeline_check/core/standards/data/cis_aws_foundations.py.
+          EXPECTED_CIS = {
+              "IAM-002": "1.16",
+              "S3-001":  "2.1.4",
+              "S3-002":  "2.1.1",
+              "S3-003":  "2.1.2",
+              "S3-004":  "3.6",
+          }
+
+          missing_cis = []
+          for check_id, ctrl_id in EXPECTED_CIS.items():
+              matches = findings_by_id.get(check_id, [])
+              if not matches:
+                  missing_cis.append(f"{check_id} (no finding emitted)")
+                  continue
+              has_cis = any(
+                  c["standard"] == "cis_aws_foundations" and c["control_id"] == ctrl_id
+                  for fd in matches for c in fd.get("controls", [])
+              )
+              if not has_cis:
+                  missing_cis.append(f"{check_id} (expected CIS {ctrl_id})")
+
+          if missing_cis:
+              print("CIS enrichment missing for:")
+              for m in missing_cis:
+                  print(f"  - {m}")
+              sys.exit(1)
+
+          print(f"CIS AWS Foundations enrichment verified for {len(EXPECTED_CIS)} checks.")
+          EOF
+
+      - name: Run pipeline_check with --standard cis_aws_foundations
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          pipeline_check \
+            --pipeline aws \
+            --region us-east-1 \
+            --standard cis_aws_foundations \
+            --output json \
+            | tee pipeline-check-bad-cis-report.json || true
+
+      - name: Assert --standard filter restricts ControlRefs to CIS
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          with open("pipeline-check-bad-cis-report.json") as f:
+              report = json.load(f)
+
+          # When --standard cis_aws_foundations is the only active standard,
+          # no finding may carry an OWASP ControlRef.
+          leaked = []
+          for fd in report["findings"]:
+              for c in fd.get("controls", []):
+                  if c["standard"] != "cis_aws_foundations":
+                      leaked.append((fd["check_id"], c["standard"]))
+
+          if leaked:
+              print("Non-CIS controls leaked through --standard filter:")
+              for cid, std in leaked[:10]:
+                  print(f"  {cid} -> {std}")
+              sys.exit(1)
+
+          # At least one CIS-mapped check must have produced a CIS ControlRef.
+          any_cis = any(
+              c["standard"] == "cis_aws_foundations"
+              for fd in report["findings"]
+              for c in fd.get("controls", [])
+          )
+          if not any_cis:
+              print("No CIS ControlRefs produced — standards filter produced empty annotation.")
+              sys.exit(1)
+
+          print("--standard cis_aws_foundations filter correctly restricts ControlRefs.")
+          EOF
+
+      - name: Upload HTML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pipeline-check-report
-          path: pipeline-check-report.html
+          name: pipeline-check-reports
+          path: |
+            pipeline-check-report.html
+            pipeline-check-bad-report.html
           retention-days: 30

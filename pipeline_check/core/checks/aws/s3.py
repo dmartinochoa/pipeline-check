@@ -94,7 +94,6 @@ class S3Checks(AWSBaseCheck):
                     resource=bucket,
                     description=f"Could not retrieve public access block config: {exc}",
                     recommendation="Ensure s3:GetBucketPublicAccessBlock permission.",
-                    owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
                     passed=False,
                 )
 
@@ -127,7 +126,6 @@ class S3Checks(AWSBaseCheck):
                 "bucket: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, "
                 "and RestrictPublicBuckets."
             ),
-            owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
             passed=fully_blocked,
         )
 
@@ -153,7 +151,6 @@ class S3Checks(AWSBaseCheck):
                     resource=bucket,
                     description=f"Could not retrieve bucket encryption config: {exc}",
                     recommendation="Ensure s3:GetEncryptionConfiguration permission.",
-                    owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
                     passed=False,
                 )
 
@@ -179,7 +176,6 @@ class S3Checks(AWSBaseCheck):
                 "Enable default bucket encryption using at minimum AES256 (SSE-S3). "
                 "For stronger key control, use SSE-KMS with a customer-managed key."
             ),
-            owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
             passed=encrypted,
         )
 
@@ -197,7 +193,6 @@ class S3Checks(AWSBaseCheck):
                 resource=bucket,
                 description=f"Could not retrieve bucket versioning status: {exc}",
                 recommendation="Ensure s3:GetBucketVersioning permission.",
-                owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
                 passed=False,
             )
 
@@ -221,7 +216,6 @@ class S3Checks(AWSBaseCheck):
                 "artifact versions are retained and rollback is possible. Combine "
                 "with a lifecycle rule to expire old versions after a retention period."
             ),
-            owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
             passed=passed,
         )
 
@@ -238,7 +232,6 @@ class S3Checks(AWSBaseCheck):
                 resource=bucket,
                 description=f"Could not retrieve bucket logging config: {exc}",
                 recommendation="Ensure s3:GetBucketLogging permission.",
-                owasp_cicd="CICD-SEC-10: Insufficient Logging and Visibility",
                 passed=False,
             )
 
@@ -263,6 +256,5 @@ class S3Checks(AWSBaseCheck):
                 "direct logs to a separate, centralised logging bucket with "
                 "restricted write access."
             ),
-            owasp_cicd="CICD-SEC-10: Insufficient Logging and Visibility",
             passed=logging_enabled,
         )

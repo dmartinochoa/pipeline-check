@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
+from pipeline_check.core import providers as _providers
 from pipeline_check.core.scanner import Scanner
 from pipeline_check.core.checks.aws.base import Severity
 from tests.aws.conftest import make_paginator
@@ -37,6 +38,10 @@ def _cicd_trust(service="codebuild.amazonaws.com"):
     }
 
 
+_SHARED_ROLE = "arn:aws:iam::123456789:role/shared-build-role"
+_SECURE_VPC = {"vpcId": "vpc-abc123", "subnets": ["subnet-1"], "securityGroupIds": ["sg-1"]}
+
+
 def _make_codebuild_client(
     *,
     plaintext_secret=False,
@@ -44,6 +49,9 @@ def _make_codebuild_client(
     logging_enabled=True,
     timeout=60,
     image="aws/codebuild/standard:7.0",
+    vpc_config=_SECURE_VPC,
+    service_role="arn:aws:iam::123456789:role/my-build-role",
+    extra_projects=None,
 ):
     client = MagicMock()
     env_vars = (
@@ -53,6 +61,7 @@ def _make_codebuild_client(
     )
     project = {
         "name": "my-build",
+        "serviceRole": service_role,
         "environment": {
             "environmentVariables": env_vars,
             "privilegedMode": privileged,
@@ -64,9 +73,18 @@ def _make_codebuild_client(
         },
         "timeoutInMinutes": timeout,
     }
-    paginator = make_paginator([{"projects": ["my-build"]}])
+    if vpc_config is not None:
+        project["vpcConfig"] = vpc_config
+
+    projects = [project] + (extra_projects or [])
+    names = [p["name"] for p in projects]
+    # Both CodeBuildChecks and PBACChecks iterate this paginator, so yield a
+    # fresh iterator on every paginate() call instead of a single consumed one.
+    _pages = [{"projects": names}]
+    paginator = MagicMock()
+    paginator.paginate.side_effect = lambda **kw: iter(_pages)
     client.get_paginator.return_value = paginator
-    client.batch_get_projects.return_value = {"projects": [project]}
+    client.batch_get_projects.return_value = {"projects": projects}
     return client
 
 
@@ -328,6 +346,7 @@ def _make_scanner(session) -> Scanner:
     scanner = Scanner.__new__(Scanner)
     scanner.pipeline = "aws"
     scanner._context = session
+    scanner._check_classes = _providers.get("aws").check_classes
     return scanner
 
 
@@ -349,6 +368,19 @@ def secure_session():
 
 @pytest.fixture()
 def insecure_session():
+    # A second project sharing the same role triggers PBAC-002.
+    shared_role_project = {
+        "name": "my-build-2",
+        "serviceRole": _SHARED_ROLE,
+        "environment": {
+            "environmentVariables": [],
+            "privilegedMode": False,
+            "image": "aws/codebuild/standard:7.0",
+        },
+        "logsConfig": {"cloudWatchLogs": {"status": "ENABLED"}, "s3Logs": {"status": "DISABLED"}},
+        "timeoutInMinutes": 60,
+        # no vpcConfig → also fails PBAC-001
+    }
     return _make_session(
         codebuild_client=_make_codebuild_client(
             plaintext_secret=True,
@@ -356,6 +388,9 @@ def insecure_session():
             logging_enabled=False,
             timeout=480,
             image="aws/codebuild/standard:1.0",
+            vpc_config=None,            # PBAC-001: no VPC
+            service_role=_SHARED_ROLE,  # PBAC-002: shared role
+            extra_projects=[shared_role_project],
         ),
         codepipeline_client=_make_codepipeline_client(
             approval_before_deploy=False,
@@ -401,10 +436,10 @@ class TestSecurePipeline:
             f"{[(f.check_id, f.title) for f in failed]}"
         )
 
-    def test_all_six_services_produce_findings(self, secure_session):
+    def test_all_services_produce_findings(self, secure_session):
         findings = _make_scanner(secure_session).run()
         check_prefixes = {f.check_id.split("-")[0] for f in findings}
-        assert check_prefixes == {"CB", "CP", "CD", "ECR", "IAM", "S3"}
+        assert check_prefixes == {"CB", "CP", "CD", "ECR", "IAM", "PBAC", "S3"}
 
 
 # ---------------------------------------------------------------------------
@@ -489,6 +524,13 @@ class TestInsecurePipeline:
     def test_s3004_no_logging_detected(self):
         assert "S3-004" in self.failed
 
+    # PBAC
+    def test_pbac001_no_vpc_detected(self):
+        assert "PBAC-001" in self.failed
+
+    def test_pbac002_shared_role_detected(self):
+        assert "PBAC-002" in self.failed
+
     def test_severity_distribution_includes_critical(self):
         critical = [f for f in self.findings if not f.passed and f.severity == Severity.CRITICAL]
         assert len(critical) >= 3, "Expected at least 3 CRITICAL failures on an insecure pipeline"
@@ -498,15 +540,15 @@ class TestInsecurePipeline:
 # OWASP CI/CD Top 10 coverage
 # ---------------------------------------------------------------------------
 
-# The checks currently implemented map to 9 of the 10 OWASP CI/CD risks.
-# CICD-SEC-5 (Insufficient PBAC) is not yet covered.
+# All 10 OWASP CI/CD risks are now covered.
 _EXPECTED_OWASP_COVERAGE = {
-    "CICD-SEC-1",   # Insufficient Flow Control Mechanisms  (CP-001, CD-001, CD-002)
-    "CICD-SEC-2",   # Inadequate Identity and Access Mgmt   (IAM-001, IAM-002, IAM-003)
-    "CICD-SEC-3",   # Dependency Chain Abuse                (ECR-001)
-    "CICD-SEC-4",   # Poisoned Pipeline Execution           (CP-003)
-    "CICD-SEC-6",   # Insufficient Credential Hygiene       (CB-001)
-    "CICD-SEC-7",   # Insecure System Configuration         (CB-002, CB-004, CB-005, ECR-004)
+    "CICD-SEC-1",   # Insufficient Flow Control Mechanisms   (CP-001, CD-001, CD-002)
+    "CICD-SEC-2",   # Inadequate Identity and Access Mgmt    (IAM-001, IAM-002, IAM-003)
+    "CICD-SEC-3",   # Dependency Chain Abuse                 (ECR-001)
+    "CICD-SEC-4",   # Poisoned Pipeline Execution            (CP-003)
+    "CICD-SEC-5",   # Insufficient PBAC                      (PBAC-001, PBAC-002)
+    "CICD-SEC-6",   # Insufficient Credential Hygiene        (CB-001)
+    "CICD-SEC-7",   # Insecure System Configuration          (CB-002, CB-004, CB-005, ECR-004)
     "CICD-SEC-8",   # Ungoverned Usage of 3rd-Party Services (ECR-003)
     "CICD-SEC-9",   # Improper Artifact Integrity Validation (CP-002, ECR-002, S3-001–003)
     "CICD-SEC-10",  # Insufficient Logging and Visibility    (CB-003, CD-003, S3-004)
@@ -518,28 +560,30 @@ class TestOWASPCoverage:
     def _findings(self, insecure_session):
         self.findings = _make_scanner(insecure_session).run()
 
-    def test_expected_owasp_risks_are_covered(self):
-        covered = {
-            f.owasp_cicd.split(":")[0].strip()
-            for f in self.findings
+    @staticmethod
+    def _owasp_ids(finding):
+        return {
+            c.control_id for c in finding.controls
+            if c.standard == "owasp_cicd_top_10"
         }
+
+    def test_expected_owasp_risks_are_covered(self):
+        covered: set[str] = set()
+        for f in self.findings:
+            covered |= self._owasp_ids(f)
         missing = _EXPECTED_OWASP_COVERAGE - covered
         assert not missing, f"OWASP risks not covered by any check: {missing}"
 
     def test_each_finding_references_an_owasp_risk(self):
         for f in self.findings:
-            assert f.owasp_cicd.startswith("CICD-SEC-"), (
-                f"{f.check_id} has unexpected owasp_cicd value: {f.owasp_cicd!r}"
-            )
-
-    def test_cicd_sec5_not_yet_covered(self):
-        """Canary: fails when CICD-SEC-5 coverage is added, reminding us to update this file."""
-        covered = {f.owasp_cicd.split(":")[0].strip() for f in self.findings}
-        assert "CICD-SEC-5" not in covered, (
-            "CICD-SEC-5 is now covered — update _EXPECTED_OWASP_COVERAGE and remove this test."
-        )
+            owasp = self._owasp_ids(f)
+            assert owasp, f"{f.check_id} has no OWASP mapping"
+            for cid in owasp:
+                assert cid.startswith("CICD-SEC-"), (
+                    f"{f.check_id} has unexpected OWASP control id: {cid!r}"
+                )
 
     @pytest.mark.parametrize("risk", sorted(_EXPECTED_OWASP_COVERAGE))
     def test_risk_has_at_least_one_check(self, risk):
-        matching = [f for f in self.findings if f.owasp_cicd.startswith(risk)]
+        matching = [f for f in self.findings if risk in self._owasp_ids(f)]
         assert matching, f"No findings found for {risk}"

@@ -22,7 +22,15 @@ Final score is clamped to [0, 100] and mapped to a letter grade:
     D  < 60
 """
 
+from typing import TypedDict
+
 from .checks.base import Finding, Severity
+
+
+class ScoreResult(TypedDict):
+    score: int
+    grade: str
+    summary: dict[str, dict[str, int]]
 
 _WEIGHTS: dict[Severity, int] = {
     Severity.CRITICAL: 20,
@@ -35,7 +43,7 @@ _WEIGHTS: dict[Severity, int] = {
 _CRITICAL_PENALTY = 5  # extra points deducted per CRITICAL failure
 
 
-def score(findings: list[Finding]) -> dict:
+def score(findings: list[Finding]) -> ScoreResult:
     """Compute the overall security score and grade.
 
     Returns a dict with keys:

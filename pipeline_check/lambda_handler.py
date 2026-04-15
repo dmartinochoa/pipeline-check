@@ -38,6 +38,7 @@ from typing import Any
 
 import boto3
 
+from .core.checks.base import Severity
 from .core.reporter import report_json
 from .core.scanner import Scanner
 from .core.scorer import score
@@ -88,11 +89,11 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         except Exception:
             logger.exception("Failed to write report to S3")
     else:
-        s3_key = None  # type: ignore[assignment]
+        s3_key = None
 
     # SNS alert on critical failures
     critical_failures = [
-        f for f in findings if not f.passed and f.severity.value == "CRITICAL"
+        f for f in findings if not f.passed and f.severity is Severity.CRITICAL
     ]
 
     if sns_topic_arn and critical_failures:

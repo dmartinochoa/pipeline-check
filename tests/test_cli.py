@@ -18,7 +18,6 @@ def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
         resource="test-resource",
         description="Test description.",
         recommendation="Test recommendation.",
-        owasp_cicd="CICD-SEC-1: Test",
         passed=passed,
     )
 
@@ -90,7 +89,7 @@ class TestFlagWiring:
             MockScanner.return_value.run.return_value = []
             runner.invoke(scan, ["--checks", "CB-001", "--checks", "CB-002", "--output", "json"])
         MockScanner.return_value.run.assert_called_once_with(
-            checks=["CB-001", "CB-002"], target=None
+            checks=["CB-001", "CB-002"], target=None, standards=None
         )
 
     def test_target_forwarded_to_scanner(self, runner):
@@ -98,14 +97,14 @@ class TestFlagWiring:
             MockScanner.return_value.run.return_value = []
             runner.invoke(scan, ["--target", "my-pipeline", "--output", "json"])
         MockScanner.return_value.run.assert_called_once_with(
-            checks=None, target="my-pipeline"
+            checks=None, target="my-pipeline", standards=None
         )
 
     def test_no_checks_passes_none_to_scanner(self, runner):
         with patch("pipeline_check.cli.Scanner") as MockScanner:
             MockScanner.return_value.run.return_value = []
             runner.invoke(scan, ["--output", "json"])
-        MockScanner.return_value.run.assert_called_once_with(checks=None, target=None)
+        MockScanner.return_value.run.assert_called_once_with(checks=None, target=None, standards=None)
 
     def test_html_output_writes_file(self, runner, tmp_path):
         out = tmp_path / "report.html"

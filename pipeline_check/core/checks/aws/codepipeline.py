@@ -31,7 +31,6 @@ class CodePipelineChecks(AWSBaseCheck):
                         "Ensure the IAM principal has codepipeline:ListPipelines and "
                         "codepipeline:GetPipeline permissions."
                     ),
-                    owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                     passed=False,
                 )]
 
@@ -98,7 +97,6 @@ class CodePipelineChecks(AWSBaseCheck):
                 "Add a Manual approval action to a stage that precedes every Deploy "
                 "stage that targets a production or sensitive environment."
             ),
-            owasp_cicd="CICD-SEC-1: Insufficient Flow Control Mechanisms",
             passed=passed,
         )
 
@@ -140,7 +138,6 @@ class CodePipelineChecks(AWSBaseCheck):
                 "each artifact store. This enables key rotation, fine-grained access "
                 "policies, and CloudTrail auditing of decrypt operations."
             ),
-            owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
             passed=passed,
         )
 
@@ -181,6 +178,5 @@ class CodePipelineChecks(AWSBaseCheck):
                 "rule or CodeCommit trigger to start the pipeline on change. This "
                 "reduces latency, API usage, and improves auditability."
             ),
-            owasp_cicd="CICD-SEC-4: Poisoned Pipeline Execution",
             passed=passed,
         )

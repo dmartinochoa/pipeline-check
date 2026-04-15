@@ -30,7 +30,6 @@ class ECRChecks(AWSBaseCheck):
                 recommendation=(
                     "Ensure the IAM principal has ecr:DescribeRepositories permission."
                 ),
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )]
 
@@ -82,7 +81,6 @@ class ECRChecks(AWSBaseCheck):
                 "Consider also enabling Amazon Inspector continuous scanning for "
                 "ongoing CVE detection against images already in the registry."
             ),
-            owasp_cicd="CICD-SEC-3: Dependency Chain Abuse",
             passed=enabled,
         )
 
@@ -112,7 +110,6 @@ class ECRChecks(AWSBaseCheck):
                 "by digest (sha256:...) in deployment manifests for strongest "
                 "immutability guarantees."
             ),
-            owasp_cicd="CICD-SEC-9: Improper Artifact Integrity Validation",
             passed=passed,
         )
 
@@ -135,7 +132,6 @@ class ECRChecks(AWSBaseCheck):
                         "Keep the repository private. If cross-account access is "
                         "needed, restrict the policy to specific account principals."
                     ),
-                    owasp_cicd="CICD-SEC-8: Ungoverned Usage of 3rd-Party Services",
                     passed=True,
                 )
             # Other error — skip
@@ -146,7 +142,6 @@ class ECRChecks(AWSBaseCheck):
                 resource=name,
                 description=f"Could not retrieve repository policy: {exc}",
                 recommendation="Verify IAM permissions include ecr:GetRepositoryPolicy.",
-                owasp_cicd="CICD-SEC-8: Ungoverned Usage of 3rd-Party Services",
                 passed=False,
             )
 
@@ -181,7 +176,6 @@ class ECRChecks(AWSBaseCheck):
                 "Remove wildcard principals from the repository policy. Grant access "
                 "only to specific AWS account IDs or IAM principals that require it."
             ),
-            owasp_cicd="CICD-SEC-8: Ungoverned Usage of 3rd-Party Services",
             passed=passed,
         )
 
@@ -215,6 +209,5 @@ class ECRChecks(AWSBaseCheck):
                 "period (e.g. 7 days) and limits the number of tagged images retained, "
                 "reducing exposure to images with known CVEs."
             ),
-            owasp_cicd="CICD-SEC-7: Insecure System Configuration",
             passed=passed,
         )

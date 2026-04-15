@@ -35,7 +35,6 @@ class CodeDeployChecks(AWSBaseCheck):
                     "Ensure the IAM principal has codedeploy:ListApplications and "
                     "codedeploy:ListDeploymentGroups permissions."
                 ),
-                owasp_cicd="CICD-SEC-2: Inadequate Identity and Access Management",
                 passed=False,
             )]
 
@@ -111,7 +110,6 @@ class CodeDeployChecks(AWSBaseCheck):
                 "DEPLOYMENT_FAILURE event so CodeDeploy automatically reverts to "
                 "the last successful revision when a deployment fails."
             ),
-            owasp_cicd="CICD-SEC-1: Insufficient Flow Control Mechanisms",
             passed=has_failure_rollback,
         )
 
@@ -141,7 +139,6 @@ class CodeDeployChecks(AWSBaseCheck):
                 "rolling config) so that defects are caught before they affect all "
                 "instances or traffic."
             ),
-            owasp_cicd="CICD-SEC-1: Insufficient Flow Control Mechanisms",
             passed=not is_all_at_once,
         )
 
@@ -174,6 +171,5 @@ class CodeDeployChecks(AWSBaseCheck):
                 "to the deployment group's alarmConfiguration. Enable automatic "
                 "rollback on DEPLOYMENT_STOP_ON_ALARM to halt bad deployments."
             ),
-            owasp_cicd="CICD-SEC-10: Insufficient Logging and Visibility",
             passed=passed,
         )
