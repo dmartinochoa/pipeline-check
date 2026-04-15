@@ -354,7 +354,7 @@ def report_html(
 <header>
   <div class="header-inner">
     <div>
-      <h1>PipelineCheck<span class="header-sub">AWS CI/CD Security Report</span></h1>
+      <h1>PipelineCheck<span class="header-sub">CI/CD Security Report</span></h1>
     </div>
     <div class="header-meta">{meta_str}</div>
   </div>
