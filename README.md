@@ -137,7 +137,13 @@ pipeline_check --output both
 | `--profile`             | _(env)_                       | AWS CLI named profile                                         |
 | `--output`              | `terminal`                    | `terminal`, `json`, `html`, `sarif`, or `both`                |
 | `--output-file`         | _(provider-specific default)_ | Output path — used with `--output html` or `--output sarif`   |
-| `--severity-threshold`  | `INFO`                        | Minimum severity to include                                   |
+| `--severity-threshold`  | `INFO`                        | Minimum severity to include in the report                     |
+| `--fail-on`             | _(unset)_                     | Gate: fail if any finding ≥ this severity                     |
+| `--min-grade`           | _(unset)_                     | Gate: fail if grade is worse than this (A/B/C/D)              |
+| `--max-failures`        | _(unset)_                     | Gate: fail if more than N effective failing findings          |
+| `--fail-on-check`       | _(unset)_                     | Gate: fail if named check fails (repeat for multiple)         |
+| `--baseline`            | _(none)_                      | Prior JSON report — findings already there don't gate         |
+| `--ignore-file`         | `.pipelinecheckignore`        | Curated suppressions (CHECK_ID or CHECK_ID:RESOURCE per line) |
 | `--version`             | _(flag)_                      | Print version and exit                                        |
 
 `--tf-plan`, `--gha-path`, `--gitlab-path`, and `--bitbucket-path` are
@@ -154,16 +160,45 @@ for its provider or if the path does not exist on disk.
 > pipeline_check --output both 2>report.txt | jq '.score'
 > ```
 
+### CI gate
+
+By default, `pipeline_check` exits `1` when the grade reaches `D`. For
+finer control you can set explicit gate conditions; any tripped
+condition fails the gate:
+
+```bash
+# Block CRITICAL only
+pipeline_check --pipeline aws --fail-on CRITICAL
+
+# Require a B-or-better grade
+pipeline_check --pipeline aws --min-grade B
+
+# Zero-tolerance on specific checks
+pipeline_check --pipeline github --gha-path .github/workflows \
+    --fail-on-check GHA-002 --fail-on-check GHA-005
+
+# Only block on NEW findings (baseline diff)
+pipeline_check --pipeline aws --output json > baseline.json      # once
+pipeline_check --pipeline aws --fail-on HIGH --baseline baseline.json  # per-PR
+
+# Curated suppressions — `.pipelinecheckignore` picked up automatically
+echo "CB-001:my-legacy-project" >> .pipelinecheckignore
+pipeline_check --pipeline aws --fail-on HIGH
+```
+
+A short `[gate] PASS/FAIL` summary is emitted to stderr on every run.
+Full reference: [docs/ci_gate.md](docs/ci_gate.md).
+
 ### Exit codes
 
-| Code | Meaning        |
-|------|----------------|
-| `0`  | Grade A/B/C    |
-| `1`  | Grade D        |
-| `2`  | AWS API error  |
+| Code | Meaning         |
+|------|-----------------|
+| `0`  | Gate passed     |
+| `1`  | Gate failed     |
+| `2`  | Scanner error   |
 
-See [docs/scoring_model.md](docs/scoring_model.md) for the full severity
-weights and grade bands.
+See [docs/scoring_model.md](docs/scoring_model.md) for the severity
+weights and grade bands feeding `--min-grade`.
 
 ---
 

@@ -44,6 +44,7 @@ from . import __version__
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Severity
+from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
 from .core.sarif_reporter import report_sarif
@@ -171,6 +172,56 @@ _PIPELINE_CHOICES = _providers.available()
     show_default=True,
     help="Minimum severity to display (e.g. HIGH shows only HIGH and CRITICAL).",
 )
+@click.option(
+    "--fail-on",
+    type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
+    default=None,
+    help=(
+        "Fail the CI gate if any effective finding's severity is ≥ this "
+        "threshold (e.g. --fail-on HIGH fails on HIGH or CRITICAL)."
+    ),
+)
+@click.option(
+    "--min-grade",
+    type=click.Choice(["A", "B", "C", "D"], case_sensitive=False),
+    default=None,
+    help="Fail the gate if the overall grade is worse than this (A is best).",
+)
+@click.option(
+    "--max-failures",
+    type=int,
+    default=None,
+    metavar="N",
+    help="Fail the gate if more than N effective failing findings are present.",
+)
+@click.option(
+    "--fail-on-check",
+    "fail_on_checks",
+    multiple=True,
+    metavar="CHECK_ID",
+    help=(
+        "Fail the gate if the named check fails. Repeat for multiple "
+        "(e.g. --fail-on-check IAM-001 --fail-on-check CB-002)."
+    ),
+)
+@click.option(
+    "--baseline",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a prior --output json report. Findings already failing in "
+        "the baseline are excluded from gate evaluation (but still reported)."
+    ),
+)
+@click.option(
+    "--ignore-file",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an ignore file (one CHECK_ID or CHECK_ID:RESOURCE per line). "
+        "Defaults to .pipelinecheckignore when present in the working dir."
+    ),
+)
 def scan(
     pipeline: str,
     target: str | None,
@@ -186,6 +237,12 @@ def scan(
     standards: tuple[str, ...],
     list_standards: bool,
     severity_threshold: str,
+    fail_on: str | None,
+    min_grade: str | None,
+    max_failures: int | None,
+    fail_on_checks: tuple[str, ...],
+    baseline: str | None,
+    ignore_file: str | None,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
@@ -277,6 +334,40 @@ def scan(
         else:
             click.echo(sarif_text)
 
-    # Non-zero exit when the grade is D so CI pipelines can gate on the result.
-    if score_result["grade"] == "D":
+    # CI gate evaluation. See pipeline_check.core.gate for the full contract.
+    ignore_path = ignore_file or ".pipelinecheckignore"
+    gate_config = GateConfig(
+        fail_on=Severity(fail_on.upper()) if fail_on else None,
+        min_grade=min_grade.upper() if min_grade else None,
+        max_failures=max_failures,
+        fail_on_checks={c.upper() for c in fail_on_checks},
+        baseline_path=baseline,
+        ignore_rules=load_ignore_file(ignore_path),
+    )
+    gate = evaluate_gate(findings, score_result, gate_config)
+
+    if output != "json" and (gate.reasons or gate.baseline_matched or gate.suppressed):
+        _emit_gate_summary(gate)
+
+    if not gate.passed:
         sys.exit(1)
+
+
+def _emit_gate_summary(gate) -> None:
+    """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
+    if gate.passed:
+        msg_lines = ["[gate] PASS"]
+    else:
+        msg_lines = ["[gate] FAIL"]
+        for reason in gate.reasons:
+            msg_lines.append(f"        - {reason}")
+    if gate.baseline_matched:
+        msg_lines.append(
+            f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"
+        )
+    if gate.suppressed:
+        msg_lines.append(
+            f"[gate] {len(gate.suppressed)} finding(s) suppressed by ignore file"
+        )
+    for line in msg_lines:
+        click.echo(line, err=True)
