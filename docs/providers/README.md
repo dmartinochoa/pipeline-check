@@ -7,9 +7,10 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 
 ## Supported providers
 
-| Name  | Status | Context            | Docs                  |
-|-------|--------|--------------------|-----------------------|
-| `aws` | stable | `boto3.Session`    | [aws.md](aws.md)      |
+| Name        | Status | Context                                                 | Docs                           |
+|-------------|--------|---------------------------------------------------------|--------------------------------|
+| `aws`       | stable | `boto3.Session` — live AWS account                      | [aws.md](aws.md)               |
+| `terraform` | stable | `TerraformContext` — parsed `terraform show -json` plan | [terraform.md](terraform.md)   |
 
 ## Adding a new provider
 

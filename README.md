@@ -6,7 +6,9 @@
 
 Pipeline-Check audits your AWS build, deploy, and artifact infrastructure
 against well-known compliance standards and scores it A–D, so you can gate
-pipelines on the result.
+pipelines on the result. It can scan either a **live AWS account** via boto3
+or a **Terraform plan** (`terraform show -json`) before any resource is
+provisioned.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -42,7 +44,8 @@ Top 10 CI/CD + CIS AWS Foundations — see [Compliance standards](#compliance-st
 Findings are scored 0–100 and graded A–D. Exit code is `1` when the grade
 is D, so `pipeline_check` works as a CI gate.
 
-Planned providers: **GCP**, **GitHub Actions**, **Azure Pipelines**.
+Supported providers: **AWS** (live, via boto3) and **Terraform** (plan JSON).
+Planned: **GCP**, **GitHub Actions**, **Azure Pipelines**.
 
 ---
 
@@ -62,7 +65,11 @@ chain (`~/.aws/credentials`, env vars, instance profile, SSO).
 ## Usage
 
 ```bash
-# Scan everything in us-east-1
+# Scan a Terraform plan before provisioning (no AWS creds needed)
+terraform plan -out=tfplan && terraform show -json tfplan > plan.json
+pipeline_check --pipeline terraform --tf-plan plan.json
+
+# Scan everything in us-east-1 (live AWS account)
 pipeline_check
 
 # Scope to a specific pipeline
@@ -97,7 +104,8 @@ pipeline_check --output both
 
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
-| `--pipeline`            | `aws`                         | Pipeline environment (`aws`; `gcp`, `github`, `azure` planned) |
+| `--pipeline`            | `aws`                         | Provider (`aws`, `terraform`; `gcp`, `github`, `azure` planned) |
+| `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
@@ -173,16 +181,25 @@ pipeline_check/
     │       └── cis_aws_foundations.py
     └── checks/
         ├── base.py                # Finding dataclass, Severity enum, BaseCheck ABC
-        └── aws/
-            ├── base.py            # AWSBaseCheck — wires boto3 Session
-            ├── codebuild.py       # CB-001 … CB-005
-            ├── codepipeline.py    # CP-001 … CP-003
-            ├── codedeploy.py      # CD-001 … CD-003
-            ├── ecr.py             # ECR-001 … ECR-004
-            ├── iam.py             # IAM-001 … IAM-003
-            ├── pbac.py            # PBAC-001 … PBAC-002
-            ├── s3.py              # S3-001 … S3-004
-            └── rules/             # per-check YAML metadata for HTML report
+        ├── aws/                   # live-account provider (boto3)
+        │   ├── base.py            # AWSBaseCheck — wires boto3 Session
+        │   ├── codebuild.py       # CB-001 … CB-005
+        │   ├── codepipeline.py    # CP-001 … CP-003
+        │   ├── codedeploy.py      # CD-001 … CD-003
+        │   ├── ecr.py             # ECR-001 … ECR-004
+        │   ├── iam.py             # IAM-001 … IAM-003
+        │   ├── pbac.py            # PBAC-001 … PBAC-002
+        │   ├── s3.py              # S3-001 … S3-004
+        │   └── rules/             # per-check YAML metadata for HTML report
+        └── terraform/             # plan-JSON provider (same check IDs)
+            ├── base.py            # TerraformContext + TerraformBaseCheck
+            ├── codebuild.py
+            ├── codepipeline.py
+            ├── codedeploy.py
+            ├── ecr.py
+            ├── iam.py
+            ├── pbac.py
+            └── s3.py
 ```
 
 See [docs/providers/](docs/providers/) for the provider catalogue and
