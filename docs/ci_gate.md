@@ -171,9 +171,35 @@ pipeline_check --pipeline github --diff-base origin/main --fail-on HIGH
 
 If git is unavailable or the ref can't be resolved, the flag no-ops
 and a full scan runs — over-scanning is safer than silently skipping
-everything in CI. `--diff-base` only affects workflow-style providers
-(`github`, `gitlab`, `bitbucket`, `azure`); AWS and Terraform builds
-scan their full context regardless.
+everything in CI.
+
+**Provider support:**
+
+- **Workflow providers** (`github`, `gitlab`, `bitbucket`, `azure`) —
+  filters the loaded workflow documents to just the changed files.
+- **`terraform`** — filters planned resources to those whose module
+  directory is touched by the diff. A change in `modules/vpc/main.tf`
+  keeps `module.vpc.*` resources, drops unrelated modules. A change
+  in a root `*.tf` file keeps root-level resources.
+- **`aws`** — rejected with a clear error. Live AWS resources aren't
+  bound to git refs; narrow the scope with `--target NAME` instead.
+
+## Baseline from a git ref — `--baseline-from-git REF:PATH`
+
+`--baseline` reads a JSON report from disk. When baselines are stored
+in the repo itself (committed artifact) or on a merge-base branch,
+`--baseline-from-git REF:PATH` pulls them via `git show`:
+
+```bash
+# Gate only on findings not already present on origin/main's baseline.json.
+pipeline_check --pipeline github \
+    --baseline-from-git origin/main:artifacts/baseline.json \
+    --fail-on HIGH
+```
+
+Mirrors `--diff-base`: a git failure (unreachable ref, missing path)
+degrades to "no baseline" instead of raising. `--baseline` (file path)
+takes precedence if both are set.
 
 ## Autofix — `--fix`
 
@@ -185,15 +211,53 @@ unified diff on stdout, so it composes with `git apply`:
 pipeline_check --pipeline github --fix | git apply
 ```
 
-The tool never modifies files directly — review the patch, apply or
-discard. Currently registered fixers:
+The tool never modifies files directly by default — review the patch,
+apply or discard. Currently registered fixers:
 
-| Check    | Fix                                                |
-|----------|----------------------------------------------------|
-| GHA-004  | Inserts `permissions: contents: read` at the top   |
+| Check    | Fix                                                                  |
+|----------|----------------------------------------------------------------------|
+| GHA-002  | Adds `persist-credentials: false` under every `actions/checkout` step; handles both `- uses: ...` and named (`- name: ... / uses: ...`) forms. |
+| GHA-004  | Inserts `permissions: contents: read` at the top of the workflow.    |
+| GHA-008  | Replaces credential-shaped literals with `"<REDACTED>"` and a `TODO(pipelineguard)` marker. Preserves any operator comment on the line. |
 
 Fixers are idempotent — re-running against already-remediated content
-emits nothing for that finding.
+emits nothing for that finding. A broken fixer logs to stderr and is
+skipped; the rest of the run continues.
+
+### Applying patches directly — `--fix --apply`
+
+When you trust the fixer catalogue, skip the `git apply` round-trip:
+
+```bash
+pipeline_check --pipeline github --fix --apply
+# [autofix] 3 file(s) modified.
+```
+
+`--apply` is opt-in (dry-run by default), only valid with `--fix`, and
+reports the modified-file count on stderr. Stdout is untouched by
+`--apply` so the rest of the report (terminal / JSON / SARIF) still
+behaves the same.
+
+When `--output` is `json`, `sarif`, `html`, or `both`, patches from
+plain `--fix` (without `--apply`) route to stderr automatically so
+the machine-readable stream on stdout stays valid.
+
+## Selecting checks — globs
+
+`--checks` accepts glob patterns (`fnmatch` syntax), not just exact IDs:
+
+```bash
+# All secret-scanning checks across every provider
+pipeline_check --pipeline github --checks '*-008'
+
+# Every GitHub check
+pipeline_check --pipeline github --checks 'GHA-*'
+
+# A range
+pipeline_check --pipeline gitlab --checks 'GL-00[12]'
+```
+
+Exact IDs (`--checks GHA-001`) still work unchanged.
 
 ## Custom secret patterns
 

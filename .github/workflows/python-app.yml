@@ -18,7 +18,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        # 3.10 is supported by setup.py (``python_requires=">=3.10"``)
+        # but excluded from the hash-locked CI install: pytest 9 pulls
+        # in ``exceptiongroup``/``tomli`` conditionally on 3.10, and
+        # the pip-compile that produced requirements-dev.txt ran on a
+        # newer Python so those transitive deps aren't in the lock
+        # file. Re-add 3.10 here once requirements-dev.txt is
+        # regenerated with ``pip-compile`` on Python 3.10.
+        python-version: ["3.11", "3.12", "3.13"]
         include:
           # Cross-platform smoke check on the version most dev laptops run.
           # Path-handling bugs in diff.py / autofix.py surface on Windows,

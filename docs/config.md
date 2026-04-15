@@ -123,6 +123,36 @@ rather than raising:
 Typos still surface, but a config written for a newer version keeps
 working on an older install.
 
+### `--config-check` — fail CI on typos
+
+The warning is easy to miss in CI logs. Run the dedicated validator
+step to make unknown keys a hard failure:
+
+```bash
+pipeline_check --config-check
+# [config] OK — no unknown keys.
+# exit 0
+```
+
+On a typo:
+
+```bash
+pipeline_check --config-check
+# [config] pyproject.toml: 'max_faillures' — unknown key
+# [config] 1 unknown key(s) detected.
+# exit 3
+```
+
+Exit code `3` is reserved for this validation failure (distinct from
+`1` for a failed gate and `2` for a scan error), so CI can branch
+on the cause:
+
+```yaml
+- name: Validate pipeline_check config
+  run: pipeline_check --config-check
+# ↑ fails the job immediately on any unknown key
+```
+
 ## Tips
 
 - Keep `pyproject.toml` as the single source of truth for Python projects;
