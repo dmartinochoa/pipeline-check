@@ -1,7 +1,17 @@
 name: LocalStack Integration Test
 
 on:
+  # Manual trigger kept for debugging.
   workflow_dispatch:
+  # Run on merges to master so integration drift between the scanner
+  # and real AWS behaviour (via LocalStack) surfaces at merge time,
+  # not weeks later when someone notices.
+  push:
+    branches: ["master"]
+  # Nightly schedule catches LocalStack / AWS SDK upstream drift that
+  # wouldn't otherwise show up between PRs.
+  schedule:
+    - cron: "17 4 * * *"  # 04:17 UTC daily — off-peak for GH runners
 
 permissions:
   contents: read
@@ -16,9 +26,12 @@ jobs:
   # ---------------------------------------------------------------------------
   pytest-integration:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.12
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
@@ -75,9 +88,12 @@ jobs:
   # ---------------------------------------------------------------------------
   terraform-fixture:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.12
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
@@ -210,31 +226,20 @@ jobs:
             | tee pipeline-check-bad-report.json || true
 
       - name: Assert bad fixture check failures detected
+        # EXPECTED_FAILURES is loaded from tests/integration/expected_failures.json
+        # so localstack-test.yml and any Python-side integration test
+        # consume the same canonical list — renaming a check can't
+        # silently leave the workflow checking the wrong set.
         run: |
           python - <<'EOF'
           import json, sys
 
+          with open("tests/integration/expected_failures.json") as f:
+              spec = json.load(f)
           with open("pipeline-check-bad-report.json") as f:
               report = json.load(f)
 
-          # Every check ID that the bad fixture is designed to trigger.
-          # The exclusions below cannot be reliably triggered in LocalStack:
-          #   IAM-001, ECR-003 — managed policy ARNs / registry policies differ from real AWS
-          #   S3-001, S3-002   — LocalStack returns passing defaults for
-          #                      get_public_access_block / get_bucket_encryption
-          #                      even when no config was applied
-          #   CD-001, CD-002, CD-003 — batch_get_deployment_groups in LocalStack
-          #                      doesn't round-trip missing autoRollback/alarm
-          #                      fields faithfully, so checks read as passing
-          EXPECTED_FAILURES = {
-              "IAM-002", "IAM-003", "IAM-004", "IAM-005", "IAM-006",
-              "S3-003", "S3-004", "S3-005",
-              "CP-001", "CP-002", "CP-003",
-              "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
-              "ECR-001", "ECR-002", "ECR-004", "ECR-005",
-              "PBAC-001", "PBAC-002",
-          }
-
+          EXPECTED_FAILURES = set(spec["bad_fixture_expected_failures"])
           failed = {f["check_id"] for f in report["findings"] if not f["passed"]}
           missing = EXPECTED_FAILURES - failed
 
@@ -252,6 +257,8 @@ jobs:
           python - <<'EOF'
           import json, sys
 
+          with open("tests/integration/expected_failures.json") as f:
+              spec = json.load(f)
           with open("pipeline-check-bad-report.json") as f:
               report = json.load(f)
 
@@ -272,14 +279,7 @@ jobs:
               sys.exit(1)
 
           # 2. Every CIS-mapped check that failed carries its CIS ControlRef.
-          # Mirrors pipeline_check/core/standards/data/cis_aws_foundations.py.
-          EXPECTED_CIS = {
-              "IAM-002": "1.16",
-              "S3-001":  "2.1.4",
-              "S3-002":  "2.1.1",
-              "S3-003":  "2.1.2",
-              "S3-004":  "3.6",
-          }
+          EXPECTED_CIS = spec["cis_enrichment_expected"]
 
           missing_cis = []
           for check_id, ctrl_id in EXPECTED_CIS.items():

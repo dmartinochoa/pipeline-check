@@ -11,15 +11,32 @@ permissions:
 
 jobs:
   lint-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          # Cross-platform smoke check on the version most dev laptops run.
+          # Path-handling bugs in diff.py / autofix.py surface on Windows,
+          # so run the suite at least once per push to catch them early.
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
 
-      - name: Set up Python 3.12
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: "pip"
           cache-dependency-path: requirements-dev.txt
 
@@ -35,5 +52,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest
+        # --cov-fail-under gates the build on coverage regressions. Bump
+        # this floor (never lower it) as the suite grows.
         run: |
-          pytest --cov=pipeline_check --cov-report=term-missing
+          pytest --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90

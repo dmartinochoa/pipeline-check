@@ -139,6 +139,34 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
 
 def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
     level, _ = _LEVEL_MAP.get(f.severity, ("warning", "5.0"))
+    physical_location: dict = {
+        "artifactLocation": {"uri": _artifact_uri(f.resource)},
+    }
+    # Best-effort line number: for file-based findings we try to grep
+    # the resource content for a signature line per check_id. This
+    # makes GitHub PR annotations land on the offending line instead
+    # of the file header. When we can't determine a line (AWS/Terraform
+    # or unreadable file) we omit the region entirely — GitHub handles
+    # a missing region fine, a wrong one looks like a bug.
+    start_line = _best_effort_line(f)
+    if start_line is not None:
+        physical_location["region"] = {"startLine": start_line}
+
+    logical_location: dict = {"name": f.resource, "kind": "resource"}
+    # AWS resources: surface an ARN/region property so programmatic
+    # SARIF consumers can pivot to the console.
+    arn = _aws_arn(f.resource)
+    if arn:
+        logical_location["fullyQualifiedName"] = arn
+
+    properties: dict = {
+        "severity": f.severity.value,
+        "controls": [c.to_dict() for c in f.controls],
+    }
+    if arn:
+        properties["arn"] = arn
+        properties["region"] = _region_from_arn(arn) or ""
+
     result: dict = {
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
@@ -146,20 +174,88 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
         "message": {"text": f.description},
         "locations": [
             {
-                "physicalLocation": {
-                    "artifactLocation": {"uri": _artifact_uri(f.resource)},
-                },
-                "logicalLocations": [
-                    {"name": f.resource, "kind": "resource"},
-                ],
+                "physicalLocation": physical_location,
+                "logicalLocations": [logical_location],
             }
         ],
-        "properties": {
-            "severity": f.severity.value,
-            "controls": [c.to_dict() for c in f.controls],
-        },
+        "properties": properties,
     }
     return result
+
+
+def _best_effort_line(f: Finding) -> int | None:
+    """Try to find a line number in ``f.resource`` the finding refers to.
+
+    Strategy: only run on file-based findings (resource looks like a
+    path, file exists, is small enough to read). Match by check_id —
+    e.g. GHA-001 looks for a tag-pinned ``uses:`` line, GHA-008 looks
+    for a credential-shaped token. When no pattern matches we return
+    None so the SARIF consumer falls back to whole-file annotation.
+    """
+    import os
+    import re as _re
+    from .checks._patterns import SECRET_VALUE_RE
+
+    path = f.resource
+    if not path or not isinstance(path, str):
+        return None
+    # Avoid pathologically large files and AWS resource names.
+    try:
+        if not os.path.isfile(path):
+            return None
+        if os.path.getsize(path) > 256 * 1024:
+            return None
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+
+    check_id = f.check_id.upper()
+    # Per-check line signatures. Return the 1-based line number of the
+    # first match. Missing patterns mean "don't annotate a specific
+    # line" — caller falls back to file-level.
+    patterns: dict[str, _re.Pattern[str]] = {
+        "GHA-001": _re.compile(r"\buses:\s*\S+@(?!\s*[0-9a-f]{40}\b)\S+"),
+        "GHA-002": _re.compile(r"pull_request\.head\.(?:sha|ref)"),
+        "GHA-003": _re.compile(r"\$\{\{\s*github\.event\."),
+        "GL-001":  _re.compile(r"^\s*image:\s*\S+(?<!@sha256):\w+"),
+        "BB-001":  _re.compile(r"^\s*-?\s*pipe:\s*\S+"),
+        "ADO-001": _re.compile(r"^\s*-?\s*task:\s*\S+@\d"),
+        "ADO-005": _re.compile(r"^\s*image:\s*\S+:\S+"),
+    }
+    pat = patterns.get(check_id)
+    if pat is not None:
+        for idx, line in enumerate(lines, start=1):
+            if pat.search(line):
+                return idx
+        return None
+
+    # Generic fallback for secret-scanning checks: first line matching
+    # the built-in credential regex.
+    if check_id in ("GHA-008", "GL-008", "BB-008", "ADO-008"):
+        for idx, line in enumerate(lines, start=1):
+            if SECRET_VALUE_RE.search(line):
+                return idx
+            # SECRET_VALUE_RE is anchored; also check for AKIA inline.
+            if "AKIA" in line or "ghp_" in line:
+                return idx
+    return None
+
+
+def _aws_arn(resource: str) -> str | None:
+    """Return the ARN embedded in an AWS check resource, or None."""
+    if isinstance(resource, str) and resource.startswith("arn:"):
+        return resource
+    return None
+
+
+def _region_from_arn(arn: str) -> str | None:
+    # arn:aws:service:region:account:resource
+    try:
+        parts = arn.split(":", 5)
+        return parts[3] or None
+    except (IndexError, AttributeError):
+        return None
 
 
 def _rule_name(check_id: str, title: str) -> str:

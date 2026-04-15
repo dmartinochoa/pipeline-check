@@ -15,7 +15,7 @@ import re
 from typing import Any
 
 from .._secrets import find_secret_values
-from ..base import Finding, Severity, has_sbom, has_signing
+from ..base import Finding, Severity, has_sbom, has_signing, is_quoted_assignment
 from .base import GitHubBaseCheck, iter_jobs, iter_steps, workflow_triggers
 
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -263,7 +263,14 @@ class WorkflowChecks(GitHubBaseCheck):
                 run = step.get("run")
                 if not isinstance(run, str):
                     continue
-                if _UNTRUSTED_CONTEXT_RE.search(run):
+                # Skip lines that are the safe idiom
+                # ``VAR="${{ github.event.title }}"`` — the assignment
+                # captures the value but never executes it. Matches
+                # the behaviour GitLab / Bitbucket / Azure already have.
+                if _UNTRUSTED_CONTEXT_RE.search(run) and not all(
+                    is_quoted_assignment(line) for line in run.splitlines()
+                    if _UNTRUSTED_CONTEXT_RE.search(line)
+                ):
                     offenders.append(f"{job_id}[{idx}]")
         passed = not offenders
         desc = (

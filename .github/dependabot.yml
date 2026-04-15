@@ -1,0 +1,41 @@
+# Dependabot keeps our SHA-pinned GitHub Actions and Python
+# dependencies fresh. SHA pins are the right call for supply-chain
+# safety (see GHA-001) but they rot fast without automation.
+#
+# Rebase strategy: auto-rebase so PRs don't go stale against master.
+# Reviewers: left empty — use CODEOWNERS for routing.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    rebase-strategy: "auto"
+    groups:
+      # Batch all action bumps into one PR/week to cut review noise.
+      actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    rebase-strategy: "auto"
+    groups:
+      # Split dev-only bumps from runtime so Python package upgrades
+      # can be reviewed separately from test-tool churn.
+      runtime:
+        dependency-type: "production"
+      dev:
+        dependency-type: "development"
+    labels:
+      - "dependencies"
+      - "python"

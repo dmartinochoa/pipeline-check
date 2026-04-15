@@ -45,6 +45,8 @@ as e.g. `default[0]`, `branches.main[1].parallel[0]`.
 | BB-005  | Step has no `max-time` — unbounded build                      | MEDIUM   |
 | BB-006  | Artifacts not signed                                          | MEDIUM   |
 | BB-007  | SBOM not produced                                             | MEDIUM   |
+| BB-008  | Credential-shaped literal in pipeline body                    | CRITICAL |
+| BB-009  | pipe: pinned by version rather than sha256 digest             | LOW      |
 
 ---
 

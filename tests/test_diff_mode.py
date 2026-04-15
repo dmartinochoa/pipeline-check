@@ -25,7 +25,7 @@ def test_filter_context_drops_unchanged_workflows(tmp_path):
     )
 
     with patch.object(diff_mod, "changed_files", return_value={str(changed)}):
-        _filter_context_by_diff(ctx, base_ref="origin/main")
+        _filter_context_by_diff(ctx, base_ref="origin/main", provider="github")
 
     assert [w.path for w in ctx.workflows] == [str(changed)]
 
@@ -33,7 +33,7 @@ def test_filter_context_drops_unchanged_workflows(tmp_path):
 def test_filter_context_no_op_when_git_unavailable(tmp_path):
     ctx = GitHubContext(workflows=[Workflow(path="a.yml", data={})])
     with patch.object(diff_mod, "changed_files", return_value=None):
-        _filter_context_by_diff(ctx, base_ref="origin/main")
+        _filter_context_by_diff(ctx, base_ref="origin/main", provider="github")
     # Unchanged — over-scanning beats under-scanning in CI.
     assert len(ctx.workflows) == 1
 

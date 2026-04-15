@@ -9,6 +9,12 @@ from rich.table import Table
 
 from .checks.base import Finding, Severity, severity_rank
 
+
+# Bump when the JSON payload shape changes in a way consumers need to
+# branch on (e.g. a new top-level key, a renamed field). Minor-revision
+# adds (appending an optional field) do NOT require a version bump.
+JSON_SCHEMA_VERSION = "1.0"
+
 _SEVERITY_STYLE: dict[Severity, str] = {
     Severity.CRITICAL: "bold red",
     Severity.HIGH: "red",
@@ -136,9 +142,21 @@ def report_terminal(
         )
 
 
-def report_json(findings: list[Finding], score_result: dict) -> str:
-    """Serialise all findings and the score to a JSON string."""
+def report_json(
+    findings: list[Finding],
+    score_result: dict,
+    tool_version: str = "",
+) -> str:
+    """Serialise all findings and the score to a JSON string.
+
+    The payload carries ``schema_version`` (bumped on breaking format
+    changes) and ``tool_version`` (the pipeline_check release that
+    produced it) at the top level so downstream consumers can version-
+    branch without guessing.
+    """
     payload = {
+        "schema_version": JSON_SCHEMA_VERSION,
+        "tool_version": tool_version or "0.0.0",
         "score": score_result,
         "findings": [f.to_dict() for f in findings],
     }

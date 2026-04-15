@@ -1,9 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["score", "findings"],
+  "required": ["schema_version", "tool_version", "score", "findings"],
   "additionalProperties": false,
   "properties": {
+    "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "tool_version":   { "type": "string" },
     "score": {
       "type": "object",
       "required": ["score", "grade", "summary"],

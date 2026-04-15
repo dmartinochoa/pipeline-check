@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .checks.base import Finding
+from .checks.base import Finding, clear_blob_cache
+from .checks import _secrets as _secret_registry
 from . import providers as _providers
 from . import standards as _standards
 from . import diff as _diff
@@ -39,6 +40,7 @@ class Scanner:
         region: str = "us-east-1",
         profile: str | None = None,
         diff_base: str | None = None,
+        secret_patterns: list[str] | tuple[str, ...] | None = None,
         **provider_kwargs: Any,
     ) -> None:
         provider = _providers.get(pipeline)
@@ -49,11 +51,19 @@ class Scanner:
             )
         self.pipeline = pipeline.lower()
         self._check_classes = provider.check_classes
+        # Reset the global secret-pattern registry at the start of
+        # every Scanner construction so patterns registered for a
+        # prior scan (common in long-lived Lambda containers) don't
+        # leak into the next invocation. Callers pass the patterns
+        # they want applied to this scan via ``secret_patterns``.
+        _secret_registry.reset_patterns()
+        for pat in secret_patterns or ():
+            _secret_registry.register_pattern(pat)
         self._context: Any = provider.build_context(
             region=region, profile=profile, **provider_kwargs
         )
         if diff_base:
-            _filter_context_by_diff(self._context, diff_base)
+            _filter_context_by_diff(self._context, diff_base, self.pipeline)
 
     def run(
         self,
@@ -77,14 +87,25 @@ class Scanner:
             to annotate findings with. When ``None``, every registered
             standard is used.
         """
+        # Reset the blob cache so id()-keyed entries from a prior scan
+        # can't alias a newly-allocated doc object in the same process.
+        clear_blob_cache()
+
         findings: list[Finding] = []
         for check_class in self._check_classes:
             checker = check_class(self._context, target=target)
             findings.extend(checker.run())
 
         if checks:
-            normalised = {c.upper() for c in checks}
-            findings = [f for f in findings if f.check_id.upper() in normalised]
+            # Support glob patterns (``GHA-*``, ``*-008``) alongside
+            # exact IDs. fnmatch semantics: ``*`` matches any run of
+            # chars, ``?`` matches one, ``[abc]`` matches a set.
+            import fnmatch
+            patterns = [c.upper() for c in checks]
+            findings = [
+                f for f in findings
+                if any(fnmatch.fnmatchcase(f.check_id.upper(), p) for p in patterns)
+            ]
 
         active_standards = _standards.resolve(standards)
         for f in findings:
@@ -93,20 +114,32 @@ class Scanner:
         return findings
 
 
-def _filter_context_by_diff(context: Any, base_ref: str) -> None:
+def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
     """Drop workflow/pipeline entries whose file was not changed vs ``base_ref``.
 
-    Only workflow-style providers carry file-scoped context — AWS and
-    Terraform build contexts hold live API clients or a single plan
-    and are left untouched. Workflow providers expose either
-    ``.workflows`` (GitHub) or ``.pipelines`` (GitLab / Bitbucket /
-    Azure), each a list of objects with a ``.path`` attribute; filter
-    those lists in place.
+    Workflow providers expose either ``.workflows`` (GitHub) or
+    ``.pipelines`` (GitLab / Bitbucket / Azure), each a list of objects
+    with a ``.path`` attribute; filter those lists in place.
+
+    Terraform provider: filter ``planned_values.root_module.resources``
+    by whether any ``.tf`` file mentioning the resource address
+    changed. Coarse but correct — if nothing in the plan's source
+    files changed, nothing in the plan can have changed.
+
+    AWS provider: ``--diff-base`` has no natural analogue (live API
+    calls aren't bound to git files). Raise loudly rather than
+    silently ignoring the flag.
 
     ``changed_files`` returning ``None`` (git missing / base ref bad)
     is treated as "no filter" — better to over-scan than to silently
     skip everything in CI.
     """
+    if provider == "aws":
+        raise ValueError(
+            "--diff-base is not supported for the AWS provider. "
+            "Live AWS resources are not bound to git refs; scan the "
+            "whole region or narrow scope with --target NAME."
+        )
     allowed = _diff.changed_files(base_ref)
     if allowed is None:
         return
@@ -121,3 +154,64 @@ def _filter_context_by_diff(context: Any, base_ref: str) -> None:
             attr,
             [i for i in items if getattr(i, "path", "") in kept],
         )
+    if provider == "terraform":
+        _filter_terraform_by_diff(context, allowed)
+
+
+def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
+    """Keep only planned resources whose module directory touched a changed file.
+
+    A plan's resources don't carry source file locations directly,
+    but their ``address`` starts with a module path (e.g.
+    ``module.vpc.aws_subnet.public[0]``). We approximate "changed
+    resources" as "resources whose module path maps to a .tf file
+    under a directory that appears in the diff." When the plan has
+    no module prefix (root module), any .tf file change in the
+    working directory keeps all resources in play.
+    """
+    plan = getattr(context, "plan", None)
+    if not isinstance(plan, dict):
+        return
+    tf_files_touched = {
+        p for p in allowed
+        if isinstance(p, str) and p.endswith(".tf")
+    }
+    root_changed = any(
+        "/" not in p and "\\" not in p for p in tf_files_touched
+    )
+    module_dirs_changed = {
+        _tf_dir(p) for p in tf_files_touched if _tf_dir(p)
+    }
+    planned = (
+        plan.get("planned_values", {})
+            .get("root_module", {})
+            .get("resources")
+    )
+    if not isinstance(planned, list):
+        return
+
+    def _keep(res: dict) -> bool:
+        addr = res.get("address", "")
+        if not isinstance(addr, str):
+            return True
+        if not addr.startswith("module."):
+            return root_changed
+        # module.<name>.<type>.<...> — use <name> as a directory hint.
+        parts = addr.split(".")
+        if len(parts) < 2:
+            return root_changed
+        mod_name = parts[1]
+        # Exact match only. Substring (``vpc in "vpc-prod"``) would
+        # keep resources from unrelated modules whose directory name
+        # happens to share a prefix.
+        return mod_name in module_dirs_changed
+
+    plan["planned_values"]["root_module"]["resources"] = [
+        r for r in planned if _keep(r)
+    ]
+
+
+def _tf_dir(path: str) -> str:
+    from pathlib import Path as _P
+    parts = _P(path).parent.parts
+    return parts[-1] if parts else ""

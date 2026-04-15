@@ -62,3 +62,27 @@ def filter_paths(paths: list[str], allowed: set[str] | None) -> list[str]:
 
 def _norm(p: str) -> str:
     return Path(p).as_posix().lower()
+
+
+def git_show(ref: str, path: str, cwd: str | Path = ".") -> str | None:
+    """Return the content of ``path`` at ``ref`` via ``git show``, or None.
+
+    Used by ``--baseline-from-git`` to resolve a prior scan's JSON
+    report without requiring the caller to restore the artifact by
+    hand. ``None`` on any git failure — callers should degrade to a
+    full scan rather than refusing to run.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "show", f"{ref}:{path}"],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout

@@ -2,8 +2,9 @@
 
 `pipeline_check` exits with a non-zero code when the gate fails, so you
 can wire it directly into a pipeline step and let the pipeline block the
-merge. The gate has six orthogonal conditions; any tripped condition
-fails the gate (logical OR).
+merge. The gate has four orthogonal fail conditions plus two subtractive
+filters; any tripped condition fails the gate (logical OR), and filters
+run before the conditions are evaluated.
 
 | Condition        | Flag                      | Fails when…                                             |
 |------------------|---------------------------|---------------------------------------------------------|
@@ -91,6 +92,30 @@ Lines are `CHECK_ID` (suppress everywhere) or `CHECK_ID:RESOURCE`
 The file is discovered automatically when present; override with
 `--ignore-file path/to/file`.
 
+#### Expiring suppressions (YAML format)
+
+Pass `--ignore-file .pipelineguard-ignore.yml` (or any `.yml` / `.yaml`
+extension) to use the structured format:
+
+```yaml
+- check_id: GHA-001
+  resource: .github/workflows/release.yml
+  expires: 2026-06-30
+  reason: waiting on upstream Dependabot config
+
+- check_id: GL-003
+```
+
+`expires` (ISO date) is optional; past the date the suppression no
+longer applies and the gate summary emits:
+
+```
+[gate] ignore rule expired on 2026-06-30: GHA-001:.github/workflows/release.yml (no longer suppressing)
+```
+
+This forces a review rather than letting suppressions rot silently.
+`reason` is free-form metadata for reviewers.
+
 ### Combine: new findings only, CRITICAL blocks, debt tracked explicitly
 
 ```bash
@@ -132,3 +157,58 @@ as-yet-unacknowledged CRITICALs fail CI.
 As soon as any of `--fail-on`, `--min-grade`, `--max-failures`, or
 `--fail-on-check` is passed, those govern and the implicit default is
 suppressed.
+
+## Scoping to changed files — `--diff-base`
+
+PR pipelines often only want to scan workflows the PR actually touches.
+`--diff-base REF` runs `git diff --name-only <REF>...HEAD` and filters
+the workflow/pipeline documents down to the changed set before checks
+run.
+
+```bash
+pipeline_check --pipeline github --diff-base origin/main --fail-on HIGH
+```
+
+If git is unavailable or the ref can't be resolved, the flag no-ops
+and a full scan runs — over-scanning is safer than silently skipping
+everything in CI. `--diff-base` only affects workflow-style providers
+(`github`, `gitlab`, `bitbucket`, `azure`); AWS and Terraform builds
+scan their full context regardless.
+
+## Autofix — `--fix`
+
+For a subset of checks, `pipeline_check` can emit the exact source
+edit that would remediate the finding. The output is a standard
+unified diff on stdout, so it composes with `git apply`:
+
+```bash
+pipeline_check --pipeline github --fix | git apply
+```
+
+The tool never modifies files directly — review the patch, apply or
+discard. Currently registered fixers:
+
+| Check    | Fix                                                |
+|----------|----------------------------------------------------|
+| GHA-004  | Inserts `permissions: contents: read` at the top   |
+
+Fixers are idempotent — re-running against already-remediated content
+emits nothing for that finding.
+
+## Custom secret patterns
+
+The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`)
+ship with detectors for AWS access keys, GitHub tokens, Slack tokens,
+and JWTs. Add org-specific patterns with `--secret-pattern REGEX`
+(repeat for multiple) or a `secret_patterns:` list in the config file:
+
+```bash
+pipeline_check --pipeline github \
+    --secret-pattern '^acme_[a-f0-9]{32}$' \
+    --secret-pattern '^xoxo-[A-Z0-9]{20,}$'
+```
+
+Patterns are Python regex syntax; anchor with `^...$` to whole-token
+match. Tokens are extracted from every string in the workflow, split
+on whitespace and common shell separators. See
+[config.md](config.md#schema) for the config-file form.

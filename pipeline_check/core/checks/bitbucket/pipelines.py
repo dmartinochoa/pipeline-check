@@ -16,7 +16,7 @@ import re
 from typing import Any
 
 from .._secrets import find_secret_values
-from ..base import Finding, Severity, has_sbom, has_signing
+from ..base import Finding, Severity, has_sbom, has_signing, is_quoted_assignment
 from .base import BitbucketBaseCheck, iter_steps, step_scripts
 
 # Bitbucket pipe ref: "org/name:version". Pinned = digest-looking, semver x.y.z,
@@ -259,7 +259,7 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
         offenders: list[str] = []
         for loc, step in steps:
             for line in step_scripts(step):
-                if _UNTRUSTED_VAR_RE.search(line) and not _is_quoted_assignment(line):
+                if _UNTRUSTED_VAR_RE.search(line) and not is_quoted_assignment(line):
                     offenders.append(loc)
                     break
         passed = not offenders
@@ -431,6 +431,3 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
         )
 
 
-def _is_quoted_assignment(line: str) -> bool:
-    """Heuristic — ignore assignments like `BRANCH=\"$BITBUCKET_BRANCH\"`."""
-    return bool(re.match(r'\s*\w+="[^"]*\$\{?\w+\}?[^"]*"\s*$', line))

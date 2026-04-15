@@ -9,6 +9,27 @@ from botocore.exceptions import ClientError
 
 from .base import AWSBaseCheck, Finding, Severity
 
+
+def _cd000(resource: str, description: str) -> Finding:
+    """Emit a degraded-mode finding when an AWS API call fails.
+
+    Used instead of silently skipping, so the operator sees that some
+    subset of CodeDeploy was not evaluated rather than assuming a clean
+    result. INFO severity keeps it out of the gate by default.
+    """
+    return Finding(
+        check_id="CD-000",
+        title="CodeDeploy inspection degraded",
+        severity=Severity.INFO,
+        resource=resource,
+        description=description,
+        recommendation=(
+            "Retry the scan; if the failure is persistent check IAM "
+            "permissions and CloudTrail for throttling or access denials."
+        ),
+        passed=False,
+    )
+
 # Deployment configs that deploy to all targets simultaneously with no traffic shifting.
 _ALL_AT_ONCE_CONFIGS = {
     "CodeDeployDefault.AllAtOnce",
@@ -42,7 +63,12 @@ class CodeDeployChecks(AWSBaseCheck):
         for app_name in app_names:
             try:
                 groups = self._list_deployment_groups(client, app_name)
-            except ClientError:
+            except ClientError as exc:
+                findings.append(_cd000(
+                    f"codedeploy/{app_name}",
+                    f"Could not list deployment groups for {app_name}: {exc}. "
+                    f"CD checks for this application were skipped.",
+                ))
                 continue
             if not groups:
                 continue
@@ -51,7 +77,12 @@ class CodeDeployChecks(AWSBaseCheck):
                     applicationName=app_name,
                     deploymentGroupNames=groups,
                 )
-            except ClientError:
+            except ClientError as exc:
+                findings.append(_cd000(
+                    f"codedeploy/{app_name}",
+                    f"Could not fetch deployment group details for "
+                    f"{app_name} ({len(groups)} group(s)): {exc}.",
+                ))
                 continue
             for group in resp.get("deploymentGroupsInfo", []):
                 resource = f"{app_name}/{group['deploymentGroupName']}"

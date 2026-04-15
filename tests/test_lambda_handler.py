@@ -198,3 +198,39 @@ class TestSNSAlerts:
 
         msg = sns.publish.call_args.kwargs["Message"]
         assert "s3://my-reports/reports/" in msg
+
+    def test_sns_message_omits_s3_link_when_put_object_fails(self, monkeypatch):
+        """When S3 write fails, the SNS alert must not reference a key
+        that was never written — and ``report_s3_status`` distinguishes
+        the failure from the "unconfigured" case."""
+        monkeypatch.setenv("PIPELINE_CHECK_RESULTS_BUCKET", "my-reports")
+        monkeypatch.setenv("PIPELINE_CHECK_SNS_TOPIC_ARN",
+                           "arn:aws:sns:us-east-1:123:alerts")
+        s3 = MagicMock()
+        s3.put_object.side_effect = ClientError(
+            {"Error": {"Code": "AccessDenied", "Message": "no"}}, "PutObject"
+        )
+        sns = MagicMock()
+
+        def pick_client(name, **_):
+            return s3 if name == "s3" else sns
+
+        with _patch_scanner([_f(severity=Severity.CRITICAL)]), \
+             patch.object(lh, "boto3") as mock_boto3:
+            mock_boto3.client.side_effect = pick_client
+            result = lh.handler({}, None)
+
+        # SNS is still published, but the S3 link is absent from the message.
+        msg = sns.publish.call_args.kwargs["Message"]
+        assert "s3://" not in msg
+        # Return payload distinguishes 'error' from 'unconfigured'.
+        assert result["report_s3_key"] is None
+        assert result["report_s3_status"] == "error"
+
+    def test_report_s3_status_unconfigured_when_bucket_env_unset(self, monkeypatch):
+        monkeypatch.delenv("PIPELINE_CHECK_RESULTS_BUCKET", raising=False)
+        monkeypatch.delenv("PIPELINE_CHECK_SNS_TOPIC_ARN", raising=False)
+        with _patch_scanner([_f()]), patch.object(lh, "boto3"):
+            result = lh.handler({}, None)
+        assert result["report_s3_key"] is None
+        assert result["report_s3_status"] == "unconfigured"

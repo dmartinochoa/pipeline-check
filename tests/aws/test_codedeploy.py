@@ -260,10 +260,21 @@ class TestErrorHandling:
         client.batch_get_deployment_groups.return_value = {"deploymentGroupsInfo": [_group()]}
 
         findings = CodeDeployChecks(session).run()
-        # Only app-ok produces findings; app-bad is silently skipped
-        resources = {f.resource for f in findings}
-        assert all("app-bad" not in r for r in resources)
-        assert any("app-ok" in r for r in resources)
+        # app-ok produces real CD-00X findings; app-bad produces a
+        # single CD-000 degraded-mode finding, not silence — so the
+        # operator can see that not every application was evaluated.
+        bad_failures = [
+            f for f in findings
+            if "app-bad" in f.resource and f.check_id == "CD-000"
+        ]
+        assert len(bad_failures) == 1
+        # No CD-001/002/003 findings for app-bad (we couldn't list its groups).
+        non_degraded_bad = [
+            f for f in findings
+            if "app-bad" in f.resource and f.check_id != "CD-000"
+        ]
+        assert non_degraded_bad == []
+        assert any("app-ok" in f.resource for f in findings)
 
     def test_app_with_no_groups_produces_no_findings(self):
         findings = _make_check({"empty-app": []}).run()

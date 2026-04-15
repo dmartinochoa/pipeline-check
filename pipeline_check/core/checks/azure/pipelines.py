@@ -16,7 +16,7 @@ import re
 from typing import Any
 
 from .._secrets import find_secret_values
-from ..base import Finding, Severity, has_sbom, has_signing
+from ..base import Finding, Severity, has_sbom, has_signing, is_quoted_assignment
 from .base import AzureBaseCheck, iter_jobs, iter_steps
 
 # `- task: Org.Task@N.M.P` — pinned; `@N` alone is floating-major.
@@ -272,7 +272,7 @@ class AzurePipelineChecks(AzureBaseCheck):
                     body = step.get(key)
                     if not isinstance(body, str):
                         continue
-                    if _UNTRUSTED_VAR_RE.search(body) and not _is_quoted_assignment(body):
+                    if _UNTRUSTED_VAR_RE.search(body) and not is_quoted_assignment(body):
                         offenders.append(f"{job_loc}.{step_loc}")
                         break
         passed = not offenders
@@ -480,6 +480,3 @@ class AzurePipelineChecks(AzureBaseCheck):
         return None
 
 
-def _is_quoted_assignment(line: str) -> bool:
-    """Heuristic — ``VAR="$(Build.SourceBranch)"`` captures, doesn't execute."""
-    return bool(re.match(r'\s*\w+="[^"]*\$\([^)]+\)[^"]*"\s*$', line))

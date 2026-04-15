@@ -73,7 +73,28 @@ class CodeBuildChecks(AWSBaseCheck):
             batch = project_names[i : i + 100]
             try:
                 response = client.batch_get_projects(names=batch)
-            except ClientError:
+            except ClientError as exc:
+                # Surface the dropped batch explicitly rather than
+                # silently skipping 100 projects. A transient API
+                # failure must not be indistinguishable from "all
+                # projects clean".
+                findings.append(Finding(
+                    check_id="CB-000",
+                    title="CodeBuild batch inspection failed",
+                    severity=Severity.INFO,
+                    resource=f"codebuild (projects {i}..{i + len(batch)})",
+                    description=(
+                        f"Could not BatchGetProjects for {len(batch)} "
+                        f"project name(s): {exc}. Those projects were "
+                        f"not evaluated by any CB-XXX check."
+                    ),
+                    recommendation=(
+                        "Retry the scan; if the failure is persistent, "
+                        "check IAM permissions for codebuild:BatchGetProjects "
+                        "and CloudTrail for throttling."
+                    ),
+                    passed=False,
+                ))
                 continue
             for project in response.get("projects", []):
                 findings.extend(self._check_project(project, source_creds))

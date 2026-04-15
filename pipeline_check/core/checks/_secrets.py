@@ -16,9 +16,41 @@ are not.
 """
 from __future__ import annotations
 
-from typing import Any, Iterable
+import re
+from typing import Any, Iterable, Pattern
 
 from ._patterns import SECRET_VALUE_RE
+
+
+# Mutable registry — appended to by :func:`register_pattern` so users
+# can extend the detector with org-specific credential shapes (e.g.
+# internal token prefixes) without vendoring the package. Always
+# includes the built-in ``SECRET_VALUE_RE`` as the first entry.
+_PATTERNS: list[Pattern[str]] = [SECRET_VALUE_RE]
+
+
+def register_pattern(pattern: str | Pattern[str]) -> None:
+    """Add ``pattern`` to the set of regexes :func:`find_secret_values` checks.
+
+    The pattern is anchored by the caller — tokens are whole-string
+    matched (``re.fullmatch``) after tokenisation, so a pattern like
+    ``^acme_[a-z0-9]{32}$`` matches the token ``acme_…`` but not a
+    substring of a larger blob. Duplicate patterns are ignored.
+    """
+    compiled = re.compile(pattern) if isinstance(pattern, str) else pattern
+    for existing in _PATTERNS:
+        if existing.pattern == compiled.pattern:
+            return
+    _PATTERNS.append(compiled)
+
+
+def reset_patterns() -> None:
+    """Drop every custom pattern, keeping only the built-in one.
+
+    Exists for test isolation — callers that tweak the registry should
+    restore it so later tests start from a known state.
+    """
+    _PATTERNS[:] = [SECRET_VALUE_RE]
 
 
 def _walk(node: Any) -> Iterable[str]:
@@ -50,7 +82,9 @@ def find_secret_values(doc: Any) -> list[str]:
         # ``script:`` bodies can contain multiple tokens separated by
         # whitespace or shell metacharacters. Split permissively.
         for token in _tokenize(candidate):
-            if SECRET_VALUE_RE.match(token) and token not in seen:
+            if token in seen:
+                continue
+            if any(p.fullmatch(token) for p in _PATTERNS):
                 seen.add(token)
                 hits.append(_redact(token))
     return hits
@@ -59,11 +93,10 @@ def find_secret_values(doc: Any) -> list[str]:
 def _tokenize(s: str) -> Iterable[str]:
     """Split ``s`` on whitespace + common shell separators.
 
-    Yields each token for pattern-matching. SECRET_VALUE_RE is anchored
-    (``^...$``) so whole-string matches only; tokenising lets a secret
-    embedded in ``echo "AKIA…"`` still fire.
+    Yields each token for pattern-matching. Built-in patterns are
+    anchored (``^...$``), so tokenising lets a secret embedded in
+    ``echo "AKIA…"`` still fire.
     """
-    import re
     for tok in re.split(r"[\s=\"'`,;<>|&()]+", s):
         if tok:
             yield tok

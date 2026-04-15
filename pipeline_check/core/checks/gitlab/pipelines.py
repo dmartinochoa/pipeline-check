@@ -16,7 +16,7 @@ import re
 from typing import Any
 
 from .._secrets import find_secret_values
-from ..base import Finding, Severity, has_sbom, has_signing
+from ..base import Finding, Severity, has_sbom, has_signing, is_quoted_assignment
 from .base import GitLabBaseCheck, iter_jobs, job_scripts
 
 _DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
@@ -271,7 +271,7 @@ class GitLabPipelineChecks(GitLabBaseCheck):
         offenders: list[str] = []
         for name, job in iter_jobs(doc):
             for line in job_scripts(job):
-                if _UNTRUSTED_VAR_RE.search(line) and not _is_quoted_assignment(line):
+                if _UNTRUSTED_VAR_RE.search(line) and not is_quoted_assignment(line):
                     offenders.append(name)
                     break
         passed = not offenders
@@ -457,11 +457,6 @@ class GitLabPipelineChecks(GitLabBaseCheck):
             ),
             passed=passed,
         )
-
-
-def _is_quoted_assignment(line: str) -> bool:
-    """Heuristic — `VAR="$CI_COMMIT_MESSAGE"` is safe assignment, not injection."""
-    return bool(re.match(r'\s*\w+="[^"]*\$\{?\w+\}?[^"]*"\s*$', line))
 
 
 def _rules_manual(rules: Any) -> bool:

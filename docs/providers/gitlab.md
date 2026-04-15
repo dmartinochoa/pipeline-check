@@ -37,6 +37,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GL-005  | `include:` pulls remote / project without pinned ref    | HIGH     |
 | GL-006  | Artifacts not signed                                    | MEDIUM   |
 | GL-007  | SBOM not produced                                       | MEDIUM   |
+| GL-008  | Credential-shaped literal in pipeline body              | CRITICAL |
+| GL-009  | Image pinned to version tag rather than sha256 digest   | LOW      |
 
 ---
 

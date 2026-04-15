@@ -44,6 +44,7 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "tf_plan", "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
     "output", "output_file",
     "standards", "severity_threshold",
+    "secret_patterns",
 })
 
 # Keys allowed under the "gate" sub-table.
@@ -68,6 +69,17 @@ _ENV_PREFIX = "PIPELINE_CHECK_"
 _ENV_GATE_PREFIX = "PIPELINE_CHECK_GATE_"
 
 
+#: Populated by ``_flatten`` each time a config file is parsed so
+#: ``--config-check`` can report on the most recent load without
+#: re-parsing. A list of ``(source, key, reason)`` tuples.
+_LAST_UNKNOWN_KEYS: list[tuple[str, str, str]] = []
+
+
+def last_unknown_keys() -> list[tuple[str, str, str]]:
+    """Return the unknown keys seen during the last ``load_config`` call."""
+    return list(_LAST_UNKNOWN_KEYS)
+
+
 def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> dict[str, Any]:
     """Resolve configuration from file(s) + environment.
 
@@ -76,6 +88,7 @@ def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> di
     expects, so the caller can hand it straight to the click entry
     point.
     """
+    _LAST_UNKNOWN_KEYS.clear()
     cwd = cwd or Path.cwd()
     file_cfg = _load_from_file(explicit_path, cwd)
     env_cfg = _load_from_env()
@@ -175,12 +188,13 @@ def _coerce(key: str, value: Any) -> Any:
       tuples (multiple=True) — accept a list in config and convert.
     - Everything else passes through as-is; click handles type conversion.
     """
-    if key in ("checks", "standards", "fail_on_checks") and isinstance(value, list):
+    if key in ("checks", "standards", "fail_on_checks", "secret_patterns") and isinstance(value, list):
         return tuple(str(v) for v in value)
     return value
 
 
 def _warn_unknown(source: str, key: str, reason: str = "unknown key") -> None:
+    _LAST_UNKNOWN_KEYS.append((source, key, reason))
     print(f"[config] ignoring {key!r} from {source}: {reason}", file=sys.stderr)
 
 
@@ -214,7 +228,7 @@ def _load_from_env() -> dict[str, Any]:
 
 def _coerce_env(key: str, raw: str) -> Any:
     """Env vars arrive as strings; split the multi-value ones on commas."""
-    if key in ("checks", "standards", "fail_on_checks"):
+    if key in ("checks", "standards", "fail_on_checks", "secret_patterns"):
         return tuple(v.strip() for v in raw.split(",") if v.strip())
     if key == "max_failures":
         try:

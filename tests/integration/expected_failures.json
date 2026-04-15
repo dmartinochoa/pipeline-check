@@ -1,0 +1,19 @@
+{
+  "_comment": "Check IDs the 'bad' Terraform fixture (infra/bad/) is designed to trigger when scanned via LocalStack. Both localstack-test.yml and tests/integration/ consume this file so the list has a single source of truth.",
+  "_exclusions_reason": "LocalStack does not faithfully round-trip every AWS API. The exclusions documented below are known LocalStack gaps, not scanner bugs: IAM-001/ECR-003 (managed policy ARNs / registry policies), S3-001/S3-002 (get_public_access_block and get_bucket_encryption return passing defaults), CD-001/CD-002/CD-003 (batch_get_deployment_groups omits autoRollback and alarm fields).",
+  "bad_fixture_expected_failures": [
+    "CB-001", "CB-002", "CB-003", "CB-004", "CB-005",
+    "CP-001", "CP-002", "CP-003",
+    "ECR-001", "ECR-002", "ECR-004", "ECR-005",
+    "IAM-002", "IAM-003", "IAM-004", "IAM-005", "IAM-006",
+    "PBAC-001", "PBAC-002",
+    "S3-003", "S3-004", "S3-005"
+  ],
+  "cis_enrichment_expected": {
+    "IAM-002": "1.16",
+    "S3-001":  "2.1.4",
+    "S3-002":  "2.1.1",
+    "S3-003":  "2.1.2",
+    "S3-004":  "3.6"
+  }
+}

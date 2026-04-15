@@ -39,6 +39,8 @@ The walker handles every layout ADO supports:
 | ADO-005  | Container image not pinned to specific version          | HIGH     |
 | ADO-006  | Artifacts not signed                                    | MEDIUM   |
 | ADO-007  | SBOM not produced                                       | MEDIUM   |
+| ADO-008  | Credential-shaped literal in pipeline body              | CRITICAL |
+| ADO-009  | Container image pinned by tag rather than sha256 digest | LOW      |
 
 ---
 

@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -87,6 +88,10 @@ class GateConfig:
     max_failures: int | None = None
     fail_on_checks: set[str] = field(default_factory=set)
     baseline_path: str | None = None
+    #: When set, resolve the baseline JSON from ``git show <ref>:<path>``
+    #: instead of reading a file. Mutually exclusive with baseline_path
+    #: at the CLI layer; if both are set here, file wins.
+    baseline_from_git: tuple[str, str] | None = None  # (ref, path)
     ignore_rules: list[IgnoreRule] = field(default_factory=list)
 
     def any_explicit_gate(self) -> bool:
@@ -183,9 +188,27 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
 def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
     try:
         doc = yaml.safe_load(p.read_text(encoding="utf-8"))
-    except yaml.YAMLError:
+    except yaml.YAMLError as exc:
+        # Surface the parse error — a typo here silently removes every
+        # suppression and the user has no way to tell without diffing
+        # findings against a prior run.
+        print(
+            f"[ignore-file] could not parse {p}: {exc}. No rules loaded.",
+            file=sys.stderr,
+        )
+        return []
+    except OSError as exc:
+        print(
+            f"[ignore-file] could not read {p}: {exc}. No rules loaded.",
+            file=sys.stderr,
+        )
         return []
     if not isinstance(doc, list):
+        print(
+            f"[ignore-file] {p} must contain a top-level list of rules; "
+            f"got {type(doc).__name__}. No rules loaded.",
+            file=sys.stderr,
+        )
         return []
     rules: list[IgnoreRule] = []
     for entry in doc:
@@ -236,6 +259,29 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
         doc = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return set()
+    return _baseline_from_doc(doc)
+
+
+def load_baseline_from_git(ref: str, path: str, cwd: str | Path = ".") -> set[tuple[str, str]]:
+    """Load a baseline JSON report directly from ``git show <ref>:<path>``.
+
+    This lets the gate compare against a prior commit's scan output
+    without requiring the caller to check it out or restore an
+    artifact by hand. Returns an empty set on any failure, mirroring
+    ``load_baseline`` for file-based lookups.
+    """
+    from .diff import git_show
+    content = git_show(ref, path, cwd=cwd)
+    if content is None:
+        return set()
+    try:
+        doc = json.loads(content)
+    except json.JSONDecodeError:
+        return set()
+    return _baseline_from_doc(doc)
+
+
+def _baseline_from_doc(doc: dict) -> set[tuple[str, str]]:
     out: set[tuple[str, str]] = set()
     for f in doc.get("findings", []):
         if not f.get("passed", True):
@@ -249,9 +295,9 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def _is_ignored(f: Finding, rules: Iterable[IgnoreRule]) -> bool:
+def _is_ignored(f: Finding, rules: Iterable[IgnoreRule], today: _dt.date) -> bool:
     for r in rules:
-        if r.is_expired():
+        if r.is_expired(today):
             continue
         if r.check_id != f.check_id.upper():
             continue
@@ -273,11 +319,14 @@ def evaluate_gate(
     """
     failing = [f for f in findings if not f.passed]
 
-    # Filter: baseline
-    baseline_pairs = (
-        load_baseline(config.baseline_path)
-        if config.baseline_path else set()
-    )
+    # Filter: baseline — file wins over git-ref when both set.
+    if config.baseline_path:
+        baseline_pairs = load_baseline(config.baseline_path)
+    elif config.baseline_from_git:
+        ref, path = config.baseline_from_git
+        baseline_pairs = load_baseline_from_git(ref, path)
+    else:
+        baseline_pairs = set()
     baseline_matched: list[Finding] = []
     after_baseline: list[Finding] = []
     for f in failing:
@@ -286,11 +335,13 @@ def evaluate_gate(
         else:
             after_baseline.append(f)
 
-    # Filter: ignore rules
+    # Filter: ignore rules. Cache today's date so the expiry check
+    # doesn't invoke the clock once per (rule, finding) pair.
+    today = _dt.date.today()
     suppressed: list[Finding] = []
     effective: list[Finding] = []
     for f in after_baseline:
-        if _is_ignored(f, config.ignore_rules):
+        if _is_ignored(f, config.ignore_rules, today):
             suppressed.append(f)
         else:
             effective.append(f)
@@ -338,7 +389,7 @@ def evaluate_gate(
                 f"--fail-on-check"
             )
 
-    expired_rules = [r for r in config.ignore_rules if r.is_expired()]
+    expired_rules = [r for r in config.ignore_rules if r.is_expired(today)]
 
     return GateResult(
         passed=not reasons,

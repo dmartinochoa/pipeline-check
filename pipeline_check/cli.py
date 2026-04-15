@@ -39,6 +39,7 @@ auto-detect their canonical file at cwd when omitted. Missing flag plus
 missing canonical file raises a ``UsageError``.
 """
 import os
+import re
 import sys
 
 import click
@@ -209,6 +210,25 @@ def _load_config_callback(ctx: click.Context, _param, value):
     help="List every registered compliance standard and exit.",
 )
 @click.option(
+    "--standard-report",
+    default=None,
+    metavar="NAME",
+    help=(
+        "Print the control → check matrix for the named standard and "
+        "exit. Includes a 'gaps' section listing controls with no "
+        "mapped checks — useful for auditing standard coverage."
+    ),
+)
+@click.option(
+    "--config-check",
+    is_flag=True,
+    help=(
+        "Parse the config file, report any unknown keys, and exit. "
+        "Exits non-zero when a dropped key is detected so CI can "
+        "fail on typos. Use alongside --config PATH for explicit files."
+    ),
+)
+@click.option(
     "--severity-threshold",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default="INFO",
@@ -248,6 +268,19 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--secret-pattern",
+    "secret_patterns",
+    multiple=True,
+    metavar="REGEX",
+    help=(
+        "Extra regex (Python syntax) for the secret-scanning checks "
+        "(GHA-008, GL-008, BB-008, ADO-008) to match against every "
+        "string token. Repeat for multiple. Anchor with ^...$ for "
+        "whole-token match. Also configurable via "
+        "`secret_patterns: [...]` in the config file."
+    ),
+)
+@click.option(
     "--fix",
     is_flag=True,
     default=False,
@@ -256,6 +289,27 @@ def _load_config_callback(ctx: click.Context, _param, value):
         "that has a registered autofix. Does not modify files — pipe "
         "the output into `git apply` to apply. Currently supports: "
         + ", ".join(_autofix.available_fixers()) + "."
+    ),
+)
+@click.option(
+    "--apply",
+    "apply_fixes",
+    is_flag=True,
+    default=False,
+    help=(
+        "Apply autofixes in place instead of emitting a patch. Only "
+        "meaningful with --fix. Prints an 'N files modified' summary "
+        "to stderr."
+    ),
+)
+@click.option(
+    "--baseline-from-git",
+    default=None,
+    metavar="REF:PATH",
+    help=(
+        "Load the baseline JSON from a prior commit via "
+        "`git show REF:PATH`. Mirrors --diff-base for the baseline "
+        "workflow. Example: --baseline-from-git origin/main:baseline.json"
     ),
 )
 @click.option(
@@ -302,12 +356,17 @@ def scan(
     output_file: str | None,
     standards: tuple[str, ...],
     list_standards: bool,
+    standard_report: str | None,
+    config_check: bool,
     severity_threshold: str,
     fail_on: str | None,
     min_grade: str | None,
     max_failures: int | None,
     fail_on_checks: tuple[str, ...],
+    secret_patterns: tuple[str, ...],
     fix: bool,
+    apply_fixes: bool,
+    baseline_from_git: str | None,
     diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
@@ -323,6 +382,53 @@ def scan(
             if std.url:
                 click.echo(f"    {std.url}")
         return
+
+    if standard_report:
+        std = _standards.get(standard_report)
+        if std is None:
+            available = ", ".join(_standards.available())
+            raise click.UsageError(
+                f"Unknown standard {standard_report!r}. "
+                f"Available: {available or 'none'}."
+            )
+        click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
+        if std.url:
+            click.echo(f"  {std.url}")
+        click.echo("")
+        click.echo("Control → check mapping:")
+        gaps: list[tuple[str, str]] = []
+        for ctrl_id in sorted(std.controls):
+            title = std.controls[ctrl_id]
+            check_ids = [
+                cid for cid, controls in std.mappings.items()
+                if ctrl_id in controls
+            ]
+            if check_ids:
+                joined = ", ".join(sorted(check_ids))
+                click.echo(f"  [{ctrl_id}] {title}")
+                click.echo(f"      checks: {joined}")
+            else:
+                gaps.append((ctrl_id, title))
+        if gaps:
+            click.echo("")
+            click.echo(f"Gaps ({len(gaps)} control(s) with no mapped check):")
+            for ctrl_id, title in gaps:
+                click.echo(f"  [{ctrl_id}] {title}")
+        return
+
+    if config_check:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if not dropped:
+            click.echo("[config] OK — no unknown keys.")
+            return
+        for source, key, reason in dropped:
+            click.echo(f"[config] {source}: {key!r} — {reason}", err=True)
+        click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
+        sys.exit(3)
+
+    if apply_fixes and not fix:
+        raise click.UsageError("--apply requires --fix.")
 
     pipeline_lc = pipeline.lower()
     if pipeline_lc == "terraform":
@@ -382,6 +488,14 @@ def scan(
             "--output-file PATH is required when --output html."
         )
 
+    for pat in secret_patterns:
+        try:
+            re.compile(pat)
+        except re.error as exc:
+            raise click.UsageError(
+                f"--secret-pattern {pat!r} is not a valid regex: {exc}"
+            ) from exc
+
     threshold = Severity(severity_threshold.upper())
 
     scanner = Scanner(
@@ -389,6 +503,7 @@ def scan(
         region=region,
         profile=profile,
         diff_base=diff_base,
+        secret_patterns=secret_patterns or None,
         tf_plan=tf_plan,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
@@ -403,7 +518,12 @@ def scan(
             standards=list(standards) if standards else None,
         )
     except Exception as exc:
+        # Print the traceback to stderr so operators have something to
+        # take to support. Keep the single-line summary above it for
+        # teams that grep logs for "[error] Scan failed".
+        import traceback
         click.echo(f"[error] Scan failed: {exc}", err=True)
+        click.echo(traceback.format_exc(), err=True, nl=False)
         sys.exit(2)
 
     score_result = score(findings)
@@ -416,7 +536,7 @@ def scan(
         report_terminal(findings, score_result, severity_threshold=threshold, console=console)
 
     if output in ("json", "both"):
-        click.echo(report_json(findings, score_result))
+        click.echo(report_json(findings, score_result, tool_version=__version__))
 
     if output == "html":
         report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
@@ -432,16 +552,33 @@ def scan(
             click.echo(sarif_text)
 
     if fix:
-        _emit_fix_patches(findings)
+        if apply_fixes:
+            _apply_fix_patches(findings)
+        else:
+            # Route patches to stderr whenever stdout is carrying a machine-
+            # readable report, so `--output json --fix` doesn't produce
+            # "JSON...--- a/file" and break downstream parsers. The
+            # documented `pipeline_check --fix | git apply` recipe uses the
+            # default terminal output where stdout is free for the patch.
+            _emit_fix_patches(findings, to_stderr=output != "terminal")
 
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"
+    baseline_git_pair: tuple[str, str] | None = None
+    if baseline_from_git:
+        if ":" not in baseline_from_git:
+            raise click.UsageError(
+                "--baseline-from-git expects REF:PATH (e.g. origin/main:baseline.json)"
+            )
+        ref_part, path_part = baseline_from_git.split(":", 1)
+        baseline_git_pair = (ref_part, path_part)
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
         min_grade=min_grade.upper() if min_grade else None,
         max_failures=max_failures,
         fail_on_checks={c.upper() for c in fail_on_checks},
         baseline_path=baseline,
+        baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
     )
     gate = evaluate_gate(findings, score_result, gate_config)
@@ -455,30 +592,98 @@ def scan(
         sys.exit(1)
 
 
-def _emit_fix_patches(findings) -> None:
+def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
     """Emit one unified-diff patch per failing finding that has a fixer.
 
-    Output goes to stdout so a user can ``pipeline_check --fix | git
-    apply``. File read errors are silently skipped — a missing file is
-    almost always due to a finding with a synthetic resource name
-    (e.g. an AWS check), not a real on-disk workflow.
+    Patches go to stdout by default so a user can pipe straight into
+    ``git apply``. When a machine-readable report is already occupying
+    stdout (``--output json/sarif/html/both``), the caller sets
+    ``to_stderr=True`` to avoid corrupting that stream.
+
+    File read errors are silently skipped — a missing file is almost
+    always due to a finding with a synthetic resource name (e.g. an
+    AWS check), not a real on-disk workflow. Per-path content is
+    cached so multiple findings against the same file only re-read
+    the source once.
     """
     import os
+    cache: dict[str, str] = {}
     for f in findings:
         if f.passed:
             continue
         path = f.resource
         if not path or not os.path.isfile(path):
             continue
+        before = cache.get(path)
+        if before is None:
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    before = fh.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            cache[path] = before
         try:
-            with open(path, "r", encoding="utf-8") as fh:
-                before = fh.read()
-        except (OSError, UnicodeDecodeError):
+            after = _autofix.generate_fix(f, before)
+        except Exception as exc:
+            # One broken fixer must not abort the whole --fix run. Log
+            # to stderr so the bug is still visible to whoever is
+            # debugging it.
+            click.echo(
+                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
+                err=True,
+            )
             continue
-        after = _autofix.generate_fix(f, before)
         if after is None:
             continue
-        click.echo(_autofix.render_patch(path, before, after), nl=False)
+        click.echo(
+            _autofix.render_patch(path, before, after),
+            nl=False,
+            err=to_stderr,
+        )
+
+
+def _apply_fix_patches(findings) -> None:
+    """Apply autofixes in place; print an N-files-modified summary to stderr.
+
+    Each fixer is idempotent, so it's safe to re-run after an apply —
+    already-fixed files produce no further patch. Unfixable findings
+    are silently skipped.
+    """
+    import os
+    cache: dict[str, str] = {}
+    dirty: dict[str, str] = {}  # path → final content
+    for f in findings:
+        if f.passed:
+            continue
+        path = f.resource
+        if not path or not os.path.isfile(path):
+            continue
+        before = dirty.get(path) or cache.get(path)
+        if before is None:
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    before = fh.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            cache[path] = before
+        try:
+            after = _autofix.generate_fix(f, before)
+        except Exception as exc:
+            click.echo(
+                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
+                err=True,
+            )
+            continue
+        if after is None:
+            continue
+        dirty[path] = after
+    for path, content in dirty.items():
+        try:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(content)
+        except OSError as exc:
+            click.echo(f"[autofix] could not write {path}: {exc}", err=True)
+    click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
 
 
 def _emit_gate_summary(gate) -> None:

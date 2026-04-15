@@ -47,6 +47,14 @@ gitlab_path = ".gitlab-ci.yml"
 bitbucket_path = "bitbucket-pipelines.yml"
 tf_plan = "plan.json"
 
+# Extra credential patterns for the secret-scanning checks
+# (GHA-008, GL-008, BB-008, ADO-008). Python regex syntax; anchor
+# with ^...$ for whole-token matches.
+secret_patterns = [
+    '^acme_[a-f0-9]{32}$',     # internal service token
+    '^xoxo-[A-Z0-9]{20,}$',    # vendor-specific API key
+]
+
 [tool.pipeline_check.gate]
 fail_on = "HIGH"
 min_grade = "B"
@@ -67,6 +75,10 @@ standards:
   - owasp_cicd_top_10
   - nist_ssdf
 severity_threshold: MEDIUM
+
+secret_patterns:
+  - '^acme_[a-f0-9]{32}$'
+  - '^xoxo-[A-Z0-9]{20,}$'
 
 gate:
   fail_on: HIGH
@@ -92,8 +104,8 @@ export PIPELINE_CHECK_GATE_FAIL_ON=HIGH
 export PIPELINE_CHECK_GATE_MAX_FAILURES=5
 ```
 
-Multi-value flags (`standards`, `checks`, `fail_on_checks`) are
-comma-separated in env vars.
+Multi-value flags (`standards`, `checks`, `fail_on_checks`,
+`secret_patterns`) are comma-separated in env vars.
 
 Env vars override config-file values for the same key — useful in CI
 where the file encodes repo policy but a specific job (e.g. a nightly
