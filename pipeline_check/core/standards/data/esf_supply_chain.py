@@ -95,6 +95,7 @@ STANDARD = Standard(
         "GHA-005":  ["ESF-D-TOKEN-HYGIENE"],
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],
         "GHA-007":  ["ESF-D-SBOM"],
+        "GHA-008":  ["ESF-D-SECRETS"],
         # ── GitLab CI ──────────────────────────────────────────────
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "GL-002":   ["ESF-D-INJECTION"],
@@ -103,6 +104,8 @@ STANDARD = Standard(
         "GL-005":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "GL-007":   ["ESF-D-SBOM"],
+        "GL-008":   ["ESF-D-SECRETS"],
+        "GL-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
         # ── Bitbucket Pipelines ────────────────────────────────────
         "BB-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "BB-002":   ["ESF-D-INJECTION"],
@@ -111,6 +114,8 @@ STANDARD = Standard(
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
         "BB-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "BB-007":   ["ESF-D-SBOM"],
+        "BB-008":   ["ESF-D-SECRETS"],
+        "BB-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
         # ── Azure DevOps Pipelines ─────────────────────────────────
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
@@ -119,5 +124,20 @@ STANDARD = Standard(
         "ADO-005":  ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
         "ADO-006":  ["ESF-D-SIGN-ARTIFACTS"],
         "ADO-007":  ["ESF-D-SBOM"],
+        "ADO-008":  ["ESF-D-SECRETS"],
+        "ADO-009":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
+        # ── Jenkins ────────────────────────────────────────────────
+        "JF-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "JF-002":   ["ESF-D-INJECTION"],
+        "JF-003":   ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
+        "JF-004":   ["ESF-D-TOKEN-HYGIENE"],
+        "JF-005":   ["ESF-C-APPROVAL"],
+        "JF-006":   ["ESF-D-SIGN-ARTIFACTS"],
+        "JF-007":   ["ESF-D-SBOM"],
+        "JF-008":   ["ESF-D-SECRETS"],
+        "JF-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
+        "JF-010":   ["ESF-D-SECRETS", "ESF-D-TOKEN-HYGIENE"],
+        "JF-011":   ["ESF-D-BUILD-LOGS", "ESF-C-AUDIT"],
+        "JF-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
     },
 )

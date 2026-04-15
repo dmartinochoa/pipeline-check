@@ -261,10 +261,46 @@ Exact IDs (`--checks GHA-001`) still work unchanged.
 
 ## Custom secret patterns
 
-The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`)
-ship with detectors for AWS access keys, GitHub tokens, Slack tokens,
-and JWTs. Add org-specific patterns with `--secret-pattern REGEX`
-(repeat for multiple) or a `secret_patterns:` list in the config file:
+The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
+`JF-008`) ship with named detectors for **16 vendor token shapes**:
+
+| Detector              | Matches                                                          |
+|-----------------------|------------------------------------------------------------------|
+| `aws_access_key`      | `AKIA…` / `ASIA…` (16 trailing chars)                            |
+| `github_token`        | `ghp_` / `gho_` / `ghu_` / `ghs_` / `ghr_` (36+ trailing)        |
+| `slack_token`         | `xoxa-` / `xoxb-` / `xoxp-` / `xoxr-` / `xoxs-`                  |
+| `jwt`                 | `eyJ…` three-segment header.payload.signature                    |
+| `stripe_secret`       | `sk_live_` / `sk_test_` / `rk_live_` / `rk_test_` (24+ payload)  |
+| `stripe_publishable`  | `pk_live_` / `pk_test_` (24+ payload)                            |
+| `google_api_key`      | `AIza…` (35 trailing chars)                                      |
+| `npm_token`           | `npm_…` (36 chars)                                               |
+| `pypi_token`          | `pypi-AgEIcHlwaS5vcmc…` (50+ trailing)                           |
+| `docker_hub_pat`      | `dckr_pat_…` (20+ trailing)                                      |
+| `gitlab_pat`          | `glpat-…` (20 trailing)                                          |
+| `gitlab_deploy_token` | `gldt-…` (20+ trailing)                                          |
+| `sendgrid`            | `SG.<22>.<43>`                                                   |
+| `anthropic_api_key`   | `sk-ant-api03-…` (90+ trailing)                                  |
+| `digitalocean_token`  | `dop_v1_…` (64 hex)                                              |
+| `hashicorp_vault`     | `hvs.…` (24+ trailing)                                           |
+
+Plus a multi-line `private_key` detector that fires on any
+`-----BEGIN PRIVATE KEY-----` block (RSA, EC, OPENSSH, PGP).
+
+Each hit is labelled with the matched detector — finding descriptions
+read like ``aws_access_key:AKIA…LE, stripe_secret:sk_l…23`` so
+operators can write **targeted** ignore rules per-detector instead of
+suppressing the whole `*-008` check.
+
+**Placeholder suppression**: tokens containing obvious documentation
+markers (`<your-key>`, `XXXXX`, `replace_me`, `dummy_key`, …) are
+silently skipped before reaching the user. The canonical AWS docs
+example `AKIAIOSFODNN7EXAMPLE` is **deliberately NOT** suppressed —
+if it shows up in a real workflow it almost always means someone
+copy-pasted from docs and forgot to substitute.
+
+Add org-specific patterns with `--secret-pattern REGEX` (repeat for
+multiple) or a `secret_patterns:` list in the config file. User
+patterns share a single `custom:` label:
 
 ```bash
 pipeline_check --pipeline github \

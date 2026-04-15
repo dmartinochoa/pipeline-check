@@ -84,8 +84,11 @@ _VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 # An ``environment { KEY = '...' }`` declaration where the key looks
 # like a long-lived AWS credential. The Groovy assignment uses ``=``
 # (not ``:`` like YAML), and the value is single- or double-quoted.
+# The leading boundary is start-of-line OR whitespace OR ``{`` so the
+# inline form ``environment { AWS_ACCESS_KEY_ID = '...' }`` matches
+# alongside the multiline form.
 _ENV_AWS_KEY_RE = re.compile(
-    r"^\s*(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN)\s*=\s*['\"]([^'\"]+)['\"]",
+    r"(?:^|[\s{])(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN)\s*=\s*['\"]([^'\"]+)['\"]",
     re.MULTILINE,
 )
 

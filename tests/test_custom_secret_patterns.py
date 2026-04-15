@@ -37,8 +37,13 @@ def test_duplicate_registration_is_idempotent():
     assert len(secrets_mod._PATTERNS) == before + 1
 
 
-def test_reset_restores_only_builtin():
+def test_reset_clears_all_user_patterns():
+    """Built-ins live in the immutable ``SECRET_DETECTORS`` registry;
+    ``_PATTERNS`` only holds user-registered patterns. Reset empties
+    them and the next scan again sees only the built-ins."""
     secrets_mod.register_pattern(r"^foo$")
-    assert len(secrets_mod._PATTERNS) == 2
-    secrets_mod.reset_patterns()
     assert len(secrets_mod._PATTERNS) == 1
+    secrets_mod.reset_patterns()
+    assert len(secrets_mod._PATTERNS) == 0
+    # Built-in detectors still fire after reset.
+    assert secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})

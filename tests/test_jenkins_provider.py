@@ -202,6 +202,15 @@ pipeline {
     assert results["JF-010"] is False
 
 
+def test_jf010_inline_form_flagged(tmp_path):
+    """``environment { KEY = '...' }`` on a single line is the most
+    compact form in real Jenkinsfiles. Regression test for the
+    line-start-anchor bug found by the per-check real-examples sweep."""
+    text = 'pipeline { agent any; environment { AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" } }\n'
+    results = _scan_text(text, tmp_path)
+    assert results["JF-010"] is False
+
+
 def test_jf010_session_token_also_flagged(tmp_path):
     text = """\
 pipeline {

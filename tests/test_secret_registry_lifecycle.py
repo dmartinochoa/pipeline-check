@@ -23,10 +23,13 @@ def test_scanner_resets_registry_between_constructions(monkeypatch, tmp_path):
     fake_provider.build_context.return_value = fake_context
     monkeypatch.setattr(providers_mod, "get", lambda _name: fake_provider)
 
-    # First scan registers a custom pattern.
+    # First scan registers a custom pattern. ``_PATTERNS`` now holds
+    # ONLY user-supplied patterns (built-ins live in SECRET_DETECTORS).
     Scanner(pipeline="aws", secret_patterns=["^acme_[a-f0-9]{32}$"])
-    assert len(secrets_mod._PATTERNS) == 2  # builtin + acme
-
-    # Second scan with no patterns — registry should be back to builtin only.
-    Scanner(pipeline="aws")
     assert len(secrets_mod._PATTERNS) == 1
+    assert secrets_mod._PATTERNS[0].pattern == "^acme_[a-f0-9]{32}$"
+
+    # Second scan with no patterns — registry must be empty so the
+    # acme pattern doesn't leak into this invocation.
+    Scanner(pipeline="aws")
+    assert secrets_mod._PATTERNS == []

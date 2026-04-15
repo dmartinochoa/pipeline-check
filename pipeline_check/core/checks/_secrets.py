@@ -3,30 +3,45 @@
 Each provider already has a YAML-declared-variable check (GL-003, BB-003,
 ADO-003) scoped to the ``variables:`` block and keyed by variable name.
 This module adds a broader detector that walks every string scalar in a
-document and flags any value matching a known credential pattern
-(``_patterns.SECRET_VALUE_RE``). That catches secrets pasted into
+document and flags any value matching a known credential pattern from
+``_patterns.SECRET_DETECTORS``. That catches secrets pasted into
 ``script:`` bodies, ``run:`` blocks, custom env blocks, and anywhere
 else a contributor might land them — places the name-based detector
 can't see.
 
-The detector is deliberately value-shape only: no entropy heuristics,
-no GitHub-token online validation. False positives are cheap to
-suppress via the ignore file; false negatives from entropy-based rules
-are not.
+The detector catalogue is shape-based, not entropy-based. False
+positives are cheap to suppress via the ignore file (and the
+``PLACEHOLDER_MARKER_RE`` filter handles obvious documentation
+placeholders before they ever reach the user); false negatives from
+entropy heuristics tend to surface as silently-missed real secrets,
+which is the wrong direction.
+
+Three signal types fire:
+
+  1. Token-shape match — a tokenised value matches a built-in or
+     user-registered credential regex. Hit label: ``<detector>:<token>``.
+  2. PEM private-key block — multi-line ``-----BEGIN PRIVATE KEY-----``
+     marker anywhere in the document. Hit label: ``private_key:<kind>``.
+  3. User-registered custom pattern (via ``register_pattern`` or
+     ``--secret-pattern``). Hit label: ``custom:<token>``.
 """
 from __future__ import annotations
 
 import re
 from typing import Any, Iterable, Pattern
 
-from ._patterns import SECRET_VALUE_RE
+from ._patterns import (
+    PEM_BLOCK_RE,
+    PLACEHOLDER_MARKER_RE,
+    SECRET_DETECTORS,
+    SECRET_VALUE_RE,
+)
 
 
 # Mutable registry — appended to by :func:`register_pattern` so users
 # can extend the detector with org-specific credential shapes (e.g.
-# internal token prefixes) without vendoring the package. Always
-# includes the built-in ``SECRET_VALUE_RE`` as the first entry.
-_PATTERNS: list[Pattern[str]] = [SECRET_VALUE_RE]
+# internal token prefixes) without vendoring the package.
+_USER_PATTERNS: list[Pattern[str]] = []
 
 
 def register_pattern(pattern: str | Pattern[str]) -> None:
@@ -38,19 +53,25 @@ def register_pattern(pattern: str | Pattern[str]) -> None:
     substring of a larger blob. Duplicate patterns are ignored.
     """
     compiled = re.compile(pattern) if isinstance(pattern, str) else pattern
-    for existing in _PATTERNS:
+    for existing in _USER_PATTERNS:
         if existing.pattern == compiled.pattern:
             return
-    _PATTERNS.append(compiled)
+    _USER_PATTERNS.append(compiled)
 
 
 def reset_patterns() -> None:
-    """Drop every custom pattern, keeping only the built-in one.
+    """Drop every custom pattern, keeping only the built-in catalogue.
 
-    Exists for test isolation — callers that tweak the registry should
-    restore it so later tests start from a known state.
+    Exists for test isolation and for the long-lived Lambda container
+    case where a prior invocation's patterns shouldn't leak into the
+    next one — see ``Scanner.__init__`` for the lifecycle hook.
     """
-    _PATTERNS[:] = [SECRET_VALUE_RE]
+    _USER_PATTERNS.clear()
+
+
+# Backwards-compat alias for tests that introspected the old internal
+# name. Keeps a stable surface even though the storage moved.
+_PATTERNS = _USER_PATTERNS
 
 
 def _walk(node: Any) -> Iterable[str]:
@@ -66,28 +87,71 @@ def _walk(node: Any) -> Iterable[str]:
 
 
 def find_secret_values(doc: Any) -> list[str]:
-    """Return every string in ``doc`` that matches a credential pattern.
+    """Return labelled credential hits found anywhere in ``doc``.
 
-    Results are deduplicated and truncated to the first 8 characters of
-    each match — we never want to echo a full secret back into logs.
+    Each hit is a string of the form ``"<detector>:<redacted-token>"``
+    (or ``"private_key:<kind>"`` for PEM blocks). The detector label
+    lets operators write targeted ignore rules and lets reports group
+    findings by secret type.
+
+    Results are deduplicated within a single call and the token body
+    is redacted to first-4 + last-2 characters so we never echo a full
+    secret back into logs or report output.
     """
     hits: list[str] = []
-    seen: set[str] = set()
+    seen_tokens: set[str] = set()
+    seen_pem: set[str] = set()
+
     for s in _walk(doc):
-        # Trim surrounding whitespace — a copy-paste secret often has a
-        # leading or trailing newline.
+        # Trim surrounding whitespace — copy-paste secrets often have
+        # a leading or trailing newline.
         candidate = s.strip()
         if not candidate:
             continue
+
+        # PEM blocks span many lines — a token-split would shred them
+        # into base64 fragments. Match the BEGIN marker anywhere in
+        # the string and emit a single hit per kind.
+        for pem in PEM_BLOCK_RE.finditer(candidate):
+            kind = pem.group("kind").lower().replace(" ", "_")
+            label = f"private_key:{kind}"
+            if label not in seen_pem:
+                seen_pem.add(label)
+                hits.append(label)
+
         # ``script:`` bodies can contain multiple tokens separated by
         # whitespace or shell metacharacters. Split permissively.
         for token in _tokenize(candidate):
-            if token in seen:
+            if token in seen_tokens:
                 continue
-            if any(p.fullmatch(token) for p in _PATTERNS):
-                seen.add(token)
-                hits.append(_redact(token))
+            if PLACEHOLDER_MARKER_RE.search(token):
+                # Documentation placeholder — skip without consuming
+                # the seen slot so a real secret with the same prefix
+                # later can still fire.
+                continue
+            label = _classify(token)
+            if label is None:
+                continue
+            seen_tokens.add(token)
+            hits.append(f"{label}:{_redact(token)}")
     return hits
+
+
+def _classify(token: str) -> str | None:
+    """Return the detector name for ``token``, or None if no detector matches.
+
+    Built-in detectors are tried in registry order. User-registered
+    patterns get a generic ``custom`` label so report descriptions
+    distinguish "shipped detector fired" from "operator-supplied
+    pattern fired".
+    """
+    for name, pattern in SECRET_DETECTORS:
+        if pattern.fullmatch(token):
+            return name
+    for pattern in _USER_PATTERNS:
+        if pattern.fullmatch(token):
+            return "custom"
+    return None
 
 
 def _tokenize(s: str) -> Iterable[str]:
@@ -107,3 +171,14 @@ def _redact(token: str) -> str:
     if len(token) <= 8:
         return token[:4] + "…"
     return token[:4] + "…" + token[-2:]
+
+
+# Re-export for callers that historically did
+# ``from ._secrets import SECRET_VALUE_RE``.
+__all__ = [
+    "find_secret_values",
+    "register_pattern",
+    "reset_patterns",
+    "SECRET_VALUE_RE",
+    "SECRET_DETECTORS",
+]
