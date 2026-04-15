@@ -58,8 +58,11 @@ pipeline_check/
                 └── s3.yml
 
 tests/
-├── test_scorer.py
+├── conftest.py
+├── test_cli.py
+├── test_json_schema.py
 ├── test_reporter.py
+├── test_scorer.py
 └── aws/
     ├── conftest.py
     ├── test_codebuild.py
@@ -68,7 +71,7 @@ tests/
     ├── test_ecr.py
     ├── test_iam.py
     ├── test_s3.py
-    └── test_owasp_pipeline.py  # end-to-end integration test
+    └── test_owasp_pipeline.py  # end-to-end OWASP coverage test
 ```
 ---
 
@@ -113,16 +116,23 @@ pipeline_check --output both
 
 | Flag | Default | Description |
 |---|---|---|
-| `--pipeline` | `aws` | Pipeline environment: `aws`, `gcp`, `github`, `azure` |
+| `--pipeline` | `aws` | Pipeline environment: `aws`, `gcp`\*, `github`\*, `azure`\* |
 | `--target` | _(all)_ | Scope to a named resource (e.g. a CodePipeline name) |
 | `--checks` | _(all)_ | Check ID(s) to run — repeat for multiple |
 | `--region` | `us-east-1` | AWS region |
 | `--profile` | None | AWS CLI named profile |
 | `--output` | `terminal` | `terminal`, `json`, `html`, or `both` |
-| `--output-file` | `pipeline-check-report.html` | Output path for the HTML report |
+| `--output-file` | `pipeline-check-report.html` | Output path — only used with `--output html` |
 | `--severity-threshold` | `INFO` | Minimum severity to include |
 
+\* GCP, GitHub Actions, and Azure Pipelines support is planned but not yet implemented.
+
 > **`--target` scoping:** CodePipeline fetches only the named pipeline; S3 checks discover the artifact bucket from it. CodeBuild, CodeDeploy, ECR, and IAM still scan the full region — use `--checks` to narrow those further.
+
+> **`--output both`:** The human-readable terminal report is written to **stderr** and the JSON to **stdout**, so you can pipe or redirect them independently:
+> ```bash
+> pipeline_check --output both 2>report.txt | jq '.score'
+> ```
 
 ### Exit codes
 
@@ -216,6 +226,8 @@ The HTML reporter picks these up automatically if `pyyaml` is installed. Without
 
 ## Adding a new AWS check
 
+Only **one file** needs to change after the check module itself is written.
+
 1. Create `pipeline_check/core/checks/aws/<service>.py`:
 
 ```python
@@ -228,30 +240,59 @@ class MyServiceChecks(AWSBaseCheck):
         return findings
 ```
 
-2. Register it in `pipeline_check/core/scanner.py`:
+2. Register it in **`pipeline_check/core/providers/aws.py`** — the only file that needs to change:
 
 ```python
-from .checks.aws.myservice import MyServiceChecks
+from ..checks.aws.myservice import MyServiceChecks
 
-_CHECK_CLASSES = [..., MyServiceChecks]
+class AWSProvider(BaseProvider):
+    @property
+    def check_classes(self):
+        return [
+            ...,
+            MyServiceChecks,   # ← add here
+        ]
 ```
 
-3. Add a rule file at `pipeline_check/core/checks/aws/rules/<service>.yml`.
+3. Add a rule file at `pipeline_check/core/checks/aws/rules/<service>.yml` (optional — enriches the HTML report).
 
 4. Add tests in `tests/aws/test_myservice.py`.
 
-Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`).
+Check IDs use the format `<PREFIX>-<NNN>` (e.g. `CB-001`). The Scanner and CLI pick up the new check automatically.
 
 ---
 ## Adding a new provider (GCP, GitHub, Azure, …)
 
-1. Create `pipeline_check/core/checks/<provider>/` with a `base.py` that subclasses `BaseCheck` and sets `PROVIDER = "<provider>"`.
+Three steps — `scanner.py` and `cli.py` never need to change.
 
-2. Add a branch in `Scanner.__init__` to build the provider context.
+1. Create `pipeline_check/core/providers/<provider>.py` subclassing `BaseProvider`:
 
-3. Write check modules, register them in `_CHECK_CLASSES`, add tests under `tests/<provider>/`.
+```python
+from .base import BaseProvider
+from ..checks.<provider>.mycheck import MyChecks
 
-Checks only run when `--pipeline <provider>` is passed.
+class GitHubProvider(BaseProvider):
+    NAME = "github"
+
+    def build_context(self, token: str | None = None, **_):
+        # Return whatever context your check classes need.
+        return {"token": token}
+
+    @property
+    def check_classes(self):
+        return [MyChecks]
+```
+
+2. Register it in `pipeline_check/core/providers/__init__.py`:
+
+```python
+from .github import GitHubProvider
+register(GitHubProvider())
+```
+
+3. Write check modules under `pipeline_check/core/checks/<provider>/` and tests under `tests/<provider>/`.
+
+The new provider is immediately available via `--pipeline github` — the Scanner and CLI derive their choices from the registry.
 
 
 ---

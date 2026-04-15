@@ -2,9 +2,15 @@
 
 from unittest.mock import MagicMock
 
+from botocore.exceptions import ClientError
+
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.iam import IAMChecks
 from tests.aws.conftest import make_paginator
+
+
+def _client_error(code="AccessDeniedException"):
+    return ClientError({"Error": {"Code": code, "Message": "msg"}}, "op")
 
 _CB_TRUST = {
     "Statement": [{
@@ -114,3 +120,50 @@ class TestNoCicdRoles:
         }
         findings = _make_check([_role(trust=non_cicd_trust)]).run()
         assert findings == []
+
+
+class TestErrorHandling:
+    def test_list_roles_access_denied_returns_iam000(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = MagicMock()
+        paginator.paginate.side_effect = _client_error()
+        client.get_paginator.return_value = paginator
+
+        findings = IAMChecks(session).run()
+        assert len(findings) == 1
+        assert findings[0].check_id == "IAM-000"
+        assert not findings[0].passed
+
+    def test_list_attached_policies_error_fails_iam001(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = make_paginator([{"Roles": [_role()]}])
+        client.get_paginator.return_value = paginator
+        client.list_attached_role_policies.side_effect = _client_error()
+        client.list_role_policies.return_value = {"PolicyNames": []}
+
+        findings = IAMChecks(session).run()
+        iam001 = next(f for f in findings if f.check_id == "IAM-001")
+        assert not iam001.passed
+
+    def test_list_role_policies_error_fails_iam002(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = make_paginator([{"Roles": [_role()]}])
+        client.get_paginator.return_value = paginator
+        client.list_attached_role_policies.return_value = {"AttachedPolicies": []}
+        client.list_role_policies.side_effect = _client_error()
+
+        findings = IAMChecks(session).run()
+        iam002 = next(f for f in findings if f.check_id == "IAM-002")
+        assert not iam002.passed
+
+    def test_multiple_roles_produce_findings_for_each(self):
+        findings = _make_check([_role("role-a"), _role("role-b")]).run()
+        resources = {f.resource for f in findings}
+        assert "role-a" in resources
+        assert "role-b" in resources

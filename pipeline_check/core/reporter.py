@@ -1,7 +1,6 @@
 """Output formatters -- terminal (rich) and JSON."""
 
 import json
-from typing import Optional
 
 from rich import box
 from rich.console import Console
@@ -40,8 +39,8 @@ def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
 def report_terminal(
     findings: list[Finding],
     score_result: dict,
-    severity_threshold: Severity = Severity.LOW,
-    console: Optional[Console] = None,
+    severity_threshold: Severity = Severity.INFO,
+    console: Console | None = None,
 ) -> None:
     """Print a rich-formatted report to the terminal."""
     if console is None:

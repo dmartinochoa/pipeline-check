@@ -8,7 +8,6 @@ PyYAML is installed; the report degrades gracefully without it.
 import html
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from .checks.base import Finding, Severity, severity_rank
 
@@ -291,7 +290,7 @@ def report_html(
     score_result: dict,
     region: str = "",
     target: str = "",
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
 ) -> str:
     """Generate a self-contained HTML security report.
 

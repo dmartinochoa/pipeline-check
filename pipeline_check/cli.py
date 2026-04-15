@@ -11,6 +11,7 @@ import sys
 
 import click
 
+from .core import providers as _providers
 from .core.checks.base import Severity
 from .core.html_reporter import report_html
 from .core.reporter import report_json, report_terminal
@@ -22,7 +23,10 @@ _SEVERITY_CHOICES = [
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
 ]
 
-_PIPELINE_CHOICES = ["aws", "gcp", "github", "azure"]
+# Derived from the provider registry — no manual list to maintain.
+# Registering a new provider in core/providers/__init__.py automatically
+# makes it available here.
+_PIPELINE_CHOICES = _providers.available()
 
 
 @click.command()
@@ -110,7 +114,11 @@ def scan(
     score_result = score(findings)
 
     if output in ("terminal", "both"):
-        report_terminal(findings, score_result, severity_threshold=threshold)
+        # When emitting both terminal and JSON, send the human-readable report to
+        # stderr so the JSON on stdout remains clean and machine-parseable.
+        from rich.console import Console as _Console  # local import — only needed here
+        console = _Console(stderr=(output == "both"))
+        report_terminal(findings, score_result, severity_threshold=threshold, console=console)
 
     if output in ("json", "both"):
         click.echo(report_json(findings, score_result))

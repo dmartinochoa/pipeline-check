@@ -2,9 +2,15 @@
 
 from unittest.mock import MagicMock
 
+from botocore.exceptions import ClientError
+
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.codepipeline import CodePipelineChecks
 from tests.aws.conftest import make_paginator
+
+
+def _client_error(code="AccessDeniedException"):
+    return ClientError({"Error": {"Code": code, "Message": "msg"}}, "op")
 
 
 def _action(category, name="action", poll=None):
@@ -109,3 +115,56 @@ class TestCP003SourcePolling:
         ])
         findings = _make_check(p).run()
         assert next(f for f in findings if f.check_id == "CP-003").passed
+
+
+class TestNoPipelines:
+    def test_no_pipelines_returns_empty(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = make_paginator([{"pipelines": []}])
+        client.get_paginator.return_value = paginator
+        findings = CodePipelineChecks(session).run()
+        assert findings == []
+
+
+class TestErrorHandling:
+    def test_list_pipelines_access_denied_returns_cp000(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = MagicMock()
+        paginator.paginate.side_effect = _client_error()
+        client.get_paginator.return_value = paginator
+
+        findings = CodePipelineChecks(session).run()
+        assert len(findings) == 1
+        assert findings[0].check_id == "CP-000"
+        assert not findings[0].passed
+
+    def test_get_pipeline_error_skips_pipeline(self):
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        paginator = make_paginator([{"pipelines": [{"name": "bad-pipe"}]}])
+        client.get_paginator.return_value = paginator
+        client.get_pipeline.side_effect = _client_error()
+
+        findings = CodePipelineChecks(session).run()
+        assert findings == []
+
+    def test_target_flag_skips_list_pipelines(self):
+        """When target is set the list_pipelines call should be skipped entirely."""
+        p = _pipeline("my-pipe", stages=[
+            {"actions": [_action("Source")]},
+            {"actions": [_action("Approval")]},
+            {"actions": [_action("Deploy")]},
+        ])
+        session = MagicMock()
+        client = MagicMock()
+        session.client.return_value = client
+        client.get_pipeline.return_value = {"pipeline": p}
+
+        findings = CodePipelineChecks(session, target="my-pipe").run()
+        client.get_paginator.assert_not_called()
+        assert any(f.check_id == "CP-001" and f.passed for f in findings)

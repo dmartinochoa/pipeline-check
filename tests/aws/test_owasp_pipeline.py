@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
+from pipeline_check.core import providers as _providers
 from pipeline_check.core.scanner import Scanner
 from pipeline_check.core.checks.aws.base import Severity
 from tests.aws.conftest import make_paginator
@@ -328,6 +329,7 @@ def _make_scanner(session) -> Scanner:
     scanner = Scanner.__new__(Scanner)
     scanner.pipeline = "aws"
     scanner._context = session
+    scanner._check_classes = _providers.get("aws").check_classes
     return scanner
 
 
