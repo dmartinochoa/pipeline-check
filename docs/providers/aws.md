@@ -6,19 +6,15 @@ supports named AWS CLI profiles via `--profile` and honours the
 
 ## Services covered
 
-| Service       | Check IDs                                         |
-|---------------|---------------------------------------------------|
-| CodeBuild     | CB-000, CB-001, CB-002, CB-003, CB-004, CB-005    |
-| CodePipeline  | CP-000, CP-001, CP-002, CP-003                    |
-| CodeDeploy    | CD-000, CD-001, CD-002, CD-003                    |
-| ECR           | ECR-000, ECR-001, ECR-002, ECR-003, ECR-004       |
-| IAM           | IAM-000, IAM-001, IAM-002, IAM-003                |
-| PBAC (CodeBuild roles/VPC) | PBAC-000, PBAC-001, PBAC-002         |
-| S3            | S3-001, S3-002, S3-003, S3-004                    |
-
-Check IDs ending in `-000` are reserved for access-denied / API-failure
-findings — they report the inability to evaluate the service rather than a
-specific misconfiguration.
+| Service       | Check IDs                                  |
+|---------------|--------------------------------------------|
+| CodeBuild     | CB-001, CB-002, CB-003, CB-004, CB-005     |
+| CodePipeline  | CP-001, CP-002, CP-003                     |
+| CodeDeploy    | CD-001, CD-002, CD-003                     |
+| ECR           | ECR-001, ECR-002, ECR-003, ECR-004         |
+| IAM           | IAM-001, IAM-002, IAM-003                  |
+| PBAC (CodeBuild roles/VPC) | PBAC-001, PBAC-002            |
+| S3            | S3-001, S3-002, S3-003, S3-004             |
 
 ## Check reference
 

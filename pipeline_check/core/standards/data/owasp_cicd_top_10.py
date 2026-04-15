@@ -22,35 +22,29 @@ STANDARD = Standard(
     },
     mappings={
         # CodeBuild
-        "CB-000":   ["CICD-SEC-2"],
         "CB-001":   ["CICD-SEC-6"],
         "CB-002":   ["CICD-SEC-7"],
         "CB-003":   ["CICD-SEC-10"],
         "CB-004":   ["CICD-SEC-7"],
         "CB-005":   ["CICD-SEC-7"],
         # CodePipeline
-        "CP-000":   ["CICD-SEC-2"],
         "CP-001":   ["CICD-SEC-1"],
         "CP-002":   ["CICD-SEC-9"],
         "CP-003":   ["CICD-SEC-4"],
         # CodeDeploy
-        "CD-000":   ["CICD-SEC-2"],
         "CD-001":   ["CICD-SEC-1"],
         "CD-002":   ["CICD-SEC-1"],
         "CD-003":   ["CICD-SEC-10"],
         # ECR
-        "ECR-000":  ["CICD-SEC-2"],
         "ECR-001":  ["CICD-SEC-3"],
         "ECR-002":  ["CICD-SEC-9"],
         "ECR-003":  ["CICD-SEC-8"],
         "ECR-004":  ["CICD-SEC-7"],
         # IAM
-        "IAM-000":  ["CICD-SEC-2"],
         "IAM-001":  ["CICD-SEC-2"],
         "IAM-002":  ["CICD-SEC-2"],
         "IAM-003":  ["CICD-SEC-2"],
         # PBAC
-        "PBAC-000": ["CICD-SEC-5"],
         "PBAC-001": ["CICD-SEC-5"],
         "PBAC-002": ["CICD-SEC-5"],
         # S3

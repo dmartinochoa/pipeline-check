@@ -126,6 +126,9 @@ pipeline_check --output both
 | `1`  | Grade D        |
 | `2`  | AWS API error  |
 
+See [docs/scoring_model.md](docs/scoring_model.md) for the full severity
+weights and grade bands.
+
 ---
 
 ## Compliance standards
