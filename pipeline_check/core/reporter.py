@@ -54,7 +54,7 @@ def report_terminal(
     console.print(
         Panel(
             f"[{grade_style}]Grade: {grade}   Score: {score}/100[/{grade_style}]",
-            title="[bold]PipelineCheck -- AWS CI/CD Security Report[/bold]",
+            title="[bold]PipelineCheck -- CI/CD Security Report[/bold]",
             border_style="blue",
             padding=(0, 2),
         )

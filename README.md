@@ -2,13 +2,13 @@
 
 # Pipeline-Check
 
-**An AWS CI/CD security posture scanner.**
+**A CI/CD security posture scanner.**
 
-Pipeline-Check audits your AWS build, deploy, and artifact infrastructure
+Pipeline-Check audits your CI/CD build, deploy, and artifact infrastructure
 against well-known compliance standards and scores it A–D, so you can gate
-pipelines on the result. It can scan either a **live AWS account** via boto3
-or a **Terraform plan** (`terraform show -json`) before any resource is
-provisioned.
+pipelines on the result. It can scan a **live AWS account** via boto3, a
+**Terraform plan** (`terraform show -json`) before any resource is
+provisioned, or **GitHub Actions workflow YAML** on disk.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -27,7 +27,7 @@ provisioned.
 
 ## What it checks
 
-Covered AWS services (**37 checks** for AWS, **5 checks** for GitHub
+Covered surfaces (**37 checks** for AWS, **5 checks** for GitHub
 Actions — 42 total, severity-weighted):
 
 | Service       | Focus                                                                                              | IDs              |

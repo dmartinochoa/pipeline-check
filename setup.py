@@ -6,7 +6,7 @@ with open("README.md", encoding="utf-8") as f:
 setup(
     name="pipeline_check",
     version="0.1.0",
-    description="AWS CI/CD Security Posture Scanner — scores pipelines against OWASP Top 10 CI/CD Risks",
+    description="CI/CD Security Posture Scanner (AWS, Terraform, GitHub Actions) — scores pipelines against OWASP Top 10 CI/CD Risks",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Daniel Martin",
