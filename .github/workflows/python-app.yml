@@ -27,12 +27,13 @@ jobs:
         # regenerated with ``pip-compile`` on Python 3.10.
         python-version: ["3.11", "3.12", "3.13"]
         include:
-          # Cross-platform smoke check on the version most dev laptops run.
-          # Path-handling bugs in diff.py / autofix.py surface on Windows,
-          # so run the suite at least once per push to catch them early.
+          # Windows smoke check on the version most dev laptops run.
+          # Path-handling bugs in diff.py / autofix.py have a real
+          # history of surfacing only on Windows, so run the suite at
+          # least once per push there. macOS is omitted — it shares
+          # POSIX path semantics with Linux and the marginal coverage
+          # didn't justify the runner cost.
           - os: windows-latest
-            python-version: "3.12"
-          - os: macos-latest
             python-version: "3.12"
 
     steps:
