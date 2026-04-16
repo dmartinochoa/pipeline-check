@@ -21,6 +21,14 @@ STANDARD = Standard(
         "CICD-SEC-10": "Insufficient Logging and Visibility",
     },
     mappings={
+        # Degraded-mode findings (API access failures).
+        "CB-000":   ["CICD-SEC-10"],
+        "CP-000":   ["CICD-SEC-10"],
+        "CD-000":   ["CICD-SEC-10"],
+        "ECR-000":  ["CICD-SEC-10"],
+        "IAM-000":  ["CICD-SEC-10"],
+        "PBAC-000": ["CICD-SEC-10"],
+        "S3-000":   ["CICD-SEC-10"],
         # CodeBuild
         "CB-001":   ["CICD-SEC-6"],
         "CB-002":   ["CICD-SEC-7"],
