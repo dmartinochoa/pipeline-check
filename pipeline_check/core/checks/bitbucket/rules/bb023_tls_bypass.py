@@ -1,6 +1,8 @@
 """BB-023 — TLS / certificate verification bypass."""
 from __future__ import annotations
+
 from typing import Any
+
 from ...base import TLS_BYPASS_RE, Finding, Severity, blob_lower
 from ...rule import Rule
 

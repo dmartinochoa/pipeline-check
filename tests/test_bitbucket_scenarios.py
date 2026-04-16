@@ -6,12 +6,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
+import yaml
 
 from pipeline_check.core.checks.bitbucket.base import BitbucketContext, Pipeline
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
-
-import yaml
 
 SCENARIO_DIR = Path(__file__).parent / "fixtures" / "scenarios" / "bitbucket"
 

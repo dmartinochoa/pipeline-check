@@ -1,6 +1,8 @@
 """BB-021 — package install without lockfile enforcement."""
 from __future__ import annotations
+
 from typing import Any
+
 from ...base import PKG_NO_LOCKFILE_RE, Finding, Severity, blob_lower
 from ...rule import Rule
 

@@ -1,6 +1,8 @@
 """GL-022 — dependency update command bypasses lockfile pins."""
 from __future__ import annotations
+
 from typing import Any
+
 from ...base import Finding, Severity, blob_lower, has_dep_update
 from ...rule import Rule
 

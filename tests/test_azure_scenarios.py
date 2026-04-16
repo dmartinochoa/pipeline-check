@@ -6,12 +6,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
+import yaml
 
 from pipeline_check.core.checks.azure.base import AzureContext, Pipeline
 from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
-
-import yaml
 
 SCENARIO_DIR = Path(__file__).parent / "fixtures" / "scenarios" / "azure"
 

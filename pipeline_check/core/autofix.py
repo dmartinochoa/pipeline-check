@@ -769,9 +769,9 @@ _TODO_TOKEN = "WARNING(pipelineguard): token written to persistent storage — r
 
 def _comment_token_persist(content: str, finding: Finding) -> str | None:
     """Comment out lines that persist tokens to files/env."""
+    from .checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
     from .checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
     from .checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
-    from .checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
 
     persist_re = {"GHA-019": GHA_RE, "GL-020": GL_RE, "BB-017": BB_RE}
     pattern = persist_re.get(finding.check_id.upper())
@@ -881,7 +881,7 @@ _TODO_DEP_UPDATE = "TODO(pipelineguard): remove dependency update command; use l
 
 def _comment_dep_update(content: str, finding: Finding) -> str | None:
     """Comment out dependency-update commands."""
-    from .checks.base import DEP_UPDATE_RE, _DEP_UPDATE_TOOL_EXEMPT_RE
+    from .checks.base import _DEP_UPDATE_TOOL_EXEMPT_RE, DEP_UPDATE_RE
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
