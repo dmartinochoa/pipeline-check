@@ -48,6 +48,14 @@ STANDARD = Standard(
         "ESF-C-AUDIT":           "Audit deployment / pipeline activity and retain logs",
     },
     mappings={
+        # ── Degraded-mode findings (API access failures) ──────────
+        "CB-000":   ["ESF-C-AUDIT"],
+        "CP-000":   ["ESF-C-AUDIT"],
+        "CD-000":   ["ESF-C-AUDIT"],
+        "ECR-000":  ["ESF-C-AUDIT"],
+        "IAM-000":  ["ESF-C-AUDIT"],
+        "PBAC-000": ["ESF-C-AUDIT"],
+        "S3-000":   ["ESF-C-AUDIT"],
         # ── CodeBuild ──────────────────────────────────────────────
         "CB-001":   ["ESF-D-SECRETS"],
         "CB-002":   ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
