@@ -75,18 +75,6 @@ def reset_patterns() -> None:
 _PATTERNS = _USER_PATTERNS
 
 
-def _walk(node: Any) -> Iterable[str]:
-    """Yield every string scalar under ``node``."""
-    if isinstance(node, str):
-        yield node
-    elif isinstance(node, dict):
-        for v in node.values():
-            yield from _walk(v)
-    elif isinstance(node, list):
-        for v in node:
-            yield from _walk(v)
-
-
 def find_secret_values(doc: Any) -> list[str]:
     """Return labelled credential hits found anywhere in ``doc``.
 
@@ -98,21 +86,29 @@ def find_secret_values(doc: Any) -> list[str]:
     Results are deduplicated within a single call and the token body
     is redacted to first-4 + last-2 characters so we never echo a full
     secret back into logs or report output.
+
+    Accepts either a parsed YAML dict/list (walks all string values)
+    or a pre-collected list of strings (skips the walk). The latter is
+    used by Jenkins checks that pass ``[jf.text]``.
     """
+    from .base import walk_strings
+
     hits: list[str] = []
     seen_tokens: set[str] = set()
     seen_pem: set[str] = set()
 
-    for s in _walk(doc):
-        # Trim surrounding whitespace — copy-paste secrets often have
-        # a leading or trailing newline.
+    strings: Iterable[str]
+    if isinstance(doc, list) and doc and isinstance(doc[0], str):
+        strings = doc  # pre-collected string list
+    else:
+        strings = walk_strings(doc)
+
+    for s in strings:
         candidate = s.strip()
         if not candidate:
             continue
 
-        # PEM blocks span many lines — a token-split would shred them
-        # into base64 fragments. Match the BEGIN marker anywhere in
-        # the string and emit a single hit per kind.
+        # PEM blocks span many lines — match the BEGIN marker anywhere.
         for pem in PEM_BLOCK_RE.finditer(candidate):
             kind = pem.group("kind").lower().replace(" ", "_")
             label = f"private_key:{kind}"
@@ -120,15 +116,10 @@ def find_secret_values(doc: Any) -> list[str]:
                 seen_pem.add(label)
                 hits.append(label)
 
-        # ``script:`` bodies can contain multiple tokens separated by
-        # whitespace or shell metacharacters. Split permissively.
         for token in _tokenize(candidate):
             if token in seen_tokens:
                 continue
             if PLACEHOLDER_MARKER_RE.search(token):
-                # Documentation placeholder — skip without consuming
-                # the seen slot so a real secret with the same prefix
-                # later can still fire.
                 continue
             label = _classify(token)
             if label is None:
@@ -141,18 +132,89 @@ def find_secret_values(doc: Any) -> list[str]:
 def _classify(token: str) -> str | None:
     """Return the detector name for ``token``, or None if no detector matches.
 
-    Built-in detectors are tried in registry order. User-registered
-    patterns get a generic ``custom`` label so report descriptions
-    distinguish "shipped detector fired" from "operator-supplied
-    pattern fired".
+    Uses a two-level dispatch: first by the token's first 2 characters
+    (catches 39 of 41 built-in detectors), then a short fallback list
+    for patterns with no fixed prefix (mailchimp hex, telegram numeric).
+
+    Tokens shorter than 8 characters are rejected early — no built-in
+    credential shape is that short.
     """
-    for name, pattern in SECRET_DETECTORS:
+    if len(token) < 8:
+        return None
+    # Two-char prefix dispatch — covers ~95% of detectors.
+    prefix2 = token[:2]
+    candidates = _PREFIX_DISPATCH.get(prefix2)
+    if candidates:
+        for name, pattern in candidates:
+            if pattern.fullmatch(token):
+                return name
+    # Fallback for patterns with no fixed prefix (numeric/hex start).
+    for name, pattern in _VARIABLE_PREFIX_DETECTORS:
         if pattern.fullmatch(token):
             return name
     for pattern in _USER_PATTERNS:
         if pattern.fullmatch(token):
             return "custom"
     return None
+
+
+def _build_prefix_dispatch() -> tuple[
+    dict[str, list[tuple[str, re.Pattern[str]]]],
+    list[tuple[str, re.Pattern[str]]],
+]:
+    """Partition detectors into prefix-dispatchable and variable-prefix.
+
+    Extracts 2-char literal prefixes from each detector's regex. For
+    alternation groups like ``A(?:KIA|SIA)`` or ``gh[pousr]_``, expands
+    into multiple 2-char keys. Only patterns that start with a digit or
+    raw hex (no fixed prefix) go into the fallback list.
+    """
+    # Hand-tuned dispatch for patterns with regex-syntax prefixes.
+    # Maps detector name → list of 2-char prefixes it can match.
+    _MULTI_PREFIX: dict[str, list[str]] = {
+        "aws_access_key":     ["AK", "AS"],       # A(?:KIA|SIA)
+        "github_token":       ["gh"],              # gh[pousr]_
+        "slack_token":        ["xo"],              # xox[abprs]-
+        "jwt":                ["ey"],              # eyJ
+        "stripe_secret":      ["sk", "rk"],        # (?:sk|rk)_
+        "stripe_publishable": ["pk"],              # pk_
+        "sendgrid":           ["SG"],              # SG\.
+        "hashicorp_vault":    ["hv"],              # hvs\.
+        "twilio_api_key":     ["SK"],              # SK[hex]
+        "twilio_account_sid": ["AC"],              # AC[hex]
+        "shopify_token":      ["sh"],              # shp
+        "openai_api_key":     ["sk"],              # sk- (overlaps stripe)
+        "huggingface_token":  ["hf"],              # hf_
+        "doppler_token":      ["dp"],              # dp\.
+    }
+
+    dispatch: dict[str, list[tuple[str, re.Pattern[str]]]] = {}
+    variable: list[tuple[str, re.Pattern[str]]] = []
+
+    for name, pattern in SECRET_DETECTORS:
+        if name in _MULTI_PREFIX:
+            for key in _MULTI_PREFIX[name]:
+                dispatch.setdefault(key, []).append((name, pattern))
+            continue
+        # Try extracting a literal 2-char prefix.
+        body = pattern.pattern.lstrip("^")
+        prefix_chars = []
+        for ch in body:
+            if ch in r".[]*+?{}()|\\^$":
+                break
+            prefix_chars.append(ch)
+        if len(prefix_chars) >= 2:
+            key = "".join(prefix_chars[:2])
+            dispatch.setdefault(key, []).append((name, pattern))
+        else:
+            variable.append((name, pattern))
+    return dispatch, variable
+
+
+_PREFIX_DISPATCH, _VARIABLE_PREFIX_DETECTORS = _build_prefix_dispatch()
+
+
+_TOKENIZE_RE = re.compile(r"[\s=\"'`,;<>|&()]+")
 
 
 def _tokenize(s: str) -> Iterable[str]:
@@ -162,7 +224,7 @@ def _tokenize(s: str) -> Iterable[str]:
     anchored (``^...$``), so tokenising lets a secret embedded in
     ``echo "AKIA…"`` still fire.
     """
-    for tok in re.split(r"[\s=\"'`,;<>|&()]+", s):
+    for tok in _TOKENIZE_RE.split(s):
         if tok:
             yield tok
 

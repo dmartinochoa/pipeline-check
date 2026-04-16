@@ -67,16 +67,26 @@ class Rule:
     docs_note: str = ""
 
 
+_RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}
+
+
 def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]:
     """Import every submodule under ``package_fqn`` and collect
     ``(RULE, check)`` pairs.
 
-    Called once at provider orchestrator construction; the returned
-    list is the ordered registry the orchestrator iterates on each
-    workflow. Ordering: lexical by module name, which means rule
-    IDs should be numerically sortable (``GHA-001`` < ``GHA-010``)
-    so the doc generator emits them in the natural order.
+    Results are cached after the first call — rule modules don't
+    change at runtime, and the pkgutil filesystem scan is the
+    dominant cost for repeated orchestrator construction (e.g. when
+    scanning many files in a directory).
+
+    Ordering: lexical by module name, which means rule IDs should be
+    numerically sortable (``GHA-001`` < ``GHA-010``) so the doc
+    generator emits them in the natural order.
     """
+    cached = _RULES_CACHE.get(package_fqn)
+    if cached is not None:
+        return cached
+
     package = importlib.import_module(package_fqn)
     pairs: list[tuple[Rule, Callable[..., Finding]]] = []
     for info in sorted(
@@ -90,4 +100,5 @@ def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]
         check = getattr(mod, "check", None)
         if isinstance(rule, Rule) and callable(check):
             pairs.append((rule, check))
+    _RULES_CACHE[package_fqn] = pairs
     return pairs

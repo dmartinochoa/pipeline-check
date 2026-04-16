@@ -9,8 +9,8 @@ against well-known compliance standards and scores it A–D, so you can gate
 pipelines on the result. It can scan a **live AWS account** via boto3, a
 **Terraform plan** (`terraform show -json`) before any resource is
 provisioned, or CI definition YAML for **GitHub Actions**, **GitLab CI**,
-**Bitbucket Pipelines**, **Azure DevOps Pipelines**, and **Jenkins** —
-all without an API token.
+**Bitbucket Pipelines**, **Azure DevOps Pipelines**, **Jenkins**, and
+**CircleCI** — all without an API token.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -29,7 +29,7 @@ all without an API token.
 
 ## What it checks
 
-Covered surfaces (**147 checks** total: 32 AWS + 23 GitHub Actions + 23 GitLab CI + 23 Bitbucket Pipelines + 23 Azure DevOps Pipelines + 23 Jenkins, severity-weighted):
+Covered surfaces (**170 checks** total: 32 AWS + 23 GitHub Actions + 23 GitLab CI + 23 Bitbucket Pipelines + 23 Azure DevOps Pipelines + 23 Jenkins + 23 CircleCI, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -44,17 +44,20 @@ Covered surfaces (**147 checks** total: 32 AWS + 23 GitHub Actions + 23 GitLab C
 | GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*` (incl. `CI_COMMIT_TAG_MESSAGE`, `CI_EXTERNAL_PULL_REQUEST_*`, env-chain variables: inheritance, command-substitution bypass), literal secrets in `variables:`, deploy gating (name + deploy-command detection), `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning, multi-project artifact ingestion, `include: local` on MR pipelines, MR-tainted cache key, long-lived AWS keys (incl. `aws configure` and inline key assignments), self-hosted ephemeral runner, job timeouts, curl-pipe-shell (PowerShell, download-then-execute), Docker insecure flags (socket mount, PID/user namespace, compose), insecure package registries (pip3, gem, nuget, cargo), vulnerability scanning (+cargo audit, semgrep, bandit, checkov, tfsec, docker scout), CI_JOB_TOKEN/CI_DEPLOY_TOKEN/CI_REGISTRY_PASSWORD persistence | `GL-001…023`     |
 | Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*` (incl. env-chain export tracking, command-substitution bypass), literal secrets, `deployment:` gating (name + deploy-command detection), unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning, PR-to-deploy artifact handover, long-lived AWS keys (incl. `aws configure`), curl-pipe-shell (PowerShell, download-then-execute), Docker insecure flags (socket mount, PID/user namespace, compose), insecure package registries (pip3, gem, nuget, cargo), vulnerability scanning (+cargo audit, semgrep, bandit, checkov, tfsec, docker scout), self-hosted ephemeral, token persistence (BITBUCKET_TOKEN, OIDC token, clone token), cache key tainting, after-script secret leak, full clone depth | `BB-001…023`     |
 | Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars (incl. `Build.DefinitionName`, `System.PullRequest.SourceCommitId`, env-chain variables: inheritance, command-substitution bypass), literal secrets, `environment:` binding (deployment + name + deploy-command detection), container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning, cross-pipeline `download:`, local `template:` on PR, `Cache@2` PR-tainted key (incl. `Build.RequestedFor*`), self-hosted pool ephemeral marker, long-lived AWS keys (incl. `aws configure`), job timeouts, curl-pipe-shell (PowerShell, download-then-execute), Docker insecure flags (socket mount, PID/user namespace, compose), insecure package registries (pip3, gem, nuget, cargo), `extends:` template injection, vulnerability scanning (+cargo audit, semgrep, bandit, checkov, tfsec, docker scout) | `ADO-001…023`    |
-| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*` (incl. `CHANGE_URL`, `CHANGE_TARGET`, `GIT_AUTHOR_*`, `GIT_COMMITTER_*`), `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk, `copyArtifacts` cross-job ingestion, self-hosted ephemeral agent, job timeouts, curl-pipe-shell (PowerShell, download-then-execute), Docker insecure flags (socket mount, PID/user namespace, compose), insecure package registries (pip3, gem, nuget, cargo), Groovy sandbox escape, vulnerability scanning (+cargo audit, semgrep, bandit, checkov, tfsec, docker scout) | `JF-001…023`     |
+| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*` (incl. `CHANGE_URL`, `CHANGE_TARGET`, `GIT_AUTHOR_*`, `GIT_COMMITTER_*`), `agent any` blast radius, long-lived AWS keys via `withCredentials`, `withAWS(credentials:…)`, and `environment {}`, deploy `input` gate, artifact signing (comment-aware detection), SBOM generation (comment-aware), credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk, `copyArtifacts` cross-job ingestion, self-hosted ephemeral agent, job timeouts, curl-pipe-shell (PowerShell, download-then-execute), Docker insecure flags (socket mount, PID/user namespace, compose), insecure package registries (pip3, gem, nuget, cargo), Groovy sandbox escape, vulnerability scanning (comment-aware; +cargo audit, semgrep, bandit, checkov, tfsec, docker scout) | `JF-001…023`     |
+| CircleCI            | Orb version pinning, injection via `$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_*`, Docker executor digest pinning, secret-like env vars without `context:`, long-lived AWS keys in `environment {}`, artifact signing, SBOM generation, credential-shaped literals, deploy approval gate (`type: approval`), self-hosted runner ephemeral marker, `store_test_results` retention, dynamic config via `setup: true`, branch-filter enforcement on deploy jobs, `resource_class` declaration, `no_output_timeout`, curl-pipe-shell, Docker insecure flags, insecure package registries, `add_ssh_keys` fingerprint restriction, vulnerability scanning, lockfile enforcement, dependency-update bypass, TLS verification bypass | `CC-001…023`     |
 
 Cross-cutting capabilities layered on top:
 
 - **Autofix** — `--fix` emits a unified-diff patch (pipe to `git apply`)
-  or `--fix --apply` writes in place. 25 fixers across all providers:
-  permissions blocks (GHA-004), `persist-credentials` (GHA-002),
-  secret redaction (`*-008` incl. Groovy), timeout insertion
+  or `--fix --apply` writes in place. 67 fixers across all 8 providers:
+  script-injection env-var indirection (GHA-003), permissions blocks
+  (GHA-004), `persist-credentials` (GHA-002), AWS static-key removal
+  (`*-005`), secret redaction (`*-008` incl. Groovy), timeout insertion
   (`*-015`), curl-pipe comment-out (`*-016`), Docker `--privileged`
-  removal (`*-017`), and insecure package-registry flag removal
-  (`*-018`).
+  removal (`*-017`), insecure package-registry flag removal (`*-018`),
+  `npm install` → `npm ci` (`*-021`), dep-update comment-out (`*-022`),
+  TLS-bypass comment-out (`*-023`), and pinning TODOs (`*-001`).
 - **Diff-mode scanning** — `--diff-base REF` scans only workflow /
   terraform resources touched by the branch, keyed off `git diff`.
 - **Baselines from git** — `--baseline-from-git REF:PATH` resolves a
@@ -80,9 +83,10 @@ is D, so `pipeline_check` works as a CI gate.
 
 Supported providers: **AWS** (live, via boto3), **Terraform** (plan
 JSON), **GitHub Actions**, **GitLab CI**, **Bitbucket Pipelines**,
-**Azure DevOps Pipelines** (all YAML), and **Jenkins** (Declarative
+**Azure DevOps Pipelines** (all YAML), **Jenkins** (Declarative
 or Scripted Pipeline text — no Groovy interpreter, no controller
-access). All providers run without an API token.
+access), and **CircleCI** (`.circleci/config.yml`). All providers
+run without an API token.
 
 ---
 
@@ -120,6 +124,9 @@ pipeline_check --pipeline azure
 
 # Scan a Jenkinsfile (--jenkinsfile-path auto-detected if ./Jenkinsfile exists)
 pipeline_check --pipeline jenkins
+
+# Scan a CircleCI config (--circleci-path auto-detected if .circleci/config.yml exists)
+pipeline_check --pipeline circleci
 
 # Scan everything in us-east-1 (live AWS account)
 pipeline_check
@@ -203,13 +210,14 @@ Precedence: CLI > env > file > defaults. Full reference:
 | Flag                    | Default                       | Description                                                   |
 |-------------------------|-------------------------------|---------------------------------------------------------------|
 | `--config`              | _(auto)_                      | Config file (TOML or YAML); auto-discovers `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml` |
-| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins` |
+| `--pipeline`            | `aws`                         | Provider: `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci` |
 | `--tf-plan`             | _(none)_                      | Path to `terraform show -json` output (required with `--pipeline terraform`) |
 | `--gha-path`            | _(auto: `.github/workflows`)_ | Path to workflows dir; auto-detected from cwd when omitted     |
 | `--gitlab-path`         | _(auto: `.gitlab-ci.yml`)_    | Path to `.gitlab-ci.yml`; auto-detected from cwd when omitted  |
 | `--bitbucket-path`      | _(auto: `bitbucket-pipelines.yml`)_ | Path to `bitbucket-pipelines.yml`; auto-detected from cwd |
 | `--azure-path`          | _(auto: `azure-pipelines.yml`)_ | Path to `azure-pipelines.yml`; auto-detected from cwd       |
 | `--jenkinsfile-path`    | _(auto: `Jenkinsfile`)_       | Path to a Jenkinsfile (or directory); auto-detected from cwd  |
+| `--circleci-path`       | _(auto: `.circleci/config.yml`)_ | Path to CircleCI config; auto-detected from cwd            |
 | `--target`              | _(all)_                       | Scope to a named resource (e.g. a CodePipeline name)          |
 | `--checks`              | _(all)_                       | Check ID(s) to run — repeat for multiple                      |
 | `--standard`            | _(all registered)_            | Compliance standard(s) to annotate findings with              |
@@ -235,9 +243,10 @@ Precedence: CLI > env > file > defaults. Full reference:
 | `--config-check`        | _(flag)_                      | Parse the config, report unknown keys, exit non-zero on any   |
 | `--version`             | _(flag)_                      | Print version and exit                                        |
 
-`--tf-plan`, `--gha-path`, `--gitlab-path`, and `--bitbucket-path` are
-validated eagerly: the CLI exits with `UsageError` if the flag is missing
-for its provider or if the path does not exist on disk.
+`--tf-plan`, `--gha-path`, `--gitlab-path`, `--bitbucket-path`,
+`--azure-path`, `--jenkinsfile-path`, and `--circleci-path` are validated
+eagerly: the CLI exits with `UsageError` if the flag is missing for its
+provider or if the path does not exist on disk.
 
 > **`--target` scoping:** CodePipeline fetches only the named pipeline;
 > S3 checks discover the artifact bucket from it. CodeBuild, CodeDeploy,
@@ -339,7 +348,8 @@ pipeline_check/
     │   ├── gitlab.py              # GitLab CI YAML provider
     │   ├── bitbucket.py           # Bitbucket Pipelines YAML provider
     │   ├── azure.py               # Azure DevOps Pipelines YAML provider
-    │   └── jenkins.py             # Jenkins pipeline text provider
+    │   ├── jenkins.py             # Jenkins pipeline text provider
+    │   └── circleci.py            # CircleCI YAML provider
     ├── standards/                 # compliance standards (data-driven)
     │   ├── base.py                # ControlRef + Standard dataclasses
     │   ├── registry.py            # register / get / resolve
@@ -389,10 +399,14 @@ pipeline_check/
         │   ├── base.py            # AzureContext + Pipeline loader
         │   ├── pipelines.py       # thin orchestrator
         │   └── rules/             # ADO-001 … ADO-020
-        └── jenkins/               # Jenkins (rule-per-module)
-            ├── base.py            # JenkinsContext + Jenkinsfile parser
-            ├── jenkinsfile.py     # thin orchestrator
-            └── rules/             # JF-001 … JF-020
+        ├── jenkins/               # Jenkins (rule-per-module)
+        │   ├── base.py            # JenkinsContext + Jenkinsfile parser
+        │   ├── jenkinsfile.py     # thin orchestrator
+        │   └── rules/             # JF-001 … JF-023
+        └── circleci/              # CircleCI (rule-per-module)
+            ├── base.py            # CircleCIContext + config loader
+            ├── pipelines.py       # thin orchestrator
+            └── rules/             # CC-001 … CC-023
 ```
 
 See [docs/providers/](docs/providers/) for the provider catalogue and
@@ -436,7 +450,7 @@ result):
 
 Omit both to fall back to `AWS_REGION`. The handler accepts per-
 provider kwargs (`tf_plan`, `gha_path`, `gitlab_path`, `bitbucket_path`,
-`azure_path`, `target`, `profile`) alongside `region` / `provider` for
+`azure_path`, `circleci_path`, `target`, `profile`) alongside `region` / `provider` for
 non-AWS providers.
 
 ### Return value

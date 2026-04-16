@@ -10,9 +10,15 @@ from ..base import iter_steps, step_scripts
 from ._helpers import DEPLOY_RE
 
 _DEPLOY_CMD_RE = re.compile(
-    r"(?:kubectl\s+apply|terraform\s+apply|aws\s+s3\s+cp"
-    r"|docker\s+push|helm\s+(?:upgrade|install)"
-    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy))",
+    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
+    r"|terraform\s+(?:apply|destroy)"
+    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
+    r"|docker\s+push"
+    r"|helm\s+(?:upgrade|install)"
+    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
+    r"|ansible-playbook"
+    r"|serverless\s+deploy"
+    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
     re.IGNORECASE,
 )
 

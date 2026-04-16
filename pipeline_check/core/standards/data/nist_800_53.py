@@ -121,5 +121,29 @@ STANDARD = Standard(
         "ADO-003":  ["IA-5"],
         "ADO-004":  ["SA-10", "AC-3"],
         "ADO-005":  ["SR-3", "SR-11", "CM-2"],
+        # CircleCI
+        "CC-001":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # orb not pinned to SHA
+        "CC-002":   ["CM-6", "SA-11", "SA-15"],          # script injection
+        "CC-003":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # image not pinned to digest
+        "CC-004":   ["IA-5"],                            # unrestricted context
+        "CC-005":   ["IA-5"],                            # long-lived AWS keys
+        "CC-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
+        "CC-007":   ["CM-8", "SR-4"],                    # no SBOM / provenance
+        "CC-008":   ["IA-5"],                            # literal secrets in config
+        "CC-009":   ["SA-10", "SA-15"],                  # no deployment approval
+        "CC-010":   ["CM-6", "CM-7"],                    # self-hosted runner
+        "CC-011":   ["AU-2", "AU-12"],                   # no build retention
+        "CC-012":   ["CM-6", "SA-11", "SA-15"],          # setup / dynamic config
+        "CC-013":   ["SA-10"],                           # no branch filter
+        "CC-014":   ["AC-6", "CM-6"],                    # resource class isolation
+        "CC-015":   ["CM-6"],                            # no timeout
+        "CC-016":   ["SR-3", "SR-11"],                   # curl | bash
+        "CC-017":   ["CM-6", "CM-7"],                    # insecure Docker config
+        "CC-018":   ["SR-3", "SR-11"],                   # insecure package source
+        "CC-019":   ["IA-5"],                            # SSH key in config
+        "CC-020":   ["RA-5", "SI-2"],                    # no vulnerability scanning
+        "CC-021":   ["SR-3", "SR-11"],                   # no lockfile
+        "CC-022":   ["SI-2", "SR-3"],                    # no dependency updates
+        "CC-023":   ["SC-8"],                            # TLS verification bypass
     },
 )

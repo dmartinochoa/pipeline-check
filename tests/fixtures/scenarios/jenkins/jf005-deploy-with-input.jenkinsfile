@@ -1,0 +1,14 @@
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            input {
+                message 'Promote to production?'
+                submitter 'releasers'
+            }
+            steps {
+                sh 'kubectl apply -f k8s/'
+            }
+        }
+    }
+}

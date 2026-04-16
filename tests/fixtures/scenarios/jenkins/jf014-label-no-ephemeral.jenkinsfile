@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+        label 'linux-build-pool'
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+            }
+        }
+    }
+}

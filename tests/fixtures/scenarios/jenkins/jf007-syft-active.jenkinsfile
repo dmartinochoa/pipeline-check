@@ -1,0 +1,11 @@
+pipeline {
+    agent any
+    stages {
+        stage('SBOM') {
+            steps {
+                sh 'syft . -o cyclonedx-json > sbom.json'
+                archiveArtifacts artifacts: 'sbom.json'
+            }
+        }
+    }
+}

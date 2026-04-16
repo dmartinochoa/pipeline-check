@@ -32,7 +32,7 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|pull_request\.(?:title|body|head\.ref|head\.label)"
     r"|comment\.body"
     r"|review\.body"
-    r"|pages\.[^\}]*?\.page_name"
+    r"|pages(?:\[\d+\])?\.\w+"
     r"|head_commit\.(?:message|author\.(?:name|email))"
     r"|discussion\.(?:title|body)"
     r"|release\.(?:name|body|tag_name)"

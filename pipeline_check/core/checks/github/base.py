@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck
+from ..base import BaseCheck, safe_load_yaml
 
 
 @dataclass(frozen=True)
@@ -28,6 +28,9 @@ class GitHubContext:
 
     def __init__(self, workflows: list[Workflow]) -> None:
         self.workflows = workflows
+        self.files_scanned: int = len(workflows)
+        self.files_skipped: int = 0
+        self.warnings: list[str] = []
 
     @classmethod
     def from_path(cls, path: str | Path) -> GitHubContext:
@@ -45,19 +48,29 @@ class GitHubContext:
                 if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
             )
         workflows: list[Workflow] = []
+        warnings: list[str] = []
+        skipped = 0
         for f in files:
             try:
                 text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError) as exc:
+                warnings.append(f"{f}: read error: {exc}")
+                skipped += 1
                 continue
             try:
-                data = yaml.safe_load(text)
-            except yaml.YAMLError:
+                data = safe_load_yaml(text)
+            except yaml.YAMLError as exc:
+                first_line = str(exc).split("\n", 1)[0]
+                warnings.append(f"{f}: YAML parse error: {first_line}")
+                skipped += 1
                 continue
             if not isinstance(data, dict):
                 continue
             workflows.append(Workflow(path=str(f), data=data))
-        return cls(workflows)
+        ctx = cls(workflows)
+        ctx.files_skipped = skipped
+        ctx.warnings = warnings
+        return ctx
 
 
 class GitHubBaseCheck(BaseCheck):

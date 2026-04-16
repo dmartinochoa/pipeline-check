@@ -9,13 +9,19 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
 _DEPLOY_CMD_RE = re.compile(
-    r"(?:kubectl\s+apply|terraform\s+apply|aws\s+s3\s+cp"
-    r"|docker\s+push|helm\s+(?:upgrade|install)"
-    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy))",
+    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
+    r"|terraform\s+(?:apply|destroy)"
+    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
+    r"|docker\s+push"
+    r"|helm\s+(?:upgrade|install)"
+    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
+    r"|ansible-playbook"
+    r"|serverless\s+deploy"
+    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
     re.IGNORECASE,
 )
 
-_DEPLOY_NAME_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+_DEPLOY_NAME_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 RULE = Rule(
     id="ADO-004",

@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    def proc = Runtime.getRuntime().exec("whoami")
+                    println proc.text
+                }
+            }
+        }
+    }
+}

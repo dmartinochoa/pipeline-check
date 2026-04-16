@@ -181,6 +181,40 @@ miss a real injection because the parser couldn't follow a dynamic
 expression.
 """,
     ),
+    "circleci": (
+        "CircleCI",
+        "pipeline_check.core.checks.circleci.rules",
+        _REPO_ROOT / "docs" / "providers" / "circleci.md",
+        """\
+# CircleCI provider
+
+Parses `.circleci/config.yml` on disk — no CircleCI API token, no
+runner install.
+
+## Producer workflow
+
+```bash
+# --circleci-path is auto-detected when .circleci/config.yml exists at cwd.
+pipeline_check --pipeline circleci
+
+# …or pass it explicitly.
+pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### CircleCI-specific checks
+
+Several checks target CircleCI concepts that have no direct analogue
+in other providers:
+
+- **CC-001** — orb version pinning (`@volatile`, `@1` → `@5.1.0`)
+- **CC-009** — approval gate via `type: approval` predecessor job
+- **CC-012** — dynamic config generation via `setup: true`
+- **CC-019** — `add_ssh_keys` fingerprint restriction
+""",
+    ),
 }
 
 
@@ -214,6 +248,7 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "bitbucket": {"prefix": "BB",  "prefix_lc": "bb",  "pkg": "bitbucket"},
     "azure":     {"prefix": "ADO", "prefix_lc": "ado", "pkg": "azure"},
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
+    "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
 }
 
 

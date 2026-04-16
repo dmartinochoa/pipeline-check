@@ -16,30 +16,28 @@ Design rules:
   re-serialising destroys comments, blank lines, and YAML style that
   maintainers rely on; text patches preserve them.
 
-Registered fixers:
+67 registered fixers covering all 8 providers.  Key categories:
 
-- ``GHA-004`` — add a top-level ``permissions: contents: read`` block.
-- ``GHA-002`` — add ``persist-credentials: false`` to ``actions/checkout``
-  steps (defence-in-depth when pull_request_target checks out PR head).
-- ``GHA-008`` / ``GL-008`` / ``BB-008`` / ``ADO-008`` — redact
-  credential-shaped literals embedded in the workflow by replacing the
-  value with ``\"<REDACTED>\"`` and leaving a ``# TODO:`` comment.
-- ``JF-008`` — Groovy-syntax variant of the secret redactor.
-- ``GHA-015`` — insert ``timeout-minutes: 30`` into GitHub Actions jobs.
-- ``GL-015`` — insert ``timeout: 30 minutes`` into GitLab CI jobs.
-- ``ADO-015`` — insert ``timeoutInMinutes: 30`` into Azure DevOps jobs
-  (only flat ``jobs:`` blocks; skips ``stages:`` → ``jobs:`` nesting).
-- ``GHA-016`` / ``GL-016`` / ``ADO-016`` / ``BB-012`` / ``JF-016`` —
-  comment out ``curl | bash`` / ``wget | sh`` lines with a TODO marker.
-- ``GHA-017`` / ``GL-017`` / ``ADO-017`` / ``BB-013`` / ``JF-017`` —
-  strip ``--privileged``, ``--cap-add``, ``--net=host``, and host-mount
-  ``-v`` flags from ``docker run`` commands.
-- ``GHA-018`` / ``GL-018`` / ``ADO-018`` / ``BB-014`` / ``JF-018`` —
-  strip ``--index-url http://``, ``--registry http://``,
-  ``--trusted-host``, and ``--no-verify`` from package-install commands.
-
-GHA-001 SHA-pinning is not included because resolving the current SHA
-for a tagged action requires a network call to the GitHub API.
+- **Permissions** — ``GHA-004`` (contents: read), ``GHA-002``
+  (persist-credentials: false).
+- **Script injection** — ``GHA-003`` (env-var indirection for
+  untrusted GitHub context expressions in ``run:`` blocks).
+- **Secret redaction** — ``*-008`` across all 6 CI providers plus
+  ``JF-008`` (Groovy syntax).
+- **AWS key removal** — ``GHA-005`` / ``GL-013`` / ``BB-011`` /
+  ``ADO-014`` / ``CC-005`` / ``JF-004`` / ``JF-010``.
+- **Timeouts** — ``GHA-015``, ``GL-015``, ``ADO-015``, ``BB-005``,
+  ``JF-015``, ``CC-015``.
+- **Curl-pipe** — ``*-016`` across all 6 CI providers.
+- **Docker insecure** — ``*-017`` across all 6 CI providers.
+- **Package insecure** — ``*-018`` across all 6 CI providers.
+- **Token persistence** — ``GHA-019``, ``GL-020``, ``BB-017``.
+- **Deploy environment** — ``GHA-014`` (environment: stub).
+- **Lockfile** — ``*-021`` npm install → npm ci across all providers.
+- **Dep update** — ``*-022`` comment-out across all providers.
+- **TLS bypass** — ``*-023`` comment-out across all providers.
+- **Pinning TODOs** — ``GHA-001``, ``GL-001``, ``BB-001``,
+  ``ADO-001``, ``CC-001``, ``JF-011`` (buildDiscarder).
 """
 from __future__ import annotations
 
@@ -203,6 +201,7 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 @register("GL-008")
 @register("BB-008")
 @register("ADO-008")
+@register("CC-008")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -498,7 +497,7 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016"):
+for _cid in ("GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016"):
     register(_cid)(_comment_curl_pipe)
 
 
@@ -531,7 +530,7 @@ def _strip_docker_flags(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017"):
+for _cid in ("GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017", "CC-017"):
     register(_cid)(_strip_docker_flags)
 
 
@@ -564,7 +563,7 @@ def _strip_pkg_flags(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018"):
+for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018", "CC-018"):
     register(_cid)(_strip_pkg_flags)
 
 
@@ -660,6 +659,56 @@ def _fix_jf015(content: str, finding: Finding) -> str | None:
     insert_at = m.end()
     indent = m.group(1) + "    "
     return content[:insert_at] + f"\n{indent}{marker}" + content[insert_at:]
+
+
+# ── JF-011 Jenkins buildDiscarder fixer ─────────────────────────────
+
+
+@register("JF-011")
+def _fix_jf011(content: str, finding: Finding) -> str | None:
+    """Insert a ``buildDiscarder`` option into a declarative pipeline.
+
+    Targets ``options { … }`` when it exists, or inserts a new
+    ``options`` block after ``agent`` otherwise. Scripted pipelines
+    are skipped (they'd need ``properties([…])`` which is harder to
+    splice safely).
+    """
+    discarder = "buildDiscarder(logRotator(numToKeepStr: '30'))"
+    if "buildDiscarder" in content or "logRotator" in content:
+        return None
+
+    # Try inserting inside an existing `options { … }` block.
+    m = re.search(r"^(\s*)options\s*\{", content, re.MULTILINE)
+    if m:
+        insert_at = m.end()
+        indent = m.group(1) + "    "
+        return content[:insert_at] + f"\n{indent}{discarder}" + content[insert_at:]
+
+    # No options block — insert one after `agent …` (declarative only).
+    m_pipeline = re.search(r"^(\s*)pipeline\s*\{", content, re.MULTILINE)
+    if m_pipeline is None:
+        return None
+    base_indent = m_pipeline.group(1) + "    "
+    # Find the closing line of the agent block (agent any / agent { … }).
+    m_agent_simple = re.search(r"^(\s*)agent\s+\w+\s*$", content, re.MULTILINE)
+    m_agent_block = re.search(r"^(\s*)agent\s*\{", content, re.MULTILINE)
+    if m_agent_block:
+        # Walk braces to find the end of the agent block.
+        i = m_agent_block.end()
+        depth = 1
+        while i < len(content) and depth > 0:
+            if content[i] == "{":
+                depth += 1
+            elif content[i] == "}":
+                depth -= 1
+            i += 1
+        insert_at = i
+    elif m_agent_simple:
+        insert_at = m_agent_simple.end()
+    else:
+        return None
+    snippet = f"\n{base_indent}options {{\n{base_indent}    {discarder}\n{base_indent}}}"
+    return content[:insert_at] + snippet + content[insert_at:]
 
 
 # ── Pinning TODO comments ────────────────────────────────────────────
@@ -762,6 +811,152 @@ def _fix_ado001(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
+# ── GHA-003 Script injection — env-var indirection ──────────────────
+
+
+@register("GHA-003")
+def _fix_gha003(content: str, finding: Finding) -> str | None:
+    """Add env-var indirection for untrusted context expressions in run: blocks.
+
+    Transforms:
+        - run: echo "${{ github.event.pull_request.title }}"
+    Into:
+        - run: echo "$UNTRUSTED_INPUT"
+          env:
+            UNTRUSTED_INPUT: ${{ github.event.pull_request.title }}
+
+    This moves the expression from shell interpolation (injectable) to
+    environment variable binding (safe — GitHub sets the env var as a
+    single string, not subject to shell parsing).
+    """
+    from .checks.github.rules._helpers import UNTRUSTED_CONTEXT_RE
+
+    _RUN_RE = re.compile(r"^(\s*-?\s*run:\s*[|>]?\s*)$|^(\s*-?\s*run:\s+)(\S.*)$")
+    _TODO_INJECT = "TODO(pipelineguard): moved untrusted expression to env var"
+
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if _TODO_INJECT in line:
+            out.append(line)
+            i += 1
+            continue
+
+        # Match `- run: <command>` (inline form)
+        m = _RUN_RE.match(line.rstrip("\n"))
+        if m and m.group(3):
+            run_body = m.group(3)
+            contexts = list(UNTRUSTED_CONTEXT_RE.finditer(run_body))
+            if contexts:
+                prefix = m.group(2)
+                indent = " " * len(prefix)
+                new_body = run_body
+                env_vars: list[tuple[str, str]] = []
+                for idx, ctx_m in enumerate(reversed(contexts)):
+                    expr = ctx_m.group(0)
+                    # Derive an env var name from the expression
+                    var_name = _expr_to_env_name(expr)
+                    if idx > 0:
+                        var_name = f"{var_name}_{idx}"
+                    new_body = new_body[:ctx_m.start()] + f"${var_name}" + new_body[ctx_m.end():]
+                    env_vars.append((var_name, expr))
+                env_vars.reverse()
+                out.append(f"{prefix}{new_body}  # {_TODO_INJECT}\n")
+                out.append(f"{indent}env:\n")
+                for var_name, expr in env_vars:
+                    out.append(f"{indent}  {var_name}: {expr}\n")
+                changed = True
+                i += 1
+                continue
+        out.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(out)
+
+
+def _expr_to_env_name(expr: str) -> str:
+    """Convert ``${{ github.event.pull_request.title }}`` to ``PR_TITLE``."""
+    inner = expr.strip("${} ")
+    # Extract the last meaningful segment
+    parts = inner.replace(".", "_").replace("[", "_").replace("]", "").split("_")
+    # Take the last 2 meaningful parts
+    meaningful = [p.upper() for p in parts if p and p not in ("GITHUB", "EVENT", "INPUTS")]
+    if len(meaningful) >= 2:
+        return "_".join(meaningful[-2:])
+    return meaningful[-1] if meaningful else "UNTRUSTED_INPUT"
+
+
+# ── CC-001 CircleCI orb pinning TODO ────────────────────────────────
+
+_TODO_ORB = "TODO(pipelineguard): pin to exact semver (e.g. @5.1.0)"
+
+
+@register("CC-001")
+def _fix_cc001(content: str, finding: Finding) -> str | None:
+    """Add TODO comment next to unpinned orb references."""
+    _ORB_RE = re.compile(r"^(\s*\w[\w-]*:\s*)(\S+@\S+)(.*)$")
+    _PINNED_RE = re.compile(r"@v?\d+\.\d+\.\d+")
+    out: list[str] = []
+    changed = False
+    in_orbs = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.rstrip()
+        if re.match(r"^orbs\s*:", stripped):
+            in_orbs = True
+            out.append(line)
+            continue
+        if in_orbs and stripped and not stripped.startswith("#") and not line[0].isspace():
+            in_orbs = False
+        if in_orbs and _TODO_ORB not in line:
+            m = _ORB_RE.match(line.rstrip("\n"))
+            if m:
+                prefix, ref, rest = m.groups()
+                if not _PINNED_RE.search(ref):
+                    new_line = f"{prefix}{ref}{rest}  # {_TODO_ORB}\n"
+                    out.append(new_line)
+                    changed = True
+                    continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── CC-015 CircleCI timeout fixer ───────────────────────────────────
+
+
+@register("CC-015")
+def _fix_cc015(content: str, finding: Finding) -> str | None:
+    """Insert ``no_output_timeout: 30m`` into CircleCI run steps that lack it."""
+    _RUN_KEY_RE = re.compile(r"^(\s*)- run:\s*$")
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        m = _RUN_KEY_RE.match(line)
+        if m:
+            base_indent = m.group(1)
+            child_indent = base_indent + "    "
+            out.append(line)
+            i += 1
+            has_timeout = _scan_for_key(lines, i, "no_output_timeout", len(base_indent))
+            if not has_timeout:
+                out.append(f"{child_indent}no_output_timeout: 30m\n")
+                changed = True
+            continue
+        out.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(out)
+
+
 # ── Token persistence comment-out ────────────────────────────────────
 
 _TODO_TOKEN = "WARNING(pipelineguard): token written to persistent storage — remove this line"
@@ -801,6 +996,42 @@ def _comment_token_persist(content: str, finding: Finding) -> str | None:
 
 for _cid in ("GHA-019", "GL-020", "BB-017"):
     register(_cid)(_comment_token_persist)
+
+
+# ── *-005 AWS long-lived key comment-out ──────────────────────────────
+
+_TODO_AWS = "TODO(pipelineguard): switch to OIDC / IAM role — remove static AWS keys"
+_AWS_KEY_LINE_RE = re.compile(
+    r"(?:AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|aws_access_key_id|aws_secret_access_key)"
+)
+
+
+def _comment_aws_keys(content: str, finding: Finding) -> str | None:
+    """Comment out lines that declare static AWS access keys."""
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if _TODO_AWS in line or stripped.startswith("#") or stripped.startswith("//"):
+            out.append(line)
+            continue
+        if _AWS_KEY_LINE_RE.search(line):
+            indent = line[: len(line) - len(line.lstrip())]
+            comment_char = "//" if finding.check_id.startswith("JF-") else "#"
+            out.append(f"{indent}{comment_char} {_TODO_AWS}\n")
+            out.append(f"{indent}{comment_char} {stripped}")
+            if not line.endswith("\n"):
+                out[-1] += "\n"
+            changed = True
+        else:
+            out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-005", "GL-013", "BB-011", "ADO-014", "CC-005", "JF-004", "JF-010"):
+    register(_cid)(_comment_aws_keys)
 
 
 # ── Deploy environment stubs ─────────────────────────────────────────
@@ -870,7 +1101,7 @@ def _fix_npm_ci(content: str, finding: Finding) -> str | None:
     return out
 
 
-for _cid in ("GHA-021", "GL-021", "ADO-021", "BB-021", "JF-021"):
+for _cid in ("GHA-021", "GL-021", "ADO-021", "BB-021", "JF-021", "CC-021"):
     register(_cid)(_fix_npm_ci)
 
 
@@ -903,7 +1134,7 @@ def _comment_dep_update(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-022", "GL-022", "ADO-022", "BB-022", "JF-022"):
+for _cid in ("GHA-022", "GL-022", "ADO-022", "BB-022", "JF-022", "CC-022"):
     register(_cid)(_comment_dep_update)
 
 
@@ -936,5 +1167,5 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023"):
+for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023"):
     register(_cid)(_comment_tls_bypass)

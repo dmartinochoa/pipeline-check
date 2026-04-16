@@ -1,0 +1,106 @@
+# Hardened equivalent of insecure-config.yml — every CC-* check passes.
+# Same Node.js web-app build/test/deploy pipeline, properly secured.
+version: 2.1
+
+# CC-001: All orbs pinned to exact semver (x.y.z).
+orbs:
+  node: circleci/node@5.2.0
+  aws-cli: circleci/aws-cli@4.1.3
+  slack: circleci/slack@4.13.3
+
+jobs:
+  install:
+    # CC-003: Docker image pinned by sha256 digest.
+    docker:
+      - image: cimg/node:20.11@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+    # CC-014: resource_class explicitly declared.
+    resource_class: medium
+    steps:
+      - checkout
+      # CC-021: npm ci enforces lockfile.
+      - run: npm ci
+      # CC-015: no_output_timeout configured on a run step.
+      - run:
+          name: Verify dependencies
+          no_output_timeout: 10m
+          command: npm ls --all
+
+  test:
+    docker:
+      - image: cimg/node:20.11@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+      - image: cimg/postgres:15.3@sha256:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          command: npm test
+      # CC-011: store_test_results archives test output.
+      - store_test_results:
+          path: test-results
+      # CC-019: add_ssh_keys with explicit fingerprints.
+      - add_ssh_keys:
+          fingerprints:
+            - "ab:cd:ef:01:23:45:67:89:ab:cd:ef:01:23:45:67:89"
+
+  build:
+    docker:
+      - image: cimg/node:20.11@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Build production bundle
+          command: npm run build
+      # CC-007: SBOM generation via syft.
+      - run:
+          name: Generate SBOM
+          command: syft . -o cyclonedx-json > sbom.json
+      # CC-020: Vulnerability scanning via trivy.
+      - run:
+          name: Scan for vulnerabilities
+          command: trivy image --severity HIGH,CRITICAL myorg/webapp:${CIRCLE_SHA1}
+      # CC-006: Artifact signing via cosign.
+      - run:
+          name: Sign container image
+          command: cosign sign --yes myorg/webapp:${CIRCLE_SHA1}
+      - store_artifacts:
+          path: sbom.json
+
+  deploy-production:
+    docker:
+      - image: cimg/node:20.11@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Deploy to ECS
+          command: |
+            aws ecs update-service \
+              --cluster prod \
+              --service webapp \
+              --force-new-deployment
+
+workflows:
+  build-test-deploy:
+    jobs:
+      - install
+      - test:
+          requires:
+            - install
+      - build:
+          requires:
+            - test
+      # CC-009: Approval gate before deploy.
+      - hold-for-approval:
+          type: approval
+          requires:
+            - build
+      # CC-013: Deploy job with branch filter.
+      - deploy-production:
+          requires:
+            - hold-for-approval
+          filters:
+            branches:
+              only:
+                - main

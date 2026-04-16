@@ -2,4 +2,5 @@ pipelines:
   default:
     - step:
         script:
+          - docker push app:latest
           - npm test

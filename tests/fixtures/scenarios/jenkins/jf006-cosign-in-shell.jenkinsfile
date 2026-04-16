@@ -1,0 +1,10 @@
+pipeline {
+    agent any
+    stages {
+        stage('Sign') {
+            steps {
+                sh 'cosign sign --yes --key env://COSIGN_KEY image:tag'
+            }
+        }
+    }
+}

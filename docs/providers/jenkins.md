@@ -85,7 +85,7 @@ Replace `agent any` with `agent { label 'build-pool' }` (targeting a labelled po
 ## JF-004 — AWS auth uses long-lived access keys via withCredentials
 **Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE
 
-Fires when BOTH a credentialsId containing `aws` is referenced AND an AWS key variable name appears. Requires both so an OIDC role binding (which doesn't use key variables) doesn't false-positive.
+Fires when BOTH a credentialsId containing `aws` is referenced AND an AWS key variable name appears (requires both so an OIDC role binding doesn't false-positive). Also fires when `withAWS(credentials: '…')` is used — the safe alternative is `withAWS(role: '…')`.
 
 **Recommended action**
 
@@ -103,7 +103,7 @@ Add an `input` step to every deploy-like stage (e.g. `input message: 'Promote to
 ## JF-006 — Artifacts not signed
 **Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS
 
-Passes when cosign / sigstore / slsa-* / notation-sign appears in the raw Jenkinsfile text.
+Passes when cosign / sigstore / slsa-* / notation-sign appears in executable Jenkinsfile text (comments are stripped before matching).
 
 **Recommended action**
 
@@ -112,7 +112,7 @@ Add a `sh 'cosign sign --yes …'` step (the cosign-installer Jenkins plugin han
 ## JF-007 — SBOM not produced
 **Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM
 
-Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears, or when Trivy is paired with `sbom` / `cyclonedx` in the same file.
+Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears in executable code, or when Trivy is paired with `sbom` / `cyclonedx` in the same file. Comments are stripped before matching.
 
 **Recommended action**
 
@@ -229,7 +229,7 @@ Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avo
 ## JF-020 — No vulnerability scanning step
 **Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT
 
-Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
 
 **Recommended action**
 

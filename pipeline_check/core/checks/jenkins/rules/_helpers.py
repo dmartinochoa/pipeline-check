@@ -9,6 +9,38 @@ from __future__ import annotations
 
 import re
 
+# ── Groovy comment stripping ──────────────────────────────────────────
+# YAML providers benefit from yaml.safe_load stripping comments before
+# token matching.  Jenkins checks work on raw Groovy text, so a comment
+# like ``// TODO: add cosign`` would false-positive the signing check.
+# This regex-based stripper handles single-line (``//``) and multi-line
+# (``/* … */``) comments while leaving string literals untouched.
+
+_GROOVY_TOKEN_RE = re.compile(
+    r'""".*?"""'           # triple-double-quoted string
+    r"|'''.*?'''"          # triple-single-quoted string
+    r'|"(?:[^"\\]|\\.)*"'  # double-quoted string
+    r"|'(?:[^'\\]|\\.)*'"  # single-quoted string
+    r"|/\*.*?\*/"          # block comment
+    r"|//[^\n]*",          # line comment
+    re.DOTALL,
+)
+
+
+def strip_groovy_comments(text: str) -> str:
+    """Remove ``//`` and ``/* */`` comments, preserving string literals.
+
+    Returns the text with comment bodies replaced by whitespace so
+    line numbers stay stable for downstream regex matches.
+    """
+    def _replace(m: re.Match) -> str:
+        s = m.group()
+        if s.startswith(("'", '"')):
+            return s  # keep string literals
+        # Replace comment with spaces (preserve newlines for line counts)
+        return re.sub(r"[^\n]", " ", s)
+    return _GROOVY_TOKEN_RE.sub(_replace, text)
+
 PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){0,2}|[0-9a-f]{40})$")
 FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest"})
 
@@ -39,6 +71,13 @@ AWS_KEY_VAR_RE = re.compile(
     r"(?:accessKeyVariable|secretKeyVariable|aws_access_key_id|aws_secret_access_key)",
     re.IGNORECASE,
 )
+#: ``withAWS(credentials: 'id')`` — the AWS Steps plugin with long-lived
+#: credentials.  ``withAWS(role: '…')`` is the safe IAM-role pattern and
+#: is NOT matched.
+WITH_AWS_CREDS_RE = re.compile(
+    r"\bwithAWS\s*\(\s*credentials\s*:\s*['\"]",
+    re.IGNORECASE,
+)
 
 DOCKER_IMAGE_RE = re.compile(
     r"docker\s*\{\s*[^}]*?\bimage\s+['\"]([^'\"]+)['\"]",
@@ -61,4 +100,4 @@ VERIFY_RE = re.compile(
     r"\b(?:cosign\s+verify|sha256sum\s+(?:--check|-c)|gpg\s+--verify)\b"
 )
 
-DEPLOY_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")

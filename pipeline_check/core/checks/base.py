@@ -3,7 +3,22 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+import yaml as _yaml
+
 from ..standards.base import ControlRef
+
+# Use the C-accelerated YAML loader when available (libyaml bindings).
+# CSafeLoader is functionally identical to SafeLoader but ~30-50x faster,
+# which matters when scanning 100+ workflow files in a monorepo.
+try:
+    _YAML_LOADER = _yaml.CSafeLoader  # type: ignore[attr-defined]
+except AttributeError:
+    _YAML_LOADER = _yaml.SafeLoader  # type: ignore[assignment]
+
+
+def safe_load_yaml(text: str) -> Any:
+    """Parse YAML using the fastest available safe loader."""
+    return _yaml.load(text, Loader=_YAML_LOADER)
 
 
 class Severity(str, Enum):
@@ -83,15 +98,22 @@ class BaseCheck(abc.ABC):
 
 
 def walk_strings(node: Any):
-    """Recursively yield every string scalar found under a dict/list tree."""
-    if isinstance(node, str):
-        yield node
-    elif isinstance(node, dict):
-        for v in node.values():
-            yield from walk_strings(v)
-    elif isinstance(node, list):
-        for v in node:
-            yield from walk_strings(v)
+    """Yield every string scalar under a dict/list tree (iterative).
+
+    Uses an explicit stack instead of recursion to reduce function-call
+    overhead — a single large workflow can have hundreds of nested
+    dict/list nodes, each of which would be a separate generator frame
+    in the recursive version.
+    """
+    stack = [node]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            yield item
+        elif isinstance(item, dict):
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
 
 
 # Case-insensitive substring tokens; a workflow passes the signing check if
@@ -107,6 +129,37 @@ SBOM_DIRECT_TOKENS = (
     "cyclonedx", "syft", "anchore/sbom-action",
     "spdx-sbom-generator", "microsoft/sbom-tool",
 )
+
+
+# Tokens that indicate a workflow produces deployable artifacts.
+# Used by the signing/SBOM/vuln-scan checks to suppress false positives
+# on lint/test-only workflows that don't produce anything to sign or scan.
+_ARTIFACT_TOKENS = (
+    "docker push", "docker build",
+    "upload-artifact", "actions/upload-artifact",
+    "archiveartifacts",                         # Jenkins
+    "store_artifacts", "persist_to_workspace",  # CircleCI
+    "publish", "deploy", "release",
+    "docker/build-push-action",
+    "docker/metadata-action",
+    "aws s3 cp", "aws s3 sync",
+    "kubectl apply", "helm upgrade", "helm install",
+    "terraform apply",
+    "gcloud app deploy", "gcloud run deploy",
+    "twine upload", "cargo publish", "gem push",
+    "npm publish", "yarn publish",
+)
+
+
+def produces_artifacts(doc: Any) -> bool:
+    """Return True when the workflow appears to produce deployable artifacts.
+
+    Heuristic: if no artifact-production token appears anywhere in the
+    workflow's string content, the workflow is likely lint/test-only and
+    the signing/SBOM/vulnerability-scanning checks should not fire.
+    """
+    blob = blob_lower(doc)
+    return any(tok in blob for tok in _ARTIFACT_TOKENS)
 
 
 def blob_lower(doc: Any) -> str:
@@ -164,7 +217,7 @@ import re as _re
 #: and download-then-execute variants.
 CURL_PIPE_RE = _re.compile(
     r"(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b"           # curl | sudo bash
-    r"|(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:python|perl|ruby)\b"
+    r"|(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:python[23]?|perl|ruby)\b"  # curl | python3
     r"|(?:ba)?sh\s+(?:-c\s+)?[\"']\$\((?:curl|wget)\b"             # bash -c "$(curl ...)"
     r"|python[23]?\s+-c\s+[\"'].*(?:urllib|requests)\.get\("        # python -c "requests.get(..."
     r"|(?:curl|wget)\s+[^;&]*>\s*\S+\.sh\s*[;&]+\s*(?:ba)?sh\s"    # curl > x.sh && bash x
@@ -178,7 +231,7 @@ DOCKER_INSECURE_RE = _re.compile(
     r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net[= ]host"
     r"|--pid[= ]host|--userns[= ]host"                              # namespace sharing
     r"|-v\s+/var/run/docker\.sock:/var/run/docker\.sock"            # socket mount
-    r"|-v\s+/[^:\s]*:/)"
+    r"|-v\s+/:/)"                                                   # root mount
     r"|docker\s+compose\s[^;&]*--privileged",                       # compose
 )
 
@@ -200,18 +253,20 @@ PKG_INSECURE_RE = _re.compile(
 #: Package install without lockfile enforcement — supply-chain risk
 #: because the resolver pulls whatever version is currently latest.
 PKG_NO_LOCKFILE_RE = _re.compile(
-    # npm install (should be npm ci)
-    r"\bnpm\s+install\b(?![^\n]*(?:--frozen|--ci))"
-    # pip install <bare-package> (no -r / --require-hashes / --requirement / -e)
-    r"|\bpip3?\s+install\s+(?!-)[a-z]\S*(?![^\n]*(?:-r\s|--require-hashes|--requirement))"
+    # npm install (should be npm ci); exempt -g/--global (different concern)
+    r"\bnpm\s+install\b(?![^\n]*(?:--frozen|--ci|-g\b|--global\b))"
+    # pip install <bare-package> without version pin or lockfile flag.
+    # Exempt: -r, --require-hashes, -e, ==version, >=version, ~=, .[extras]
+    r"|\bpip3?\s+install\s+(?!-)[a-z][A-Za-z0-9_\-\.]*(?:\s|$)"
+    r"(?![^\n]*(?:-r\s|--require-hashes|--requirement))"
     # yarn install without --frozen-lockfile / --immutable
     r"|\byarn\s+install\b(?![^\n]*(?:--frozen-lockfile|--immutable))"
     # bundle install without --frozen / --deployment
     r"|\bbundle\s+install\b(?![^\n]*(?:--frozen|--deployment))"
     # cargo install (always risky in CI without lockfile)
     r"|\bcargo\s+install\s"
-    # go install without @vN.N.N version pin
-    r"|\bgo\s+install\s+\S+(?<!@v\d)(?:\s|$)"
+    # go install without @vN.N version pin
+    r"|\bgo\s+install\s+(?!.*@v\d+\.\d+)\S+(?:\s|$)"
     # poetry install without --no-update
     r"|\bpoetry\s+install\b(?![^\n]*--no-update)",
     _re.MULTILINE,
@@ -259,7 +314,7 @@ TLS_BYPASS_RE = _re.compile(
     r"|\bgit_ssl_no_verify\s*=\s*(?:true|1)\b"
     r"|\bnode_tls_reject_unauthorized\s*=\s*['\"]?0['\"]?"
     r"|\bpythonhttpsverify\s*=\s*['\"]?0['\"]?"
-    r"|\bcurl\s+[^\n]*(?:\s-k\b|\s--insecure\b)"
+    r"|\bcurl\b[^\n]*(?:\s-k\b|\s--insecure\b)"
     r"|\bwget\s+[^\n]*--no-check-certificate\b"
     r"|\bgoinsecure\s*=",
     _re.MULTILINE,

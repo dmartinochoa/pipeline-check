@@ -57,6 +57,105 @@ from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
 
+# ────────────────────────────────────────────────────────────────────────────
+# Shell completion helpers
+# ────────────────────────────────────────────────────────────────────────────
+
+
+def _complete_check_ids(ctx, param, incomplete):
+    """Tab-complete check IDs (GHA-001, GL-002, CB-001, etc.)."""
+    from click.shell_completion import CompletionItem
+    try:
+        ids = _all_check_ids()
+    except Exception:
+        return []
+    return [
+        CompletionItem(cid)
+        for cid in ids
+        if cid.lower().startswith(incomplete.lower())
+    ]
+
+
+def _complete_standards(ctx, param, incomplete):
+    """Tab-complete standard names."""
+    from click.shell_completion import CompletionItem
+    try:
+        names = _standards.available()
+    except Exception:
+        return []
+    return [
+        CompletionItem(n)
+        for n in names
+        if n.lower().startswith(incomplete.lower())
+    ]
+
+
+def _complete_man_topics(ctx, param, incomplete):
+    """Tab-complete --man topic names."""
+    from click.shell_completion import CompletionItem
+    try:
+        from .core.manual import topics
+        names = topics()
+    except Exception:
+        return []
+    return [
+        CompletionItem(t)
+        for t in names
+        if t.lower().startswith(incomplete.lower())
+    ]
+
+
+_CHECK_IDS_CACHE: list[str] | None = None
+
+
+def _all_check_ids() -> list[str]:
+    """Collect every check ID from every provider's rules registry.
+
+    Cached after the first call so repeated completions are fast.
+    CI providers use the ``Rule`` registry; AWS and Terraform check
+    IDs are extracted from source via regex since they use class-based
+    checks without a ``Rule`` dataclass.
+    """
+    global _CHECK_IDS_CACHE
+    if _CHECK_IDS_CACHE is not None:
+        return _CHECK_IDS_CACHE
+    ids: list[str] = []
+    # CI providers — each has a rules/ package with RULE.id
+    for pkg in (
+        "pipeline_check.core.checks.github.rules",
+        "pipeline_check.core.checks.gitlab.rules",
+        "pipeline_check.core.checks.bitbucket.rules",
+        "pipeline_check.core.checks.azure.rules",
+        "pipeline_check.core.checks.jenkins.rules",
+    ):
+        try:
+            from .core.checks.rule import discover_rules
+            for rule, _ in discover_rules(pkg):
+                ids.append(rule.id)
+        except Exception:
+            pass
+    # AWS / Terraform — class-based checks with hardcoded check_id strings.
+    _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
+    for provider_pkg_name in (
+        "pipeline_check.core.checks.aws",
+        "pipeline_check.core.checks.terraform",
+    ):
+        try:
+            import importlib
+            import pkgutil
+            pkg = importlib.import_module(provider_pkg_name)
+            for info in pkgutil.iter_modules(pkg.__path__):
+                mod = importlib.import_module(f"{provider_pkg_name}.{info.name}")
+                if mod.__file__:
+                    with open(mod.__file__, encoding="utf-8") as fh:
+                        ids.extend(_id_re.findall(fh.read()))
+        except Exception:
+            pass
+    ids = sorted(set(ids))
+    _CHECK_IDS_CACHE = ids
+    return ids
+
+
 _SEVERITY_CHOICES = [
     s.value
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
@@ -84,8 +183,76 @@ def _load_config_callback(ctx: click.Context, _param, value):
     return value
 
 
+def _install_completion_callback(ctx, _param, value):
+    """Print instructions or install completion for the given shell."""
+    if not value:
+        return
+    shell = value
+    if shell == "bash":
+        line = 'eval "$(_PIPELINE_CHECK_COMPLETE=bash_source pipeline_check)"'
+        rc = os.path.expanduser("~/.bashrc")
+        marker = "# pipeline_check completion"
+        try:
+            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+        except OSError:
+            existing = ""
+        if marker in existing:
+            click.echo(f"Completion already installed in {rc}")
+        else:
+            with open(rc, "a", encoding="utf-8") as f:
+                f.write(f"\n{marker}\n{line}\n")
+            click.echo(f"Completion installed in {rc}. Restart your shell or run:")
+            click.echo(f"  source {rc}")
+    elif shell == "zsh":
+        line = 'eval "$(_PIPELINE_CHECK_COMPLETE=zsh_source pipeline_check)"'
+        rc = os.path.expanduser("~/.zshrc")
+        marker = "# pipeline_check completion"
+        try:
+            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+        except OSError:
+            existing = ""
+        if marker in existing:
+            click.echo(f"Completion already installed in {rc}")
+        else:
+            with open(rc, "a", encoding="utf-8") as f:
+                f.write(f"\n{marker}\n{line}\n")
+            click.echo(f"Completion installed in {rc}. Restart your shell or run:")
+            click.echo(f"  source {rc}")
+    elif shell == "fish":
+        comp_dir = os.path.expanduser("~/.config/fish/completions")
+        os.makedirs(comp_dir, exist_ok=True)
+        comp_file = os.path.join(comp_dir, "pipeline_check.fish")
+        # Fish uses a generated script, not an eval.
+        env = os.environ.copy()
+        env["_PIPELINE_CHECK_COMPLETE"] = "fish_source"
+        import subprocess
+        result = subprocess.run(
+            ["pipeline_check"], env=env,
+            capture_output=True, text=True,
+        )
+        if result.stdout.strip():
+            with open(comp_file, "w", encoding="utf-8") as f:
+                f.write(result.stdout)
+            click.echo(f"Completion installed to {comp_file}")
+        else:
+            click.echo(
+                "Add this to ~/.config/fish/completions/pipeline_check.fish:\n"
+                "  _PIPELINE_CHECK_COMPLETE=fish_source pipeline_check | source"
+            )
+    ctx.exit(0)
+
+
 @click.command()
 @click.version_option(version=__version__, prog_name="pipeline_check")
+@click.option(
+    "--install-completion",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    default=None,
+    is_eager=True,
+    expose_value=False,
+    callback=_install_completion_callback,
+    help="Install shell completion for the given shell and exit.",
+)
 @click.option(
     "--config",
     default=None,
@@ -119,6 +286,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "--checks",
     multiple=True,
     metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
     help=(
         "Run only the specified check ID(s).  Repeat to include multiple "
         "(e.g. --checks CB-001 --checks CB-003).  Omit to run all checks."
@@ -190,6 +358,15 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--circleci-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a CircleCI config.yml file or a directory containing one "
+        "(required when --pipeline circleci). Auto-detects .circleci/config.yml."
+    ),
+)
+@click.option(
     "--output",
     type=click.Choice(["terminal", "json", "html", "sarif", "both"], case_sensitive=False),
     default="terminal",
@@ -207,6 +384,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "standards",
     multiple=True,
     metavar="NAME",
+    shell_complete=_complete_standards,
     help=(
         "Annotate findings with controls from the named standard. Repeat to "
         "enable multiple (e.g. --standard owasp_cicd_top_10 --standard "
@@ -225,6 +403,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     flag_value="index",
     default=None,
     metavar="[TOPIC]",
+    shell_complete=_complete_man_topics,
     help=(
         "Print extended documentation for TOPIC and exit. Without "
         "TOPIC, prints the index of available topics. Topics: "
@@ -236,6 +415,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "--standard-report",
     default=None,
     metavar="NAME",
+    shell_complete=_complete_standards,
     help=(
         "Print the control → check matrix for the named standard and "
         "exit. Includes a 'gaps' section listing controls with no "
@@ -285,6 +465,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "fail_on_checks",
     multiple=True,
     metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
     help=(
         "Fail the gate if the named check fails. Repeat for multiple "
         "(e.g. --fail-on-check IAM-001 --fail-on-check CB-002)."
@@ -365,6 +546,17 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit additional [debug] messages to stderr showing provider "
+        "resolution, check execution details, and gate configuration. "
+        "Suppressed when --quiet is also set."
+    ),
+)
+@click.option(
     "--quiet",
     "-q",
     is_flag=True,
@@ -387,6 +579,7 @@ def scan(
     bitbucket_path: str | None,
     azure_path: str | None,
     jenkinsfile_path: str | None,
+    circleci_path: str | None,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
@@ -406,6 +599,7 @@ def scan(
     diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
+    verbose: bool,
     quiet: bool,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
@@ -413,6 +607,13 @@ def scan(
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
+    # --quiet wins over --verbose.
+    verbose = verbose and not quiet
+
+    def _debug(msg: str) -> None:
+        if verbose:
+            click.echo(f"[debug] {msg}", err=True)
+
     if man_topic is not None:
         from .core import manual as _manual
         click.echo(_manual.render(man_topic), nl=False)
@@ -535,6 +736,17 @@ def scan(
             )
         if not os.path.exists(jenkinsfile_path):
             raise click.UsageError(f"--jenkinsfile-path not found: {jenkinsfile_path}")
+    elif pipeline_lc == "circleci":
+        if not circleci_path and os.path.isfile(".circleci/config.yml"):
+            circleci_path = ".circleci/config.yml"
+            click.echo(f"[auto] using --circleci-path {circleci_path}", err=True)
+        if not circleci_path:
+            raise click.UsageError(
+                "--circleci-path PATH is required when --pipeline circleci "
+                "(no .circleci/config.yml found in the current directory)."
+            )
+        if not os.path.exists(circleci_path):
+            raise click.UsageError(f"--circleci-path not found: {circleci_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -551,19 +763,35 @@ def scan(
 
     threshold = Severity(severity_threshold.upper())
 
+    if not quiet:
+        from .core.config import last_loaded_source as _config_source
+        _cfg_src = _config_source()
+        if _cfg_src:
+            click.echo(f"[config] loaded {_cfg_src}", err=True)
+
+    _debug(f"provider: {pipeline}")
+
     scanner = Scanner(
         pipeline=pipeline,
         region=region,
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
+        log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
         azure_path=azure_path,
         jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
     )
+
+    if verbose:
+        meta = scanner.metadata
+        if meta.files_scanned or meta.files_skipped:
+            _debug(f"loaded {meta.files_scanned} file(s), {meta.files_skipped} skipped")
+        _debug(f"checks to run: {len(scanner._check_classes)} check class(es)")
 
     try:
         findings = scanner.run(
@@ -579,6 +807,13 @@ def scan(
         click.echo(f"[error] Scan failed: {exc}", err=True)
         click.echo(traceback.format_exc(), err=True, nl=False)
         sys.exit(2)
+
+    if not quiet:
+        _emit_scan_summary(scanner.metadata)
+
+    n_passed = sum(1 for f in findings if f.passed)
+    n_failed = sum(1 for f in findings if not f.passed)
+    _debug(f"findings: {len(findings)} total ({n_failed} failed, {n_passed} passed)")
 
     score_result = score(findings)
 
@@ -636,11 +871,23 @@ def scan(
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
     )
+
+    if verbose:
+        parts = []
+        parts.append(f"fail-on={fail_on or 'CRITICAL (default)'}")
+        if min_grade:
+            parts.append(f"min-grade={min_grade}")
+        if max_failures is not None:
+            parts.append(f"max-failures={max_failures}")
+        if baseline:
+            parts.append(f"baseline={baseline}")
+        elif baseline_from_git:
+            parts.append(f"baseline-from-git={baseline_from_git}")
+        _debug(f"gate config: {', '.join(parts)}")
+
     gate = evaluate_gate(findings, score_result, gate_config)
 
-    if not quiet and output != "json" and (
-        gate.reasons or gate.baseline_matched or gate.suppressed or gate.expired_rules
-    ):
+    if not quiet and output != "json":
         _emit_gate_summary(gate)
 
     if not gate.passed:
@@ -663,6 +910,8 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
     """
     import os
     cache: dict[str, str] = {}
+    patch_count = 0
+    patched_files: set[str] = set()
     for f in findings:
         if f.passed:
             continue
@@ -690,10 +939,18 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
             continue
         if after is None:
             continue
+        patch_count += 1
+        patched_files.add(path)
         click.echo(
             _autofix.render_patch(path, before, after),
             nl=False,
             err=to_stderr,
+        )
+    if patch_count:
+        click.echo(
+            f"[autofix] {patch_count} patch(es) for {len(patched_files)} file(s)."
+            f" Run with --apply to modify in place.",
+            err=True,
         )
 
 
@@ -741,10 +998,31 @@ def _apply_fix_patches(findings) -> None:
     click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
 
 
+def _emit_scan_summary(meta) -> None:
+    """Render the scan summary line and any parse warnings to stderr."""
+    from .core.scanner import ScanMetadata
+    if not isinstance(meta, ScanMetadata):
+        return
+    for w in meta.warnings:
+        click.echo(f"[warn] {w}", err=True)
+    if meta.files_scanned == 0 and meta.files_skipped == 0:
+        click.echo("[warn] no pipeline files found to scan", err=True)
+        return
+    skip_part = f" ({meta.files_skipped} skipped)" if meta.files_skipped else ""
+    click.echo(
+        f"[scan] {meta.provider}: scanned {meta.files_scanned} file(s){skip_part}"
+        f" in {meta.elapsed_seconds:.1f}s",
+        err=True,
+    )
+
+
 def _emit_gate_summary(gate) -> None:
     """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
+    n_effective = len(gate.effective)
     if gate.passed:
-        msg_lines = ["[gate] PASS"]
+        msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
+        for cond in getattr(gate, "conditions_evaluated", []):
+            msg_lines.append(f"        - {cond}")
     else:
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:

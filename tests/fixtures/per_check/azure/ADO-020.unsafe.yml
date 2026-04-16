@@ -1,2 +1,3 @@
 steps:
+  - script: docker push app:latest
   - script: npm test

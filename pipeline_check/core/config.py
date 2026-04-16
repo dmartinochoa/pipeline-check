@@ -41,6 +41,7 @@ import yaml
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",
     "tf_plan", "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
+    "circleci_path",
     "output", "output_file",
     "standards", "severity_threshold",
     "secret_patterns",
@@ -73,10 +74,19 @@ _ENV_GATE_PREFIX = "PIPELINE_CHECK_GATE_"
 #: re-parsing. A list of ``(source, key, reason)`` tuples.
 _LAST_UNKNOWN_KEYS: list[tuple[str, str, str]] = []
 
+#: Path of the config file that was loaded (if any). Set by
+#: ``_load_from_file`` so the CLI can announce which file was used.
+_LAST_LOADED_SOURCE: str | None = None
+
 
 def last_unknown_keys() -> list[tuple[str, str, str]]:
     """Return the unknown keys seen during the last ``load_config`` call."""
     return list(_LAST_UNKNOWN_KEYS)
+
+
+def last_loaded_source() -> str | None:
+    """Return the path of the config file loaded by the last ``load_config`` call."""
+    return _LAST_LOADED_SOURCE
 
 
 def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> dict[str, Any]:
@@ -87,7 +97,9 @@ def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> di
     expects, so the caller can hand it straight to the click entry
     point.
     """
+    global _LAST_LOADED_SOURCE
     _LAST_UNKNOWN_KEYS.clear()
+    _LAST_LOADED_SOURCE = None
     cwd = cwd or Path.cwd()
     file_cfg = _load_from_file(explicit_path, cwd)
     env_cfg = _load_from_env()
@@ -104,6 +116,7 @@ def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> di
 
 def _load_from_file(explicit_path: str | None, cwd: Path) -> dict[str, Any]:
     """Load a flat config dict from whichever file is found first."""
+    global _LAST_LOADED_SOURCE
     if explicit_path:
         p = Path(explicit_path)
         if not p.exists():
@@ -111,16 +124,21 @@ def _load_from_file(explicit_path: str | None, cwd: Path) -> dict[str, Any]:
             # file in particular, so surface the error rather than silently
             # falling back to auto-discovery.
             raise FileNotFoundError(f"--config file not found: {p}")
+        _LAST_LOADED_SOURCE = str(p)
         return _load_path(p)
 
     for candidate in (".pipeline-check.yml", ".pipeline-check.yaml"):
         p = cwd / candidate
         if p.exists():
+            _LAST_LOADED_SOURCE = str(p)
             return _load_path(p)
 
     pyproject = cwd / "pyproject.toml"
     if pyproject.exists():
-        return _load_pyproject(pyproject)
+        result = _load_pyproject(pyproject)
+        if result:
+            _LAST_LOADED_SOURCE = str(pyproject)
+        return result
 
     return {}
 

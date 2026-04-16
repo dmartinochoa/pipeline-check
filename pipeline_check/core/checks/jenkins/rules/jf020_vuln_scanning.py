@@ -1,7 +1,7 @@
 """JF-020 — no vulnerability scanning step."""
 from __future__ import annotations
 
-from ...base import Finding, Severity, has_vuln_scanning
+from ...base import _ARTIFACT_TOKENS, Finding, Severity, has_vuln_scanning
 from ...rule import Rule
 from ..base import Jenkinsfile
 
@@ -21,13 +21,21 @@ RULE = Rule(
         "Without a vulnerability scanning step, known-vulnerable "
         "dependencies ship to production undetected. The check "
         "recognises trivy, grype, snyk, npm audit, yarn audit, "
-        "safety check, pip-audit, osv-scanner, and govulncheck."
+        "safety check, pip-audit, osv-scanner, and govulncheck. "
+        "Comments are stripped before matching."
     ),
 )
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    passed = has_vuln_scanning([jf.text])
+    passed = has_vuln_scanning([jf.text_no_comments])
+    if not passed and not any(tok in jf.text.lower() for tok in _ARTIFACT_TOKENS):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=jf.path,
+            description="No artifact production detected — check not applicable.",
+            recommendation=RULE.recommendation, passed=True,
+        )
     desc = (
         "Pipeline invokes a vulnerability scanner (trivy / grype / "
         "snyk / npm audit / pip-audit / osv-scanner)."

@@ -1,0 +1,11 @@
+@Library('my-shared-lib@abc123def456abc123def456abc123def456abcd') _
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+            }
+        }
+    }
+}

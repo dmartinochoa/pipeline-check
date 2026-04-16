@@ -45,10 +45,11 @@ output_file = "pipeline-check.sarif"
 gha_path = ".github/workflows"
 gitlab_path = ".gitlab-ci.yml"
 bitbucket_path = "bitbucket-pipelines.yml"
+circleci_path = ".circleci/config.yml"
 tf_plan = "plan.json"
 
 # Extra credential patterns for the secret-scanning checks
-# (GHA-008, GL-008, BB-008, ADO-008). Python regex syntax; anchor
+# (GHA-008, GL-008, BB-008, ADO-008, JF-008, CC-008). Python regex syntax; anchor
 # with ^...$ for whole-token matches.
 secret_patterns = [
     '^acme_[a-f0-9]{32}$',     # internal service token

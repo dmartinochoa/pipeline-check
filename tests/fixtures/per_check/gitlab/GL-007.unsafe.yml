@@ -1,3 +1,4 @@
 release:
   script:
+    - docker push example/app:$CI_COMMIT_SHA
     - cosign sign --yes example/app:$CI_COMMIT_SHA

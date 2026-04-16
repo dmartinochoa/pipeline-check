@@ -104,5 +104,29 @@ STANDARD = Standard(
         "ADO-003":  ["PS.1.1"],
         "ADO-004":  ["PO.5.1"],
         "ADO-005":  ["PW.4.1", "PW.4.4"],
+        # CircleCI
+        "CC-001":   ["PW.4.1", "PW.4.4"],              # orb not pinned to SHA
+        "CC-002":   ["PW.6.1", "PW.9.1"],              # script injection
+        "CC-003":   ["PW.4.1", "PW.4.4"],              # image not pinned to digest
+        "CC-004":   ["PS.1.1"],                        # unrestricted context
+        "CC-005":   ["PS.1.1"],                        # long-lived AWS keys
+        "CC-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts
+        "CC-007":   ["PS.3.2"],                        # no SBOM / provenance
+        "CC-008":   ["PS.1.1"],                        # literal secrets in config
+        "CC-009":   ["PO.5.1"],                        # no deployment approval
+        "CC-010":   ["PO.5.2", "PW.9.1"],              # self-hosted runner
+        "CC-011":   ["PO.3.3"],                        # no build retention
+        "CC-012":   ["PW.6.1", "PW.9.1"],              # setup / dynamic config
+        "CC-013":   ["PO.5.1"],                        # no branch filter
+        "CC-014":   ["PO.5.1", "PO.5.2"],              # resource class isolation
+        "CC-015":   ["PO.5.2", "PW.9.1"],              # no timeout
+        "CC-016":   ["PW.4.1", "PW.4.4"],              # curl | bash
+        "CC-017":   ["PO.5.2", "PW.9.1"],              # insecure Docker config
+        "CC-018":   ["PW.4.1", "PW.4.4"],              # insecure package source
+        "CC-019":   ["PS.1.1"],                        # SSH key in config
+        "CC-020":   ["RV.1.1"],                        # no vulnerability scanning
+        "CC-021":   ["PW.4.4"],                        # no lockfile
+        "CC-022":   ["PW.4.1"],                        # no dependency updates
+        "CC-023":   ["PW.4.4"],                        # TLS verification bypass
     },
 )
