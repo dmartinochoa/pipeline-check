@@ -1,0 +1,3 @@
+build:
+  script:
+    - pip install --trusted-host pypi.internal.com package

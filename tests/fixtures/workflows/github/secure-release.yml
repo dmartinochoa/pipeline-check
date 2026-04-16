@@ -13,6 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout tagged commit
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -35,6 +36,9 @@ jobs:
         uses: anchore/sbom-action@61119d458adab75f756bc0b9e4bde25725f86a7a
         with:
           format: cyclonedx-json
+
+      - name: Vulnerability scan
+        run: trivy fs --severity HIGH .
 
       - name: Publish
         env:

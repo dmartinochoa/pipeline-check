@@ -6,7 +6,6 @@ import json
 from pipeline_check.core.checks.terraform.base import TerraformContext
 from pipeline_check.core.checks.terraform.iam import IAMChecks
 
-
 _CB_TRUST = json.dumps({
     "Statement": [{"Effect": "Allow", "Principal": {"Service": "codebuild.amazonaws.com"},
                    "Action": "sts:AssumeRole"}]

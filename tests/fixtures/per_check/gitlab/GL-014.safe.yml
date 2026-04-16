@@ -1,0 +1,6 @@
+build:
+  tags:
+    - custom-runner
+    - ephemeral
+  script:
+    - make build

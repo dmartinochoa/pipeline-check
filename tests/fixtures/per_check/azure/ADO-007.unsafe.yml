@@ -1,0 +1,4 @@
+jobs:
+  - job: Release
+    steps:
+      - script: cosign sign --yes example/app:$(Build.BuildId)

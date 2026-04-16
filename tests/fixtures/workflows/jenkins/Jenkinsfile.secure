@@ -11,6 +11,8 @@ pipeline {
         // JF-011 -- bound retention so old logs (and any leaked secrets
         // they might contain) are pruned on a schedule.
         buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90'))
+        // JF-015 -- explicit build timeout.
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     environment {
@@ -27,6 +29,7 @@ pipeline {
                     sh 'echo "Building branch $BRANCH"'
                     sh 'make build'
                 }
+                sh 'trivy fs --severity HIGH .'
                 sh 'syft . -o cyclonedx-json > sbom.json'
                 sh 'cosign sign --yes registry.example.com/app:$BUILD_TAG'
             }

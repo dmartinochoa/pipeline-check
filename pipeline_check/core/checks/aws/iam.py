@@ -18,16 +18,25 @@ import json
 
 from botocore.exceptions import ClientError
 
-from .base import AWSBaseCheck, Finding, Severity
 from .._iam_policy import (
     ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
+)
+from .._iam_policy import (
     CICD_SERVICE_PRINCIPALS as _CICD_SERVICE_PRINCIPALS,
-    as_list as _as_list,
+)
+from .._iam_policy import (
     has_wildcard_action as _has_wildcard_action,
+)
+from .._iam_policy import (
     iter_allow as _iter_allow,
+)
+from .._iam_policy import (
     passrole_wildcard as _passrole_wildcard,
+)
+from .._iam_policy import (
     sensitive_wildcard as _sensitive_wildcard,
 )
+from .base import AWSBaseCheck, Finding, Severity
 
 
 class IAMChecks(AWSBaseCheck):

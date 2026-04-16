@@ -1,6 +1,11 @@
 """Focused tests for the Jenkins provider — CLI integration, parser
 edge cases, and per-check sad paths the broad fixture sweep doesn't
-exercise."""
+exercise.
+
+Snippets live on disk under ``tests/fixtures/scenarios/jenkins/`` so
+the inline triple-quoted Groovy that used to fill this file is now
+in real ``.jenkinsfile`` files an IDE can syntax-highlight.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,6 +18,13 @@ from pipeline_check.core import providers as providers_mod
 from pipeline_check.core.checks.jenkins.base import JenkinsContext, _extract_stages
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 
+SCENARIO_DIR = Path(__file__).parent / "fixtures" / "scenarios" / "jenkins"
+
+
+def _scenario(name: str) -> str:
+    """Return the body of a Jenkins scenario fixture by filename."""
+    return (SCENARIO_DIR / name).read_text(encoding="utf-8")
+
 
 def _scan_text(text: str, tmp_path: Path):
     """Helper: write *text* to a Jenkinsfile and return ``{check_id: passed}``."""
@@ -20,6 +32,11 @@ def _scan_text(text: str, tmp_path: Path):
     p.write_text(text, encoding="utf-8")
     ctx = JenkinsContext.from_path(p)
     return {f.check_id: f.passed for f in JenkinsfileChecks(ctx).run()}
+
+
+def _scan(name: str, tmp_path: Path):
+    """Convenience: load + scan a scenario in one call."""
+    return _scan_text(_scenario(name), tmp_path)
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -96,17 +113,7 @@ def test_extract_stages_handles_nested_braces():
     """A stage body containing ``script { … }`` and ``steps { … }``
     nested blocks must be captured in full — the depth-aware walker
     is the whole reason we don't use a flat regex."""
-    text = """\
-pipeline {
-  stages {
-    stage('Build') {
-      steps {
-        script { def x = 1; if (x) { sh 'make' } }
-      }
-    }
-  }
-}
-"""
+    text = _scenario("extract-stages-nested-braces.jenkinsfile")
     stages = _extract_stages(text)
     assert len(stages) == 1
     name, body = stages[0]
@@ -121,7 +128,7 @@ def test_extract_stages_unclosed_brace_returns_truncated_body():
     """A pathologically unbalanced stage block (missing closing brace)
     shouldn't blow up — the walker should yield what it has so the
     rest of the checks still run."""
-    text = "stage('Broken') { steps { sh 'x'\n# missing closes\n"
+    text = _scenario("extract-stages-unclosed.jenkinsfile")
     stages = _extract_stages(text)
     assert stages
     assert stages[0][0] == "Broken"
@@ -133,40 +140,25 @@ def test_extract_stages_unclosed_brace_returns_truncated_body():
 
 
 def test_jf009_passes_with_digest_pin(tmp_path):
-    text = """\
-pipeline {
-  agent { docker { image 'maven@sha256:0000000000000000000000000000000000000000000000000000000000000001' } }
-  options { buildDiscarder(logRotator(numToKeepStr: '5')) }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-009"] is True
+    assert _scan("jf009-digest-pin.jenkinsfile", tmp_path)["JF-009"] is True
 
 
 def test_jf009_flags_floating_tag(tmp_path):
-    text = "pipeline { agent { docker { image 'maven:latest' } } }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-009"] is False
+    assert _scan("jf009-floating-tag.jenkinsfile", tmp_path)["JF-009"] is False
 
 
 def test_jf009_flags_no_tag(tmp_path):
-    text = "pipeline { agent { docker { image 'maven' } } }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-009"] is False
+    assert _scan("jf009-no-tag.jenkinsfile", tmp_path)["JF-009"] is False
 
 
 def test_jf009_flags_version_tag_without_digest(tmp_path):
     """Tag-pinned but not digest-pinned still fails — registry tag
     repointing is the threat model."""
-    text = "pipeline { agent { docker { image 'maven:3.9.6' } } }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-009"] is False
+    assert _scan("jf009-version-tag.jenkinsfile", tmp_path)["JF-009"] is False
 
 
 def test_jf009_passes_when_no_docker_agent(tmp_path):
-    text = "pipeline { agent { label 'build-pool' } }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-009"] is True
+    assert _scan("jf009-no-docker-agent.jenkinsfile", tmp_path)["JF-009"] is True
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -177,51 +169,22 @@ def test_jf009_passes_when_no_docker_agent(tmp_path):
 def test_jf010_credentials_reference_passes(tmp_path):
     """``credentials('id')`` reads from the credentials store at runtime
     and is the recommended pattern — must not be flagged."""
-    text = """\
-pipeline {
-  agent any
-  environment {
-    AWS_ACCESS_KEY_ID = credentials('aws-prod-key')
-  }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-010"] is True
+    assert _scan("jf010-credentials-reference.jenkinsfile", tmp_path)["JF-010"] is True
 
 
 def test_jf010_literal_value_fails(tmp_path):
-    text = """\
-pipeline {
-  agent any
-  environment {
-    AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
-  }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-010"] is False
+    assert _scan("jf010-literal-value.jenkinsfile", tmp_path)["JF-010"] is False
 
 
 def test_jf010_inline_form_flagged(tmp_path):
     """``environment { KEY = '...' }`` on a single line is the most
     compact form in real Jenkinsfiles. Regression test for the
     line-start-anchor bug found by the per-check real-examples sweep."""
-    text = 'pipeline { agent any; environment { AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" } }\n'
-    results = _scan_text(text, tmp_path)
-    assert results["JF-010"] is False
+    assert _scan("jf010-inline-form.jenkinsfile", tmp_path)["JF-010"] is False
 
 
 def test_jf010_session_token_also_flagged(tmp_path):
-    text = """\
-pipeline {
-  agent any
-  environment {
-    AWS_SESSION_TOKEN = "FQoGZXIvYXdzEHcaDExample"
-  }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-010"] is False
+    assert _scan("jf010-session-token.jenkinsfile", tmp_path)["JF-010"] is False
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -230,34 +193,21 @@ pipeline {
 
 
 def test_jf011_passes_with_options_block(tmp_path):
-    text = """\
-pipeline {
-  agent any
-  options { buildDiscarder(logRotator(numToKeepStr: '10')) }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-011"] is True
+    assert _scan("jf011-options-block.jenkinsfile", tmp_path)["JF-011"] is True
 
 
 def test_jf011_passes_with_scripted_properties(tmp_path):
     """Scripted-pipeline equivalent uses ``properties([buildDiscarder(...)])``."""
-    text = "properties([buildDiscarder(logRotator(numToKeepStr: '10'))])\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-011"] is True
+    assert _scan("jf011-scripted-properties.jenkinsfile", tmp_path)["JF-011"] is True
 
 
 def test_jf011_passes_with_logrotator_alias(tmp_path):
     """Older Jenkinsfiles call the helper directly."""
-    text = "node { logRotator(numToKeepStr: '5') }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-011"] is True
+    assert _scan("jf011-logrotator-alias.jenkinsfile", tmp_path)["JF-011"] is True
 
 
 def test_jf011_fails_without_any_retention(tmp_path):
-    text = "pipeline { agent any }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-011"] is False
+    assert _scan("jf011-no-retention.jenkinsfile", tmp_path)["JF-011"] is False
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -266,30 +216,15 @@ def test_jf011_fails_without_any_retention(tmp_path):
 
 
 def test_jf012_passes_when_no_load_step(tmp_path):
-    text = "pipeline { agent any }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-012"] is True
+    assert _scan("jf012-no-load-step.jenkinsfile", tmp_path)["JF-012"] is True
 
 
 def test_jf012_flags_load_inside_script(tmp_path):
-    text = """\
-pipeline {
-  agent any
-  stages {
-    stage('Bootstrap') {
-      steps { script { def lib = load 'ci/helpers.groovy' } }
-    }
-  }
-}
-"""
-    results = _scan_text(text, tmp_path)
-    assert results["JF-012"] is False
+    assert _scan("jf012-load-inside-script.jenkinsfile", tmp_path)["JF-012"] is False
 
 
 def test_jf012_only_matches_groovy_extension(tmp_path):
     """``load 'foo.txt'`` would be a Groovy syntax error in practice;
     the regex deliberately requires a .groovy extension so a `load`
     keyword in some other context (e.g. plugin DSL) doesn't trip it."""
-    text = "pipeline { agent any; steps { sh 'load foo.txt' } }\n"
-    results = _scan_text(text, tmp_path)
-    assert results["JF-012"] is True
+    assert _scan("jf012-load-non-groovy.jenkinsfile", tmp_path)["JF-012"] is True

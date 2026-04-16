@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  stages { stage('Release') { steps { sh 'docker build -t app .' } } }
+}

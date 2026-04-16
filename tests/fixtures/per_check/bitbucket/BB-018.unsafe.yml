@@ -1,0 +1,11 @@
+definitions:
+  caches:
+    custom: /tmp/cache-$BITBUCKET_BRANCH
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - custom
+        script:
+          - npm test

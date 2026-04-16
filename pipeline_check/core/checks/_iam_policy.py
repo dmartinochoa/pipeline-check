@@ -9,7 +9,7 @@ land in one place.
 from __future__ import annotations
 
 import json
-from typing import Iterable
+from collections.abc import Iterable
 
 CICD_SERVICE_PRINCIPALS = {
     "codebuild.amazonaws.com",

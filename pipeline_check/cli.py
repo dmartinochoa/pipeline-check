@@ -45,10 +45,10 @@ import sys
 import click
 
 from . import __version__
+from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Severity
-from .core import autofix as _autofix
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
@@ -364,6 +364,17 @@ def _load_config_callback(ctx: click.Context, _param, value):
         "Defaults to .pipelinecheckignore when present in the working dir."
     ),
 )
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    default=False,
+    help=(
+        "Suppress all terminal output. Only the exit code indicates "
+        "pass (0) or fail (1). Useful for CI scripts that parse exit "
+        "codes without needing human-readable output."
+    ),
+)
 def scan(
     pipeline: str,
     target: str | None,
@@ -395,6 +406,7 @@ def scan(
     diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
+    quiet: bool,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
@@ -570,39 +582,40 @@ def scan(
 
     score_result = score(findings)
 
-    if output in ("terminal", "both"):
-        # When emitting both terminal and JSON, send the human-readable report to
-        # stderr so the JSON on stdout remains clean and machine-parseable.
-        from rich.console import Console as _Console  # local import — only needed here
-        console = _Console(stderr=(output == "both"))
-        report_terminal(findings, score_result, severity_threshold=threshold, console=console)
+    if not quiet:
+        if output in ("terminal", "both"):
+            # When emitting both terminal and JSON, send the human-readable report to
+            # stderr so the JSON on stdout remains clean and machine-parseable.
+            from rich.console import Console as _Console  # local import — only needed here
+            console = _Console(stderr=(output == "both"))
+            report_terminal(findings, score_result, severity_threshold=threshold, console=console)
 
-    if output in ("json", "both"):
-        click.echo(report_json(findings, score_result, tool_version=__version__))
+        if output in ("json", "both"):
+            click.echo(report_json(findings, score_result, tool_version=__version__))
 
-    if output == "html":
-        report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
-        click.echo(f"HTML report written to {output_file}", err=True)
+        if output == "html":
+            report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
+            click.echo(f"HTML report written to {output_file}", err=True)
 
-    if output == "sarif":
-        sarif_text = report_sarif(findings, score_result, tool_version=__version__)
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(sarif_text)
-            click.echo(f"SARIF report written to {output_file}", err=True)
-        else:
-            click.echo(sarif_text)
+        if output == "sarif":
+            sarif_text = report_sarif(findings, score_result, tool_version=__version__)
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(sarif_text)
+                click.echo(f"SARIF report written to {output_file}", err=True)
+            else:
+                click.echo(sarif_text)
 
-    if fix:
-        if apply_fixes:
-            _apply_fix_patches(findings)
-        else:
-            # Route patches to stderr whenever stdout is carrying a machine-
-            # readable report, so `--output json --fix` doesn't produce
-            # "JSON...--- a/file" and break downstream parsers. The
-            # documented `pipeline_check --fix | git apply` recipe uses the
-            # default terminal output where stdout is free for the patch.
-            _emit_fix_patches(findings, to_stderr=output != "terminal")
+        if fix:
+            if apply_fixes:
+                _apply_fix_patches(findings)
+            else:
+                # Route patches to stderr whenever stdout is carrying a machine-
+                # readable report, so `--output json --fix` doesn't produce
+                # "JSON...--- a/file" and break downstream parsers. The
+                # documented `pipeline_check --fix | git apply` recipe uses the
+                # default terminal output where stdout is free for the patch.
+                _emit_fix_patches(findings, to_stderr=output != "terminal")
 
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"
@@ -625,7 +638,7 @@ def scan(
     )
     gate = evaluate_gate(findings, score_result, gate_config)
 
-    if output != "json" and (
+    if not quiet and output != "json" and (
         gate.reasons or gate.baseline_matched or gate.suppressed or gate.expired_rules
     ):
         _emit_gate_summary(gate)
@@ -659,7 +672,7 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
         before = cache.get(path)
         if before is None:
             try:
-                with open(path, "r", encoding="utf-8") as fh:
+                with open(path, encoding="utf-8") as fh:
                     before = fh.read()
             except (OSError, UnicodeDecodeError):
                 continue
@@ -703,7 +716,7 @@ def _apply_fix_patches(findings) -> None:
         before = dirty.get(path) or cache.get(path)
         if before is None:
             try:
-                with open(path, "r", encoding="utf-8") as fh:
+                with open(path, encoding="utf-8") as fh:
                     before = fh.read()
             except (OSError, UnicodeDecodeError):
                 continue

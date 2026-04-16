@@ -14,13 +14,19 @@ matches a known credential pattern (AKIA/ASIA/ghp_/xoxb-/JWT).
 
 from botocore.exceptions import ClientError
 
-from .base import AWSBaseCheck, Finding, Severity
 from .._patterns import (
     LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
+)
+from .._patterns import (
     MANAGED_IMAGE_RE as _MANAGED_IMAGE_RE,
+)
+from .._patterns import (
     SECRET_NAME_RE as _SECRET_NAME_RE,
+)
+from .._patterns import (
     SECRET_VALUE_RE as _SECRET_VALUE_RE,
 )
+from .base import AWSBaseCheck, Finding, Severity
 
 _LONG_LIVED_TOKEN_AUTH = {"OAUTH", "PERSONAL_ACCESS_TOKEN", "BASIC_AUTH"}
 _EXTERNAL_SOURCE_TYPES = {"GITHUB", "GITHUB_ENTERPRISE", "BITBUCKET"}

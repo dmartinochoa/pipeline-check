@@ -1,0 +1,3 @@
+release:
+  script:
+    - docker build -t app:$CI_COMMIT_SHA .

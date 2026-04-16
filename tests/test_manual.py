@@ -7,7 +7,6 @@ from click.testing import CliRunner
 from pipeline_check.cli import scan
 from pipeline_check.core import manual
 
-
 # ────────────────────────────────────────────────────────────────────────
 # Content registry
 # ────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,10 @@
+name: build
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -o install.sh https://example.com/install.sh
+          sha256sum -c checksums.txt
+          bash install.sh

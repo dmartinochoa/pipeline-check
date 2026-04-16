@@ -1,0 +1,7 @@
+variables:
+  - name: BUILD_CONFIG
+    value: Release
+jobs:
+  - job: Build
+    steps:
+      - script: pytest

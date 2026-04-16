@@ -55,6 +55,21 @@ DETECTORS: list[tuple[str, str]] = [
     ("anthropic_api_key",     "sk-ant-api03-" + _FILLER[:95]),
     ("digitalocean_token",    "dop_v1_" + ("0123456789abcdef" * 4)),
     ("hashicorp_vault",       "hvs." + _FILLER[:30]),
+    ("twilio_api_key",        "SK" + "0123456789abcdef" * 2),
+    ("twilio_account_sid",    "AC" + "0123456789abcdef" * 2),
+    ("mailchimp_api_key",     "0123456789abcdef" * 2 + "-us21"),
+    ("shopify_token",         "shpat_" + "0123456789abcdef" * 2),
+    ("shopify_token",         "shpss_" + "0123456789abcdef" * 2),
+    ("databricks_token",      "dapi" + "0123456789abcdef" * 2),
+    ("openai_api_key",        "sk-" + _FILLER[:20] + "T3BlbkFJ" + _FILLER[:20]),
+    ("openai_api_key",        "sk-proj-" + _FILLER[:45]),
+    ("huggingface_token",     "hf_" + _FILLER[:40]),
+    ("age_secret_key",        "AGE-SECRET-KEY-1" + _FILLER[:58]),
+    ("linear_api_key",        "lin_api_" + _FILLER[:40]),
+    ("planetscale_token",     "pscale_tkn_" + _FILLER[:45]),
+    ("new_relic_api_key",     "NRAK-" + _FILLER[:27]),
+    ("grafana_api_key",       "glsa_" + _FILLER[:35]),
+    ("telegram_bot_token",    "123456789:" + _FILLER[:35]),
 ]
 
 
@@ -88,6 +103,19 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("glpat-tooshort",                     "GitLab PAT requires exactly 20 trailing chars"),
     ("dop_v1_short",                       "DigitalOcean token needs 64 hex chars"),
     ("hvs.x",                              "Vault token needs 24+ chars after prefix"),
+    ("SKabc123",                           "Twilio API key needs exactly 32 hex after SK"),
+    ("ACshort",                            "Twilio Account SID needs exactly 32 hex after AC"),
+    ("0123456789abcdef-us1",               "Mailchimp key needs 32 hex chars, not 16"),
+    ("shpat_tooshort",                     "Shopify token needs 32 hex after prefix"),
+    ("dapishort",                          "Databricks token needs 32 hex after dapi"),
+    ("sk-tooshort",                        "OpenAI key needs T3BlbkFJ marker or proj- prefix + 40"),
+    ("hf_short",                           "Hugging Face token needs 34+ chars after hf_"),
+    ("AGE-SECRET-KEY-1short",              "age key needs exactly 58 chars after prefix"),
+    ("lin_api_short",                      "Linear key needs 40 chars after prefix"),
+    ("pscale_tkn_short",                   "PlanetScale token needs 40+ chars after prefix"),
+    ("NRAK-short",                         "New Relic key needs 27 chars after NRAK-"),
+    ("glsa_short",                         "Grafana key needs 32+ chars after glsa_"),
+    ("12345:shorttoken",                   "Telegram bot token needs 8-10 digit ID and 35-char secret"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.

@@ -12,9 +12,9 @@ without any changes to Scanner or the CLI.
 """
 from __future__ import annotations
 
-from .base import BaseProvider
 from .aws import AWSProvider
 from .azure import AzureProvider
+from .base import BaseProvider
 from .bitbucket import BitbucketProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider

@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  environment { AWS_ACCESS_KEY_ID = credentials('aws-prod-key') }
+}

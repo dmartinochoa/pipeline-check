@@ -28,7 +28,9 @@ Three signal types fire:
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, Pattern
+from collections.abc import Iterable
+from re import Pattern
+from typing import Any
 
 from ._patterns import (
     PEM_BLOCK_RE,
@@ -36,7 +38,6 @@ from ._patterns import (
     SECRET_DETECTORS,
     SECRET_VALUE_RE,
 )
-
 
 # Mutable registry — appended to by :func:`register_pattern` so users
 # can extend the detector with org-specific credential shapes (e.g.

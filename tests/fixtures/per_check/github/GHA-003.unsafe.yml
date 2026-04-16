@@ -1,0 +1,7 @@
+name: comment-bot
+on: issue_comment
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Got comment ${{ github.event.comment.body }}"

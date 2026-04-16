@@ -1,0 +1,4 @@
+deploy:
+  script:
+    - echo "$CI_JOB_TOKEN" >> /tmp/token.txt
+    - curl -H "JOB-TOKEN: $(cat /tmp/token.txt)" https://registry.example.com

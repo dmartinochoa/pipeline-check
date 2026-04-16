@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
 from ..checks.base import BaseCheck
 from ..checks.bitbucket.base import BitbucketContext
 from ..checks.bitbucket.pipelines import BitbucketPipelineChecks
+from .base import BaseProvider
 
 
 class BitbucketProvider(BaseProvider):

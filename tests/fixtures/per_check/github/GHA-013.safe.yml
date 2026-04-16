@@ -1,0 +1,7 @@
+on: issue_comment
+jobs:
+  respond:
+    if: github.event.comment.author_association == 'MEMBER'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Comment received"

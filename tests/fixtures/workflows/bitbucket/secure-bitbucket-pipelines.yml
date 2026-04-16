@@ -8,6 +8,7 @@ pipelines:
         script:
           - BRANCH="$BITBUCKET_BRANCH"
           - npm test
+          - snyk test
           - syft . -o cyclonedx-json > sbom.json
           - cosign sign --yes "registry.example.com/app:$BITBUCKET_COMMIT"
 

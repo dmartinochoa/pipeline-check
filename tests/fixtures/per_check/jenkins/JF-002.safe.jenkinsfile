@@ -1,0 +1,12 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Build') {
+      steps {
+        withEnv(["BRANCH=${env.BRANCH_NAME}"]) {
+          sh 'echo "Building $BRANCH"'
+        }
+      }
+    }
+  }
+}

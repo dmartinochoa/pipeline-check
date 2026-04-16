@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('Test') {
+      steps {
+        sh 'docker run --rm myimage:latest /run-tests.sh'
+      }
+    }
+  }
+}

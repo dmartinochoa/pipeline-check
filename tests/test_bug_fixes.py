@@ -5,7 +5,7 @@ back, it should point directly at the class of regression.
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from pipeline_check.core import autofix
 from pipeline_check.core.checks.base import Finding, Severity, is_quoted_assignment
@@ -153,6 +153,7 @@ def test_bug_c_is_quoted_assignment_rejects_command_injection():
 
 def test_bug_d_terraform_filter_does_not_over_match_on_prefix(monkeypatch):
     from types import SimpleNamespace
+
     from pipeline_check.core import diff as diff_mod
     from pipeline_check.core.scanner import _filter_context_by_diff
 
@@ -171,6 +172,7 @@ def test_bug_d_terraform_filter_does_not_over_match_on_prefix(monkeypatch):
 
 def test_bug_d_terraform_filter_matches_module_dir_exactly(monkeypatch):
     from types import SimpleNamespace
+
     from pipeline_check.core import diff as diff_mod
     from pipeline_check.core.scanner import _filter_context_by_diff
 

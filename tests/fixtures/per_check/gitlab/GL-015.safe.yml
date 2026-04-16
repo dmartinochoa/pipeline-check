@@ -1,0 +1,4 @@
+build:
+  timeout: 30 minutes
+  script:
+    - npm test

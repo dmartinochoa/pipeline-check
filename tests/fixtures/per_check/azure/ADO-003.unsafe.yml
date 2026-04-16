@@ -1,0 +1,7 @@
+variables:
+  - name: AWS_ACCESS_KEY_ID
+    value: AKIAIOSFODNN7EXAMPLE
+jobs:
+  - job: Build
+    steps:
+      - script: pytest

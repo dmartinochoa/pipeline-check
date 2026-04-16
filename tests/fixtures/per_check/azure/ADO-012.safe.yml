@@ -1,0 +1,7 @@
+jobs:
+  - job: Build
+    steps:
+      - task: Cache@2
+        inputs:
+          key: build-$(Agent.OS)-$(Build.DefinitionName) | poetry.lock
+          path: $(Pipeline.Workspace)/.cache

@@ -15,6 +15,7 @@ stages:
 
 unit-tests:
   stage: test
+  timeout: 30 minutes
   image: node@sha256:0000000000000000000000000000000000000000000000000000000000000002
   script:
     - TITLE="$CI_MERGE_REQUEST_TITLE"
@@ -22,11 +23,13 @@ unit-tests:
 
 deploy-prod:
   stage: deploy
+  timeout: 15 minutes
   when: manual
   environment:
     name: production
     url: https://app.example.com
   script:
+    - trivy fs --severity HIGH .
     - syft . -o cyclonedx-json > sbom.json
     - cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"
     - ./scripts/deploy.sh

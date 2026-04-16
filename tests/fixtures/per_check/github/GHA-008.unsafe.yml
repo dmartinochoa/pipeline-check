@@ -1,0 +1,9 @@
+name: deploy
+on: push
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
+        run: ./deploy.sh

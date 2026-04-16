@@ -1,0 +1,3 @@
+include:
+  - project: 'templates/ci'
+    ref: main

@@ -1,6 +1,6 @@
 """Unit tests for CodeDeploy checks."""
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 

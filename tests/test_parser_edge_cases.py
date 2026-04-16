@@ -10,17 +10,19 @@ Each provider's ``from_path`` loader and check classes are stressed with:
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 import yaml
 
+from pipeline_check.core.checks.bitbucket.base import BitbucketContext
+from pipeline_check.core.checks.bitbucket.base import Pipeline as BBPipeline
+from pipeline_check.core.checks.bitbucket.base import iter_steps as bb_iter_steps
+from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
 from pipeline_check.core.checks.github.base import GitHubContext, workflow_triggers
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
-from pipeline_check.core.checks.gitlab.base import GitLabContext, Pipeline as GLPipeline, iter_jobs as gl_iter_jobs
+from pipeline_check.core.checks.gitlab.base import GitLabContext
+from pipeline_check.core.checks.gitlab.base import Pipeline as GLPipeline
+from pipeline_check.core.checks.gitlab.base import iter_jobs as gl_iter_jobs
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
-from pipeline_check.core.checks.bitbucket.base import BitbucketContext, Pipeline as BBPipeline, iter_steps as bb_iter_steps
-from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
 
 
 def _run(checker_cls, ctx, check_id):
@@ -102,7 +104,7 @@ class TestGitHubEdgeCases:
     def test_yaml_1_1_on_coerced_to_true(self):
         """YAML 1.1 parses bareword ``on`` as boolean True. workflow_triggers
         must normalise this back to the event list."""
-        wf = yaml.safe_load("on: push\njobs: {b: {runs-on: x}}\n")
+        yaml.safe_load("on: push\njobs: {b: {runs-on: x}}\n")
         # pyyaml ≥ 6.0 treats `on:` as literal "on" string under safe_load,
         # but older parsers / some config surfaces may coerce. Exercise both.
         assert workflow_triggers({"on": "push"}) == ["push"]

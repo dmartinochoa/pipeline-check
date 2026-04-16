@@ -36,7 +36,7 @@ jobs:
 
       - name: Verify tag matches package version
         # Fail loudly if someone tagged v1.2.3 but shipped 1.2.4 in
-        # setup.py — otherwise PyPI rejects the upload with a
+        # pyproject.toml — otherwise PyPI rejects the upload with a
         # confusing 400 and the tag is already in public history.
         run: |
           TAG="${GITHUB_REF_NAME#v}"

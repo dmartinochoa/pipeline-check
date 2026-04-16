@@ -411,6 +411,7 @@ class TestCliIntegration:
 
     def test_fail_on_high_trips_exit_1(self, tmp_path):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         wf = self._setup_wf(tmp_path)
@@ -422,6 +423,7 @@ class TestCliIntegration:
 
     def test_fail_on_critical_passes_on_high_only(self, tmp_path):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         wf = self._setup_wf(tmp_path)
@@ -433,6 +435,7 @@ class TestCliIntegration:
 
     def test_ignore_file_suppresses_gate(self, tmp_path):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         wf = self._setup_wf(tmp_path)
@@ -448,6 +451,7 @@ class TestCliIntegration:
 
     def test_baseline_suppresses_preexisting(self, tmp_path):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         wf = self._setup_wf(tmp_path)

@@ -1,0 +1,9 @@
+include:
+  - project: 'shared/ci-templates'
+    file: '/helpers.yml'
+    ref: v1.4.2
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+build:
+  script: [pytest]

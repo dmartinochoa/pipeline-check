@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
 from ..checks.base import BaseCheck
 from ..checks.gitlab.base import GitLabContext
 from ..checks.gitlab.pipelines import GitLabPipelineChecks
+from .base import BaseProvider
 
 
 class GitLabProvider(BaseProvider):

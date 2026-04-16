@@ -149,6 +149,46 @@ def has_sbom(doc: Any) -> bool:
 
 import re as _re
 
+# ── Cross-provider script-safety regexes ──────────────────────────
+# Used by the curl-pipe, docker-privileged, and package-insecure
+# checks across all five workflow providers.
+
+#: ``curl … | bash`` or ``wget … | sh`` — remote code execution via
+#: pipe to interpreter. Covers bash, sh, python, perl, ruby.
+CURL_PIPE_RE = _re.compile(
+    r"(?:curl|wget)\s+[^|]*\|\s*(?:ba)?sh\b"
+    r"|(?:curl|wget)\s+[^|]*\|\s*(?:python|perl|ruby)\b",
+)
+
+#: ``docker run --privileged`` or ``-v /…:/…`` — container escape via
+#: host mount or privileged mode.
+DOCKER_INSECURE_RE = _re.compile(
+    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net[= ]host"
+    r"|-v\s+/[^:\s]*:/)",
+)
+
+#: ``pip install --index-url http://`` or ``npm install --registry=http://``
+#: — package install from insecure (non-TLS) registry or with trust overrides.
+PKG_INSECURE_RE = _re.compile(
+    r"(?:pip\s+install|npm\s+install|yarn\s+add|gem\s+install)"
+    r"[^;&]*(?:--index-url\s+http[^s]|--registry[= ]http[^s]"
+    r"|--trusted-host|--no-verify)",
+)
+
+#: Vulnerability scanning tool tokens — same detection pattern as
+#: ``has_signing`` / ``has_sbom``.
+VULN_SCAN_TOKENS = (
+    "trivy ", "grype ", "snyk ", "npm audit", "yarn audit",
+    "safety check", "pip-audit", "osv-scanner", "govulncheck",
+)
+
+
+def has_vuln_scanning(doc: Any) -> bool:
+    """Return True if the pipeline invokes a known vulnerability scanner."""
+    blob = blob_lower(doc)
+    return any(tok in blob for tok in VULN_SCAN_TOKENS)
+
+
 # A shell *assignment* like ``VAR="$UNTRUSTED"`` captures the value
 # into a variable; the untrusted content is not executed unless a
 # later command inlines the resulting ``$VAR`` unquoted. All four

@@ -1,0 +1,2 @@
+steps:
+  - script: npm test

@@ -1,10 +1,7 @@
 """Tests for --diff-base (scanner.py scoping + diff.py git wrapper)."""
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from pipeline_check.core import diff as diff_mod
 from pipeline_check.core.checks.github.base import GitHubContext, Workflow

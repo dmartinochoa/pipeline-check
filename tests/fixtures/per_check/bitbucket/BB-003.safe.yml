@@ -1,0 +1,6 @@
+definitions:
+  variables:
+    DEPLOY_ENV: production
+pipelines:
+  default:
+    - step: { max-time: 10, script: [pytest] }

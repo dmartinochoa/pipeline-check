@@ -1,0 +1,9 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: docker build -t app:$GITHUB_SHA .

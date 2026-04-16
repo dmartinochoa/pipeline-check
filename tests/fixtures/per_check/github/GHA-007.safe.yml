@@ -1,0 +1,8 @@
+name: release
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: syft . -o cyclonedx-json > sbom.json
+      - run: cosign sign --yes example/app:$GITHUB_SHA

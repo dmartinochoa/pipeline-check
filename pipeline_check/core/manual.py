@@ -239,13 +239,51 @@ Whole-document credential scans (-008)
 --------------------------------------
 GHA-008 / GL-008 / BB-008 / ADO-008 / JF-008 walk every string in
 the document — script bodies, env values, embedded config — and
-flag any token matching a credential-shape regex. Built-in
-detectors:
+flag any token matching one of the built-in credential-shape
+detectors. Each hit carries its detector name so operators can
+group findings by secret type and write targeted ignore rules.
 
-  AWS access keys      AKIA...... / ASIA......
-  GitHub tokens        ghp_ / gho_ / ghu_ / ghs_ / ghr_ prefixes
-  Slack tokens         xoxa- / xoxb- / xoxp- / xoxr- / xoxs-
-  JWTs                 eyJ.....eyJ......sig
+Built-in detector catalogue:
+
+  aws_access_key        AKIA...... / ASIA......
+  github_token          ghp_ / gho_ / ghu_ / ghs_ / ghr_
+  slack_token           xoxa- / xoxb- / xoxp- / xoxr- / xoxs-
+  jwt                   eyJ.....eyJ......sig
+  stripe_secret         sk_live_ / sk_test_ / rk_live_ / rk_test_
+  stripe_publishable    pk_live_ / pk_test_
+  google_api_key        AIza<35 chars>
+  npm_token             npm_<36 chars>
+  pypi_token            pypi-AgEIcHlwaS5vcmc<...>
+  docker_hub_pat        dckr_pat_<20+ chars>
+  gitlab_pat            glpat-<20 chars>
+  gitlab_deploy_token   gldt-<20+ chars>
+  sendgrid              SG.<22>.<43>
+  anthropic_api_key     sk-ant-api03-<90+ chars>
+  digitalocean_token    dop_v1_<64 hex>
+  hashicorp_vault       hvs.<24+ chars>
+  twilio_api_key        SK<32 hex>
+  twilio_account_sid    AC<32 hex>
+  mailchimp_api_key     <32 hex>-us<1-2 digits>
+  shopify_token         shpat_ / shpca_ / shppa_ / shpss_ + <32 hex>
+  databricks_token      dapi<32 hex>
+  openai_api_key        sk-<...>T3BlbkFJ<...> / sk-proj-<40+ chars>
+  huggingface_token     hf_<34+ chars>
+  age_secret_key        AGE-SECRET-KEY-1<58 chars>
+  linear_api_key        lin_api_<40 chars>
+  planetscale_token     pscale_tkn_<40+ chars>
+  new_relic_api_key     NRAK-<27 chars>
+  grafana_api_key       glsa_<32+ chars>
+  telegram_bot_token    <8-10 digits>:<35 chars>
+  private_key           multi-line PEM BEGIN markers (RSA/EC/OPENSSH/PGP)
+
+Placeholder suppression
+-----------------------
+Tokens containing obvious doc markers (``<your-key>``, ``XXXXX``,
+``replace_me``, ``dummy_key``, ``your_token``, ``my_secret``) are
+suppressed before reaching the user — they're noise. The AWS
+canonical example ``AKIAIOSFODNN7EXAMPLE`` is DELIBERATELY left
+flagged: if it lands in a real workflow it almost always means
+someone copy-pasted from docs and forgot to substitute.
 
 Adding org-specific patterns
 ----------------------------

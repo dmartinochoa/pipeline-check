@@ -1,0 +1,12 @@
+pipelines:
+  default:
+    - step:
+        max-time: 10
+        script: [npm test]
+        artifacts: [dist/**]
+    - step:
+        max-time: 10
+        deployment: production
+        script:
+          - sha256sum -c dist/manifest.sha256
+          - ./dist/install.sh

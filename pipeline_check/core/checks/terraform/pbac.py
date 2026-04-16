@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .base import TerraformBaseCheck
 from ..base import Finding, Severity
+from .base import TerraformBaseCheck
 
 
 def _first(block_list: list | None) -> dict:

@@ -1,0 +1,8 @@
+name: x
+on: push
+permissions: { contents: read }
+jobs:
+  b:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo __EXPR__

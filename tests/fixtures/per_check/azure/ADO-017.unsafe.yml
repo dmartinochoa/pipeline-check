@@ -1,0 +1,2 @@
+steps:
+  - script: docker run --privileged myimage:latest /run-tests.sh

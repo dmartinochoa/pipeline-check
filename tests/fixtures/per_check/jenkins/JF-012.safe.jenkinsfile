@@ -1,0 +1,5 @@
+@Library('helpers@v1.0.0') _
+pipeline {
+  agent { label 'build' }
+  stages { stage('Bootstrap') { steps { sh 'echo ready' } } }
+}

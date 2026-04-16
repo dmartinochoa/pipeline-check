@@ -1,0 +1,12 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'aws-prod-key', variable: 'AWS_ACCESS_KEY_ID')]) {
+          sh './deploy.sh'
+        }
+      }
+    }
+  }
+}

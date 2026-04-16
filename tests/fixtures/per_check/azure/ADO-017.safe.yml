@@ -1,0 +1,2 @@
+steps:
+  - script: docker run --rm myimage:latest /run-tests.sh

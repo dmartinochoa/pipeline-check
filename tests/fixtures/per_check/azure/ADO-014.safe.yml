@@ -1,0 +1,8 @@
+variables:
+  REGION: us-east-1
+steps:
+  - task: AWSShellScript@1
+    inputs:
+      awsCredentials: 'my-oidc-connection'
+      scriptType: inline
+      inlineScript: aws s3 ls

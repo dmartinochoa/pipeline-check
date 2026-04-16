@@ -8,13 +8,8 @@ evaporating.
 """
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from unittest.mock import patch
-
 from pipeline_check.core import diff as diff_mod
 from pipeline_check.core import gate as gate_mod
-
 
 # ────────────────────────────────────────────────────────────────────────
 # diff.py — cover both subprocess code paths without mocking them away.
@@ -77,8 +72,8 @@ def test_yaml_ignore_skips_non_dict_entries(tmp_path):
 # ────────────────────────────────────────────────────────────────────────
 
 def test_best_effort_line_returns_none_for_non_file_resource():
-    from pipeline_check.core.sarif_reporter import _best_effort_line
     from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.sarif_reporter import _best_effort_line
     f = Finding(
         check_id="CB-001", title="t", severity=Severity.HIGH,
         resource="arn:aws:codebuild:us-east-1:111:project/app",
@@ -88,8 +83,8 @@ def test_best_effort_line_returns_none_for_non_file_resource():
 
 
 def test_best_effort_line_returns_none_when_no_pattern_matches(tmp_path):
-    from pipeline_check.core.sarif_reporter import _best_effort_line
     from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.sarif_reporter import _best_effort_line
     # A file with no signature the pattern catalogue knows about.
     wf = tmp_path / "ci.yml"
     wf.write_text("name: ci\non: push\njobs: {}\n")
@@ -103,8 +98,8 @@ def test_best_effort_line_returns_none_when_no_pattern_matches(tmp_path):
 def test_best_effort_line_skips_oversize_file(tmp_path):
     """Files larger than the 256KB cap are skipped to keep SARIF
     generation bounded regardless of pathological inputs."""
-    from pipeline_check.core.sarif_reporter import _best_effort_line
     from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.sarif_reporter import _best_effort_line
     big = tmp_path / "big.yml"
     big.write_text("# pad\n" * (300 * 1024 // 6))  # ~300KB
     f = Finding(
@@ -116,8 +111,8 @@ def test_best_effort_line_skips_oversize_file(tmp_path):
 
 def test_best_effort_line_finds_gha008_secret(tmp_path):
     """Happy path for the secret-scanner line lookup."""
-    from pipeline_check.core.sarif_reporter import _best_effort_line
     from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.sarif_reporter import _best_effort_line
     wf = tmp_path / "ci.yml"
     wf.write_text("jobs:\n  b:\n    env:\n      KEY: AKIAIOSFODNN7EXAMPLE\n")
     f = Finding(

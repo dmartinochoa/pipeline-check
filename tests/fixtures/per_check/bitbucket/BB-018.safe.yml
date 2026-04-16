@@ -1,0 +1,11 @@
+definitions:
+  caches:
+    node: node_modules
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - node
+        script:
+          - npm test

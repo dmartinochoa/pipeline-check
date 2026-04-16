@@ -6,7 +6,6 @@ import datetime as dt
 from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.gate import (
     GateConfig,
-    IgnoreRule,
     evaluate_gate,
     load_ignore_file,
 )

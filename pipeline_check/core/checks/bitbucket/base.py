@@ -6,9 +6,10 @@ pull-requests, tags, custom) as a flat iterable.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import yaml
 
@@ -30,7 +31,7 @@ class BitbucketContext:
         self.pipelines = pipelines
 
     @classmethod
-    def from_path(cls, path: str | Path) -> "BitbucketContext":
+    def from_path(cls, path: str | Path) -> BitbucketContext:
         root = Path(path)
         if not root.exists():
             raise ValueError(

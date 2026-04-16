@@ -1,0 +1,10 @@
+pipelines:
+  default:
+    - step:
+        max-time: 10
+        script: [npm test]
+        artifacts: [dist/**]
+    - step:
+        max-time: 10
+        deployment: production
+        script: [./dist/install.sh]

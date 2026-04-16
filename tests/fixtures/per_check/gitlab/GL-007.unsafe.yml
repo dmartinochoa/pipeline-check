@@ -1,0 +1,3 @@
+release:
+  script:
+    - cosign sign --yes example/app:$CI_COMMIT_SHA

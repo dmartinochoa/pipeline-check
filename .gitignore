@@ -29,3 +29,5 @@ htmlcov/
 # Tool-specific
 .claude/
 /.agents/
+/CLAUDE.md
+/skills-lock.json

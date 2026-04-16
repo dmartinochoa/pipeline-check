@@ -1,0 +1,8 @@
+resources:
+  containers:
+    - container: py
+      image: python:latest
+jobs:
+  - job: Build
+    container: py
+    steps: [{script: pytest}]

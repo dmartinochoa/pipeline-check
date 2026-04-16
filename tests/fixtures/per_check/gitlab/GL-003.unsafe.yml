@@ -1,0 +1,4 @@
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+build:
+  script: [echo build]

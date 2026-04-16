@@ -1,0 +1,1 @@
+pipeline { agent any; steps { sh 'load foo.txt' } }

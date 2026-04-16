@@ -13,14 +13,20 @@ CB-001 fails on **either** a secret-like variable name (PASSWORD, TOKEN, …)
 """
 from __future__ import annotations
 
-from .base import TerraformBaseCheck
-from ..base import Finding, Severity
 from .._patterns import (
     LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
+)
+from .._patterns import (
     MANAGED_IMAGE_RE as _MANAGED_IMAGE_RE,
+)
+from .._patterns import (
     SECRET_NAME_RE as _SECRET_NAME_RE,
+)
+from .._patterns import (
     SECRET_VALUE_RE as _SECRET_VALUE_RE,
 )
+from ..base import Finding, Severity
+from .base import TerraformBaseCheck
 
 _MAX_SENSIBLE_TIMEOUT = 480
 

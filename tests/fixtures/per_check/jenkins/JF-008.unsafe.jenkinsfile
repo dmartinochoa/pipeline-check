@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  environment { DEBUG = 'AKIAIOSFODNN7EXAMPLE' }
+}

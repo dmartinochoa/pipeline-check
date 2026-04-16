@@ -1,0 +1,2 @@
+steps:
+  - script: pip install --index-url https://internal.corp/simple mypackage

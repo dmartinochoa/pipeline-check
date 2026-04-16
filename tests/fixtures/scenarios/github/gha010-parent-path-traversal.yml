@@ -1,0 +1,8 @@
+name: x
+on: pull_request_target
+permissions: { contents: read }
+jobs:
+  b:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ../shared/action

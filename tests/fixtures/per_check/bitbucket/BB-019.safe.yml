@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - npm test
+        after-script:
+          - echo "Step completed"

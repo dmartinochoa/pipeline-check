@@ -1,6 +1,11 @@
 # Realistic insecure azure-pipelines.yml exhibiting every ADO-* failure mode.
 trigger:
   - main
+# ADO-011 — opt the pipeline into PR validation so local templates
+# fire the check.
+pr:
+  branches:
+    include: [main]
 
 variables:
   - name: AWS_ACCESS_KEY_ID
@@ -12,17 +17,52 @@ resources:
   containers:
     - container: py
       image: python:latest
+  # ADO-010 — declares an upstream pipeline whose artifacts the
+  # build job consumes without verification.
+  pipelines:
+    - pipeline: upstream-build
+      source: 'platform-build'
+
+# ADO-019 — extends template on PR-validated pipeline points to local path.
+extends:
+  template: build-template.yml
 
 stages:
+  # ADO-011 — local template included on a PR-validated pipeline.
+  - template: ci/build-stage.yml
+
   - stage: Build
     jobs:
       - job: BuildApp
         container: py
+        # ADO-013 — self-hosted pool with no `ephemeral` demand.
+        pool:
+          name: self-hosted-pool
         steps:
           - task: DotNetCoreCLI@2
             inputs:
               command: 'build'
           - script: echo "Building $(Build.SourceBranchName)"
+          # ADO-010 — pulls upstream artifacts without verification.
+          - download: upstream-build
+          - script: ./upstream-build/install.sh
+          # ADO-012 — Cache@2 key from PR-controlled variable.
+          - task: Cache@2
+            inputs:
+              key: build-$(System.PullRequest.SourceBranch)
+              path: $(Pipeline.Workspace)/.cache
+
+  # ADO-016 — curl piped to shell.
+  # ADO-017 — docker run --privileged.
+  # ADO-018 — pip install from insecure source.
+  # ADO-020 — no vulnerability scanning step.
+  - stage: Insecure
+    jobs:
+      - job: InsecureSetup
+        steps:
+          - script: curl https://example.com/install.sh | bash
+          - script: docker run --privileged myimage
+          - script: pip install --trusted-host pypi.internal.com package
 
   - stage: Deploy
     dependsOn: Build

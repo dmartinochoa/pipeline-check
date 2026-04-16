@@ -1,0 +1,7 @@
+name: release
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cosign sign --yes example/app:$GITHUB_SHA

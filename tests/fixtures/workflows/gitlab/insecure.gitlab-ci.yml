@@ -3,6 +3,8 @@ include:
   - project: 'templates/ci'
     ref: main
   - remote: 'https://gitlab.example.com/snippets/42/raw'
+  # GL-011 — local include resolved from the MR branch.
+  - local: 'ci/local-helpers.yml'
 
 image: python:latest
 
@@ -11,8 +13,21 @@ variables:
   DATABASE_PASSWORD: hunter2
   DEPLOY_TARGET: production
 
+# GL-011 — opt the pipeline into MR triggering so include: local fires.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+# GL-012 — cache key derived from MR-controlled commit ref.
+cache:
+  key: build-${CI_COMMIT_REF_NAME}
+  paths:
+    - .cache/
+
 stages:
   - test
+  - ingest
   - deploy
 
 unit-tests:
@@ -22,7 +37,34 @@ unit-tests:
     - echo "Running tests for MR ${CI_MERGE_REQUEST_TITLE}"
     - npm test
 
+# GL-010 — multi-project artifact ingestion without verification.
+ingest-upstream:
+  stage: ingest
+  needs:
+    - project: 'platform/build'
+      job: 'package'
+      ref: main
+      artifacts: true
+  script:
+    - ./package/install.sh
+
 deploy-prod:
   stage: deploy
+  # GL-014 — self-managed runner without ephemeral tag.
+  tags:
+    - custom-runner
   script:
     - ./scripts/deploy.sh
+
+# GL-016 — curl piped to shell.
+# GL-017 — docker run --privileged.
+# GL-018 — pip install from insecure source.
+# GL-019 — no vulnerability scanning step.
+# GL-020 — CI_JOB_TOKEN written to file.
+insecure-setup:
+  stage: test
+  script:
+    - curl https://example.com/setup.sh | bash
+    - docker run --privileged myimage
+    - pip install --trusted-host pypi.internal.com package
+    - echo "$CI_JOB_TOKEN" >> /tmp/token.txt

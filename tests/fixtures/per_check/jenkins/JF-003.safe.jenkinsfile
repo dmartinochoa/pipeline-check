@@ -1,0 +1,1 @@
+pipeline { agent { label 'build-pool' }; stages { stage('B') { steps { sh 'pytest' } } } }

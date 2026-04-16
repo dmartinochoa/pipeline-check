@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  stages { stage('Release') { steps { sh 'cosign sign --yes app:$BUILD_TAG' } } }
+}

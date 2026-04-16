@@ -1,0 +1,3 @@
+build:
+  script:
+    - curl -o setup.sh https://example.com/setup.sh

@@ -1,0 +1,13 @@
+name: x
+on: pull_request_target
+permissions: { contents: read }
+jobs:
+  b:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f
+        with:
+          path: ~/.cache
+          key: ${{ runner.os }}-${{ hashFiles('**/*.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.head_ref }}

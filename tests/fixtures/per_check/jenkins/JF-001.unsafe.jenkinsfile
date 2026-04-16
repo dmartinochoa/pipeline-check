@@ -1,0 +1,2 @@
+@Library('shared-pipeline@main') _
+pipeline { agent { label 'build' } }

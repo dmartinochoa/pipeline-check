@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        max-time: 10
+        script:
+          - BRANCH="$BITBUCKET_BRANCH"
+          - echo "Building $BRANCH"

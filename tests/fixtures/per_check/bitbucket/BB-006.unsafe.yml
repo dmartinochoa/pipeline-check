@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        max-time: 10
+        script:
+          - docker build -t app .

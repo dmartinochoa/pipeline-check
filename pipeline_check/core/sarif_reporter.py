@@ -26,7 +26,6 @@ import json
 
 from .checks.base import Finding, Severity
 
-
 _SARIF_VERSION = "2.1.0"
 _SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 _TOOL_URI = "https://github.com/dnlmrtn/pipeline-check"
@@ -194,6 +193,7 @@ def _best_effort_line(f: Finding) -> int | None:
     """
     import os
     import re as _re
+
     from .checks._patterns import SECRET_VALUE_RE
 
     path = f.resource

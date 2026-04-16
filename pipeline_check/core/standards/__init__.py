@@ -13,17 +13,17 @@ To add a new standard, create a module under
 from __future__ import annotations
 
 from .base import ControlRef, Standard
-from .registry import available, get, register, resolve, resolve_for_check
+from .data.cis_aws_foundations import STANDARD as _CIS
+from .data.cis_supply_chain import STANDARD as _CIS_SC
+from .data.esf_supply_chain import STANDARD as _ESF_SC
+from .data.nist_800_53 import STANDARD as _NIST_800_53
+from .data.nist_ssdf import STANDARD as _NIST_SSDF
 
 # ── Register built-in standards ─────────────────────────────────────────────
 from .data.owasp_cicd_top_10 import STANDARD as _OWASP
-from .data.cis_aws_foundations import STANDARD as _CIS
-from .data.nist_ssdf import STANDARD as _NIST_SSDF
-from .data.nist_800_53 import STANDARD as _NIST_800_53
-from .data.slsa import STANDARD as _SLSA
 from .data.pci_dss_v4 import STANDARD as _PCI_DSS
-from .data.cis_supply_chain import STANDARD as _CIS_SC
-from .data.esf_supply_chain import STANDARD as _ESF_SC
+from .data.slsa import STANDARD as _SLSA
+from .registry import available, get, register, resolve, resolve_for_check
 
 register(_OWASP)
 register(_CIS)

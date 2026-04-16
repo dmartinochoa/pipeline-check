@@ -1,0 +1,7 @@
+name: x
+on: push
+permissions: { contents: read }
+jobs:
+  b:
+    runs-on: { group: pool, labels: [self-hosted, linux] }
+    steps: [{run: 'make'}]

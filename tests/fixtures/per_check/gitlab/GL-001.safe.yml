@@ -1,0 +1,3 @@
+image: python:3.12.1-slim
+build:
+  script: [pytest]

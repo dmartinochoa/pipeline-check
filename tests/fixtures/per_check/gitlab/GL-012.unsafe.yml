@@ -1,0 +1,5 @@
+build:
+  cache:
+    key: build-${CI_COMMIT_REF_NAME}
+    paths: [.cache/]
+  script: [pytest]

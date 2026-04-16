@@ -1,0 +1,67 @@
+"""BB-004 — deploy-like steps must declare `deployment:`."""
+from __future__ import annotations
+
+from typing import Any
+
+from ...base import Finding, Severity
+from ...rule import Rule
+from ..base import iter_steps
+from ._helpers import DEPLOY_RE
+
+RULE = Rule(
+    id="BB-004",
+    title="Deploy step missing `deployment:` environment gate",
+    severity=Severity.MEDIUM,
+    owasp=("CICD-SEC-1",),
+    esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
+    recommendation=(
+        "Add `deployment: production` (or `staging` / `test`) to the "
+        "step. Configure the matching environment in the repo's "
+        "Deployments settings with required reviewers and secured "
+        "variables."
+    ),
+    docs_note=(
+        "A step whose name or invoked pipe matches `deploy` / "
+        "`release` / `publish` / `promote` should declare a "
+        "`deployment:` field so Bitbucket enforces deployment-scoped "
+        "variables, approvals, and history."
+    ),
+)
+
+
+def check(path: str, doc: dict[str, Any]) -> Finding:
+    ungated: list[str] = []
+    for loc, step in iter_steps(doc):
+        name = step.get("name") or ""
+        if not isinstance(name, str):
+            name = ""
+        is_deploy = bool(DEPLOY_RE.search(name))
+        script = step.get("script")
+        if not is_deploy and isinstance(script, list):
+            for entry in script:
+                if isinstance(entry, dict):
+                    v = entry.get("pipe")
+                    if isinstance(v, str) and DEPLOY_RE.search(v):
+                        is_deploy = True
+                        break
+                elif isinstance(entry, str) and "pipe:" in entry and DEPLOY_RE.search(entry):
+                    is_deploy = True
+                    break
+        if not is_deploy:
+            continue
+        if not step.get("deployment"):
+            ungated.append(loc)
+    passed = not ungated
+    desc = (
+        "All deploy-like steps declare a `deployment:` environment."
+        if passed else
+        f"{len(ungated)} deploy-like step(s) have no `deployment:` "
+        f"field: {', '.join(ungated)}. Without it, Bitbucket cannot "
+        f"enforce deployment-scoped variables, approvals, or "
+        f"deployment history."
+    )
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=path, description=desc,
+        recommendation=RULE.recommendation, passed=passed,
+    )

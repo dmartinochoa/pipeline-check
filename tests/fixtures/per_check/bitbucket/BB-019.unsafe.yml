@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - npm test
+        after-script:
+          - 'curl -H "Authorization: Bearer $BITBUCKET_TOKEN" https://api.example.com/status'

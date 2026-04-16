@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
 from ..checks.base import BaseCheck
 from ..checks.github.base import GitHubContext
 from ..checks.github.workflows import WorkflowChecks
+from .base import BaseProvider
 
 
 class GitHubProvider(BaseProvider):

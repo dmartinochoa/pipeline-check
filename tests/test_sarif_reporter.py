@@ -196,6 +196,7 @@ class TestIntegrationWithCli:
 
     def test_cli_sarif_output(self, tmp_path, monkeypatch):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         # Use the GitHub provider with a trivial fixture so the CLI actually
