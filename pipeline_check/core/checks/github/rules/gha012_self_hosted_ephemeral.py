@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Configure the self-hosted runner to register with "
         "`--ephemeral` (the runner exits after one job and is "

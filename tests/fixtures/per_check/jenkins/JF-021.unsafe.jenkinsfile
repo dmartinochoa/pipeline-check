@@ -1,0 +1,11 @@
+pipeline {
+  agent any
+  stages {
+    stage('Install') {
+      steps {
+        sh 'npm install'
+        sh 'pip install requests boto3'
+      }
+    }
+  }
+}

@@ -63,6 +63,12 @@ stages:
           - script: curl https://example.com/install.sh | bash
           - script: docker run --privileged myimage
           - script: pip install --trusted-host pypi.internal.com package
+          # ADO-021: package install without lockfile enforcement.
+          - script: npm install
+          # ADO-022: dependency update bypasses lockfile pins.
+          - script: npm update
+          # ADO-023: TLS verification bypass.
+          - script: git config --global http.sslVerify false
 
   - stage: Deploy
     dependsOn: Build

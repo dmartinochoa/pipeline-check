@@ -17,6 +17,8 @@ pipelines:
         deployment: production
         max-time: 15
         script:
+          # BB-021 safe: lockfile-enforcing install command.
+          - npm ci
           - pipe: atlassian/aws-s3-deploy@sha256:0000000000000000000000000000000000000000000000000000000000000003
             variables:
               AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE

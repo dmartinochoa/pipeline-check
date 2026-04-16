@@ -16,6 +16,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
+    cwe=("CWE-400",),
     recommendation=(
         "Wrap the pipeline body or individual stages with "
         "`timeout(time: N, unit: 'MINUTES') { … }`. Without an "

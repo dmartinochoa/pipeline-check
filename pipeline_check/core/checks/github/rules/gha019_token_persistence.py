@@ -12,6 +12,9 @@ _TOKEN_PERSIST_RE = re.compile(
     r"GITHUB_TOKEN.*(?:>>?\s|tee\s)"
     r"|>>?\s*\$GITHUB_ENV.*GITHUB_TOKEN"
     r"|\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}.*>>?"
+    r"|\$\{\{\s*secrets\.\w+\s*\}\}.*>>?\s*"           # any secret redirected
+    r"|>>?\s*\$GITHUB_OUTPUT.*(?:GITHUB_TOKEN|secrets)"  # secrets to GITHUB_OUTPUT
+    r"|>>?\s*\$GITHUB_STATE.*(?:GITHUB_TOKEN|secrets)"   # secrets to GITHUB_STATE
 )
 
 RULE = Rule(
@@ -20,6 +23,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-522",),
     recommendation=(
         "Never write GITHUB_TOKEN to files, artifacts, or GITHUB_ENV. "
         "Use the token inline via ${{ secrets.GITHUB_TOKEN }} in the "

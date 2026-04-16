@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-PIN-DEPS"),
+    cwe=("CWE-78",),
     recommendation=(
         "Move the included template into a separate, read-only "
         "project and reference it via `include: project: ... ref: "

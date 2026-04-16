@@ -70,6 +70,21 @@ DETECTORS: list[tuple[str, str]] = [
     ("new_relic_api_key",     "NRAK-" + _FILLER[:27]),
     ("grafana_api_key",       "glsa_" + _FILLER[:35]),
     ("telegram_bot_token",    "123456789:" + _FILLER[:35]),
+    # ── New detectors (round 2) ──
+    ("atlassian_api_token",   "ATATT3" + _FILLER[:55]),
+    ("gitlab_runner_token",   "glrt-" + _FILLER[:25]),
+    ("gitlab_ci_token",       "glcbt-" + _FILLER[:25]),
+    ("supabase_key",          "sbp_" + ("0123456789abcdef" * 3)[:40]),
+    ("fly_api_token",         "fo1_" + _FILLER[:45]),
+    ("pulumi_access_token",   "pul-" + ("0123456789abcdef" * 3)[:40]),
+    ("doppler_token",         "dp.ct." + _FILLER[:45]),
+    ("doppler_token",         "dp.sa." + _FILLER[:42]),
+    ("doppler_token",         "dp.scrt." + _FILLER[:44]),
+    ("netlify_token",         "nfp_" + _FILLER[:45]),
+    ("railway_token",         "railway_" + _FILLER[:40]),
+    ("render_api_key",        "rnd_" + _FILLER[:35]),
+    ("prefect_api_key",       "pnu_" + _FILLER[:40]),
+    ("neon_api_key",          "neon_" + _FILLER[:40]),
 ]
 
 
@@ -116,6 +131,19 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("NRAK-short",                         "New Relic key needs 27 chars after NRAK-"),
     ("glsa_short",                         "Grafana key needs 32+ chars after glsa_"),
     ("12345:shorttoken",                   "Telegram bot token needs 8-10 digit ID and 35-char secret"),
+    # ── New detectors (round 2) ──
+    ("ATATT3short",                        "Atlassian token needs 50+ chars after ATATT3"),
+    ("glrt-short",                         "GitLab runner token needs 20+ chars after glrt-"),
+    ("glcbt-short",                        "GitLab CI token needs 20+ chars after glcbt-"),
+    ("sbp_short",                          "Supabase key needs 40 hex chars after sbp_"),
+    ("fo1_short",                          "Fly.io token needs 40+ chars after fo1_"),
+    ("pul-short",                          "Pulumi token needs 40 hex chars after pul-"),
+    ("dp.ct.short",                        "Doppler token needs 40+ chars after scope prefix"),
+    ("nfp_short",                          "Netlify token needs 40+ chars after nfp_"),
+    ("railway_short",                      "Railway token needs 36+ chars after railway_"),
+    ("rnd_short",                          "Render key needs 32+ chars after rnd_"),
+    ("pnu_short",                          "Prefect key needs 36+ chars after pnu_"),
+    ("neon_short",                         "Neon key needs 36+ chars after neon_"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.

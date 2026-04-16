@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - MY_TAG="$BITBUCKET_TAG"
+          - echo "$MY_TAG"

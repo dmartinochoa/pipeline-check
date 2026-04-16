@@ -52,7 +52,7 @@
       "type": "object",
       "required": [
         "check_id", "title", "severity", "resource",
-        "description", "recommendation", "controls", "passed"
+        "description", "recommendation", "controls", "cwe", "passed"
       ],
       "additionalProperties": false,
       "properties": {
@@ -63,6 +63,7 @@
         "description":    { "type": "string", "minLength": 1 },
         "recommendation": { "type": "string", "minLength": 1 },
         "controls":       { "type": "array", "items": { "$ref": "#/definitions/control_ref" } },
+        "cwe":            { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]+$" } },
         "passed":         { "type": "boolean" }
       }
     },

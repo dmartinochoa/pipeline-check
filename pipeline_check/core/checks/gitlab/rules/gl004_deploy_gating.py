@@ -1,12 +1,20 @@
 """GL-004 — deploy jobs must be gated by manual approval or environment."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs
+from ..base import iter_jobs, job_scripts
 from ._helpers import DEPLOY_RE, rules_manual
+
+_DEPLOY_CMD_RE = re.compile(
+    r"(?:kubectl\s+apply|terraform\s+apply|aws\s+s3\s+cp"
+    r"|docker\s+push|helm\s+(?:upgrade|install)"
+    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy))",
+    re.IGNORECASE,
+)
 
 RULE = Rule(
     id="GL-004",
@@ -14,6 +22,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-1",),
     esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
+    cwe=("CWE-284",),
     recommendation=(
         "Add `when: manual` (optionally with `rules:` for protected "
         "branches) or bind the job to an `environment:` with a "
@@ -37,6 +46,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             (isinstance(stage, str) and DEPLOY_RE.search(stage))
             or DEPLOY_RE.search(name)
         )
+        if not is_deploy:
+            # Also check for deploy-like commands in scripts.
+            is_deploy = any(
+                _DEPLOY_CMD_RE.search(line) for line in job_scripts(job)
+            )
         if not is_deploy:
             continue
         manual = job.get("when") == "manual" or rules_manual(job.get("rules"))

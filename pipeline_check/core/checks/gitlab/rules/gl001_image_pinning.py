@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Reference images by `@sha256:<digest>` or at minimum a full "
         "immutable version tag (e.g. `python:3.12.1-slim`). Avoid "

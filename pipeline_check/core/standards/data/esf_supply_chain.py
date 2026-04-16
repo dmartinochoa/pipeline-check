@@ -116,6 +116,9 @@ STANDARD = Standard(
         "GHA-018":  ["ESF-S-VERIFY-DEPS"],
         "GHA-019":  ["ESF-D-SECRETS"],
         "GHA-020":  ["ESF-S-VULN-MGMT"],
+        "GHA-021":  ["ESF-S-PIN-DEPS"],
+        "GHA-022":  ["ESF-S-PIN-DEPS"],
+        "GHA-023":  ["ESF-S-VERIFY-DEPS"],
         # ── GitLab CI ──────────────────────────────────────────────
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "GL-002":   ["ESF-D-INJECTION"],
@@ -137,6 +140,9 @@ STANDARD = Standard(
         "GL-018":   ["ESF-S-VERIFY-DEPS"],
         "GL-019":   ["ESF-S-VULN-MGMT"],
         "GL-020":   ["ESF-D-SECRETS"],
+        "GL-021":   ["ESF-S-PIN-DEPS"],
+        "GL-022":   ["ESF-S-PIN-DEPS"],
+        "GL-023":   ["ESF-S-VERIFY-DEPS"],
         # ── Bitbucket Pipelines ────────────────────────────────────
         "BB-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "BB-002":   ["ESF-D-INJECTION"],
@@ -158,6 +164,9 @@ STANDARD = Standard(
         "BB-018":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "BB-019":   ["ESF-D-SECRETS"],
         "BB-020":   ["ESF-D-BUILD-ENV"],
+        "BB-021":   ["ESF-S-PIN-DEPS"],
+        "BB-022":   ["ESF-S-PIN-DEPS"],
+        "BB-023":   ["ESF-S-VERIFY-DEPS"],
         # ── Azure DevOps Pipelines ─────────────────────────────────
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
@@ -179,6 +188,9 @@ STANDARD = Standard(
         "ADO-018":  ["ESF-S-VERIFY-DEPS"],
         "ADO-019":  ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
         "ADO-020":  ["ESF-S-VULN-MGMT"],
+        "ADO-021":  ["ESF-S-PIN-DEPS"],
+        "ADO-022":  ["ESF-S-PIN-DEPS"],
+        "ADO-023":  ["ESF-S-VERIFY-DEPS"],
         # ── Jenkins ────────────────────────────────────────────────
         "JF-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "JF-002":   ["ESF-D-INJECTION"],
@@ -200,5 +212,8 @@ STANDARD = Standard(
         "JF-018":   ["ESF-S-VERIFY-DEPS"],
         "JF-019":   ["ESF-D-INJECTION"],
         "JF-020":   ["ESF-S-VULN-MGMT"],
+        "JF-021":   ["ESF-S-PIN-DEPS"],
+        "JF-022":   ["ESF-S-PIN-DEPS"],
+        "JF-023":   ["ESF-S-VERIFY-DEPS"],
     },
 )

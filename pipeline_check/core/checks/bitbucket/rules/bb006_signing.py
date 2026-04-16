@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a step that runs `cosign sign` against the built image "
         "or archive, using Bitbucket OIDC for keyless signing where "

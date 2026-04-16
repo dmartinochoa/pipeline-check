@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-1",),
     esf=("ESF-C-APPROVAL",),
+    cwe=("CWE-284",),
     recommendation=(
         "Add an `input` step to every deploy-like stage (e.g. "
         "`input message: 'Promote to prod?', submitter: "

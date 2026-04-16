@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
+    cwe=("CWE-494",),
     recommendation=(
         "Download the script to a file, verify its checksum, then "
         "execute it. Or vendor the script into the repository."

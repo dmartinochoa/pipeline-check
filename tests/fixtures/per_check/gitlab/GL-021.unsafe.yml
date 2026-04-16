@@ -1,0 +1,4 @@
+build:
+  script:
+    - npm install
+    - pip install requests

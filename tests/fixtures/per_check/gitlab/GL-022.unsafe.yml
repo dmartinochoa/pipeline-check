@@ -1,0 +1,4 @@
+build:
+  script:
+    - pip install -U requests
+    - bundle update

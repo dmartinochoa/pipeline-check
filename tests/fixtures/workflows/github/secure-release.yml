@@ -40,6 +40,10 @@ jobs:
       - name: Vulnerability scan
         run: trivy fs --severity HIGH .
 
+      # GHA-021 safe: lockfile-enforcing install command.
+      - name: Install dependencies
+        run: npm ci
+
       - name: Publish
         env:
           TAG: ${{ github.ref_name }}

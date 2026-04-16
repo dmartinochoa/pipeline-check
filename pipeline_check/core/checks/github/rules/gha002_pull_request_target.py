@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-D-BUILD-ENV"),
+    cwe=("CWE-78",),
     recommendation=(
         "Use `pull_request` instead of `pull_request_target` for any "
         "workflow that must run untrusted code. If you need write "

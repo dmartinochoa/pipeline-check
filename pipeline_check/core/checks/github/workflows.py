@@ -33,6 +33,8 @@ class WorkflowChecks(GitHubBaseCheck):
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for wf in self.ctx.workflows:
-            for _, check_fn in self._rules:
-                findings.append(check_fn(wf.path, wf.data))
+            for rule, check_fn in self._rules:
+                finding = check_fn(wf.path, wf.data)
+                finding.cwe = list(rule.cwe)
+                findings.append(finding)
         return findings

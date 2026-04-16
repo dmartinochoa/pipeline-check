@@ -24,6 +24,8 @@ stages:
           - script: BRANCH="$(Build.SourceBranchName)"
           - script: trivy fs --severity HIGH .
           - script: syft . -o cyclonedx-json > sbom.json
+          # ADO-021 safe: lockfile-enforcing install command.
+          - script: npm ci
           - script: cosign sign --yes "registry.example.com/app:$(Build.BuildId)"
 
   - stage: Deploy

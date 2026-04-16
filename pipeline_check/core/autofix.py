@@ -21,11 +21,22 @@ Registered fixers:
 - ``GHA-004`` — add a top-level ``permissions: contents: read`` block.
 - ``GHA-002`` — add ``persist-credentials: false`` to ``actions/checkout``
   steps (defence-in-depth when pull_request_target checks out PR head).
-- ``GHA-008`` — redact credential-shaped literals embedded in the
-  workflow by replacing the value with ``\"<REDACTED>\"`` and leaving
-  a ``# TODO:`` comment for the operator to wire up a real secret.
-- ``GHA-015`` — insert ``timeout-minutes: 30`` into GitHub Actions jobs
-  that lack one.
+- ``GHA-008`` / ``GL-008`` / ``BB-008`` / ``ADO-008`` — redact
+  credential-shaped literals embedded in the workflow by replacing the
+  value with ``\"<REDACTED>\"`` and leaving a ``# TODO:`` comment.
+- ``JF-008`` — Groovy-syntax variant of the secret redactor.
+- ``GHA-015`` — insert ``timeout-minutes: 30`` into GitHub Actions jobs.
+- ``GL-015`` — insert ``timeout: 30 minutes`` into GitLab CI jobs.
+- ``ADO-015`` — insert ``timeoutInMinutes: 30`` into Azure DevOps jobs
+  (only flat ``jobs:`` blocks; skips ``stages:`` → ``jobs:`` nesting).
+- ``GHA-016`` / ``GL-016`` / ``ADO-016`` / ``BB-012`` / ``JF-016`` —
+  comment out ``curl | bash`` / ``wget | sh`` lines with a TODO marker.
+- ``GHA-017`` / ``GL-017`` / ``ADO-017`` / ``BB-013`` / ``JF-017`` —
+  strip ``--privileged``, ``--cap-add``, ``--net=host``, and host-mount
+  ``-v`` flags from ``docker run`` commands.
+- ``GHA-018`` / ``GL-018`` / ``ADO-018`` / ``BB-014`` / ``JF-018`` —
+  strip ``--index-url http://``, ``--registry http://``,
+  ``--trusted-host``, and ``--no-verify`` from package-install commands.
 
 GHA-001 SHA-pinning is not included because resolving the current SHA
 for a tagged action requires a network call to the GitHub API.
@@ -239,10 +250,6 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
 
 # ── Timeout fixer ──────────────────────────────────────────────────────
 
-# Matches a job ID line under `jobs:` in GitHub Actions.
-# e.g. "  build:" with leading whitespace.
-_JOB_RE = re.compile(r"^( {2,})(\w[\w-]*):\s*$", re.MULTILINE)
-
 
 @register("GHA-015")
 def _fix_gha015(content: str, finding: Finding) -> str | None:
@@ -254,6 +261,7 @@ def _fix_gha015(content: str, finding: Finding) -> str | None:
     """
     lines = content.splitlines(keepends=True)
     in_jobs = False
+    job_indent: str | None = None  # indent string of job-level keys
     result: list[str] = []
     changed = False
     i = 0
@@ -263,30 +271,38 @@ def _fix_gha015(content: str, finding: Finding) -> str | None:
         # Detect `jobs:` top-level key.
         if re.match(r"^jobs\s*:", stripped):
             in_jobs = True
+            job_indent = None  # reset — will be learned from first child
             result.append(line)
             i += 1
             continue
         # Detect another top-level key (exits jobs block).
         if in_jobs and re.match(r"^\S", stripped) and not stripped.startswith("#"):
             in_jobs = False
-        if in_jobs:
-            m = _JOB_RE.match(line)
-            if m:
-                indent = m.group(1)
-                child_indent = indent + "  "
+        if in_jobs and stripped and not stripped.startswith("#"):
+            # Learn the job indent from the first non-blank, non-comment
+            # line under `jobs:`.
+            leading = len(line) - len(line.lstrip())
+            if job_indent is None and leading > 0:
+                job_indent = " " * leading
+            # Only match keys at exactly the job indent level.
+            if (
+                job_indent is not None
+                and line.startswith(job_indent)
+                and leading == len(job_indent)
+                and re.match(r"\w[\w-]*:\s*$", line.lstrip())
+            ):
+                child_indent = job_indent + "  "
                 result.append(line)
                 i += 1
-                # Check if timeout-minutes already exists in this job.
+                # Scan ahead to check if timeout-minutes already exists.
                 has_timeout = False
                 j = i
                 while j < len(lines):
                     next_line = lines[j]
                     next_stripped = next_line.rstrip()
-                    # Another job or top-level key means we left this job.
                     if next_stripped and not next_stripped.startswith("#"):
-                        # Is this at the same or lesser indent? That means a new job or key.
-                        line_indent = len(next_line) - len(next_line.lstrip())
-                        if line_indent <= len(indent) and next_stripped:
+                        next_indent = len(next_line) - len(next_line.lstrip())
+                        if next_indent <= len(job_indent):
                             break
                     if "timeout-minutes" in next_line:
                         has_timeout = True
@@ -301,3 +317,624 @@ def _fix_gha015(content: str, finding: Finding) -> str | None:
     if not changed:
         return None
     return "".join(result)
+
+
+# ── GitLab / Azure timeout fixers ──────────────────────────────────────
+#
+# GitLab and Azure use the same top-level-job pattern as GitHub but with
+# different timeout key names.  Rather than duplicate the scan logic we
+# share a generic helper that takes the keyword and the value string.
+
+
+def _fix_yaml_timeout(
+    content: str, keyword: str, value: str, top_key: str | None = None,
+) -> str | None:
+    """Insert *keyword*: *value* into every top-level job missing it.
+
+    *top_key* is an optional ``jobs:`` equivalent (Azure uses it);
+    GitLab jobs live at the root alongside non-job keys, so *top_key*
+    is ``None`` for that provider — we treat every root-level mapping
+    key that isn't a known GitLab meta key as a job.
+    """
+    _GL_META = {
+        "default", "include", "stages", "variables", "workflow",
+        "image", "services", "cache", "before_script", "after_script",
+        "pages",
+    }
+    lines = content.splitlines(keepends=True)
+    result: list[str] = []
+    changed = False
+    i = 0
+
+    if top_key is not None:
+        # ── Azure-style: jobs live under a top-level key ──────────
+        in_block = False
+        job_indent: str | None = None
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.rstrip()
+            if re.match(re.escape(top_key) + r"\s*:", stripped) and not line[0].isspace():
+                in_block = True
+                job_indent = None
+                result.append(line)
+                i += 1
+                continue
+            if in_block and stripped and not stripped.startswith("#") and not line[0].isspace():
+                in_block = False
+            if in_block and stripped and not stripped.startswith("#"):
+                leading = len(line) - len(line.lstrip())
+                if job_indent is None and leading > 0:
+                    job_indent = " " * leading
+                if (
+                    job_indent is not None
+                    and leading == len(job_indent)
+                    and re.match(r"\w[\w-]*:\s*$", line.lstrip())
+                ):
+                    child_indent = job_indent + "  "
+                    result.append(line)
+                    i += 1
+                    has_kw = _scan_for_key(lines, i, keyword, len(job_indent))
+                    if not has_kw:
+                        result.append(f"{child_indent}{keyword}: {value}\n")
+                        changed = True
+                    continue
+            result.append(line)
+            i += 1
+    else:
+        # ── GitLab-style: jobs are root-level keys ────────────────
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.rstrip()
+            if (
+                stripped
+                and not stripped.startswith("#")
+                and not line[0].isspace()
+                and re.match(r"[\w][\w-]*:\s*$", stripped)
+                and stripped.split(":")[0] not in _GL_META
+            ):
+                child_indent = "  "
+                result.append(line)
+                i += 1
+                has_kw = _scan_for_key(lines, i, keyword, 0)
+                if not has_kw:
+                    result.append(f"{child_indent}{keyword}: {value}\n")
+                    changed = True
+                continue
+            result.append(line)
+            i += 1
+
+    if not changed:
+        return None
+    return "".join(result)
+
+
+def _scan_for_key(
+    lines: list[str], start: int, keyword: str, parent_indent: int,
+) -> bool:
+    """Return True if *keyword* appears inside the block starting at *start*."""
+    j = start
+    while j < len(lines):
+        ln = lines[j]
+        s = ln.rstrip()
+        if s and not s.startswith("#"):
+            ind = len(ln) - len(ln.lstrip())
+            if ind <= parent_indent:
+                break
+        if keyword in ln:
+            return True
+        j += 1
+    return False
+
+
+@register("GL-015")
+def _fix_gl015(content: str, finding: Finding) -> str | None:
+    return _fix_yaml_timeout(content, "timeout", "30 minutes")
+
+
+@register("ADO-015")
+def _fix_ado015(content: str, finding: Finding) -> str | None:
+    """Insert ``timeoutInMinutes: 30`` into Azure ``- job:`` list items.
+
+    Azure jobs are YAML list items (``- job: Name``), not mapping keys.
+    """
+    _JOB_ITEM_RE = re.compile(r"^(\s*)- job:\s*\S+")
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        m = _JOB_ITEM_RE.match(line)
+        if m:
+            base_indent = m.group(1)
+            # Properties of this job item are at base_indent + 2 spaces
+            child_indent = base_indent + "  "
+            out.append(line)
+            i += 1
+            has_kw = _scan_for_key(lines, i, "timeoutInMinutes", len(base_indent))
+            if not has_kw:
+                out.append(f"{child_indent}timeoutInMinutes: 30\n")
+                changed = True
+            continue
+        out.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── Curl-pipe comment-out ──────────────────────────────────────────────
+
+_CURL_PIPE_LINE_RE = re.compile(
+    r"(?:curl|wget)\s+[^\n|]*\|\s*(?:ba)?sh\b"
+    r"|(?:curl|wget)\s+[^\n|]*\|\s*(?:python|perl|ruby)\b",
+)
+
+_TODO_CURL = "TODO(pipelineguard): download, verify checksum, then execute"
+
+
+def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
+    """Comment out curl-pipe / wget-pipe lines across all providers."""
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        # Skip lines that are already comments or already have our marker.
+        if _TODO_CURL in line or stripped.startswith("#") or stripped.startswith("//"):
+            out.append(line)
+            continue
+        if _CURL_PIPE_LINE_RE.search(line):
+            indent = line[: len(line) - len(line.lstrip())]
+            comment_char = "#"
+            out.append(f"{indent}{comment_char} {_TODO_CURL}\n")
+            out.append(f"{indent}{comment_char} {stripped}")
+            if not line.endswith("\n"):
+                out[-1] += "\n"
+            changed = True
+        else:
+            out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016"):
+    register(_cid)(_comment_curl_pipe)
+
+
+# ── Docker --privileged removal ────────────────────────────────────────
+
+_DOCKER_FLAG_RE = re.compile(
+    r"\s+--privileged(?=\s|$)"
+    r"|\s+--cap-add\s+\S+"
+    r"|\s+--net[= ]host"
+    r"|\s+-v\s+/[^:\s]*:/\S*",
+)
+
+
+def _strip_docker_flags(content: str, finding: Finding) -> str | None:
+    """Strip --privileged, --cap-add, --net=host, -v /host:/ from docker run."""
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if "docker" in line and _DOCKER_FLAG_RE.search(line):
+            new_line = _DOCKER_FLAG_RE.sub("", line)
+            # Collapse multiple spaces left by removals.
+            new_line = re.sub(r"  +", " ", new_line)
+            if new_line != line:
+                out.append(new_line)
+                changed = True
+                continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017"):
+    register(_cid)(_strip_docker_flags)
+
+
+# ── Insecure package-install flag removal ──────────────────────────────
+
+_PKG_UNSAFE_FLAG_RE = re.compile(
+    r"\s+--index-url\s+http://\S+"
+    r"|\s+--extra-index-url\s+http://\S+"
+    r"|\s+--trusted-host\s+\S+"
+    r"|\s+--registry[= ]http://\S+"
+    r"|\s+--no-verify"
+)
+
+
+def _strip_pkg_flags(content: str, finding: Finding) -> str | None:
+    """Remove insecure registry / trust-override flags from package install."""
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if _PKG_UNSAFE_FLAG_RE.search(line):
+            new_line = _PKG_UNSAFE_FLAG_RE.sub("", line)
+            new_line = re.sub(r"  +", " ", new_line)
+            if new_line != line:
+                out.append(new_line)
+                changed = True
+                continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018"):
+    register(_cid)(_strip_pkg_flags)
+
+
+# ── Jenkins secret redaction (Groovy syntax) ───────────────────────────
+
+
+@register("JF-008")
+def _fix_jf008(content: str, finding: Finding) -> str | None:
+    """Redact credential-shaped literals in Groovy source.
+
+    Handles ``VAR = "AKIA..."`` and ``def x = "ghp_..."`` patterns.
+    """
+    from .checks._patterns import SECRET_VALUE_RE
+
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if "<REDACTED>" in line:
+            out.append(line)
+            continue
+        # Groovy assignments: VAR = "value" or def var = "value"
+        m = re.match(
+            r'^(\s*(?:def\s+)?[\w.]+\s*=\s*)["\']([^"\']+)["\'](.*)$',
+            line,
+        )
+        if m:
+            prefix, value, rest = m.groups()
+            if SECRET_VALUE_RE.fullmatch(value) or value.startswith("AKIA"):
+                todo = "// TODO(pipelineguard): rotate and wire up a credential"
+                new_line = f'{prefix}"<REDACTED>"  {todo}\n'
+                out.append(new_line)
+                changed = True
+                continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── BB-005 Bitbucket timeout fixer ───────────────────────────────────
+
+
+@register("BB-005")
+def _fix_bb005(content: str, finding: Finding) -> str | None:
+    """Insert ``max-time: 120`` into Bitbucket steps missing it.
+
+    Bitbucket steps are list items under ``- step:``. Scans for
+    ``- step:`` markers and checks whether the step's child block
+    already declares ``max-time:``.
+    """
+    _STEP_RE = re.compile(r"^(\s*)- step:\s*$")
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        m = _STEP_RE.match(line)
+        if m:
+            base_indent = m.group(1)
+            child_indent = base_indent + "    "  # step children are 4 spaces in
+            out.append(line)
+            i += 1
+            has_timeout = _scan_for_key(lines, i, "max-time", len(base_indent))
+            if not has_timeout:
+                out.append(f"{child_indent}max-time: 120\n")
+                changed = True
+            continue
+        out.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── JF-015 Jenkins timeout fixer ─────────────────────────────────────
+
+
+@register("JF-015")
+def _fix_jf015(content: str, finding: Finding) -> str | None:
+    """Insert a TODO comment for adding a timeout wrapper.
+
+    Jenkins timeout is Groovy syntax ``timeout(time: N, unit: 'MINUTES')``
+    which can't be safely inserted by a text fixer, so we add a comment.
+    """
+    marker = "// TODO(pipelineguard): wrap with timeout(time: 30, unit: 'MINUTES')"
+    if marker in content:
+        return None
+    # Find `pipeline {` and insert after it.
+    m = re.search(r"^(\s*)pipeline\s*\{", content, re.MULTILINE)
+    if m is None:
+        return None
+    insert_at = m.end()
+    indent = m.group(1) + "    "
+    return content[:insert_at] + f"\n{indent}{marker}" + content[insert_at:]
+
+
+# ── Pinning TODO comments ────────────────────────────────────────────
+
+_TODO_PIN = "TODO(pipelineguard): pin to commit SHA"
+_TODO_PIN_IMG = "TODO(pipelineguard): pin to digest"
+
+
+@register("GHA-001")
+def _fix_gha001(content: str, finding: Finding) -> str | None:
+    """Add TODO comment next to unpinned action uses: references."""
+    _USES_RE = re.compile(r"^(\s*-?\s*uses:\s*)(\S+@)([^#\s]+)(.*)$")
+    _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if _TODO_PIN in line:
+            out.append(line)
+            continue
+        m = _USES_RE.match(line.rstrip("\n"))
+        if m:
+            prefix, action, ref, rest = m.groups()
+            if not _SHA_RE.match(ref):
+                new_line = f"{prefix}{action}{ref}{rest}  # {_TODO_PIN}\n"
+                out.append(new_line)
+                changed = True
+                continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+@register("GL-001")
+def _fix_gl001(content: str, finding: Finding) -> str | None:
+    """Add TODO comment next to unpinned image: references."""
+    _IMAGE_RE = re.compile(r"^(\s*image:\s*)(\S+)(.*)$")
+    _DIGEST_RE = re.compile(r"@sha256:")
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if _TODO_PIN_IMG in line:
+            out.append(line)
+            continue
+        m = _IMAGE_RE.match(line.rstrip("\n"))
+        if m:
+            prefix, image, rest = m.groups()
+            if not _DIGEST_RE.search(image):
+                new_line = f"{prefix}{image}{rest}  # {_TODO_PIN_IMG}\n"
+                out.append(new_line)
+                changed = True
+                continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+@register("BB-001")
+def _fix_bb001(content: str, finding: Finding) -> str | None:
+    """Add TODO comment next to unpinned pipe: references."""
+    _PIPE_RE = re.compile(r"^(\s*(?:- )?pipe:\s*)(\S+)(.*)$")
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if _TODO_PIN in line:
+            out.append(line)
+            continue
+        m = _PIPE_RE.match(line.rstrip("\n"))
+        if m:
+            new_line = f"{line.rstrip()}  # {_TODO_PIN}\n"
+            out.append(new_line)
+            changed = True
+            continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+@register("ADO-001")
+def _fix_ado001(content: str, finding: Finding) -> str | None:
+    """Add TODO comment next to unpinned task: references."""
+    _TASK_RE = re.compile(r"^(\s*-?\s*task:\s*)(\S+@\S+)(.*)$")
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        if _TODO_PIN in line:
+            out.append(line)
+            continue
+        m = _TASK_RE.match(line.rstrip("\n"))
+        if m:
+            new_line = f"{line.rstrip()}  # {_TODO_PIN}\n"
+            out.append(new_line)
+            changed = True
+            continue
+        out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── Token persistence comment-out ────────────────────────────────────
+
+_TODO_TOKEN = "WARNING(pipelineguard): token written to persistent storage — remove this line"
+
+
+def _comment_token_persist(content: str, finding: Finding) -> str | None:
+    """Comment out lines that persist tokens to files/env."""
+    from .checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
+    from .checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
+    from .checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
+
+    persist_re = {"GHA-019": GHA_RE, "GL-020": GL_RE, "BB-017": BB_RE}
+    pattern = persist_re.get(finding.check_id.upper())
+    if pattern is None:
+        return None
+
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if _TODO_TOKEN in line or stripped.startswith("#") or stripped.startswith("//"):
+            out.append(line)
+            continue
+        if pattern.search(line):
+            indent = line[: len(line) - len(line.lstrip())]
+            out.append(f"{indent}# {_TODO_TOKEN}\n")
+            out.append(f"{indent}# {stripped}")
+            if not line.endswith("\n"):
+                out[-1] += "\n"
+            changed = True
+        else:
+            out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-019", "GL-020", "BB-017"):
+    register(_cid)(_comment_token_persist)
+
+
+# ── Deploy environment stubs ─────────────────────────────────────────
+
+_TODO_ENV = "TODO(pipelineguard): configure deployment environment"
+_DEPLOY_NAME_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+
+
+@register("GHA-014")
+def _fix_gha014(content: str, finding: Finding) -> str | None:
+    """Insert ``environment:`` placeholder into deploy-named GHA jobs."""
+    lines = content.splitlines(keepends=True)
+    in_jobs = False
+    job_indent: str | None = None
+    out: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.rstrip()
+        if re.match(r"^jobs\s*:", stripped):
+            in_jobs = True
+            job_indent = None
+            out.append(line)
+            i += 1
+            continue
+        if in_jobs and re.match(r"^\S", stripped) and not stripped.startswith("#"):
+            in_jobs = False
+        if in_jobs and stripped and not stripped.startswith("#"):
+            leading = len(line) - len(line.lstrip())
+            if job_indent is None and leading > 0:
+                job_indent = " " * leading
+            if (
+                job_indent is not None
+                and leading == len(job_indent)
+                and re.match(r"\w[\w-]*:\s*$", line.lstrip())
+            ):
+                job_name = line.lstrip().split(":")[0]
+                child_indent = job_indent + "  "
+                out.append(line)
+                i += 1
+                if _DEPLOY_NAME_RE.search(job_name):
+                    has_env = _scan_for_key(lines, i, "environment", len(job_indent))
+                    if not has_env:
+                        out.append(f"{child_indent}environment: # {_TODO_ENV}\n")
+                        changed = True
+                continue
+        out.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(out)
+
+
+# ── *-021 npm install → npm ci ───────────────────────────────────────
+
+_NPM_INSTALL_RE = re.compile(r"\bnpm\s+install\b")
+
+
+def _fix_npm_ci(content: str, finding: Finding) -> str | None:
+    """Replace bare ``npm install`` with ``npm ci``."""
+    if "npm ci" in content and "npm install" not in content:
+        return None
+    out = _NPM_INSTALL_RE.sub("npm ci", content)
+    if out == content:
+        return None
+    return out
+
+
+for _cid in ("GHA-021", "GL-021", "ADO-021", "BB-021", "JF-021"):
+    register(_cid)(_fix_npm_ci)
+
+
+# ── *-022 dependency-update command comment-out ──────────────────────
+
+_TODO_DEP_UPDATE = "TODO(pipelineguard): remove dependency update command; use lockfile-pinned install"
+
+
+def _comment_dep_update(content: str, finding: Finding) -> str | None:
+    """Comment out dependency-update commands."""
+    from .checks.base import DEP_UPDATE_RE, _DEP_UPDATE_TOOL_EXEMPT_RE
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if _TODO_DEP_UPDATE in line or stripped.startswith("#") or stripped.startswith("//"):
+            out.append(line)
+            continue
+        if DEP_UPDATE_RE.search(line) and not _DEP_UPDATE_TOOL_EXEMPT_RE.search(line):
+            indent = line[: len(line) - len(line.lstrip())]
+            out.append(f"{indent}# {_TODO_DEP_UPDATE}\n")
+            out.append(f"{indent}# {stripped}")
+            if not line.endswith("\n"):
+                out[-1] += "\n"
+            changed = True
+        else:
+            out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-022", "GL-022", "ADO-022", "BB-022", "JF-022"):
+    register(_cid)(_comment_dep_update)
+
+
+# ── *-023 TLS bypass comment-out ─────────────────────────────────────
+
+_TODO_TLS = "TODO(pipelineguard): remove TLS/SSL verification bypass"
+
+
+def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
+    """Comment out TLS verification bypass lines."""
+    from .checks.base import TLS_BYPASS_RE
+    out: list[str] = []
+    changed = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if _TODO_TLS in line or stripped.startswith("#") or stripped.startswith("//"):
+            out.append(line)
+            continue
+        if TLS_BYPASS_RE.search(line):
+            indent = line[: len(line) - len(line.lstrip())]
+            out.append(f"{indent}# {_TODO_TLS}\n")
+            out.append(f"{indent}# {stripped}")
+            if not line.endswith("\n"):
+                out[-1] += "\n"
+            changed = True
+        else:
+            out.append(line)
+    if not changed:
+        return None
+    return "".join(out)
+
+
+for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023"):
+    register(_cid)(_comment_tls_bypass)

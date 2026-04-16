@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SBOM",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add a `sh 'syft . -o cyclonedx-json > sbom.json'` step "
         "(or Trivy with `--format cyclonedx`) and archive the "

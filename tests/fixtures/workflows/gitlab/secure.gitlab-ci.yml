@@ -29,6 +29,8 @@ deploy-prod:
     name: production
     url: https://app.example.com
   script:
+    # GL-021 safe: lockfile-enforcing install command.
+    - npm ci
     - trivy fs --severity HIGH .
     - syft . -o cyclonedx-json > sbom.json
     - cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"

@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
+    cwe=("CWE-400",),
     recommendation=(
         "Add `max-time: <minutes>` to each step, sized to the 95th "
         "percentile of historical runtime plus margin. Bounded runs "

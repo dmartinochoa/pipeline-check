@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Configure the agent pool with autoscaling + ephemeral "
         "agents (the Azure VM Scale Set agent), and add `demands: "

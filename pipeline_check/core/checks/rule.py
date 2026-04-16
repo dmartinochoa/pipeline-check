@@ -57,6 +57,9 @@ class Rule:
     owasp: tuple[str, ...] = ()
     #: NSA/CISA ESF supply-chain controls. Same caveat.
     esf: tuple[str, ...] = ()
+    #: CWE identifiers for vulnerability classification (e.g. "CWE-78").
+    #: Surfaced in SARIF output and JSON reports.
+    cwe: tuple[str, ...] = ()
     #: One-paragraph recommendation shown in reports and the
     #: provider reference doc.
     recommendation: str = ""

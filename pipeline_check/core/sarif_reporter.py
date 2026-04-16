@@ -118,6 +118,12 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         # exposed via ``properties.controls`` for programmatic consumers.
         standard_tags = sorted({c.standard for c in f.controls})
         tags = ["security", *standard_tags][:20]
+        rule_props: dict = {
+            "security-severity": score,
+            "tags": tags,
+        }
+        if f.cwe:
+            rule_props["cwe"] = list(f.cwe)
         seen[f.check_id] = {
             "id": f.check_id,
             "name": _rule_name(f.check_id, f.title),
@@ -128,10 +134,7 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
                 "markdown": f"**Recommendation**\n\n{f.recommendation}",
             },
             "defaultConfiguration": {"level": level},
-            "properties": {
-                "security-severity": score,
-                "tags": tags,
-            },
+            "properties": rule_props,
         }
     return list(seen.values())
 
@@ -162,6 +165,8 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
         "severity": f.severity.value,
         "controls": [c.to_dict() for c in f.controls],
     }
+    if f.cwe:
+        properties["cwe"] = list(f.cwe)
     if arn:
         properties["arn"] = arn
         properties["region"] = _region_from_arn(arn) or ""

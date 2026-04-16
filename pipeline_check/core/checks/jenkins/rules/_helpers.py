@@ -15,7 +15,10 @@ FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest
 UNTRUSTED_ENV_RE = re.compile(
     r"\$\{?\s*(?:env\.)?"
     r"(?:BRANCH_NAME|GIT_BRANCH|TAG_NAME"
-    r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?)"
+    r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?"
+    r"|CHANGE_URL|CHANGE_TARGET"
+    r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
+    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
     r"\s*\}?"
 )
 

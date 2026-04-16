@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
+    cwe=("CWE-494",),
     recommendation=(
         "Use HTTPS registry URLs. Remove --trusted-host and "
         "--no-verify flags. Pin to a private registry with TLS."

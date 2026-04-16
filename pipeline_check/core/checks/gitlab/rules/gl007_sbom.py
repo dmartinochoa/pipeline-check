@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SBOM",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with "
         "`--format cyclonedx`, or GitLab's built-in CycloneDX "

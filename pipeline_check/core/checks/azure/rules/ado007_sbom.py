@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SBOM",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add an SBOM step — `microsoft/sbom-tool`, `syft . -o "
         "cyclonedx-json`, or `anchore/sbom-action`. Publish the SBOM "

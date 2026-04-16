@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - npm ci
+          - pip install -r requirements.txt

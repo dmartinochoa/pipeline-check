@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-PIN-DEPS"),
+    cwe=("CWE-78",),
     recommendation=(
         "Move the template into a separate, branch-protected "
         "repository and reference it via `template: foo.yml@<repo-"

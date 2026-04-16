@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VULN-MGMT",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add a vulnerability scanning step \u2014 trivy, grype, snyk test, "
         "npm audit, pip-audit, or osv-scanner. Publish results so "

@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a `sh 'cosign sign --yes …'` step (the cosign-"
         "installer Jenkins plugin handles binary install). Publish "

@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - npm install
+          - pip install requests

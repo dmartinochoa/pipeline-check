@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION",),
+    cwe=("CWE-78",),
     recommendation=(
         "Add an `if:` condition that checks "
         "`github.event.comment.author_association` (e.g. "

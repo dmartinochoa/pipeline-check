@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS", "ESF-D-TOKEN-HYGIENE"),
+    cwe=("CWE-522",),
     recommendation=(
         "Replace the literal with a credentials-store reference: "
         "`AWS_ACCESS_KEY_ID = credentials('aws-prod-key')`. Better: "

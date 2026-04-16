@@ -41,6 +41,9 @@ class Finding:
     #: from the standards registry after a check runs; checks never set this
     #: directly.
     controls: list[ControlRef] = field(default_factory=list)
+    #: CWE identifiers (e.g. ``["CWE-78"]``). Populated by the
+    #: workflow-provider orchestrators from the rule's ``cwe`` field.
+    cwe: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -52,6 +55,7 @@ class Finding:
             "recommendation": self.recommendation,
             "passed": self.passed,
             "controls": [c.to_dict() for c in self.controls],
+            "cwe": self.cwe,
         }
 
 
@@ -154,32 +158,120 @@ import re as _re
 # checks across all five workflow providers.
 
 #: ``curl … | bash`` or ``wget … | sh`` — remote code execution via
-#: pipe to interpreter. Covers bash, sh, python, perl, ruby.
+#: pipe to interpreter. Covers bash, sh, python, perl, ruby, PowerShell,
+#: and download-then-execute variants.
 CURL_PIPE_RE = _re.compile(
-    r"(?:curl|wget)\s+[^|]*\|\s*(?:ba)?sh\b"
-    r"|(?:curl|wget)\s+[^|]*\|\s*(?:python|perl|ruby)\b",
+    r"(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b"           # curl | sudo bash
+    r"|(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:python|perl|ruby)\b"
+    r"|(?:ba)?sh\s+(?:-c\s+)?[\"']\$\((?:curl|wget)\b"             # bash -c "$(curl ...)"
+    r"|python[23]?\s+-c\s+[\"'].*(?:urllib|requests)\.get\("        # python -c "requests.get(..."
+    r"|(?:curl|wget)\s+[^;&]*>\s*\S+\.sh\s*[;&]+\s*(?:ba)?sh\s"    # curl > x.sh && bash x
+    r"|irm\s+[^|]*\|\s*iex"                                        # PowerShell: irm | iex
+    r"|Invoke-(?:WebRequest|RestMethod)\s+[^|]*\|\s*iex",           # PowerShell long form
 )
 
 #: ``docker run --privileged`` or ``-v /…:/…`` — container escape via
-#: host mount or privileged mode.
+#: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
     r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net[= ]host"
-    r"|-v\s+/[^:\s]*:/)",
+    r"|--pid[= ]host|--userns[= ]host"                              # namespace sharing
+    r"|-v\s+/var/run/docker\.sock:/var/run/docker\.sock"            # socket mount
+    r"|-v\s+/[^:\s]*:/)"
+    r"|docker\s+compose\s[^;&]*--privileged",                       # compose
 )
 
 #: ``pip install --index-url http://`` or ``npm install --registry=http://``
 #: — package install from insecure (non-TLS) registry or with trust overrides.
+#: Covers pip, npm, yarn, gem, nuget, and cargo.
 PKG_INSECURE_RE = _re.compile(
-    r"(?:pip\s+install|npm\s+install|yarn\s+add|gem\s+install)"
-    r"[^;&]*(?:--index-url\s+http[^s]|--registry[= ]http[^s]"
-    r"|--trusted-host|--no-verify)",
+    r"(?:pip3?\s+install)"                                           # pip / pip3
+    r"[^;&]*(?:--index-url\s+http[^s]|-i\s+http[^s]"               # -i short form
+    r"|--extra-index-url\s+http[^s]"                                 # extra index
+    r"|--trusted-host|--no-verify)"
+    r"|(?:npm\s+install|yarn\s+add)"
+    r"[^;&]*(?:--registry[= ]http[^s]|--no-verify)"
+    r"|gem\s+(?:install|sources\s+--add)\s[^;&]*(?:--source\s+http[^s]|http[^s])"  # gem
+    r"|nuget\s+(?:install|restore)\s[^;&]*-Source\s+http[^s]"       # nuget
+    r"|cargo\s+install\s[^;&]*--index\s+http[^s]",                  # cargo
 )
+
+#: Package install without lockfile enforcement — supply-chain risk
+#: because the resolver pulls whatever version is currently latest.
+PKG_NO_LOCKFILE_RE = _re.compile(
+    # npm install (should be npm ci)
+    r"\bnpm\s+install\b(?![^\n]*(?:--frozen|--ci))"
+    # pip install <bare-package> (no -r / --require-hashes / --requirement / -e)
+    r"|\bpip3?\s+install\s+(?!-)[a-z]\S*(?![^\n]*(?:-r\s|--require-hashes|--requirement))"
+    # yarn install without --frozen-lockfile / --immutable
+    r"|\byarn\s+install\b(?![^\n]*(?:--frozen-lockfile|--immutable))"
+    # bundle install without --frozen / --deployment
+    r"|\bbundle\s+install\b(?![^\n]*(?:--frozen|--deployment))"
+    # cargo install (always risky in CI without lockfile)
+    r"|\bcargo\s+install\s"
+    # go install without @vN.N.N version pin
+    r"|\bgo\s+install\s+\S+(?<!@v\d)(?:\s|$)"
+    # poetry install without --no-update
+    r"|\bpoetry\s+install\b(?![^\n]*--no-update)",
+    _re.MULTILINE,
+)
+
+
+#: Dependency-update commands that bypass lockfile pins.
+DEP_UPDATE_RE = _re.compile(
+    r"\bpip3?\s+install\s+[^\n]*(?:--upgrade|-U)\b"
+    r"|\bnpm\s+update\b"
+    r"|\byarn\s+upgrade\b"
+    r"|\bbundle\s+update\b"
+    r"|\bcargo\s+update\b"
+    r"|\bgo\s+get\s+[^\n]*-u\b"
+    r"|\bcomposer\s+update\b",
+)
+
+#: Tooling upgrades that are safe (pip/setuptools/wheel themselves).
+_DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
+    r"\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv)\b"
+)
+
+
+def has_dep_update(blob: str) -> bool:
+    """Return True if *blob* contains a non-exempt dependency-update command."""
+    for m in DEP_UPDATE_RE.finditer(blob):
+        # Extract the full line so the exemption regex can see the
+        # trailing package name (e.g. "pip install --upgrade pip").
+        line_start = blob.rfind("\n", 0, m.start()) + 1
+        line_end = blob.find("\n", m.end())
+        if line_end == -1:
+            line_end = len(blob)
+        full_line = blob[line_start:line_end]
+        if not _DEP_UPDATE_TOOL_EXEMPT_RE.search(full_line):
+            return True
+    return False
+
+
+#: TLS / certificate-verification bypass — allows MITM injection.
+TLS_BYPASS_RE = _re.compile(
+    r"\bnpm\s+config\s+set\s+strict-ssl\s+false\b"
+    r"|\byarn\s+config\s+set\s+strict-ssl\s+false\b"
+    r"|\bpip3?\s+config\s+set\s+global\.trusted-host\b"
+    r"|\bgit\s+config\s+[^\n]*http\.sslverify\s+false\b"
+    r"|\bgit_ssl_no_verify\s*=\s*(?:true|1)\b"
+    r"|\bnode_tls_reject_unauthorized\s*=\s*['\"]?0['\"]?"
+    r"|\bpythonhttpsverify\s*=\s*['\"]?0['\"]?"
+    r"|\bcurl\s+[^\n]*(?:\s-k\b|\s--insecure\b)"
+    r"|\bwget\s+[^\n]*--no-check-certificate\b"
+    r"|\bgoinsecure\s*=",
+    _re.MULTILINE,
+)
+
 
 #: Vulnerability scanning tool tokens — same detection pattern as
 #: ``has_signing`` / ``has_sbom``.
 VULN_SCAN_TOKENS = (
     "trivy ", "grype ", "snyk ", "npm audit", "yarn audit",
     "safety check", "pip-audit", "osv-scanner", "govulncheck",
+    "cargo audit", "bundler-audit", "bundle audit",
+    "docker scout", "codeql-action", "github/codeql-action",
+    "semgrep ", "bandit ", "checkov ", "tfsec ",
 )
 
 
@@ -215,5 +307,17 @@ def is_quoted_assignment(line: str) -> bool:
     Shared between the GitHub, GitLab, Bitbucket, and Azure
     script-injection checks so the "this is just capturing the value,
     not executing it" escape hatch is applied consistently.
+
+    **Not** safe when the RHS contains a command substitution like
+    ``$( … )`` wrapping untrusted input — the substitution executes
+    the content even inside double quotes.
     """
-    return bool(_QUOTED_ASSIGNMENT_RE.match(line))
+    if not _QUOTED_ASSIGNMENT_RE.match(line):
+        return False
+    # Extract the RHS after the first '=' and strip the surrounding quotes.
+    rhs = line.split("=", 1)[1].strip().strip('"')
+    # If the RHS contains $(...) that itself embeds an untrusted
+    # interpolation (${{ ... }}, ${VAR}, or bare $VAR), it is NOT safe.
+    if _re.search(r"\$\(.*(?:\$\{\{|\$\{?\w|\$\()", rhs):
+        return False
+    return True

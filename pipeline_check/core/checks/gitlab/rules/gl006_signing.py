@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a job that runs `cosign sign` (keyless OIDC with "
         "GitLab's id_tokens works out of the box) or `notation sign`. "

@@ -1,0 +1,2 @@
+steps:
+  - script: RESULT="$(curl $(Build.SourceVersionMessage))"

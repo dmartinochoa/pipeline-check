@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Pin every `pipe:` to a full semver tag (e.g. "
         "`atlassian/aws-s3-deploy:1.4.0`) or to an immutable SHA. "

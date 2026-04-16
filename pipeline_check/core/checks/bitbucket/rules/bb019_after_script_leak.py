@@ -19,6 +19,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-522",),
     recommendation=(
         "Move secret-dependent operations into the main `script:` "
         "block. `after-script` runs even when the step fails and "

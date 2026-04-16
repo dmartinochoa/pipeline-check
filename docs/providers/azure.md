@@ -52,6 +52,9 @@ The walker handles every layout ADO supports:
 | ADO-018 | Package install from insecure source | HIGH |
 | ADO-019 | `extends:` template on PR-validated pipeline points to local path | CRITICAL |
 | ADO-020 | No vulnerability scanning step | MEDIUM |
+| ADO-021 | Package install without lockfile enforcement | MEDIUM |
+| ADO-022 | Dependency update command bypasses lockfile pins | MEDIUM |
+| ADO-023 | TLS / certificate verification bypass | HIGH |
 
 ---
 
@@ -234,6 +237,33 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 **Recommended action**
 
 Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+
+## ADO-021 — Package install without lockfile enforcement
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+
+**Recommended action**
+
+Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip install --require-hashes -r requirements.txt`, `yarn install --frozen-lockfile`, `bundle install --frozen`, and `go install tool@v1.2.3`.
+
+## ADO-022 — Dependency update command bypasses lockfile pins
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Recommended action**
+
+Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).
+
+## ADO-023 — TLS / certificate verification bypass
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
+
+**Recommended action**
+
+Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
 
 ---
 

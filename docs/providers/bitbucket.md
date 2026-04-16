@@ -37,6 +37,9 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | BB-018 | Cache key derives from attacker-controllable input | MEDIUM |
 | BB-019 | after-script references secrets | HIGH |
 | BB-020 | Full clone depth exposes complete history | LOW |
+| BB-021 | Package install without lockfile enforcement | MEDIUM |
+| BB-022 | Dependency update command bypasses lockfile pins | MEDIUM |
+| BB-023 | TLS / certificate verification bypass | HIGH |
 
 ---
 
@@ -52,7 +55,7 @@ Pin every `pipe:` to a full semver tag (e.g. `atlassian/aws-s3-deploy:1.4.0`) or
 ## BB-002 — Script injection via attacker-controllable context
 **Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
 
-$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch/tag name execute inline.
+$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline.
 
 **Recommended action**
 
@@ -219,6 +222,33 @@ By default Bitbucket Pipelines clone with `depth: 50`. Setting `depth: full` exp
 **Recommended action**
 
 Set `clone: depth: 1` (or a small number) in pipeline or step options to limit the amount of repository history available in the build environment. Full clones make it easier to extract secrets that were committed and later removed.
+
+## BB-021 — Package install without lockfile enforcement
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+
+**Recommended action**
+
+Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip install --require-hashes -r requirements.txt`, `yarn install --frozen-lockfile`, `bundle install --frozen`, and `go install tool@v1.2.3`.
+
+## BB-022 — Dependency update command bypasses lockfile pins
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Recommended action**
+
+Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).
+
+## BB-023 — TLS / certificate verification bypass
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
+
+**Recommended action**
+
+Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
 
 ---
 

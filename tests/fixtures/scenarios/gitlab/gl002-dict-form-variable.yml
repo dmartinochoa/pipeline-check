@@ -1,0 +1,7 @@
+variables:
+  MSG:
+    value: $CI_COMMIT_MESSAGE
+    description: "The commit message"
+build:
+  script:
+    - echo $MSG

@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - export MY_BRANCH=$BITBUCKET_BRANCH
+          - echo $MY_BRANCH

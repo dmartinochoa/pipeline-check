@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a task that runs `cosign sign` or `notation sign` — "
         "Azure Pipelines' workload identity federation enables "

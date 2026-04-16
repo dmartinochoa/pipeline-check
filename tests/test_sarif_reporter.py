@@ -10,7 +10,7 @@ from pipeline_check.core.sarif_reporter import report_sarif
 from pipeline_check.core.standards.base import ControlRef
 
 
-def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, **kw):
+def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, cwe=None, **kw):
     return Finding(
         check_id=check_id,
         title=kw.get("title", "Plaintext secret in CodeBuild env"),
@@ -20,6 +20,7 @@ def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, *
         recommendation=kw.get("recommendation", "Use Secrets Manager."),
         passed=passed,
         controls=controls or [],
+        cwe=cwe or [],
     )
 
 
@@ -189,6 +190,28 @@ class TestRuleContent:
             _score(),
         ))
         assert out["runs"][0]["results"][0]["message"]["text"].startswith("CB-001:")
+
+
+class TestCweEnrichment:
+    def test_cwe_appears_in_rule_properties(self):
+        f = _f(cwe=["CWE-798"])
+        out = json.loads(report_sarif([f], _score()))
+        rule = out["runs"][0]["tool"]["driver"]["rules"][0]
+        assert rule["properties"]["cwe"] == ["CWE-798"]
+
+    def test_cwe_appears_in_result_properties(self):
+        f = _f(cwe=["CWE-78", "CWE-94"])
+        out = json.loads(report_sarif([f], _score()))
+        result = out["runs"][0]["results"][0]
+        assert result["properties"]["cwe"] == ["CWE-78", "CWE-94"]
+
+    def test_cwe_omitted_when_empty(self):
+        f = _f()  # no cwe
+        out = json.loads(report_sarif([f], _score()))
+        rule = out["runs"][0]["tool"]["driver"]["rules"][0]
+        assert "cwe" not in rule["properties"]
+        result = out["runs"][0]["results"][0]
+        assert "cwe" not in result["properties"]
 
 
 class TestIntegrationWithCli:

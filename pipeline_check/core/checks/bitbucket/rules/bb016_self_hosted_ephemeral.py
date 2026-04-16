@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Use Docker-based self-hosted runners or configure runners to "
         "tear down between jobs. Add 'ephemeral' to `runs-on` labels "

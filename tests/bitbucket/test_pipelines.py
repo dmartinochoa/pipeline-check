@@ -103,6 +103,36 @@ class TestBB002ScriptInjection:
         )
         assert f.passed
 
+    def test_env_chain_exported_tainted_var(self):
+        """Tainted value exported then referenced unquoted in later line."""
+        f = _run(
+            """
+            pipelines:
+              default:
+                - step:
+                    script:
+                      - export MY_BRANCH=$BITBUCKET_BRANCH
+                      - echo $MY_BRANCH
+            """,
+            "BB-002",
+        )
+        assert not f.passed
+
+    def test_env_chain_safe_export_not_flagged(self):
+        """Non-tainted export should not trigger env-chain detection."""
+        f = _run(
+            """
+            pipelines:
+              default:
+                - step:
+                    script:
+                      - export MY_VAR="safe-value"
+                      - echo $MY_VAR
+            """,
+            "BB-002",
+        )
+        assert f.passed
+
 
 class TestBB003LiteralSecrets:
     def test_aws_key_fails_critical(self):

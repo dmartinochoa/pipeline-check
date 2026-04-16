@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a signing step — e.g. `sigstore/cosign-installer` followed "
         "by `cosign sign`, or `slsa-framework/slsa-github-generator` "

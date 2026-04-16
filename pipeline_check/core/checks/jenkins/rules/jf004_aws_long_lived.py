@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-TOKEN-HYGIENE",),
+    cwe=("CWE-522",),
     recommendation=(
         "Switch to the AWS plugin's IAM-role / OIDC binding (e.g. "
         "`withAWS(role: 'arn:aws:iam::…:role/jenkins')`) so each "

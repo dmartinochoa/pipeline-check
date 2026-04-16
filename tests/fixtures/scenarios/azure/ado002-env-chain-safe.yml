@@ -1,0 +1,4 @@
+variables:
+  MY_VAR: $(Build.BuildId)
+steps:
+  - script: echo $(MY_VAR)

@@ -10,7 +10,9 @@ UNTRUSTED_VAR_RE = re.compile(
     r"Build\.SourceBranch(?:Name)?"
     r"|Build\.SourceVersion(?:Message)?"
     r"|Build\.RequestedFor(?:Email)?"
-    r"|System\.PullRequest\.(?:SourceBranch|SourceRepositoryURI|PullRequestId|PullRequestNumber)"
+    r"|Build\.DefinitionName"
+    r"|System\.PullRequest\.(?:SourceBranch|SourceRepositoryURI|SourceCommitId"
+    r"|PullRequestId|PullRequestNumber)"
     r")\s*\)"
 )
 
@@ -28,6 +30,7 @@ CACHE_TAINT_RE = re.compile(
     r"System\.PullRequest\.[A-Za-z]+"
     r"|Build\.SourceBranch(?:Name)?"
     r"|Build\.SourceVersion(?:Message)?"
+    r"|Build\.RequestedFor(?:Email)?"
     r")\s*\)"
 )
 

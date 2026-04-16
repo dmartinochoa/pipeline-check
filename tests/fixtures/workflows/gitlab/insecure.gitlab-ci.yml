@@ -68,3 +68,9 @@ insecure-setup:
     - docker run --privileged myimage
     - pip install --trusted-host pypi.internal.com package
     - echo "$CI_JOB_TOKEN" >> /tmp/token.txt
+    # GL-021: package install without lockfile enforcement.
+    - npm install
+    # GL-022: dependency update bypasses lockfile pins.
+    - npm update
+    # GL-023: TLS verification bypass.
+    - git config --global http.sslVerify false

@@ -17,6 +17,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION",),
+    cwe=("CWE-250",),
     recommendation=(
         "Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline "
         "steps instead. Avoid @Grab for untrusted dependencies."

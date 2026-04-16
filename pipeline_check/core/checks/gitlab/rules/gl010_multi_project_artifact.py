@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-494",),
     recommendation=(
         "Add a verification step before consuming the artifact: "
         "`cosign verify-attestation`, `sha256sum -c`, or `gpg --verify` "

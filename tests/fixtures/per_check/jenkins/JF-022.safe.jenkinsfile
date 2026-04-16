@@ -1,0 +1,11 @@
+pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        sh 'pip install --upgrade pip'
+        sh 'npm audit fix'
+      }
+    }
+  }
+}

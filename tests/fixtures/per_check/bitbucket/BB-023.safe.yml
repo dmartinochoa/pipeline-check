@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - git clone https://internal.example.com/repo.git
