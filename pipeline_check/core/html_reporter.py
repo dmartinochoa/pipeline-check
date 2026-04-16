@@ -76,6 +76,13 @@ main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
 .grade-score  { font-size: 18px; font-weight: 600; margin-top: 4px; }
 .grade-denom  { font-size: 12px; font-weight: 400; opacity: .7; }
 .score-detail { flex: 1; min-width: 0; }
+.score-bar-track {
+  height: 8px; background: var(--border); border-radius: 4px;
+  margin: 10px 0 14px; overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%; border-radius: 4px; transition: width .3s ease;
+}
 .count-row    { font-size: 15px; margin-bottom: 14px; }
 .c-fail  { color: #dc3545; font-weight: 600; }
 .c-pass  { color: #198754; font-weight: 600; }
@@ -175,6 +182,27 @@ details[open] > summary::before { transform: rotate(90deg); }
 }
 .copy-ignore-btn:hover { background: var(--row-hover); }
 .copy-ignore-btn.copied { background: #e6f4ec; color: #198754; border-color: #198754; }
+
+/* ── Dark mode ── */
+.dark {
+  --bg: #1a1a2e; --card: #16213e; --header-bg: #0f0f23;
+  --border: #2a2a4a; --text: #e0e0e8; --muted: #8888aa;
+  --row-hover: #1e2a4a; --detail-bg: #12203a;
+}
+.dark .findings-table thead th { background: #1a1a3e; }
+.dark .owasp-tag { background: #2a2a5a; color: #9999dd; }
+.dark .sev-pill { background: #1a1a3e; }
+.dark .b-pass { background: #1a3a2a; } .dark .b-fail { background: #3a1a1a; }
+.dark .b-critical { background: #3a1a1a; } .dark .b-high { background: #3a2a1a; }
+.dark .b-medium { background: #3a3a1a; } .dark .b-low { background: #1a2a3a; }
+.dark .b-info { background: #2a2a2a; color: #aaa; }
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  background: none; border: 1px solid #555; border-radius: 4px;
+  color: #9090b0; padding: 3px 10px; cursor: pointer; font-size: 12px;
+}
+.theme-toggle:hover { background: rgba(255,255,255,.1); }
 
 /* ── Footer ── */
 footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px; }
@@ -315,6 +343,7 @@ def _severity_summary_html(summary: dict) -> str:
 
 _PROVIDER_PREFIXES = {
     "GHA": "github", "GL": "gitlab", "BB": "bitbucket", "ADO": "azure",
+    "JF": "jenkins", "CC": "circleci",
     "CB": "aws", "CP": "aws", "CD": "aws", "IAM": "aws", "S3": "aws",
     "ECR": "aws", "PBAC": "aws",
     "TF": "terraform",
@@ -361,6 +390,19 @@ def _finding_row(finding: Finding, rule: dict) -> str:
             f'<div class="d-section">'
             f'<div class="d-label">Recommendation</div>'
             f'<div class="d-value">{_e(finding.recommendation)}</div>'
+            f'</div>'
+        )
+
+    # CWE identifiers
+    if finding.cwe:
+        cwe_tags = " ".join(
+            f'<span class="owasp-tag" style="background:#fff3e0;color:#e65100">{_e(c)}</span>'
+            for c in finding.cwe
+        )
+        sections.append(
+            f'<div class="d-section">'
+            f'<div class="d-label">CWE</div>'
+            f'<div class="d-value">{cwe_tags}</div>'
             f'</div>'
         )
 
@@ -523,7 +565,10 @@ def report_html(
     <div>
       <h1>PipelineCheck<span class="header-sub">CI/CD Security Report</span></h1>
     </div>
-    <div class="header-meta">{meta_str}</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-meta">{meta_str}</div>
+      <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">dark/light</button>
+    </div>
   </div>
 </header>
 
@@ -539,6 +584,9 @@ def report_html(
         <span class="c-sep">/</span>
         <span class="c-pass">{passed_count} passed</span>
         <span class="c-total">({total} total)</span>
+      </div>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:{score}%;background:{grade_color}"></div>
       </div>
       {summary_html}
     </div>

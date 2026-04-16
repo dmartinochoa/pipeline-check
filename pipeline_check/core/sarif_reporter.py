@@ -124,14 +124,20 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         }
         if f.cwe:
             rule_props["cwe"] = list(f.cwe)
+        # Build richer help markdown
+        help_parts = [f"**Recommendation**\n\n{f.recommendation}"]
+        if f.cwe:
+            help_parts.append(f"**CWE:** {', '.join(f.cwe)}")
+        help_md = "\n\n---\n\n".join(help_parts)
+
         seen[f.check_id] = {
             "id": f.check_id,
             "name": _rule_name(f.check_id, f.title),
             "shortDescription": {"text": f.title},
-            "fullDescription": {"text": f.title},
+            "fullDescription": {"text": f.recommendation or f.title},
             "help": {
                 "text": f.recommendation,
-                "markdown": f"**Recommendation**\n\n{f.recommendation}",
+                "markdown": help_md,
             },
             "defaultConfiguration": {"level": level},
             "properties": rule_props,
@@ -227,6 +233,12 @@ def _best_effort_line(f: Finding) -> int | None:
         "BB-001":  _re.compile(r"^\s*-?\s*pipe:\s*\S+"),
         "ADO-001": _re.compile(r"^\s*-?\s*task:\s*\S+@\d"),
         "ADO-005": _re.compile(r"^\s*image:\s*\S+:\S+"),
+        "JF-001":  _re.compile(r"@Library\("),
+        "JF-002":  _re.compile(r'(?:sh|bat)\s*(?:\(?\s*".*\$(?:BRANCH_NAME|CHANGE_))'),
+        "JF-003":  _re.compile(r"\bagent\s+any\b"),
+        "JF-019":  _re.compile(r"Runtime\.getRuntime|Class\.forName|@Grab\b"),
+        "CC-001":  _re.compile(r"^\s*\w[\w-]*:\s*\S+@(?!v?\d+\.\d+\.\d+)"),
+        "CC-002":  _re.compile(r"\$CIRCLE_BRANCH|\$CIRCLE_TAG"),
     }
     pat = patterns.get(check_id)
     if pat is not None:
@@ -237,7 +249,7 @@ def _best_effort_line(f: Finding) -> int | None:
 
     # Generic fallback for secret-scanning checks: first line matching
     # the built-in credential regex.
-    if check_id in ("GHA-008", "GL-008", "BB-008", "ADO-008"):
+    if check_id in ("GHA-008", "GL-008", "BB-008", "ADO-008", "JF-008", "CC-008"):
         for idx, line in enumerate(lines, start=1):
             if SECRET_VALUE_RE.search(line):
                 return idx
