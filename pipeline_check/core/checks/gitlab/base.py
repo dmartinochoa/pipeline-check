@@ -6,14 +6,14 @@ and iterate ``self.ctx.pipelines``.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import yaml
 
 from ..base import BaseCheck
-
 
 # Top-level keys that are *not* jobs. Anything else at the root is a job.
 # https://docs.gitlab.com/ee/ci/yaml/
@@ -39,7 +39,7 @@ class GitLabContext:
         self.pipelines = pipelines
 
     @classmethod
-    def from_path(cls, path: str | Path) -> "GitLabContext":
+    def from_path(cls, path: str | Path) -> GitLabContext:
         root = Path(path)
         if not root.exists():
             raise ValueError(

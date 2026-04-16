@@ -12,7 +12,7 @@
 - [Output formats](output.md) — terminal, JSON, HTML (with client-side
   filters), and SARIF 2.1.0 (line-number annotations + AWS ARN metadata).
 - [CI gate](ci_gate.md) — severity thresholds, baseline diff (file or
-  git ref), `.pipelineguard-ignore.yml` with expiries, `--diff-base`
+  git ref), `.pipeline-check-ignore.yml` with expiries, `--diff-base`
   scoping, autofix (emit or `--apply`), glob check selection, custom
   secret patterns.
 - [Configuration](config.md) — `pyproject.toml` / `.pipeline-check.yml` /
@@ -27,6 +27,7 @@
   - [NIST SP 800-53 Rev. 5 (CI/CD subset)](standards/nist_800_53.md)
   - [SLSA Build Track v1.0](standards/slsa.md)
   - [PCI DSS v4.0 (CI/CD subset)](standards/pci_dss_v4.md)
+  - [NSA/CISA ESF — Securing the Software Supply Chain](standards/esf_supply_chain.md)
 
 For installation, usage, architecture, Lambda deployment (including the
 multi-region fan-out payload), and the full CLI options table, see the

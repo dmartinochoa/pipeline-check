@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_steps
 
-
 RULE = Rule(
     id="BB-010",
     title="Deploy step ingests pull-request artifact unverified",

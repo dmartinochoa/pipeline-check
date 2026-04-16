@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import UNTRUSTED_VAR_RE
 
-
 RULE = Rule(
     id="ADO-002",
     title="Script injection via attacker-controllable context",

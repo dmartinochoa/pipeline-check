@@ -1,0 +1,6 @@
+deploy:
+  id_tokens:
+    AWS_TOKEN:
+      aud: https://aws.example.com
+  script:
+    - aws s3 sync dist/ s3://bucket/

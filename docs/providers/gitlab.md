@@ -30,6 +30,14 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | GL-010 | Multi-project pipeline ingests upstream artifact unverified | CRITICAL |
 | GL-011 | include: local file pulled in MR-triggered pipeline | HIGH |
 | GL-012 | Cache key derives from MR-controlled CI variable | MEDIUM |
+| GL-013 | AWS auth uses long-lived access keys | MEDIUM |
+| GL-014 | Self-managed runner without ephemeral tag | MEDIUM |
+| GL-015 | Job has no `timeout` — unbounded build | MEDIUM |
+| GL-016 | Remote script piped to shell interpreter | HIGH |
+| GL-017 | Docker run with insecure flags (privileged/host mount) | CRITICAL |
+| GL-018 | Package install from insecure source | HIGH |
+| GL-019 | No vulnerability scanning step | MEDIUM |
+| GL-020 | CI_JOB_TOKEN written to persistent storage | CRITICAL |
 
 ---
 
@@ -140,6 +148,78 @@ GitLab caches restore by key prefix. When the key includes an MR-controlled vari
 **Recommended action**
 
 Build the cache key from values the MR can't control: lockfile contents (`files: [Cargo.lock]`), the job name, and `$CI_PROJECT_NAMESPACE`. Never reference `$CI_MERGE_REQUEST_*` or `$CI_COMMIT_BRANCH` from a cache key namespace.
+
+## GL-013 — AWS auth uses long-lived access keys
+**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE
+
+Long-lived `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` values in CI/CD variables can't be rotated on a fine-grained schedule. GitLab supports OIDC via `id_tokens:` for short-lived credential injection.
+
+**Recommended action**
+
+Use GitLab CI/CD OIDC with `id_tokens:` to obtain short-lived AWS credentials via `sts:AssumeRoleWithWebIdentity`. Remove static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from CI/CD variables.
+
+## GL-014 — Self-managed runner without ephemeral tag
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD
+
+Self-managed runners that don't tear down between jobs leak filesystem and process state. The check looks for an `ephemeral` tag on any job whose `tags:` list doesn't match SaaS-only runner names.
+
+**Recommended action**
+
+Register the runner with `--executor docker` + `--docker-pull-policy always` so containers are fresh per job, and add an `ephemeral` tag. Alternatively use the GitLab Runner Operator with autoscaling.
+
+## GL-015 — Job has no `timeout` — unbounded build
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT
+
+Without an explicit `timeout`, the job runs until the instance-level default (typically 60 minutes). Explicit timeouts cap blast radius and the window during which a compromised script has access to CI/CD variables.
+
+**Recommended action**
+
+Add `timeout:` to each job (e.g. `timeout: 30 minutes`), sized to the 95th percentile of historical runtime. GitLab's default is 60 minutes (or the instance admin setting).
+
+## GL-016 — Remote script piped to shell interpreter
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a pipeline. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+
+**Recommended action**
+
+Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.
+
+## GL-017 — Docker run with insecure flags (privileged/host mount)
+**Severity:** CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+Flags like `--privileged`, `--cap-add`, `--net=host`, or host-root volume mounts (`-v /:/`) in a pipeline give the container full access to the CI runner, enabling container escape and lateral movement.
+
+**Recommended action**
+
+Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
+
+## GL-018 — Package install from insecure source
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects package-manager invocations that use plain HTTP registries (`--index-url http://`, `--registry=http://`) or disable TLS verification (`--trusted-host`, `--no-verify`) in a pipeline. These patterns allow man-in-the-middle injection of malicious packages.
+
+**Recommended action**
+
+Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
+
+## GL-019 — No vulnerability scanning step
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT
+
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+
+**Recommended action**
+
+Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+
+## GL-020 — CI_JOB_TOKEN written to persistent storage
+**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Detects patterns where `CI_JOB_TOKEN` is redirected to a file, piped through `tee`, or appended to dotenv/artifact paths. Persisted tokens survive the job boundary and can be read by later stages, downloaded artifacts, or cache entries — turning a scoped credential into a long-lived one.
+
+**Recommended action**
+
+Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. Use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes.
 
 ---
 

@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import ENV_AWS_KEY_RE
 
-
 RULE = Rule(
     id="JF-010",
     title="Long-lived AWS keys exposed via environment {} block",

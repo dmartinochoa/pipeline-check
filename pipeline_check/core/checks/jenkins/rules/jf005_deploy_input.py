@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import DEPLOY_RE
 
-
 RULE = Rule(
     id="JF-005",
     title="Deploy stage missing manual `input` approval",

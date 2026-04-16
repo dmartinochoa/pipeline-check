@@ -1,0 +1,7 @@
+name: build
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl https://example.com/install.sh | bash

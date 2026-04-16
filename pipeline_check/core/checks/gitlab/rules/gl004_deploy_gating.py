@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import DEPLOY_RE, rules_manual
 
-
 RULE = Rule(
     id="GL-004",
     title="Deploy job lacks manual approval or environment gate",

@@ -30,7 +30,7 @@ class GitHubContext:
         self.workflows = workflows
 
     @classmethod
-    def from_path(cls, path: str | Path) -> "GitHubContext":
+    def from_path(cls, path: str | Path) -> GitHubContext:
         root = Path(path)
         if not root.exists():
             raise ValueError(

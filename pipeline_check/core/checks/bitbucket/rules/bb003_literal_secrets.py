@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_steps
 from ._helpers import AWS_KEY_RE, SECRETISH_KEY_RE
 
-
 RULE = Rule(
     id="BB-003",
     title="Variables contain literal secret values",

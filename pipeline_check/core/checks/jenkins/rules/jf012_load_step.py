@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import LOAD_STEP_RE
 
-
 RULE = Rule(
     id="JF-012",
     title="`load` step pulls Groovy from disk without integrity pin",

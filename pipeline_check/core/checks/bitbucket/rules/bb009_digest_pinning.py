@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_steps
 from ._helpers import extract_pipe_ref
 
-
 RULE = Rule(
     id="BB-009",
     title="pipe: pinned by version rather than sha256 digest",

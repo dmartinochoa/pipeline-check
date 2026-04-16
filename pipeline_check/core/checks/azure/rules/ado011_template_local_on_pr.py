@@ -6,7 +6,6 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 
-
 RULE = Rule(
     id="ADO-011",
     title="`template: <local-path>` on PR-validated pipeline",

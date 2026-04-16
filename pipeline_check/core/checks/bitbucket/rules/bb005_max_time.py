@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_steps
 
-
 RULE = Rule(
     id="BB-005",
     title="Step has no `max-time` — unbounded build",

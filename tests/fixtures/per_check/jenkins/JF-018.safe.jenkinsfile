@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('Install') {
+      steps {
+        sh 'pip install --index-url https://internal.corp/simple mypackage'
+      }
+    }
+  }
+}

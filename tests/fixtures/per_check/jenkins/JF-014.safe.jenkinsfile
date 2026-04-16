@@ -1,0 +1,10 @@
+pipeline {
+    agent { label 'ephemeral-build-pool' }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+            }
+        }
+    }
+}

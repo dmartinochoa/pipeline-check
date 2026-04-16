@@ -26,7 +26,6 @@ import pytest
 from pipeline_check.core.checks.github.base import GitHubContext
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 
-
 SCENARIO_DIR = Path(__file__).parent / "fixtures" / "scenarios" / "github"
 
 
@@ -70,6 +69,10 @@ def _scan(text: str, tmp_path: Path):
     "${{ github.ref_name }}",
     # workflow_dispatch / workflow_call inputs — caller-controlled.
     "${{ inputs.target_branch }}",
+    # Actor / base ref / repository_dispatch — added for completeness.
+    "${{ github.actor }}",
+    "${{ github.event.pull_request.base.ref }}",
+    "${{ github.event.client_payload.command }}",
     # Pre-existing high-signal fields, kept as a regression net.
     "${{ github.event.pull_request.title }}",
     "${{ github.event.head_commit.message }}",
@@ -86,6 +89,26 @@ def test_gha003_does_not_flag_safe_contexts(tmp_path):
     """Sanity: ``github.repository``, ``github.run_id`` etc. are NOT
     attacker-controllable and must NOT trigger GHA-003."""
     results = _scan(_scenario("gha003-safe-contexts.yml"), tmp_path)
+    assert results["GHA-003"] is True
+
+
+def test_gha003_flags_env_chain_workflow_level(tmp_path):
+    """Untrusted context assigned to workflow-level env:, then
+    referenced in a run: block — indirect PPE."""
+    results = _scan(_scenario("gha003-env-chain-tainted.yml"), tmp_path)
+    assert results["GHA-003"] is False
+
+
+def test_gha003_flags_env_chain_job_level(tmp_path):
+    """Same attack via job-level env: block."""
+    results = _scan(_scenario("gha003-env-chain-job-level.yml"), tmp_path)
+    assert results["GHA-003"] is False
+
+
+def test_gha003_env_chain_safe_context_not_flagged(tmp_path):
+    """Env var containing safe context (github.repository) should
+    not trigger the indirect PPE check."""
+    results = _scan(_scenario("gha003-env-chain-safe.yml"), tmp_path)
     assert results["GHA-003"] is True
 
 

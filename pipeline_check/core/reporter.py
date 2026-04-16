@@ -9,7 +9,6 @@ from rich.table import Table
 
 from .checks.base import Finding, Severity, severity_rank
 
-
 # Bump when the JSON payload shape changes in a way consumers need to
 # branch on (e.g. a new top-level key, a renamed field). Minor-revision
 # adds (appending an optional field) do NOT require a version bump.

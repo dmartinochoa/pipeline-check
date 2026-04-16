@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import image_reason
 
-
 RULE = Rule(
     id="ADO-005",
     title="Container image not pinned to specific version",

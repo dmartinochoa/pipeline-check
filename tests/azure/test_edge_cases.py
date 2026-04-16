@@ -15,9 +15,10 @@ import pytest
 import yaml
 
 from pipeline_check.core.checks.azure.base import (
-    AzureContext, Pipeline, iter_jobs, iter_steps,
+    AzureContext,
+    iter_jobs,
+    iter_steps,
 )
-from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 
 from .conftest import azure_ctx, run_check
 

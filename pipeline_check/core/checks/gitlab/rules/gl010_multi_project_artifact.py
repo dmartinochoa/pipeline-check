@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 
-
 RULE = Rule(
     id="GL-010",
     title="Multi-project pipeline ingests upstream artifact unverified",
@@ -33,7 +32,7 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ingests = False
     verified = False
-    for name, job in iter_jobs(doc):
+    for _name, job in iter_jobs(doc):
         needs = job.get("needs")
         if isinstance(needs, list):
             for n in needs:

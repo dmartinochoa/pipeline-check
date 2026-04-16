@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - echo "$BITBUCKET_TOKEN" >> /tmp/token.txt

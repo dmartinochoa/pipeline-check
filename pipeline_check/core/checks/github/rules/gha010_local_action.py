@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps, workflow_triggers
 from ._helpers import UNTRUSTED_TRIGGERS
 
-
 RULE = Rule(
     id="GHA-010",
     title="Local action (./path) on untrusted-trigger workflow",

@@ -27,7 +27,6 @@ from pipeline_check.core.checks.aws.iam import IAMChecks
 from pipeline_check.core.checks.aws.pbac import PBACChecks
 from pipeline_check.core.scanner import Scanner
 
-
 _CB_TRUST = {
     "Version": "2012-10-17",
     "Statement": [{

@@ -7,7 +7,6 @@ from ..._secrets import find_secret_values
 from ...base import Finding, Severity
 from ...rule import Rule
 
-
 RULE = Rule(
     id="BB-008",
     title="Credential-shaped literal in pipeline body",

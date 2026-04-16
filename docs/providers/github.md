@@ -39,6 +39,14 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GHA-010 | Local action (./path) on untrusted-trigger workflow | HIGH |
 | GHA-011 | Cache key derives from attacker-controllable input | MEDIUM |
 | GHA-012 | Self-hosted runner without ephemeral marker | MEDIUM |
+| GHA-013 | issue_comment trigger without author guard | HIGH |
+| GHA-014 | Deploy job missing environment binding | MEDIUM |
+| GHA-015 | Job has no `timeout-minutes` — unbounded build | MEDIUM |
+| GHA-016 | Remote script piped to shell interpreter | HIGH |
+| GHA-017 | Docker run with insecure flags (privileged/host mount) | CRITICAL |
+| GHA-018 | Package install from insecure source | HIGH |
+| GHA-019 | GITHUB_TOKEN written to persistent storage | CRITICAL |
+| GHA-020 | No vulnerability scanning step | MEDIUM |
 
 ---
 
@@ -149,6 +157,78 @@ Self-hosted runners that don't tear down between jobs leak filesystem and proces
 **Recommended action**
 
 Configure the self-hosted runner to register with `--ephemeral` (the runner exits after one job and is freshly registered), and add an `ephemeral` label so this check can verify it. Consider actions-runner-controller for ephemeral pools.
+
+## GHA-013 — issue_comment trigger without author guard
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+`on: issue_comment` (and `discussion_comment`) fires for every comment on every issue or discussion in the repository. On public repos this means any GitHub user can trigger workflow execution. If the workflow runs commands, deploys, or accesses secrets, the attacker controls timing and can inject payloads through the comment body.
+
+**Recommended action**
+
+Add an `if:` condition that checks `github.event.comment.author_association` (e.g. `contains('OWNER MEMBER COLLABORATOR', ...)`), `github.event.sender.login`, or `github.actor` against an allowlist. Without a guard, any GitHub user can trigger the workflow by posting a comment.
+
+## GHA-014 — Deploy job missing environment binding
+**Severity:** MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL, ESF-C-ENV-SEP
+
+Without an `environment:` binding, a deploy job can't be gated by required reviewers, deployment-branch policies, or wait timers. Any push to the triggering branch will deploy immediately.
+
+**Recommended action**
+
+Add `environment: <name>` to jobs that deploy. Configure required reviewers, wait timers, and branch-protection rules on the matching GitHub environment.
+
+## GHA-015 — Job has no `timeout-minutes` — unbounded build
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT
+
+Without `timeout-minutes`, the job runs until GitHub's 6-hour default kills it. Explicit timeouts cap blast radius, cost, and the window during which a compromised step has access to secrets.
+
+**Recommended action**
+
+Add `timeout-minutes:` to each job, sized to the 95th percentile of historical runtime plus margin. GitHub's default is 360 minutes — an explicitly shorter value limits blast radius and runner cost.
+
+## GHA-016 — Remote script piped to shell interpreter
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a workflow. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+
+**Recommended action**
+
+Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.
+
+## GHA-017 — Docker run with insecure flags (privileged/host mount)
+**Severity:** CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+Flags like `--privileged`, `--cap-add`, `--net=host`, or host-root volume mounts (`-v /:/`) in a workflow give the container full access to the runner, enabling container escape and lateral movement.
+
+**Recommended action**
+
+Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
+
+## GHA-018 — Package install from insecure source
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects package-manager invocations that use plain HTTP registries (`--index-url http://`, `--registry=http://`) or disable TLS verification (`--trusted-host`, `--no-verify`) in a workflow. These patterns allow man-in-the-middle injection of malicious packages.
+
+**Recommended action**
+
+Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
+
+## GHA-019 — GITHUB_TOKEN written to persistent storage
+**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Detects patterns where `GITHUB_TOKEN` is written to files, environment files (`$GITHUB_ENV`), or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries — turning a scoped credential into a long-lived one.
+
+**Recommended action**
+
+Never write GITHUB_TOKEN to files, artifacts, or GITHUB_ENV. Use the token inline via ${{ secrets.GITHUB_TOKEN }} in the step that needs it.
+
+## GHA-020 — No vulnerability scanning step
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT
+
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+
+**Recommended action**
+
+Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 ---
 

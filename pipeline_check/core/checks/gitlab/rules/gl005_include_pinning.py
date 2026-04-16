@@ -6,7 +6,6 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 
-
 RULE = Rule(
     id="GL-005",
     title="include: pulls remote / project without pinned ref",

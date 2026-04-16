@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import AWS_KEY_BINDING_RE, AWS_KEY_VAR_RE
 
-
 RULE = Rule(
     id="JF-004",
     title="AWS auth uses long-lived access keys via withCredentials",

@@ -19,20 +19,31 @@ and the ``managed_policy_arns`` attribute on the role.
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
-from .base import TerraformBaseCheck, TerraformResource
-from ..base import Finding, Severity
 from .._iam_policy import (
     ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
+)
+from .._iam_policy import (
     CICD_SERVICE_PRINCIPALS as _CICD_SERVICE_PRINCIPALS,
-    as_list as _as_list,
+)
+from .._iam_policy import (
     has_wildcard_action as _has_wildcard_action,
+)
+from .._iam_policy import (
     iter_allow as _iter_allow_statements,
+)
+from .._iam_policy import (
     parse_doc as _parse,
+)
+from .._iam_policy import (
     passrole_wildcard as _statements_with_passrole_wildcard,
+)
+from .._iam_policy import (
     sensitive_wildcard as _sensitive_wildcard_resource,
 )
+from ..base import Finding, Severity
+from .base import TerraformBaseCheck, TerraformResource
 
 
 def _role_is_cicd(values: dict) -> bool:

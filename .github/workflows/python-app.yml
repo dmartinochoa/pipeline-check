@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # 3.10 is supported by setup.py (``python_requires=">=3.10"``)
+        # 3.10 is supported by pyproject.toml (``requires-python = ">=3.10"``)
         # but excluded from the hash-locked CI install: pytest 9 pulls
         # in ``exceptiongroup``/``tomli`` conditionally on 3.10, and
         # the pip-compile that produced requirements-dev.txt ran on a
@@ -54,10 +54,16 @@ jobs:
           pip install --require-hashes -r requirements-dev.txt
           pip install -e .
 
-      - name: Lint with flake8
+      - name: Lint with ruff
         run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          pip install ruff
+          ruff check pipeline_check/ tests/
+
+      - name: Type check with mypy
+        run: |
+          pip install mypy
+          mypy pipeline_check/ --ignore-missing-imports
+        continue-on-error: true
 
       - name: Test with pytest
         # --cov-fail-under gates the build on coverage regressions. Bump

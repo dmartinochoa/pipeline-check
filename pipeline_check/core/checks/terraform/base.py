@@ -14,9 +14,10 @@ Typical producer workflow for the caller:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from ..base import BaseCheck
 
@@ -43,8 +44,8 @@ class TerraformContext:
         self._resources: list[TerraformResource] = list(_iter_resources(plan))
 
     @classmethod
-    def from_path(cls, path: str | Path) -> "TerraformContext":
-        with open(path, "r", encoding="utf-8") as fh:
+    def from_path(cls, path: str | Path) -> TerraformContext:
+        with open(path, encoding="utf-8") as fh:
             return cls(json.load(fh))
 
     def resources(self, resource_type: str | None = None) -> Iterator[TerraformResource]:

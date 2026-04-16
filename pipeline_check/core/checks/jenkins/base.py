@@ -26,10 +26,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from ..base import BaseCheck
-
 
 _LIBRARY_RE = re.compile(r"@Library\(\s*['\"]([^'\"]+)['\"]\s*\)")
 # Matches ``stage('Name') { ... }`` non-greedily, capturing the inner
@@ -55,7 +53,7 @@ class JenkinsContext:
         self.files = files
 
     @classmethod
-    def from_path(cls, path: str | Path) -> "JenkinsContext":
+    def from_path(cls, path: str | Path) -> JenkinsContext:
         root = Path(path)
         if not root.exists():
             raise ValueError(

@@ -1,0 +1,3 @@
+build:
+  script:
+    - curl https://example.com/setup.sh | bash

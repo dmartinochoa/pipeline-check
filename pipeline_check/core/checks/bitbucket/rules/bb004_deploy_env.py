@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_steps
 from ._helpers import DEPLOY_RE
 
-
 RULE = Rule(
     id="BB-004",
     title="Deploy step missing `deployment:` environment gate",

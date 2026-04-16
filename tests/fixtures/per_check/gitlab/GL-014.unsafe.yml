@@ -1,0 +1,5 @@
+build:
+  tags:
+    - custom-runner
+  script:
+    - make build

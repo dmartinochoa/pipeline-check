@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import SHA_RE
 
-
 RULE = Rule(
     id="GHA-001",
     title="Action not pinned to commit SHA",

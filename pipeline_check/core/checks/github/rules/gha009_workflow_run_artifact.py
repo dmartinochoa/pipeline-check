@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, workflow_triggers
 
-
 RULE = Rule(
     id="GHA-009",
     title="workflow_run downloads upstream artifact unverified",

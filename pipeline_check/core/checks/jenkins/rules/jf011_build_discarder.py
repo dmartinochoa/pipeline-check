@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import BUILD_DISCARDER_RE
 
-
 RULE = Rule(
     id="JF-011",
     title="Pipeline has no `buildDiscarder` retention policy",

@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import MS_HOSTED_NAMES
 
-
 RULE = Rule(
     id="ADO-013",
     title="Self-hosted pool without explicit ephemeral marker",

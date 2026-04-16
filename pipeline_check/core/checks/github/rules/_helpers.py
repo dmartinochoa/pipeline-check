@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import re
 
-
 # A 40-character lowercase hex string — a git commit SHA.
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -40,7 +39,9 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|deployment\.payload\.[^\}]*"
     r"|workflow_run\.(?:head_branch|display_title|head_commit\.message)"
     r")"
-    r"|github\.(?:head_ref|ref_name)"
+    r"|github\.(?:head_ref|ref_name|actor)"
+    r"|github\.event\.pull_request\.base\.ref"
+    r"|github\.event\.client_payload\.[^\}]*"
     r"|inputs\.[A-Za-z_][A-Za-z0-9_]*"
     r")\s*\}\}"
 )

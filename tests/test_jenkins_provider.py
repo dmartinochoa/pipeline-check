@@ -18,7 +18,6 @@ from pipeline_check.core import providers as providers_mod
 from pipeline_check.core.checks.jenkins.base import JenkinsContext, _extract_stages
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 
-
 SCENARIO_DIR = Path(__file__).parent / "fixtures" / "scenarios" / "jenkins"
 
 

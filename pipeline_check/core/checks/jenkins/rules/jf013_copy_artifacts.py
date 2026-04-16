@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import COPY_ARTIFACTS_RE, VERIFY_RE
 
-
 RULE = Rule(
     id="JF-013",
     title="copyArtifacts ingests another job's output unverified",

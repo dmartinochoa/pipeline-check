@@ -8,7 +8,6 @@ from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.pbac import PBACChecks
 from tests.aws.conftest import make_paginator
 
-
 _ROLE_ARN = "arn:aws:iam::123456789:role/my-build-role"
 _ROLE_ARN_2 = "arn:aws:iam::123456789:role/other-build-role"
 

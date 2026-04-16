@@ -1,13 +1,16 @@
-.PHONY: install test lint build-lambda clean
+.PHONY: install test lint docs build-lambda clean
 
 install:
 	pip install -e ".[dev]"
 
 test:
-	pytest tests/ -v --cov=pipelineguard --cov-report=term-missing
+	pytest tests/ -v --cov=pipeline_check --cov-report=term-missing
 
 lint:
-	ruff check pipelineguard/ tests/
+	ruff check pipeline_check/ tests/
+
+docs:
+	python scripts/gen_provider_docs.py
 
 build-lambda:
 	bash scripts/build_lambda.sh

@@ -9,7 +9,8 @@ against well-known compliance standards and scores it A–D, so you can gate
 pipelines on the result. It can scan a **live AWS account** via boto3, a
 **Terraform plan** (`terraform show -json`) before any resource is
 provisioned, or CI definition YAML for **GitHub Actions**, **GitLab CI**,
-and **Bitbucket Pipelines** — all without an API token.
+**Bitbucket Pipelines**, **Azure DevOps Pipelines**, and **Jenkins** —
+all without an API token.
 
 [What it checks](#what-it-checks) ·
 [Installation](#installation) ·
@@ -28,7 +29,7 @@ and **Bitbucket Pipelines** — all without an API token.
 
 ## What it checks
 
-Covered surfaces (**92 checks** total: 32 AWS + 12 GitHub Actions + 12 GitLab CI + 10 Bitbucket Pipelines + 13 Azure DevOps Pipelines + 13 Jenkins, severity-weighted):
+Covered surfaces (**132 checks** total: 32 AWS + 20 GitHub Actions + 20 GitLab CI + 20 Bitbucket Pipelines + 20 Azure DevOps Pipelines + 20 Jenkins, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -39,11 +40,11 @@ Covered surfaces (**92 checks** total: 32 AWS + 12 GitHub Actions + 12 GitLab CI
 | IAM                 | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
 | PBAC                | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
 | S3                  | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
-| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection (incl. `release.body`, `inputs.*`, `head_ref`), missing permissions blocks, long-lived AWS keys, artifact signing, SBOM generation, credential-shaped literals, **workflow_run artifact poisoning**, **local action under untrusted trigger**, **PR-controlled cache key**, **non-ephemeral self-hosted runner** | `GHA-001…012`    |
-| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning, **multi-project artifact ingestion**, **`include: local` on MR pipelines**, **MR-tainted cache key** | `GL-001…012`     |
-| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning, **PR-to-deploy artifact handover** | `BB-001…010`     |
-| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning, **cross-pipeline `download:`**, **local `template:` on PR**, **`Cache@2` PR-tainted key**, **self-hosted pool ephemeral marker** | `ADO-001…013`    |
-| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*`, `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk, **`copyArtifacts` cross-job ingestion** | `JF-001…013`     |
+| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection (incl. `release.body`, `inputs.*`, `head_ref`, env-chain PPE), missing permissions blocks, long-lived AWS keys, artifact signing, SBOM generation, credential-shaped literals, workflow_run artifact poisoning, local action under untrusted trigger, PR-controlled cache key, non-ephemeral self-hosted runner, unguarded `issue_comment` trigger, deploy environment approval, job timeouts, curl-pipe-shell, Docker insecure flags, insecure package registries, token persistence, vulnerability scanning | `GHA-001…020`    |
+| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning, multi-project artifact ingestion, `include: local` on MR pipelines, MR-tainted cache key, long-lived AWS keys, self-hosted ephemeral runner, job timeouts, curl-pipe-shell, Docker insecure flags, insecure package registries, vulnerability scanning, CI_JOB_TOKEN persistence | `GL-001…020`     |
+| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning, PR-to-deploy artifact handover, long-lived AWS keys, curl-pipe-shell, Docker insecure flags, insecure package registries, vulnerability scanning, self-hosted ephemeral, token persistence, cache key tainting, after-script secret leak, full clone depth | `BB-001…020`     |
+| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning, cross-pipeline `download:`, local `template:` on PR, `Cache@2` PR-tainted key, self-hosted pool ephemeral marker, long-lived AWS keys, job timeouts, curl-pipe-shell, Docker insecure flags, insecure package registries, `extends:` template injection, vulnerability scanning | `ADO-001…020`    |
+| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*`, `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk, `copyArtifacts` cross-job ingestion, self-hosted ephemeral agent, job timeouts, curl-pipe-shell, Docker insecure flags, insecure package registries, Groovy sandbox escape, vulnerability scanning | `JF-001…020`     |
 
 Cross-cutting capabilities layered on top:
 
@@ -333,7 +334,9 @@ pipeline_check/
     │   ├── terraform.py           # plan-JSON provider
     │   ├── github.py              # GitHub Actions workflow-YAML provider
     │   ├── gitlab.py              # GitLab CI YAML provider
-    │   └── bitbucket.py           # Bitbucket Pipelines YAML provider
+    │   ├── bitbucket.py           # Bitbucket Pipelines YAML provider
+    │   ├── azure.py               # Azure DevOps Pipelines YAML provider
+    │   └── jenkins.py             # Jenkins pipeline text provider
     ├── standards/                 # compliance standards (data-driven)
     │   ├── base.py                # ControlRef + Standard dataclasses
     │   ├── registry.py            # register / get / resolve
@@ -367,15 +370,26 @@ pipeline_check/
         │   ├── iam.py
         │   ├── pbac.py
         │   └── s3.py
-        ├── github/                # GitHub Actions workflow-YAML provider
+        ├── github/                # GitHub Actions (rule-per-module)
         │   ├── base.py            # GitHubContext + Workflow loader
-        │   └── workflows.py       # GHA-001 … GHA-005
-        ├── gitlab/                # GitLab CI YAML provider
+        │   ├── workflows.py       # thin orchestrator (discover_rules)
+        │   └── rules/             # GHA-001 … GHA-020
+        ├── gitlab/                # GitLab CI (rule-per-module)
         │   ├── base.py            # GitLabContext + Pipeline loader
-        │   └── pipelines.py       # GL-001 … GL-005
-        └── bitbucket/             # Bitbucket Pipelines YAML provider
-            ├── base.py            # BitbucketContext + step walker
-            └── pipelines.py       # BB-001 … BB-005
+        │   ├── pipelines.py       # thin orchestrator
+        │   └── rules/             # GL-001 … GL-020
+        ├── bitbucket/             # Bitbucket Pipelines (rule-per-module)
+        │   ├── base.py            # BitbucketContext + step walker
+        │   ├── pipelines.py       # thin orchestrator
+        │   └── rules/             # BB-001 … BB-020
+        ├── azure/                 # Azure DevOps Pipelines (rule-per-module)
+        │   ├── base.py            # AzureContext + Pipeline loader
+        │   ├── pipelines.py       # thin orchestrator
+        │   └── rules/             # ADO-001 … ADO-020
+        └── jenkins/               # Jenkins (rule-per-module)
+            ├── base.py            # JenkinsContext + Jenkinsfile parser
+            ├── jenkinsfile.py     # thin orchestrator
+            └── rules/             # JF-001 … JF-020
 ```
 
 See [docs/providers/](docs/providers/) for the provider catalogue and

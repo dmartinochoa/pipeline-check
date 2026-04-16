@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import CACHE_TAINT_RE
 
-
 RULE = Rule(
     id="GL-012",
     title="Cache key derives from MR-controlled CI variable",

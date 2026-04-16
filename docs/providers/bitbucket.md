@@ -27,6 +27,16 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | BB-008 | Credential-shaped literal in pipeline body | CRITICAL |
 | BB-009 | pipe: pinned by version rather than sha256 digest | LOW |
 | BB-010 | Deploy step ingests pull-request artifact unverified | CRITICAL |
+| BB-011 | AWS auth uses long-lived access keys | MEDIUM |
+| BB-012 | Remote script piped to shell interpreter | HIGH |
+| BB-013 | Docker run with insecure flags (privileged/host mount) | CRITICAL |
+| BB-014 | Package install from insecure source | HIGH |
+| BB-015 | No vulnerability scanning step | MEDIUM |
+| BB-016 | Self-hosted runner without ephemeral marker | MEDIUM |
+| BB-017 | Repository token written to persistent storage | CRITICAL |
+| BB-018 | Cache key derives from attacker-controllable input | MEDIUM |
+| BB-019 | after-script references secrets | HIGH |
+| BB-020 | Full clone depth exposes complete history | LOW |
 
 ---
 
@@ -119,6 +129,96 @@ Bitbucket steps declare artifacts on the producer and downstream steps implicitl
 **Recommended action**
 
 Add a verification step before the deploy step consumes the artifact: `sha256sum -c artifact.sha256` against a manifest the producer signed, or `cosign verify` over the artifact directly. Alternatively, restrict the artifact-producing step to non-PR pipelines via ``branches:`` or ``custom:`` triggers.
+
+## BB-011 — AWS auth uses long-lived access keys
+**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE
+
+Long-lived `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` values embedded in the pipeline file can't be rotated on a fine-grained schedule. Prefer OIDC or Bitbucket secured variables for cross-cloud access.
+
+**Recommended action**
+
+Use Bitbucket OIDC with `oidc: true` on the AWS pipe, or store credentials as secured Bitbucket variables rather than inline values. Remove static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from the pipeline file.
+
+## BB-012 — Remote script piped to shell interpreter
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a pipeline. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build runner.
+
+**Recommended action**
+
+Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.
+
+## BB-013 — Docker run with insecure flags (privileged/host mount)
+**Severity:** CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+Flags like `--privileged`, `--cap-add`, `--net=host`, or host-root volume mounts (`-v /:/`) in a pipeline give the container full access to the build runner, enabling container escape and lateral movement.
+
+**Recommended action**
+
+Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
+
+## BB-014 — Package install from insecure source
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects package-manager invocations that use plain HTTP registries (`--index-url http://`, `--registry=http://`) or disable TLS verification (`--trusted-host`, `--no-verify`) in a pipeline. These patterns allow man-in-the-middle injection of malicious packages.
+
+**Recommended action**
+
+Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
+
+## BB-015 — No vulnerability scanning step
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT
+
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+
+**Recommended action**
+
+Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+
+## BB-016 — Self-hosted runner without ephemeral marker
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD
+
+Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered step writes to a well-known path; a subsequent deploy step on the same runner reads it. Detects `runs-on: self.hosted` without an `ephemeral` marker or Docker image override.
+
+**Recommended action**
+
+Use Docker-based self-hosted runners or configure runners to tear down between jobs. Add 'ephemeral' to `runs-on` labels or use Bitbucket's runner images that are rebuilt per-job.
+
+## BB-017 — Repository token written to persistent storage
+**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Detects patterns where Bitbucket pipeline tokens are redirected to files or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, artifacts, or cache entries.
+
+**Recommended action**
+
+Never write BITBUCKET_TOKEN or REPOSITORY_OAUTH_ACCESS_TOKEN to files or artifacts. Use the token inline in the command that needs it and let Bitbucket revoke it after the build.
+
+## BB-018 — Cache key derives from attacker-controllable input
+**Severity:** MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Bitbucket caches are restored by key. When the key includes a value the attacker controls (branch name, tag, PR ID), a pull-request pipeline can plant a poisoned cache entry that a subsequent default-branch build restores.
+
+**Recommended action**
+
+Build the cache key from values the attacker cannot control. Prefer `hashFiles()` on lockfiles enforced by branch protection. Never include $BITBUCKET_BRANCH or PR-related variables in the cache key.
+
+## BB-019 — after-script references secrets
+**Severity:** HIGH · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Bitbucket's `after-script` runs unconditionally after the main `script` block (including on failure). If the `after-script` references secrets or tokens, those values may leak into build logs or artifacts even when the step fails unexpectedly. This check detects secret-like variable references in `after-script` blocks.
+
+**Recommended action**
+
+Move secret-dependent operations into the main `script:` block. `after-script` runs even when the step fails and executes in a separate shell context — credential exposure here is harder to audit and more likely to persist in logs.
+
+## BB-020 — Full clone depth exposes complete history
+**Severity:** LOW · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+By default Bitbucket Pipelines clone with `depth: 50`. Setting `depth: full` exposes the entire commit history, including any secrets that were committed and later removed. This check flags explicit `clone: depth: full` settings.
+
+**Recommended action**
+
+Set `clone: depth: 1` (or a small number) in pipeline or step options to limit the amount of repository history available in the build environment. Full clones make it easier to extract secrets that were committed and later removed.
 
 ---
 

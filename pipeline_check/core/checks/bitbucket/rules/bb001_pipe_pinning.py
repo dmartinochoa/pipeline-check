@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_steps
 from ._helpers import VER_OK_RE, extract_pipe_ref
 
-
 RULE = Rule(
     id="BB-001",
     title="pipe: action not pinned to exact version",

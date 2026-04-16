@@ -6,7 +6,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 
-
 RULE = Rule(
     id="JF-008",
     title="Credential-shaped literal in pipeline body",

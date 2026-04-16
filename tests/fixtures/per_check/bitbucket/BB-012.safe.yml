@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -o install.sh https://example.com/install.sh

@@ -16,7 +16,6 @@ from typing import Any
 
 import boto3
 
-from .base import BaseProvider
 from ..checks.aws.codebuild import CodeBuildChecks
 from ..checks.aws.codedeploy import CodeDeployChecks
 from ..checks.aws.codepipeline import CodePipelineChecks
@@ -25,6 +24,7 @@ from ..checks.aws.iam import IAMChecks
 from ..checks.aws.pbac import PBACChecks
 from ..checks.aws.s3 import S3Checks
 from ..checks.base import BaseCheck
+from .base import BaseProvider
 
 
 class AWSProvider(BaseProvider):

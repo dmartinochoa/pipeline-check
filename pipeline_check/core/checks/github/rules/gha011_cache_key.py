@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import CACHE_TAINT_RE
 
-
 RULE = Rule(
     id="GHA-011",
     title="Cache key derives from attacker-controllable input",

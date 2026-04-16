@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import TASK_PIN_RE
 
-
 RULE = Rule(
     id="ADO-001",
     title="Task reference not pinned to specific version",

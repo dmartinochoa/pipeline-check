@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 
-
 RULE = Rule(
     id="JF-003",
     title="Pipeline uses `agent any` (no executor isolation)",

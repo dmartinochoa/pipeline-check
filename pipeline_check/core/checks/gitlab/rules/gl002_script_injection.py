@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 from ._helpers import UNTRUSTED_VAR_RE
 
-
 RULE = Rule(
     id="GL-002",
     title="Script injection via untrusted commit/MR context",

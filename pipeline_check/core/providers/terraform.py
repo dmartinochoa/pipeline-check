@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
 from ..checks.base import BaseCheck
 from ..checks.terraform.base import TerraformContext
 from ..checks.terraform.codebuild import CodeBuildChecks
@@ -28,6 +27,7 @@ from ..checks.terraform.ecr import ECRChecks
 from ..checks.terraform.iam import IAMChecks
 from ..checks.terraform.pbac import PBACChecks
 from ..checks.terraform.s3 import S3Checks
+from .base import BaseProvider
 
 
 class TerraformProvider(BaseProvider):

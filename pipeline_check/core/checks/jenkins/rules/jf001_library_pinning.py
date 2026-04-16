@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import FLOATING_REFS, PINNED_REF_RE
 
-
 RULE = Rule(
     id="JF-001",
     title="Shared library not pinned to a tag or commit",

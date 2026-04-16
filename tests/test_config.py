@@ -7,7 +7,6 @@ import pytest
 
 from pipeline_check.core.config import load_config
 
-
 # ────────────────────────────────────────────────────────────────────────────
 # Top-level loader + precedence
 # ────────────────────────────────────────────────────────────────────────────
@@ -204,7 +203,9 @@ class TestEnvVars:
 class TestCliIntegration:
     def test_config_file_supplies_default(self, tmp_path, monkeypatch):
         import json
+
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         _clear_env(monkeypatch)
@@ -219,11 +220,13 @@ class TestCliIntegration:
         # Config-supplied `pipeline: gitlab` actually took effect — only
         # GitLab check IDs should be emitted.
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 13)}
+        assert emitted == {f"GL-{i:03d}" for i in range(1, 21)}
 
     def test_cli_flag_overrides_config(self, tmp_path, monkeypatch):
         import json
+
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         _clear_env(monkeypatch)
@@ -250,7 +253,9 @@ class TestCliIntegration:
 
     def test_env_overrides_config(self, tmp_path, monkeypatch):
         import json
+
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         _clear_env(monkeypatch)
@@ -265,10 +270,11 @@ class TestCliIntegration:
         # GitLab provider actually ran — AWS would need real creds and
         # emit CB-*/IAM-*/etc. ids, none of which should appear here.
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 13)}
+        assert emitted == {f"GL-{i:03d}" for i in range(1, 21)}
 
     def test_gate_config_file_tightens_gate(self, tmp_path, monkeypatch):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         _clear_env(monkeypatch)
@@ -295,6 +301,7 @@ class TestCliIntegration:
 
     def test_explicit_config_flag_missing_file_errors(self, tmp_path, monkeypatch):
         from click.testing import CliRunner
+
         from pipeline_check.cli import scan
 
         _clear_env(monkeypatch)

@@ -5,7 +5,8 @@ import pytest
 
 from pipeline_check.core.checks.base import Severity
 
-from .conftest import azure_ctx as _ctx, run_check as _run
+from .conftest import azure_ctx as _ctx
+from .conftest import run_check as _run
 
 __all__ = ["_ctx", "_run"]
 

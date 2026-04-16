@@ -1,0 +1,14 @@
+pr:
+  branches:
+    include:
+      - main
+
+extends:
+  template: build-template.yml@secure-templates
+
+stages:
+  - stage: Build
+    jobs:
+      - job: build
+        steps:
+          - script: make build

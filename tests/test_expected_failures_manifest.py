@@ -17,7 +17,6 @@ import pytest
 from pipeline_check.core import providers as _providers
 from pipeline_check.core.standards.data.cis_aws_foundations import STANDARD as _CIS
 
-
 MANIFEST = Path(__file__).parent / "integration" / "expected_failures.json"
 
 

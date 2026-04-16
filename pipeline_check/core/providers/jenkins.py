@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
 from ..checks.base import BaseCheck
 from ..checks.jenkins.base import JenkinsContext
 from ..checks.jenkins.jenkinsfile import JenkinsfileChecks
+from .base import BaseProvider
 
 
 class JenkinsProvider(BaseProvider):

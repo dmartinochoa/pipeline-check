@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
-
 RULE = Rule(
     id="GHA-005",
     title="AWS auth uses long-lived access keys",

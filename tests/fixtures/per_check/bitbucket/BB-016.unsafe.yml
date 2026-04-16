@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        runs-on:
+          - self.hosted
+        script:
+          - npm test

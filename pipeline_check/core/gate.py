@@ -43,14 +43,13 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
 from .checks.base import Finding, Severity, severity_rank
-
 
 # Grade ordering — A is best, D is worst. Kept inline rather than imported
 # from the scorer so this module has no upward coupling.

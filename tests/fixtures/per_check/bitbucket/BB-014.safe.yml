@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - pip install -r requirements.txt

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from pipeline_check.core import providers as providers_mod
 from pipeline_check.core.checks import _secrets as secrets_mod
 from pipeline_check.core.scanner import Scanner
-from pipeline_check.core import providers as providers_mod
 
 
 def test_scanner_resets_registry_between_constructions(monkeypatch, tmp_path):

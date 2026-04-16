@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import CACHE_TAINT_RE
 
-
 RULE = Rule(
     id="ADO-012",
     title="Cache@2 key derives from $(System.PullRequest.*)",

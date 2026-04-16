@@ -1,0 +1,5 @@
+jobs:
+  - job: build
+    timeoutInMinutes: 30
+    steps:
+      - script: npm test

@@ -70,6 +70,32 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "digitalocean_token":     r"dop_v1_[a-f0-9]{64}",
     # HashiCorp Vault service / batch tokens.
     "hashicorp_vault":        r"hvs\.[A-Za-z0-9_\-]{24,}",
+    # Twilio API key SID (SK prefix + 32 hex = 34 chars total).
+    "twilio_api_key":         r"SK[0-9a-fA-F]{32}",
+    # Twilio Account SID (AC prefix + 32 hex = 34 chars total).
+    "twilio_account_sid":     r"AC[0-9a-fA-F]{32}",
+    # Mailchimp API key — 32 hex + datacenter suffix (-us1 through -us99).
+    "mailchimp_api_key":      r"[0-9a-f]{32}-us\d{1,2}",
+    # Shopify access tokens — four scoped prefixes, 32 hex chars.
+    "shopify_token":          r"shp(?:at|ca|pa|ss)_[0-9a-fA-F]{32}",
+    # Databricks personal access token — dapi prefix + 32 hex.
+    "databricks_token":       r"dapi[0-9a-f]{32}",
+    # OpenAI API keys — legacy (sk-…T3BlbkFJ…) and new (sk-proj-…).
+    "openai_api_key":         r"sk-(?:proj-[A-Za-z0-9_\-]{40,}|[A-Za-z0-9]{20,}T3BlbkFJ[A-Za-z0-9]{20,})",
+    # Hugging Face user access tokens.
+    "huggingface_token":      r"hf_[A-Za-z0-9]{34,}",
+    # age encryption tool secret key.
+    "age_secret_key":         r"AGE-SECRET-KEY-1[0-9A-Za-z]{58}",
+    # Linear issue tracker API key.
+    "linear_api_key":         r"lin_api_[A-Za-z0-9]{40}",
+    # PlanetScale database token.
+    "planetscale_token":      r"pscale_tkn_[A-Za-z0-9_\-]{40,}",
+    # New Relic user API key (NRAK prefix, 32 total).
+    "new_relic_api_key":      r"NRAK-[A-Za-z0-9]{27}",
+    # Grafana Cloud service account token (glsa_ prefix).
+    "grafana_api_key":        r"glsa_[A-Za-z0-9_]{32,}",
+    # Telegram Bot API token — numeric bot ID + alphanumeric secret.
+    "telegram_bot_token":     r"\d{8,10}:[A-Za-z0-9_\-]{35}",
 }
 
 

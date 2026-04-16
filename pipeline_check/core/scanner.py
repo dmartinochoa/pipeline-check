@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from .checks.base import Finding, clear_blob_cache
-from .checks import _secrets as _secret_registry
+from . import diff as _diff
 from . import providers as _providers
 from . import standards as _standards
-from . import diff as _diff
+from .checks import _secrets as _secret_registry
+from .checks.base import Finding, clear_blob_cache
 
 
 class Scanner:

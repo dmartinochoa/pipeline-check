@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import SHELL_STEP_RE, UNTRUSTED_ENV_RE
 
-
 RULE = Rule(
     id="JF-002",
     title="Script step interpolates attacker-controllable env var",

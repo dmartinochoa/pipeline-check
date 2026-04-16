@@ -4,7 +4,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-
 DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 

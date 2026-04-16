@@ -1,0 +1,3 @@
+deploy:
+  script:
+    - 'curl -H "JOB-TOKEN: $CI_JOB_TOKEN" https://registry.example.com'

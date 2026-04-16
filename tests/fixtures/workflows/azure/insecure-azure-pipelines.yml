@@ -23,6 +23,10 @@ resources:
     - pipeline: upstream-build
       source: 'platform-build'
 
+# ADO-019 — extends template on PR-validated pipeline points to local path.
+extends:
+  template: build-template.yml
+
 stages:
   # ADO-011 — local template included on a PR-validated pipeline.
   - template: ci/build-stage.yml
@@ -47,6 +51,18 @@ stages:
             inputs:
               key: build-$(System.PullRequest.SourceBranch)
               path: $(Pipeline.Workspace)/.cache
+
+  # ADO-016 — curl piped to shell.
+  # ADO-017 — docker run --privileged.
+  # ADO-018 — pip install from insecure source.
+  # ADO-020 — no vulnerability scanning step.
+  - stage: Insecure
+    jobs:
+      - job: InsecureSetup
+        steps:
+          - script: curl https://example.com/install.sh | bash
+          - script: docker run --privileged myimage
+          - script: pip install --trusted-host pypi.internal.com package
 
   - stage: Deploy
     dependsOn: Build

@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import BaseProvider
-from ..checks.base import BaseCheck
 from ..checks.azure.base import AzureContext
 from ..checks.azure.pipelines import AzurePipelineChecks
+from ..checks.base import BaseCheck
+from .base import BaseProvider
 
 
 class AzureProvider(BaseProvider):

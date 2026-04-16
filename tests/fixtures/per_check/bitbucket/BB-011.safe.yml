@@ -1,0 +1,8 @@
+pipelines:
+  default:
+    - step:
+        name: deploy
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.2.3
+            variables:
+              S3_BUCKET: my-bucket

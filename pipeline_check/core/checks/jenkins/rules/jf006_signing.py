@@ -1,10 +1,9 @@
 """JF-006 — artifact signing."""
 from __future__ import annotations
 
-from ...base import Finding, Severity, SIGN_TOKENS
+from ...base import SIGN_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
-
 
 RULE = Rule(
     id="JF-006",

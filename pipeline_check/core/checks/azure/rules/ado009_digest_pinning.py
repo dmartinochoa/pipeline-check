@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import DIGEST_RE
 
-
 RULE = Rule(
     id="ADO-009",
     title="Container image pinned by tag rather than sha256 digest",

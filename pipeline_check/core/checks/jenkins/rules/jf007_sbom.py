@@ -1,10 +1,9 @@
 """JF-007 — pipeline should produce an SBOM."""
 from __future__ import annotations
 
-from ...base import Finding, Severity, SBOM_DIRECT_TOKENS
+from ...base import SBOM_DIRECT_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
-
 
 RULE = Rule(
     id="JF-007",

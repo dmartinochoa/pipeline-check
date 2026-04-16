@@ -46,6 +46,7 @@ from typing import Any
 
 import pytest
 
+from pipeline_check.core import standards as standards_mod
 from pipeline_check.core.checks.azure.base import AzureContext
 from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 from pipeline_check.core.checks.base import Finding
@@ -57,8 +58,6 @@ from pipeline_check.core.checks.gitlab.base import GitLabContext
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
 from pipeline_check.core.checks.jenkins.base import JenkinsContext
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
-from pipeline_check.core import standards as standards_mod
-
 
 SNIPPET_ROOT = Path(__file__).parent / "fixtures" / "per_check"
 
@@ -172,6 +171,14 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
     CheckCase("GHA-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     CheckCase("GHA-012", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("GHA-013", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-014", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("GHA-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("GHA-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GHA-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("GHA-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GHA-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GHA-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
     # ── GitLab CI ────────────────────────────────────────────────────
     CheckCase("GL-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("GL-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -185,6 +192,14 @@ CASES: list[CheckCase] = [
     CheckCase("GL-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     CheckCase("GL-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
     CheckCase("GL-012", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-013", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("GL-014", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("GL-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("GL-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GL-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("GL-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GL-019", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("GL-020", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── Bitbucket Pipelines ──────────────────────────────────────────
     CheckCase("BB-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("BB-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -196,6 +211,16 @@ CASES: list[CheckCase] = [
     CheckCase("BB-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("BB-009", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE")),
     CheckCase("BB-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-011", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("BB-012", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("BB-013", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("BB-014", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("BB-015", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("BB-016", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("BB-017", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("BB-018", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("BB-020", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
     # ── Azure DevOps Pipelines ───────────────────────────────────────
     CheckCase("ADO-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -210,6 +235,13 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
     CheckCase("ADO-012", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-013", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("ADO-014", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("ADO-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("ADO-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("ADO-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("ADO-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("ADO-019", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
+    CheckCase("ADO-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
     # ── Jenkins ──────────────────────────────────────────────────────
     CheckCase("JF-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("JF-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -224,6 +256,13 @@ CASES: list[CheckCase] = [
     CheckCase("JF-011", "CICD-SEC-10", ("ESF-D-BUILD-LOGS", "ESF-C-AUDIT")),
     CheckCase("JF-012", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("JF-013", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-014", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("JF-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("JF-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("JF-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("JF-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("JF-019", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
 ]
 
 
@@ -267,11 +306,11 @@ def test_every_workflow_check_has_a_case():
     workflow checks. If a new check ships without an entry here, this
     test fails — forcing the author to write a real-example case."""
     expected_ids = (
-        {f"GHA-{i:03d}" for i in range(1, 13)}
-        | {f"GL-{i:03d}" for i in range(1, 13)}
-        | {f"BB-{i:03d}" for i in range(1, 11)}
-        | {f"ADO-{i:03d}" for i in range(1, 14)}
-        | {f"JF-{i:03d}" for i in range(1, 14)}
+        {f"GHA-{i:03d}" for i in range(1, 21)}
+        | {f"GL-{i:03d}" for i in range(1, 21)}
+        | {f"BB-{i:03d}" for i in range(1, 21)}
+        | {f"ADO-{i:03d}" for i in range(1, 21)}
+        | {f"JF-{i:03d}" for i in range(1, 21)}
     )
     covered = {c.check_id for c in CASES}
     missing = expected_ids - covered

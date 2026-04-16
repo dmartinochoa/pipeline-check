@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps, workflow_triggers
 from ._helpers import PR_HEAD_REF_RE
 
-
 RULE = Rule(
     id="GHA-002",
     title="pull_request_target checks out PR head",

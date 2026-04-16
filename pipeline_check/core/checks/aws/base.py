@@ -11,7 +11,7 @@ from typing import Any
 
 import boto3
 
-from pipeline_check.core.checks.base import BaseCheck, Finding, Severity
+from pipeline_check.core.checks.base import BaseCheck, Finding, Severity  # noqa: F401
 
 _CLIENT_CACHE_ATTR = "_pc_client_cache"
 

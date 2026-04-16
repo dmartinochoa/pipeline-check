@@ -1,0 +1,8 @@
+on: pull_request
+env:
+  REPO: ${{ github.repository }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo $REPO

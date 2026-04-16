@@ -5,8 +5,7 @@ and HTML filter markup)."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from click.testing import CliRunner
 
@@ -102,8 +101,9 @@ def test_diff_base_rejected_for_aws(monkeypatch):
     fake_provider.build_context.return_value = MagicMock()
     monkeypatch.setattr(providers_mod, "get", lambda name: fake_provider if name == "aws" else None)
 
-    from pipeline_check.core.scanner import Scanner
     import pytest
+
+    from pipeline_check.core.scanner import Scanner
     with pytest.raises(ValueError, match="not supported for the AWS provider"):
         Scanner(pipeline="aws", diff_base="origin/main")
 

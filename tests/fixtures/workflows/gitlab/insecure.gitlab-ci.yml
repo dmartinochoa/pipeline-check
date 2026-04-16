@@ -50,5 +50,21 @@ ingest-upstream:
 
 deploy-prod:
   stage: deploy
+  # GL-014 — self-managed runner without ephemeral tag.
+  tags:
+    - custom-runner
   script:
     - ./scripts/deploy.sh
+
+# GL-016 — curl piped to shell.
+# GL-017 — docker run --privileged.
+# GL-018 — pip install from insecure source.
+# GL-019 — no vulnerability scanning step.
+# GL-020 — CI_JOB_TOKEN written to file.
+insecure-setup:
+  stage: test
+  script:
+    - curl https://example.com/setup.sh | bash
+    - docker run --privileged myimage
+    - pip install --trusted-host pypi.internal.com package
+    - echo "$CI_JOB_TOKEN" >> /tmp/token.txt

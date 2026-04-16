@@ -6,7 +6,6 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import DIGEST_RE, DOCKER_IMAGE_RE, VERSION_TAG_RE
 
-
 RULE = Rule(
     id="JF-009",
     title="Agent docker image not pinned to sha256 digest",

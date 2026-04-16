@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import DIGEST_RE, VERSION_TAG_RE, image_ref
 
-
 RULE = Rule(
     id="GL-001",
     title="Image not pinned to specific version or digest",

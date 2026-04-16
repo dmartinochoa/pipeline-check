@@ -15,11 +15,10 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
 from botocore.exceptions import ClientError
 
-from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check import lambda_handler as lh
+from pipeline_check.core.checks.base import Finding, Severity
 
 
 def _f(check_id="CB-001", severity=Severity.HIGH, passed=False):

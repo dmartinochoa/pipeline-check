@@ -6,7 +6,6 @@ from typing import Any
 from ...base import Finding, Severity, has_signing
 from ...rule import Rule
 
-
 RULE = Rule(
     id="GL-006",
     title="Artifacts not signed",

@@ -1,0 +1,2 @@
+steps:
+  - script: trivy fs .

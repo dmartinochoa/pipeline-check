@@ -7,8 +7,8 @@ CP-004  Legacy ThirdParty/GitHub (OAuth) source action      HIGH      CICD-SEC-6
 """
 from __future__ import annotations
 
-from .base import TerraformBaseCheck
 from ..base import Finding, Severity
+from .base import TerraformBaseCheck
 
 
 class CodePipelineChecks(TerraformBaseCheck):

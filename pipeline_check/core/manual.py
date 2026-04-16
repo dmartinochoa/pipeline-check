@@ -261,6 +261,19 @@ Built-in detector catalogue:
   anthropic_api_key     sk-ant-api03-<90+ chars>
   digitalocean_token    dop_v1_<64 hex>
   hashicorp_vault       hvs.<24+ chars>
+  twilio_api_key        SK<32 hex>
+  twilio_account_sid    AC<32 hex>
+  mailchimp_api_key     <32 hex>-us<1-2 digits>
+  shopify_token         shpat_ / shpca_ / shppa_ / shpss_ + <32 hex>
+  databricks_token      dapi<32 hex>
+  openai_api_key        sk-<...>T3BlbkFJ<...> / sk-proj-<40+ chars>
+  huggingface_token     hf_<34+ chars>
+  age_secret_key        AGE-SECRET-KEY-1<58 chars>
+  linear_api_key        lin_api_<40 chars>
+  planetscale_token     pscale_tkn_<40+ chars>
+  new_relic_api_key     NRAK-<27 chars>
+  grafana_api_key       glsa_<32+ chars>
+  telegram_bot_token    <8-10 digits>:<35 chars>
   private_key           multi-line PEM BEGIN markers (RSA/EC/OPENSSH/PGP)
 
 Placeholder suppression

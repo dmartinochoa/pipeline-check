@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ._helpers import pipeline_runs_on_mr
 
-
 RULE = Rule(
     id="GL-011",
     title="include: local file pulled in MR-triggered pipeline",

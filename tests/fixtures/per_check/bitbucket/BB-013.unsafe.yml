@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - docker run --privileged myimage

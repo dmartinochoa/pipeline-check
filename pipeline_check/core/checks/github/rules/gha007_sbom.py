@@ -6,7 +6,6 @@ from typing import Any
 from ...base import Finding, Severity, has_sbom
 from ...rule import Rule
 
-
 RULE = Rule(
     id="GHA-007",
     title="SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)",

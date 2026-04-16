@@ -4,8 +4,8 @@ Runs over ``aws_codedeploy_deployment_group`` resources.
 """
 from __future__ import annotations
 
-from .base import TerraformBaseCheck
 from ..base import Finding, Severity
+from .base import TerraformBaseCheck
 
 _ALL_AT_ONCE_CONFIGS = {
     "CodeDeployDefault.AllAtOnce",

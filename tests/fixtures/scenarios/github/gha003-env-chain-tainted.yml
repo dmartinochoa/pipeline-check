@@ -1,0 +1,8 @@
+on: pull_request
+env:
+  PR_TITLE: ${{ github.event.pull_request.title }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo $PR_TITLE

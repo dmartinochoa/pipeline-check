@@ -8,7 +8,6 @@ from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import DIGEST_RE, image_ref
 
-
 RULE = Rule(
     id="GL-009",
     title="Image pinned to version tag rather than sha256 digest",

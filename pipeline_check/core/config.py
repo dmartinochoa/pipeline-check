@@ -37,7 +37,6 @@ except ImportError:  # pragma: no cover
 
 import yaml
 
-
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",

@@ -24,6 +24,8 @@ Registered fixers:
 - ``GHA-008`` — redact credential-shaped literals embedded in the
   workflow by replacing the value with ``\"<REDACTED>\"`` and leaving
   a ``# TODO:`` comment for the operator to wire up a real secret.
+- ``GHA-015`` — insert ``timeout-minutes: 30`` into GitHub Actions jobs
+  that lack one.
 
 GHA-001 SHA-pinning is not included because resolving the current SHA
 for a tagged action requires a network call to the GitHub API.
@@ -32,10 +34,9 @@ from __future__ import annotations
 
 import difflib
 import re
-from typing import Callable
+from collections.abc import Callable
 
 from .checks.base import Finding
-
 
 Fixer = Callable[[str, Finding], "str | None"]
 
@@ -188,6 +189,9 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 
 
 @register("GHA-008")
+@register("GL-008")
+@register("BB-008")
+@register("ADO-008")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -196,6 +200,11 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
     scrubbing the value from the repo is always safe. The operator
     still needs to rotate the key and wire up a real secret — we
     leave a ``# TODO:`` comment so the change is visible in review.
+
+    Registered for all YAML-based providers (GHA, GL, BB, ADO). The
+    fixer operates on raw text, so the same logic works across all
+    YAML dialects. Jenkins (JF-008) is excluded — Groovy syntax
+    needs a different approach.
     """
     from .checks._patterns import SECRET_VALUE_RE
     out_lines: list[str] = []
@@ -226,3 +235,69 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
     if not changed:
         return None
     return "".join(out_lines)
+
+
+# ── Timeout fixer ──────────────────────────────────────────────────────
+
+# Matches a job ID line under `jobs:` in GitHub Actions.
+# e.g. "  build:" with leading whitespace.
+_JOB_RE = re.compile(r"^( {2,})(\w[\w-]*):\s*$", re.MULTILINE)
+
+
+@register("GHA-015")
+def _fix_gha015(content: str, finding: Finding) -> str | None:
+    """Insert ``timeout-minutes: 30`` into jobs that lack one.
+
+    Scans for job-level keys under ``jobs:`` and inserts the timeout
+    as the first property of each job that doesn't already have one.
+    Idempotent: skips jobs that already declare ``timeout-minutes``.
+    """
+    lines = content.splitlines(keepends=True)
+    in_jobs = False
+    result: list[str] = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.rstrip()
+        # Detect `jobs:` top-level key.
+        if re.match(r"^jobs\s*:", stripped):
+            in_jobs = True
+            result.append(line)
+            i += 1
+            continue
+        # Detect another top-level key (exits jobs block).
+        if in_jobs and re.match(r"^\S", stripped) and not stripped.startswith("#"):
+            in_jobs = False
+        if in_jobs:
+            m = _JOB_RE.match(line)
+            if m:
+                indent = m.group(1)
+                child_indent = indent + "  "
+                result.append(line)
+                i += 1
+                # Check if timeout-minutes already exists in this job.
+                has_timeout = False
+                j = i
+                while j < len(lines):
+                    next_line = lines[j]
+                    next_stripped = next_line.rstrip()
+                    # Another job or top-level key means we left this job.
+                    if next_stripped and not next_stripped.startswith("#"):
+                        # Is this at the same or lesser indent? That means a new job or key.
+                        line_indent = len(next_line) - len(next_line.lstrip())
+                        if line_indent <= len(indent) and next_stripped:
+                            break
+                    if "timeout-minutes" in next_line:
+                        has_timeout = True
+                        break
+                    j += 1
+                if not has_timeout:
+                    result.append(f"{child_indent}timeout-minutes: 30\n")
+                    changed = True
+                continue
+        result.append(line)
+        i += 1
+    if not changed:
+        return None
+    return "".join(result)

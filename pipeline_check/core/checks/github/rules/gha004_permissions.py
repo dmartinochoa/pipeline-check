@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
 
-
 RULE = Rule(
     id="GHA-004",
     title="Workflow has no explicit permissions block",

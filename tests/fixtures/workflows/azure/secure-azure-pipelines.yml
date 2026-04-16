@@ -15,12 +15,14 @@ stages:
   - stage: Build
     jobs:
       - job: BuildApp
+        timeoutInMinutes: 30
         container: py
         steps:
           - task: DotNetCoreCLI@2.210.0
             inputs:
               command: 'build'
           - script: BRANCH="$(Build.SourceBranchName)"
+          - script: trivy fs --severity HIGH .
           - script: syft . -o cyclonedx-json > sbom.json
           - script: cosign sign --yes "registry.example.com/app:$(Build.BuildId)"
 
@@ -28,6 +30,7 @@ stages:
     dependsOn: Build
     jobs:
       - deployment: DeployWeb
+        timeoutInMinutes: 15
         environment: production
         strategy:
           runOnce:

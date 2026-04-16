@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import re
 
-
 PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){0,2}|[0-9a-f]{40})$")
 FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest"})
 

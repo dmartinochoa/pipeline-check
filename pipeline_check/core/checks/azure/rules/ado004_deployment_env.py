@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
 
-
 RULE = Rule(
     id="ADO-004",
     title="Deployment job missing environment binding",

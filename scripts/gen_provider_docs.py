@@ -19,9 +19,8 @@ Usage
     python scripts/gen_provider_docs.py           # write every supported provider
     python scripts/gen_provider_docs.py github    # write just one provider
 
-Currently only providers that have been migrated to the per-rule-
-module layout (github) are supported. Other providers keep their
-hand-maintained docs until their check classes are split too.
+All five workflow providers (github, gitlab, bitbucket, azure,
+jenkins) are supported.
 """
 from __future__ import annotations
 
@@ -113,6 +112,75 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 ```
 """,
     ),
+    "azure": (
+        "Azure DevOps Pipelines",
+        "pipeline_check.core.checks.azure.rules",
+        _REPO_ROOT / "docs" / "providers" / "azure.md",
+        """\
+# Azure DevOps Pipelines provider
+
+Parses an `azure-pipelines.yml` from disk — no network calls, no ADO
+personal access token.
+
+## Producer workflow
+
+```bash
+# --azure-path is auto-detected when azure-pipelines.yml is present at cwd;
+# the CLI announces the pick on stderr.
+pipeline_check --pipeline azure
+
+# …or pass it explicitly.
+pipeline_check --pipeline azure --azure-path azure-pipelines.yml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Shape coverage
+
+The walker handles every layout ADO supports:
+
+- Flat single-job pipeline — top-level `steps:`
+- Single-stage multi-job — top-level `jobs:`
+- Multi-stage — `stages: → jobs: → steps:`
+- Deployment jobs — steps under
+  `strategy.{runOnce|rolling|canary}.{preDeploy|deploy|routeTraffic|postRouteTraffic}.steps`
+  and `strategy.*.on.{success|failure}.steps`.
+""",
+    ),
+    "jenkins": (
+        "Jenkins",
+        "pipeline_check.core.checks.jenkins.rules",
+        _REPO_ROOT / "docs" / "providers" / "jenkins.md",
+        """\
+# Jenkins provider
+
+Parses Jenkinsfile text — Declarative or Scripted Pipeline — without
+talking to a Jenkins controller. No Groovy interpreter, no plugin
+install, no API token.
+
+## Producer workflow
+
+```bash
+# --jenkinsfile-path is auto-detected when ./Jenkinsfile exists at cwd.
+pipeline_check --pipeline jenkins
+
+# …or pass it explicitly.
+pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
+
+# Scan a directory of multiple Jenkinsfiles (e.g. monorepo with per-app pipelines).
+pipeline_check --pipeline jenkins --jenkinsfile-path ci/
+```
+
+The loader recognises files named `Jenkinsfile` exactly, plus anything
+ending in `.jenkinsfile` or `.groovy`. It treats every file as text —
+no Groovy parsing — and applies the same regex-driven heuristics the
+other workflow providers use for `run:` blocks. False positives are
+intentional: better to flag and let the operator suppress than to
+miss a real injection because the parser couldn't follow a dynamic
+expression.
+""",
+    ),
 }
 
 
@@ -144,6 +212,8 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "github":    {"prefix": "GHA", "prefix_lc": "gha", "pkg": "github"},
     "gitlab":    {"prefix": "GL",  "prefix_lc": "gl",  "pkg": "gitlab"},
     "bitbucket": {"prefix": "BB",  "prefix_lc": "bb",  "pkg": "bitbucket"},
+    "azure":     {"prefix": "ADO", "prefix_lc": "ado", "pkg": "azure"},
+    "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
 }
 
 

@@ -15,10 +15,9 @@ import pytest
 from botocore.exceptions import ClientError
 
 from pipeline_check.core import providers as _providers
-from pipeline_check.core.scanner import Scanner
 from pipeline_check.core.checks.aws.base import Severity
+from pipeline_check.core.scanner import Scanner
 from tests.aws.conftest import make_paginator
-
 
 # ---------------------------------------------------------------------------
 # Helpers

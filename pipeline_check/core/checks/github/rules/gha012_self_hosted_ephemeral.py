@@ -7,7 +7,6 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
 
-
 RULE = Rule(
     id="GHA-012",
     title="Self-hosted runner without ephemeral marker",
@@ -50,7 +49,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 labels = [str(x) for x in ll]
             elif isinstance(ll, str):
                 labels = [ll]
-        label_set = {l.lower() for l in labels}
+        label_set = {lbl.lower() for lbl in labels}
         if "self-hosted" not in label_set:
             continue
         if "ephemeral" not in label_set:
