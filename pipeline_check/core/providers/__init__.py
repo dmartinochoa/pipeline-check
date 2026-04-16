@@ -14,7 +14,11 @@ from __future__ import annotations
 
 from .base import BaseProvider
 from .aws import AWSProvider
+from .azure import AzureProvider
+from .bitbucket import BitbucketProvider
 from .github import GitHubProvider
+from .gitlab import GitLabProvider
+from .jenkins import JenkinsProvider
 from .terraform import TerraformProvider
 
 _REGISTRY: dict[str, BaseProvider] = {}
@@ -41,3 +45,7 @@ def available() -> list[str]:
 register(AWSProvider())
 register(TerraformProvider())
 register(GitHubProvider())
+register(GitLabProvider())
+register(BitbucketProvider())
+register(AzureProvider())
+register(JenkinsProvider())

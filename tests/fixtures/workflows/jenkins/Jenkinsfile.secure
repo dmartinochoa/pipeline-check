@@ -1,0 +1,48 @@
+// Hardened equivalent of Jenkinsfile.insecure -- every JF-* check passes.
+@Library('shared-pipeline@v1.4.2') _
+
+pipeline {
+    agent {
+        // Pinned by sha256 digest -- JF-009 happy path.
+        docker { image 'maven@sha256:0000000000000000000000000000000000000000000000000000000000000001' }
+    }
+
+    options {
+        // JF-011 -- bound retention so old logs (and any leaked secrets
+        // they might contain) are pruned on a schedule.
+        buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90'))
+    }
+
+    environment {
+        // Credentials store reference, not a literal -- safe for JF-010.
+        AWS_PROFILE = credentials('aws-prod-profile')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Single-quoted -- Groovy doesn't interpolate, so $BRANCH_NAME
+                // is read at shell expansion time after withEnv quoting.
+                withEnv(["BRANCH=${env.BRANCH_NAME}"]) {
+                    sh 'echo "Building branch $BRANCH"'
+                    sh 'make build'
+                }
+                sh 'syft . -o cyclonedx-json > sbom.json'
+                sh 'cosign sign --yes registry.example.com/app:$BUILD_TAG'
+            }
+        }
+
+        stage('Deploy to production') {
+            input {
+                message 'Promote to prod?'
+                submitter 'releasers'
+            }
+            steps {
+                // OIDC-backed AWS plugin; no static credentials.
+                withAWS(role: 'arn:aws:iam::111122223333:role/jenkins-prod') {
+                    sh 'make deploy'
+                }
+            }
+        }
+    }
+}

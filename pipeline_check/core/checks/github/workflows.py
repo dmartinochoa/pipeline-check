@@ -5,13 +5,17 @@ GHA-002  pull_request_target checks out PR head         CRITICAL  CICD-SEC-4
 GHA-003  Script injection via untrusted context         HIGH      CICD-SEC-4
 GHA-004  Workflow has no explicit permissions block     MEDIUM    CICD-SEC-5
 GHA-005  AWS auth uses long-lived access keys           MEDIUM    CICD-SEC-6
+GHA-006  Artifacts not signed (no cosign/sigstore step) MEDIUM    ESF-D-SIGN-ARTIFACTS
+GHA-007  SBOM not produced (no CycloneDX/syft step)     MEDIUM    ESF-D-SBOM
+GHA-008  Credential-shaped literal in workflow body     CRITICAL  CICD-SEC-6
 """
 from __future__ import annotations
 
 import re
 from typing import Any
 
-from ..base import Finding, Severity
+from .._secrets import find_secret_values
+from ..base import Finding, Severity, has_sbom, has_signing, is_quoted_assignment
 from .base import GitHubBaseCheck, iter_jobs, iter_steps, workflow_triggers
 
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -53,7 +57,103 @@ class WorkflowChecks(GitHubBaseCheck):
             self._gha003_script_injection(path, wf),
             self._gha004_permissions(path, wf),
             self._gha005_aws_long_lived(path, wf),
+            self._gha006_signing(path, wf),
+            self._gha007_sbom(path, wf),
+            self._gha008_literal_secrets(path, wf),
         ]
+
+    # ------------------------------------------------------------------
+    # GHA-008 — credential-shaped literal anywhere in the workflow
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gha008_literal_secrets(path: str, wf: dict[str, Any]) -> Finding:
+        hits = find_secret_values(wf)
+        passed = not hits
+        desc = (
+            "No string in the workflow matches a known credential pattern."
+            if passed else
+            f"Workflow contains {len(hits)} literal value(s) matching known "
+            f"credential patterns (AWS keys, GitHub tokens, Slack tokens, JWTs): "
+            f"{', '.join(hits[:5])}{'…' if len(hits) > 5 else ''}. "
+            f"Secrets committed to YAML are visible in every fork and in every "
+            f"build log, and must be considered compromised."
+        )
+        return Finding(
+            check_id="GHA-008",
+            title="Credential-shaped literal in workflow body",
+            severity=Severity.CRITICAL,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Rotate the exposed credential immediately. Move the value to "
+                "an encrypted repository or environment secret and reference "
+                "it via `${{ secrets.NAME }}`. For cloud access, prefer OIDC "
+                "federation over long-lived keys."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # GHA-006 — artifact signing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gha006_signing(path: str, wf: dict[str, Any]) -> Finding:
+        passed = has_signing(wf)
+        desc = (
+            "Workflow invokes a signing tool (cosign / sigstore / slsa-github-"
+            "generator / notation)."
+            if passed else
+            "Workflow produces build artifacts but does not invoke any "
+            "signing tool (cosign, sigstore, slsa-github-generator, notation). "
+            "Unsigned artifacts cannot be verified downstream, so a tampered "
+            "build is indistinguishable from a legitimate one."
+        )
+        return Finding(
+            check_id="GHA-006",
+            title="Artifacts not signed (no cosign/sigstore step)",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add a signing step — e.g. `sigstore/cosign-installer` followed "
+                "by `cosign sign`, or `slsa-framework/slsa-github-generator` for "
+                "keyless SLSA provenance. Publish the signature alongside the "
+                "artifact and verify it at consumption time."
+            ),
+            passed=passed,
+        )
+
+    # ------------------------------------------------------------------
+    # GHA-007 — SBOM generation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _gha007_sbom(path: str, wf: dict[str, Any]) -> Finding:
+        passed = has_sbom(wf)
+        desc = (
+            "Workflow produces an SBOM (CycloneDX / syft / anchore / Trivy-SBOM)."
+            if passed else
+            "Workflow does not produce a software bill of materials (SBOM). "
+            "Without an SBOM, downstream consumers cannot audit the exact set "
+            "of dependencies shipped in the artifact, delaying vulnerability "
+            "response when a transitive dep is disclosed."
+        )
+        return Finding(
+            check_id="GHA-007",
+            title="SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)",
+            severity=Severity.MEDIUM,
+            resource=path,
+            description=desc,
+            recommendation=(
+                "Add an SBOM generation step — `anchore/sbom-action`, "
+                "`syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or "
+                "Microsoft's `sbom-tool`. Attach the SBOM to the release so "
+                "consumers can ingest it into their vuln-management pipeline."
+            ),
+            passed=passed,
+        )
 
     # ------------------------------------------------------------------
     # GHA-001 — pin actions by SHA
@@ -163,7 +263,14 @@ class WorkflowChecks(GitHubBaseCheck):
                 run = step.get("run")
                 if not isinstance(run, str):
                     continue
-                if _UNTRUSTED_CONTEXT_RE.search(run):
+                # Skip lines that are the safe idiom
+                # ``VAR="${{ github.event.title }}"`` — the assignment
+                # captures the value but never executes it. Matches
+                # the behaviour GitLab / Bitbucket / Azure already have.
+                if _UNTRUSTED_CONTEXT_RE.search(run) and not all(
+                    is_quoted_assignment(line) for line in run.splitlines()
+                    if _UNTRUSTED_CONTEXT_RE.search(line)
+                ):
                     offenders.append(f"{job_id}[{idx}]")
         passed = not offenders
         desc = (

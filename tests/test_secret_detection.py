@@ -1,0 +1,220 @@
+"""Per-detector tests for the expanded secret catalogue, plus the
+placeholder-suppression and PEM-block-detection layers.
+
+Each ``DETECTOR`` entry pairs a detector name with a positive token
+(real-shape) and a negative token (similar but doesn't match the
+contract). The negative cases protect against false positives the
+loose original alternation might have produced.
+"""
+from __future__ import annotations
+
+import pytest
+
+from pipeline_check.core.checks import _secrets as secrets_mod
+
+
+@pytest.fixture(autouse=True)
+def _clean_user_patterns():
+    secrets_mod.reset_patterns()
+    yield
+    secrets_mod.reset_patterns()
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Per-detector positive cases
+# ──────────────────────────────────────────────────────────────────────
+#
+# Each entry: (detector_name, real-shape token).
+# Tokens are FAKE — chosen to match the published shape but not be a
+# usable credential. They are length-correct so the pattern fires.
+# Tokens use varied characters because the placeholder filter
+# (intentionally) treats any run of 5+ identical letters as a doc
+# redaction marker — a "real" key has more entropy than a wall of one
+# character. These are still FAKE; just shaped like a real key would
+# be after a vendor's RNG ran.
+_FILLER = "0123456789abcdefghijABCDEFGHIJ" * 10  # plenty of variety
+
+DETECTORS: list[tuple[str, str]] = [
+    ("aws_access_key",        "AKIAIOSFODNN7EXAMPLE"),
+    ("aws_access_key",        "ASIAIOSFODNN7EXAMPLE"),
+    ("github_token",          "ghp_" + _FILLER[:40]),
+    ("github_token",          "gho_" + _FILLER[:36]),
+    ("slack_token",           "xoxb-1234567890123-1234567890123"),
+    ("jwt",                   "eyJabcdefghij.eyJklmnopqrst.signaturesignaturex"),
+    ("stripe_secret",         "sk_live_" + _FILLER[:30]),
+    ("stripe_secret",         "sk_test_" + _FILLER[:24]),
+    ("stripe_secret",         "rk_live_" + _FILLER[:26]),
+    ("stripe_publishable",    "pk_live_" + _FILLER[:24]),
+    ("google_api_key",        "AIza" + _FILLER[:35]),
+    ("npm_token",             "npm_" + _FILLER[:36]),
+    ("pypi_token",            "pypi-AgEIcHlwaS5vcmc" + _FILLER[:50]),
+    ("docker_hub_pat",        "dckr_pat_" + _FILLER[:28]),
+    ("gitlab_pat",            "glpat-abcdefghij1234567890"),
+    ("gitlab_deploy_token",   "gldt-" + "1234567890ABCDEFghij"),
+    ("sendgrid",              "SG." + _FILLER[:22] + "." + _FILLER[:43]),
+    ("anthropic_api_key",     "sk-ant-api03-" + _FILLER[:95]),
+    ("digitalocean_token",    "dop_v1_" + ("0123456789abcdef" * 4)),
+    ("hashicorp_vault",       "hvs." + _FILLER[:30]),
+]
+
+
+@pytest.mark.parametrize("name,token", DETECTORS, ids=[f"{n}-{i}" for i, (n, _) in enumerate(DETECTORS)])
+def test_detector_fires_on_real_shape_token(name, token):
+    """Every built-in detector must fire on a token matching its
+    published shape, and the resulting hit must carry the detector's
+    label so consumers can group by type."""
+    hits = secrets_mod.find_secret_values({"k": token})
+    assert hits, f"detector {name!r} did not fire on {token[:12]}…"
+    assert any(h.startswith(f"{name}:") for h in hits), (
+        f"hit label missing detector name {name!r}; got {hits}"
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Per-detector negative cases — values that LOOK similar but shouldn't
+# match the corresponding detector. Catches loose anchoring.
+# ──────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("token,reason", [
+    ("AKIASHORTKEY",                       "AWS access key needs 16 trailing chars"),
+    ("ghp_short",                          "GitHub PAT needs 36+ chars after prefix"),
+    ("xoxb-",                              "Slack token needs payload after the dash"),
+    ("eyJ.foo.bar",                        "JWT segments need 10+ chars each"),
+    ("sk_live_short",                      "Stripe key needs 24+ payload chars"),
+    ("AIzaTooShort",                       "Google API key requires exactly 35 trailing chars"),
+    ("npm_only_24_chars_aaaaaaa",          "npm token requires exactly 36 trailing chars"),
+    ("dckr_pat_short",                     "Docker Hub PAT needs 20+ chars after prefix"),
+    ("glpat-tooshort",                     "GitLab PAT requires exactly 20 trailing chars"),
+    ("dop_v1_short",                       "DigitalOcean token needs 64 hex chars"),
+    ("hvs.x",                              "Vault token needs 24+ chars after prefix"),
+])
+def test_detectors_reject_undersized_tokens(token, reason):
+    """Loose detector regexes are a constant source of false positives.
+    Each near-miss above must NOT fire any built-in detector."""
+    hits = secrets_mod.find_secret_values({"k": token})
+    assert hits == [], f"unexpected hit for {token!r}; reason: {reason}; hits={hits}"
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Placeholder suppression
+# ──────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("token", [
+    "AKIAXXXXXXXXXXXXXXXX",        # docs redaction, AWS-shape
+    "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # GitHub-shape redaction
+    "AKIAYOUR_KEY_HERE_ABCD",      # YOUR_KEY marker
+    "ghp_replace_me_with_real_pat_aaaaaaaaaaa",  # replace_me
+    "<your-aws-key-id>",            # angle-bracketed placeholder
+    "AKIA_DUMMY_KEY_HERE_AB",       # dummy_key
+])
+def test_placeholder_tokens_are_suppressed(token):
+    """Documentation placeholders that happen to match a credential
+    shape must NOT be emitted as findings — they're noise."""
+    hits = secrets_mod.find_secret_values({"k": token})
+    assert hits == [], (
+        f"placeholder {token!r} should not have produced a hit; got {hits}"
+    )
+
+
+def test_aws_canonical_example_is_still_flagged():
+    """``AKIAIOSFODNN7EXAMPLE`` is the canonical AWS docs example. It
+    is DELIBERATELY left in the flag set — if it shows up in a real
+    workflow it almost certainly means someone copy-pasted from docs
+    and forgot to substitute. That's exactly the case the scanner
+    exists to catch."""
+    hits = secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})
+    assert hits and hits[0].startswith("aws_access_key:")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Multi-line PEM-block detection
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_pem_block_detection_fires_on_begin_marker():
+    pem = (
+        "-----BEGIN RSA PRIVATE KEY-----\n"
+        "MIIEpAIBAAKCAQEA1234567890abcdefghij\n"
+        "-----END RSA PRIVATE KEY-----\n"
+    )
+    hits = secrets_mod.find_secret_values({"key": pem})
+    assert any(h.startswith("private_key:") for h in hits), (
+        f"PEM block did not produce a private_key hit; got {hits}"
+    )
+
+
+def test_pem_block_label_includes_key_kind():
+    """The label embeds the BEGIN-marker kind so report consumers can
+    distinguish RSA / EC / OPENSSH / etc. private keys."""
+    pem_rsa = "-----BEGIN RSA PRIVATE KEY-----\nbody\n-----END RSA PRIVATE KEY-----"
+    pem_ec  = "-----BEGIN EC PRIVATE KEY-----\nbody\n-----END EC PRIVATE KEY-----"
+    rsa_hits = secrets_mod.find_secret_values({"k": pem_rsa})
+    ec_hits  = secrets_mod.find_secret_values({"k": pem_ec})
+    assert any("rsa_private_key" in h for h in rsa_hits)
+    assert any("ec_private_key" in h for h in ec_hits)
+
+
+def test_pem_block_dedup_within_one_doc():
+    """Two PEM blocks of the same kind in one doc collapse to a single
+    hit — the operator already knows the file is leaking; spamming
+    them with N hits per file isn't useful."""
+    pem = "-----BEGIN PRIVATE KEY-----\nbody\n-----END PRIVATE KEY-----"
+    hits = secrets_mod.find_secret_values({"k1": pem, "k2": pem})
+    pk_hits = [h for h in hits if h.startswith("private_key:")]
+    assert len(pk_hits) == 1
+
+
+def test_pem_body_does_not_emit_token_hits():
+    """The base64 body of a PEM block must NOT also trigger token
+    detectors — that would double-report the same secret with noisy
+    false-positive labels."""
+    pem = (
+        "-----BEGIN PRIVATE KEY-----\n"
+        "MIIEpAIBAAKCAQEA" + "x" * 200 + "\n"
+        "-----END PRIVATE KEY-----\n"
+    )
+    hits = secrets_mod.find_secret_values({"k": pem})
+    # Exactly one private_key hit; nothing else.
+    assert len(hits) == 1
+    assert hits[0].startswith("private_key:")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Hit-label format invariants
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_hit_label_format_is_detector_then_redacted():
+    """Stable contract: ``<detector>:<redacted-value>``. Reports and
+    ignore-rule tooling parse these by splitting on the first ``:``."""
+    hits = secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})
+    assert hits
+    name, _, redacted = hits[0].partition(":")
+    assert name == "aws_access_key"
+    # Redaction shape: first 4 + ellipsis + last 2.
+    assert redacted.startswith("AKIA")
+    assert redacted.endswith("LE")
+    assert "…" in redacted
+
+
+def test_user_pattern_uses_custom_label():
+    """User-registered patterns share a single ``custom`` label so
+    operators can write a blanket ``custom:*`` ignore for all
+    org-specific patterns when needed."""
+    secrets_mod.register_pattern(r"^acme_[a-f0-9]{32}$")
+    hits = secrets_mod.find_secret_values({
+        "k": "acme_deadbeefcafebabe0123456789abcdef"
+    })
+    assert hits
+    assert hits[0].startswith("custom:")
+
+
+def test_dedup_within_doc():
+    """Repeated occurrences of the same token collapse to one hit."""
+    hits = secrets_mod.find_secret_values({
+        "a": "AKIAIOSFODNN7EXAMPLE",
+        "b": "AKIAIOSFODNN7EXAMPLE",
+    })
+    assert len(hits) == 1

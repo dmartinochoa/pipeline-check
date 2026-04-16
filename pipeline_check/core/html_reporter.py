@@ -154,8 +154,94 @@ details[open] > summary::before { transform: rotate(90deg); }
   padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
 }
 
+/* ── Filter bar ── */
+.filter-bar {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 14px;
+  display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px;
+}
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-group label { font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.filter-group select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: var(--card); }
+.filter-group input[type=text] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; min-width: 180px; }
+.filter-count { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+/* ── Copy-ignore button ── */
+.copy-ignore-btn {
+  float: right; margin-left: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer;
+  color: var(--muted); font-family: monospace;
+}
+.copy-ignore-btn:hover { background: var(--row-hover); }
+.copy-ignore-btn.copied { background: #e6f4ec; color: #198754; border-color: #198754; }
+
 /* ── Footer ── */
 footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px; }
+"""
+
+
+_SCRIPT = r"""
+(function () {
+  const rows = document.querySelectorAll('tbody tr[data-check-id]');
+  const sev = document.getElementById('f-sev');
+  const std = document.getElementById('f-std');
+  const prov = document.getElementById('f-prov');
+  const stat = document.getElementById('f-status');
+  const text = document.getElementById('f-text');
+  const count = document.getElementById('f-count');
+
+  function visibleCount() {
+    let n = 0;
+    rows.forEach(r => { if (r.style.display !== 'none') n++; });
+    count.textContent = n + ' shown';
+  }
+
+  function apply() {
+    const want_sev  = sev.value;
+    const want_std  = std.value;
+    const want_prov = prov.value;
+    const want_stat = stat.value;
+    const needle    = text.value.toLowerCase().trim();
+    rows.forEach(r => {
+      const rsev  = r.dataset.severity;
+      const rstds = (r.dataset.standards || '').split(',');
+      const rprov = r.dataset.provider;
+      const rstat = r.dataset.status;
+      const hay   = (r.dataset.haystack || '').toLowerCase();
+      let ok = true;
+      if (want_sev  && rsev  !== want_sev)  ok = false;
+      if (want_std  && !rstds.includes(want_std)) ok = false;
+      if (want_prov && rprov !== want_prov) ok = false;
+      if (want_stat && rstat !== want_stat) ok = false;
+      if (needle && !hay.includes(needle))  ok = false;
+      r.style.display = ok ? '' : 'none';
+    });
+    visibleCount();
+  }
+
+  [sev, std, prov, stat].forEach(el => el.addEventListener('change', apply));
+  text.addEventListener('input', apply);
+  visibleCount();
+
+  document.querySelectorAll('.copy-ignore-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const rule = btn.dataset.rule;
+      try {
+        await navigator.clipboard.writeText(rule);
+        btn.textContent = '✓ copied';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = btn.dataset.label;
+          btn.classList.remove('copied');
+        }, 1500);
+      } catch (err) {
+        console.warn('clipboard failed', err);
+      }
+    });
+  });
+})();
 """
 
 
@@ -164,7 +250,13 @@ footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px
 # ---------------------------------------------------------------------------
 
 def _load_rules() -> dict[str, dict]:
-    """Load YAML rule definitions indexed by check_id. Returns {} if unavailable."""
+    """Load YAML rule definitions indexed by check_id. Returns {} if unavailable.
+
+    Parse errors are logged to stderr rather than silently swallowed —
+    a malformed rule YAML is a real maintenance problem that should be
+    visible to the operator, even if we still render the report.
+    """
+    import sys
     if not _YAML_AVAILABLE or not _RULES_DIR.exists():
         return {}
     rules: dict[str, dict] = {}
@@ -172,12 +264,16 @@ def _load_rules() -> dict[str, dict]:
         try:
             with yml_path.open(encoding="utf-8") as fh:
                 data = _yaml.safe_load(fh)
-            if isinstance(data, list):
-                for entry in data:
-                    if isinstance(entry, dict) and "id" in entry:
-                        rules[entry["id"]] = entry
-        except Exception:
+        except (OSError, _yaml.YAMLError) as exc:
+            print(
+                f"[html-reporter] could not load rule file {yml_path}: {exc}",
+                file=sys.stderr,
+            )
             continue
+        if isinstance(data, list):
+            for entry in data:
+                if isinstance(entry, dict) and "id" in entry:
+                    rules[entry["id"]] = entry
     return rules
 
 
@@ -215,6 +311,19 @@ def _severity_summary_html(summary: dict) -> str:
             f'</div>'
         )
     return f'<div class="sev-row">{"".join(pills)}</div>'
+
+
+_PROVIDER_PREFIXES = {
+    "GHA": "github", "GL": "gitlab", "BB": "bitbucket", "ADO": "azure",
+    "CB": "aws", "CP": "aws", "CD": "aws", "IAM": "aws", "S3": "aws",
+    "ECR": "aws", "PBAC": "aws",
+    "TF": "terraform",
+}
+
+
+def _provider_for(check_id: str) -> str:
+    prefix = check_id.split("-", 1)[0].upper()
+    return _PROVIDER_PREFIXES.get(prefix, "other")
 
 
 def _finding_row(finding: Finding, rule: dict) -> str:
@@ -281,19 +390,76 @@ def _finding_row(finding: Finding, rule: dict) -> str:
 
     detail_html = "".join(sections)
 
+    standards = sorted({c.standard for c in finding.controls})
+    provider = _provider_for(finding.check_id)
+    status = "fail" if not finding.passed else "pass"
+    # Haystack for free-text filter; include the visible summary text
+    # but NOT the detail sections (keeps matches predictable).
+    haystack = f"{finding.check_id} {finding.title} {finding.resource}".lower()
+    # Ignore-rule the copy button will drop into the clipboard:
+    # ``CHECK_ID:RESOURCE`` — the flat format the gate accepts.
+    ignore_rule = f"{finding.check_id}:{finding.resource}"
+
     return (
-        f'<tr class="{row_cls}">'
+        f'<tr class="{row_cls}" '
+        f'data-check-id="{_e(finding.check_id)}" '
+        f'data-severity="{_e(finding.severity.value)}" '
+        f'data-standards="{_e(",".join(standards))}" '
+        f'data-provider="{_e(provider)}" '
+        f'data-status="{status}" '
+        f'data-haystack="{_e(haystack)}">'
         f'<td class="td-id"><span class="check-id">{_e(finding.check_id)}</span></td>'
         f'<td>{_severity_badge(finding.severity)}</td>'
         f'<td>{_status_badge(finding.passed)}</td>'
         f'<td><span class="resource">{_e(finding.resource)}</span></td>'
         f'<td>'
         f'<details>'
-        f'<summary>{_e(finding.title)}</summary>'
+        f'<summary>{_e(finding.title)}'
+        f'<button class="copy-ignore-btn" '
+        f'data-rule="{_e(ignore_rule)}" '
+        f'data-label="copy ignore">copy ignore</button>'
+        f'</summary>'
         f'<div class="check-detail">{detail_html}</div>'
         f'</details>'
         f'</td>'
         f'</tr>\n'
+    )
+
+
+def _filter_bar_html(findings: list[Finding]) -> str:
+    """Render the dropdowns with only the options present in the results."""
+    severities_present = sorted(
+        {f.severity.value for f in findings},
+        key=lambda s: -severity_rank(Severity(s)),
+    )
+    standards_present = sorted({c.standard for f in findings for c in f.controls})
+    providers_present = sorted({_provider_for(f.check_id) for f in findings})
+
+    def _opts(values: list[str], label: str) -> str:
+        opts = f'<option value="">All {label}</option>'
+        for v in values:
+            opts += f'<option value="{_e(v)}">{_e(v)}</option>'
+        return opts
+
+    return (
+        '<div class="filter-bar">'
+        '<div class="filter-group"><label>Severity</label>'
+        f'<select id="f-sev">{_opts(severities_present, "severities")}</select></div>'
+        '<div class="filter-group"><label>Standard</label>'
+        f'<select id="f-std">{_opts(standards_present, "standards")}</select></div>'
+        '<div class="filter-group"><label>Provider</label>'
+        f'<select id="f-prov">{_opts(providers_present, "providers")}</select></div>'
+        '<div class="filter-group"><label>Status</label>'
+        '<select id="f-status">'
+        '<option value="">All</option>'
+        '<option value="fail">Fail</option>'
+        '<option value="pass">Pass</option>'
+        '</select></div>'
+        '<div class="filter-group">'
+        '<input id="f-text" type="text" placeholder="Filter by id, title, resource..." />'
+        '</div>'
+        '<span class="filter-count" id="f-count"></span>'
+        '</div>'
     )
 
 
@@ -340,6 +506,7 @@ def report_html(
 
     rows_html = "".join(_finding_row(f, rules.get(f.check_id, {})) for f in sorted_findings)
     summary_html = _severity_summary_html(summary)
+    filter_bar_html = _filter_bar_html(findings)
 
     content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -377,6 +544,8 @@ def report_html(
     </div>
   </div>
 
+  {filter_bar_html}
+
   <table class="findings-table">
     <thead>
       <tr>
@@ -396,6 +565,7 @@ def report_html(
   <p>Generated by <strong>PipelineCheck</strong> &mdash; OWASP Top 10 CI/CD Security Risks</p>
 </footer>
 
+<script>{_SCRIPT}</script>
 </body>
 </html>"""
 

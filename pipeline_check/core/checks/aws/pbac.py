@@ -15,7 +15,7 @@ class PBACChecks(AWSBaseCheck):
     """Runs PBAC-XXX checks across every CodeBuild project in the region."""
 
     def run(self) -> list[Finding]:
-        client = self.session.client("codebuild")
+        client = self.client("codebuild")
 
         try:
             project_names = self._list_projects(client)

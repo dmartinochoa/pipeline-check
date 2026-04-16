@@ -1,0 +1,38 @@
+# Hardened equivalent of insecure-azure-pipelines.yml — every ADO-* passes.
+trigger:
+  - main
+
+variables:
+  - name: buildConfiguration
+    value: Release
+
+resources:
+  containers:
+    - container: py
+      image: python@sha256:0000000000000000000000000000000000000000000000000000000000000004
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildApp
+        container: py
+        steps:
+          - task: DotNetCoreCLI@2.210.0
+            inputs:
+              command: 'build'
+          - script: BRANCH="$(Build.SourceBranchName)"
+          - script: syft . -o cyclonedx-json > sbom.json
+          - script: cosign sign --yes "registry.example.com/app:$(Build.BuildId)"
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: DeployWeb
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1.200.0
+                  inputs:
+                    appName: 'my-web-app'

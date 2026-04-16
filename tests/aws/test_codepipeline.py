@@ -177,7 +177,12 @@ class TestErrorHandling:
         client.get_pipeline.side_effect = _client_error()
 
         findings = CodePipelineChecks(session).run()
-        assert findings == []
+        # Degraded-mode CP-000 finding surfaces the skipped pipeline,
+        # so the operator can tell the silence apart from a real pass.
+        assert len(findings) == 1
+        assert findings[0].check_id == "CP-000"
+        assert "bad-pipe" in findings[0].resource
+        assert not findings[0].passed
 
     def test_target_flag_skips_list_pipelines(self):
         """When target is set the list_pipelines call should be skipped entirely."""

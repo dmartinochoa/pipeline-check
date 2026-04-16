@@ -11,7 +11,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 |-------------|--------|---------------------------------------------------------|--------------------------------|
 | `aws`       | stable | `boto3.Session` — live AWS account                      | [aws.md](aws.md)               |
 | `terraform` | stable | `TerraformContext` — parsed `terraform show -json` plan | [terraform.md](terraform.md)   |
-| `github`    | stable | `GitHubContext` — parsed workflow YAML from disk        | [github.md](github.md)         |
+| `github`    | stable | `GitHubContext` — parsed GitHub Actions workflow YAML   | [github.md](github.md)         |
+| `gitlab`    | stable | `GitLabContext` — parsed `.gitlab-ci.yml`               | [gitlab.md](gitlab.md)         |
+| `bitbucket` | stable | `BitbucketContext` — parsed `bitbucket-pipelines.yml`   | [bitbucket.md](bitbucket.md)   |
+| `azure`     | stable | `AzureContext` — parsed `azure-pipelines.yml`           | [azure.md](azure.md)           |
+| `jenkins`   | stable | `JenkinsContext` — parsed `Jenkinsfile` text            | [jenkins.md](jenkins.md)       |
 
 ## Adding a new provider
 

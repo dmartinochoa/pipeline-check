@@ -47,7 +47,11 @@ class GitHubContext:
         workflows: list[Workflow] = []
         for f in files:
             try:
-                data = yaml.safe_load(f.read_text(encoding="utf-8"))
+                text = f.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            try:
+                data = yaml.safe_load(text)
             except yaml.YAMLError:
                 continue
             if not isinstance(data, dict):

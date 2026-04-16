@@ -19,41 +19,20 @@ and the ``managed_policy_arns`` attribute on the role.
 """
 from __future__ import annotations
 
-import json
 from typing import Iterable
 
 from .base import TerraformBaseCheck, TerraformResource
 from ..base import Finding, Severity
-
-_CICD_SERVICE_PRINCIPALS = {
-    "codebuild.amazonaws.com",
-    "codepipeline.amazonaws.com",
-    "codedeploy.amazonaws.com",
-}
-
-_ADMIN_POLICY_ARN = "arn:aws:iam::aws:policy/AdministratorAccess"
-
-# Actions that are high-risk when paired with an unscoped Resource.
-# A scoped action over Resource:"*" is the classic "least-privilege theatre"
-# finding that IAM-002 (which only catches Action:"*") misses.
-_SENSITIVE_ACTION_PREFIXES = (
-    "s3:", "kms:", "secretsmanager:", "ssm:", "iam:", "sts:",
-    "dynamodb:", "lambda:", "ec2:",
+from .._iam_policy import (
+    ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
+    CICD_SERVICE_PRINCIPALS as _CICD_SERVICE_PRINCIPALS,
+    as_list as _as_list,
+    has_wildcard_action as _has_wildcard_action,
+    iter_allow as _iter_allow_statements,
+    parse_doc as _parse,
+    passrole_wildcard as _statements_with_passrole_wildcard,
+    sensitive_wildcard as _sensitive_wildcard_resource,
 )
-_SENSITIVE_ACTION_EXACT = {
-    "*",  # handled by IAM-002 but included for completeness
-}
-
-
-def _parse(raw) -> dict:
-    if not raw:
-        return {}
-    if isinstance(raw, dict):
-        return raw
-    try:
-        return json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
-        return {}
 
 
 def _role_is_cicd(values: dict) -> bool:
@@ -66,59 +45,6 @@ def _role_is_cicd(values: dict) -> bool:
         if any(s in _CICD_SERVICE_PRINCIPALS for s in services):
             return True
     return False
-
-
-def _iter_allow_statements(doc: dict) -> Iterable[dict]:
-    for stmt in doc.get("Statement", []):
-        if stmt.get("Effect") == "Allow":
-            yield stmt
-
-
-def _as_list(v) -> list:
-    if v is None:
-        return []
-    return v if isinstance(v, list) else [v]
-
-
-def _has_wildcard_action(doc: dict) -> bool:
-    for stmt in _iter_allow_statements(doc):
-        if "*" in _as_list(stmt.get("Action")):
-            return True
-    return False
-
-
-def _statements_with_passrole_wildcard(doc: dict) -> bool:
-    for stmt in _iter_allow_statements(doc):
-        actions = _as_list(stmt.get("Action"))
-        if not any(
-            a == "iam:PassRole" or a == "iam:*" or a == "*"
-            for a in actions
-        ):
-            continue
-        resources = _as_list(stmt.get("Resource"))
-        if "*" in resources:
-            return True
-    return False
-
-
-def _sensitive_wildcard_resource(doc: dict) -> list[str]:
-    """Return sensitive actions that are paired with Resource:'*'."""
-    hits: list[str] = []
-    for stmt in _iter_allow_statements(doc):
-        actions = _as_list(stmt.get("Action"))
-        # IAM-002 already covers Action:"*" — don't double-report here.
-        if "*" in actions:
-            continue
-        resources = _as_list(stmt.get("Resource"))
-        if "*" not in resources:
-            continue
-        for a in actions:
-            if isinstance(a, str) and (
-                a.startswith(_SENSITIVE_ACTION_PREFIXES)
-                or a in _SENSITIVE_ACTION_EXACT
-            ):
-                hits.append(a)
-    return hits
 
 
 class IAMChecks(TerraformBaseCheck):

@@ -15,73 +15,25 @@ version (for commonly-problematic managed policies).
 from __future__ import annotations
 
 import json
-from typing import Iterable
 
 from botocore.exceptions import ClientError
 
 from .base import AWSBaseCheck, Finding, Severity
-
-_CICD_SERVICE_PRINCIPALS = {
-    "codebuild.amazonaws.com",
-    "codepipeline.amazonaws.com",
-    "codedeploy.amazonaws.com",
-}
-
-_ADMIN_POLICY_ARN = "arn:aws:iam::aws:policy/AdministratorAccess"
-
-_SENSITIVE_ACTION_PREFIXES = (
-    "s3:", "kms:", "secretsmanager:", "ssm:", "iam:", "sts:",
-    "dynamodb:", "lambda:", "ec2:",
+from .._iam_policy import (
+    ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
+    CICD_SERVICE_PRINCIPALS as _CICD_SERVICE_PRINCIPALS,
+    as_list as _as_list,
+    has_wildcard_action as _has_wildcard_action,
+    iter_allow as _iter_allow,
+    passrole_wildcard as _passrole_wildcard,
+    sensitive_wildcard as _sensitive_wildcard,
 )
-
-
-def _as_list(v) -> list:
-    if v is None:
-        return []
-    return v if isinstance(v, list) else [v]
-
-
-def _iter_allow(doc: dict) -> Iterable[dict]:
-    for stmt in doc.get("Statement", []):
-        if stmt.get("Effect") == "Allow":
-            yield stmt
-
-
-def _has_wildcard_action(doc: dict) -> bool:
-    for stmt in _iter_allow(doc):
-        if "*" in _as_list(stmt.get("Action")):
-            return True
-    return False
-
-
-def _passrole_wildcard(doc: dict) -> bool:
-    for stmt in _iter_allow(doc):
-        actions = _as_list(stmt.get("Action"))
-        if not any(a in ("iam:PassRole", "iam:*", "*") for a in actions):
-            continue
-        if "*" in _as_list(stmt.get("Resource")):
-            return True
-    return False
-
-
-def _sensitive_wildcard(doc: dict) -> list[str]:
-    hits: list[str] = []
-    for stmt in _iter_allow(doc):
-        actions = _as_list(stmt.get("Action"))
-        if "*" in actions:
-            continue  # IAM-002 handles this
-        if "*" not in _as_list(stmt.get("Resource")):
-            continue
-        for a in actions:
-            if isinstance(a, str) and a.startswith(_SENSITIVE_ACTION_PREFIXES):
-                hits.append(a)
-    return hits
 
 
 class IAMChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
-        client = self.session.client("iam")
+        client = self.client("iam")
         try:
             roles = self._list_cicd_roles(client)
         except ClientError as exc:

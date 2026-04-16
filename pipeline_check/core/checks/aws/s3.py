@@ -24,7 +24,7 @@ class S3Checks(AWSBaseCheck):
         if not buckets:
             return []
 
-        s3 = self.session.client("s3")
+        s3 = self.client("s3")
         findings: list[Finding] = []
         for bucket in buckets:
             findings.extend(self._check_bucket(s3, bucket))
@@ -37,7 +37,7 @@ class S3Checks(AWSBaseCheck):
         otherwise all pipelines in the region are enumerated.
         """
         buckets: set[str] = set()
-        cp = self.session.client("codepipeline")
+        cp = self.client("codepipeline")
 
         def _extract_buckets(pipeline: dict) -> None:
             store = pipeline.get("artifactStore", {})

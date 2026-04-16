@@ -6,6 +6,11 @@ network calls, no GitHub API token, no installed Actions runner required.
 ## Producer workflow
 
 ```bash
+# --gha-path is auto-detected when .github/workflows exists at cwd;
+# the CLI announces the pick on stderr.
+pipeline_check --pipeline github
+
+# …or pass it explicitly.
 pipeline_check --pipeline github --gha-path .github/workflows
 ```
 
@@ -27,6 +32,9 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GHA-003  | Script injection via untrusted context          | HIGH     |
 | GHA-004  | Workflow has no explicit permissions block      | MEDIUM   |
 | GHA-005  | AWS auth uses long-lived access keys            | MEDIUM   |
+| GHA-006  | Artifacts not signed (no cosign/sigstore step)  | MEDIUM   |
+| GHA-007  | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | MEDIUM |
+| GHA-008  | Credential-shaped literal in workflow body      | CRITICAL |
 
 ---
 
@@ -103,6 +111,25 @@ short-lived credentials per workflow run.
 - Remove the static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY repository
   secrets once OIDC is in place.
 
+## GHA-008 — Credential-shaped literal in workflow body
+**Severity:** CRITICAL · CICD-SEC-6 Insufficient Credential Hygiene
+
+Every string in the workflow is scanned against a set of credential
+patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, …).
+A match means a secret was pasted into YAML — the value is visible
+in every fork and every build log and must be treated as compromised.
+
+Teams can register additional patterns (e.g. an internal `acme_` token
+prefix) via the `--secret-pattern REGEX` flag or a `secret_patterns:`
+list in the config file. See [config.md](../config.md#schema).
+
+**Recommended actions**
+- Rotate the credential immediately.
+- Move the value to a repository or environment secret and reference it
+  via `${{ secrets.NAME }}`.
+- For cloud access, prefer OIDC federation over long-lived keys
+  (GHA-005).
+
 ---
 
 ## Adding a new GitHub Actions check
@@ -114,5 +141,7 @@ short-lived credentials per workflow run.
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py`.
 3. Add tests under `tests/github/test_workflows.py`.
 
-For a new provider (GCP Cloud Build, Azure Pipelines, …) follow the
-contract documented in `docs/providers/README.md`.
+Similar YAML-based providers exist for **GitLab CI** and **Bitbucket
+Pipelines** — see [gitlab.md](gitlab.md) and [bitbucket.md](bitbucket.md).
+For a new provider (Azure Pipelines, Jenkins, …) follow the contract
+documented in `docs/providers/README.md`.

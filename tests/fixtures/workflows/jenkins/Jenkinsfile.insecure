@@ -1,0 +1,45 @@
+// Realistic insecure Jenkinsfile exhibiting every JF-* failure mode.
+@Library('shared-pipeline@main') _
+
+pipeline {
+    agent {
+        // Floating tag — JF-009. Also `agent any` semantics handled
+        // separately via the inline `any` directive below for JF-003.
+        docker { image 'maven:latest' }
+    }
+
+    environment {
+        DEBUG_AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
+        // JF-010 — long-lived AWS keys exposed via env block.
+        AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+        AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    }
+
+    stages {
+        stage('Bootstrap') {
+            agent any
+            steps {
+                // JF-012 — dynamic load.
+                script {
+                    def helpers = load 'ci/helpers.groovy'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh "echo Building branch ${env.BRANCH_NAME}"
+                sh "make build"
+            }
+        }
+
+        stage('Deploy to production') {
+            steps {
+                withCredentials([string(credentialsId: 'aws-prod-key',
+                                        variable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh "make deploy"
+                }
+            }
+        }
+    }
+}

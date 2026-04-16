@@ -1,0 +1,28 @@
+# Realistic insecure GitLab CI exhibiting every GL-* failure mode.
+include:
+  - project: 'templates/ci'
+    ref: main
+  - remote: 'https://gitlab.example.com/snippets/42/raw'
+
+image: python:latest
+
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  DATABASE_PASSWORD: hunter2
+  DEPLOY_TARGET: production
+
+stages:
+  - test
+  - deploy
+
+unit-tests:
+  stage: test
+  image: node
+  script:
+    - echo "Running tests for MR ${CI_MERGE_REQUEST_TITLE}"
+    - npm test
+
+deploy-prod:
+  stage: deploy
+  script:
+    - ./scripts/deploy.sh

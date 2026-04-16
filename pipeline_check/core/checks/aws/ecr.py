@@ -17,7 +17,7 @@ from .base import AWSBaseCheck, Finding, Severity
 class ECRChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
-        client = self.session.client("ecr")
+        client = self.client("ecr")
 
         try:
             repos = self._list_repositories(client)

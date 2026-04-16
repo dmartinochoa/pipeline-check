@@ -14,7 +14,7 @@ from .base import AWSBaseCheck, Finding, Severity
 class CodePipelineChecks(AWSBaseCheck):
 
     def run(self) -> list[Finding]:
-        client = self.session.client("codepipeline")
+        client = self.client("codepipeline")
 
         if self.target:
             pipelines = [self.target]
@@ -40,7 +40,22 @@ class CodePipelineChecks(AWSBaseCheck):
             try:
                 resp = client.get_pipeline(name=name)
                 pipeline = resp["pipeline"]
-            except ClientError:
+            except ClientError as exc:
+                findings.append(Finding(
+                    check_id="CP-000",
+                    title="CodePipeline inspection degraded",
+                    severity=Severity.INFO,
+                    resource=f"codepipeline/{name}",
+                    description=(
+                        f"Could not fetch pipeline {name}: {exc}. "
+                        f"CP-001..004 were not evaluated for this pipeline."
+                    ),
+                    recommendation=(
+                        "Retry the scan; if the failure is persistent check "
+                        "IAM permissions for codepipeline:GetPipeline."
+                    ),
+                    passed=False,
+                ))
                 continue
             findings.extend(self._check_pipeline(pipeline))
 
