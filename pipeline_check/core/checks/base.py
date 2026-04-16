@@ -75,6 +75,7 @@ class BaseCheck(abc.ABC):
         self.context = context
         #: Optional resource name to scope the scan to (e.g. a pipeline name).
         self.target = target
+        clear_blob_cache()
 
     @abc.abstractmethod
     def run(self) -> list["Finding"]:
@@ -126,10 +127,11 @@ def blob_lower(doc: Any) -> str:
     return blob
 
 
-# The cache is cleared at the top of every ``BaseCheck.run`` via
-# :func:`clear_blob_cache` so entries from a previous scan (especially
-# in long-lived Lambda containers) can't pin memory or — worse —
-# collide with a newly-allocated doc that reused the freed ``id()``.
+# The cache is cleared in ``BaseCheck.__init__`` and in
+# ``Scanner._scan_provider`` so entries from a previous scan
+# (especially in long-lived Lambda containers) can't pin memory
+# or — worse — collide with a newly-allocated doc that reused the
+# freed ``id()``.
 _BLOB_CACHE: dict[int, str] = {}
 
 
