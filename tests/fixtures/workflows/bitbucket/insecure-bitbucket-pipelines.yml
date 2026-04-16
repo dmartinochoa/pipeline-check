@@ -12,7 +12,12 @@ pipelines:
         script:
           - echo "Building $BITBUCKET_BRANCH"
           - npm test
+        # BB-010 — produces an artifact that the downstream deployment
+        # step consumes without verification.
+        artifacts:
+          - dist/**
 
+    # BB-004 — deploy step missing `deployment:` env gate.
     - step:
         name: Deploy to production
         script:
@@ -21,3 +26,11 @@ pipelines:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               S3_BUCKET: 'example-bucket'
+
+    # BB-010 — separate deployment-marked step that consumes the
+    # earlier artifacts without verification.
+    - step:
+        name: Promote release
+        deployment: staging
+        script:
+          - ./dist/install.sh

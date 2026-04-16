@@ -41,6 +41,7 @@ expression.
 | JF-010   | Long-lived AWS keys exposed via `environment { … }`             | HIGH     |
 | JF-011   | Pipeline has no `buildDiscarder` retention policy               | LOW      |
 | JF-012   | `load` step pulls Groovy from disk without integrity pin        | MEDIUM   |
+| JF-013   | `copyArtifacts` ingests another job's output unverified         | CRITICAL |
 
 ---
 

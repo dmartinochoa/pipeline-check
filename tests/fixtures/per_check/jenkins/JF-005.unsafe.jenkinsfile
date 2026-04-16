@@ -1,0 +1,8 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Deploy to production') {
+      steps { sh './deploy.sh' }
+    }
+  }
+}

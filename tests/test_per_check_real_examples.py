@@ -1,7 +1,7 @@
 """Per-check end-to-end tests using realistic snippets.
 
-For every workflow-provider check (47 total: 8 GHA + 9 GL + 9 BB + 9
-ADO + 12 JF) this module exercises:
+For every workflow-provider check (60 total: 12 GHA + 12 GL + 10 BB +
+13 ADO + 13 JF) this module exercises:
 
   1. an UNSAFE snippet sourced from real-world anti-patterns, and
      asserts the targeted check fires AND carries the expected OWASP
@@ -14,11 +14,24 @@ only assert behaviour for the targeted check_id. The broader sweep
 in ``test_workflow_fixtures.py`` covers cross-check coordination on
 the larger fixtures.
 
+Snippet bodies live on disk under ``tests/fixtures/per_check/<provider>/``
+so this file owns ONLY the metadata (which standards each finding
+should map to). That separation lets the snippets be edited with
+native YAML / Groovy syntax highlighting in any IDE, copy-pasted
+from real workflows, and inspected without scrolling through
+hundreds of triple-quoted Python strings.
+
 Adding a check
 --------------
 1. Append a ``CheckCase`` to ``CASES`` below.
-2. The unsafe snippet must trigger the targeted check.
-3. The safe snippet must NOT trigger the targeted check.
+2. Drop two snippets at:
+       tests/fixtures/per_check/<provider>/<check-id>.unsafe.<ext>
+       tests/fixtures/per_check/<provider>/<check-id>.safe.<ext>
+   where ``<ext>`` is ``yml`` for the YAML providers and
+   ``jenkinsfile`` for Jenkins. The file extension determines the
+   syntax highlighter the IDE picks.
+3. The unsafe snippet must trigger the targeted check; the safe
+   snippet must not.
 4. ``expected_owasp`` is the primary OWASP CICD-SEC control. Add
    ``expected_esf`` if the check has an ESF mapping.
 
@@ -47,49 +60,70 @@ from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 from pipeline_check.core import standards as standards_mod
 
 
+SNIPPET_ROOT = Path(__file__).parent / "fixtures" / "per_check"
+
+
 # ──────────────────────────────────────────────────────────────────────
-# Test harness
+# Per-prefix wiring — provider context, check class, snippet extension.
 # ──────────────────────────────────────────────────────────────────────
+
+
+_PROVIDER_BY_PREFIX: dict[str, tuple[Any, Any, str, str]] = {
+    # prefix -> (context_class, check_class, fixture-dir-name, extension)
+    "GHA": (GitHubContext,    WorkflowChecks,           "github",    "yml"),
+    "GL":  (GitLabContext,    GitLabPipelineChecks,     "gitlab",    "yml"),
+    "BB":  (BitbucketContext, BitbucketPipelineChecks,  "bitbucket", "yml"),
+    "ADO": (AzureContext,     AzurePipelineChecks,      "azure",     "yml"),
+    "JF":  (JenkinsContext,   JenkinsfileChecks,        "jenkins",   "jenkinsfile"),
+}
 
 
 @dataclass(frozen=True)
 class CheckCase:
     check_id: str
-    unsafe: str
-    safe: str
     expected_owasp: str
     expected_esf: tuple[str, ...] = field(default_factory=tuple)
 
+    def _path(self, kind: str) -> Path:
+        prefix = self.check_id.split("-", 1)[0]
+        _, _, sub, ext = _PROVIDER_BY_PREFIX[prefix]
+        return SNIPPET_ROOT / sub / f"{self.check_id}.{kind}.{ext}"
 
-_PROVIDER_BY_PREFIX: dict[str, tuple[Any, Any, str]] = {
-    # prefix -> (context_class, check_class, fixture filename)
-    "GHA": (GitHubContext, WorkflowChecks, "wf.yml"),
-    "GL":  (GitLabContext, GitLabPipelineChecks, ".gitlab-ci.yml"),
-    "BB":  (BitbucketContext, BitbucketPipelineChecks, "bitbucket-pipelines.yml"),
-    "ADO": (AzureContext, AzurePipelineChecks, "azure-pipelines.yml"),
-    "JF":  (JenkinsContext, JenkinsfileChecks, "Jenkinsfile"),
-}
+    @property
+    def unsafe_path(self) -> Path:
+        return self._path("unsafe")
+
+    @property
+    def safe_path(self) -> Path:
+        return self._path("safe")
 
 
-def _run_one_check(check_id: str, snippet: str, tmp_path: Path) -> Finding:
-    """Write *snippet* to disk, scan with the right provider, return the
-    finding for *check_id* with ControlRefs enriched (mirrors what the
-    real Scanner does post-run)."""
+# ──────────────────────────────────────────────────────────────────────
+# Test harness
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _run_one_check(check_id: str, snippet_path: Path, tmp_path: Path) -> Finding:
+    """Copy *snippet_path* into ``tmp_path``, scan with the right
+    provider, return the finding for *check_id* with ControlRefs
+    enriched (mirrors what the real Scanner does post-run)."""
     prefix = check_id.split("-", 1)[0]
-    ctx_cls, check_cls, fname = _PROVIDER_BY_PREFIX[prefix]
-    p = tmp_path / fname
-    p.write_text(snippet, encoding="utf-8")
-    ctx = ctx_cls.from_path(p)
+    ctx_cls, check_cls, _, ext = _PROVIDER_BY_PREFIX[prefix]
+    # Copy under a known filename in tmp_path so the loader can pick
+    # it up regardless of the snippet's own basename.
+    fname = "Jenkinsfile" if ext == "jenkinsfile" else "wf.yml"
+    target = tmp_path / fname
+    target.write_text(snippet_path.read_text(encoding="utf-8"), encoding="utf-8")
+    ctx = ctx_cls.from_path(target)
     findings = check_cls(ctx).run()
-    target = next((f for f in findings if f.check_id == check_id), None)
-    assert target is not None, (
-        f"check {check_id} produced no finding from the snippet; "
+    finding = next((f for f in findings if f.check_id == check_id), None)
+    assert finding is not None, (
+        f"check {check_id} produced no finding from {snippet_path}; "
         f"either the snippet is malformed or the check is mis-IDed."
     )
-    # Enrich exactly the way Scanner does — full registry, all standards.
     active = standards_mod.resolve()
-    target.controls = standards_mod.resolve_for_check(check_id, active)
-    return target
+    finding.controls = standards_mod.resolve_for_check(check_id, active)
+    return finding
 
 
 def _assert_owasp(finding: Finding, expected: str) -> None:
@@ -115,1000 +149,81 @@ def _assert_esf(finding: Finding, expected: tuple[str, ...]) -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Snippet catalogue — one entry per check.
+# Catalogue — one entry per workflow check.
 # ──────────────────────────────────────────────────────────────────────
-
-
-# Some shared scaffolding that lets a "safe" GHA snippet pass even
-# though the targeted check isn't the only one in the file.
-_GHA_SAFE_HEADER = """\
-name: ci
-on: push
-permissions:
-  contents: read
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-"""
-
+#
+# The snippet bodies live on disk; this list owns only the metadata
+# the assertions care about. Adding an entry here without dropping
+# the matching snippet files makes ``_run_one_check`` raise
+# ``FileNotFoundError``, which is caught by the catalogue-completeness
+# guard at the bottom.
 
 CASES: list[CheckCase] = [
     # ── GitHub Actions ───────────────────────────────────────────────
-    CheckCase(
-        check_id="GHA-001",
-        unsafe="""\
-name: build
-on: push
-jobs:
-  b:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-""",
-        safe="""\
-name: build
-on: push
-jobs:
-  b:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
-    CheckCase(
-        check_id="GHA-002",
-        unsafe="""\
-name: pr-target
-on: pull_request_target
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-""",
-        safe="""\
-name: pr
-on: pull_request
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION", "ESF-D-BUILD-ENV"),
-    ),
-    CheckCase(
-        check_id="GHA-003",
-        unsafe="""\
-name: comment-bot
-on: issue_comment
-jobs:
-  echo:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Got comment ${{ github.event.comment.body }}"
-""",
-        safe="""\
-name: comment-bot
-on: issue_comment
-jobs:
-  echo:
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          BODY: ${{ github.event.comment.body }}
-        run: echo "Got comment $BODY"
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION",),
-    ),
-    CheckCase(
-        check_id="GHA-004",
-        unsafe="""\
-name: build
-on: push
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo build
-""",
-        safe="""\
-name: build
-on: push
-permissions:
-  contents: read
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo build
-""",
-        expected_owasp="CICD-SEC-5",
-        expected_esf=("ESF-C-LEAST-PRIV",),
-    ),
-    CheckCase(
-        check_id="GHA-005",
-        unsafe="""\
-name: deploy
-on: push
-permissions: { contents: read }
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-""",
-        safe="""\
-name: deploy
-on: push
-permissions:
-  id-token: write
-  contents: read
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
-        with:
-          role-to-assume: arn:aws:iam::111122223333:role/gha-deployer
-          aws-region: us-east-1
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-TOKEN-HYGIENE",),
-    ),
-    CheckCase(
-        check_id="GHA-006",
-        unsafe="""\
-name: release
-on:
-  push:
-    tags: ['v*']
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - run: docker build -t app:$GITHUB_SHA .
-""",
-        safe="""\
-name: release
-on:
-  push:
-    tags: ['v*']
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: sigstore/cosign-installer@4959ce089c2fe0a3ab7b3aaa3aebc6a0a17b2af9
-      - run: cosign sign --yes ghcr.io/example/app:$GITHUB_SHA
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SIGN-ARTIFACTS",),
-    ),
-    CheckCase(
-        check_id="GHA-007",
-        unsafe="""\
-name: release
-on: push
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: cosign sign --yes example/app:$GITHUB_SHA
-""",
-        safe="""\
-name: release
-on: push
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: syft . -o cyclonedx-json > sbom.json
-      - run: cosign sign --yes example/app:$GITHUB_SHA
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SBOM",),
-    ),
-    CheckCase(
-        check_id="GHA-008",
-        unsafe="""\
-name: deploy
-on: push
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
-        run: ./deploy.sh
-""",
-        safe="""\
-name: deploy
-on: push
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          DEBUG_AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        run: ./deploy.sh
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-
+    CheckCase("GHA-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GHA-002", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-D-BUILD-ENV")),
+    CheckCase("GHA-003", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-004", "CICD-SEC-5", ("ESF-C-LEAST-PRIV",)),
+    CheckCase("GHA-005", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("GHA-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("GHA-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("GHA-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GHA-009", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GHA-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
+    CheckCase("GHA-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GHA-012", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
     # ── GitLab CI ────────────────────────────────────────────────────
-    CheckCase(
-        check_id="GL-001",
-        unsafe="""\
-image: python:latest
-build:
-  script: [pytest]
-""",
-        safe="""\
-image: python:3.12.1-slim
-build:
-  script: [pytest]
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
-    CheckCase(
-        check_id="GL-002",
-        unsafe="""\
-build:
-  script:
-    - echo "Building MR ${CI_MERGE_REQUEST_TITLE}"
-""",
-        safe="""\
-build:
-  script:
-    - TITLE="$CI_MERGE_REQUEST_TITLE"
-    - echo "Building MR $TITLE"
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION",),
-    ),
-    CheckCase(
-        check_id="GL-003",
-        unsafe="""\
-variables:
-  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
-build:
-  script: [echo build]
-""",
-        safe="""\
-variables:
-  DEPLOY_ENV: production
-build:
-  script: [echo build]
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="GL-004",
-        unsafe="""\
-deploy-prod:
-  stage: deploy
-  script: [./deploy.sh]
-""",
-        safe="""\
-deploy-prod:
-  stage: deploy
-  when: manual
-  environment:
-    name: production
-    url: https://app.example.com
-  script: [./deploy.sh]
-""",
-        expected_owasp="CICD-SEC-1",
-        expected_esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
-    ),
-    CheckCase(
-        check_id="GL-005",
-        unsafe="""\
-include:
-  - project: 'templates/ci'
-    ref: main
-""",
-        safe="""\
-include:
-  - project: 'templates/ci'
-    ref: v1.4.2
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"),
-    ),
-    CheckCase(
-        check_id="GL-006",
-        unsafe="""\
-release:
-  script:
-    - docker build -t app:$CI_COMMIT_SHA .
-""",
-        safe="""\
-release:
-  script:
-    - cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SIGN-ARTIFACTS",),
-    ),
-    CheckCase(
-        check_id="GL-007",
-        unsafe="""\
-release:
-  script:
-    - cosign sign --yes example/app:$CI_COMMIT_SHA
-""",
-        safe="""\
-release:
-  script:
-    - syft . -o cyclonedx-json > sbom.json
-    - cosign sign --yes example/app:$CI_COMMIT_SHA
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SBOM",),
-    ),
-    CheckCase(
-        check_id="GL-008",
-        unsafe="""\
-build:
-  script:
-    - echo "deploying with AKIAIOSFODNN7EXAMPLE"
-""",
-        safe="""\
-build:
-  script:
-    - echo "deploying with $AWS_ACCESS_KEY_ID"
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="GL-009",
-        unsafe="""\
-image: python:3.12.1-slim
-build:
-  script: [pytest]
-""",
-        safe="""\
-image: python@sha256:0000000000000000000000000000000000000000000000000000000000000001
-build:
-  script: [pytest]
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"),
-    ),
-
+    CheckCase("GL-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GL-003", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-004", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("GL-005", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG")),
+    CheckCase("GL-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("GL-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("GL-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-009", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE")),
+    CheckCase("GL-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
+    CheckCase("GL-012", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     # ── Bitbucket Pipelines ──────────────────────────────────────────
-    CheckCase(
-        check_id="BB-001",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - pipe: atlassian/aws-s3-deploy:1
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - pipe: atlassian/aws-s3-deploy:1.4.0
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
-    CheckCase(
-        check_id="BB-002",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - echo "Building $BITBUCKET_BRANCH"
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - BRANCH="$BITBUCKET_BRANCH"
-          - echo "Building $BRANCH"
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION",),
-    ),
-    CheckCase(
-        check_id="BB-003",
-        unsafe="""\
-definitions:
-  variables:
-    AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
-pipelines:
-  default:
-    - step: { max-time: 10, script: [pytest] }
-""",
-        safe="""\
-definitions:
-  variables:
-    DEPLOY_ENV: production
-pipelines:
-  default:
-    - step: { max-time: 10, script: [pytest] }
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="BB-004",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        name: Deploy to production
-        max-time: 10
-        script: [./deploy.sh]
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        name: Deploy to production
-        deployment: production
-        max-time: 10
-        script: [./deploy.sh]
-""",
-        expected_owasp="CICD-SEC-1",
-        expected_esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
-    ),
-    CheckCase(
-        check_id="BB-005",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        name: Build
-        script: [pytest]
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        name: Build
-        max-time: 20
-        script: [pytest]
-""",
-        expected_owasp="CICD-SEC-7",
-        expected_esf=("ESF-D-BUILD-TIMEOUT",),
-    ),
-    CheckCase(
-        check_id="BB-006",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - docker build -t app .
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - cosign sign --yes registry.example.com/app:$BITBUCKET_COMMIT
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SIGN-ARTIFACTS",),
-    ),
-    CheckCase(
-        check_id="BB-007",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - cosign sign --yes example/app:$BITBUCKET_COMMIT
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - syft . -o cyclonedx-json > sbom.json
-          - cosign sign --yes example/app:$BITBUCKET_COMMIT
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SBOM",),
-    ),
-    CheckCase(
-        check_id="BB-008",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - echo "Deploying with AKIAIOSFODNN7EXAMPLE"
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - echo "Deploying with $AWS_ACCESS_KEY_ID"
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="BB-009",
-        unsafe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - pipe: atlassian/aws-s3-deploy:1.4.0
-""",
-        safe="""\
-pipelines:
-  default:
-    - step:
-        max-time: 10
-        script:
-          - pipe: atlassian/aws-s3-deploy@sha256:0000000000000000000000000000000000000000000000000000000000000001
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"),
-    ),
-
+    CheckCase("BB-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-003", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("BB-004", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("BB-005", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("BB-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("BB-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("BB-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("BB-009", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE")),
+    CheckCase("BB-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     # ── Azure DevOps Pipelines ───────────────────────────────────────
-    CheckCase(
-        check_id="ADO-001",
-        unsafe="""\
-jobs:
-  - job: Build
-    steps:
-      - task: DotNetCoreCLI@2
-        inputs:
-          command: 'build'
-""",
-        safe="""\
-jobs:
-  - job: Build
-    steps:
-      - task: DotNetCoreCLI@2.210.0
-        inputs:
-          command: 'build'
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
-    CheckCase(
-        check_id="ADO-002",
-        unsafe="""\
-jobs:
-  - job: Build
-    steps:
-      - script: echo "Building $(Build.SourceBranchName)"
-""",
-        safe="""\
-jobs:
-  - job: Build
-    steps:
-      - script: BRANCH="$(Build.SourceBranchName)"
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION",),
-    ),
-    CheckCase(
-        check_id="ADO-003",
-        unsafe="""\
-variables:
-  - name: AWS_ACCESS_KEY_ID
-    value: AKIAIOSFODNN7EXAMPLE
-jobs:
-  - job: Build
-    steps:
-      - script: pytest
-""",
-        safe="""\
-variables:
-  - name: BUILD_CONFIG
-    value: Release
-jobs:
-  - job: Build
-    steps:
-      - script: pytest
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="ADO-004",
-        unsafe="""\
-jobs:
-  - deployment: DeployWeb
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-            - task: AzureWebApp@1.200.0
-""",
-        safe="""\
-jobs:
-  - deployment: DeployWeb
-    environment: production
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-            - task: AzureWebApp@1.200.0
-""",
-        expected_owasp="CICD-SEC-1",
-        expected_esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
-    ),
-    CheckCase(
-        check_id="ADO-005",
-        unsafe="""\
-resources:
-  containers:
-    - container: py
-      image: python:latest
-jobs:
-  - job: Build
-    container: py
-    steps: [{script: pytest}]
-""",
-        safe="""\
-resources:
-  containers:
-    - container: py
-      image: python:3.12.1-slim
-jobs:
-  - job: Build
-    container: py
-    steps: [{script: pytest}]
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"),
-    ),
-    CheckCase(
-        check_id="ADO-006",
-        unsafe="""\
-jobs:
-  - job: Release
-    steps:
-      - script: docker build -t app .
-""",
-        safe="""\
-jobs:
-  - job: Release
-    steps:
-      - script: cosign sign --yes registry.example.com/app:$(Build.BuildId)
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SIGN-ARTIFACTS",),
-    ),
-    CheckCase(
-        check_id="ADO-007",
-        unsafe="""\
-jobs:
-  - job: Release
-    steps:
-      - script: cosign sign --yes example/app:$(Build.BuildId)
-""",
-        safe="""\
-jobs:
-  - job: Release
-    steps:
-      - script: syft . -o cyclonedx-json > sbom.json
-      - script: cosign sign --yes example/app:$(Build.BuildId)
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SBOM",),
-    ),
-    CheckCase(
-        check_id="ADO-008",
-        unsafe="""\
-jobs:
-  - job: Build
-    steps:
-      - script: echo "Deploying with AKIAIOSFODNN7EXAMPLE"
-""",
-        safe="""\
-jobs:
-  - job: Build
-    steps:
-      - script: echo "Deploying with $(AWS_ACCESS_KEY_ID)"
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="ADO-009",
-        unsafe="""\
-resources:
-  containers:
-    - container: py
-      image: python:3.12.1-slim
-jobs:
-  - job: Build
-    container: py
-    steps: [{script: pytest}]
-""",
-        safe="""\
-resources:
-  containers:
-    - container: py
-      image: python@sha256:0000000000000000000000000000000000000000000000000000000000000001
-jobs:
-  - job: Build
-    container: py
-    steps: [{script: pytest}]
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"),
-    ),
-
+    CheckCase("ADO-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-003", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("ADO-004", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("ADO-005", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG")),
+    CheckCase("ADO-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("ADO-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("ADO-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("ADO-009", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE")),
+    CheckCase("ADO-010", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-011", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
+    CheckCase("ADO-012", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-013", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
     # ── Jenkins ──────────────────────────────────────────────────────
-    CheckCase(
-        check_id="JF-001",
-        unsafe="""\
-@Library('shared-pipeline@main') _
-pipeline { agent { label 'build' } }
-""",
-        safe="""\
-@Library('shared-pipeline@v1.4.2') _
-pipeline { agent { label 'build' } }
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
-    CheckCase(
-        check_id="JF-002",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Build') {
-      steps { sh "echo Building ${env.BRANCH_NAME}" }
-    }
-  }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Build') {
-      steps {
-        withEnv(["BRANCH=${env.BRANCH_NAME}"]) {
-          sh 'echo "Building $BRANCH"'
-        }
-      }
-    }
-  }
-}
-""",
-        expected_owasp="CICD-SEC-4",
-        expected_esf=("ESF-D-INJECTION",),
-    ),
-    CheckCase(
-        check_id="JF-003",
-        unsafe="""\
-pipeline { agent any; stages { stage('B') { steps { sh 'pytest' } } } }
-""",
-        safe="""\
-pipeline { agent { label 'build-pool' }; stages { stage('B') { steps { sh 'pytest' } } } }
-""",
-        expected_owasp="CICD-SEC-5",
-        expected_esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
-    ),
-    CheckCase(
-        check_id="JF-004",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Deploy') {
-      steps {
-        withCredentials([string(credentialsId: 'aws-prod-key', variable: 'AWS_ACCESS_KEY_ID')]) {
-          sh './deploy.sh'
-        }
-      }
-    }
-  }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Deploy') {
-      steps {
-        withAWS(role: 'arn:aws:iam::111122223333:role/jenkins-prod') {
-          sh './deploy.sh'
-        }
-      }
-    }
-  }
-}
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-TOKEN-HYGIENE",),
-    ),
-    CheckCase(
-        check_id="JF-005",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Deploy to production') {
-      steps { sh './deploy.sh' }
-    }
-  }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Deploy to production') {
-      input { message 'Promote to prod?'; submitter 'releasers' }
-      steps { sh './deploy.sh' }
-    }
-  }
-}
-""",
-        expected_owasp="CICD-SEC-1",
-        expected_esf=("ESF-C-APPROVAL",),
-    ),
-    CheckCase(
-        check_id="JF-006",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages { stage('Release') { steps { sh 'docker build -t app .' } } }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  stages { stage('Release') { steps { sh 'cosign sign --yes app:$BUILD_TAG' } } }
-}
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SIGN-ARTIFACTS",),
-    ),
-    CheckCase(
-        check_id="JF-007",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages { stage('Release') { steps { sh 'cosign sign --yes app:$BUILD_TAG' } } }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Release') {
-      steps {
-        sh 'syft . -o cyclonedx-json > sbom.json'
-        sh 'cosign sign --yes app:$BUILD_TAG'
-      }
-    }
-  }
-}
-""",
-        expected_owasp="CICD-SEC-9",
-        expected_esf=("ESF-D-SBOM",),
-    ),
-    CheckCase(
-        check_id="JF-008",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  environment { DEBUG = 'AKIAIOSFODNN7EXAMPLE' }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  environment { DEBUG = credentials('aws-prod-key') }
-}
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS",),
-    ),
-    CheckCase(
-        check_id="JF-009",
-        unsafe="""\
-pipeline { agent { docker { image 'maven:latest' } } }
-""",
-        safe="""\
-pipeline { agent { docker { image 'maven@sha256:0000000000000000000000000000000000000000000000000000000000000001' } } }
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"),
-    ),
-    CheckCase(
-        check_id="JF-010",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  environment { AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" }
-}
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  environment { AWS_ACCESS_KEY_ID = credentials('aws-prod-key') }
-}
-""",
-        expected_owasp="CICD-SEC-6",
-        expected_esf=("ESF-D-SECRETS", "ESF-D-TOKEN-HYGIENE"),
-    ),
-    CheckCase(
-        check_id="JF-011",
-        unsafe="""\
-pipeline { agent { label 'build' } }
-""",
-        safe="""\
-pipeline {
-  agent { label 'build' }
-  options { buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90')) }
-}
-""",
-        expected_owasp="CICD-SEC-10",
-        expected_esf=("ESF-D-BUILD-LOGS", "ESF-C-AUDIT"),
-    ),
-    CheckCase(
-        check_id="JF-012",
-        unsafe="""\
-pipeline {
-  agent { label 'build' }
-  stages {
-    stage('Bootstrap') {
-      steps { script { def helpers = load 'ci/helpers.groovy' } }
-    }
-  }
-}
-""",
-        safe="""\
-@Library('helpers@v1.0.0') _
-pipeline {
-  agent { label 'build' }
-  stages { stage('Bootstrap') { steps { sh 'echo ready' } } }
-}
-""",
-        expected_owasp="CICD-SEC-3",
-        expected_esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
-    ),
+    CheckCase("JF-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-003", "CICD-SEC-5", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("JF-004", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("JF-005", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("JF-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("JF-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("JF-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("JF-009", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE")),
+    CheckCase("JF-010", "CICD-SEC-6", ("ESF-D-SECRETS", "ESF-D-TOKEN-HYGIENE")),
+    CheckCase("JF-011", "CICD-SEC-10", ("ESF-D-BUILD-LOGS", "ESF-C-AUDIT")),
+    CheckCase("JF-012", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-013", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
 ]
 
 
@@ -1119,13 +234,14 @@ pipeline {
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.check_id)
 def test_unsafe_snippet_triggers_check_with_correct_standards(case, tmp_path):
-    """The unsafe snippet must produce a FAILING finding for the targeted
-    check, and that finding must carry the expected OWASP (and ESF
-    where mapped) ControlRefs."""
-    f = _run_one_check(case.check_id, case.unsafe, tmp_path)
+    """The unsafe snippet at ``case.unsafe_path`` must produce a
+    FAILING finding for the targeted check, and that finding must
+    carry the expected OWASP (and ESF where mapped) ControlRefs."""
+    f = _run_one_check(case.check_id, case.unsafe_path, tmp_path)
     assert f.passed is False, (
         f"{case.check_id}: unsafe snippet did NOT trigger the check.\n"
-        f"--- snippet ---\n{case.unsafe}"
+        f"--- snippet ({case.unsafe_path}) ---\n"
+        + case.unsafe_path.read_text(encoding="utf-8")
     )
     _assert_owasp(f, case.expected_owasp)
     if case.expected_esf:
@@ -1134,14 +250,15 @@ def test_unsafe_snippet_triggers_check_with_correct_standards(case, tmp_path):
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.check_id)
 def test_safe_snippet_does_not_trigger_check(case, tmp_path):
-    """The safe snippet must produce a PASSING finding for the targeted
-    check. Other checks may pass or fail — we only assert behaviour for
-    the targeted ID."""
-    f = _run_one_check(case.check_id, case.safe, tmp_path)
+    """The safe snippet at ``case.safe_path`` must produce a PASSING
+    finding for the targeted check. Other checks may pass or fail —
+    we only assert behaviour for the targeted ID."""
+    f = _run_one_check(case.check_id, case.safe_path, tmp_path)
     assert f.passed is True, (
         f"{case.check_id}: safe snippet triggered the check unexpectedly.\n"
         f"description: {f.description}\n"
-        f"--- snippet ---\n{case.safe}"
+        f"--- snippet ({case.safe_path}) ---\n"
+        + case.safe_path.read_text(encoding="utf-8")
     )
 
 
@@ -1150,15 +267,32 @@ def test_every_workflow_check_has_a_case():
     workflow checks. If a new check ships without an entry here, this
     test fails — forcing the author to write a real-example case."""
     expected_ids = (
-        {f"GHA-{i:03d}" for i in range(1, 9)}
-        | {f"GL-{i:03d}" for i in range(1, 10)}
-        | {f"BB-{i:03d}" for i in range(1, 10)}
-        | {f"ADO-{i:03d}" for i in range(1, 10)}
-        | {f"JF-{i:03d}" for i in range(1, 13)}
+        {f"GHA-{i:03d}" for i in range(1, 13)}
+        | {f"GL-{i:03d}" for i in range(1, 13)}
+        | {f"BB-{i:03d}" for i in range(1, 11)}
+        | {f"ADO-{i:03d}" for i in range(1, 14)}
+        | {f"JF-{i:03d}" for i in range(1, 14)}
     )
     covered = {c.check_id for c in CASES}
     missing = expected_ids - covered
     assert not missing, (
         f"per-check catalogue is missing entries for: {sorted(missing)}. "
-        f"Add a CheckCase for each so future regressions are caught."
+        f"Add a CheckCase + snippet pair for each so future regressions "
+        f"are caught."
+    )
+
+
+def test_every_case_has_both_snippet_files_on_disk():
+    """A ``CheckCase`` without its two snippet files would surface as
+    a confusing ``FileNotFoundError`` deep inside the test harness.
+    Fail fast at collection time instead."""
+    missing = []
+    for case in CASES:
+        if not case.unsafe_path.exists():
+            missing.append(str(case.unsafe_path))
+        if not case.safe_path.exists():
+            missing.append(str(case.safe_path))
+    assert not missing, (
+        f"missing snippet files for {len(missing)} case(s):\n"
+        + "\n".join(f"  - {m}" for m in missing)
     )

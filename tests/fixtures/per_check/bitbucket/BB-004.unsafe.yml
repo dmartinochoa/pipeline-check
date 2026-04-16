@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        name: Deploy to production
+        max-time: 10
+        script: [./deploy.sh]

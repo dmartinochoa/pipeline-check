@@ -1,0 +1,4 @@
+build:
+  script:
+    - TITLE="$CI_MERGE_REQUEST_TITLE"
+    - echo "Building MR $TITLE"

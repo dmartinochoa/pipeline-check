@@ -1,0 +1,7 @@
+deploy-prod:
+  stage: deploy
+  when: manual
+  environment:
+    name: production
+    url: https://app.example.com
+  script: [./deploy.sh]

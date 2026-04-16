@@ -1,0 +1,4 @@
+jobs:
+  - job: Release
+    steps:
+      - script: cosign sign --yes registry.example.com/app:$(Build.BuildId)

@@ -1,0 +1,4 @@
+variables:
+  DEPLOY_ENV: production
+build:
+  script: [echo build]

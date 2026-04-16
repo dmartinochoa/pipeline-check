@@ -145,7 +145,7 @@ class TestAutoDetect:
         # resolved path was actually loaded and scanned.
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {"GL-001", "GL-002", "GL-003", "GL-004", "GL-005", "GL-006", "GL-007", "GL-008", "GL-009"}
+        assert emitted == {f"GL-{i:03d}" for i in range(1, 13)}
 
     def test_bitbucket_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -157,7 +157,7 @@ class TestAutoDetect:
         assert "[auto] using --bitbucket-path bitbucket-pipelines.yml" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {"BB-001", "BB-002", "BB-003", "BB-004", "BB-005", "BB-006", "BB-007", "BB-008", "BB-009"}
+        assert emitted == {f"BB-{i:03d}" for i in range(1, 11)}
 
     def test_github_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -171,7 +171,7 @@ class TestAutoDetect:
         assert "[auto] using --gha-path" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {"GHA-001", "GHA-002", "GHA-003", "GHA-004", "GHA-005", "GHA-006", "GHA-007", "GHA-008"}
+        assert emitted == {f"GHA-{i:03d}" for i in range(1, 13)}
 
     def test_gitlab_missing_file_raises_usage_error(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)  # no .gitlab-ci.yml present

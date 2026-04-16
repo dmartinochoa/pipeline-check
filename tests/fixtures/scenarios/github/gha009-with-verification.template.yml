@@ -1,0 +1,13 @@
+name: x
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+permissions: { contents: read }
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      - run: __VERIFY_STEP__
+      - run: ./build-output/install.sh

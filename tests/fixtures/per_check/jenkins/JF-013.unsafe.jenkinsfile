@@ -1,0 +1,11 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Ingest') {
+      steps {
+        copyArtifacts(projectName: 'platform-build', filter: 'dist/*')
+        sh './dist/install.sh'
+      }
+    }
+  }
+}

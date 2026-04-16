@@ -1,0 +1,2 @@
+stage('Broken') { steps { sh 'x'
+# missing closes

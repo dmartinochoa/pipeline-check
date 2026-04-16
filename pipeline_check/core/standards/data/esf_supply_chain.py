@@ -96,6 +96,10 @@ STANDARD = Standard(
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],
         "GHA-007":  ["ESF-D-SBOM"],
         "GHA-008":  ["ESF-D-SECRETS"],
+        "GHA-009":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
+        "GHA-010":  ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
+        "GHA-011":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
+        "GHA-012":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         # ── GitLab CI ──────────────────────────────────────────────
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "GL-002":   ["ESF-D-INJECTION"],
@@ -106,6 +110,9 @@ STANDARD = Standard(
         "GL-007":   ["ESF-D-SBOM"],
         "GL-008":   ["ESF-D-SECRETS"],
         "GL-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
+        "GL-010":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
+        "GL-011":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
+        "GL-012":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         # ── Bitbucket Pipelines ────────────────────────────────────
         "BB-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "BB-002":   ["ESF-D-INJECTION"],
@@ -116,6 +123,7 @@ STANDARD = Standard(
         "BB-007":   ["ESF-D-SBOM"],
         "BB-008":   ["ESF-D-SECRETS"],
         "BB-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
+        "BB-010":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         # ── Azure DevOps Pipelines ─────────────────────────────────
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
@@ -126,6 +134,10 @@ STANDARD = Standard(
         "ADO-007":  ["ESF-D-SBOM"],
         "ADO-008":  ["ESF-D-SECRETS"],
         "ADO-009":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
+        "ADO-010":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
+        "ADO-011":  ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
+        "ADO-012":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
+        "ADO-013":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         # ── Jenkins ────────────────────────────────────────────────
         "JF-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "JF-002":   ["ESF-D-INJECTION"],
@@ -139,5 +151,6 @@ STANDARD = Standard(
         "JF-010":   ["ESF-D-SECRETS", "ESF-D-TOKEN-HYGIENE"],
         "JF-011":   ["ESF-D-BUILD-LOGS", "ESF-C-AUDIT"],
         "JF-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "JF-013":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
     },
 )

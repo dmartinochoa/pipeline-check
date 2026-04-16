@@ -1,0 +1,12 @@
+name: x
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+permissions: { contents: read }
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh run download ${{ github.event.workflow_run.id }}
+      - run: ./build-output/install.sh

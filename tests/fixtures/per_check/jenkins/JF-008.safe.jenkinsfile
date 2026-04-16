@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  environment { DEBUG = credentials('aws-prod-key') }
+}

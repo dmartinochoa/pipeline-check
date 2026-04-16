@@ -1,0 +1,6 @@
+build:
+  cache:
+    key:
+      files: [poetry.lock]
+    paths: [.cache/]
+  script: [pytest]

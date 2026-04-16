@@ -1,0 +1,10 @@
+resources:
+  pipelines:
+    - pipeline: upstream
+      source: 'platform-build'
+jobs:
+  - job: Ingest
+    steps:
+      - download: upstream
+      - script: sha256sum -c upstream/manifest.sha256
+      - script: ./upstream/install.sh

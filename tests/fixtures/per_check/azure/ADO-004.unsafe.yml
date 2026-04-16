@@ -1,0 +1,7 @@
+jobs:
+  - deployment: DeployWeb
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureWebApp@1.200.0

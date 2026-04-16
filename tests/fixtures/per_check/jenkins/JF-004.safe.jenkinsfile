@@ -1,0 +1,12 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Deploy') {
+      steps {
+        withAWS(role: 'arn:aws:iam::111122223333:role/jenkins-prod') {
+          sh './deploy.sh'
+        }
+      }
+    }
+  }
+}

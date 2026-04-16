@@ -41,6 +41,10 @@ The walker handles every layout ADO supports:
 | ADO-007  | SBOM not produced                                       | MEDIUM   |
 | ADO-008  | Credential-shaped literal in pipeline body              | CRITICAL |
 | ADO-009  | Container image pinned by tag rather than sha256 digest | LOW      |
+| ADO-010  | Cross-pipeline `download:` ingestion unverified         | CRITICAL |
+| ADO-011  | `template: <local-path>` on PR-validated pipeline       | HIGH     |
+| ADO-012  | Cache@2 key derives from `$(System.PullRequest.*)`      | MEDIUM   |
+| ADO-013  | Self-hosted pool without explicit ephemeral marker      | MEDIUM   |
 
 ---
 

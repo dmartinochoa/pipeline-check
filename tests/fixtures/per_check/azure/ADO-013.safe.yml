@@ -1,0 +1,7 @@
+jobs:
+  - job: Build
+    pool:
+      name: self-hosted-pool
+      demands:
+        - ephemeral -equals true
+    steps: [{script: pytest}]

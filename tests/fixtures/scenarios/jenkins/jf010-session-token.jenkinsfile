@@ -1,0 +1,6 @@
+pipeline {
+  agent any
+  environment {
+    AWS_SESSION_TOKEN = "FQoGZXIvYXdzEHcaDExample"
+  }
+}

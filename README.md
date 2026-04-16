@@ -28,7 +28,7 @@ and **Bitbucket Pipelines** — all without an API token.
 
 ## What it checks
 
-Covered surfaces (**79 checks** total: 32 AWS + 8 GitHub Actions + 9 GitLab CI + 9 Bitbucket Pipelines + 9 Azure DevOps Pipelines + 12 Jenkins, severity-weighted):
+Covered surfaces (**92 checks** total: 32 AWS + 12 GitHub Actions + 12 GitLab CI + 10 Bitbucket Pipelines + 13 Azure DevOps Pipelines + 13 Jenkins, severity-weighted):
 
 | Service             | Focus                                                                                              | IDs              |
 |---------------------|----------------------------------------------------------------------------------------------------|------------------|
@@ -39,11 +39,11 @@ Covered surfaces (**79 checks** total: 32 AWS + 8 GitHub Actions + 9 GitLab CI +
 | IAM                 | `AdministratorAccess`, wildcard actions, permission boundaries, `iam:PassRole *`, external trust without `sts:ExternalId`, sensitive actions with `Resource:*` | `IAM-001…006`    |
 | PBAC                | Build project VPC isolation, service-role sharing                                                  | `PBAC-001…002`   |
 | S3                  | Public access block, encryption, versioning, access logging, `aws:SecureTransport` deny            | `S3-001…005`     |
-| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection, missing permissions blocks, long-lived AWS keys, artifact signing, SBOM generation, credential-shaped literals | `GHA-001…008`    |
-| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning | `GL-001…009`     |
-| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning | `BB-001…009`     |
-| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning | `ADO-001…009`    |
-| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*`, `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk | `JF-001…012`     |
+| GitHub Actions      | Unpinned actions, `pull_request_target` head-checkout, script injection (incl. `release.body`, `inputs.*`, `head_ref`), missing permissions blocks, long-lived AWS keys, artifact signing, SBOM generation, credential-shaped literals, **workflow_run artifact poisoning**, **local action under untrusted trigger**, **PR-controlled cache key**, **non-ephemeral self-hosted runner** | `GHA-001…012`    |
+| GitLab CI           | Image pinning, script injection via `$CI_COMMIT_*`, literal secrets in `variables:`, deploy gating, `include:` pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest image pinning, **multi-project artifact ingestion**, **`include: local` on MR pipelines**, **MR-tainted cache key** | `GL-001…012`     |
+| Bitbucket Pipelines | `pipe:` pinning, injection via `$BITBUCKET_*`, literal secrets, `deployment:` gating, unbounded `max-time`, artifact signing, SBOM generation, credential-shaped literals, sha256-digest pipe pinning, **PR-to-deploy artifact handover** | `BB-001…010`     |
+| Azure DevOps Pipelines | `task:` pinning, injection via `$(Build.SourceBranch*)` / PR vars, literal secrets, `environment:` binding, container image pinning, artifact signing, SBOM generation, credential-shaped literals, sha256-digest container pinning, **cross-pipeline `download:`**, **local `template:` on PR**, **`Cache@2` PR-tainted key**, **self-hosted pool ephemeral marker** | `ADO-001…013`    |
+| Jenkins             | `@Library` pinning, injection via `$BRANCH_NAME` / `$CHANGE_*`, `agent any` blast radius, long-lived AWS keys via `withCredentials` and `environment {}`, deploy `input` gate, artifact signing, SBOM generation, credential-shaped literals, docker-agent digest pinning, `buildDiscarder` retention, dynamic `load` of Groovy from disk, **`copyArtifacts` cross-job ingestion** | `JF-001…013`     |
 
 Cross-cutting capabilities layered on top:
 

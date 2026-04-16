@@ -1,0 +1,10 @@
+name: x
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+permissions: { contents: read }
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps: [{run: 'curl https://hooks.example.com/notify'}]

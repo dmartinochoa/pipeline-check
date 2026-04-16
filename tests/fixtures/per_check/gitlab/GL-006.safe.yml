@@ -1,0 +1,3 @@
+release:
+  script:
+    - cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"

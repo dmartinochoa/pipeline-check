@@ -1,0 +1,8 @@
+resources:
+  containers:
+    - container: py
+      image: python@sha256:0000000000000000000000000000000000000000000000000000000000000001
+jobs:
+  - job: Build
+    container: py
+    steps: [{script: pytest}]

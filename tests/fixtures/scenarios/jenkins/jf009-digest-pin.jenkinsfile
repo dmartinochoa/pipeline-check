@@ -1,0 +1,4 @@
+pipeline {
+  agent { docker { image 'maven@sha256:0000000000000000000000000000000000000000000000000000000000000001' } }
+  options { buildDiscarder(logRotator(numToKeepStr: '5')) }
+}

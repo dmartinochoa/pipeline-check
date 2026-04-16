@@ -1,0 +1,4 @@
+pipeline {
+  agent { label 'build' }
+  options { buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90')) }
+}

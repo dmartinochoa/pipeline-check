@@ -1,0 +1,4 @@
+release:
+  script:
+    - syft . -o cyclonedx-json > sbom.json
+    - cosign sign --yes example/app:$CI_COMMIT_SHA

@@ -30,6 +30,10 @@ pipeline {
             steps {
                 sh "echo Building branch ${env.BRANCH_NAME}"
                 sh "make build"
+                // JF-013 -- ingests build output from another job
+                // with no integrity check.
+                copyArtifacts(projectName: 'platform-build', filter: 'dist/*')
+                sh './dist/install.sh'
             }
         }
 

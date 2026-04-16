@@ -1,0 +1,5 @@
+jobs:
+  - job: Build
+    pool:
+      name: self-hosted-pool
+    steps: [{script: pytest}]

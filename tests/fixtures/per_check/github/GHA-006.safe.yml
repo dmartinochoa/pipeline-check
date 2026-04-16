@@ -1,0 +1,10 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sigstore/cosign-installer@4959ce089c2fe0a3ab7b3aaa3aebc6a0a17b2af9
+      - run: cosign sign --yes ghcr.io/example/app:$GITHUB_SHA

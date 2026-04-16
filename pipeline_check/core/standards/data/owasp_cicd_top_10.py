@@ -69,6 +69,10 @@ STANDARD = Standard(
         "GHA-006":  ["CICD-SEC-9"],
         "GHA-007":  ["CICD-SEC-9"],
         "GHA-008":  ["CICD-SEC-6"],
+        "GHA-009":  ["CICD-SEC-4"],
+        "GHA-010":  ["CICD-SEC-4"],
+        "GHA-011":  ["CICD-SEC-4"],
+        "GHA-012":  ["CICD-SEC-7"],
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -79,6 +83,9 @@ STANDARD = Standard(
         "GL-007":   ["CICD-SEC-9"],
         "GL-008":   ["CICD-SEC-6"],
         "GL-009":   ["CICD-SEC-3"],
+        "GL-010":   ["CICD-SEC-4"],
+        "GL-011":   ["CICD-SEC-4"],
+        "GL-012":   ["CICD-SEC-4"],
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3"],
         "BB-002":   ["CICD-SEC-4"],
@@ -89,6 +96,7 @@ STANDARD = Standard(
         "BB-007":   ["CICD-SEC-9"],
         "BB-008":   ["CICD-SEC-6"],
         "BB-009":   ["CICD-SEC-3"],
+        "BB-010":   ["CICD-SEC-4"],
         # Azure DevOps Pipelines
         "ADO-001":  ["CICD-SEC-3"],
         "ADO-002":  ["CICD-SEC-4"],
@@ -99,6 +107,10 @@ STANDARD = Standard(
         "ADO-007":  ["CICD-SEC-9"],
         "ADO-008":  ["CICD-SEC-6"],
         "ADO-009":  ["CICD-SEC-3"],
+        "ADO-010":  ["CICD-SEC-4"],
+        "ADO-011":  ["CICD-SEC-4"],
+        "ADO-012":  ["CICD-SEC-4"],
+        "ADO-013":  ["CICD-SEC-7"],
         # Jenkins
         "JF-001":   ["CICD-SEC-3"],
         "JF-002":   ["CICD-SEC-4"],
@@ -112,5 +124,6 @@ STANDARD = Standard(
         "JF-010":   ["CICD-SEC-6"],
         "JF-011":   ["CICD-SEC-10"],
         "JF-012":   ["CICD-SEC-3"],
+        "JF-013":   ["CICD-SEC-4"],
     },
 )

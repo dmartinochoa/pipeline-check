@@ -1,0 +1,5 @@
+pr:
+  branches:
+    include: [main]
+stages:
+  - template: ci/build.yml

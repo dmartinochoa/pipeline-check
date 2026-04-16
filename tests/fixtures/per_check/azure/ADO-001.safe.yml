@@ -1,0 +1,6 @@
+jobs:
+  - job: Build
+    steps:
+      - task: DotNetCoreCLI@2.210.0
+        inputs:
+          command: 'build'

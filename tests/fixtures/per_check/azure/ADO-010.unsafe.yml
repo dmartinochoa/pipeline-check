@@ -1,0 +1,9 @@
+resources:
+  pipelines:
+    - pipeline: upstream
+      source: 'platform-build'
+jobs:
+  - job: Ingest
+    steps:
+      - download: upstream
+      - script: ./upstream/install.sh

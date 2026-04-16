@@ -1,0 +1,1 @@
+pipeline { agent any; stages { stage('B') { steps { sh 'pytest' } } } }

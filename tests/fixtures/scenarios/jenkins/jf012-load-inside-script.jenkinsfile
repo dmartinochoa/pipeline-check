@@ -1,0 +1,8 @@
+pipeline {
+  agent any
+  stages {
+    stage('Bootstrap') {
+      steps { script { def lib = load 'ci/helpers.groovy' } }
+    }
+  }
+}

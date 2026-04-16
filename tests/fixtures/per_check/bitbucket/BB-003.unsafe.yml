@@ -1,0 +1,6 @@
+definitions:
+  variables:
+    AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+pipelines:
+  default:
+    - step: { max-time: 10, script: [pytest] }
