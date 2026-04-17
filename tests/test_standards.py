@@ -1,9 +1,19 @@
 """Tests for the compliance standards registry and built-in standards."""
+from __future__ import annotations
+
+import ast
+import pathlib
 
 import pytest
 
 from pipeline_check.core import standards
+from pipeline_check.core.standards import data as _standards_data
 from pipeline_check.core.standards.base import ControlRef, Standard
+
+_DATA_DIR = pathlib.Path(_standards_data.__file__).parent
+_DATA_MODULES = sorted(
+    p for p in _DATA_DIR.glob("*.py") if p.name != "__init__.py"
+)
 
 
 class TestRegistry:
@@ -167,6 +177,35 @@ class TestMultiStandardEnrichment:
         std_names = {r.standard for r in refs}
         assert "cis_aws_foundations" not in std_names
         assert "owasp_cicd_top_10" in std_names
+
+
+class TestDataFileHygiene:
+    """Source-level guards that the runtime API can't catch.
+
+    Python dict literals allow duplicate keys silently (last-write-wins).
+    When a check_id evidences multiple controls in the same standard,
+    a drafter may write ``"CB-005": ["A"]`` and later ``"CB-005": ["B"]``
+    in the same dict — the first mapping is silently lost. Runtime
+    integrity tests walk the *collapsed* dict and can't see it. This
+    suite parses the source AST to catch duplicates before they ship.
+    """
+
+    @pytest.mark.parametrize("path", _DATA_MODULES, ids=lambda p: p.stem)
+    def test_no_duplicate_dict_keys(self, path):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Dict):
+                continue
+            keys: list[object] = []
+            for k in node.keys:
+                if isinstance(k, ast.Constant):
+                    keys.append(k.value)
+            dupes = sorted({k for k in keys if keys.count(k) > 1})
+            assert not dupes, (
+                f"{path.name}: duplicate dict keys {dupes} "
+                f"(Python silently keeps only the last — consolidate "
+                f"into a single list value)"
+            )
 
 
 class TestControlRef:
