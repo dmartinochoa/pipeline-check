@@ -500,11 +500,19 @@ class ResourceCatalog:
     # ------------------------------------------------------------------
 
     def ecr_pull_through_cache_rules(self) -> list[dict]:
+        # Swallow ClientError locally so a PTC API failure (LocalStack
+        # lacks this endpoint, or AccessDenied in prod) only costs ECR-006
+        # visibility — not the entire ECR rule family. Without this,
+        # self._memo would taint catalog.errors["ecr"] and the orchestrator
+        # would suppress ECR-001..005 in favour of a single ECR-000.
         def _load() -> list[dict]:
             client = self.client("ecr")
-            return client.describe_pull_through_cache_rules().get(
-                "pullThroughCacheRules", []
-            )
+            try:
+                return client.describe_pull_through_cache_rules().get(
+                    "pullThroughCacheRules", []
+                )
+            except Exception:  # noqa: BLE001
+                return []
         return self._memo("ecr:ptc", _load)
 
     # ------------------------------------------------------------------
