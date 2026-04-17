@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+                sh 'docker push myregistry/myapp:latest'
+            }
+        }
+        /* trivy scan to be added in sprint 42 */
+    }
+}

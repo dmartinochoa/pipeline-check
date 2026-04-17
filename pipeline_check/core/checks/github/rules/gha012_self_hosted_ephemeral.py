@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Configure the self-hosted runner to register with "
         "`--ephemeral` (the runner exits after one job and is "
@@ -30,6 +31,15 @@ RULE = Rule(
         "`runs-on` value; without one, the runner is presumed "
         "reusable. Recognises all three `runs-on` shapes: string, "
         "list, and `{ group, labels }` dict form."
+    ),
+    known_fp=(
+        "Organisations using actions-runner-controller (ARC), "
+        "autoscaled pools, or vendor runner fleets often use labels "
+        "like ``arc-*``, ``autoscaled-*``, or ``ephemeral-pool-*`` "
+        "instead of a bare ``ephemeral`` label. The check only "
+        "matches the literal ``ephemeral`` token on ``runs-on``; "
+        "extend via a custom allow-prefix config if your fleet uses "
+        "a different naming convention. Defaults to MEDIUM confidence.",
     ),
 )
 

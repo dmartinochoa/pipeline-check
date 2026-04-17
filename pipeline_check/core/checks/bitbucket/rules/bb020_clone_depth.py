@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.LOW,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV",),
+    cwe=("CWE-250",),
     recommendation=(
         "Set `clone: depth: 1` (or a small number) in pipeline or "
         "step options to limit the amount of repository history "

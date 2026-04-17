@@ -29,9 +29,11 @@ pipeline {
                     sh 'echo "Building branch $BRANCH"'
                     sh 'make build'
                 }
+                // JF-021 safe: lockfile-enforcing install command.
+                sh 'npm ci'
                 sh 'trivy fs --severity HIGH .'
                 sh 'syft . -o cyclonedx-json > sbom.json'
-                sh 'cosign sign --yes registry.example.com/app:$BUILD_TAG'
+                sh 'cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes registry.example.com/app:$BUILD_TAG'
             }
         }
 

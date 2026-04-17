@@ -34,6 +34,8 @@ class JenkinsfileChecks(JenkinsBaseCheck):
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for jf in self.ctx.files:
-            for _, check_fn in self._rules:
-                findings.append(check_fn(jf))
+            for rule, check_fn in self._rules:
+                finding = check_fn(jf)
+                finding.cwe = list(rule.cwe)
+                findings.append(finding)
         return findings

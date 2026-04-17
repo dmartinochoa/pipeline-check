@@ -1,0 +1,9 @@
+resources:
+  repositories:
+    - repository: tools
+      type: git
+      name: MyOrg/tools
+      ref: refs/heads/main
+
+jobs:
+  - template: shared/build.yml@tools

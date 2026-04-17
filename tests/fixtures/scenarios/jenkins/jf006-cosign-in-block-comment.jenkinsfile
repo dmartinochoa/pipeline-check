@@ -1,0 +1,15 @@
+/*
+ * We plan to add cosign signing in the future.
+ * See https://docs.sigstore.dev for docs.
+ */
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+                sh 'docker push myregistry/myapp:latest'
+            }
+        }
+    }
+}

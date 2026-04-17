@@ -12,6 +12,12 @@ _TOKEN_PERSIST_RE = re.compile(
     r"CI_JOB_TOKEN.*(?:>>?\s|tee\s)"
     r"|>>?\s*.*CI_JOB_TOKEN"
     r"|\$CI_JOB_TOKEN.*>>?"
+    r"|CI_DEPLOY_TOKEN.*(?:>>?\s|tee\s)"
+    r"|\$CI_DEPLOY_TOKEN.*>>?"
+    r"|CI_REGISTRY_PASSWORD.*(?:>>?\s|tee\s)"
+    r"|\$CI_REGISTRY_PASSWORD.*>>?"
+    r"|CI_DEPLOY_PASSWORD.*(?:>>?\s|tee\s)"
+    r"|\$CI_DEPLOY_PASSWORD.*>>?"
 )
 
 RULE = Rule(
@@ -20,6 +26,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-522",),
     recommendation=(
         "Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. "
         "Use the token inline in the command that needs it and let GitLab "

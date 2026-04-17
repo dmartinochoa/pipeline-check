@@ -26,20 +26,27 @@ def spec() -> dict:
 
 
 def _all_aws_check_ids() -> set[str]:
-    """Collect every check_id the AWS provider can emit by constructing
-    a real Scanner-like context and inspecting the registered classes."""
+    """Collect every check_id the AWS provider can emit.
+
+    Post-migration every AWS check is a rule module under
+    ``aws/rules/``; walk the rule registry via ``discover_rules`` and
+    collect each rule's ``id``. Any still-class-based modules
+    registered in ``provider.check_classes`` (none, at time of writing)
+    are additionally scraped via their docstring check-ID table so the
+    helper stays correct if the mix changes in either direction.
+    """
+    from pipeline_check.core.checks.rule import discover_rules
+
     provider = _providers.get("aws")
     assert provider is not None, "aws provider should always be registered"
     ids: set[str] = set()
+
+    for _rule, _check in discover_rules("pipeline_check.core.checks.aws.rules"):
+        ids.add(_rule.id)
+
+    import re
     for cls in provider.check_classes:
-        # Every AWS check module declares a module-level docstring
-        # listing check IDs. Simpler and more robust: introspect the
-        # class's run() won't work without live boto3, so just parse
-        # the docstring for ``^[A-Z]+-\\d{3}`` patterns.
-        import re
         doc = (cls.__module__ and __import__(cls.__module__, fromlist=[""]).__doc__) or ""
-        # Check prefixes may contain digits (``S3`` is the outlier) —
-        # match ``[A-Z][A-Z0-9]*-\d{3}``, not ``[A-Z]+-\d{3}``.
         for m in re.finditer(r"^([A-Z][A-Z0-9]*-\d{3})\b", doc, re.MULTILINE):
             ids.add(m.group(1))
     return ids

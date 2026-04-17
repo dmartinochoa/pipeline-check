@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Move shared Groovy into a Jenkins shared library "
         "(`@Library('name@<sha>')`) — those are version-pinned and "

@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - export GIT_SSL_NO_VERIFY=true
+          - git clone https://internal.example.com/repo.git

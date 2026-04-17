@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck
+from ..base import BaseCheck, safe_load_yaml
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,9 @@ class BitbucketContext:
 
     def __init__(self, pipelines: list[Pipeline]) -> None:
         self.pipelines = pipelines
+        self.files_scanned: int = len(pipelines)
+        self.files_skipped: int = 0
+        self.warnings: list[str] = []
 
     @classmethod
     def from_path(cls, path: str | Path) -> BitbucketContext:
@@ -48,19 +51,29 @@ class BitbucketContext:
                 }
             )
         pipelines: list[Pipeline] = []
+        warnings: list[str] = []
+        skipped = 0
         for f in files:
             try:
                 text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError) as exc:
+                warnings.append(f"{f}: read error: {exc}")
+                skipped += 1
                 continue
             try:
-                data = yaml.safe_load(text)
-            except yaml.YAMLError:
+                data = safe_load_yaml(text)
+            except yaml.YAMLError as exc:
+                first_line = str(exc).split("\n", 1)[0]
+                warnings.append(f"{f}: YAML parse error: {first_line}")
+                skipped += 1
                 continue
             if not isinstance(data, dict):
                 continue
             pipelines.append(Pipeline(path=str(f), data=data))
-        return cls(pipelines)
+        ctx = cls(pipelines)
+        ctx.files_skipped = skipped
+        ctx.warnings = warnings
+        return ctx
 
 
 class BitbucketBaseCheck(BaseCheck):

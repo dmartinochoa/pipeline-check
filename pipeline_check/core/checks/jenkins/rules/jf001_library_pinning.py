@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Pin every `@Library('name@<ref>')` to a release tag (e.g. "
         "`@v1.4.2`) or a 40-char commit SHA. Configure the library "

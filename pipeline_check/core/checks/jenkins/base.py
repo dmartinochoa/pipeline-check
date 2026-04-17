@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..base import BaseCheck
+from .rules._helpers import strip_groovy_comments
 
 _LIBRARY_RE = re.compile(r"@Library\(\s*['\"]([^'\"]+)['\"]\s*\)")
 # Matches ``stage('Name') { ... }`` non-greedily, capturing the inner
@@ -44,6 +45,9 @@ class Jenkinsfile:
     text: str
     library_refs: list[str] = field(default_factory=list)
     stages: list[tuple[str, str]] = field(default_factory=list)
+    #: Text with Groovy comments stripped — computed once at
+    #: construction time so checks JF-006/007/020 share the work.
+    text_no_comments: str = field(default="", repr=False)
 
 
 class JenkinsContext:
@@ -51,6 +55,9 @@ class JenkinsContext:
 
     def __init__(self, files: list[Jenkinsfile]) -> None:
         self.files = files
+        self.files_scanned: int = len(files)
+        self.files_skipped: int = 0
+        self.warnings: list[str] = []
 
     @classmethod
     def from_path(cls, path: str | Path) -> JenkinsContext:
@@ -68,18 +75,26 @@ class JenkinsContext:
                 if p.is_file() and (p.name == "Jenkinsfile" or p.suffix.lower() in {".jenkinsfile", ".groovy"})
             )
         files: list[Jenkinsfile] = []
+        warnings: list[str] = []
+        skipped = 0
         for p in paths:
             try:
                 text = p.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError) as exc:
+                warnings.append(f"{p}: read error: {exc}")
+                skipped += 1
                 continue
             files.append(Jenkinsfile(
                 path=str(p),
                 text=text,
                 library_refs=_LIBRARY_RE.findall(text),
                 stages=_extract_stages(text),
+                text_no_comments=strip_groovy_comments(text),
             ))
-        return cls(files)
+        ctx = cls(files)
+        ctx.files_skipped = skipped
+        ctx.warnings = warnings
+        return ctx
 
 
 class JenkinsBaseCheck(BaseCheck):
@@ -97,11 +112,8 @@ def _extract_stages(text: str) -> list[tuple[str, str]]:
 
     Walks Groovy braces depth-aware so a stage containing nested
     blocks (``script { ... }``, ``steps { ... }``) is captured in
-    full. Lines inside string literals can contain unmatched braces;
-    we intentionally don't try to handle that — the false-positive
-    cost on declarative Jenkinsfiles (which avoid that idiom) is
-    negligible compared to the false-negative cost of skipping the
-    whole stage parser when one weird literal trips us up.
+    full. String literals are skipped so braces inside strings
+    (e.g. ``sh 'echo "config: }"'``) don't break the depth count.
     """
     out: list[tuple[str, str]] = []
     for head in _STAGE_HEAD_RE.finditer(text):
@@ -110,6 +122,15 @@ def _extract_stages(text: str) -> list[tuple[str, str]]:
         depth = 1
         while i < len(text) and depth > 0:
             ch = text[i]
+            if ch in ('"', "'"):
+                # _skip_string returns the index of the closing quote —
+                # advance past it so the next iteration doesn't re-enter
+                # the string-skip branch on the same position (which
+                # would scan forward into unrelated quoted content,
+                # collapsing stage boundaries around triple-quoted
+                # YAML/JSON literals).
+                i = _skip_string(text, i) + 1
+                continue
             if ch == "{":
                 depth += 1
             elif ch == "}":
@@ -118,3 +139,28 @@ def _extract_stages(text: str) -> list[tuple[str, str]]:
         body = text[head.end():i - 1] if depth == 0 else text[head.end():]
         out.append((name, body))
     return out
+
+
+def _skip_string(text: str, pos: int) -> int:
+    """Advance past a Groovy string literal starting at *pos*.
+
+    Handles single-quoted, double-quoted, triple-single, and
+    triple-double-quoted strings. Returns the index of the closing
+    quote character (the caller's ``i += 1`` will step past it).
+    """
+    # Triple-quoted strings
+    for triple in ('"""', "'''"):
+        if text[pos:pos + 3] == triple:
+            end = text.find(triple, pos + 3)
+            return (end + 2) if end != -1 else len(text) - 1
+    # Single/double-quoted strings (with backslash escape)
+    quote = text[pos]
+    j = pos + 1
+    while j < len(text):
+        if text[j] == "\\":
+            j += 2
+            continue
+        if text[j] == quote:
+            return j
+        j += 1
+    return len(text) - 1

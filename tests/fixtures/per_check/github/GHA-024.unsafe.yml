@@ -1,0 +1,12 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: docker build -t app:$GITHUB_SHA .
+      - run: docker push app:$GITHUB_SHA
+      - uses: sigstore/cosign-installer@4959ce089c2fe0a3ab7b3aaa3aebc6a0a17b2af9
+      - run: cosign sign --yes app:$GITHUB_SHA

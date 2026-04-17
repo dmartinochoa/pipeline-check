@@ -1,0 +1,4 @@
+variables:
+  MY_BRANCH: $(Build.SourceBranchName)
+steps:
+  - script: echo $(MY_BRANCH)

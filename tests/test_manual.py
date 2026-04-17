@@ -86,11 +86,12 @@ def test_cli_man_with_topic_prints_only_that_topic():
     assert "TOPIC: autofix" not in result.output
 
 
-def test_cli_man_unknown_topic_exits_zero_but_surfaces_error():
-    """Unknown topic still exits 0 (not a hard failure) but shows the
-    error line so the user can correct the typo without re-invocation."""
+def test_cli_man_unknown_topic_exits_nonzero_with_error():
+    """Unknown topic exits 3 (config error) so automation piping the
+    output through ``| grep`` catches the typo. The previous "print
+    index and exit 0" behaviour hid typos in CI scripts."""
     result = CliRunner().invoke(scan, ["--man", "nope"])
-    assert result.exit_code == 0
+    assert result.exit_code == 3
     assert "Unknown topic: 'nope'" in result.output
 
 

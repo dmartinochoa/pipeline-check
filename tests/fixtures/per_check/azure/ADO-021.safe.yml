@@ -1,0 +1,3 @@
+steps:
+  - script: npm ci
+  - script: pip install --require-hashes -r requirements.txt

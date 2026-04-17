@@ -33,6 +33,8 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for p in self.ctx.pipelines:
-            for _, check_fn in self._rules:
-                findings.append(check_fn(p.path, p.data))
+            for rule, check_fn in self._rules:
+                finding = check_fn(p.path, p.data)
+                finding.cwe = list(rule.cwe)
+                findings.append(finding)
         return findings

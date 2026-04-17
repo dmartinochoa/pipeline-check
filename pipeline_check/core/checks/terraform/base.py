@@ -41,7 +41,9 @@ class TerraformContext:
 
     def __init__(self, plan: dict[str, Any]) -> None:
         self._plan = plan
-        self._resources: list[TerraformResource] = list(_iter_resources(plan))
+        resources, data_sources = _split_resources(plan)
+        self._resources: list[TerraformResource] = resources
+        self._data_sources: list[TerraformResource] = data_sources
 
     @classmethod
     def from_path(cls, path: str | Path) -> TerraformContext:
@@ -49,8 +51,21 @@ class TerraformContext:
             return cls(json.load(fh))
 
     def resources(self, resource_type: str | None = None) -> Iterator[TerraformResource]:
-        """Yield resources, optionally filtered by Terraform *resource_type*."""
+        """Yield **managed** resources, optionally filtered by Terraform *resource_type*."""
         for r in self._resources:
+            if resource_type is None or r.type == resource_type:
+                yield r
+
+    def data_sources(self, resource_type: str | None = None) -> Iterator[TerraformResource]:
+        """Yield **data sources** (``mode == "data"``), optionally filtered by type.
+
+        Exposed separately from ``resources()`` so rules that only care
+        about managed-state changes keep their current semantics. Data
+        sources are useful when a check needs to follow an indirect
+        reference — e.g. an ``aws_iam_policy_document`` rendered via
+        ``.json`` output and consumed elsewhere in the plan.
+        """
+        for r in self._data_sources:
             if resource_type is None or r.type == resource_type:
                 yield r
 
@@ -58,21 +73,34 @@ class TerraformContext:
         return len(self._resources)
 
 
-def _iter_resources(plan: dict[str, Any]) -> Iterator[TerraformResource]:
-    """Walk planned_values.root_module (and child_modules) recursively."""
+def _split_resources(
+    plan: dict[str, Any],
+) -> tuple[list[TerraformResource], list[TerraformResource]]:
+    """Partition ``planned_values`` into (managed, data) resource lists."""
+    managed: list[TerraformResource] = []
+    data: list[TerraformResource] = []
     root = plan.get("planned_values", {}).get("root_module", {})
-    yield from _walk_module(root)
+    for r in _walk_module(root):
+        (managed if r[0] else data).append(r[1])
+    return managed, data
 
 
-def _walk_module(module: dict[str, Any]) -> Iterator[TerraformResource]:
+def _walk_module(
+    module: dict[str, Any],
+) -> Iterator[tuple[bool, TerraformResource]]:
+    """Yield ``(is_managed, TerraformResource)`` pairs from *module* recursively."""
     for r in module.get("resources", []) or []:
-        if r.get("mode") != "managed":
-            continue  # skip data sources
-        yield TerraformResource(
-            address=r.get("address", ""),
-            type=r.get("type", ""),
-            name=r.get("name", ""),
-            values=r.get("values", {}) or {},
+        mode = r.get("mode")
+        if mode not in ("managed", "data"):
+            continue
+        yield (
+            mode == "managed",
+            TerraformResource(
+                address=r.get("address", ""),
+                type=r.get("type", ""),
+                name=r.get("name", ""),
+                values=r.get("values", {}) or {},
+            ),
         )
     for child in module.get("child_modules", []) or []:
         yield from _walk_module(child)

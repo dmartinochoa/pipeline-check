@@ -8,13 +8,28 @@ See the relevant provider module for instructions:
 """
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import diff as _diff
 from . import providers as _providers
 from . import standards as _standards
 from .checks import _secrets as _secret_registry
-from .checks.base import Finding, clear_blob_cache
+from .checks._confidence import confidence_for
+from .checks.base import Confidence, Finding, clear_blob_cache
+from .inventory import Component
+
+
+@dataclass
+class ScanMetadata:
+    """Metadata about a scan run, surfaced in the CLI summary line."""
+
+    provider: str = ""
+    files_scanned: int = 0
+    files_skipped: int = 0
+    warnings: list[str] = field(default_factory=list)
+    elapsed_seconds: float = 0.0
 
 
 class Scanner:
@@ -41,8 +56,10 @@ class Scanner:
         profile: str | None = None,
         diff_base: str | None = None,
         secret_patterns: list[str] | tuple[str, ...] | None = None,
+        log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
+        self._log = log
         provider = _providers.get(pipeline)
         if provider is None:
             available = ", ".join(_providers.available()) or "none registered"
@@ -50,6 +67,7 @@ class Scanner:
                 f"Unknown provider '{pipeline}'. Available: {available}"
             )
         self.pipeline = pipeline.lower()
+        self._provider = provider
         self._check_classes = provider.check_classes
         # Reset the global secret-pattern registry at the start of
         # every Scanner construction so patterns registered for a
@@ -64,6 +82,54 @@ class Scanner:
         )
         if diff_base:
             _filter_context_by_diff(self._context, diff_base, self.pipeline)
+
+        self.metadata = ScanMetadata(
+            provider=self.pipeline,
+            files_scanned=getattr(self._context, "files_scanned", 0),
+            files_skipped=getattr(self._context, "files_skipped", 0),
+            warnings=list(getattr(self._context, "warnings", [])),
+        )
+
+    def inventory(
+        self,
+        type_patterns: list[str] | None = None,
+    ) -> list[Component]:
+        """Return the list of components the active provider discovered.
+
+        Delegates to ``provider.inventory(context)``. Safe to call
+        independently of ``run()`` — shift-left providers answer from
+        the already-loaded context, the AWS provider performs a fresh
+        enumeration pass (one extra round-trip per service). Either
+        call order works:
+
+            scanner.inventory()
+            scanner.run()
+
+        or vice-versa; the inventory function does not depend on
+        findings having been collected.
+
+        Parameters
+        ----------
+        type_patterns:
+            Optional glob patterns (``aws_*``, ``AWS::IAM::*``,
+            ``workflow``). A component is kept when its ``type`` matches
+            any pattern. Case-sensitive — CFN types are PascalCase,
+            Terraform types are snake_case; callers should match the
+            casing of the provider they're slicing.
+        """
+        provider = getattr(self, "_provider", None)
+        if provider is None:
+            provider = _providers.get(self.pipeline)
+        if provider is None:
+            return []
+        components = provider.inventory(self._context)
+        if type_patterns:
+            import fnmatch
+            components = [
+                c for c in components
+                if any(fnmatch.fnmatchcase(c.type, p) for p in type_patterns)
+            ]
+        return components
 
     def run(
         self,
@@ -91,10 +157,21 @@ class Scanner:
         # can't alias a newly-allocated doc object in the same process.
         clear_blob_cache()
 
+        # Guard for callers that bypass __init__ (e.g. tests using __new__).
+        if not hasattr(self, "metadata"):
+            self.metadata = ScanMetadata(provider=getattr(self, "pipeline", ""))
+
+        t0 = time.monotonic()
+
+        log = getattr(self, "_log", None)
+
         findings: list[Finding] = []
         for check_class in self._check_classes:
             checker = check_class(self._context, target=target)
-            findings.extend(checker.run())
+            batch = checker.run()
+            if log:
+                log(f"running {check_class.__name__}... {len(batch)} finding(s)")
+            findings.extend(batch)
 
         if checks:
             # Support glob patterns (``GHA-*``, ``*-008``) alongside
@@ -110,6 +187,15 @@ class Scanner:
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
+            # Apply the centralised confidence default ONLY when the
+            # rule hasn't explicitly set it (i.e. still at the
+            # dataclass default). Rules that want to override stay in
+            # control — e.g. ``CB-005`` may emit HIGH for two-versions-
+            # behind and MEDIUM for one-behind.
+            if f.confidence == Confidence.HIGH:
+                f.confidence = confidence_for(f.check_id)
+
+        self.metadata.elapsed_seconds = time.monotonic() - t0
 
         return findings
 

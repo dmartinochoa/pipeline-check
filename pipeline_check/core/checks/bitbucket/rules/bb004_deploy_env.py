@@ -1,12 +1,26 @@
 """BB-004 — deploy-like steps must declare `deployment:`."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_steps
+from ..base import iter_steps, step_scripts
 from ._helpers import DEPLOY_RE
+
+_DEPLOY_CMD_RE = re.compile(
+    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
+    r"|terraform\s+(?:apply|destroy)"
+    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
+    r"|docker\s+push"
+    r"|helm\s+(?:upgrade|install)"
+    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
+    r"|ansible-playbook"
+    r"|serverless\s+deploy"
+    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
+    re.IGNORECASE,
+)
 
 RULE = Rule(
     id="BB-004",
@@ -14,6 +28,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-1",),
     esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
+    cwe=("CWE-284",),
     recommendation=(
         "Add `deployment: production` (or `staging` / `test`) to the "
         "step. Configure the matching environment in the repo's "
@@ -47,6 +62,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 elif isinstance(entry, str) and "pipe:" in entry and DEPLOY_RE.search(entry):
                     is_deploy = True
                     break
+        # Also check for deploy-like commands in script bodies.
+        if not is_deploy:
+            is_deploy = any(
+                _DEPLOY_CMD_RE.search(line) for line in step_scripts(step)
+            )
         if not is_deploy:
             continue
         if not step.get("deployment"):

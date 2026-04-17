@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.LOW,
     owasp=("CICD-SEC-10",),
     esf=("ESF-D-BUILD-LOGS", "ESF-C-AUDIT"),
+    cwe=("CWE-532",),
     recommendation=(
         "Add `options { buildDiscarder(logRotator(numToKeepStr: "
         "'30', daysToKeepStr: '90')) }` (declarative) or the "

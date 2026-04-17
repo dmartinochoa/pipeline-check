@@ -96,6 +96,30 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "grafana_api_key":        r"glsa_[A-Za-z0-9_]{32,}",
     # Telegram Bot API token — numeric bot ID + alphanumeric secret.
     "telegram_bot_token":     r"\d{8,10}:[A-Za-z0-9_\-]{35}",
+    # Atlassian Cloud API tokens (Forge / Connect apps; ATATT3 prefix).
+    "atlassian_api_token":    r"ATATT3[A-Za-z0-9_\-]{50,}",
+    # GitLab Runner registration tokens (glrt- prefix).
+    "gitlab_runner_token":    r"glrt-[0-9A-Za-z_\-]{20,}",
+    # GitLab CI/CD job tokens (new format, glcbt- prefix).
+    "gitlab_ci_token":        r"glcbt-[0-9A-Za-z]{20,}",
+    # Supabase project API keys (sbp_ prefix).
+    "supabase_key":           r"sbp_[a-f0-9]{40}",
+    # Fly.io API tokens (fo1_ prefix).
+    "fly_api_token":          r"fo1_[A-Za-z0-9_\-]{40,}",
+    # Pulumi Cloud access tokens (pul- prefix, 40 hex).
+    "pulumi_access_token":    r"pul-[a-f0-9]{40}",
+    # Doppler secrets manager tokens — scoped prefixes (ct/sa/st/scrt/audit).
+    "doppler_token":          r"dp\.(?:ct|sa|st|scrt|audit)\.[A-Za-z0-9]{40,}",
+    # Netlify personal access tokens (nfp_ prefix).
+    "netlify_token":          r"nfp_[A-Za-z0-9]{40,}",
+    # Railway.app API tokens.
+    "railway_token":          r"railway_[A-Za-z0-9_\-]{36,}",
+    # Render API keys (rnd_ prefix).
+    "render_api_key":         r"rnd_[A-Za-z0-9]{32,}",
+    # Prefect Cloud API keys (pnu_ prefix).
+    "prefect_api_key":        r"pnu_[A-Za-z0-9]{36,}",
+    # Neon serverless Postgres API keys (neon_ prefix).
+    "neon_api_key":           r"neon_[A-Za-z0-9_\-]{36,}",
 }
 
 

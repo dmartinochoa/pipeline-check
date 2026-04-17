@@ -30,6 +30,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | IAM           | `IAM-001…006`     | `aws_iam_role`, `aws_iam_role_policy`, `aws_iam_role_policy_attachment`, `aws_iam_policy` |
 | PBAC          | `PBAC-001…002`    | `aws_codebuild_project`                                                              |
 | S3            | `S3-001…005`      | `aws_codepipeline` + `aws_s3_bucket_{public_access_block,server_side_encryption_configuration,versioning,logging,policy}` |
+| Signer        | `SIGN-001`        | `aws_lambda_function.code_signing_config_arn`, `aws_signer_signing_profile` |
+| EventBridge   | `EB-002`          | `aws_cloudwatch_event_target`                                                     |
+| CloudWatch    | `CW-001`          | `aws_cloudwatch_metric_alarm` (namespace=`AWS/CodeBuild`, metric=`FailedBuilds`)  |
+| Terraform-only| `TF-001…003`      | `aws_iam_access_key`, stateful data-store resources, `aws_subnet.map_public_ip_on_launch` |
 
 Child modules are walked recursively; `mode="data"` entries are skipped.
 
@@ -117,13 +121,39 @@ If a helper resource is absent for a given bucket, the check fails —
 matching the AWS-provider behaviour where the service returns the default
 (usually "not configured").
 
+### Phase-4 gap fills and Terraform-native rules
+
+| Check    | Resource(s) read                                         | Condition                                                                           |
+|----------|----------------------------------------------------------|-------------------------------------------------------------------------------------|
+| SIGN-001 | `aws_lambda_function`, `aws_signer_signing_profile`      | Gated: only emits when a Lambda references `code_signing_config_arn`. Passes if a profile with `platform_id = AWSLambda-*` exists. |
+| EB-002   | `aws_cloudwatch_event_target`                            | Fails when `arn` contains a literal `*`.                                            |
+| CW-001   | `aws_codebuild_project`, `aws_cloudwatch_metric_alarm`   | Gated: only emits when the plan declares CodeBuild. Passes if any alarm has `namespace = AWS/CodeBuild` and `metric_name = FailedBuilds`. |
+| TF-001   | `aws_iam_access_key`                                     | Fails for every `aws_iam_access_key` — long-lived keys as code store credential material in state. |
+| TF-002   | Stateful data stores (`aws_db_instance`, `aws_rds_cluster`, `aws_redshift_cluster`, `aws_elasticache_replication_group`, `aws_docdb_cluster`, `aws_neptune_cluster`, `aws_opensearch_domain`, `aws_memorydb_cluster`) | Fails when a string leaf matches `SECRET_VALUE_RE` (vendor tokens) or a secret-named attribute (`*password`, `*token`, …) carries an 8+ char value that is not a Terraform interpolation residue or a documented placeholder. `aws_lambda_function` / `aws_ssm_parameter` / `aws_codebuild_project` / `aws_secretsmanager_secret_version` are skipped — covered by LMB-003, SSM-001, CB-001, or intentional. |
+| TF-003   | `aws_codebuild_project`, `aws_subnet`                    | When `vpc_config[0].vpc_id` is a resolved string, fails if any `aws_subnet` in the same `vpc_id` has `map_public_ip_on_launch = true`. Silent when `vpc_id` is unresolved ("known after apply"). |
+
+## Working with data sources
+
+The context exposes a second iterator, `ctx.data_sources(type=None)`,
+for resources with `mode="data"` (e.g. `aws_iam_policy_document`,
+`aws_caller_identity`). Managed-resource iteration via `ctx.resources()`
+is unchanged — rules that only care about to-be-created state keep
+their current semantics. Checks that need to follow an indirect
+reference (for instance, a policy-document `.json` rendered by a data
+source and consumed via a module output) can now join against the
+data-source list.
+
+In most plans Terraform already resolves `aws_iam_policy_document`
+data sources inline — the rendered JSON arrives on `aws_iam_policy.policy`
+or `aws_iam_role_policy.policy` directly and the IAM checks see it
+without any extra work. The new iterator only matters when the data
+source depends on a to-be-created resource and Terraform defers it to
+apply.
+
 ## Limitations
 
 - **Only the plan's resource set is visible.** Resources provisioned
-  outside Terraform or via nested data sources are not scanned.
-- **Compiled policy bodies only.** IAM checks read the `policy` strings
-  present in the plan; they do not dereference `aws_iam_policy_document`
-  data sources unless Terraform already resolved them.
+  outside Terraform (console, other stacks) are not scanned.
 - **No runtime state.** Checks like ECR-003 that in AWS-provider mode
   query the live repository policy rely here on whether an
   `aws_ecr_repository_policy` resource exists in the plan.

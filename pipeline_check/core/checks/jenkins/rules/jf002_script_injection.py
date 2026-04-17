@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION",),
+    cwe=("CWE-78",),
     recommendation=(
         "Switch the affected `sh`/`bat`/`powershell` step to a "
         "single-quoted string (Groovy doesn't interpolate single "

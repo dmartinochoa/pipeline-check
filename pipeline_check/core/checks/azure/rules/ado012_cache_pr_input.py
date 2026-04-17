@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-345",),
     recommendation=(
         "Build the cache key from values the PR can't control: "
         "`$(Agent.OS)`, lockfile hashes, the pipeline name. Never "

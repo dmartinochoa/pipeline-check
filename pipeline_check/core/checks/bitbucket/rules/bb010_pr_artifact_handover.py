@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-494",),
     recommendation=(
         "Add a verification step before the deploy step consumes "
         "the artifact: `sha256sum -c artifact.sha256` against a "

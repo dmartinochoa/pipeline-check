@@ -40,11 +40,14 @@ def _finding(
 
 class TestListStandards:
     def test_prints_every_registered_standard(self, runner):
+        from pipeline_check.core import standards
+
         result = runner.invoke(scan, ["--list-standards"])
         assert result.exit_code == 0
-        assert "owasp_cicd_top_10" in result.output
-        assert "cis_aws_foundations" in result.output
-        assert "slsa" in result.output
+        for name in standards.available():
+            assert name in result.output, (
+                f"--list-standards output missing {name!r}"
+            )
         # URLs should render too
         assert "https://owasp.org/www-project-top-10-ci-cd-security-risks/" in result.output
 

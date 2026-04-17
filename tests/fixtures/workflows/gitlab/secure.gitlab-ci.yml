@@ -5,6 +5,11 @@ include:
 
 image: python@sha256:0000000000000000000000000000000000000000000000000000000000000001
 
+# GL-028 — services image pinned by sha256 digest.
+services:
+  - name: postgres@sha256:0000000000000000000000000000000000000000000000000000000000000003
+    alias: db
+
 variables:
   DEPLOY_TARGET: production
   AWS_ROLE_ARN: $OIDC_DEPLOY_ROLE
@@ -25,11 +30,26 @@ deploy-prod:
   stage: deploy
   timeout: 15 minutes
   when: manual
+  # GL-029 — manual deploy explicitly blocks the pipeline on no-click.
+  allow_failure: false
   environment:
     name: production
     url: https://app.example.com
   script:
+    # GL-021 safe: lockfile-enforcing install command.
+    - npm ci
     - trivy fs --severity HIGH .
     - syft . -o cyclonedx-json > sbom.json
-    - cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"
+    - cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"
     - ./scripts/deploy.sh
+
+# GL-030 — trigger:include: pulls from a tag-pinned project.
+# Placed outside the deploy stage so GL-004/GL-015 don't fire on it
+# (parent-child triggers don't run scripts in the parent pipeline).
+trigger-child:
+  stage: test
+  timeout: 5 minutes
+  trigger:
+    include:
+      - project: 'platform/child-pipelines'
+        ref: v2.1.0

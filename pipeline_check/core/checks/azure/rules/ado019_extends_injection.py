@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-PIN-DEPS"),
+    cwe=("CWE-78",),
     recommendation=(
         "Pin the extends template to a protected repository ref "
         "(`template@ref`). Local templates in PR-validated pipelines "

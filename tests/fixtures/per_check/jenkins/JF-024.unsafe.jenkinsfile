@@ -1,0 +1,14 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Build') {
+      steps { sh 'make build' }
+    }
+    stage('Deploy to prod') {
+      steps {
+        input message: 'Promote to production?'
+        sh './deploy.sh'
+      }
+    }
+  }
+}

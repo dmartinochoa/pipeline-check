@@ -1,0 +1,5 @@
+variables:
+  MY_BRANCH: $CI_COMMIT_REF_NAME
+build:
+  script:
+    - echo $MY_BRANCH

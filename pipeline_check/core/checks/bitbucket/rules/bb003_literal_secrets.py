@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-798",),
     recommendation=(
         "Store credentials as Repository / Deployment Variables in "
         "Bitbucket's Pipelines settings with the 'Secured' flag, and "

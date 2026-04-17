@@ -3,4 +3,5 @@ pipelines:
     - step:
         max-time: 10
         script:
+          - docker push example/app:$BITBUCKET_COMMIT
           - cosign sign --yes example/app:$BITBUCKET_COMMIT

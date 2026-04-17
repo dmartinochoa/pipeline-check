@@ -16,15 +16,30 @@ Key shape notes:
 - Severity is expressed two ways: the enum ``level`` (error/warning/note)
   for UI coloring, and the floating-point ``security-severity``
   (0–10 CVSS-style) that GitHub uses to filter code-scanning alerts.
-- Compliance controls attached by the Scanner are surfaced via
-  ``properties.tags`` (so they are searchable in the GitHub UI) and
-  ``properties.controls`` (structured form for programmatic consumers).
+- Compliance controls attached by the Scanner are split across two
+  SARIF fields: rule-level ``properties.tags`` carries the *standard
+  slugs* (e.g. ``owasp_cicd_top_10``, ``soc2``) so GitHub's code-
+  scanning UI can filter by standard; individual *control IDs*
+  (``CICD-SEC-6``, ``CC6.1``, ``Dangerous-Workflow``) live only on the
+  per-result ``properties.controls`` array. GitHub caps rule tags at
+  20, which is why control IDs can't go there.
 """
 from __future__ import annotations
 
 import json
 
-from .checks.base import Finding, Severity
+from .checks.base import Confidence, Finding, Severity
+
+# SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
+# result is" independent of severity. GitHub Code Scanning surfaces it
+# as a sortable column. Map confidence directly: HIGH-confidence
+# findings are ranked at 100 so they float to the top of the UI;
+# LOW-confidence noise sinks to 20.
+_CONFIDENCE_RANK: dict[Confidence, float] = {
+    Confidence.HIGH: 100.0,
+    Confidence.MEDIUM: 50.0,
+    Confidence.LOW: 20.0,
+}
 
 _SARIF_VERSION = "2.1.0"
 _SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -118,20 +133,29 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         # exposed via ``properties.controls`` for programmatic consumers.
         standard_tags = sorted({c.standard for c in f.controls})
         tags = ["security", *standard_tags][:20]
+        rule_props: dict = {
+            "security-severity": score,
+            "tags": tags,
+        }
+        if f.cwe:
+            rule_props["cwe"] = list(f.cwe)
+        # Build richer help markdown
+        help_parts = [f"**Recommendation**\n\n{f.recommendation}"]
+        if f.cwe:
+            help_parts.append(f"**CWE:** {', '.join(f.cwe)}")
+        help_md = "\n\n---\n\n".join(help_parts)
+
         seen[f.check_id] = {
             "id": f.check_id,
             "name": _rule_name(f.check_id, f.title),
             "shortDescription": {"text": f.title},
-            "fullDescription": {"text": f.title},
+            "fullDescription": {"text": f.recommendation or f.title},
             "help": {
                 "text": f.recommendation,
-                "markdown": f"**Recommendation**\n\n{f.recommendation}",
+                "markdown": help_md,
             },
             "defaultConfiguration": {"level": level},
-            "properties": {
-                "security-severity": score,
-                "tags": tags,
-            },
+            "properties": rule_props,
         }
     return list(seen.values())
 
@@ -160,8 +184,11 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
 
     properties: dict = {
         "severity": f.severity.value,
+        "confidence": f.confidence.value,
         "controls": [c.to_dict() for c in f.controls],
     }
+    if f.cwe:
+        properties["cwe"] = list(f.cwe)
     if arn:
         properties["arn"] = arn
         properties["region"] = _region_from_arn(arn) or ""
@@ -170,6 +197,11 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,
+        # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
+        # sort results by how much the scanner trusts them — orthogonal
+        # to severity. HIGH-confidence findings surface first; LOW are
+        # de-ranked so noisy rules don't drown out the signal.
+        "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "message": {"text": f.description},
         "locations": [
             {
@@ -222,6 +254,30 @@ def _best_effort_line(f: Finding) -> int | None:
         "BB-001":  _re.compile(r"^\s*-?\s*pipe:\s*\S+"),
         "ADO-001": _re.compile(r"^\s*-?\s*task:\s*\S+@\d"),
         "ADO-005": _re.compile(r"^\s*image:\s*\S+:\S+"),
+        "JF-001":  _re.compile(r"@Library\("),
+        "JF-002":  _re.compile(r'(?:sh|bat)\s*(?:\(?\s*".*\$(?:BRANCH_NAME|CHANGE_))'),
+        "JF-003":  _re.compile(r"\bagent\s+any\b"),
+        "JF-019":  _re.compile(r"Runtime\.getRuntime|Class\.forName|@Grab\b"),
+        "CC-001":  _re.compile(r"^\s*\w[\w-]*:\s*\S+@(?!v?\d+\.\d+\.\d+)"),
+        "CC-002":  _re.compile(r"\$CIRCLE_BRANCH|\$CIRCLE_TAG"),
+        # Per-provider entries for the cross-provider shell_eval
+        # primitive: best-effort line match on ``eval`` / ``sh -c``
+        # followed by a variable or command-substitution.
+        "GHA-028": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "GL-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "BB-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "ADO-027": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "CC-027":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "JF-030":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        # Per-provider entries for the lockfile_integrity primitive:
+        # best-effort line match on unpinned git URLs or integrity-
+        # bypassing local-path / tarball installs.
+        "GHA-029": _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "GL-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "BB-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "ADO-028": _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "CC-028":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "JF-031":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
     }
     pat = patterns.get(check_id)
     if pat is not None:
@@ -232,7 +288,7 @@ def _best_effort_line(f: Finding) -> int | None:
 
     # Generic fallback for secret-scanning checks: first line matching
     # the built-in credential regex.
-    if check_id in ("GHA-008", "GL-008", "BB-008", "ADO-008"):
+    if check_id in ("GHA-008", "GL-008", "BB-008", "ADO-008", "JF-008", "CC-008"):
         for idx, line in enumerate(lines, start=1):
             if SECRET_VALUE_RE.search(line):
                 return idx

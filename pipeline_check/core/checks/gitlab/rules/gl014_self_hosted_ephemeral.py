@@ -25,6 +25,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Register the runner with `--executor docker` + "
         "`--docker-pull-policy always` so containers are fresh per "

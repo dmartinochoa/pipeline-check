@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"),
+    cwe=("CWE-829",),
     recommendation=(
         "Pin `include: project:` entries with `ref:` set to a tag or "
         "commit SHA. Avoid `include: remote:` for untrusted URLs; "

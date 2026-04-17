@@ -1,0 +1,5 @@
+name: caller
+on: [push]
+jobs:
+  reuse:
+    uses: myorg/shared/.github/workflows/release.yml@v1

@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+                sh 'docker push myregistry/myapp:latest'
+                // sh 'syft . -o cyclonedx-json > sbom.json'
+            }
+        }
+    }
+}

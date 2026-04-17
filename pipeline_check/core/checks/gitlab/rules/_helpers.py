@@ -12,9 +12,12 @@ UNTRUSTED_VAR_RE = re.compile(
     r"\$\{?(?:"
     r"CI_COMMIT_MESSAGE|CI_COMMIT_DESCRIPTION|CI_COMMIT_TITLE"
     r"|CI_COMMIT_REF_NAME|CI_COMMIT_BRANCH|CI_COMMIT_TAG"
+    r"|CI_COMMIT_TAG_MESSAGE"
     r"|CI_COMMIT_AUTHOR"
     r"|CI_MERGE_REQUEST_TITLE|CI_MERGE_REQUEST_DESCRIPTION"
     r"|CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+    r"|CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME"
+    r"|CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_SHA"
     r")\}?"
 )
 
@@ -22,14 +25,15 @@ AWS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
 SECRETISH_KEY_RE = re.compile(
     r"(?i)(?:password|passwd|secret|token|apikey|api_key|private_key)"
 )
-DEPLOY_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 # Cache-key taint regex used by GL-012.
 CACHE_TAINT_RE = re.compile(
     r"\$\{?(?:"
     r"CI_MERGE_REQUEST_[A-Z_]+"
-    r"|CI_COMMIT_(?:BRANCH|REF_NAME|REF_SLUG|MESSAGE|TITLE|DESCRIPTION)"
+    r"|CI_COMMIT_(?:BRANCH|REF_NAME|REF_SLUG|MESSAGE|TITLE|DESCRIPTION|TAG_MESSAGE)"
     r"|CI_COMMIT_AUTHOR"
+    r"|CI_EXTERNAL_PULL_REQUEST_[A-Z_]+"
     r")\}?"
 )
 

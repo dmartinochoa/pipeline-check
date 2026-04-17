@@ -1,9 +1,26 @@
 name: Release
 
+# Publishing is manual for now: a tag push builds the sdist/wheel and
+# uploads them as a run artifact, but the TestPyPI / PyPI publish jobs
+# only run when an operator triggers the workflow via the Actions UI
+# (``workflow_dispatch``) with ``publish: true``. This keeps tag
+# creation — including ``gh release create`` — from accidentally
+# shipping to public indexes before the project is ready for a PyPI
+# debut.
 on:
   push:
     tags:
       - "v*.*.*"   # semver-looking tags only; patch releases included
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to TestPyPI and PyPI"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: read
@@ -60,6 +77,7 @@ jobs:
   # ---------------------------------------------------------------------------
   publish-testpypi:
     needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -88,6 +106,7 @@ jobs:
   # ---------------------------------------------------------------------------
   publish-pypi:
     needs: publish-testpypi
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

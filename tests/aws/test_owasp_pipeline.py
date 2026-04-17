@@ -97,15 +97,19 @@ def _make_codepipeline_client(
 ):
     client = MagicMock()
 
+    # Action roleArns differ from the pipeline-level role so PBAC-005 passes
+    # on the secure fixture (and fails when callers pass matching roles).
     source_action = {
         "name": "Source",
         "actionTypeId": {"category": "Source", "owner": "AWS", "provider": "CodeCommit", "version": "1"},
         "configuration": {"PollForSourceChanges": "false" if event_driven else "true"},
+        "roleArn": "arn:aws:iam::123:role/pipeline-source",
     }
     build_action = {
         "name": "Build",
         "actionTypeId": {"category": "Build", "owner": "AWS", "provider": "CodeBuild", "version": "1"},
         "configuration": {},
+        "roleArn": "arn:aws:iam::123:role/pipeline-build",
     }
     approval_action = {
         "name": "Approve",
@@ -116,6 +120,7 @@ def _make_codepipeline_client(
         "name": "Deploy",
         "actionTypeId": {"category": "Deploy", "owner": "AWS", "provider": "CodeDeploy", "version": "1"},
         "configuration": {},
+        "roleArn": "arn:aws:iam::123:role/pipeline-deploy",
     }
 
     if approval_before_deploy:
@@ -141,6 +146,7 @@ def _make_codepipeline_client(
 
     pipeline = {
         "name": "my-pipeline",
+        "roleArn": "arn:aws:iam::123:role/pipeline-top",
         "stages": stages,
         "artifactStore": artifact_store,
     }
@@ -347,6 +353,70 @@ def _make_s3_client(
     return client
 
 
+def _make_cloudtrail_client(has_active_trail=True, validation=True, multi_region=True):
+    client = MagicMock()
+    trails = []
+    if has_active_trail:
+        trails.append({
+            "Name": "org-trail",
+            "TrailARN": "arn:aws:cloudtrail:us-east-1:123456789:trail/org-trail",
+            "IsMultiRegionTrail": multi_region,
+            "LogFileValidationEnabled": validation,
+        })
+    client.describe_trails.return_value = {"trailList": trails}
+    client.get_trail_status.return_value = {"IsLogging": has_active_trail}
+    return client
+
+
+def _make_logs_client(log_groups=None):
+    client = MagicMock()
+    paginator = MagicMock()
+    paginator.paginate.return_value = iter([{"logGroups": log_groups or []}])
+    client.get_paginator.return_value = paginator
+    return client
+
+
+def _make_secretsmanager_client(secrets=None, resource_policy=None):
+    client = MagicMock()
+    paginator = MagicMock()
+    paginator.paginate.return_value = iter([{"SecretList": secrets or []}])
+    client.get_paginator.return_value = paginator
+    if resource_policy is None:
+        client.get_resource_policy.return_value = {}
+    else:
+        client.get_resource_policy.return_value = {"ResourcePolicy": resource_policy}
+    return client
+
+
+def _make_empty_paginator_client(page_key):
+    """A client whose one paginator returns a single empty page."""
+    client = MagicMock()
+    paginator = MagicMock()
+    paginator.paginate.return_value = iter([{page_key: []}])
+    client.get_paginator.return_value = paginator
+    return client
+
+
+def _events_client_with_failure_rule():
+    """EventBridge client wired with a rule matching CodePipeline FAILED."""
+    import json as _json
+    client = MagicMock()
+    rules = [{
+        "Name": "pipeline-failures",
+        "EventPattern": _json.dumps({
+            "detail-type": ["CodePipeline Pipeline Execution State Change"],
+            "detail": {"state": ["FAILED"]},
+        }),
+    }]
+    paginator = MagicMock()
+    paginator.paginate.side_effect = lambda **kw: iter([{"Rules": rules}])
+    client.get_paginator.return_value = paginator
+    client.list_targets_by_rule.return_value = {"Targets": [
+        {"Id": "sns", "Arn": "arn:aws:sns:us-east-1:123:alerts"},
+    ]}
+    return client
+
+
 def _make_session(
     codebuild_client,
     codepipeline_client,
@@ -354,8 +424,21 @@ def _make_session(
     ecr_client,
     iam_client,
     s3_client,
+    cloudtrail_client=None,
+    logs_client=None,
+    secretsmanager_client=None,
+    codeartifact_client=None,
+    codecommit_client=None,
+    lambda_client=None,
+    kms_client=None,
+    ssm_client=None,
 ):
-    """Wire all service clients into a single mock boto3 Session."""
+    """Wire all service clients into a single mock boto3 Session.
+
+    Services introduced by Phase 1+ rules default to "nothing to scan" —
+    existing per-check tests drive those services directly, and the
+    whole-pipeline integration test just needs them not to crash.
+    """
     _map = {
         "codebuild": codebuild_client,
         "codepipeline": codepipeline_client,
@@ -363,6 +446,29 @@ def _make_session(
         "ecr": ecr_client,
         "iam": iam_client,
         "s3": s3_client,
+        "cloudtrail": cloudtrail_client or _make_cloudtrail_client(),
+        "logs": logs_client or _make_logs_client(),
+        "secretsmanager": secretsmanager_client or _make_secretsmanager_client(),
+        "codeartifact": codeartifact_client or _make_empty_paginator_client("domains"),
+        "codecommit": codecommit_client or _make_empty_paginator_client("repositories"),
+        "lambda": lambda_client or _make_empty_paginator_client("Functions"),
+        "kms": kms_client or _make_empty_paginator_client("Keys"),
+        "ssm": ssm_client or _make_empty_paginator_client("Parameters"),
+        "sts": MagicMock(**{"get_caller_identity.return_value": {"Account": "123456789012"}}),
+        "ec2": MagicMock(**{"describe_security_groups.return_value": {"SecurityGroups": []}}),
+        "events": _events_client_with_failure_rule(),
+        "inspector2": MagicMock(**{
+            "batch_get_account_status.return_value": {
+                "accounts": [{"accountId": "123456789012",
+                              "resourceState": {"ecr": {"status": "ENABLED"}}}]
+            }
+        }),
+        "signer": MagicMock(**{"list_signing_profiles.return_value": {
+            "profiles": [{"profileName": "p", "platformId": "AWSLambda-SHA384-ECDSA", "status": "Active"}]
+        }}),
+        "cloudwatch": MagicMock(**{"describe_alarms.return_value": {
+            "MetricAlarms": [{"Namespace": "AWS/CodeBuild", "MetricName": "FailedBuilds"}]
+        }}),
     }
     session = MagicMock()
     session.client.side_effect = lambda svc, **kw: _map[svc]
@@ -469,7 +575,10 @@ class TestSecurePipeline:
     def test_all_services_produce_findings(self, secure_session):
         findings = _make_scanner(secure_session).run()
         check_prefixes = {f.check_id.split("-")[0] for f in findings}
-        assert check_prefixes == {"CB", "CP", "CD", "ECR", "IAM", "PBAC", "S3"}
+        # Core services are always represented. Rule-based services
+        # (CT, CWL, SM) only appear when the fixture wires resources;
+        # the secure fixture wires a CloudTrail trail, so CT appears.
+        assert {"CB", "CP", "CD", "ECR", "IAM", "PBAC", "S3", "CT"} <= check_prefixes
 
 
 # ---------------------------------------------------------------------------

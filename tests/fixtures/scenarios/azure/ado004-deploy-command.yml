@@ -1,0 +1,4 @@
+jobs:
+  - job: infra
+    steps:
+      - script: kubectl apply -f deploy.yml

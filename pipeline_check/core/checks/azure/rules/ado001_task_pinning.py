@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Reference tasks by a full semver (`DownloadSecureFile@1.2.3`) "
         "or extension-published-version. Track task updates explicitly "

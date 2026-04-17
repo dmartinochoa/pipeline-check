@@ -1,0 +1,5 @@
+build:
+  variables:
+    MSG: $CI_COMMIT_MESSAGE
+  script:
+    - echo $MSG

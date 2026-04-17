@@ -1,0 +1,9 @@
+pipelines:
+  default:
+    - step:
+        name: release
+        script:
+          - docker build -t app:$BITBUCKET_COMMIT .
+          - docker push app:$BITBUCKET_COMMIT
+          - cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance app:$BITBUCKET_COMMIT
+          - cosign sign --yes app:$BITBUCKET_COMMIT

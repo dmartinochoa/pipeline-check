@@ -37,10 +37,17 @@ Available topics:
   config      .pipeline-check.yml / pyproject.toml / env vars +
               --config-check.
   output      --output formats, where each lands, exit codes.
+  inventory   --inventory / --inventory-type / --inventory-only:
+              surfacing the list of components the scanner discovered,
+              per-provider component types, and asset-register use.
   lambda      Running pipeline_check as an AWS Lambda — payload
               shapes, fan-out, IAM, return value.
   recipes     End-to-end command examples for the most common
-              workflows (PR gate, nightly drift, baseline rollout).
+              workflows (PR gate, nightly drift, baseline rollout,
+              inventory export).
+  explain     ``--explain CHECK_ID`` — per-check reference: severity,
+              confidence, compliance mappings, docs note, known FP
+              modes, and the recommended fix.
 
 Run e.g. ``pipeline_check --man gate`` for any topic above.
 """
@@ -607,6 +614,133 @@ Filter for a specific provider via glob:
 """
 
 
+INVENTORY = """\
+TOPIC: inventory
+
+Findings answer "what's wrong"; the inventory answers "what did the
+scanner see". Useful for asset registers, drift detection, and audits
+that need an independent record of what was in scope on a given date.
+
+Flags
+-----
+--inventory
+    Emit the component inventory alongside findings. Rendered as a
+    compact table in terminal mode; added as an ``inventory`` array to
+    JSON output. Absent from JSON when the flag isn't set — consumers
+    can feature-detect.
+
+--inventory-type PATTERN
+    Glob filter on component type (repeatable). Implies --inventory.
+    Case-sensitive: CloudFormation types are PascalCase
+    (``AWS::IAM::*``), Terraform types are snake_case
+    (``aws_iam_*``), workflow providers use lowercase (``workflow``,
+    ``pipeline``, ``jenkinsfile``, ``config``). Match the casing of
+    the provider you're slicing.
+
+--inventory-only
+    Skip check execution entirely; emit the inventory on its own.
+    Useful for scheduled asset-register ingest. Mutually exclusive
+    with --fix, --diff-base, and --baseline.
+
+What each provider reports
+--------------------------
+AWS            codebuild_project, codepipeline, iam_role (CI/CD trust
+               only), iam_user, cloudtrail_trail, secretsmanager_secret,
+               codeartifact_domain / repository, codecommit_repository,
+               lambda_function, kms_key, cloudwatch_log_group (under
+               /aws/codebuild/*), ssm_parameter, eventbridge_rule,
+               ecr_repository, ecr_pull_through_cache_rule, s3_bucket
+               (artifact buckets only).
+               Services that fail to enumerate surface as
+               ``<service>_degraded`` rather than being silently
+               omitted.
+
+Terraform      Every planned aws_* resource. ``type`` is the HCL type
+               (``aws_iam_role``), ``source`` is the Terraform address.
+
+CloudFormation Every resource in the ``Resources:`` block. ``type`` is
+               the PascalCase CFN type (``AWS::IAM::Role``).
+               ``metadata`` preserves ``DeletionPolicy``,
+               ``UpdateReplacePolicy``, and ``Condition``.
+
+GitHub         One component per loaded workflow file. Metadata lists
+               jobs, runners, environments, triggers, permissions.
+
+GitLab / Bitbucket / Azure / CircleCI
+               One component per pipeline / config file. Metadata
+               depends on provider (jobs, categories, stages,
+               workflows + orbs).
+
+Jenkins        One component per parsed Jenkinsfile. Metadata lists
+               stages, @Library refs, agent declaration, and whether
+               the file declares a ``timeout`` or ``buildDiscarder``.
+
+Examples
+--------
+Full inventory as JSON:
+
+    pipeline_check --pipeline cloudformation --inventory \\
+        --output json > inventory.json
+
+Only the IAM surface:
+
+    pipeline_check --pipeline cloudformation \\
+        --inventory-type 'AWS::IAM::*' --output json
+
+Asset-register ingest (no gate, no checks — just a snapshot):
+
+    pipeline_check --pipeline aws --inventory-only --output json \\
+        | jq '.inventory' > aws-assets-$(date +%F).json
+
+Multiple type patterns (logical OR — any pattern match passes):
+
+    pipeline_check --pipeline terraform --tf-plan plan.json \\
+        --inventory-type 'aws_iam_*' --inventory-type aws_kms_key
+"""
+
+
+EXPLAIN = """\
+TOPIC: explain
+
+``--explain CHECK_ID`` prints the full reference for one check.
+``--help`` lists every flag; ``--man TOPIC`` is the narrative per
+subsystem; ``--explain`` is the narrative per check. All three are
+orthogonal.
+
+Use it when a finding fires in CI and you want to know *why this
+specific rule* and *how to fix it* without grepping source or the
+provider reference doc.
+
+What it shows
+-------------
+  * Check ID, severity, and confidence (HIGH / MEDIUM / LOW).
+  * Compliance cross-references for every standard this check
+    evidences (OWASP Top 10 CI/CD, SLSA, NIST SSDF, ESF, ...).
+  * CWE identifiers when the rule is tagged with them.
+  * ``[What it checks]`` — the rule's docs note (rule-based
+    providers) or a pointer to the provider doc (class-based
+    modules like AWS core services).
+  * ``[Known false-positive modes]`` — populated for rules whose
+    heuristic shape is known to misfire on specific legitimate
+    patterns. Use this to decide whether to dismiss a finding.
+  * ``[How to fix]`` — the rule's recommendation string verbatim.
+
+Exit codes
+----------
+  0  Explain succeeded.
+  3  Unknown check ID (a suggestion list is printed first).
+
+Examples
+--------
+    pipeline_check --explain GHA-024
+    pipeline_check --explain CB-001
+    pipeline_check --explain IAM-002
+
+Tab completion (if installed via --install-completion) expands every
+known check ID.
+"""
+
+
 _TOPICS: dict[str, str] = {
     "index": INDEX,
     "gate": GATE,
@@ -616,8 +750,10 @@ _TOPICS: dict[str, str] = {
     "standards": STANDARDS,
     "config": CONFIG,
     "output": OUTPUT,
+    "inventory": INVENTORY,
     "lambda": LAMBDA,
     "recipes": RECIPES,
+    "explain": EXPLAIN,
 }
 
 

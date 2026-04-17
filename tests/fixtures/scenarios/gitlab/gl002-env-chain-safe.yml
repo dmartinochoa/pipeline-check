@@ -1,0 +1,5 @@
+variables:
+  MY_VAR: $CI_PIPELINE_ID
+build:
+  script:
+    - echo $MY_VAR

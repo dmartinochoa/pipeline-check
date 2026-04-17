@@ -1,0 +1,4 @@
+steps:
+  - script: |
+      export NODE_TLS_REJECT_UNAUTHORIZED=0
+      npm config set strict-ssl false

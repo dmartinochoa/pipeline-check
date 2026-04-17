@@ -97,5 +97,29 @@ STANDARD = Standard(
         "ADO-003":  ["8.2.1", "6.5.1"],
         "ADO-004":  ["6.4.3"],
         "ADO-005":  ["6.3.3"],
+        # CircleCI
+        "CC-001":   ["6.3.3"],                           # orb not pinned to SHA
+        "CC-002":   ["6.5.1"],                           # script injection
+        "CC-003":   ["6.3.3"],                           # image not pinned to digest
+        "CC-004":   ["8.2.1", "6.5.1"],                  # unrestricted context
+        "CC-005":   ["8.2.1"],                           # long-lived AWS keys
+        "CC-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
+        "CC-007":   ["6.5.1"],                           # no SBOM / provenance
+        "CC-008":   ["8.2.1", "6.5.1"],                  # literal secrets in config
+        "CC-009":   ["6.4.3"],                           # no deployment approval
+        "CC-010":   ["6.4.1"],                           # self-hosted runner
+        "CC-011":   ["10.2.1"],                          # no build retention
+        "CC-012":   ["6.5.1"],                           # setup / dynamic config
+        "CC-013":   ["6.4.3"],                           # no branch filter
+        "CC-014":   ["7.2.5"],                           # resource class isolation
+        "CC-015":   ["6.4.1"],                           # no timeout
+        "CC-016":   ["6.3.3"],                           # curl | bash
+        "CC-017":   ["6.4.1"],                           # insecure Docker config
+        "CC-018":   ["6.3.3"],                           # insecure package source
+        "CC-019":   ["8.2.1"],                           # SSH key in config
+        "CC-020":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "CC-021":   ["6.3.3"],                           # no lockfile
+        "CC-022":   ["6.3.3"],                           # no dependency updates
+        "CC-023":   ["6.5.1"],                           # TLS verification bypass
     },
 )

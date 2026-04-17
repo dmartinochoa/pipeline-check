@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, has_vuln_scanning
+from ...base import Finding, Severity, has_vuln_scanning, produces_artifacts
 from ...rule import Rule
 
 RULE = Rule(
@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VULN-MGMT",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add a vulnerability scanning step \u2014 trivy, grype, snyk test, "
         "npm audit, pip-audit, or osv-scanner. Publish results so "
@@ -28,6 +29,13 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     passed = has_vuln_scanning(doc)
+    if not passed and not produces_artifacts(doc):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=path,
+            description="No artifact production detected — check not applicable.",
+            recommendation=RULE.recommendation, passed=True,
+        )
     desc = (
         "Workflow invokes a vulnerability scanner (trivy / grype / "
         "snyk / npm audit / pip-audit / osv-scanner)."

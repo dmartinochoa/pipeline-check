@@ -18,7 +18,7 @@ AWS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
 SECRETISH_KEY_RE = re.compile(
     r"(?i)(?:password|passwd|secret|token|apikey|api_key|private_key)"
 )
-DEPLOY_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 PIPE_REF_RE = re.compile(r"\s*pipe:\s*(\S+)")
 
 

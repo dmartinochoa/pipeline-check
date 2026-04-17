@@ -40,9 +40,13 @@ jobs:
       - name: Vulnerability scan
         run: trivy fs --severity HIGH .
 
+      # GHA-021 safe: lockfile-enforcing install command.
+      - name: Install dependencies
+        run: npm ci
+
       - name: Publish
         env:
           TAG: ${{ github.ref_name }}
         run: |
           npm run deploy -- --tag "$TAG"
-          cosign sign --yes "ghcr.io/example/app:$TAG"
+          cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes "ghcr.io/example/app:$TAG"

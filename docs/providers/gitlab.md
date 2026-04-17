@@ -38,6 +38,16 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | GL-018 | Package install from insecure source | HIGH |
 | GL-019 | No vulnerability scanning step | MEDIUM |
 | GL-020 | CI_JOB_TOKEN written to persistent storage | CRITICAL |
+| GL-021 | Package install without lockfile enforcement | MEDIUM |
+| GL-022 | Dependency update command bypasses lockfile pins | MEDIUM |
+| GL-023 | TLS / certificate verification bypass | HIGH |
+| GL-024 | No SLSA provenance attestation produced | MEDIUM |
+| GL-025 | Pipeline contains indicators of malicious activity | CRITICAL |
+| GL-026 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| GL-027 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| GL-028 | services: image not pinned | HIGH |
+| GL-029 | Manual deploy job defaults to allow_failure: true | MEDIUM |
+| GL-030 | trigger: include: pulls child pipeline without pinned ref | HIGH |
 
 ---
 
@@ -220,6 +230,96 @@ Detects patterns where `CI_JOB_TOKEN` is redirected to a file, piped through `te
 **Recommended action**
 
 Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. Use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes.
+
+## GL-021 — Package install without lockfile enforcement
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+
+**Recommended action**
+
+Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip install --require-hashes -r requirements.txt`, `yarn install --frozen-lockfile`, `bundle install --frozen`, and `go install tool@v1.2.3`.
+
+## GL-022 — Dependency update command bypasses lockfile pins
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Recommended action**
+
+Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR workflow (e.g. Dependabot, Renovate).
+
+## GL-023 — TLS / certificate verification bypass
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
+
+**Recommended action**
+
+Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## GL-024 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+``cosign sign`` and ``cosign attest`` look similar but mean different things: the first binds identity to bytes; the second binds a structured claim (builder, source, inputs) to the artifact. SLSA Build L3 verifiers check the latter.
+
+**Recommended action**
+
+Add a job that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` statement, or adopt a SLSA-aware builder (the SLSA project ships GitLab templates). Signing the artifact (GL-006) isn't enough for SLSA L3 — the attestation describes *how* the build ran.
+
+## GL-025 — Pipeline contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Fires on concrete indicators (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, ``webhook.site`` callbacks, ``env | curl`` credential dumps, ``history -c`` audit erasure). Orthogonal to GL-003 (curl pipe) and GL-017 (Docker insecure flags) — those flag risky defaults; this flags evidence.
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the MR that added the matching job(s), rotate any credentials the pipeline can reach, and audit recent runs for outbound traffic to the matched hosts. A legitimate red-team exercise should be time-bounded via ``.pipelinecheckignore`` with ``expires:``.
+
+## GL-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+``eval``, ``sh -c "$X"``, and `` `$X` `` all re-parse the variable's value as shell syntax. Once a CI variable feeds into one of these idioms, any ``;``, ``&&``, ``|``, backtick, or ``$()`` in the value executes — even if the variable's source is currently trusted, future refactors may expose it.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec of variables with direct command invocation. If the command must be dynamic, pass arguments as array members or validate the input against an allow-list at the boundary.
+
+## GL-027 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements GL-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs all bypass the registry integrity controls the lockfile relies on — an attacker who can move a branch head, drop a sibling checkout, or change a served tarball can substitute code into the build.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## GL-028 — services: image not pinned
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+``services:`` entries (top-level or per-job) can be either a string (``redis:7``) or a dict (``{name: redis:7, alias: cache}``). Both forms are normalised via ``image_ref``-style extraction and evaluated with the same floating-tag regex GL-001 uses for ``image:``.
+
+**Recommended action**
+
+Pin every ``services:`` entry the same way ``image:`` is pinned — prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
+
+## GL-029 — Manual deploy job defaults to allow_failure: true
+**Severity:** MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL
+
+This is the most common GitLab deployment gotcha: a manual ``deploy`` job looks like a gate in the UI, but the pipeline reports success on the first run because the job is marked allow_failure by default. Downstream jobs (and the overall pipeline status) proceed as though the human approved.
+
+**Recommended action**
+
+Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab defaults ``allow_failure`` to *true* for manual jobs, which makes the pipeline report success whether or not the operator clicks — exactly the opposite of the gate you meant to add.
+
+## GL-030 — trigger: include: pulls child pipeline without pinned ref
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-TRUSTED-REG
+
+GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``) count as unpinned.
+
+**Recommended action**
+
+Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
 
 ---
 

@@ -1,0 +1,4 @@
+variables:
+  MY_BRANCH: $(Build.SourceBranchName)
+steps:
+  - pwsh: echo $env:MY_BRANCH

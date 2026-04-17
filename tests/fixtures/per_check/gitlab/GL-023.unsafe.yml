@@ -1,0 +1,4 @@
+build:
+  script:
+    - git config --global http.sslVerify false
+    - curl -k https://example.com/setup.sh -o setup.sh

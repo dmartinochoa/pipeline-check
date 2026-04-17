@@ -1,7 +1,8 @@
 """JF-016 — remote script piped to shell interpreter."""
 from __future__ import annotations
 
-from ...base import CURL_PIPE_RE, Finding, Severity
+from ..._primitives import remote_script_exec
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 
@@ -11,6 +12,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
+    cwe=("CWE-494",),
     recommendation=(
         "Download the script to a file, verify its checksum, then "
         "execute it. Or vendor the script into the repository."
@@ -26,12 +28,13 @@ RULE = Rule(
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    matches = CURL_PIPE_RE.findall(jf.text.lower())
-    passed = not matches
+    hits = remote_script_exec.scan(jf.text.lower())
+    passed = not hits
     desc = (
         "No curl-pipe or wget-pipe patterns detected in this Jenkinsfile."
         if passed else
-        f"Remote script piped to interpreter detected: {', '.join(matches[:3])}"
+        f"Remote script piped to interpreter detected: "
+        f"{', '.join(h.snippet for h in hits[:3])}"
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

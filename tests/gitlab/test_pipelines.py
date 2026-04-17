@@ -103,6 +103,72 @@ class TestGL002ScriptInjection:
         )
         assert f.passed
 
+    def test_env_chain_global_var_tainted(self):
+        """Tainted value assigned in global variables:, referenced in script."""
+        f = _run(
+            """
+            variables:
+              MY_BRANCH: $CI_COMMIT_REF_NAME
+            build:
+              script:
+                - echo $MY_BRANCH
+            """,
+            "GL-002",
+        )
+        assert not f.passed
+
+    def test_env_chain_job_var_tainted(self):
+        """Tainted value assigned in job-level variables:, referenced in script."""
+        f = _run(
+            """
+            build:
+              variables:
+                MSG: $CI_COMMIT_MESSAGE
+              script:
+                - echo $MSG
+            """,
+            "GL-002",
+        )
+        assert not f.passed
+
+    def test_env_chain_safe_var_not_flagged(self):
+        """Non-tainted value in variables: should not trigger."""
+        f = _run(
+            """
+            variables:
+              MY_VAR: "safe-value"
+            build:
+              script:
+                - echo $MY_VAR
+            """,
+            "GL-002",
+        )
+        assert f.passed
+
+    def test_new_untrusted_var_tag_message(self):
+        """CI_COMMIT_TAG_MESSAGE (newly added) should be flagged."""
+        f = _run(
+            """
+            build:
+              script:
+                - echo $CI_COMMIT_TAG_MESSAGE
+            """,
+            "GL-002",
+        )
+        assert not f.passed
+
+    def test_new_untrusted_var_external_pr(self):
+        """CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME should be flagged."""
+        f = _run(
+            """
+            build:
+              script:
+                - echo $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+            """,
+            "GL-002",
+        )
+        assert not f.passed
+
 
 class TestGL003LiteralSecrets:
     def test_aws_key_fails_critical(self):

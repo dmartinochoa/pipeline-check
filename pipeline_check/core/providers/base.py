@@ -18,6 +18,7 @@ import abc
 from typing import Any
 
 from ..checks.base import BaseCheck
+from ..inventory import Component
 
 
 class BaseProvider(abc.ABC):
@@ -46,3 +47,13 @@ class BaseProvider(abc.ABC):
         Adding a new check to an existing provider only requires updating this
         list — the Scanner and registry do not need to change.
         """
+
+    def inventory(self, context: Any) -> list[Component]:
+        """Return the list of components the scanner discovered.
+
+        Default implementation returns ``[]`` so providers that don't
+        expose an asset view still satisfy the contract. Override to
+        surface the resources / files / workflows the context is
+        built from — the Scanner's ``inventory()`` delegates here.
+        """
+        return []

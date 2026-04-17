@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-798",),
     recommendation=(
         "Store secrets in an Azure Key Vault or a Library variable "
         "group with the secret flag set; reference them via "

@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Replace tag/branch references (`@v4`, `@main`) with the full "
         "40-char commit SHA. Use Dependabot or StepSecurity to keep the "

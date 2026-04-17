@@ -1,0 +1,12 @@
+// TODO: add cosign sign step later
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+                sh 'docker push myregistry/myapp:latest'
+            }
+        }
+    }
+}

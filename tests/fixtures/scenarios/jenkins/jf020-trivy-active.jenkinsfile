@@ -1,0 +1,10 @@
+pipeline {
+    agent any
+    stages {
+        stage('Scan') {
+            steps {
+                sh 'trivy image --exit-code 1 myimage:latest'
+            }
+        }
+    }
+}

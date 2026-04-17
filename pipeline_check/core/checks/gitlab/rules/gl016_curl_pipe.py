@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import CURL_PIPE_RE, Finding, Severity, blob_lower
+from ..._primitives import remote_script_exec
+from ...base import Finding, Severity, blob_lower
 from ...rule import Rule
 
 RULE = Rule(
@@ -12,6 +13,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
+    cwe=("CWE-494",),
     recommendation=(
         "Download the script to a file, verify its checksum, then "
         "execute it. Or vendor the script into the repository."
@@ -27,13 +29,13 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    matches = CURL_PIPE_RE.findall(blob)
-    passed = not matches
+    hits = remote_script_exec.scan(blob_lower(doc))
+    passed = not hits
     desc = (
         "No curl-pipe or wget-pipe patterns detected in this pipeline."
         if passed else
-        f"Remote script piped to interpreter detected: {', '.join(matches[:3])}"
+        f"Remote script piped to interpreter detected: "
+        f"{', '.join(h.snippet for h in hits[:3])}"
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

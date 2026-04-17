@@ -1,0 +1,13 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Build') {
+      steps { sh 'make build' }
+    }
+    stage('Kick off packaging') {
+      steps {
+        build job: 'downstream-package', wait: false, propagate: false
+      }
+    }
+  }
+}

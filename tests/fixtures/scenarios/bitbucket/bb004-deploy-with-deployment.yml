@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        name: Ship it
+        deployment: production
+        script:
+          - docker push myimage:latest

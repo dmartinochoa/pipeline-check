@@ -1,0 +1,10 @@
+name: build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+      options: --privileged --network host -v /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - run: echo hi

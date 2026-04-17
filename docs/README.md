@@ -9,6 +9,7 @@
   - [Bitbucket Pipelines](providers/bitbucket.md) — scan `bitbucket-pipelines.yml`.
   - [Azure DevOps Pipelines](providers/azure.md) — scan `azure-pipelines.yml`.
   - [Jenkins](providers/jenkins.md) — scan `Jenkinsfile` (Declarative or Scripted).
+  - [CircleCI](providers/circleci.md) — scan `.circleci/config.yml`.
 - [Output formats](output.md) — terminal, JSON, HTML (with client-side
   filters), and SARIF 2.1.0 (line-number annotations + AWS ARN metadata).
 - [CI gate](ci_gate.md) — severity thresholds, baseline diff (file or

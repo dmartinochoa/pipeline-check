@@ -1,0 +1,3 @@
+build:
+  script:
+    - RESULT="$(echo $CI_COMMIT_MESSAGE)"

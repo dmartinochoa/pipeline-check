@@ -13,9 +13,14 @@ can evidence controls in multiple standards at once.
 | `cis_supply_chain`     | CIS Software Supply Chain Security Guide   | 1.0     | [cis_supply_chain.md](cis_supply_chain.md) |
 | `nist_ssdf`            | NIST Secure Software Development Framework | SP 800-218 v1.1 | [nist_ssdf.md](nist_ssdf.md) |
 | `nist_800_53`          | NIST SP 800-53 Rev. 5 (CI/CD subset)       | Rev. 5  | [nist_800_53.md](nist_800_53.md) |
+| `nist_csf_2`           | NIST Cybersecurity Framework 2.0           | 2.0     | _see module docstring_ |
+| `nist_800_190`         | NIST SP 800-190 Application Container Security | 1.0 (Sep 2017) | _see module docstring_ |
 | `slsa`                 | SLSA Build Track                           | 1.0     | [slsa.md](slsa.md) |
 | `pci_dss_v4`           | PCI DSS v4.0 (CI/CD subset)                | 4.0     | [pci_dss_v4.md](pci_dss_v4.md) |
 | `esf_supply_chain`     | NSA/CISA ESF — Securing the Software Supply Chain | 2022 | [esf_supply_chain.md](esf_supply_chain.md) |
+| `openssf_scorecard`    | OpenSSF Scorecard                          | 5       | _see module docstring_ |
+| `s2c2f`                | Secure Supply Chain Consumption Framework  | 2024-05 | _see module docstring_ |
+| `soc2`                 | SOC 2 Trust Services Criteria              | 2017 (revised 2022) | _see module docstring_ |
 
 List them at runtime with:
 

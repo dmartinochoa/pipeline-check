@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.LOW,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"),
+    cwe=("CWE-829",),
     recommendation=(
         "Resolve each image to its current digest (`docker buildx "
         "imagetools inspect <ref>` prints it) and replace the tag "

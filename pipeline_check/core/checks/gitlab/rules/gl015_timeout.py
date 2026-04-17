@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
+    cwe=("CWE-400",),
     recommendation=(
         "Add `timeout:` to each job (e.g. `timeout: 30 minutes`), "
         "sized to the 95th percentile of historical runtime. GitLab's "

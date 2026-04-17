@@ -10,7 +10,7 @@ from pipeline_check.core.sarif_reporter import report_sarif
 from pipeline_check.core.standards.base import ControlRef
 
 
-def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, **kw):
+def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, cwe=None, **kw):
     return Finding(
         check_id=check_id,
         title=kw.get("title", "Plaintext secret in CodeBuild env"),
@@ -20,6 +20,7 @@ def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, *
         recommendation=kw.get("recommendation", "Use Secrets Manager."),
         passed=passed,
         controls=controls or [],
+        cwe=cwe or [],
     )
 
 
@@ -165,6 +166,47 @@ class TestControlsPropagation:
         assert len(controls) == 2
         assert controls[0]["control_id"] == "CICD-SEC-6"
 
+    def test_kebab_case_control_ids_pass_through(self):
+        """OpenSSF Scorecard uses kebab-case IDs (``Dangerous-Workflow``)
+        rather than the numeric IDs other standards use. SARIF allows any
+        string for ``properties.controls[].control_id``, but downstream
+        consumers (GitHub Advanced Security) have historically been
+        picky about special characters — this test guards the round-trip.
+        """
+        finding = _f(controls=[
+            ControlRef(
+                standard="openssf_scorecard",
+                standard_title="OpenSSF Scorecard",
+                control_id="Dangerous-Workflow",
+                control_title="No dangerous patterns in CI workflows",
+            ),
+            ControlRef(
+                standard="soc2",
+                standard_title="SOC 2 Trust Services Criteria",
+                control_id="CC6.8",
+                control_title="Controls prevent or detect malicious software",
+            ),
+        ])
+        out = json.loads(report_sarif([finding], _score()))
+
+        tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
+        assert "openssf_scorecard" in tags
+        assert "soc2" in tags
+        # Control IDs themselves must NOT appear in tags — they only
+        # live in properties.controls. Guards against a regression
+        # where someone "helpfully" adds them to tags and pushes past
+        # the 20-tag cap.
+        assert "Dangerous-Workflow" not in tags
+        assert "CC6.8" not in tags
+
+        controls = out["runs"][0]["results"][0]["properties"]["controls"]
+        ids = {c["control_id"] for c in controls}
+        assert ids == {"Dangerous-Workflow", "CC6.8"}
+        # SARIF JSON must round-trip without escape mangling of the hyphen.
+        assert json.loads(json.dumps(out))["runs"][0]["results"][0][
+            "properties"
+        ]["controls"][0]["control_id"] in ids
+
 
 class TestRuleContent:
     def test_rule_help_has_text_and_markdown(self):
@@ -189,6 +231,28 @@ class TestRuleContent:
             _score(),
         ))
         assert out["runs"][0]["results"][0]["message"]["text"].startswith("CB-001:")
+
+
+class TestCweEnrichment:
+    def test_cwe_appears_in_rule_properties(self):
+        f = _f(cwe=["CWE-798"])
+        out = json.loads(report_sarif([f], _score()))
+        rule = out["runs"][0]["tool"]["driver"]["rules"][0]
+        assert rule["properties"]["cwe"] == ["CWE-798"]
+
+    def test_cwe_appears_in_result_properties(self):
+        f = _f(cwe=["CWE-78", "CWE-94"])
+        out = json.loads(report_sarif([f], _score()))
+        result = out["runs"][0]["results"][0]
+        assert result["properties"]["cwe"] == ["CWE-78", "CWE-94"]
+
+    def test_cwe_omitted_when_empty(self):
+        f = _f()  # no cwe
+        out = json.loads(report_sarif([f], _score()))
+        rule = out["runs"][0]["tool"]["driver"]["rules"][0]
+        assert "cwe" not in rule["properties"]
+        result = out["runs"][0]["results"][0]
+        assert "cwe" not in result["properties"]
 
 
 class TestIntegrationWithCli:

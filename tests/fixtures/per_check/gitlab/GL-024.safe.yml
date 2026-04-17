@@ -1,0 +1,17 @@
+stages: [build, attest, release]
+
+build:
+  stage: build
+  script:
+    - docker build -t app:$CI_COMMIT_SHA .
+    - docker push app:$CI_COMMIT_SHA
+
+attest:
+  stage: attest
+  script:
+    - cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance app:$CI_COMMIT_SHA
+
+release:
+  stage: release
+  script:
+    - cosign sign --yes app:$CI_COMMIT_SHA

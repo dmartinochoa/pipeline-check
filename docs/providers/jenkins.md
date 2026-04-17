@@ -49,6 +49,17 @@ expression.
 | JF-018 | Package install from insecure source | HIGH |
 | JF-019 | Groovy sandbox escape pattern detected | CRITICAL |
 | JF-020 | No vulnerability scanning step | MEDIUM |
+| JF-021 | Package install without lockfile enforcement | MEDIUM |
+| JF-022 | Dependency update command bypasses lockfile pins | MEDIUM |
+| JF-023 | TLS / certificate verification bypass | HIGH |
+| JF-024 | `input` approval step missing submitter restriction | MEDIUM |
+| JF-025 | Kubernetes agent pod template runs privileged or mounts hostPath | HIGH |
+| JF-026 | `build job:` trigger ignores downstream failure | MEDIUM |
+| JF-027 | `archiveArtifacts` does not record a fingerprint | LOW |
+| JF-028 | No SLSA provenance attestation produced | MEDIUM |
+| JF-029 | Jenkinsfile contains indicators of malicious activity | CRITICAL |
+| JF-030 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| JF-031 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 
 ---
 
@@ -82,7 +93,7 @@ Replace `agent any` with `agent { label 'build-pool' }` (targeting a labelled po
 ## JF-004 — AWS auth uses long-lived access keys via withCredentials
 **Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE
 
-Fires when BOTH a credentialsId containing `aws` is referenced AND an AWS key variable name appears. Requires both so an OIDC role binding (which doesn't use key variables) doesn't false-positive.
+Fires when BOTH a credentialsId containing `aws` is referenced AND an AWS key variable name appears (requires both so an OIDC role binding doesn't false-positive). Also fires when `withAWS(credentials: '…')` is used — the safe alternative is `withAWS(role: '…')`.
 
 **Recommended action**
 
@@ -100,7 +111,7 @@ Add an `input` step to every deploy-like stage (e.g. `input message: 'Promote to
 ## JF-006 — Artifacts not signed
 **Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS
 
-Passes when cosign / sigstore / slsa-* / notation-sign appears in the raw Jenkinsfile text.
+Passes when cosign / sigstore / slsa-* / notation-sign appears in executable Jenkinsfile text (comments are stripped before matching).
 
 **Recommended action**
 
@@ -109,7 +120,7 @@ Add a `sh 'cosign sign --yes …'` step (the cosign-installer Jenkins plugin han
 ## JF-007 — SBOM not produced
 **Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM
 
-Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears, or when Trivy is paired with `sbom` / `cyclonedx` in the same file.
+Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears in executable code, or when Trivy is paired with `sbom` / `cyclonedx` in the same file. Comments are stripped before matching.
 
 **Recommended action**
 
@@ -226,11 +237,110 @@ Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avo
 ## JF-020 — No vulnerability scanning step
 **Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT
 
-Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
 
 **Recommended action**
 
 Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+
+## JF-021 — Package install without lockfile enforcement
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+
+**Recommended action**
+
+Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip install --require-hashes -r requirements.txt`, `yarn install --frozen-lockfile`, `bundle install --frozen`, and `go install tool@v1.2.3`.
+
+## JF-022 — Dependency update command bypasses lockfile pins
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Recommended action**
+
+Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).
+
+## JF-023 — TLS / certificate verification bypass
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
+
+**Recommended action**
+
+Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## JF-024 — `input` approval step missing submitter restriction
+**Severity:** MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL
+
+JF-005 already flags deploy stages with no ``input`` step. This rule catches the subtler case: the gate exists, but it doesn't actually restrict approvers. ``submitter`` accepts a comma-separated list of Jenkins usernames and group names; scope it to the smallest release-eligible pool.
+
+**Recommended action**
+
+Add a ``submitter: 'releasers,sre'`` (or a single role) argument to every ``input`` step in a deploy-like stage. Without it, any user with the Jenkins job ``Build`` permission can approve a production promotion — the approval gate becomes advisory.
+
+## JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+JF-017 flags inline ``docker run`` commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare ``agent { kubernetes { yaml '''...''' } }``. A pod running with ``privileged: true`` or mounting ``hostPath: /`` gives the build container the same blast radius — container escape, node-credential theft, cross-tenant contamination on a shared cluster.
+
+**Recommended action**
+
+Remove ``privileged: true`` from the embedded pod YAML, drop ``hostPath``/``hostNetwork``/``hostPID``/``hostIPC`` entries, and add a ``securityContext`` with ``runAsNonRoot: true`` and a ``readOnlyRootFilesystem``. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.
+
+## JF-026 — `build job:` trigger ignores downstream failure
+**Severity:** MEDIUM · OWASP CICD-SEC-4 · ESF ESF-C-APPROVAL
+
+The Jenkins Pipeline plugin defaults ``wait`` to ``true`` and ``propagate`` to ``true``, but either can be flipped per call. ``wait: false`` returns immediately; ``propagate: false`` continues even when the downstream job fails or is aborted. Both patterns sever the flow-control link between the upstream approval gate and the work the downstream job is about to do.
+
+**Recommended action**
+
+Remove ``wait: false`` and ``propagate: false`` from every ``build job:`` step, or replace them with an explicit ``currentBuild.result = build(...).result`` check. A fire-and-forget trigger can silently ship broken artifacts because the upstream job reports success regardless of what the downstream job actually did.
+
+## JF-027 — `archiveArtifacts` does not record a fingerprint
+**Severity:** LOW · OWASP CICD-SEC-9 · ESF ESF-D-TAMPER
+
+Fingerprinting hashes the artifact on archive so Jenkins can trace its flow between jobs — the same mechanism JF-013 relies on for verification-step pairing. It's cheap and retroactive: enabling it on the producer job unlocks a build-traceability audit for every downstream consumer.
+
+**Recommended action**
+
+Set ``fingerprint: true`` on every ``archiveArtifacts`` call (or use ``archiveArtifacts artifacts: '...', fingerprint: true``). Without it, Jenkins can't link the artifact to the build that produced it; ``copyArtifacts`` consumers downstream then have no provenance to verify against.
+
+## JF-028 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+``cosign sign`` signs the artifact bytes. ``cosign attest`` signs an in-toto statement describing how the build ran — builder, source commit, input parameters. SLSA L3 verifiers check the latter so consumers can enforce policy on where and how artifacts were produced.
+
+**Recommended action**
+
+Add a ``sh 'cosign attest --predicate=provenance.intoto.jsonl …'`` step after the build, or integrate the TestifySec ``witness run`` attestor. JF-006 covers signing; this rule covers the build-provenance statement SLSA Build L3 requires.
+
+## JF-029 — Jenkinsfile contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox escape). Those flag risky defaults; this flags concrete evidence — reverse shells, base64-decoded execution, miner binaries, exfil channels, credential-dump pipes, shell-history erasure. Runs on the comment-stripped Groovy text so ``// cosign verify … // webhook.site`` in a legitimate annotation doesn't false-positive.
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the commit that introduced the matching stage(s), rotate Jenkins credentials the job can reach, review controller/agent audit logs for outbound traffic to the matched hosts, and re-image the agent pool if the compromise may have persisted.
+
+## JF-030 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+Complements JF-002 (script injection from untrusted build parameters). Fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate any value feeding a dynamic command at the boundary, or pass arguments as a list to a real ``sh`` step so the shell is not re-invoked.
+
+## JF-031 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements JF-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Artifactory, Nexus) instead of installing from a filesystem path or tarball URL.
 
 ---
 

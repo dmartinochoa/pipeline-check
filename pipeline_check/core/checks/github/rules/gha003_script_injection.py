@@ -15,6 +15,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION",),
+    cwe=("CWE-78",),
     recommendation=(
         "Pass untrusted values through an intermediate `env:` variable "
         "and reference that variable from the shell script. GitHub's "

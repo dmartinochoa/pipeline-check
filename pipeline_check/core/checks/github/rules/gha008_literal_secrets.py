@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-798",),
     recommendation=(
         "Rotate the exposed credential immediately. Move the value to "
         "an encrypted repository or environment secret and reference "
@@ -26,6 +27,14 @@ RULE = Rule(
         "`--man secrets` for the full catalogue). A match means a "
         "secret was pasted into YAML — the value is visible in every "
         "fork and every build log and must be treated as compromised."
+    ),
+    known_fp=(
+        "Test fixtures and documentation blobs sometimes embed "
+        "credential-shaped strings (JWT samples, AKIAI... examples). "
+        "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
+        "deliberately NOT suppressed — if it appears in a real "
+        "workflow it almost always means a copy-paste from docs was "
+        "never substituted. Defaults to LOW confidence.",
     ),
 )
 

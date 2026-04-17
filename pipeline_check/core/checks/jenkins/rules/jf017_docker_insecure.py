@@ -11,6 +11,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV",),
+    cwe=("CWE-250",),
     recommendation=(
         "Remove --privileged and --cap-add flags. Use minimal volume "
         "mounts. Prefer rootless containers."

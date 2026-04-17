@@ -18,6 +18,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-269",),
     recommendation=(
         "Register Jenkins agents with ephemeral lifecycle (e.g. "
         "Kubernetes pod templates or EC2 Fleet plugin) and include "

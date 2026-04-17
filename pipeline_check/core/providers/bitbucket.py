@@ -11,6 +11,7 @@ from typing import Any
 from ..checks.base import BaseCheck
 from ..checks.bitbucket.base import BitbucketContext
 from ..checks.bitbucket.pipelines import BitbucketPipelineChecks
+from ..inventory import Component
 from .base import BaseProvider
 
 
@@ -31,3 +32,18 @@ class BitbucketProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
         return [BitbucketPipelineChecks]
+
+    def inventory(self, context: BitbucketContext) -> list[Component]:
+        out: list[Component] = []
+        for pipe in context.pipelines:
+            data = pipe.data if isinstance(pipe.data, dict) else {}
+            top = data.get("pipelines") or {}
+            categories = sorted(k for k in top.keys() if isinstance(k, str))
+            out.append(Component(
+                provider=self.NAME,
+                type="pipeline",
+                identifier=pipe.path,
+                source=pipe.path,
+                metadata={"categories": categories} if categories else {},
+            ))
+        return out

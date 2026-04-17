@@ -1,0 +1,12 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Build') {
+      steps {
+        sh 'docker build -t app:$BUILD_TAG .'
+        sh 'docker push app:$BUILD_TAG'
+        sh 'cosign sign --yes app:$BUILD_TAG'
+      }
+    }
+  }
+}

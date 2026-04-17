@@ -25,15 +25,14 @@ jenkins) are supported.
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 # Make ``pipeline_check`` importable when the script is run directly.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 from pipeline_check.core.checks.rule import Rule, discover_rules
-
 
 # ``provider_slug -> (display_title, rules_package_fqn, docs_output_path,
 #                     per-provider header markdown)``
@@ -181,6 +180,81 @@ miss a real injection because the parser couldn't follow a dynamic
 expression.
 """,
     ),
+    "circleci": (
+        "CircleCI",
+        "pipeline_check.core.checks.circleci.rules",
+        _REPO_ROOT / "docs" / "providers" / "circleci.md",
+        """\
+# CircleCI provider
+
+Parses `.circleci/config.yml` on disk — no CircleCI API token, no
+runner install.
+
+## Producer workflow
+
+```bash
+# --circleci-path is auto-detected when .circleci/config.yml exists at cwd.
+pipeline_check --pipeline circleci
+
+# …or pass it explicitly.
+pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### CircleCI-specific checks
+
+Several checks target CircleCI concepts that have no direct analogue
+in other providers:
+
+- **CC-001** — orb version pinning (`@volatile`, `@1` → `@5.1.0`)
+- **CC-009** — approval gate via `type: approval` predecessor job
+- **CC-012** — dynamic config generation via `setup: true`
+- **CC-019** — `add_ssh_keys` fingerprint restriction
+""",
+    ),
+    "cloudbuild": (
+        "Google Cloud Build",
+        "pipeline_check.core.checks.cloudbuild.rules",
+        _REPO_ROOT / "docs" / "providers" / "cloudbuild.md",
+        """\
+# Google Cloud Build provider
+
+Parses `cloudbuild.yaml` on disk — no Google Cloud credentials, no
+`gcloud` install, no Cloud Build API token required. Each document
+must declare a top-level `steps:` list; files without it (SAM
+templates, ordinary YAML configs) are skipped by the loader.
+
+## Producer workflow
+
+```bash
+# --cloudbuild-path is auto-detected when cloudbuild.yaml/cloudbuild.yml
+# exists at cwd.
+pipeline_check --pipeline cloudbuild
+
+# …or pass it explicitly.
+pipeline_check --pipeline cloudbuild --cloudbuild-path ci/cloudbuild.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Cloud Build-specific checks
+
+Several checks target Cloud Build concepts that have no direct
+analogue in other providers:
+
+- **GCB-002** — `serviceAccount:` must be set; the default Cloud Build
+  SA is typically broader than any single pipeline needs.
+- **GCB-003** — secrets must flow through `availableSecrets.secret
+  Manager[].env` + `secretEnv:`, never via inline `gcloud secrets
+  versions access` in `args`.
+- **GCB-004** — `options.dynamicSubstitutions: true` combined with a
+  user-substitution (`$_FOO`) in step args opens a trigger-editor-
+  controlled shell-injection path.
+""",
+    ),
 }
 
 
@@ -214,6 +288,8 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "bitbucket": {"prefix": "BB",  "prefix_lc": "bb",  "pkg": "bitbucket"},
     "azure":     {"prefix": "ADO", "prefix_lc": "ado", "pkg": "azure"},
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
+    "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
+    "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
 }
 
 

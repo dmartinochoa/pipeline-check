@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - export MY_VAR="safe-value"
+          - echo $MY_VAR

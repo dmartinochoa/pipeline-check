@@ -1,0 +1,4 @@
+build:
+  script:
+    - pip install --upgrade pip setuptools
+    - bundle install --frozen

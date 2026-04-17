@@ -1,3 +1,4 @@
 build:
   script:
+    - docker push app:latest
     - npm test

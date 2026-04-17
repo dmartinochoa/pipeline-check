@@ -124,6 +124,8 @@ class GateResult:
     #: Ignore rules whose ``expires`` date has passed. Reported to the
     #: user so stale suppressions surface instead of rotting silently.
     expired_rules: list[IgnoreRule] = field(default_factory=list)
+    #: Human-readable labels for every gate condition that was evaluated.
+    conditions_evaluated: list[str] = field(default_factory=list)
 
     @property
     def exit_code(self) -> int:
@@ -348,6 +350,7 @@ def evaluate_gate(
     # Evaluate conditions. If no explicit gate was configured, default to
     # --fail-on CRITICAL so a CRITICAL finding never passes silently.
     reasons: list[str] = []
+    conditions: list[str] = []
     fail_on = config.fail_on
     fail_on_is_default = False
     if fail_on is None and not config.any_explicit_gate():
@@ -355,30 +358,36 @@ def evaluate_gate(
         fail_on_is_default = True
 
     if fail_on is not None:
+        suffix = "default gate" if fail_on_is_default else "--fail-on"
         threshold = severity_rank(fail_on)
         tripping = [f for f in effective if severity_rank(f.severity) >= threshold]
         if tripping:
             by_sev = sorted({f.severity.value for f in tripping})
-            suffix = "default gate" if fail_on_is_default else f"--fail-on {fail_on.value}"
             reasons.append(
                 f"{len(tripping)} finding(s) at or above "
                 f"{fail_on.value} ({', '.join(by_sev)}) — {suffix}"
             )
+        conditions.append(f"severity < {fail_on.value} — {suffix}")
 
     if config.min_grade:
         grade = score_result.get("grade", "D")
+        conditions.append(f"grade >= {config.min_grade} — --min-grade")
         if _grade_worse_than(grade, config.min_grade):
             reasons.append(
                 f"Grade {grade} is worse than --min-grade {config.min_grade}"
             )
 
-    if config.max_failures is not None and len(effective) > config.max_failures:
-        reasons.append(
-            f"{len(effective)} failing findings exceed --max-failures "
-            f"{config.max_failures}"
-        )
+    if config.max_failures is not None:
+        conditions.append(f"failures <= {config.max_failures} — --max-failures")
+        if len(effective) > config.max_failures:
+            reasons.append(
+                f"{len(effective)} failing findings exceed --max-failures "
+                f"{config.max_failures}"
+            )
 
     if config.fail_on_checks:
+        ids = ", ".join(sorted(config.fail_on_checks))
+        conditions.append(f"disallowed checks: {ids} — --fail-on-check")
         tripped = sorted(
             {f.check_id for f in effective if f.check_id.upper() in config.fail_on_checks}
         )
@@ -397,6 +406,7 @@ def evaluate_gate(
         suppressed=suppressed,
         baseline_matched=baseline_matched,
         expired_rules=expired_rules,
+        conditions_evaluated=conditions,
     )
 
 

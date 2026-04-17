@@ -1,0 +1,5 @@
+jobs:
+  - job: deploy_prod
+    environment: production
+    steps:
+      - script: kubectl apply -f deploy.yml

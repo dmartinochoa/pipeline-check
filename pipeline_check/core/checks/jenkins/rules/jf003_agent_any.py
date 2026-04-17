@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-5",),
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
+    cwe=("CWE-250",),
     recommendation=(
         "Replace `agent any` with `agent { label 'build-pool' }` "
         "(targeting a labelled pool) or `agent { docker { image "

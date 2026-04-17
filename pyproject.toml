@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pipeline_check"
-version = "0.1.0"
+version = "0.2.0"
 description = "CI/CD Security Posture Scanner — scores AWS, Terraform, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, and Jenkins against OWASP Top 10 CI/CD Risks"
 readme = "README.md"
 license = "MIT"
@@ -33,7 +33,10 @@ dependencies = [
 pipeline_check = "pipeline_check.cli:scan"
 
 [project.urls]
-Homepage = "https://github.com/dmartin/pipeline-check"
+Homepage = "https://github.com/dmartinochoa/pipeline-check"
+Repository = "https://github.com/dmartinochoa/pipeline-check"
+Issues = "https://github.com/dmartinochoa/pipeline-check/issues"
+Changelog = "https://github.com/dmartinochoa/pipeline-check/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["pipeline_check*"]
@@ -54,6 +57,7 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "pipeline_check/core/html_reporter.py" = ["E501"]  # inline CSS/JS templates
 "pipeline_check/core/checks/base.py" = ["E402"]    # deferred re import after dataclass
+"scripts/gen_provider_docs.py" = ["E402"]          # sys.path setup before pipeline_check import
 "tests/**" = ["E501"]                               # test strings often exceed line length
 
 [tool.mypy]

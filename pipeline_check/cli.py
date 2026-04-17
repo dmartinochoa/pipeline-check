@@ -48,14 +48,224 @@ from . import __version__
 from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
-from .core.checks.base import Severity
+from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
-from .core.reporter import report_json, report_terminal
+from .core.junit_reporter import report_junit
+from .core.markdown_reporter import report_markdown
+from .core.reporter import report_inventory_terminal, report_json, report_terminal
 from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
+
+
+def _tolerate_unencodable_stdio() -> None:
+    """Make stdout/stderr tolerate non-ASCII characters on legacy consoles.
+
+    Windows' default ``cmd.exe`` uses cp1252 for stdout. When click or
+    our own code emits help text containing characters cp1252 can't
+    encode (box-drawing, arrow, >=), Python raises
+    ``UnicodeEncodeError`` and the program dies before printing
+    anything useful. Reconfiguring the streams with
+    ``errors='replace'`` degrades un-encodable characters to ``?``
+    instead of crashing. We leave the *encoding* alone so output still
+    matches the terminal's expectations - only the error handler changes.
+
+    Runs at import time so it takes effect before click's argument-
+    parsing emits help text on --help.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, OSError):
+            # Older Python, or stream is wrapped and doesn't expose
+            # reconfigure. Non-fatal - the worst case is the original
+            # crash on cp1252, which only affects Windows default console.
+            pass
+
+
+_tolerate_unencodable_stdio()
+
+# ────────────────────────────────────────────────────────────────────────────
+# Shell completion helpers
+# ────────────────────────────────────────────────────────────────────────────
+
+
+def _complete_check_ids(ctx, param, incomplete):
+    """Tab-complete check IDs (GHA-001, GL-002, CB-001, etc.)."""
+    from click.shell_completion import CompletionItem
+    try:
+        ids = _all_check_ids()
+    except Exception:
+        return []
+    return [
+        CompletionItem(cid)
+        for cid in ids
+        if cid.lower().startswith(incomplete.lower())
+    ]
+
+
+def _complete_standards(ctx, param, incomplete):
+    """Tab-complete standard names."""
+    from click.shell_completion import CompletionItem
+    try:
+        names = _standards.available()
+    except Exception:
+        return []
+    return [
+        CompletionItem(n)
+        for n in names
+        if n.lower().startswith(incomplete.lower())
+    ]
+
+
+def _complete_man_topics(ctx, param, incomplete):
+    """Tab-complete --man topic names."""
+    from click.shell_completion import CompletionItem
+    try:
+        from .core.manual import topics
+        names = topics()
+    except Exception:
+        return []
+    return [
+        CompletionItem(t)
+        for t in names
+        if t.lower().startswith(incomplete.lower())
+    ]
+
+
+def _list_checks_for_pipeline(pipeline: str) -> None:
+    """Render every available check for *pipeline* as ``ID  SEV  TITLE``.
+
+    Rule-based providers (all workflow providers + ``aws/rules/`` +
+    ``cloudformation/*`` + ``terraform/*``) expose ``Rule`` metadata via
+    ``discover_rules``. Class-based modules (AWS core services,
+    Terraform core services) have the same info in their module
+    docstring header — we parse it so the output is uniform.
+    """
+    rows: list[tuple[str, str, str]] = []
+    rule_packages = {
+        "github": ["pipeline_check.core.checks.github.rules"],
+        "gitlab": ["pipeline_check.core.checks.gitlab.rules"],
+        "bitbucket": ["pipeline_check.core.checks.bitbucket.rules"],
+        "azure": ["pipeline_check.core.checks.azure.rules"],
+        "jenkins": ["pipeline_check.core.checks.jenkins.rules"],
+        "circleci": ["pipeline_check.core.checks.circleci.rules"],
+        "aws": ["pipeline_check.core.checks.aws.rules"],
+    }
+    from .core.checks.rule import discover_rules
+    for pkg in rule_packages.get(pipeline, []):
+        try:
+            for rule, _ in discover_rules(pkg):
+                rows.append((rule.id, rule.severity.value, rule.title))
+        except Exception as exc:  # pragma: no cover - defensive
+            click.echo(f"[warn] could not load {pkg}: {exc}", err=True)
+
+    # Class-based modules — parse the docstring header. CloudFormation
+    # modules don't carry the table header (their docstrings point at
+    # Terraform's mirror); scan Terraform's source as a fallback so
+    # ``--pipeline cloudformation --list-checks`` produces the same
+    # IDs/severities a CFN scan would.
+    import importlib
+    import pkgutil
+    _class_packages = {
+        "aws": ["pipeline_check.core.checks.aws"],
+        "terraform": ["pipeline_check.core.checks.terraform"],
+        "cloudformation": [
+            "pipeline_check.core.checks.terraform",
+            "pipeline_check.core.checks.cloudformation",
+        ],
+    }
+    class_pkg_names = _class_packages.get(pipeline) or []
+    if class_pkg_names:
+        _row_re = re.compile(
+            r"^\s*(?P<id>[A-Z]+-\d+)\s{2,}(?P<title>.+?)\s{2,}"
+            r"(?P<sev>CRITICAL|HIGH|MEDIUM|LOW|INFO)\b",
+            re.MULTILINE,
+        )
+        for class_pkg_name in class_pkg_names:
+            try:
+                pkg = importlib.import_module(class_pkg_name)
+                for info in pkgutil.iter_modules(pkg.__path__):
+                    if info.name.startswith("_") or info.name == "rules":
+                        continue
+                    mod = importlib.import_module(f"{class_pkg_name}.{info.name}")
+                    doc = mod.__doc__ or ""
+                    for m in _row_re.finditer(doc):
+                        rows.append((m["id"], m["sev"], m["title"].strip()))
+            except Exception as exc:  # pragma: no cover - defensive
+                click.echo(f"[warn] could not scan {class_pkg_name}: {exc}", err=True)
+
+    if not rows:
+        click.echo(
+            f"[list-checks] no checks registered for --pipeline {pipeline}.",
+            err=True,
+        )
+        sys.exit(3)
+
+    # Deduplicate (rule-based + class-based overlap on IDs like CB-001)
+    # and sort so ``GHA-001`` < ``GHA-010`` reads naturally.
+    dedup: dict[str, tuple[str, str, str]] = {}
+    for row in rows:
+        dedup.setdefault(row[0], row)
+    id_width = max(len(i) for i in dedup) if dedup else 0
+    sev_width = max(len(r[1]) for r in dedup.values()) if dedup else 0
+    for cid in sorted(dedup):
+        _, sev, title = dedup[cid]
+        click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
+
+
+_CHECK_IDS_CACHE: list[str] | None = None
+
+
+def _all_check_ids() -> list[str]:
+    """Collect every check ID from every provider's rules registry.
+
+    Cached after the first call so repeated completions are fast.
+    CI providers use the ``Rule`` registry; AWS and Terraform check
+    IDs are extracted from source via regex since they use class-based
+    checks without a ``Rule`` dataclass.
+    """
+    global _CHECK_IDS_CACHE
+    if _CHECK_IDS_CACHE is not None:
+        return _CHECK_IDS_CACHE
+    ids: list[str] = []
+    # CI providers — each has a rules/ package with RULE.id
+    for pkg in (
+        "pipeline_check.core.checks.github.rules",
+        "pipeline_check.core.checks.gitlab.rules",
+        "pipeline_check.core.checks.bitbucket.rules",
+        "pipeline_check.core.checks.azure.rules",
+        "pipeline_check.core.checks.jenkins.rules",
+    ):
+        try:
+            from .core.checks.rule import discover_rules
+            for rule, _ in discover_rules(pkg):
+                ids.append(rule.id)
+        except Exception:
+            pass
+    # AWS / Terraform — class-based checks with hardcoded check_id strings.
+    _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
+    for provider_pkg_name in (
+        "pipeline_check.core.checks.aws",
+        "pipeline_check.core.checks.terraform",
+    ):
+        try:
+            import importlib
+            import pkgutil
+            pkg = importlib.import_module(provider_pkg_name)
+            for info in pkgutil.iter_modules(pkg.__path__):
+                mod = importlib.import_module(f"{provider_pkg_name}.{info.name}")
+                if mod.__file__:
+                    with open(mod.__file__, encoding="utf-8") as fh:
+                        ids.extend(_id_re.findall(fh.read()))
+        except Exception:
+            pass
+    ids = sorted(set(ids))
+    _CHECK_IDS_CACHE = ids
+    return ids
+
 
 _SEVERITY_CHOICES = [
     s.value
@@ -84,8 +294,76 @@ def _load_config_callback(ctx: click.Context, _param, value):
     return value
 
 
+def _install_completion_callback(ctx, _param, value):
+    """Print instructions or install completion for the given shell."""
+    if not value:
+        return
+    shell = value
+    if shell == "bash":
+        line = 'eval "$(_PIPELINE_CHECK_COMPLETE=bash_source pipeline_check)"'
+        rc = os.path.expanduser("~/.bashrc")
+        marker = "# pipeline_check completion"
+        try:
+            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+        except OSError:
+            existing = ""
+        if marker in existing:
+            click.echo(f"Completion already installed in {rc}")
+        else:
+            with open(rc, "a", encoding="utf-8") as f:
+                f.write(f"\n{marker}\n{line}\n")
+            click.echo(f"Completion installed in {rc}. Restart your shell or run:")
+            click.echo(f"  source {rc}")
+    elif shell == "zsh":
+        line = 'eval "$(_PIPELINE_CHECK_COMPLETE=zsh_source pipeline_check)"'
+        rc = os.path.expanduser("~/.zshrc")
+        marker = "# pipeline_check completion"
+        try:
+            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+        except OSError:
+            existing = ""
+        if marker in existing:
+            click.echo(f"Completion already installed in {rc}")
+        else:
+            with open(rc, "a", encoding="utf-8") as f:
+                f.write(f"\n{marker}\n{line}\n")
+            click.echo(f"Completion installed in {rc}. Restart your shell or run:")
+            click.echo(f"  source {rc}")
+    elif shell == "fish":
+        comp_dir = os.path.expanduser("~/.config/fish/completions")
+        os.makedirs(comp_dir, exist_ok=True)
+        comp_file = os.path.join(comp_dir, "pipeline_check.fish")
+        # Fish uses a generated script, not an eval.
+        env = os.environ.copy()
+        env["_PIPELINE_CHECK_COMPLETE"] = "fish_source"
+        import subprocess
+        result = subprocess.run(
+            ["pipeline_check"], env=env,
+            capture_output=True, text=True,
+        )
+        if result.stdout.strip():
+            with open(comp_file, "w", encoding="utf-8") as f:
+                f.write(result.stdout)
+            click.echo(f"Completion installed to {comp_file}")
+        else:
+            click.echo(
+                "Add this to ~/.config/fish/completions/pipeline_check.fish:\n"
+                "  _PIPELINE_CHECK_COMPLETE=fish_source pipeline_check | source"
+            )
+    ctx.exit(0)
+
+
 @click.command()
 @click.version_option(version=__version__, prog_name="pipeline_check")
+@click.option(
+    "--install-completion",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    default=None,
+    is_eager=True,
+    expose_value=False,
+    callback=_install_completion_callback,
+    help="Install shell completion for the given shell and exit.",
+)
 @click.option(
     "--config",
     default=None,
@@ -104,7 +382,15 @@ def _load_config_callback(ctx: click.Context, _param, value):
     type=click.Choice(_PIPELINE_CHOICES, case_sensitive=False),
     default="aws",
     show_default=True,
-    help="Pipeline environment to scan.",
+    help=(
+        "Pipeline environment to scan. One of: "
+        + ", ".join(_PIPELINE_CHOICES)
+        + ". Each provider has a companion path flag "
+        "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
+        "--bitbucket-path, --azure-path, --jenkinsfile-path, "
+        "--circleci-path, --cloudbuild-path); AWS scans the live "
+        "account via boto3."
+    ),
 )
 @click.option(
     "--target",
@@ -119,6 +405,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "--checks",
     multiple=True,
     metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
     help=(
         "Run only the specified check ID(s).  Repeat to include multiple "
         "(e.g. --checks CB-001 --checks CB-003).  Omit to run all checks."
@@ -190,8 +477,80 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--circleci-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a CircleCI config.yml file or a directory containing one "
+        "(required when --pipeline circleci). Auto-detects .circleci/config.yml."
+    ),
+)
+@click.option(
+    "--cfn-template",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a CloudFormation template (YAML or JSON) or a directory "
+        "containing one (required when --pipeline cloudformation). "
+        "Auto-detects common names like template.yml, template.json, "
+        "cloudformation.yml, cfn.yaml."
+    ),
+)
+@click.option(
+    "--cloudbuild-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a cloudbuild.yaml file or a directory containing one "
+        "(required when --pipeline cloudbuild). Auto-detects "
+        "./cloudbuild.yaml and ./cloudbuild.yml."
+    ),
+)
+@click.option(
+    "--inventory",
+    "inventory_flag",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit a component inventory alongside findings. Lists every "
+        "resource/workflow/template the scanner discovered — "
+        "complements the findings view and feeds asset-register "
+        "dashboards. Added to JSON output as an ``inventory`` top-level "
+        "array; rendered as a table after the findings for terminal "
+        "output."
+    ),
+)
+@click.option(
+    "--inventory-type",
+    "inventory_types",
+    multiple=True,
+    metavar="PATTERN",
+    help=(
+        "Glob pattern to scope --inventory output by component type "
+        "(e.g. ``AWS::IAM::*``, ``aws_iam_role``, ``workflow``). "
+        "Repeat for multiple patterns — a component is kept when its "
+        "type matches any of them. Implies --inventory."
+    ),
+)
+@click.option(
+    "--inventory-only",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip running checks entirely; emit only the component "
+        "inventory. Useful when the scanner is driving an asset "
+        "register and you don't need security findings on every "
+        "run. Implies --inventory. Mutually exclusive with --fix, "
+        "--diff-base, and --baseline (each is rejected with a usage "
+        "error when combined). See ``--man inventory``."
+    ),
+)
+@click.option(
     "--output",
-    type=click.Choice(["terminal", "json", "html", "sarif", "both"], case_sensitive=False),
+    type=click.Choice(
+        ["terminal", "json", "html", "sarif", "junit", "markdown", "both"],
+        case_sensitive=False,
+    ),
     default="terminal",
     show_default=True,
     help="Output format.",
@@ -200,13 +559,18 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "--output-file",
     default=None,
     metavar="PATH",
-    help="Write HTML or SARIF report to this file (used with --output html/sarif).",
+    help=(
+        "Write the report to this file. Required for --output html. "
+        "Optional for --output sarif/junit/markdown (stdout is used if "
+        "unset)."
+    ),
 )
 @click.option(
     "--standard",
     "standards",
     multiple=True,
     metavar="NAME",
+    shell_complete=_complete_standards,
     help=(
         "Annotate findings with controls from the named standard. Repeat to "
         "enable multiple (e.g. --standard owasp_cicd_top_10 --standard "
@@ -225,21 +589,46 @@ def _load_config_callback(ctx: click.Context, _param, value):
     flag_value="index",
     default=None,
     metavar="[TOPIC]",
+    shell_complete=_complete_man_topics,
     help=(
         "Print extended documentation for TOPIC and exit. Without "
-        "TOPIC, prints the index of available topics. Topics: "
-        "gate, autofix, diff, secrets, standards, config, output, "
-        "lambda, recipes."
+        "TOPIC, prints the index of available topics. Topics are "
+        "generated from the manual registry; run ``--man`` with no "
+        "argument for the current list. Unknown topic exits with code 3."
     ),
 )
 @click.option(
     "--standard-report",
     default=None,
     metavar="NAME",
+    shell_complete=_complete_standards,
     help=(
-        "Print the control → check matrix for the named standard and "
+        "Print the control -> check matrix for the named standard and "
         "exit. Includes a 'gaps' section listing controls with no "
-        "mapped checks — useful for auditing standard coverage."
+        "mapped checks - useful for auditing standard coverage."
+    ),
+)
+@click.option(
+    "--list-checks",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every check available for --pipeline (one per line: "
+        "``ID  SEVERITY  TITLE``) and exit. Pipes well into ``grep`` "
+        "for narrowing --checks patterns. No scan is performed."
+    ),
+)
+@click.option(
+    "--explain",
+    "explain_id",
+    default=None,
+    metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
+    help=(
+        "Print the full reference for one check (severity, confidence, "
+        "compliance mappings, docs note, known FP modes, and how to "
+        "fix it) and exit. Takes any ID from --list-checks. Exits 3 "
+        "for an unknown ID and suggests near-matches."
     ),
 )
 @click.option(
@@ -259,11 +648,24 @@ def _load_config_callback(ctx: click.Context, _param, value):
     help="Minimum severity to display (e.g. HIGH shows only HIGH and CRITICAL).",
 )
 @click.option(
+    "--min-confidence",
+    type=click.Choice(["HIGH", "MEDIUM", "LOW"], case_sensitive=False),
+    default="LOW",
+    show_default=True,
+    help=(
+        "Minimum confidence to display and gate on. HIGH = only "
+        "findings the scanner is certain about; MEDIUM = includes "
+        "well-known heuristics; LOW (default) = includes blob-search "
+        "patterns that have FP modes. For CI gates that only block "
+        "on high-signal evidence, pass ``--min-confidence HIGH``."
+    ),
+)
+@click.option(
     "--fail-on",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default=None,
     help=(
-        "Fail the CI gate if any effective finding's severity is ≥ this "
+        "Fail the CI gate if any effective finding's severity is >= this "
         "threshold (e.g. --fail-on HIGH fails on HIGH or CRITICAL)."
     ),
 )
@@ -285,6 +687,7 @@ def _load_config_callback(ctx: click.Context, _param, value):
     "fail_on_checks",
     multiple=True,
     metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
     help=(
         "Fail the gate if the named check fails. Repeat for multiple "
         "(e.g. --fail-on-check IAM-001 --fail-on-check CB-002)."
@@ -365,6 +768,17 @@ def _load_config_callback(ctx: click.Context, _param, value):
     ),
 )
 @click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit additional [debug] messages to stderr showing provider "
+        "resolution, check execution details, and gate configuration. "
+        "Suppressed when --quiet is also set."
+    ),
+)
+@click.option(
     "--quiet",
     "-q",
     is_flag=True,
@@ -387,14 +801,23 @@ def scan(
     bitbucket_path: str | None,
     azure_path: str | None,
     jenkinsfile_path: str | None,
+    circleci_path: str | None,
+    cfn_template: str | None,
+    cloudbuild_path: str | None,
+    inventory_flag: bool,
+    inventory_types: tuple[str, ...],
+    inventory_only: bool,
     output: str,
     output_file: str | None,
     standards: tuple[str, ...],
     list_standards: bool,
     man_topic: str | None,
     standard_report: str | None,
+    list_checks: bool,
+    explain_id: str | None,
     config_check: bool,
     severity_threshold: str,
+    min_confidence: str,
     fail_on: str | None,
     min_grade: str | None,
     max_failures: int | None,
@@ -406,6 +829,7 @@ def scan(
     diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
+    verbose: bool,
     quiet: bool,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
@@ -413,9 +837,24 @@ def scan(
     Analyses CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
+    # --quiet wins over --verbose.
+    verbose = verbose and not quiet
+
+    def _debug(msg: str) -> None:
+        if verbose:
+            click.echo(f"[debug] {msg}", err=True)
+
     if man_topic is not None:
         from .core import manual as _manual
+        known = set(_manual.topics())
+        requested = (man_topic or "").lower()
+        # ``--man`` alone (empty string) prints the index; only flag a
+        # typo when the user supplied a non-empty topic that isn't in
+        # the registry so scripts piping this through ``| grep`` get
+        # a non-zero exit on misuse.
         click.echo(_manual.render(man_topic), nl=False)
+        if requested and requested != "index" and requested not in known:
+            sys.exit(3)
         return
 
     if list_standards:
@@ -424,6 +863,14 @@ def scan(
             if std.url:
                 click.echo(f"    {std.url}")
         return
+
+    if list_checks:
+        _list_checks_for_pipeline(pipeline.lower())
+        return
+
+    if explain_id:
+        from .core.explain import print_explain
+        sys.exit(print_explain(explain_id))
 
     if standard_report:
         std = _standards.get(standard_report)
@@ -437,7 +884,7 @@ def scan(
         if std.url:
             click.echo(f"  {std.url}")
         click.echo("")
-        click.echo("Control → check mapping:")
+        click.echo("Control -> check mapping:")
         gaps: list[tuple[str, str]] = []
         for ctrl_id in sorted(std.controls):
             title = std.controls[ctrl_id]
@@ -471,6 +918,30 @@ def scan(
 
     if apply_fixes and not fix:
         raise click.UsageError("--apply requires --fix.")
+
+    # Mutually-exclusive flag combinations — catch these before the
+    # provider context is built so the error points at the conflict
+    # rather than surfacing as a silent no-op later.
+    if inventory_only and fix:
+        raise click.UsageError(
+            "--fix cannot be combined with --inventory-only "
+            "(no findings are produced to fix)."
+        )
+    if inventory_only and diff_base:
+        raise click.UsageError(
+            "--diff-base cannot be combined with --inventory-only "
+            "(inventory is a full-state snapshot, not a per-commit delta)."
+        )
+    if inventory_only and baseline:
+        raise click.UsageError(
+            "--baseline cannot be combined with --inventory-only "
+            "(baselines gate findings; --inventory-only emits no findings)."
+        )
+
+    # Validate --baseline early so a typo'd path doesn't surface as
+    # "no regressions found" after a full scan completes.
+    if baseline and not os.path.isfile(baseline):
+        raise click.UsageError(f"--baseline file not found: {baseline}")
 
     pipeline_lc = pipeline.lower()
     if pipeline_lc == "terraform":
@@ -535,6 +1006,67 @@ def scan(
             )
         if not os.path.exists(jenkinsfile_path):
             raise click.UsageError(f"--jenkinsfile-path not found: {jenkinsfile_path}")
+    elif pipeline_lc == "circleci":
+        if not circleci_path and os.path.isfile(".circleci/config.yml"):
+            circleci_path = ".circleci/config.yml"
+            click.echo(f"[auto] using --circleci-path {circleci_path}", err=True)
+        if not circleci_path:
+            raise click.UsageError(
+                "--circleci-path PATH is required when --pipeline circleci "
+                "(no .circleci/config.yml found in the current directory)."
+            )
+        if not os.path.exists(circleci_path):
+            raise click.UsageError(f"--circleci-path not found: {circleci_path}")
+    elif pipeline_lc == "cloudformation":
+        if not cfn_template:
+            for _candidate in (
+                "template.yml", "template.yaml", "template.json",
+                "cloudformation.yml", "cloudformation.yaml",
+                "cfn.yml", "cfn.yaml",
+            ):
+                if os.path.isfile(_candidate):
+                    cfn_template = _candidate
+                    click.echo(f"[auto] using --cfn-template {cfn_template}", err=True)
+                    break
+        if not cfn_template:
+            raise click.UsageError(
+                "--cfn-template PATH is required when --pipeline cloudformation "
+                "(no template.yml / template.json / cloudformation.yml / "
+                "cfn.yaml found in the current directory)."
+            )
+        if not os.path.exists(cfn_template):
+            raise click.UsageError(f"--cfn-template not found: {cfn_template}")
+        # Distinguish "directory but no templates" from "file not found" —
+        # the former is a common mistake when someone points the flag at
+        # their project root instead of an infrastructure subdirectory.
+        if os.path.isdir(cfn_template):
+            _exts = (".yml", ".yaml", ".json", ".template")
+            has_templates = any(
+                _ent.is_file() and _ent.name.lower().endswith(_exts)
+                for _ent in os.scandir(cfn_template)
+            )
+            if not has_templates:
+                raise click.UsageError(
+                    f"--cfn-template directory {cfn_template!r} contains no "
+                    ".yml / .yaml / .json / .template files."
+                )
+    elif pipeline_lc == "cloudbuild":
+        if not cloudbuild_path:
+            for _candidate in ("cloudbuild.yaml", "cloudbuild.yml"):
+                if os.path.isfile(_candidate):
+                    cloudbuild_path = _candidate
+                    click.echo(
+                        f"[auto] using --cloudbuild-path {cloudbuild_path}",
+                        err=True,
+                    )
+                    break
+        if not cloudbuild_path:
+            raise click.UsageError(
+                "--cloudbuild-path PATH is required when --pipeline cloudbuild "
+                "(no cloudbuild.yaml/cloudbuild.yml found in the current directory)."
+            )
+        if not os.path.exists(cloudbuild_path):
+            raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -550,6 +1082,15 @@ def scan(
             ) from exc
 
     threshold = Severity(severity_threshold.upper())
+    confidence_threshold = Confidence(min_confidence.upper())
+
+    if not quiet:
+        from .core.config import last_loaded_source as _config_source
+        _cfg_src = _config_source()
+        if _cfg_src:
+            click.echo(f"[config] loaded {_cfg_src}", err=True)
+
+    _debug(f"provider: {pipeline}")
 
     scanner = Scanner(
         pipeline=pipeline,
@@ -557,30 +1098,79 @@ def scan(
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
+        log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
         azure_path=azure_path,
         jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
+        cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
     )
 
-    try:
-        findings = scanner.run(
-            checks=list(checks) if checks else None,
-            target=target,
-            standards=list(standards) if standards else None,
+    if verbose:
+        meta = scanner.metadata
+        if meta.files_scanned or meta.files_skipped:
+            _debug(f"loaded {meta.files_scanned} file(s), {meta.files_skipped} skipped")
+        _debug(f"checks to run: {len(scanner._check_classes)} check class(es)")
+
+    # ``--inventory-only``, ``--inventory-type`` both imply ``--inventory``.
+    want_inventory = inventory_flag or inventory_only or bool(inventory_types)
+
+    findings: list = []
+    if not inventory_only:
+        try:
+            findings = scanner.run(
+                checks=list(checks) if checks else None,
+                target=target,
+                standards=list(standards) if standards else None,
+            )
+        except Exception as exc:
+            # Print the traceback to stderr so operators have something to
+            # take to support. Keep the single-line summary above it for
+            # teams that grep logs for "[error] Scan failed".
+            import traceback
+            click.echo(f"[error] Scan failed: {exc}", err=True)
+            click.echo(traceback.format_exc(), err=True, nl=False)
+            sys.exit(2)
+
+    if not quiet:
+        _emit_scan_summary(scanner.metadata)
+
+    # Confidence filter applies BEFORE scoring + gate so scores reflect
+    # the trusted finding set. ``--min-confidence LOW`` (the default)
+    # keeps everything; higher thresholds drop heuristic findings the
+    # scanner is less certain about.
+    pre_filter_count = len(findings)
+    min_conf_rank = confidence_rank(confidence_threshold)
+    findings = [
+        f for f in findings if confidence_rank(f.confidence) >= min_conf_rank
+    ]
+    if verbose and pre_filter_count != len(findings):
+        _debug(
+            f"--min-confidence {confidence_threshold.value}: dropped "
+            f"{pre_filter_count - len(findings)} finding(s)"
         )
-    except Exception as exc:
-        # Print the traceback to stderr so operators have something to
-        # take to support. Keep the single-line summary above it for
-        # teams that grep logs for "[error] Scan failed".
-        import traceback
-        click.echo(f"[error] Scan failed: {exc}", err=True)
-        click.echo(traceback.format_exc(), err=True, nl=False)
-        sys.exit(2)
+
+    n_passed = sum(1 for f in findings if f.passed)
+    n_failed = sum(1 for f in findings if not f.passed)
+    _debug(f"findings: {len(findings)} total ({n_failed} failed, {n_passed} passed)")
 
     score_result = score(findings)
+
+    # Collect the component inventory only when requested — some
+    # providers (AWS runtime) perform extra API calls to build it.
+    components = None
+    if want_inventory:
+        try:
+            components = scanner.inventory(
+                type_patterns=list(inventory_types) if inventory_types else None,
+            )
+        except Exception as exc:  # noqa: BLE001
+            click.echo(f"[inventory] failed: {exc}", err=True)
+            components = []
 
     if not quiet:
         if output in ("terminal", "both"):
@@ -589,9 +1179,14 @@ def scan(
             from rich.console import Console as _Console  # local import — only needed here
             console = _Console(stderr=(output == "both"))
             report_terminal(findings, score_result, severity_threshold=threshold, console=console)
+            if components is not None:
+                report_inventory_terminal(components, console=console)
 
         if output in ("json", "both"):
-            click.echo(report_json(findings, score_result, tool_version=__version__))
+            click.echo(report_json(
+                findings, score_result, tool_version=__version__,
+                inventory=components,
+            ))
 
         if output == "html":
             report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
@@ -605,6 +1200,24 @@ def scan(
                 click.echo(f"SARIF report written to {output_file}", err=True)
             else:
                 click.echo(sarif_text)
+
+        if output == "junit":
+            junit_text = report_junit(findings, score_result)
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(junit_text)
+                click.echo(f"JUnit report written to {output_file}", err=True)
+            else:
+                click.echo(junit_text)
+
+        if output == "markdown":
+            md_text = report_markdown(findings, score_result)
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(md_text)
+                click.echo(f"Markdown report written to {output_file}", err=True)
+            else:
+                click.echo(md_text)
 
         if fix:
             if apply_fixes:
@@ -636,11 +1249,23 @@ def scan(
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
     )
+
+    if verbose:
+        parts = []
+        parts.append(f"fail-on={fail_on or 'CRITICAL (default)'}")
+        if min_grade:
+            parts.append(f"min-grade={min_grade}")
+        if max_failures is not None:
+            parts.append(f"max-failures={max_failures}")
+        if baseline:
+            parts.append(f"baseline={baseline}")
+        elif baseline_from_git:
+            parts.append(f"baseline-from-git={baseline_from_git}")
+        _debug(f"gate config: {', '.join(parts)}")
+
     gate = evaluate_gate(findings, score_result, gate_config)
 
-    if not quiet and output != "json" and (
-        gate.reasons or gate.baseline_matched or gate.suppressed or gate.expired_rules
-    ):
+    if not quiet and output != "json":
         _emit_gate_summary(gate)
 
     if not gate.passed:
@@ -663,6 +1288,8 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
     """
     import os
     cache: dict[str, str] = {}
+    patch_count = 0
+    patched_files: set[str] = set()
     for f in findings:
         if f.passed:
             continue
@@ -690,10 +1317,18 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
             continue
         if after is None:
             continue
+        patch_count += 1
+        patched_files.add(path)
         click.echo(
             _autofix.render_patch(path, before, after),
             nl=False,
             err=to_stderr,
+        )
+    if patch_count:
+        click.echo(
+            f"[autofix] {patch_count} patch(es) for {len(patched_files)} file(s)."
+            f" Run with --apply to modify in place.",
+            err=True,
         )
 
 
@@ -741,10 +1376,31 @@ def _apply_fix_patches(findings) -> None:
     click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
 
 
+def _emit_scan_summary(meta) -> None:
+    """Render the scan summary line and any parse warnings to stderr."""
+    from .core.scanner import ScanMetadata
+    if not isinstance(meta, ScanMetadata):
+        return
+    for w in meta.warnings:
+        click.echo(f"[warn] {w}", err=True)
+    if meta.files_scanned == 0 and meta.files_skipped == 0:
+        click.echo("[warn] no pipeline files found to scan", err=True)
+        return
+    skip_part = f" ({meta.files_skipped} skipped)" if meta.files_skipped else ""
+    click.echo(
+        f"[scan] {meta.provider}: scanned {meta.files_scanned} file(s){skip_part}"
+        f" in {meta.elapsed_seconds:.1f}s",
+        err=True,
+    )
+
+
 def _emit_gate_summary(gate) -> None:
     """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
+    n_effective = len(gate.effective)
     if gate.passed:
-        msg_lines = ["[gate] PASS"]
+        msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
+        for cond in getattr(gate, "conditions_evaluated", []):
+            msg_lines.append(f"        - {cond}")
     else:
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:

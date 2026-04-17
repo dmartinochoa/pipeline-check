@@ -1,6 +1,7 @@
 """ADO-014 — pipeline should not embed long-lived AWS access keys."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
@@ -8,12 +9,18 @@ from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import AWS_KEY_RE
 
+_AWS_CONFIGURE_RE = re.compile(
+    r"aws\s+configure\s+set\s+aws_access_key_id\b"
+    r"|aws\s+configure\s+set\s+aws_secret_access_key\b"
+)
+
 RULE = Rule(
     id="ADO-014",
     title="AWS auth uses long-lived access keys",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-TOKEN-HYGIENE",),
+    cwe=("CWE-522",),
     recommendation=(
         "Use workload identity federation or an Azure Key Vault task "
         "to inject short-lived AWS credentials at runtime. Remove "
@@ -35,7 +42,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for v in _walk_vars(doc.get("variables")):
         if AWS_KEY_RE.search(v):
             static_keys = True
-    # Scan job-level variables and step env.
+    # Scan job-level variables, step env, and script bodies.
     for _, job in iter_jobs(doc):
         for v in _walk_vars(job.get("variables")):
             if AWS_KEY_RE.search(v):
@@ -46,6 +53,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 for val in env.values():
                     if isinstance(val, str) and AWS_KEY_RE.search(val):
                         static_keys = True
+            # Detect `aws configure set` in script bodies.
+            for key in ("script", "bash", "pwsh", "powershell"):
+                body = step.get(key)
+                if isinstance(body, str) and _AWS_CONFIGURE_RE.search(body):
+                    static_keys = True
     if not static_keys:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

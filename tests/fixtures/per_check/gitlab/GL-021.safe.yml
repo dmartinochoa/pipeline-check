@@ -1,0 +1,4 @@
+build:
+  script:
+    - npm ci
+    - pip install -r requirements.txt

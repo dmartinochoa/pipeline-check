@@ -14,6 +14,7 @@ RULE = Rule(
     severity=Severity.HIGH,
     owasp=("CICD-SEC-4",),
     esf=("ESF-D-INJECTION", "ESF-S-PIN-DEPS"),
+    cwe=("CWE-829",),
     recommendation=(
         "Move the action to a separate repo under your control and "
         "reference it by SHA-pinned `uses: org/repo@<sha>`, or split "

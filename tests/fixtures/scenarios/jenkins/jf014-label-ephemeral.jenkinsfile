@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+        label 'linux-ephemeral-k8s'
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make build'
+            }
+        }
+    }
+}

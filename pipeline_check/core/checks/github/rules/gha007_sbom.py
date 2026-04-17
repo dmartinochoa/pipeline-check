@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, has_sbom
+from ...base import Finding, Severity, has_sbom, produces_artifacts
 from ...rule import Rule
 
 RULE = Rule(
@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SBOM",),
+    cwe=("CWE-1104",),
     recommendation=(
         "Add an SBOM generation step — `anchore/sbom-action`, "
         "`syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, "
@@ -32,6 +33,13 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     passed = has_sbom(doc)
+    if not passed and not produces_artifacts(doc):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=path,
+            description="No artifact production detected — check not applicable.",
+            recommendation=RULE.recommendation, passed=True,
+        )
     desc = (
         "Workflow produces an SBOM (CycloneDX / syft / anchore / Trivy-SBOM)."
         if passed else

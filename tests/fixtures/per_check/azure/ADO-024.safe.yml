@@ -1,0 +1,9 @@
+trigger: [main]
+jobs:
+  - job: Release
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - script: docker build -t app:$(Build.BuildId) .
+      - script: docker push app:$(Build.BuildId)
+      - script: cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance app:$(Build.BuildId)
+      - script: cosign sign --yes app:$(Build.BuildId)

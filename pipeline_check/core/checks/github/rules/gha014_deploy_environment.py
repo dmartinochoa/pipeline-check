@@ -6,9 +6,22 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs
+from ..base import iter_jobs, iter_steps
 
-_DEPLOY_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
+_DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
+
+_DEPLOY_CMD_RE = re.compile(
+    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
+    r"|terraform\s+(?:apply|destroy)"
+    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
+    r"|docker\s+push"
+    r"|helm\s+(?:upgrade|install)"
+    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
+    r"|ansible-playbook"
+    r"|serverless\s+deploy"
+    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
+    re.IGNORECASE,
+)
 
 
 RULE = Rule(
@@ -17,6 +30,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-1",),
     esf=("ESF-C-APPROVAL", "ESF-C-ENV-SEP"),
+    cwe=("CWE-284",),
     recommendation=(
         "Add `environment: <name>` to jobs that deploy. Configure "
         "required reviewers, wait timers, and branch-protection rules "
@@ -31,16 +45,28 @@ RULE = Rule(
 )
 
 
+def _job_has_deploy_commands(job: dict[str, Any]) -> bool:
+    """Return True if any step runs a deploy-like command."""
+    for step in iter_steps(job):
+        run = step.get("run")
+        if isinstance(run, str) and _DEPLOY_CMD_RE.search(run):
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
     for job_id, job in iter_jobs(doc):
-        if not _DEPLOY_RE.search(job_id):
+        is_deploy = bool(_DEPLOY_RE.search(job_id))
+        if not is_deploy:
+            is_deploy = _job_has_deploy_commands(job)
+        if not is_deploy:
             continue
         if not job.get("environment"):
             ungated.append(job_id)
     passed = not ungated
     desc = (
-        "Every deploy-named job binds a GitHub environment."
+        "Every deploy job binds a GitHub environment."
         if passed else
         f"{len(ungated)} deploy job(s) have no `environment:` binding: "
         f"{', '.join(ungated)}. Without an environment, the job "

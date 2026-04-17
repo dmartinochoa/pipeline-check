@@ -1,0 +1,11 @@
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            steps {
+                copyArtifacts(projectName: 'upstream-build', filter: 'app.jar')
+                sh 'java -jar app.jar'
+            }
+        }
+    }
+}

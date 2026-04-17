@@ -52,6 +52,8 @@ from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 from pipeline_check.core.checks.base import Finding
 from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
+from pipeline_check.core.checks.circleci.base import CircleCIContext
+from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
 from pipeline_check.core.checks.github.base import GitHubContext
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 from pipeline_check.core.checks.gitlab.base import GitLabContext
@@ -74,6 +76,7 @@ _PROVIDER_BY_PREFIX: dict[str, tuple[Any, Any, str, str]] = {
     "BB":  (BitbucketContext, BitbucketPipelineChecks,  "bitbucket", "yml"),
     "ADO": (AzureContext,     AzurePipelineChecks,      "azure",     "yml"),
     "JF":  (JenkinsContext,   JenkinsfileChecks,        "jenkins",   "jenkinsfile"),
+    "CC":  (CircleCIContext,  CircleCIPipelineChecks,   "circleci",  "yml"),
 }
 
 
@@ -179,6 +182,9 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GHA-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("GHA-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("GHA-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("GHA-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("GHA-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── GitLab CI ────────────────────────────────────────────────────
     CheckCase("GL-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("GL-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -200,6 +206,9 @@ CASES: list[CheckCase] = [
     CheckCase("GL-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-019", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
     CheckCase("GL-020", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("GL-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("GL-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines ──────────────────────────────────────────
     CheckCase("BB-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("BB-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -221,6 +230,9 @@ CASES: list[CheckCase] = [
     CheckCase("BB-018", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
     CheckCase("BB-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("BB-020", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("BB-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("BB-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("BB-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Azure DevOps Pipelines ───────────────────────────────────────
     CheckCase("ADO-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -242,6 +254,9 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("ADO-019", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-PIN-DEPS")),
     CheckCase("ADO-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("ADO-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("ADO-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("ADO-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Jenkins ──────────────────────────────────────────────────────
     CheckCase("JF-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("JF-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -263,6 +278,34 @@ CASES: list[CheckCase] = [
     CheckCase("JF-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("JF-019", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("JF-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("JF-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("JF-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("JF-024", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("JF-025", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("JF-026", "CICD-SEC-4", ("ESF-C-APPROVAL",)),
+    CheckCase("JF-027", "CICD-SEC-9", ("ESF-D-TAMPER",)),
+    CheckCase("JF-028", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    # Category 1 — SLSA provenance attestation (6 providers)
+    CheckCase("GHA-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("GL-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("BB-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("ADO-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("CC-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    # Category 2 — build cache poisoning
+    CheckCase("CC-025", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    # Category 3 — reusable-workflow / template pinning
+    CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    # Category 4 — hermetic egress
+    CheckCase("GHA-026", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    # Malicious-activity indicators (Category 5)
+    CheckCase("GHA-027", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-025", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-025", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-026", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-026", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-029", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
 ]
 
 
@@ -306,11 +349,11 @@ def test_every_workflow_check_has_a_case():
     workflow checks. If a new check ships without an entry here, this
     test fails — forcing the author to write a real-example case."""
     expected_ids = (
-        {f"GHA-{i:03d}" for i in range(1, 21)}
-        | {f"GL-{i:03d}" for i in range(1, 21)}
-        | {f"BB-{i:03d}" for i in range(1, 21)}
-        | {f"ADO-{i:03d}" for i in range(1, 21)}
-        | {f"JF-{i:03d}" for i in range(1, 21)}
+        {f"GHA-{i:03d}" for i in range(1, 24)}
+        | {f"GL-{i:03d}" for i in range(1, 24)}
+        | {f"BB-{i:03d}" for i in range(1, 24)}
+        | {f"ADO-{i:03d}" for i in range(1, 24)}
+        | {f"JF-{i:03d}" for i in range(1, 24)}
     )
     covered = {c.check_id for c in CASES}
     missing = expected_ids - covered

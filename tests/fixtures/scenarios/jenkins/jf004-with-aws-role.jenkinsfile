@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            steps {
+                withAWS(role: 'arn:aws:iam::123456789012:role/jenkins-deploy', region: 'us-east-1') {
+                    sh 'aws s3 sync build/ s3://my-bucket/'
+                }
+            }
+        }
+    }
+}

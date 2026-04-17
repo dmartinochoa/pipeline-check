@@ -10,13 +10,15 @@ pipelines:
           - npm test
           - snyk test
           - syft . -o cyclonedx-json > sbom.json
-          - cosign sign --yes "registry.example.com/app:$BITBUCKET_COMMIT"
+          - cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes "registry.example.com/app:$BITBUCKET_COMMIT"
 
     - step:
         name: Deploy to production
         deployment: production
         max-time: 15
         script:
+          # BB-021 safe: lockfile-enforcing install command.
+          - npm ci
           - pipe: atlassian/aws-s3-deploy@sha256:0000000000000000000000000000000000000000000000000000000000000003
             variables:
               AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE

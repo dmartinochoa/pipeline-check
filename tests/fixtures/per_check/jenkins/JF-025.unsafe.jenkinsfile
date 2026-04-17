@@ -1,0 +1,25 @@
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: build
+    image: maven:3.9
+    securityContext:
+      privileged: true
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+'''
+    }
+  }
+  stages {
+    stage('Build') {
+      steps { sh 'mvn package' }
+    }
+  }
+}

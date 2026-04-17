@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            steps {
+                copyArtifacts(projectName: 'upstream-build', filter: 'app.jar')
+                sh 'sha256sum --check manifest.sha256'
+                sh 'java -jar app.jar'
+            }
+        }
+    }
+}

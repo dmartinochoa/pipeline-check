@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, has_signing
+from ...base import Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 
 RULE = Rule(
@@ -12,6 +12,7 @@ RULE = Rule(
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     esf=("ESF-D-SIGN-ARTIFACTS",),
+    cwe=("CWE-345",),
     recommendation=(
         "Add a step that runs `cosign sign` against the built image "
         "or archive, using Bitbucket OIDC for keyless signing where "
@@ -28,6 +29,13 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     passed = has_signing(doc)
+    if not passed and not produces_artifacts(doc):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=path,
+            description="No artifact production detected — check not applicable.",
+            recommendation=RULE.recommendation, passed=True,
+        )
     desc = (
         "Pipeline invokes a signing tool (cosign / sigstore / notation)."
         if passed else

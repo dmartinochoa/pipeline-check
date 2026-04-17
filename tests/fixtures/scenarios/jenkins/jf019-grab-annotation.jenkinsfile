@@ -1,0 +1,15 @@
+@Grab('org.apache.commons:commons-math3:3.6.1')
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
+
+pipeline {
+    agent any
+    stages {
+        stage('Stats') {
+            steps {
+                script {
+                    def stats = new DescriptiveStatistics()
+                }
+            }
+        }
+    }
+}

@@ -85,6 +85,54 @@ class TestADO002ScriptInjection:
         )
         assert f.passed
 
+    def test_env_chain_pipeline_var_tainted(self):
+        """Tainted value assigned in pipeline-level variables:, referenced in script."""
+        f = _run(
+            """
+            variables:
+              MY_BRANCH: $(Build.SourceBranchName)
+            steps:
+              - script: echo $(MY_BRANCH)
+            """,
+            "ADO-002",
+        )
+        assert not f.passed
+
+    def test_env_chain_safe_pipeline_var(self):
+        """Non-tainted pipeline variable should not trigger."""
+        f = _run(
+            """
+            variables:
+              MY_VAR: "safe-value"
+            steps:
+              - script: echo $(MY_VAR)
+            """,
+            "ADO-002",
+        )
+        assert f.passed
+
+    def test_new_untrusted_var_definition_name(self):
+        """Build.DefinitionName (newly added) should be flagged."""
+        f = _run(
+            """
+            steps:
+              - script: echo $(Build.DefinitionName)
+            """,
+            "ADO-002",
+        )
+        assert not f.passed
+
+    def test_new_untrusted_var_source_commit_id(self):
+        """System.PullRequest.SourceCommitId (newly added) should be flagged."""
+        f = _run(
+            """
+            steps:
+              - script: echo $(System.PullRequest.SourceCommitId)
+            """,
+            "ADO-002",
+        )
+        assert not f.passed
+
 
 class TestADO003LiteralSecrets:
     def test_aws_key_mapping_form_fails(self):

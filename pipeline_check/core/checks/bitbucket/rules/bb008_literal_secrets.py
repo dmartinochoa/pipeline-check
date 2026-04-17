@@ -13,6 +13,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-798",),
     recommendation=(
         "Rotate the exposed credential. Move the value to a Secured "
         "Repository or Deployment Variable and reference it by name."

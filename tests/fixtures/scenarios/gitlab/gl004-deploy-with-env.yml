@@ -1,0 +1,5 @@
+infra:
+  stage: build
+  environment: production
+  script:
+    - kubectl apply -f deploy.yml

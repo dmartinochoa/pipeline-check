@@ -13,6 +13,10 @@ _TOKEN_PERSIST_RE = re.compile(
     r"|REPOSITORY_OAUTH_ACCESS_TOKEN.*(?:>>?\s|tee\s)"
     r"|>>?\s*.*BITBUCKET_TOKEN"
     r"|>>?\s*.*REPOSITORY_OAUTH_ACCESS_TOKEN"
+    r"|BITBUCKET_STEP_OIDC_TOKEN.*(?:>>?\s|tee\s)"
+    r"|>>?\s*.*BITBUCKET_STEP_OIDC_TOKEN"
+    r"|BITBUCKET_CLONE_TOKEN.*(?:>>?\s|tee\s)"
+    r"|>>?\s*.*BITBUCKET_CLONE_TOKEN"
 )
 
 RULE = Rule(
@@ -21,6 +25,7 @@ RULE = Rule(
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
+    cwe=("CWE-522",),
     recommendation=(
         "Never write BITBUCKET_TOKEN or REPOSITORY_OAUTH_ACCESS_TOKEN "
         "to files or artifacts. Use the token inline in the command "
