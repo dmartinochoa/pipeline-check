@@ -26,20 +26,35 @@ STANDARD = Standard(
         # ── GV (Govern) — new function in CSF 2.0 ───────────────────
         "GV.SC-03": "Cybersecurity supply chain risk management is integrated into CS and ERM programs",
         "GV.SC-04": "Suppliers are known and prioritized by criticality",
-        "GV.SC-05": "Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts",
-        "GV.SC-07": "Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored",
-        "GV.SC-08": "Relevant suppliers and other third parties are included in incident planning, response, and recovery activities",
+        "GV.SC-05": (
+            "Requirements to address cybersecurity risks in supply chains are "
+            "established, prioritized, and integrated into contracts"
+        ),
+        "GV.SC-07": (
+            "Risks posed by suppliers, their products and services, are "
+            "understood, recorded, prioritized, assessed, responded to, and monitored"
+        ),
+        "GV.SC-08": (
+            "Relevant suppliers and other third parties are included in "
+            "incident planning, response, and recovery activities"
+        ),
         # ── PR (Protect) ────────────────────────────────────────────
         "PR.AA-01": "Identities and credentials for authorized users, services, and hardware are managed",
         "PR.AA-03": "Users, services, and hardware are authenticated",
-        "PR.AA-05": "Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed",
+        "PR.AA-05": (
+            "Access permissions, entitlements, and authorizations are "
+            "defined in a policy, managed, enforced, and reviewed"
+        ),
         "PR.DS-01": "The confidentiality, integrity, and availability of data-at-rest are protected",
         "PR.DS-02": "The confidentiality, integrity, and availability of data-in-transit are protected",
         "PR.PS-01": "Configuration management practices are established and applied",
         "PR.PS-02": "Software is maintained, replaced, and removed commensurate with risk",
         "PR.PS-04": "Log records are generated and made available for continuous monitoring",
         "PR.PS-05": "Installation and execution of unauthorized software are prevented",
-        "PR.PS-06": "Secure software development practices are integrated, and their performance is monitored throughout the SDLC",
+        "PR.PS-06": (
+            "Secure software development practices are integrated, and "
+            "their performance is monitored throughout the SDLC"
+        ),
         "PR.IR-01": "Networks and environments are protected from unauthorized logical access and usage",
         "PR.IR-03": "Mechanisms are implemented to achieve resilience requirements in normal and adverse situations",
         # ── DE (Detect) ─────────────────────────────────────────────

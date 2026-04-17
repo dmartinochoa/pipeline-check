@@ -43,7 +43,10 @@ STANDARD = Standard(
         "CC7.3": "Security events are evaluated to determine if they require response",
         "CC7.4": "Identified security incidents trigger a response process",
         # ── CC8 — Change Management ─────────────────────────────────
-        "CC8.1": "Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented",
+        "CC8.1": (
+            "Changes to infrastructure, data, software, and procedures are "
+            "authorized, designed, tested, approved, and implemented"
+        ),
     },
     mappings={
         # ── CC6.1 — Logical access controls ─────────────────────────

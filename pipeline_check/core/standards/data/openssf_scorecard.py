@@ -34,7 +34,10 @@ STANDARD = Standard(
         "Code-Review":            "Changes merged to the default branch require review",
         "Dangerous-Workflow":     "No dangerous patterns in CI workflows (untrusted checkout, script injection)",
         "Dependency-Update-Tool": "Project uses an automated dependency-update tool (Dependabot / Renovate)",
-        "Pinned-Dependencies":    "Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources",
+        "Pinned-Dependencies": (
+            "Dependencies (actions, images, includes, packages) are "
+            "pinned to immutable references from trusted sources"
+        ),
         "SAST":                   "Project uses static analysis / vulnerability scanning",
         "SBOM":                   "Releases publish a software bill of materials",
         "Signed-Releases":        "Release artifacts are cryptographically signed",
