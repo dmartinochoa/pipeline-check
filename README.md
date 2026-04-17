@@ -24,12 +24,16 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 ```bash
 pip install -e .                  # Python >= 3.10
 
-pipeline_check --pipeline github    # auto-detects .github/workflows/
-pipeline_check --pipeline gitlab    # auto-detects .gitlab-ci.yml
-pipeline_check --pipeline circleci  # auto-detects .circleci/config.yml
-pipeline_check --pipeline cloudbuild # auto-detects cloudbuild.yaml
-pipeline_check                      # live AWS account (default)
+pipeline_check                      # auto-detects the provider from cwd
+pipeline_check init                 # scaffold .pipeline-check.yml
+pipeline_check -p github -o json    # short flags work too
+pipeline_check --pipeline aws       # force the live-AWS scan
 ```
+
+Run `pipeline_check` with no flags in any supported repo — it inspects
+the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
+`Jenkinsfile`, `cloudbuild.yaml`, `template.yml`, …), picks the matching
+provider, and falls back to `aws` when nothing recognisable is found.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
 standard boto3 credential chain.
@@ -215,10 +219,10 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` | `aws` | `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci` |
-| `--output` | `terminal` | `terminal`, `json`, `html`, `sarif`, `both` |
-| `--output-file` | | Required with `html`; optional with `sarif` |
-| `--fail-on` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild` |
+| `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
+| `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
+| `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
 | `--min-grade` | | Fail if grade worse than `A`/`B`/`C`/`D` |
 | `--max-failures` | | Fail if > N effective findings |
 | `--fail-on-check` | | Fail if named check fails (repeat for multiple) |
@@ -228,7 +232,7 @@ See [docs/standards/](docs/standards/).
 | `--diff-base` | | Only scan files changed vs this git ref |
 | `--fix` | | Emit unified-diff patches to stdout |
 | `--apply` | | With `--fix`, write patches in place |
-| `--checks` | all | Check ID(s) or globs (`GHA-*`, `*-008`) |
+| `--checks` / `-c` | all | Check ID(s) or globs (`GHA-*`, `*-008`) |
 | `--severity-threshold` | `INFO` | Minimum severity to display |
 | `--secret-pattern` | | Extra regex for credential scanning (repeat) |
 | `--standard` | all | Standard(s) to annotate findings with |
@@ -239,7 +243,7 @@ See [docs/standards/](docs/standards/).
 | `--config` | auto | Config file path (TOML or YAML) |
 | `--config-check` | | Validate config, exit non-zero on unknown keys |
 | `--man [TOPIC]` | | Extended docs (`gate`, `autofix`, `diff`, `secrets`, `standards`, `config`, `output`, `lambda`, `recipes`) |
-| `--region` | `us-east-1` | AWS region |
+| `--region` / `-r` | `us-east-1` | AWS region |
 | `--profile` | | AWS CLI named profile |
 | `--verbose` / `-v` | | Debug output to stderr |
 | `--quiet` / `-q` | | Suppress all output; exit code only |
@@ -248,6 +252,11 @@ See [docs/standards/](docs/standards/).
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
 `--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`) are
 auto-detected from the working directory when omitted.
+
+Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
+to the current directory, pre-filling the `pipeline:` key based on what it
+finds in cwd. Pass `--path PATH` to redirect the output, or `--force` to
+overwrite an existing file.
 
 ---
 

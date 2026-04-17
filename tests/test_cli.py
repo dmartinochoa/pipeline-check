@@ -67,7 +67,7 @@ class TestJsonOutput:
             MockScanner.return_value.run.return_value = [_finding()]
             result = runner.invoke(scan, ["--output", "json"])
         assert result.exit_code == 0
-        payload = json.loads(result.output)
+        payload = json.loads(result.stdout)
         assert "score" in payload
         assert "findings" in payload
 
@@ -76,14 +76,14 @@ class TestJsonOutput:
         with patch("pipeline_check.cli.Scanner") as MockScanner:
             MockScanner.return_value.run.return_value = findings
             result = runner.invoke(scan, ["--output", "json"])
-        payload = json.loads(result.output)
+        payload = json.loads(result.stdout)
         assert len(payload["findings"]) == 3
 
     def test_score_fields_present(self, runner):
         with patch("pipeline_check.cli.Scanner") as MockScanner:
             MockScanner.return_value.run.return_value = [_finding()]
             result = runner.invoke(scan, ["--output", "json"])
-        score = json.loads(result.output)["score"]
+        score = json.loads(result.stdout)["score"]
         assert "score" in score
         assert "grade" in score
         assert "summary" in score
