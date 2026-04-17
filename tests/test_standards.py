@@ -17,6 +17,11 @@ class TestRegistry:
             "nist_800_53",
             "slsa",
             "pci_dss_v4",
+            "openssf_scorecard",
+            "s2c2f",
+            "soc2",
+            "nist_csf_2",
+            "nist_800_190",
         ):
             assert expected in names
 
@@ -55,6 +60,11 @@ class TestStandardIntegrity:
         "nist_800_53",
         "slsa",
         "pci_dss_v4",
+        "openssf_scorecard",
+        "s2c2f",
+        "soc2",
+        "nist_csf_2",
+        "nist_800_190",
     ])
     def test_every_mapped_control_is_defined(self, name):
         std = standards.get(name)
@@ -73,6 +83,11 @@ class TestStandardIntegrity:
         "nist_800_53",
         "slsa",
         "pci_dss_v4",
+        "openssf_scorecard",
+        "s2c2f",
+        "soc2",
+        "nist_csf_2",
+        "nist_800_190",
     ])
     def test_standard_has_metadata(self, name):
         std = standards.get(name)
@@ -93,6 +108,11 @@ class TestCheckIdIntegrity:
         "nist_800_53",
         "slsa",
         "pci_dss_v4",
+        "openssf_scorecard",
+        "s2c2f",
+        "soc2",
+        "nist_csf_2",
+        "nist_800_190",
     ])
     def test_check_ids_are_known(self, name):
         owasp = standards.get("owasp_cicd_top_10")
