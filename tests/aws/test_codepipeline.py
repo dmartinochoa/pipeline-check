@@ -9,8 +9,14 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     cp001_approval_before_deploy as cp001,
+)
+from pipeline_check.core.checks.aws.rules import (
     cp002_artifact_encryption as cp002,
+)
+from pipeline_check.core.checks.aws.rules import (
     cp003_source_polling as cp003,
+)
+from pipeline_check.core.checks.aws.rules import (
     cp004_legacy_github as cp004,
 )
 from pipeline_check.core.checks.aws.workflows import AWSRuleChecks

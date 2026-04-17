@@ -9,7 +9,11 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     cd001_auto_rollback as cd001,
+)
+from pipeline_check.core.checks.aws.rules import (
     cd002_all_at_once as cd002,
+)
+from pipeline_check.core.checks.aws.rules import (
     cd003_alarm_config as cd003,
 )
 from pipeline_check.core.checks.aws.workflows import AWSRuleChecks

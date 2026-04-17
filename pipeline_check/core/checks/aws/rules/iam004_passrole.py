@@ -1,9 +1,9 @@
 """IAM-004 — CI/CD role grants iam:PassRole with Resource:'*'."""
 from __future__ import annotations
 
+from ..._iam_policy import passrole_wildcard
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import passrole_wildcard
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

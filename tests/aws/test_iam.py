@@ -9,10 +9,20 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     iam001_admin_access as iam001,
+)
+from pipeline_check.core.checks.aws.rules import (
     iam002_wildcard_action as iam002,
+)
+from pipeline_check.core.checks.aws.rules import (
     iam003_permission_boundary as iam003,
+)
+from pipeline_check.core.checks.aws.rules import (
     iam004_passrole as iam004,
+)
+from pipeline_check.core.checks.aws.rules import (
     iam005_external_trust as iam005,
+)
+from pipeline_check.core.checks.aws.rules import (
     iam006_sensitive_wildcard as iam006,
 )
 from pipeline_check.core.checks.aws.workflows import AWSRuleChecks

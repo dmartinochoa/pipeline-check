@@ -11,7 +11,6 @@ import json
 import re
 
 from .._iam_policy import (
-    as_list,
     is_oidc_trust_stmt,
     iter_allow,
     oidc_audience_pinned,

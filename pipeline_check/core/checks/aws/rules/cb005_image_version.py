@@ -1,9 +1,9 @@
 """CB-005 — CodeBuild project uses an outdated AWS-managed standard image."""
 from __future__ import annotations
 
+from ..._patterns import LATEST_STANDARD_VERSION, MANAGED_IMAGE_RE
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._patterns import LATEST_STANDARD_VERSION, MANAGED_IMAGE_RE
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

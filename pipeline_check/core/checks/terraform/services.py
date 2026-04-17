@@ -249,7 +249,6 @@ def _lambda(ctx) -> list[Finding]:
     for p in ctx.resources("aws_lambda_permission"):
         principal = p.values.get("principal", "")
         scoped = bool(p.values.get("source_arn")) or bool(p.values.get("source_account"))
-        is_public = principal == "*" or principal.endswith(".amazonaws.com") is False and principal != ""
         # Only flag when principal is "*" AND unscoped — service principals
         # with a source_arn/source_account are fine.
         offending = principal == "*" and not scoped

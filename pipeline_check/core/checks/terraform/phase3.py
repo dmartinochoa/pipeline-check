@@ -79,7 +79,6 @@ def _pbac003(ctx) -> list[Finding]:
 def _pbac005_cp005_cp007(ctx) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("aws_codepipeline"):
-        name = p.values.get("name") or p.name
         pipeline_role = p.values.get("role_arn", "")
         stages = p.values.get("stage") or []
         # PBAC-005 — any stage action with its own role_arn passes.

@@ -9,9 +9,17 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     s3001_public_access_block as s3001,
+)
+from pipeline_check.core.checks.aws.rules import (
     s3002_encryption as s3002,
+)
+from pipeline_check.core.checks.aws.rules import (
     s3003_versioning as s3003,
+)
+from pipeline_check.core.checks.aws.rules import (
     s3004_access_logging as s3004,
+)
+from pipeline_check.core.checks.aws.rules import (
     s3005_secure_transport as s3005,
 )
 from tests.aws.conftest import make_paginator

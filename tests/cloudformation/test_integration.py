@@ -1,12 +1,9 @@
 """End-to-end CFN integration tests — full Scanner pipeline on real templates."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from pipeline_check.core.scanner import Scanner
-
 
 _INSECURE_TEMPLATE = """
 AWSTemplateFormatVersion: '2010-09-09'

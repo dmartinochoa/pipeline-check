@@ -20,7 +20,18 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.terraform.base import TerraformContext
+from ..checks.terraform.codebuild import CodeBuildChecks
+from ..checks.terraform.codedeploy import CodeDeployChecks
+from ..checks.terraform.codepipeline import CodePipelineChecks
+from ..checks.terraform.ecr import ECRChecks
+from ..checks.terraform.extended import ExtendedChecks
+from ..checks.terraform.iam import IAMChecks
+from ..checks.terraform.pbac import PBACChecks
+from ..checks.terraform.phase3 import Phase3Checks
+from ..checks.terraform.s3 import S3Checks
+from ..checks.terraform.services import ServiceChecks
 from ..inventory import Component
+from .base import BaseProvider
 
 
 # Metadata extraction per Terraform resource type. Only fields that are
@@ -75,17 +86,6 @@ def _tf_metadata(resource_type: str, values: dict) -> dict:
         meta["parameter_type"] = values.get("type")
     # Prune Nones so downstream consumers don't have to branch.
     return {k: v for k, v in meta.items() if v is not None}
-from ..checks.terraform.codebuild import CodeBuildChecks
-from ..checks.terraform.codedeploy import CodeDeployChecks
-from ..checks.terraform.codepipeline import CodePipelineChecks
-from ..checks.terraform.ecr import ECRChecks
-from ..checks.terraform.extended import ExtendedChecks
-from ..checks.terraform.iam import IAMChecks
-from ..checks.terraform.pbac import PBACChecks
-from ..checks.terraform.s3 import S3Checks
-from ..checks.terraform.phase3 import Phase3Checks
-from ..checks.terraform.services import ServiceChecks
-from .base import BaseProvider
 
 
 class TerraformProvider(BaseProvider):

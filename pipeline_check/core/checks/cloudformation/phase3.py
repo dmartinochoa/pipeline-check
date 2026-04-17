@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str, is_true
+from .base import CloudFormationBaseCheck, as_str
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED", "PULL_REQUEST_UPDATED", "PULL_REQUEST_REOPENED",
@@ -82,7 +82,6 @@ def _pbac003(ctx) -> list[Finding]:
 def _pbac005_cp005_cp007(ctx) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("AWS::CodePipeline::Pipeline"):
-        name = as_str(p.properties.get("Name")) or p.logical_id
         pipeline_role = _canon(p.properties.get("RoleArn"))
         stages = p.properties.get("Stages") or []
 

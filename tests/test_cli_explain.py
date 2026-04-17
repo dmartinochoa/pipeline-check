@@ -12,7 +12,6 @@ from pipeline_check.core.explain import (
     render,
 )
 
-
 # ─── Renderer — rule-based check ───────────────────────────────────────────
 
 

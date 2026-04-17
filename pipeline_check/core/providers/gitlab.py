@@ -14,7 +14,6 @@ from ..checks.gitlab.pipelines import GitLabPipelineChecks
 from ..inventory import Component
 from .base import BaseProvider
 
-
 _GITLAB_TOPLEVEL_KEYWORDS = {
     "default", "include", "stages", "variables", "workflow",
     "image", "services", "cache", "before_script", "after_script", "pages",

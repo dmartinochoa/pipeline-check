@@ -169,9 +169,9 @@ def render(check_id: str) -> tuple[str, int]:
                 lines.append(f"  {s}  {index[s].title}")
             lines.append("")
         lines.append(
-            f"Run ``pipeline_check --pipeline <provider> --list-checks`` "
-            f"to see all IDs for a provider, or ``pipeline_check "
-            f"--man`` for the manual index."
+            "Run ``pipeline_check --pipeline <provider> --list-checks`` "
+            "to see all IDs for a provider, or ``pipeline_check "
+            "--man`` for the manual index."
         )
         return "\n".join(lines) + "\n", 3
 

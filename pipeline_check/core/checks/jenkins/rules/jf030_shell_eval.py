@@ -1,9 +1,9 @@
 """JF-030 — dangerous shell idioms in Jenkins pipeline ``sh`` / ``bat`` steps."""
 from __future__ import annotations
 
+from ..._primitives import shell_eval
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._primitives import shell_eval
 from ..base import Jenkinsfile
 
 RULE = Rule(
@@ -25,6 +25,12 @@ RULE = Rule(
         "parameters). Fires on intrinsically risky shell idioms — "
         "``eval``, ``sh -c \"$X\"``, backtick exec — regardless of "
         "whether the input source is currently trusted."
+    ),
+    known_fp=(
+        "``sh 'eval \"$(ssh-agent -s)\"'`` and similar "
+        "``eval \"$(<literal-tool>)\"`` bootstrap idioms are "
+        "intentionally NOT flagged — the substituted command is "
+        "literal, only its output is eval'd.",
     ),
 )
 

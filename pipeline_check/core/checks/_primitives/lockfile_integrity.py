@@ -61,10 +61,12 @@ _NPM_GIT_RE = re.compile(
     r"|[a-zA-Z0-9_-][a-zA-Z0-9_-]*/[a-zA-Z0-9_.-]+(?:\s|$))",
 )
 
-# cargo: ``cargo install --git <url>`` — pinned only with --rev <sha>
-# or --tag (tag is weaker but still named). Greedy capture up to a
-# newline or statement separator so a trailing ``--rev <sha>`` is
-# included in the match for the SHA check to see.
+# cargo: ``cargo install --git <url>`` — accepted as pinned only
+# when ``--rev <40-hex>`` follows on the same statement. ``--tag``
+# is explicitly treated as unpinned: tags on crates-registry-less
+# repos are mutable by the upstream maintainer. Greedy capture up
+# to a newline or statement separator so a trailing ``--rev <sha>``
+# is included in the match for the SHA check to see.
 _CARGO_GIT_RE = re.compile(
     r"\bcargo\s+install\s+[^\n;&|]*--git\s+[^\n;&|]+",
 )

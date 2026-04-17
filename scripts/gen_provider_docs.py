@@ -25,15 +25,14 @@ jenkins) are supported.
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 # Make ``pipeline_check`` importable when the script is run directly.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 from pipeline_check.core.checks.rule import Rule, discover_rules
-
 
 # ``provider_slug -> (display_title, rules_package_fqn, docs_output_path,
 #                     per-provider header markdown)``

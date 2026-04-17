@@ -1,7 +1,7 @@
 """JF-028 — Jenkinsfile must emit SLSA provenance attestation."""
 from __future__ import annotations
 
-from ...base import Finding, PROVENANCE_TOKENS, Severity
+from ...base import PROVENANCE_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 

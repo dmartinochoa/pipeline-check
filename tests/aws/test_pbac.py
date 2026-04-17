@@ -9,11 +9,12 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     pbac001_vpc_config as pbac001,
+)
+from pipeline_check.core.checks.aws.rules import (
     pbac002_shared_service_role as pbac002,
 )
 from pipeline_check.core.checks.aws.workflows import AWSRuleChecks
 from tests.aws.conftest import make_paginator
-
 
 _ROLE_ARN = "arn:aws:iam::123456789:role/my-build-role"
 _ROLE_ARN_2 = "arn:aws:iam::123456789:role/other-build-role"

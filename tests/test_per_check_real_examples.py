@@ -52,12 +52,12 @@ from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 from pipeline_check.core.checks.base import Finding
 from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
+from pipeline_check.core.checks.circleci.base import CircleCIContext
+from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
 from pipeline_check.core.checks.github.base import GitHubContext
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 from pipeline_check.core.checks.gitlab.base import GitLabContext
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
-from pipeline_check.core.checks.circleci.base import CircleCIContext
-from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
 from pipeline_check.core.checks.jenkins.base import JenkinsContext
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 

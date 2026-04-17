@@ -1,8 +1,6 @@
 """Tests for the CloudFormation parser and context."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from pipeline_check.core.checks.cloudformation.base import (

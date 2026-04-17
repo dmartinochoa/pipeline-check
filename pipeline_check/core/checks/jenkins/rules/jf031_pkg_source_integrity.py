@@ -1,9 +1,9 @@
 """JF-031 — package install from git URL / local path / tarball URL."""
 from __future__ import annotations
 
+from ..._primitives import lockfile_integrity
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._primitives import lockfile_integrity
 from ..base import Jenkinsfile
 
 RULE = Rule(

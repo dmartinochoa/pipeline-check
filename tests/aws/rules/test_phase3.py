@@ -19,7 +19,6 @@ from pipeline_check.core.checks.aws.rules import (
 )
 from tests.aws.rules.conftest import FakeClient
 
-
 # ---------- ECR-006 ----------
 
 def test_ecr006_untrusted_fails(make_catalog):

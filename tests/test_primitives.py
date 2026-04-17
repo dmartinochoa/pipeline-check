@@ -17,7 +17,6 @@ from pipeline_check.core.checks._primitives import (
     shell_eval,
 )
 
-
 # ──────────────────────────────────────────────────────────────────
 # shell_eval
 # ──────────────────────────────────────────────────────────────────
@@ -28,11 +27,19 @@ class TestShellEvalPositives:
         ('eval "$CMD"', "eval"),
         ("eval $USER_INPUT", "eval"),
         ("eval ${VAR}", "eval"),
+        # Single-quoted args are also risky — eval re-parses the
+        # literal string and expansion happens on the re-parse.
+        ("eval '$X'", "eval"),
         # Command-substitution whose inner command expands a variable.
         ('eval "$(curl $URL)"', "eval"),
+        # Unquoted eval of command-substitution with a variable arg.
+        ("eval $(curl $URL)", "eval"),
         ('sh -c "$CMD"', "sh-c"),
         ("sh -c $X", "sh-c"),
         ("bash -c ${CMD}", "sh-c"),
+        ("sh -c '$X'", "sh-c"),
+        ("sh -c $(cat $FILE)", "sh-c"),
+        ('bash -c "$(echo $VAR)"', "sh-c"),
         ("result=`$TOOL --version`", "backtick"),
         ("out=$( $TOOL arg )", "cmdsub"),
     ])
@@ -40,6 +47,18 @@ class TestShellEvalPositives:
         hits = shell_eval.scan(text)
         assert hits, f"expected {kind!r} hit for {text!r}"
         assert any(h.kind == kind for h in hits)
+
+    def test_dedup_single_hit_for_overlapping_eval_patterns(self):
+        """``eval "$(curl $URL)"`` matches both the cmdsub-var regex
+        and the var-in-quotes regex. The scan must collapse them so
+        the finding description doesn't double-count."""
+        hits = shell_eval.scan('eval "$(curl $URL)"')
+        assert len(hits) == 1
+
+    def test_multi_line_blob_counts_each_occurrence(self):
+        blob = "eval $A\neval $B\nsh -c $C"
+        hits = shell_eval.scan(blob)
+        assert len(hits) == 3
 
 
 class TestShellEvalNegatives:

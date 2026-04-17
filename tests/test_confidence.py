@@ -3,7 +3,6 @@ context-aware example suppression added in the signal-quality round."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -21,7 +20,6 @@ from pipeline_check.core.checks.base import (
     Severity,
     confidence_rank,
 )
-
 
 # ─── Confidence enum + Finding ─────────────────────────────────────────────
 

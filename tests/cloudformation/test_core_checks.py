@@ -1,8 +1,6 @@
 """Unit tests for the seven core CFN service modules (CB/CP/CD/ECR/IAM/PBAC/S3)."""
 from __future__ import annotations
 
-import json
-
 from pipeline_check.core.checks.cloudformation.codebuild import CodeBuildChecks
 from pipeline_check.core.checks.cloudformation.codedeploy import CodeDeployChecks
 from pipeline_check.core.checks.cloudformation.codepipeline import CodePipelineChecks
@@ -11,7 +9,6 @@ from pipeline_check.core.checks.cloudformation.iam import IAMChecks
 from pipeline_check.core.checks.cloudformation.pbac import PBACChecks
 from pipeline_check.core.checks.cloudformation.s3 import S3Checks
 from tests.cloudformation.conftest import make_context, r
-
 
 # ─── CodeBuild ──────────────────────────────────────────────────────────────
 

@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import scan
@@ -15,7 +13,6 @@ from pipeline_check.core.checks.terraform.base import TerraformContext
 from pipeline_check.core.inventory import Component
 from pipeline_check.core.reporter import report_inventory_terminal, report_json
 from pipeline_check.core.scanner import Scanner
-
 
 # ─── Component dataclass ────────────────────────────────────────────────────
 

@@ -1,9 +1,9 @@
 """IAM-006 — Sensitive actions granted with wildcard Resource."""
 from __future__ import annotations
 
+from ..._iam_policy import sensitive_wildcard
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import sensitive_wildcard
 from .._catalog import ResourceCatalog
 
 RULE = Rule(
@@ -38,9 +38,10 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         if error:
             desc = f"{error}. Cannot verify sensitive-action scoping for '{role_name}'."
         elif hits:
+            pairs = ", ".join(f"{k}→{v}" for k, v in hits.items())
             desc = (
                 f"Policy/policies on '{role_name}' grant sensitive actions over "
-                f"Resource: '*': {', '.join(f'{k}\u2192{v}' for k, v in hits.items())}."
+                f"Resource: '*': {pairs}."
             )
         else:
             desc = f"No policy on '{role_name}' pairs sensitive actions with Resource: '*'."

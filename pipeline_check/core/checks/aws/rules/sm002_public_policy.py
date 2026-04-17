@@ -1,9 +1,9 @@
 """SM-002 — Secrets Manager resource policy allows a wildcard principal."""
 from __future__ import annotations
 
+from ..._iam_policy import iter_allow, public_principal
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import iter_allow, public_principal
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives import shell_eval
 from ...base import Finding, Severity, blob_lower
 from ...rule import Rule
-from ..._primitives import shell_eval
 
 RULE = Rule(
     id="GHA-028",
@@ -37,6 +37,14 @@ RULE = Rule(
         "metacharacters execute. Even when the variable source "
         "looks controlled today, relocating the script or adding a "
         "new caller can silently expose it to untrusted input."
+    ),
+    known_fp=(
+        "``eval \"$(ssh-agent -s)\"`` and similar "
+        "``eval \"$(<literal-tool> <literal-args>)\"`` bootstrap "
+        "idioms are intentionally NOT flagged — the substituted "
+        "command is literal, only its output is eval'd. The rule "
+        "only fires when the substituted command references a "
+        "variable.",
     ),
 )
 

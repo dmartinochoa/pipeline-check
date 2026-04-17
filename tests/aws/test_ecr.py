@@ -10,9 +10,17 @@ from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     ecr001_scan_on_push as ecr001,
+)
+from pipeline_check.core.checks.aws.rules import (
     ecr002_tag_mutability as ecr002,
+)
+from pipeline_check.core.checks.aws.rules import (
     ecr003_public_policy as ecr003,
+)
+from pipeline_check.core.checks.aws.rules import (
     ecr004_lifecycle_policy as ecr004,
+)
+from pipeline_check.core.checks.aws.rules import (
     ecr005_kms_encryption as ecr005,
 )
 from pipeline_check.core.checks.aws.workflows import AWSRuleChecks

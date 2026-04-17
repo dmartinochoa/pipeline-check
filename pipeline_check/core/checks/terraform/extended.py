@@ -22,14 +22,14 @@ from __future__ import annotations
 import json
 import re
 
-from .._malicious import find_malicious_patterns
 from .._iam_policy import (
     is_oidc_trust_stmt,
+    iter_allow,
     oidc_audience_pinned,
     oidc_subject_pinned,
-    iter_allow,
     public_principal,
 )
+from .._malicious import find_malicious_patterns
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 

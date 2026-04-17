@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 
+from ..._iam_policy import iter_allow
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import iter_allow
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

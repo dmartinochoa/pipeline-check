@@ -5,9 +5,9 @@ import json
 
 from botocore.exceptions import ClientError
 
+from ..._iam_policy import iter_allow, public_principal
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import iter_allow, public_principal
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

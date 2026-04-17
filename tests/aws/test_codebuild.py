@@ -7,17 +7,27 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.checks.aws.rules import (
     cb001_plaintext_secrets as cb001,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb002_privileged_mode as cb002,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb003_logging as cb003,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb004_timeout as cb004,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb005_image_version as cb005,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb006_source_auth as cb006,
+)
+from pipeline_check.core.checks.aws.rules import (
     cb007_webhook_filter as cb007,
 )
 from tests.aws.conftest import make_paginator

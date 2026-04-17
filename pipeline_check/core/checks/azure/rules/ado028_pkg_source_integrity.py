@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives import lockfile_integrity
 from ...base import Finding, Severity, blob_lower
 from ...rule import Rule
-from ..._primitives import lockfile_integrity
 
 RULE = Rule(
     id="ADO-028",

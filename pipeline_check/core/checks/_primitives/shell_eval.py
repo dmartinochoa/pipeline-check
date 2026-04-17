@@ -43,21 +43,26 @@ from dataclasses import dataclass
 # ``eval`` followed by any variable expansion (``$X``, ``${X}``,
 # ``"$X"``, ``"${X}"``). Matches the variable form even if wrapped
 # in double quotes — double quotes do not suppress expansion.
+# Single-quoted args are ALSO risky: the outer shell doesn't expand
+# ``$X`` through single quotes, but eval then re-parses the literal
+# string it received and expansion happens on the re-parse.
 # Intentionally does NOT match ``eval "$(...)"`` with a literal
 # command inside, which is a common-and-usually-safe idiom.
 _EVAL_VAR_RE = re.compile(
     r"\beval\s+"
     r"(?:\"[^\"]*\$(?!\()[^\"]*\""           # "…$X…"  (excludes "$(")
-    r"|'[^']*\$(?!\()[^']*'"                 # '…$X…' — even single-quoted, shell expands $ in eval
+    r"|'[^']*\$(?!\()[^']*'"                 # '…$X…' (eval re-parse expands)
     r"|\$(?!\()\w+"                          # bare $X
     r"|\$\{\w+\})"                           # ${X}
 )
 
-# Bare ``eval "$(...)"`` where the substituted command itself
-# contains a variable expansion — this is the risky form. A literal
-# command like ``$(ssh-agent -s)`` is safe.
+# ``eval $(...)`` — command-substitution whose output is eval'd.
+# Covers both quoted (``eval "$(curl $URL)"``) and unquoted
+# (``eval $(curl $URL)``) forms where the inner command references
+# a variable. The literal form ``eval "$(ssh-agent -s)"`` — no ``$``
+# inside the substitution — is not flagged.
 _EVAL_CMDSUB_VAR_RE = re.compile(
-    r"\beval\s+\"\$\([^)]*\$(?!\()[^)]*\)\""
+    r"\beval\s+\"?\$\([^)]*\$(?!\()[^)]*\)\"?"
 )
 
 # ``sh -c "$X"`` / ``bash -c "$X"`` / ``sh -c $X`` — re-invoke shell
@@ -65,8 +70,10 @@ _EVAL_CMDSUB_VAR_RE = re.compile(
 _SHELL_DASH_C_VAR_RE = re.compile(
     r"\b(?:ba)?sh\s+-c\s+"
     r"(?:\"[^\"]*\$(?!\()[^\"]*\""           # sh -c "…$X…"
+    r"|'[^']*\$(?!\()[^']*'"                 # sh -c '…$X…' (re-parse expands)
     r"|\$(?!\()\w+"                          # sh -c $X
-    r"|\$\{\w+\})"                           # sh -c ${X}
+    r"|\$\{\w+\}"                            # sh -c ${X}
+    r"|\"?\$\([^)]*\$(?!\()[^)]*\)\"?)"      # sh -c $(cmd $VAR) / "$(cmd $VAR)"
 )
 
 # Backtick command substitution containing a variable expansion.

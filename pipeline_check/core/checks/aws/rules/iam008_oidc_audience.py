@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import json
 
-from ...base import Finding, Severity
-from ...rule import Rule
 from ..._iam_policy import (
     is_oidc_trust_stmt,
     oidc_audience_pinned,
     oidc_subject_pinned,
 )
+from ...base import Finding, Severity
+from ...rule import Rule
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

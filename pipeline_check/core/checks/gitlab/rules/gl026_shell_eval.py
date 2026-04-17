@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives import shell_eval
 from ...base import Finding, Severity, blob_lower
 from ...rule import Rule
-from ..._primitives import shell_eval
 
 RULE = Rule(
     id="GL-026",
@@ -32,6 +32,12 @@ RULE = Rule(
         "into one of these idioms, any ``;``, ``&&``, ``|``, backtick, "
         "or ``$()`` in the value executes — even if the variable's "
         "source is currently trusted, future refactors may expose it."
+    ),
+    known_fp=(
+        "``eval \"$(ssh-agent -s)\"`` and similar "
+        "``eval \"$(<literal-tool>)\"`` bootstrap idioms are "
+        "intentionally NOT flagged — the substituted command is "
+        "literal, only its output is eval'd.",
     ),
 )
 

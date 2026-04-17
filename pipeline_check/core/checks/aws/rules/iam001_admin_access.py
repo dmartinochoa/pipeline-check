@@ -1,9 +1,9 @@
 """IAM-001 — CI/CD service role has AdministratorAccess attached."""
 from __future__ import annotations
 
+from ..._iam_policy import ADMIN_POLICY_ARN
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import ADMIN_POLICY_ARN
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

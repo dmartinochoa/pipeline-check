@@ -22,7 +22,6 @@ from pipeline_check.core import providers as _providers
 from pipeline_check.core.checks.aws.base import Severity
 from pipeline_check.core.scanner import Scanner
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -613,7 +612,6 @@ class TestDegradedFindings:
         """LMB/KMS/SSM are wired fine — their rules should still run and
         just emit nothing because there are no resources to flag."""
         findings = _scanner_for(partial_outage_session).run()
-        ids = {f.check_id for f in findings}
         # Confirm at least the CloudTrail outage didn't taint unrelated services.
         lambda_degraded = [f for f in findings if f.check_id == "LMB-000"]
         assert not lambda_degraded, "Lambda should not be marked degraded"

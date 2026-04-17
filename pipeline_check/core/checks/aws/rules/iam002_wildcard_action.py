@@ -1,9 +1,9 @@
 """IAM-002 — CI/CD role has a wildcard Action in any attached policy."""
 from __future__ import annotations
 
+from ..._iam_policy import has_wildcard_action
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._iam_policy import has_wildcard_action
 from .._catalog import ResourceCatalog
 
 RULE = Rule(

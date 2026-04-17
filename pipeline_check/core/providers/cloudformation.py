@@ -19,7 +19,6 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.cloudformation.base import CloudFormationContext
-from ..inventory import Component
 from ..checks.cloudformation.codebuild import CodeBuildChecks
 from ..checks.cloudformation.codedeploy import CodeDeployChecks
 from ..checks.cloudformation.codepipeline import CodePipelineChecks
@@ -30,6 +29,7 @@ from ..checks.cloudformation.pbac import PBACChecks
 from ..checks.cloudformation.phase3 import Phase3Checks
 from ..checks.cloudformation.s3 import S3Checks
 from ..checks.cloudformation.services import ServiceChecks
+from ..inventory import Component
 from .base import BaseProvider
 
 

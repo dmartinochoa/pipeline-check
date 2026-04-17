@@ -26,7 +26,6 @@ import json
 
 from .checks.base import Confidence, Finding, Severity
 
-
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
 # result is" independent of severity. GitHub Code Scanning surfaces it
 # as a sortable column. Map confidence directly: HIGH-confidence
@@ -257,16 +256,18 @@ def _best_effort_line(f: Finding) -> int | None:
         "JF-019":  _re.compile(r"Runtime\.getRuntime|Class\.forName|@Grab\b"),
         "CC-001":  _re.compile(r"^\s*\w[\w-]*:\s*\S+@(?!v?\d+\.\d+\.\d+)"),
         "CC-002":  _re.compile(r"\$CIRCLE_BRANCH|\$CIRCLE_TAG"),
-        # Shared signatures for the cross-provider primitives:
-        # shell_eval (…-028 / -026 / -027 / -030) fires on eval / sh -c "$…"
-        # / `$VAR` / $( $VAR … ). lockfile_integrity (…-029 / -027 /
-        # -028 / -031) fires on unpinned git URLs and local-path installs.
+        # Per-provider entries for the cross-provider shell_eval
+        # primitive: best-effort line match on ``eval`` / ``sh -c``
+        # followed by a variable or command-substitution.
         "GHA-028": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
         "GL-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
         "BB-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
         "ADO-027": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
         "CC-027":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
         "JF-030":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        # Per-provider entries for the lockfile_integrity primitive:
+        # best-effort line match on unpinned git URLs or integrity-
+        # bypassing local-path / tarball installs.
         "GHA-029": _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
         "GL-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
         "BB-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),

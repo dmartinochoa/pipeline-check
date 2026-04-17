@@ -1,9 +1,9 @@
 """LMB-003 — Lambda function env vars contain secret-like plaintext values."""
 from __future__ import annotations
 
+from ..._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from .._catalog import ResourceCatalog
 
 RULE = Rule(
