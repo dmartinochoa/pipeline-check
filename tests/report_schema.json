@@ -51,7 +51,7 @@
     "finding": {
       "type": "object",
       "required": [
-        "check_id", "title", "severity", "resource",
+        "check_id", "title", "severity", "confidence", "resource",
         "description", "recommendation", "controls", "cwe", "passed"
       ],
       "additionalProperties": false,
@@ -59,6 +59,7 @@
         "check_id":       { "type": "string", "pattern": "^[A-Z]+-[0-9]{3}$" },
         "title":          { "type": "string", "minLength": 1 },
         "severity":       { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] },
+        "confidence":     { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
         "resource":       { "type": "string", "minLength": 1 },
         "description":    { "type": "string", "minLength": 1 },
         "recommendation": { "type": "string", "minLength": 1 },

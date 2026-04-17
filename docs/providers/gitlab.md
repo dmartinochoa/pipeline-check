@@ -41,6 +41,10 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | GL-021 | Package install without lockfile enforcement | MEDIUM |
 | GL-022 | Dependency update command bypasses lockfile pins | MEDIUM |
 | GL-023 | TLS / certificate verification bypass | HIGH |
+| GL-024 | No SLSA provenance attestation produced | MEDIUM |
+| GL-025 | Pipeline contains indicators of malicious activity | CRITICAL |
+| GL-026 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| GL-027 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 
 ---
 
@@ -250,6 +254,42 @@ Detects patterns that disable TLS certificate verification: `git config http.ssl
 **Recommended action**
 
 Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## GL-024 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+``cosign sign`` and ``cosign attest`` look similar but mean different things: the first binds identity to bytes; the second binds a structured claim (builder, source, inputs) to the artifact. SLSA Build L3 verifiers check the latter.
+
+**Recommended action**
+
+Add a job that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` statement, or adopt a SLSA-aware builder (the SLSA project ships GitLab templates). Signing the artifact (GL-006) isn't enough for SLSA L3 — the attestation describes *how* the build ran.
+
+## GL-025 — Pipeline contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Fires on concrete indicators (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, ``webhook.site`` callbacks, ``env | curl`` credential dumps, ``history -c`` audit erasure). Orthogonal to GL-003 (curl pipe) and GL-017 (Docker insecure flags) — those flag risky defaults; this flags evidence.
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the MR that added the matching job(s), rotate any credentials the pipeline can reach, and audit recent runs for outbound traffic to the matched hosts. A legitimate red-team exercise should be time-bounded via ``.pipelinecheckignore`` with ``expires:``.
+
+## GL-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+``eval``, ``sh -c "$X"``, and `` `$X` `` all re-parse the variable's value as shell syntax. Once a CI variable feeds into one of these idioms, any ``;``, ``&&``, ``|``, backtick, or ``$()`` in the value executes — even if the variable's source is currently trusted, future refactors may expose it.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec of variables with direct command invocation. If the command must be dynamic, pass arguments as array members or validate the input against an allow-list at the boundary.
+
+## GL-027 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements GL-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs all bypass the registry integrity controls the lockfile relies on — an attacker who can move a branch head, drop a sibling checkout, or change a served tarball can substitute code into the build.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
 
 ---
 

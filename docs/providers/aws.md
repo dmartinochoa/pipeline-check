@@ -6,18 +6,32 @@ supports named AWS CLI profiles via `--profile` and honours the
 
 ## Services covered
 
-| Service       | Check IDs                                                         |
-|---------------|-------------------------------------------------------------------|
-| CodeBuild     | CB-001, CB-002, CB-003, CB-004, CB-005, CB-006, CB-007            |
-| CodePipeline  | CP-001, CP-002, CP-003, CP-004                                    |
-| CodeDeploy    | CD-001, CD-002, CD-003                                            |
-| ECR           | ECR-001, ECR-002, ECR-003, ECR-004, ECR-005                       |
-| IAM           | IAM-001, IAM-002, IAM-003, IAM-004, IAM-005, IAM-006              |
-| PBAC (CodeBuild roles/VPC) | PBAC-001, PBAC-002                                   |
-| S3            | S3-001, S3-002, S3-003, S3-004, S3-005                            |
+| Service | Check IDs |
+|---|---|
+| CodeBuild | CB-001..007 (class-based); CB-008/009/010 (rules) |
+| CodePipeline | CP-001..004 (class-based); CP-005/007 (rules) |
+| CodeDeploy | CD-001, CD-002, CD-003 |
+| ECR | ECR-001..005 (class-based); ECR-006/007 (rules) |
+| IAM | IAM-001..006 (class-based); IAM-007/008 (rules) |
+| PBAC (CodeBuild roles/VPC, pipeline role scoping) | PBAC-001/002 (class-based); PBAC-003/005 (rules) |
+| S3 | S3-001, S3-002, S3-003, S3-004, S3-005 |
+| CloudTrail | CT-001, CT-002, CT-003 |
+| CloudWatch Logs | CWL-001, CWL-002 |
+| CloudWatch Alarms | CW-001 |
+| Secrets Manager | SM-001, SM-002 |
+| CodeArtifact | CA-001, CA-002, CA-003, CA-004 |
+| CodeCommit | CCM-001, CCM-002, CCM-003 |
+| Lambda | LMB-001, LMB-002, LMB-003, LMB-004 |
+| KMS | KMS-001, KMS-002 |
+| SSM Parameter Store | SSM-001, SSM-002 |
+| EventBridge | EB-001, EB-002 |
+| AWS Signer | SIGN-001, SIGN-002 |
+
+**Class-based vs rule-based.** The original seven-service checks (CB/CP/CD/ECR/IAM/PBAC/S3-001..) live as monolithic classes under `pipeline_check/core/checks/aws/*.py`. Everything added in later phases — CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*, SIGN-*, CW-*, plus the `CB-008+` / `CP-005+` / `ECR-006+` / `IAM-007+` / `PBAC-003+` series — lives as one-file-per-rule modules under `pipeline_check/core/checks/aws/rules/`, auto-discovered by `AWSRuleChecks` and sharing a cached `ResourceCatalog` so enumerations run once per scan.
 
 Per-check detail below is sourced from the rule metadata under
-`pipeline_check/core/checks/aws/rules/*.yml`.
+`pipeline_check/core/checks/aws/rules/*.py` (or the class docstrings for the
+original seven services).
 
 ---
 
@@ -483,20 +497,140 @@ traverse the network unencrypted.
 
 ---
 
+## Rule-based checks (Phase 1-3)
+
+Every check below is one module under
+`pipeline_check/core/checks/aws/rules/<id>_<slug>.py`. Each exports a
+`RULE` (metadata) and a `check(catalog)` callable. Full description,
+recommendation, and prose live in the rule module itself; the
+orchestrator (`AWSRuleChecks` in `aws/workflows.py`) loads every rule
+and passes a shared `ResourceCatalog`.
+
+### CodeBuild (CB-008..010)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| CB-008 | HIGH | CICD-SEC-4 | Buildspec declared inline / from S3 rather than repo-sourced |
+| CB-009 | MEDIUM | CICD-SEC-3 | Custom CodeBuild image not pinned by `@sha256:` digest |
+| CB-010 | HIGH | CICD-SEC-4 | Webhook accepts PR events without an `ACTOR_ACCOUNT_ID` filter |
+
+### CloudTrail (CT-001..003)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| CT-001 | HIGH | CICD-SEC-10 | No actively-logging trail in the region |
+| CT-002 | MEDIUM | CICD-SEC-10 | Trail has `LogFileValidationEnabled = false` |
+| CT-003 | MEDIUM | CICD-SEC-10 | Trail is region-scoped (not multi-region) |
+
+### CloudWatch Logs (CWL-001, 002)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| CWL-001 | LOW | CICD-SEC-10 | `/aws/codebuild/*` log group has no retention policy |
+| CWL-002 | MEDIUM | CICD-SEC-9 | `/aws/codebuild/*` log group not KMS-CMK encrypted |
+
+### Secrets Manager (SM-001, 002)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| SM-001 | HIGH | CICD-SEC-6 | Secret referenced by CodeBuild has no rotation configured |
+| SM-002 | CRITICAL | CICD-SEC-8 | Resource policy grants `Principal: "*"` |
+
+### IAM (IAM-007, 008)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| IAM-007 | HIGH | CICD-SEC-6 | User access key older than 90 days |
+| IAM-008 | HIGH | CICD-SEC-2 | OIDC-federated role trust policy lacks `:aud` or `:sub` pin |
+
+### CodeArtifact (CA-001..004)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| CA-001 | MEDIUM | CICD-SEC-9 | Domain not encrypted with a customer-managed CMK |
+| CA-002 | HIGH | CICD-SEC-3 | Repository has direct `public:*` external connection |
+| CA-003 | CRITICAL | CICD-SEC-8 | Domain permissions policy allows cross-account wildcard |
+| CA-004 | HIGH | CICD-SEC-2 | Repo policy grants `codeartifact:*` with Resource `*` |
+
+### CodeCommit (CCM-001..003)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| CCM-001 | HIGH | CICD-SEC-1 | No approval-rule template attached to the repo |
+| CCM-002 | MEDIUM | CICD-SEC-9 | Repo not encrypted with a customer-managed CMK |
+| CCM-003 | MEDIUM | CICD-SEC-8 | Trigger destination is in a different AWS account |
+
+### Lambda (LMB-001..004)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| LMB-001 | HIGH | CICD-SEC-9 | Function has no `CodeSigningConfigArn` |
+| LMB-002 | HIGH | CICD-SEC-8 | Function URL configured with `AuthType = NONE` |
+| LMB-003 | HIGH | CICD-SEC-6 | Env vars contain secret-like plaintext values |
+| LMB-004 | CRITICAL | CICD-SEC-8 | Resource policy grants `Principal: "*"` without scope |
+
+### KMS (KMS-001, 002)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| KMS-001 | MEDIUM | CICD-SEC-6 | Customer-managed symmetric key has rotation disabled |
+| KMS-002 | HIGH | CICD-SEC-2 | Key policy grants `kms:*` to an IAM principal |
+
+### SSM Parameter Store (SSM-001, 002)
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| SSM-001 | HIGH | CICD-SEC-6 | Parameter with secret-like name stored as `String`, not `SecureString` |
+| SSM-002 | MEDIUM | CICD-SEC-9 | SecureString uses `alias/aws/ssm` rather than a CMK |
+
+### Phase-3 deeper detections
+
+| ID | Severity | OWASP | Description |
+|---|---|---|---|
+| ECR-006 | HIGH | CICD-SEC-3 | Pull-through cache rule has an unauthenticated untrusted upstream |
+| ECR-007 | MEDIUM | CICD-SEC-3 | Inspector v2 enhanced scanning for ECR is disabled |
+| SIGN-001 | MEDIUM | CICD-SEC-9 | No active AWS Signer profile exists for the Lambda platform |
+| SIGN-002 | HIGH | CICD-SEC-9 | Signer profile is revoked or cancelled |
+| EB-001 | MEDIUM | CICD-SEC-10 | No EventBridge rule for `CodePipeline ... FAILED` events |
+| EB-002 | HIGH | CICD-SEC-8 | EventBridge rule has a wildcard target ARN |
+| CW-001 | LOW | CICD-SEC-10 | No CloudWatch alarm on `AWS/CodeBuild FailedBuilds` |
+| PBAC-003 | MEDIUM | CICD-SEC-5 | CodeBuild security group allows `0.0.0.0/0` all-port egress |
+| PBAC-005 | HIGH | CICD-SEC-5 | Pipeline action roles all equal the pipeline-level role |
+| CP-005 | MEDIUM | CICD-SEC-1 | Production-named stage has no preceding `ManualApproval` |
+| CP-007 | HIGH | CICD-SEC-4 | V2 pipeline PR trigger has no `branches.includes` filter |
+
+**Degraded findings.** When the caller's IAM principal can't list resources
+for a service, the orchestrator emits one `<PREFIX>-000` finding (INFO
+severity) per failed service — `CT-000`, `CA-000`, `LMB-000`, etc. —
+instead of every dependent rule emitting its own error copy.
+
+---
+
 ## Adding a new AWS check
 
+### Rule-based (preferred)
+
+1. Drop a single module in `pipeline_check/core/checks/aws/rules/<id>_<slug>.py`
+   exporting a `RULE` (metadata) and a `check(catalog)` callable. The
+   orchestrator and this doc's table pick it up automatically.
+2. If the check needs a new enumeration, add a cached method to
+   `ResourceCatalog` in `pipeline_check/core/checks/aws/_catalog.py`.
+3. Add the check ID to `pipeline_check/core/standards/data/owasp_cicd_top_10.py`
+   (and any other relevant standards).
+4. Add unit tests in `tests/aws/rules/test_<name>.py` using the
+   `make_catalog` fixture.
+5. (Recommended) Add a Terraform parity rule in
+   `pipeline_check/core/checks/terraform/{extended,services,phase3}.py` so
+   shift-left scans stay at parity with runtime.
+
+### Class-based (legacy, for large new service modules)
+
 1. Create `pipeline_check/core/checks/aws/<service>.py` subclassing
-   `AWSBaseCheck`. Each public check method should return one or more
-   `Finding` objects. Use `self.client("<svc>")` (not
-   `self.session.client(...)`) so clients are cached per session.
+   `AWSBaseCheck`. Use `self.client("<svc>")` (retry-configured, cached).
 2. Import it and append to `check_classes` in
    `pipeline_check/core/providers/aws.py`.
-3. Add rule metadata to
-   `pipeline_check/core/checks/aws/rules/<service>.yml` so the HTML
-   report and this documentation can render consistent descriptions and
-   recommended actions.
-4. Add unit tests in `tests/aws/test_<service>.py`.
-5. Add mappings for the new check IDs in the relevant standard file(s) under
+3. Add unit tests in `tests/aws/test_<service>.py`.
+4. Add mappings for the new check IDs in the relevant standard file(s) under
    `pipeline_check/core/standards/data/`.
-6. Extend the corresponding service section in this document with the new
+5. Extend the corresponding service section in this document with the new
    check entry (title, severity, description, recommended actions).

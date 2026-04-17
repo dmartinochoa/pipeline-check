@@ -63,7 +63,7 @@ jobs:
       # CC-006: Artifact signing via cosign.
       - run:
           name: Sign container image
-          command: cosign sign --yes myorg/webapp:${CIRCLE_SHA1}
+          command: cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes myorg/webapp:${CIRCLE_SHA1}
       - store_artifacts:
           path: sbom.json
 

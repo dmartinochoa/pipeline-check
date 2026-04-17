@@ -1,0 +1,10 @@
+name: build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+      options: --user 1000:1000 --read-only
+    steps:
+      - run: echo hi

@@ -43,6 +43,34 @@ def severity_rank(s: "Severity") -> int:
     return _SEVERITY_RANK[s]
 
 
+class Confidence(str, Enum):
+    """How strongly a finding is supported by the check's evidence.
+
+    Orthogonal to :class:`Severity`. Severity answers "how bad is this
+    if true"; confidence answers "how likely is this to be true at
+    all". A CRITICAL-severity regex-blob match can legitimately be
+    LOW-confidence — the pattern is strong-sounding but fires on any
+    workflow that mentions the token, including docs/examples.
+
+    Consumers filter via ``--min-confidence`` to trade recall for
+    precision in CI gates.
+    """
+    HIGH = "HIGH"       # unambiguous structural evidence
+    MEDIUM = "MEDIUM"   # heuristic with known but rare FP modes
+    LOW = "LOW"         # blob/text match; meaningful FP rate expected
+
+
+_CONFIDENCE_RANK: dict["Confidence", int] = {
+    Confidence.LOW: 0,
+    Confidence.MEDIUM: 1,
+    Confidence.HIGH: 2,
+}
+
+
+def confidence_rank(c: "Confidence") -> int:
+    return _CONFIDENCE_RANK[c]
+
+
 @dataclass
 class Finding:
     check_id: str
@@ -59,12 +87,21 @@ class Finding:
     #: CWE identifiers (e.g. ``["CWE-78"]``). Populated by the
     #: workflow-provider orchestrators from the rule's ``cwe`` field.
     cwe: list[str] = field(default_factory=list)
+    #: How strongly the check's evidence supports this finding. Rules
+    #: that leave this at the default (HIGH) are asserting their match
+    #: is structural/unambiguous. Heuristic rules — blob-search pattern
+    #: matches, context-dependent warnings — should return MEDIUM or
+    #: LOW. The provider orchestrators apply bulk defaults from a
+    #: curated list in ``checks/_confidence.py`` so rule authors don't
+    #: need to reason about every case.
+    confidence: Confidence = Confidence.HIGH
 
     def to_dict(self) -> dict:
         return {
             "check_id": self.check_id,
             "title": self.title,
             "severity": self.severity.value,
+            "confidence": self.confidence.value,
             "resource": self.resource,
             "description": self.description,
             "recommendation": self.recommendation,
@@ -128,6 +165,23 @@ SIGN_TOKENS = (
 SBOM_DIRECT_TOKENS = (
     "cyclonedx", "syft", "anchore/sbom-action",
     "spdx-sbom-generator", "microsoft/sbom-tool",
+)
+
+# Provenance tokens — narrower than SIGN_TOKENS. SLSA Build L3 requires
+# an in-toto attestation produced by a hardened builder, not just a
+# signed artifact. Anything here provably produces a provenance
+# attestation; ``cosign sign`` alone does NOT (it signs the artifact
+# but doesn't emit an in-toto statement describing how it was built).
+PROVENANCE_TOKENS = (
+    "slsa-github-generator",        # GHA — SLSA Level 3 builder
+    "slsa-framework/slsa-",          # SLSA GitHub org actions
+    "actions/attest-build-provenance",  # GHA — native build-provenance action
+    "actions/attest@",               # GHA — generic attest action
+    "cosign attest",                 # sigstore attestation (distinct from `cosign sign`)
+    "witness run",                   # testifysec/witness attestor
+    "in-toto-attestation",           # in-toto library/CLI
+    "intoto.jsonl",                  # standard provenance filename
+    "provenance.intoto",             # common provenance output name
 )
 
 
@@ -195,6 +249,18 @@ def clear_blob_cache() -> None:
 def has_signing(doc: Any) -> bool:
     blob = blob_lower(doc)
     return any(tok in blob for tok in SIGN_TOKENS)
+
+
+def has_provenance(doc: Any) -> bool:
+    """Return True when the workflow emits an in-toto/SLSA provenance attestation.
+
+    Distinct from :func:`has_signing` — a workflow that only runs
+    ``cosign sign`` signs the artifact but doesn't produce a
+    provenance statement describing *how* the artifact was built.
+    SLSA Build Level 3 requires the latter.
+    """
+    blob = blob_lower(doc)
+    return any(tok in blob for tok in PROVENANCE_TOKENS)
 
 
 def has_sbom(doc: Any) -> bool:

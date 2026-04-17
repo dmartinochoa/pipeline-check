@@ -56,6 +56,8 @@ from pipeline_check.core.checks.github.base import GitHubContext
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 from pipeline_check.core.checks.gitlab.base import GitLabContext
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
+from pipeline_check.core.checks.circleci.base import CircleCIContext
+from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
 from pipeline_check.core.checks.jenkins.base import JenkinsContext
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 
@@ -74,6 +76,7 @@ _PROVIDER_BY_PREFIX: dict[str, tuple[Any, Any, str, str]] = {
     "BB":  (BitbucketContext, BitbucketPipelineChecks,  "bitbucket", "yml"),
     "ADO": (AzureContext,     AzurePipelineChecks,      "azure",     "yml"),
     "JF":  (JenkinsContext,   JenkinsfileChecks,        "jenkins",   "jenkinsfile"),
+    "CC":  (CircleCIContext,  CircleCIPipelineChecks,   "circleci",  "yml"),
 }
 
 
@@ -278,6 +281,31 @@ CASES: list[CheckCase] = [
     CheckCase("JF-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
     CheckCase("JF-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
     CheckCase("JF-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("JF-024", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("JF-025", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("JF-026", "CICD-SEC-4", ("ESF-C-APPROVAL",)),
+    CheckCase("JF-027", "CICD-SEC-9", ("ESF-D-TAMPER",)),
+    CheckCase("JF-028", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    # Category 1 — SLSA provenance attestation (6 providers)
+    CheckCase("GHA-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("GL-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("BB-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("ADO-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("CC-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    # Category 2 — build cache poisoning
+    CheckCase("CC-025", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    # Category 3 — reusable-workflow / template pinning
+    CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    # Category 4 — hermetic egress
+    CheckCase("GHA-026", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    # Malicious-activity indicators (Category 5)
+    CheckCase("GHA-027", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-025", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-025", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-026", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-026", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-029", "CICD-SEC-4", ("ESF-D-INJECTION", "ESF-S-VERIFY-DEPS")),
 ]
 
 

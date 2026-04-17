@@ -53,6 +53,11 @@ in other providers:
 | CC-021 | Package install without lockfile enforcement | MEDIUM |
 | CC-022 | Dependency update command bypasses lockfile pins | MEDIUM |
 | CC-023 | TLS / certificate verification bypass | HIGH |
+| CC-024 | No SLSA provenance attestation produced | MEDIUM |
+| CC-025 | Cache key derives from attacker-controllable input | MEDIUM |
+| CC-026 | Config contains indicators of malicious activity | CRITICAL |
+| CC-027 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| CC-028 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 
 ---
 
@@ -262,6 +267,51 @@ Detects patterns that disable TLS certificate verification: `git config http.ssl
 **Recommended action**
 
 Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## CC-024 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+Signing (``cosign sign``) binds identity to bytes; attestation (``cosign attest``) binds a structured claim about *how* the artifact was built. SLSA verifiers check the latter so consumers can enforce builder/source/parameter policies.
+
+**Recommended action**
+
+Add a ``run: cosign attest`` command against a ``provenance.intoto.jsonl`` statement, or use the ``circleci/attestation`` orb. CC-006 covers signing; this rule covers the build-provenance step SLSA Build L3 requires.
+
+## CC-025 — Cache key derives from attacker-controllable input
+**Severity:** MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+CircleCI's ``restore_cache`` falls through each listed key until it finds a hit. When one of those keys is derived from ``CIRCLE_BRANCH``, ``CIRCLE_TAG``, or ``CIRCLE_PR_*`` — values an attacker can set by opening a PR — the attacker can plant a cache entry that a protected job later uses. Uses checksum-of-lockfile or a static version label instead.
+
+**Recommended action**
+
+Derive ``save_cache`` and ``restore_cache`` keys from values the attacker can't control — the lockfile checksum (``{{ checksum "package-lock.json" }}``) and the build variant, not ``{{ .Branch }}`` or ``${CIRCLE_PR_NUMBER}``. A PR-scoped branch can seed a poisoned cache entry that a later main-branch run restores as trusted.
+
+## CC-026 — Config contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Fires on concrete indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, ``webhook.site`` callbacks, credential-dump pipes, history-erasure).
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the PR that added the matching step(s), rotate any contexts/env vars the pipeline can reach, and audit recent CircleCI runs for outbound traffic to the matched hosts.
+
+## CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+Complements CC-002 (script injection from untrusted context). Fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
+
+## CC-028 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements CC-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
 
 ---
 

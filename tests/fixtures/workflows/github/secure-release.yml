@@ -49,4 +49,4 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           npm run deploy -- --tag "$TAG"
-          cosign sign --yes "ghcr.io/example/app:$TAG"
+          cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes "ghcr.io/example/app:$TAG"

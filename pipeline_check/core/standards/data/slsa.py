@@ -67,6 +67,12 @@ STANDARD = Standard(
         "GHA-019":  ["Build.L3.NonFalsifiable"],                   # token persistence
         "GHA-021":  ["Build.L3.Isolated"],                         # no lockfile → dep substitution
         "GHA-023":  ["Build.L3.Isolated"],                         # TLS bypass → MITM injection
+        "GHA-024":  ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA attestation missing
+        "GHA-025":  ["Build.L3.NonFalsifiable"],                   # unpinned reusable workflow
+        "GHA-026":  ["Build.L3.Isolated"],                         # container escape via options
+        "GHA-028":  ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "GHA-029":  ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
@@ -85,6 +91,10 @@ STANDARD = Standard(
         "GL-020":   ["Build.L3.NonFalsifiable"],                   # token persistence
         "GL-021":   ["Build.L3.Isolated"],                         # no lockfile
         "GL-023":   ["Build.L3.Isolated"],                         # TLS bypass
+        "GL-024":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],
+        "GL-026":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "GL-027":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # ── Bitbucket Pipelines ───────────────────────────────────
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
@@ -101,6 +111,10 @@ STANDARD = Standard(
         "BB-018":   ["Build.L3.Isolated"],                         # cache key tainting
         "BB-021":   ["Build.L3.Isolated"],                         # no lockfile
         "BB-023":   ["Build.L3.Isolated"],                         # TLS bypass
+        "BB-024":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],
+        "BB-026":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "BB-027":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # ── Azure DevOps Pipelines ────────────────────────────────
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
@@ -119,6 +133,11 @@ STANDARD = Standard(
         "ADO-019":  ["Build.L3.Isolated"],                         # extends template injection
         "ADO-021":  ["Build.L3.Isolated"],                         # no lockfile
         "ADO-023":  ["Build.L3.Isolated"],                         # TLS bypass
+        "ADO-024":  ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],
+        "ADO-025":  ["Build.L3.NonFalsifiable"],                   # unpinned template
+        "ADO-027":  ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "ADO-028":  ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # ── Jenkins ───────────────────────────────────────────────
         "JF-001":   ["Build.L3.NonFalsifiable"],                   # unpinned shared library
         "JF-002":   ["Build.L3.Isolated"],                         # script injection
@@ -136,6 +155,10 @@ STANDARD = Standard(
         "JF-019":   ["Build.L3.Isolated"],                         # Groovy sandbox escape
         "JF-021":   ["Build.L3.Isolated"],                         # no lockfile
         "JF-023":   ["Build.L3.Isolated"],                         # TLS bypass
+        "JF-028":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA attestation missing
+        "JF-030":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "JF-031":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # ── CircleCI ──────────────────────────────────────────────
         "CC-001":   ["Build.L3.NonFalsifiable"],                   # orb not pinned
         "CC-002":   ["Build.L3.Isolated"],                         # script injection
@@ -152,5 +175,10 @@ STANDARD = Standard(
         "CC-017":   ["Build.L3.Isolated"],                         # Docker privileged
         "CC-021":   ["Build.L3.Isolated"],                         # no lockfile
         "CC-023":   ["Build.L3.Isolated"],                         # TLS bypass
+        "CC-024":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],
+        "CC-025":   ["Build.L3.Isolated"],                         # cache poisoning
+        "CC-027":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "CC-028":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
     },
 )

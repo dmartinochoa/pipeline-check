@@ -1,11 +1,19 @@
-"""Unit tests for CodePipeline checks."""
+"""Unit tests for CodePipeline CP-001..CP-004 rule modules."""
+from __future__ import annotations
 
 from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
+from pipeline_check.core.checks.aws._catalog import ResourceCatalog
 from pipeline_check.core.checks.aws.base import Severity
-from pipeline_check.core.checks.aws.codepipeline import CodePipelineChecks
+from pipeline_check.core.checks.aws.rules import (
+    cp001_approval_before_deploy as cp001,
+    cp002_artifact_encryption as cp002,
+    cp003_source_polling as cp003,
+    cp004_legacy_github as cp004,
+)
+from pipeline_check.core.checks.aws.workflows import AWSRuleChecks
 from tests.aws.conftest import make_paginator
 
 
@@ -33,14 +41,14 @@ def _pipeline(name, stages, artifact_store=None):
     }
 
 
-def _make_check(pipeline):
+def _catalog_with(pipeline):
     session = MagicMock()
     client = MagicMock()
     session.client.return_value = client
     paginator = make_paginator([{"pipelines": [{"name": pipeline["name"]}]}])
     client.get_paginator.return_value = paginator
     client.get_pipeline.return_value = {"pipeline": pipeline}
-    return CodePipelineChecks(session)
+    return ResourceCatalog(session)
 
 
 class TestCP001ApprovalBeforeDeploy:
@@ -49,10 +57,9 @@ class TestCP001ApprovalBeforeDeploy:
             {"actions": [_action("Source")]},
             {"actions": [_action("Deploy")]},
         ])
-        findings = _make_check(p).run()
-        cp001 = next(f for f in findings if f.check_id == "CP-001")
-        assert not cp001.passed
-        assert cp001.severity == Severity.HIGH
+        f = cp001.check(_catalog_with(p))[0]
+        assert not f.passed
+        assert f.severity == Severity.HIGH
 
     def test_approval_before_deploy_passes(self):
         p = _pipeline("pipe", stages=[
@@ -60,26 +67,22 @@ class TestCP001ApprovalBeforeDeploy:
             {"actions": [_action("Approval")]},
             {"actions": [_action("Deploy")]},
         ])
-        findings = _make_check(p).run()
-        cp001 = next(f for f in findings if f.check_id == "CP-001")
-        assert cp001.passed
+        assert cp001.check(_catalog_with(p))[0].passed
 
     def test_no_deploy_stage_passes(self):
         p = _pipeline("pipe", stages=[
             {"actions": [_action("Source")]},
             {"actions": [_action("Build")]},
         ])
-        findings = _make_check(p).run()
-        assert next(f for f in findings if f.check_id == "CP-001").passed
+        assert cp001.check(_catalog_with(p))[0].passed
 
 
 class TestCP002ArtifactEncryption:
     def test_no_kms_key_fails(self):
         p = _pipeline("pipe", stages=[], artifact_store={"type": "S3", "location": "bucket"})
-        findings = _make_check(p).run()
-        cp002 = next(f for f in findings if f.check_id == "CP-002")
-        assert not cp002.passed
-        assert cp002.severity == Severity.MEDIUM
+        f = cp002.check(_catalog_with(p))[0]
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
 
     def test_with_kms_key_passes(self):
         store = {
@@ -88,33 +91,23 @@ class TestCP002ArtifactEncryption:
             "encryptionKey": {"id": "arn:aws:kms:us-east-1:123:key/abc", "type": "KMS"},
         }
         p = _pipeline("pipe", stages=[], artifact_store=store)
-        findings = _make_check(p).run()
-        assert next(f for f in findings if f.check_id == "CP-002").passed
+        assert cp002.check(_catalog_with(p))[0].passed
 
 
 class TestCP003SourcePolling:
     def test_polling_source_fails(self):
-        p = _pipeline("pipe", stages=[
-            {"actions": [_action("Source", poll=True)]},
-        ])
-        findings = _make_check(p).run()
-        cp003 = next(f for f in findings if f.check_id == "CP-003")
-        assert not cp003.passed
-        assert cp003.severity == Severity.LOW
+        p = _pipeline("pipe", stages=[{"actions": [_action("Source", poll=True)]}])
+        f = cp003.check(_catalog_with(p))[0]
+        assert not f.passed
+        assert f.severity == Severity.LOW
 
     def test_event_driven_source_passes(self):
-        p = _pipeline("pipe", stages=[
-            {"actions": [_action("Source", poll=False)]},
-        ])
-        findings = _make_check(p).run()
-        assert next(f for f in findings if f.check_id == "CP-003").passed
+        p = _pipeline("pipe", stages=[{"actions": [_action("Source", poll=False)]}])
+        assert cp003.check(_catalog_with(p))[0].passed
 
     def test_no_source_config_passes(self):
-        p = _pipeline("pipe", stages=[
-            {"actions": [_action("Source")]},
-        ])
-        findings = _make_check(p).run()
-        assert next(f for f in findings if f.check_id == "CP-003").passed
+        p = _pipeline("pipe", stages=[{"actions": [_action("Source")]}])
+        assert cp003.check(_catalog_with(p))[0].passed
 
 
 class TestCP004LegacyGitHub:
@@ -127,9 +120,9 @@ class TestCP004LegacyGitHub:
                 "configuration": {},
             }]},
         ])
-        cp004 = next(f for f in _make_check(p).run() if f.check_id == "CP-004")
-        assert not cp004.passed
-        assert cp004.severity == Severity.HIGH
+        f = cp004.check(_catalog_with(p))[0]
+        assert not f.passed
+        assert f.severity == Severity.HIGH
 
     def test_codestar_connection_passes(self):
         p = _pipeline("pipe", stages=[
@@ -140,7 +133,7 @@ class TestCP004LegacyGitHub:
                 "configuration": {},
             }]},
         ])
-        assert next(f for f in _make_check(p).run() if f.check_id == "CP-004").passed
+        assert cp004.check(_catalog_with(p))[0].passed
 
 
 class TestNoPipelines:
@@ -150,52 +143,41 @@ class TestNoPipelines:
         session.client.return_value = client
         paginator = make_paginator([{"pipelines": []}])
         client.get_paginator.return_value = paginator
-        findings = CodePipelineChecks(session).run()
-        assert findings == []
+        catalog = ResourceCatalog(session)
+        for rule in (cp001, cp002, cp003, cp004):
+            assert rule.check(catalog) == []
 
 
-class TestErrorHandling:
-    def test_list_pipelines_access_denied_returns_cp000(self):
+class TestOrchestratorDegraded:
+    def test_list_pipelines_access_denied_yields_single_cp000(self):
+        """An AWS-rule-orchestrator degraded regression: when CodePipeline
+        enumeration errors, exactly one ``CP-000`` INFO finding should be
+        emitted regardless of how many CP rules depend on the catalog."""
         session = MagicMock()
         client = MagicMock()
         session.client.return_value = client
-        paginator = MagicMock()
-        paginator.paginate.side_effect = _client_error()
-        client.get_paginator.return_value = paginator
+        # batch_get_projects/pipelines and every other call would normally
+        # succeed; we only want CodePipeline to fail.
+        def _pick(svc, **_kw):
+            if svc == "codepipeline":
+                paginator = MagicMock()
+                paginator.paginate.side_effect = _client_error()
+                client.get_paginator.return_value = paginator
+                return client
+            # Every other service returns an empty, successful client.
+            other = MagicMock()
+            empty = MagicMock()
+            empty.paginate.return_value = iter([])
+            other.get_paginator.return_value = empty
+            return other
+        session.client.side_effect = _pick
 
-        findings = CodePipelineChecks(session).run()
-        assert len(findings) == 1
-        assert findings[0].check_id == "CP-000"
-        assert not findings[0].passed
-
-    def test_get_pipeline_error_skips_pipeline(self):
-        session = MagicMock()
-        client = MagicMock()
-        session.client.return_value = client
-        paginator = make_paginator([{"pipelines": [{"name": "bad-pipe"}]}])
-        client.get_paginator.return_value = paginator
-        client.get_pipeline.side_effect = _client_error()
-
-        findings = CodePipelineChecks(session).run()
-        # Degraded-mode CP-000 finding surfaces the skipped pipeline,
-        # so the operator can tell the silence apart from a real pass.
-        assert len(findings) == 1
-        assert findings[0].check_id == "CP-000"
-        assert "bad-pipe" in findings[0].resource
-        assert not findings[0].passed
-
-    def test_target_flag_skips_list_pipelines(self):
-        """When target is set the list_pipelines call should be skipped entirely."""
-        p = _pipeline("my-pipe", stages=[
-            {"actions": [_action("Source")]},
-            {"actions": [_action("Approval")]},
-            {"actions": [_action("Deploy")]},
-        ])
-        session = MagicMock()
-        client = MagicMock()
-        session.client.return_value = client
-        client.get_pipeline.return_value = {"pipeline": p}
-
-        findings = CodePipelineChecks(session, target="my-pipe").run()
-        client.get_paginator.assert_not_called()
-        assert any(f.check_id == "CP-001" and f.passed for f in findings)
+        findings = AWSRuleChecks(session).run()
+        cp_000 = [f for f in findings if f.check_id == "CP-000"]
+        assert len(cp_000) == 1
+        assert not cp_000[0].passed
+        # None of the CP-xxx rules should have emitted their own findings.
+        assert not any(
+            f.check_id.startswith("CP-") and f.check_id != "CP-000"
+            for f in findings
+        )

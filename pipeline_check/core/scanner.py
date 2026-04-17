@@ -16,7 +16,9 @@ from . import diff as _diff
 from . import providers as _providers
 from . import standards as _standards
 from .checks import _secrets as _secret_registry
-from .checks.base import Finding, clear_blob_cache
+from .checks._confidence import confidence_for
+from .checks.base import Confidence, Finding, clear_blob_cache
+from .inventory import Component
 
 
 @dataclass
@@ -65,6 +67,7 @@ class Scanner:
                 f"Unknown provider '{pipeline}'. Available: {available}"
             )
         self.pipeline = pipeline.lower()
+        self._provider = provider
         self._check_classes = provider.check_classes
         # Reset the global secret-pattern registry at the start of
         # every Scanner construction so patterns registered for a
@@ -86,6 +89,47 @@ class Scanner:
             files_skipped=getattr(self._context, "files_skipped", 0),
             warnings=list(getattr(self._context, "warnings", [])),
         )
+
+    def inventory(
+        self,
+        type_patterns: list[str] | None = None,
+    ) -> list[Component]:
+        """Return the list of components the active provider discovered.
+
+        Delegates to ``provider.inventory(context)``. Safe to call
+        independently of ``run()`` — shift-left providers answer from
+        the already-loaded context, the AWS provider performs a fresh
+        enumeration pass (one extra round-trip per service). Either
+        call order works:
+
+            scanner.inventory()
+            scanner.run()
+
+        or vice-versa; the inventory function does not depend on
+        findings having been collected.
+
+        Parameters
+        ----------
+        type_patterns:
+            Optional glob patterns (``aws_*``, ``AWS::IAM::*``,
+            ``workflow``). A component is kept when its ``type`` matches
+            any pattern. Case-sensitive — CFN types are PascalCase,
+            Terraform types are snake_case; callers should match the
+            casing of the provider they're slicing.
+        """
+        provider = getattr(self, "_provider", None)
+        if provider is None:
+            provider = _providers.get(self.pipeline)
+        if provider is None:
+            return []
+        components = provider.inventory(self._context)
+        if type_patterns:
+            import fnmatch
+            components = [
+                c for c in components
+                if any(fnmatch.fnmatchcase(c.type, p) for p in type_patterns)
+            ]
+        return components
 
     def run(
         self,
@@ -143,6 +187,13 @@ class Scanner:
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
+            # Apply the centralised confidence default ONLY when the
+            # rule hasn't explicitly set it (i.e. still at the
+            # dataclass default). Rules that want to override stay in
+            # control — e.g. ``CB-005`` may emit HIGH for two-versions-
+            # behind and MEDIUM for one-behind.
+            if f.confidence == Confidence.HIGH:
+                f.confidence = confidence_for(f.check_id)
 
         self.metadata.elapsed_seconds = time.monotonic() - t0
 

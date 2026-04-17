@@ -52,6 +52,14 @@ expression.
 | JF-021 | Package install without lockfile enforcement | MEDIUM |
 | JF-022 | Dependency update command bypasses lockfile pins | MEDIUM |
 | JF-023 | TLS / certificate verification bypass | HIGH |
+| JF-024 | `input` approval step missing submitter restriction | MEDIUM |
+| JF-025 | Kubernetes agent pod template runs privileged or mounts hostPath | HIGH |
+| JF-026 | `build job:` trigger ignores downstream failure | MEDIUM |
+| JF-027 | `archiveArtifacts` does not record a fingerprint | LOW |
+| JF-028 | No SLSA provenance attestation produced | MEDIUM |
+| JF-029 | Jenkinsfile contains indicators of malicious activity | CRITICAL |
+| JF-030 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| JF-031 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 
 ---
 
@@ -261,6 +269,78 @@ Detects patterns that disable TLS certificate verification: `git config http.ssl
 **Recommended action**
 
 Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## JF-024 — `input` approval step missing submitter restriction
+**Severity:** MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL
+
+JF-005 already flags deploy stages with no ``input`` step. This rule catches the subtler case: the gate exists, but it doesn't actually restrict approvers. ``submitter`` accepts a comma-separated list of Jenkins usernames and group names; scope it to the smallest release-eligible pool.
+
+**Recommended action**
+
+Add a ``submitter: 'releasers,sre'`` (or a single role) argument to every ``input`` step in a deploy-like stage. Without it, any user with the Jenkins job ``Build`` permission can approve a production promotion — the approval gate becomes advisory.
+
+## JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV
+
+JF-017 flags inline ``docker run`` commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare ``agent { kubernetes { yaml '''...''' } }``. A pod running with ``privileged: true`` or mounting ``hostPath: /`` gives the build container the same blast radius — container escape, node-credential theft, cross-tenant contamination on a shared cluster.
+
+**Recommended action**
+
+Remove ``privileged: true`` from the embedded pod YAML, drop ``hostPath``/``hostNetwork``/``hostPID``/``hostIPC`` entries, and add a ``securityContext`` with ``runAsNonRoot: true`` and a ``readOnlyRootFilesystem``. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.
+
+## JF-026 — `build job:` trigger ignores downstream failure
+**Severity:** MEDIUM · OWASP CICD-SEC-4 · ESF ESF-C-APPROVAL
+
+The Jenkins Pipeline plugin defaults ``wait`` to ``true`` and ``propagate`` to ``true``, but either can be flipped per call. ``wait: false`` returns immediately; ``propagate: false`` continues even when the downstream job fails or is aborted. Both patterns sever the flow-control link between the upstream approval gate and the work the downstream job is about to do.
+
+**Recommended action**
+
+Remove ``wait: false`` and ``propagate: false`` from every ``build job:`` step, or replace them with an explicit ``currentBuild.result = build(...).result`` check. A fire-and-forget trigger can silently ship broken artifacts because the upstream job reports success regardless of what the downstream job actually did.
+
+## JF-027 — `archiveArtifacts` does not record a fingerprint
+**Severity:** LOW · OWASP CICD-SEC-9 · ESF ESF-D-TAMPER
+
+Fingerprinting hashes the artifact on archive so Jenkins can trace its flow between jobs — the same mechanism JF-013 relies on for verification-step pairing. It's cheap and retroactive: enabling it on the producer job unlocks a build-traceability audit for every downstream consumer.
+
+**Recommended action**
+
+Set ``fingerprint: true`` on every ``archiveArtifacts`` call (or use ``archiveArtifacts artifacts: '...', fingerprint: true``). Without it, Jenkins can't link the artifact to the build that produced it; ``copyArtifacts`` consumers downstream then have no provenance to verify against.
+
+## JF-028 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+``cosign sign`` signs the artifact bytes. ``cosign attest`` signs an in-toto statement describing how the build ran — builder, source commit, input parameters. SLSA L3 verifiers check the latter so consumers can enforce policy on where and how artifacts were produced.
+
+**Recommended action**
+
+Add a ``sh 'cosign attest --predicate=provenance.intoto.jsonl …'`` step after the build, or integrate the TestifySec ``witness run`` attestor. JF-006 covers signing; this rule covers the build-provenance statement SLSA Build L3 requires.
+
+## JF-029 — Jenkinsfile contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox escape). Those flag risky defaults; this flags concrete evidence — reverse shells, base64-decoded execution, miner binaries, exfil channels, credential-dump pipes, shell-history erasure. Runs on the comment-stripped Groovy text so ``// cosign verify … // webhook.site`` in a legitimate annotation doesn't false-positive.
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the commit that introduced the matching stage(s), rotate Jenkins credentials the job can reach, review controller/agent audit logs for outbound traffic to the matched hosts, and re-image the agent pool if the compromise may have persisted.
+
+## JF-030 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+Complements JF-002 (script injection from untrusted build parameters). Fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate any value feeding a dynamic command at the boundary, or pass arguments as a list to a real ``sh`` step so the shell is not re-invoked.
+
+## JF-031 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements JF-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Artifactory, Nexus) instead of installing from a filesystem path or tarball URL.
 
 ---
 

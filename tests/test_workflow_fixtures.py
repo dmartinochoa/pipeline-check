@@ -40,7 +40,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 30)}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -72,7 +72,7 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 28)}
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -104,7 +104,7 @@ class TestGitLabFixtures:
 
 
 class TestBitbucketFixtures:
-    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 28)}
 
     def _scan(self, filename: str):
         ctx = BitbucketContext.from_path(FIXTURES / "bitbucket" / filename)
@@ -136,7 +136,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 29)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
@@ -162,7 +162,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 32)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
@@ -194,7 +194,7 @@ class TestJenkinsFixtures:
 
 
 class TestCircleCIFixtures:
-    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 24)}
+    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 29)}
 
     def _scan(self, filename: str):
         ctx = CircleCIContext.from_path(FIXTURES / "circleci" / filename)
@@ -227,19 +227,19 @@ class TestCircleCIFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 24)}),
+     {f"GHA-{i:03d}" for i in range(1, 30)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 24)}),
+     {f"GL-{i:03d}" for i in range(1, 28)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
-     {f"BB-{i:03d}" for i in range(1, 24)}),
+     {f"BB-{i:03d}" for i in range(1, 28)}),
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
-     {f"ADO-{i:03d}" for i in range(1, 24)}),
+     {f"ADO-{i:03d}" for i in range(1, 29)}),
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
-     {f"JF-{i:03d}" for i in range(1, 24)}),
+     {f"JF-{i:03d}" for i in range(1, 32)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
-     {f"CC-{i:03d}" for i in range(1, 24)}),
+     {f"CC-{i:03d}" for i in range(1, 29)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

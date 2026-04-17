@@ -17,6 +17,7 @@ from .azure import AzureProvider
 from .base import BaseProvider
 from .bitbucket import BitbucketProvider
 from .circleci import CircleCIProvider
+from .cloudformation import CloudFormationProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .jenkins import JenkinsProvider
@@ -45,6 +46,7 @@ def available() -> list[str]:
 # ── Register built-in providers ───────────────────────────────────────────────
 register(AWSProvider())
 register(TerraformProvider())
+register(CloudFormationProvider())
 register(GitHubProvider())
 register(GitLabProvider())
 register(BitbucketProvider())

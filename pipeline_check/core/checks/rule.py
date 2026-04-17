@@ -65,6 +65,11 @@ class Rule:
     recommendation: str = ""
     #: Longer prose for the provider doc. Multi-paragraph markdown OK.
     docs_note: str = ""
+    #: Known false-positive modes surfaced by ``pipeline_check explain``.
+    #: Empty for most rules; populated for rules whose heuristic shape
+    #: is known to misfire on specific legitimate patterns so the user
+    #: can see the escape hatch before dismissing the whole check.
+    known_fp: tuple[str, ...] = ()
 
 
 _RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}

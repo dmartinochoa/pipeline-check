@@ -24,7 +24,19 @@ from __future__ import annotations
 
 import json
 
-from .checks.base import Finding, Severity
+from .checks.base import Confidence, Finding, Severity
+
+
+# SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
+# result is" independent of severity. GitHub Code Scanning surfaces it
+# as a sortable column. Map confidence directly: HIGH-confidence
+# findings are ranked at 100 so they float to the top of the UI;
+# LOW-confidence noise sinks to 20.
+_CONFIDENCE_RANK: dict[Confidence, float] = {
+    Confidence.HIGH: 100.0,
+    Confidence.MEDIUM: 50.0,
+    Confidence.LOW: 20.0,
+}
 
 _SARIF_VERSION = "2.1.0"
 _SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -169,6 +181,7 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
 
     properties: dict = {
         "severity": f.severity.value,
+        "confidence": f.confidence.value,
         "controls": [c.to_dict() for c in f.controls],
     }
     if f.cwe:
@@ -181,6 +194,11 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,
+        # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
+        # sort results by how much the scanner trusts them — orthogonal
+        # to severity. HIGH-confidence findings surface first; LOW are
+        # de-ranked so noisy rules don't drown out the signal.
+        "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "message": {"text": f.description},
         "locations": [
             {
@@ -239,6 +257,22 @@ def _best_effort_line(f: Finding) -> int | None:
         "JF-019":  _re.compile(r"Runtime\.getRuntime|Class\.forName|@Grab\b"),
         "CC-001":  _re.compile(r"^\s*\w[\w-]*:\s*\S+@(?!v?\d+\.\d+\.\d+)"),
         "CC-002":  _re.compile(r"\$CIRCLE_BRANCH|\$CIRCLE_TAG"),
+        # Shared signatures for the cross-provider primitives:
+        # shell_eval (…-028 / -026 / -027 / -030) fires on eval / sh -c "$…"
+        # / `$VAR` / $( $VAR … ). lockfile_integrity (…-029 / -027 /
+        # -028 / -031) fires on unpinned git URLs and local-path installs.
+        "GHA-028": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "GL-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "BB-026":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "ADO-027": _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "CC-027":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "JF-030":  _re.compile(r"\beval\s+[\"'$]|\b(?:ba)?sh\s+-c\s+[\"'$]"),
+        "GHA-029": _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "GL-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "BB-027":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "ADO-028": _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "CC-028":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
+        "JF-031":  _re.compile(r"\bgit\+[a-z]+://|(?:pip3?|npm|yarn)\s+(?:install|add)\s+(?:-e\s+)?(?:\./|/[A-Za-z]|file:|https?://\S+\.(?:whl|tgz|tar\.gz))"),
     }
     pat = patterns.get(check_id)
     if pat is not None:

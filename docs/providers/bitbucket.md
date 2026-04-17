@@ -40,6 +40,10 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | BB-021 | Package install without lockfile enforcement | MEDIUM |
 | BB-022 | Dependency update command bypasses lockfile pins | MEDIUM |
 | BB-023 | TLS / certificate verification bypass | HIGH |
+| BB-024 | No SLSA provenance attestation produced | MEDIUM |
+| BB-025 | Pipeline contains indicators of malicious activity | CRITICAL |
+| BB-026 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
+| BB-027 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 
 ---
 
@@ -249,6 +253,42 @@ Detects patterns that disable TLS certificate verification: `git config http.ssl
 **Recommended action**
 
 Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.
+
+## BB-024 — No SLSA provenance attestation produced
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE
+
+Bitbucket has no native SLSA builder; self-hosted attestation via ``cosign attest`` or ``witness run`` is the usual path. Pipes like ``atlassian/cosign-attest`` (if published) would also match.
+
+**Recommended action**
+
+Add a step that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` statement, or integrate the TestifySec ``witness run`` attestor. Artifact signing alone (BB-006) doesn't satisfy SLSA Build L3.
+
+## BB-025 — Pipeline contains indicators of malicious activity
+**Severity:** CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS
+
+Specific indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, credential-dump pipes, audit-erasure commands). Does not replace BB-014 (TLS bypass) or BB-013 (Docker insecure) — those are hygiene; this is evidence.
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the PR that added the matching step(s), rotate any credentials referenced from the pipeline's variable groups, and audit recent builds.
+
+## BB-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+Complements BB-002 (script injection from untrusted PR context). This rule fires on intrinsically risky idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
+
+## BB-027 — Package install bypasses registry integrity (git / path / tarball source)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements BB-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
 
 ---
 

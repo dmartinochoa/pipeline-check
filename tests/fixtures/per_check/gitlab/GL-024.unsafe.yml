@@ -1,0 +1,12 @@
+stages: [build, release]
+
+build:
+  stage: build
+  script:
+    - docker build -t app:$CI_COMMIT_SHA .
+    - docker push app:$CI_COMMIT_SHA
+
+release:
+  stage: release
+  script:
+    - cosign sign --yes app:$CI_COMMIT_SHA

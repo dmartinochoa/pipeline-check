@@ -1,0 +1,14 @@
+version: 2.1
+jobs:
+  release:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: docker build -t app:$CIRCLE_SHA1 .
+      - run: docker push app:$CIRCLE_SHA1
+      - run: cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance app:$CIRCLE_SHA1
+      - run: cosign sign --yes app:$CIRCLE_SHA1
+workflows:
+  main:
+    jobs:
+      - release

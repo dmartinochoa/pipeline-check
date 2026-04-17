@@ -24,6 +24,14 @@ RULE = Rule(
         "endpoint (or poisons DNS / CDN) gains arbitrary code "
         "execution in the CI runner."
     ),
+    known_fp=(
+        "Established vendor installers (get.docker.com, sh.rustup.rs, "
+        "bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) "
+        "ship via HTTPS from their own CDN and are idiomatic. This "
+        "rule defaults to LOW confidence so CI gates can ignore them "
+        "with --min-confidence MEDIUM; the finding still surfaces so "
+        "teams that want cryptographic verification can audit.",
+    ),
 )
 
 

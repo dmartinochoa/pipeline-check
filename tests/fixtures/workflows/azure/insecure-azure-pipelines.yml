@@ -22,6 +22,13 @@ resources:
   pipelines:
     - pipeline: upstream-build
       source: 'platform-build'
+  # ADO-025 — cross-repo template reference below uses this ``tools``
+  # alias, whose ``ref:`` is a floating branch, not a pinned SHA.
+  repositories:
+    - repository: tools
+      type: git
+      name: MyOrg/tools
+      ref: refs/heads/main
 
 # ADO-019 — extends template on PR-validated pipeline points to local path.
 extends:
@@ -30,6 +37,8 @@ extends:
 stages:
   # ADO-011 — local template included on a PR-validated pipeline.
   - template: ci/build-stage.yml
+  # ADO-025 — cross-repo template referenced via the unpinned ``tools`` resource.
+  - template: shared/build.yml@tools
 
   - stage: Build
     jobs:
@@ -69,6 +78,13 @@ stages:
           - script: npm update
           # ADO-023: TLS verification bypass.
           - script: git config --global http.sslVerify false
+          # ADO-026: evidence of malicious activity — base64-decoded
+          # payload piped to shell (obfuscated-exec indicator).
+          - script: echo ZWNobyBwd24tZWQgYnkgYWR2ZXJzYXJ5 | base64 -d | bash
+          # ADO-027: dangerous shell idiom — eval re-parses the value as shell.
+          - script: eval "$BUILD_CMD"
+          # ADO-028: pip install from an unpinned git URL.
+          - script: pip install git+https://example.com/internal/helper.git
 
   - stage: Deploy
     dependsOn: Build

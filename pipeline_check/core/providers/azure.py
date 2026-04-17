@@ -11,6 +11,7 @@ from typing import Any
 from ..checks.azure.base import AzureContext
 from ..checks.azure.pipelines import AzurePipelineChecks
 from ..checks.base import BaseCheck
+from ..inventory import Component
 from .base import BaseProvider
 
 
@@ -31,3 +32,21 @@ class AzureProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
         return [AzurePipelineChecks]
+
+    def inventory(self, context: AzureContext) -> list[Component]:
+        out: list[Component] = []
+        for pipe in context.pipelines:
+            data = pipe.data if isinstance(pipe.data, dict) else {}
+            stage_names: list[str] = []
+            if isinstance(data.get("stages"), list):
+                for s in data["stages"]:
+                    if isinstance(s, dict) and isinstance(s.get("stage"), str):
+                        stage_names.append(s["stage"])
+            out.append(Component(
+                provider=self.NAME,
+                type="pipeline",
+                identifier=str(data.get("name") or pipe.path),
+                source=pipe.path,
+                metadata={"stages": stage_names} if stage_names else {},
+            ))
+        return out

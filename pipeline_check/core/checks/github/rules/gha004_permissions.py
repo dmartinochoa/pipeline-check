@@ -25,6 +25,12 @@ RULE = Rule(
         "default scope — typically `write`. A compromised step "
         "receives far more privilege than it needs."
     ),
+    known_fp=(
+        "Read-only / lint-only workflows that do not call any "
+        "write-scoped API often pass without an explicit block "
+        "because the default token scope on public repos is read. "
+        "The rule defaults to MEDIUM confidence to reflect this.",
+    ),
 )
 
 

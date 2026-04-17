@@ -101,3 +101,68 @@ VERIFY_RE = re.compile(
 )
 
 DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
+
+# ── JF-024: input step submitter guard ────────────────────────────────
+#: Matches an ``input`` step call (both short and block forms). Used to
+#: extract the enclosing argument region so JF-024 can check for a
+#: ``submitter:`` field. A bare presence check lives in JF-005.
+INPUT_STEP_RE = re.compile(r"\binput\b", re.MULTILINE)
+#: Detects a ``submitter`` binding anywhere in the argument span.
+#: Groovy allows two syntaxes:
+#:   ``submitter: 'releasers,sre'``   (map-style named arg)
+#:   ``submitter 'releasers,sre'``    (DSL block-step call)
+#: Both forms pin a non-empty comma-separated list of users/roles.
+SUBMITTER_FIELD_RE = re.compile(
+    r"\bsubmitter\s*(?::|\s)\s*['\"]([^'\"]+)['\"]"
+)
+
+# ── JF-025: Kubernetes agent pod template ─────────────────────────────
+#: Matches the ``kubernetes { ... }`` block inside an ``agent { ... }``
+#: declaration. Jenkins supports both ``yaml '''...'''`` and ``yamlFile
+#: 'pod.yaml'`` forms.
+K8S_AGENT_RE = re.compile(r"\bkubernetes\s*\{", re.MULTILINE)
+#: Privileged security-context in an embedded pod YAML. Matches
+#: ``privileged: true`` on its own line (YAML key/value), NOT Groovy
+#: variable assignments like ``privileged = true``.
+K8S_PRIVILEGED_RE = re.compile(
+    r"(?m)^\s*privileged\s*:\s*true\b"
+)
+#: ``hostPath:`` volume in the embedded pod YAML — mounts a host
+#: filesystem path, allowing container escape.
+K8S_HOSTPATH_RE = re.compile(r"(?m)^\s*hostPath\s*:")
+#: ``hostNetwork: true`` or ``hostPID: true`` — share host
+#: namespaces.
+K8S_HOSTNS_RE = re.compile(
+    r"(?m)^\s*host(?:Network|PID|IPC)\s*:\s*true\b"
+)
+
+# ── JF-026: build job trigger without result check ────────────────────
+#: Matches ``build job: '<name>'`` — the Pipeline-plugin step that
+#: triggers a downstream job.
+BUILD_JOB_RE = re.compile(
+    r"\bbuild\s+(?:job\s*:|\(\s*job\s*:)\s*['\"]([^'\"]+)['\"]"
+)
+#: Captures a ``wait:`` argument from a ``build job:`` invocation.
+#: Groovy allows either positional or map-style args.
+BUILD_WAIT_FALSE_RE = re.compile(
+    r"\bbuild\s+\(?[^)]*\bwait\s*:\s*false\b",
+    re.DOTALL,
+)
+#: Captures a ``propagate:`` argument from a ``build job:`` invocation.
+#: ``propagate: false`` is equally dangerous because downstream failures
+#: don't abort the upstream job.
+BUILD_PROPAGATE_FALSE_RE = re.compile(
+    r"\bbuild\s+\(?[^)]*\bpropagate\s*:\s*false\b",
+    re.DOTALL,
+)
+
+# ── JF-027: archiveArtifacts fingerprint ──────────────────────────────
+#: Matches the ``archiveArtifacts`` step (positional or map-style).
+ARCHIVE_ARTIFACTS_RE = re.compile(
+    r"\barchiveArtifacts\b"
+)
+#: ``fingerprint: true`` — instructs Jenkins to record the artifact
+#: digest so consumers of ``copyArtifacts`` can verify provenance.
+FINGERPRINT_TRUE_RE = re.compile(
+    r"\bfingerprint\s*:\s*true\b"
+)

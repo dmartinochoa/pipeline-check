@@ -6,7 +6,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and seven other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**170 checks** across **8 providers** -- mapped to **8 compliance standards** -- with **67 autofixers**
+**295 checks** across **9 providers** -- mapped to **8 compliance standards** -- with **67 autofixers**
 
 [Quick start](#quick-start) |
 [Providers](#supported-providers) |
@@ -39,14 +39,15 @@ standard boto3 credential chain.
 
 | Provider | Input | Auto-detect | Checks |
 |----------|-------|-------------|--------|
-| **AWS** | Live account via boto3 | `--region` | 32 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3) |
-| **Terraform** | `terraform show -json` plan | `--tf-plan` | Same AWS checks, pre-provisioning |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 23 checks (`GHA-001`--`023`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 23 checks (`GL-001`--`023`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 23 checks (`BB-001`--`023`) |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 23 checks (`ADO-001`--`023`) |
-| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 23 checks (`JF-001`--`023`) |
-| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 23 checks (`CC-001`--`023`) |
+| **AWS** | Live account via boto3 | `--region` | 70 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
+| **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
+| **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 27 checks (`GHA-001`--`027`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 25 checks (`GL-001`--`025`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 25 checks (`BB-001`--`025`) |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 26 checks (`ADO-001`--`026`) |
+| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 29 checks (`JF-001`--`029`) |
+| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 26 checks (`CC-001`--`026`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -60,7 +61,7 @@ per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   170 checks across 8 providers
+  Config files   |  Scanner  |   295 checks across 9 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -96,6 +97,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
+| **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
 
 ---
 
@@ -211,7 +213,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` | `aws` | `aws`, `terraform`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci` |
+| `--pipeline` | `aws` | `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci` |
 | `--output` | `terminal` | `terminal`, `json`, `html`, `sarif`, `both` |
 | `--output-file` | | Required with `html`; optional with `sarif` |
 | `--fail-on` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
@@ -229,6 +231,9 @@ See [docs/standards/](docs/standards/).
 | `--secret-pattern` | | Extra regex for credential scanning (repeat) |
 | `--standard` | all | Standard(s) to annotate findings with |
 | `--standard-report` | | Print control-to-check matrix and exit |
+| `--inventory` | | Emit scanned-component inventory alongside findings |
+| `--inventory-type` | | Glob pattern to scope inventory by type (repeatable, implies `--inventory`) |
+| `--inventory-only` | | Skip checks; emit inventory only (implies `--inventory`) |
 | `--config` | auto | Config file path (TOML or YAML) |
 | `--config-check` | | Validate config, exit non-zero on unknown keys |
 | `--man [TOPIC]` | | Extended docs (`gate`, `autofix`, `diff`, `secrets`, `standards`, `config`, `output`, `lambda`, `recipes`) |
@@ -238,7 +243,7 @@ See [docs/standards/](docs/standards/).
 | `--quiet` / `-q` | | Suppress all output; exit code only |
 | `--version` | | Print version |
 
-Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`,
+Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
 `--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`) are
 auto-detected from the working directory when omitted.
 
@@ -263,13 +268,15 @@ pipeline_check/
     ├── standards/data/        # One module per compliance standard
     └── checks/
         ├── base.py            # Finding, Severity, shared detection patterns
-        ├── aws/               # 32 checks (CB, CP, CD, ECR, IAM, PBAC, S3)
-        ├── terraform/         # Same checks against plan JSON
+        ├── aws/               # 32 class-based checks (CB, CP, CD, ECR, IAM, PBAC, S3)
+        │   └── rules/         # 38 rule-based checks (CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW, plus CB-008+/IAM-007+/PBAC-003+/CP-005+/ECR-006+)
+        ├── terraform/         # AWS-parity checks against plan JSON
+        ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
         ├── github/rules/      # GHA-001 .. GHA-023
         ├── gitlab/rules/      # GL-001 .. GL-023
         ├── bitbucket/rules/   # BB-001 .. BB-023
         ├── azure/rules/       # ADO-001 .. ADO-023
-        ├── jenkins/rules/     # JF-001 .. JF-023
+        ├── jenkins/rules/     # JF-001 .. JF-027
         └── circleci/rules/    # CC-001 .. CC-023
 ```
 

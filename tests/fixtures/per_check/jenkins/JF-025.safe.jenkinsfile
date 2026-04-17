@@ -1,0 +1,25 @@
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+  containers:
+  - name: build
+    image: maven:3.9
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+'''
+    }
+  }
+  stages {
+    stage('Build') {
+      steps { sh 'mvn package' }
+    }
+  }
+}

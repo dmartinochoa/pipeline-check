@@ -7,7 +7,14 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .checks.base import Finding, Severity, severity_rank
+from .checks.base import Confidence, Finding, Severity, severity_rank
+from .inventory import Component
+
+_CONFIDENCE_STYLE: dict[Confidence, str] = {
+    Confidence.HIGH: "bold",
+    Confidence.MEDIUM: "dim",
+    Confidence.LOW: "dim italic",
+}
 
 # Bump when the JSON payload shape changes in a way consumers need to
 # branch on (e.g. a new top-level key, a renamed field). Minor-revision
@@ -112,16 +119,26 @@ def report_terminal(
     table.add_column("", no_wrap=True, width=4)
     table.add_column("Check", style="bold", no_wrap=True, width=8)
     table.add_column("Severity", no_wrap=True, width=10)
-    table.add_column("Resource", overflow="fold", max_width=32)
+    table.add_column("Conf.", no_wrap=True, width=7)
+    table.add_column("Resource", overflow="fold", max_width=28)
     table.add_column("Title", ratio=1)
 
     for f in visible:
         sev_style = _SEVERITY_STYLE.get(f.severity, "white")
+        conf_style = _CONFIDENCE_STYLE.get(f.confidence, "")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
+        # Abbreviate confidence to fit column width. LOW confidence is
+        # visually de-emphasised so HIGH failures stand out when
+        # scanning a long table.
+        conf_label = f.confidence.value[:3]
+        conf_cell = (
+            f"[{conf_style}]{conf_label}[/{conf_style}]" if conf_style else conf_label
+        )
         table.add_row(
             status,
             f.check_id,
             f"[{sev_style}]{f.severity.value}[/{sev_style}]",
+            conf_cell,
             f.resource,
             f.title,
         )
@@ -163,6 +180,7 @@ def report_json(
     findings: list[Finding],
     score_result: dict,
     tool_version: str = "",
+    inventory: list[Component] | None = None,
 ) -> str:
     """Serialise all findings and the score to a JSON string.
 
@@ -170,11 +188,41 @@ def report_json(
     changes) and ``tool_version`` (the pipeline_check release that
     produced it) at the top level so downstream consumers can version-
     branch without guessing.
+
+    When *inventory* is supplied the payload gains an ``inventory``
+    top-level array. Consumers can feature-detect it; it's omitted
+    (not just empty) when ``--inventory`` wasn't requested, so
+    dashboards can distinguish "nothing found" from "not asked for".
     """
-    payload = {
+    payload: dict = {
         "schema_version": JSON_SCHEMA_VERSION,
         "tool_version": tool_version or "0.0.0",
         "score": score_result,
         "findings": [f.to_dict() for f in findings],
     }
+    if inventory is not None:
+        payload["inventory"] = [c.to_dict() for c in inventory]
     return json.dumps(payload, indent=2)
+
+
+def report_inventory_terminal(
+    inventory: list[Component], console: Console | None = None,
+) -> None:
+    """Render a compact table of scanned components to the terminal."""
+    if console is None:
+        console = Console()
+    if not inventory:
+        console.print("[dim]Inventory: no components discovered.[/dim]")
+        return
+    table = Table(
+        title=f"Inventory — {len(inventory)} component(s)",
+        box=box.SIMPLE_HEAD,
+        show_lines=False,
+    )
+    table.add_column("Provider", style="cyan")
+    table.add_column("Type", style="magenta")
+    table.add_column("Identifier")
+    table.add_column("Source", style="dim")
+    for c in inventory:
+        table.add_row(c.provider, c.type, c.identifier, c.source)
+    console.print(table)

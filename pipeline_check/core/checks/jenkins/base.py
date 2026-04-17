@@ -123,7 +123,13 @@ def _extract_stages(text: str) -> list[tuple[str, str]]:
         while i < len(text) and depth > 0:
             ch = text[i]
             if ch in ('"', "'"):
-                i = _skip_string(text, i)
+                # _skip_string returns the index of the closing quote —
+                # advance past it so the next iteration doesn't re-enter
+                # the string-skip branch on the same position (which
+                # would scan forward into unrelated quoted content,
+                # collapsing stage boundaries around triple-quoted
+                # YAML/JSON literals).
+                i = _skip_string(text, i) + 1
                 continue
             if ch == "{":
                 depth += 1

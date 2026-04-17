@@ -1,0 +1,6 @@
+trigger: [main]
+jobs:
+  - job: Build
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - script: make build

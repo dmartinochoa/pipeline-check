@@ -28,6 +28,14 @@ RULE = Rule(
         "secret was pasted into YAML — the value is visible in every "
         "fork and every build log and must be treated as compromised."
     ),
+    known_fp=(
+        "Test fixtures and documentation blobs sometimes embed "
+        "credential-shaped strings (JWT samples, AKIAI... examples). "
+        "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
+        "deliberately NOT suppressed — if it appears in a real "
+        "workflow it almost always means a copy-paste from docs was "
+        "never substituted. Defaults to LOW confidence.",
+    ),
 )
 
 
