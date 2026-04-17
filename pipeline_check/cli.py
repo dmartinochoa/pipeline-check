@@ -1233,6 +1233,11 @@ def scan(
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"
     baseline_git_pair: tuple[str, str] | None = None
+    if baseline and baseline_from_git:
+        raise click.UsageError(
+            "--baseline and --baseline-from-git are mutually exclusive. "
+            "Pick one: a file path, or a git REF:PATH lookup."
+        )
     if baseline_from_git:
         if ":" not in baseline_from_git:
             raise click.UsageError(

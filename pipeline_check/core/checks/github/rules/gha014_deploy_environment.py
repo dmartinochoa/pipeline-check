@@ -5,10 +5,9 @@ import re
 from typing import Any
 
 from ...base import Finding, Severity
+from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
-
-_DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 _DEPLOY_CMD_RE = re.compile(
     r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"

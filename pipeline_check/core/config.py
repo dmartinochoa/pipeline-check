@@ -37,6 +37,38 @@ except ImportError:  # pragma: no cover
 
 import yaml
 
+
+class _DupKeyLoader(yaml.SafeLoader):
+    """SafeLoader that rejects duplicate mapping keys.
+
+    pyyaml's default behaviour is to silently keep the last value when
+    a mapping has the same key twice. For user config files that's a
+    trap — a duplicated ``pipeline:`` or ``gate:`` key hides half the
+    declared settings without warning. We accept the extra strictness
+    at config-load time so typos surface immediately.
+    """
+
+    def construct_mapping(self, node, deep=False):  # type: ignore[override]
+        mapping: dict[Any, Any] = {}
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in mapping:
+                mark = key_node.start_mark
+                raise yaml.constructor.ConstructorError(
+                    None, None,
+                    f"duplicate key {key!r} at line {mark.line + 1}, "
+                    f"column {mark.column + 1}",
+                    mark,
+                )
+            mapping[key] = self.construct_object(value_node, deep=deep)
+        return mapping
+
+
+def _safe_load_strict(text: str) -> Any:
+    """YAML load that raises on duplicate mapping keys."""
+    return yaml.load(text, Loader=_DupKeyLoader)
+
+
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",
@@ -147,14 +179,14 @@ def _load_path(p: Path) -> dict[str, Any]:
     suffix = p.suffix.lower()
     try:
         if suffix in (".yml", ".yaml"):
-            data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            data = _safe_load_strict(p.read_text(encoding="utf-8")) or {}
         elif suffix == ".toml":
             with p.open("rb") as fh:
                 doc = tomllib.load(fh)
             data = doc.get("tool", {}).get("pipeline_check", {}) or {}
         else:
             # Unknown extension — best effort: try YAML (it's a superset of JSON).
-            data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            data = _safe_load_strict(p.read_text(encoding="utf-8")) or {}
     except (OSError, yaml.YAMLError, tomllib.TOMLDecodeError) as exc:
         print(f"[config] could not parse {p}: {exc}", file=sys.stderr)
         return {}

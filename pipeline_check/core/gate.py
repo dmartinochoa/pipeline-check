@@ -46,6 +46,7 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -178,17 +179,50 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
             continue
         if ":" in line:
             check_id, resource = line.split(":", 1)
-            rules.append(IgnoreRule(check_id=check_id.strip().upper(),
-                                    resource=resource.strip()))
+            resource = resource.strip()
+            # An empty resource (``GHA-001:`` or ``GHA-001:   ``) is the
+            # user asking for a blanket suppression, equivalent to
+            # writing the check id alone. Normalise to None so the rule
+            # actually matches something — a literal ``""`` resource
+            # would only suppress findings with an exact empty string.
+            rules.append(IgnoreRule(
+                check_id=check_id.strip().upper(),
+                resource=resource or None,
+            ))
         else:
             rules.append(IgnoreRule(check_id=line.strip().upper(),
                                     resource=None))
     return rules
 
 
+class _DupKeyIgnoreLoader(yaml.SafeLoader):
+    """SafeLoader for ignore files that rejects duplicate mapping keys.
+
+    A YAML ignore-file entry with a duplicated field (e.g. two
+    ``resource:`` keys under one rule) silently keeps only the last
+    value under pyyaml's default behaviour. For a suppression file
+    that's a trap — half the user's intent is discarded invisibly.
+    """
+
+    def construct_mapping(self, node, deep=False):  # type: ignore[override]
+        mapping: dict[Any, Any] = {}
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in mapping:
+                mark = key_node.start_mark
+                raise yaml.constructor.ConstructorError(
+                    None, None,
+                    f"duplicate key {key!r} at line {mark.line + 1}, "
+                    f"column {mark.column + 1}",
+                    mark,
+                )
+            mapping[key] = self.construct_object(value_node, deep=deep)
+        return mapping
+
+
 def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
     try:
-        doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+        doc = yaml.load(p.read_text(encoding="utf-8"), Loader=_DupKeyIgnoreLoader)
     except yaml.YAMLError as exc:
         # Surface the parse error — a typo here silently removes every
         # suppression and the user has no way to tell without diffing
@@ -282,9 +316,24 @@ def load_baseline_from_git(ref: str, path: str, cwd: str | Path = ".") -> set[tu
     return _baseline_from_doc(doc)
 
 
-def _baseline_from_doc(doc: dict) -> set[tuple[str, str]]:
+def _baseline_from_doc(doc: object) -> set[tuple[str, str]]:
+    """Extract failing ``(check_id, resource)`` pairs from a baseline doc.
+
+    Defensive: the baseline JSON comes from whatever the user hands us
+    — an old scan, a hand-edited file, or a completely unrelated JSON.
+    Every downstream caller (``load_baseline``, ``load_baseline_from_git``)
+    already catches parse errors, so any *shape* error here must return
+    an empty set rather than crashing CI.
+    """
     out: set[tuple[str, str]] = set()
-    for f in doc.get("findings", []):
+    if not isinstance(doc, dict):
+        return out
+    findings = doc.get("findings")
+    if not isinstance(findings, list):
+        return out
+    for f in findings:
+        if not isinstance(f, dict):
+            continue
         if not f.get("passed", True):
             out.add((str(f.get("check_id", "")).upper(),
                      str(f.get("resource", ""))))

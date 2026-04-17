@@ -46,6 +46,49 @@ def test_finding_to_dict_includes_confidence():
     assert f.to_dict()["confidence"] == "LOW"
 
 
+def test_finding_confidence_locked_defaults_to_false():
+    f = Finding(
+        check_id="CB-001", title="t", severity=Severity.CRITICAL,
+        resource="r", description="d", recommendation="r", passed=False,
+    )
+    assert f.confidence_locked is False
+
+
+def test_scanner_respects_confidence_locked(tmp_path, monkeypatch):
+    """A finding with confidence_locked=True keeps its explicit
+    confidence even when the check_id is in the centralised demotion
+    list. This is the CB-005 scenario: the rule's blanket default is
+    MEDIUM but specific findings (``two+ versions behind``) need to
+    stay HIGH."""
+    from pipeline_check.core.scanner import Scanner
+    # Synthesise a scan result by driving the Scanner's post-process
+    # loop directly — no need to invoke a full provider scan.
+    s = Scanner.__new__(Scanner)
+    s._check_classes = []
+    s.pipeline = "github"
+    s.metadata = type("M", (), {"elapsed_seconds": 0.0})()
+
+    locked = Finding(
+        check_id="CB-005", title="t", severity=Severity.MEDIUM,
+        resource="r", description="d", recommendation="r", passed=False,
+        confidence=Confidence.HIGH, confidence_locked=True,
+    )
+    unlocked = Finding(
+        check_id="CB-005", title="t", severity=Severity.MEDIUM,
+        resource="r", description="d", recommendation="r", passed=False,
+        confidence=Confidence.HIGH,
+    )
+
+    # Simulate the post-process loop from Scanner.run().
+    from pipeline_check.core.checks._confidence import confidence_for
+    for f in (locked, unlocked):
+        if not f.confidence_locked:
+            f.confidence = confidence_for(f.check_id)
+
+    assert locked.confidence == Confidence.HIGH, "locked finding was demoted"
+    assert unlocked.confidence == Confidence.MEDIUM, "unlocked finding not demoted"
+
+
 # ─── Default demotions ─────────────────────────────────────────────────────
 
 

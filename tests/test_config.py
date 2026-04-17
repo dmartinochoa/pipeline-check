@@ -151,6 +151,41 @@ class TestSchema:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Duplicate-key detection (YAML configs)
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestDuplicateKeys:
+    def test_duplicate_toplevel_key_surfaces_warning(self, tmp_path, monkeypatch, capsys):
+        """A YAML config with a duplicated ``pipeline:`` entry should not
+        silently drop the first value — it must surface as a parse error
+        so the user sees the typo."""
+        _clear_env(monkeypatch)
+        cfg_file = tmp_path / ".pipeline-check.yml"
+        cfg_file.write_text("pipeline: aws\npipeline: github\n")
+        cfg = load_config(cwd=tmp_path)
+        captured = capsys.readouterr()
+        # Loader raised, _load_path caught it and surfaced a stderr message.
+        assert "duplicate key" in captured.err
+        assert "pipeline" in captured.err
+        # The whole file was rejected, so no config loaded.
+        assert cfg == {}
+
+    def test_duplicate_gate_key_surfaces_warning(self, tmp_path, monkeypatch, capsys):
+        _clear_env(monkeypatch)
+        cfg_file = tmp_path / ".pipeline-check.yml"
+        cfg_file.write_text(
+            "pipeline: aws\n"
+            "gate:\n"
+            "  fail_on: CRITICAL\n"
+            "  fail_on: HIGH\n"
+        )
+        load_config(cwd=tmp_path)
+        captured = capsys.readouterr()
+        assert "duplicate key" in captured.err
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Environment variables
 # ────────────────────────────────────────────────────────────────────────────
 

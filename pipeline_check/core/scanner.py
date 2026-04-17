@@ -187,12 +187,13 @@ class Scanner:
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
-            # Apply the centralised confidence default ONLY when the
-            # rule hasn't explicitly set it (i.e. still at the
-            # dataclass default). Rules that want to override stay in
-            # control — e.g. ``CB-005`` may emit HIGH for two-versions-
-            # behind and MEDIUM for one-behind.
-            if f.confidence == Confidence.HIGH:
+            # Apply the centralised confidence default unless the rule
+            # opted out by setting ``confidence_locked=True`` on the
+            # Finding. Rules that want per-finding control (e.g. CB-005
+            # emitting HIGH for two-versions-behind even though the
+            # blanket default is MEDIUM) set the lock flag on the
+            # specific findings they want to preserve.
+            if not f.confidence_locked:
                 f.confidence = confidence_for(f.check_id)
 
         self.metadata.elapsed_seconds = time.monotonic() - t0
@@ -268,11 +269,17 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     module_dirs_changed = {
         _tf_dir(p) for p in tf_files_touched if _tf_dir(p)
     }
-    planned = (
-        plan.get("planned_values", {})
-            .get("root_module", {})
-            .get("resources")
-    )
+    # Defensive nested-dict traversal — a malformed plan with a
+    # non-dict ``planned_values`` or ``root_module`` value would
+    # otherwise raise AttributeError here. Missing/wrong shape → skip
+    # the filter (safer to over-scan than to crash the CI run).
+    pv = plan.get("planned_values")
+    if not isinstance(pv, dict):
+        return
+    rm = pv.get("root_module")
+    if not isinstance(rm, dict):
+        return
+    planned = rm.get("resources")
     if not isinstance(planned, list):
         return
 
@@ -292,9 +299,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
         # happens to share a prefix.
         return mod_name in module_dirs_changed
 
-    plan["planned_values"]["root_module"]["resources"] = [
-        r for r in planned if _keep(r)
-    ]
+    rm["resources"] = [r for r in planned if _keep(r)]
 
 
 def _tf_dir(path: str) -> str:

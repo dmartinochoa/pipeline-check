@@ -80,3 +80,20 @@ def test_flat_format_still_works(tmp_path):
     assert [r.check_id for r in rules] == ["GHA-001", "GL-003"]
     # Flat rules never expire.
     assert all(r.expires is None for r in rules)
+
+
+def test_yaml_duplicate_key_rejected(tmp_path, capsys):
+    """A YAML ignore rule with a duplicated field (typo or copy-paste
+    mistake) must not silently drop half the user's intent. Loader
+    raises, load_ignore_file surfaces the error to stderr and returns
+    an empty list."""
+    p = tmp_path / ".pipeline-check-ignore.yml"
+    p.write_text(
+        "- check_id: GHA-001\n"
+        "  resource: a.yml\n"
+        "  resource: b.yml\n"
+    )
+    rules = load_ignore_file(p)
+    captured = capsys.readouterr()
+    assert "duplicate key" in captured.err
+    assert rules == []

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
+
 TASK_PIN_RE = re.compile(r"@\d+\.\d+(?:\.\d+)?(?:[-.][\w\d]+)*$")
 
 UNTRUSTED_VAR_RE = re.compile(
@@ -14,11 +16,6 @@ UNTRUSTED_VAR_RE = re.compile(
     r"|System\.PullRequest\.(?:SourceBranch|SourceRepositoryURI|SourceCommitId"
     r"|PullRequestId|PullRequestNumber)"
     r")\s*\)"
-)
-
-AWS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
-SECRETISH_KEY_RE = re.compile(
-    r"(?i)(?:password|passwd|secret|token|apikey|api_key|private_key)"
 )
 
 DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")

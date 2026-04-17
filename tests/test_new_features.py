@@ -126,6 +126,28 @@ def test_baseline_from_git_empty_on_git_failure(monkeypatch):
     assert load_baseline_from_git("origin/main", "baseline.json") == set()
 
 
+def test_baseline_and_baseline_from_git_mutually_exclusive(tmp_path, monkeypatch):
+    """Passing both --baseline and --baseline-from-git would silently
+    drop the git-ref lookup (gate evaluates file first). Reject the
+    combination at the CLI layer so the user sees their mistake."""
+    from click.testing import CliRunner
+    from pipeline_check.cli import scan
+    monkeypatch.chdir(tmp_path)
+    baseline_file = tmp_path / "baseline.json"
+    baseline_file.write_text('{"findings": []}')
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows" / "x.yml").write_text("on: push\njobs: {}\n")
+    result = CliRunner().invoke(scan, [
+        "--pipeline", "github",
+        "--gha-path", str(tmp_path / ".github" / "workflows"),
+        "--baseline", str(baseline_file),
+        "--baseline-from-git", "origin/main:baseline.json",
+    ])
+    assert result.exit_code != 0
+    assert "mutually exclusive" in result.output.lower() or \
+           "mutually exclusive" in (result.stderr or "")
+
+
 # ── --fix --apply ────────────────────────────────────────────────────────
 
 def test_fix_apply_modifies_file_in_place(tmp_path, monkeypatch):
