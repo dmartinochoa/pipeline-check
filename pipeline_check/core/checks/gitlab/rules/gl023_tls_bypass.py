@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import TLS_BYPASS_RE, Finding, Severity, blob_lower
+from ...base import Finding, Severity, blob_lower
+from ..._primitives import tls_bypass
 from ...rule import Rule
 
 RULE = Rule(
@@ -29,14 +30,13 @@ RULE = Rule(
 )
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    matches = TLS_BYPASS_RE.findall(blob)
-    passed = not matches
+    hits = tls_bypass.scan(blob_lower(doc))
+    passed = not hits
     desc = (
         "No TLS verification bypass patterns detected."
         if passed else
         f"TLS verification bypass detected: "
-        f"{', '.join(m.strip() for m in matches[:3])}"
+        f"{', '.join(h.snippet for h in hits[:3])}"
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
