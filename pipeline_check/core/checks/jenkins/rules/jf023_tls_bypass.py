@@ -1,8 +1,8 @@
 """JF-023 — TLS / certificate verification bypass."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
 from ..._primitives import tls_bypass
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 

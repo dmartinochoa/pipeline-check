@@ -1,8 +1,8 @@
 """JF-016 — remote script piped to shell interpreter."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
 from ..._primitives import remote_script_exec
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 

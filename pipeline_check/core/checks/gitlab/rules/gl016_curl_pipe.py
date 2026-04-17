@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, blob_lower
 from ..._primitives import remote_script_exec
+from ...base import Finding, Severity, blob_lower
 from ...rule import Rule
 
 RULE = Rule(
