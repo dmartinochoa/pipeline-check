@@ -16,9 +16,13 @@ Key shape notes:
 - Severity is expressed two ways: the enum ``level`` (error/warning/note)
   for UI coloring, and the floating-point ``security-severity``
   (0–10 CVSS-style) that GitHub uses to filter code-scanning alerts.
-- Compliance controls attached by the Scanner are surfaced via
-  ``properties.tags`` (so they are searchable in the GitHub UI) and
-  ``properties.controls`` (structured form for programmatic consumers).
+- Compliance controls attached by the Scanner are split across two
+  SARIF fields: rule-level ``properties.tags`` carries the *standard
+  slugs* (e.g. ``owasp_cicd_top_10``, ``soc2``) so GitHub's code-
+  scanning UI can filter by standard; individual *control IDs*
+  (``CICD-SEC-6``, ``CC6.1``, ``Dangerous-Workflow``) live only on the
+  per-result ``properties.controls`` array. GitHub caps rule tags at
+  20, which is why control IDs can't go there.
 """
 from __future__ import annotations
 

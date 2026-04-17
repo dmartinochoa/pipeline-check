@@ -52,10 +52,40 @@ from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
+from .core.junit_reporter import report_junit
+from .core.markdown_reporter import report_markdown
 from .core.reporter import report_inventory_terminal, report_json, report_terminal
 from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
+
+
+def _tolerate_unencodable_stdio() -> None:
+    """Make stdout/stderr tolerate non-ASCII characters on legacy consoles.
+
+    Windows' default ``cmd.exe`` uses cp1252 for stdout. When click or
+    our own code emits help text containing characters cp1252 can't
+    encode (box-drawing, arrow, >=), Python raises
+    ``UnicodeEncodeError`` and the program dies before printing
+    anything useful. Reconfiguring the streams with
+    ``errors='replace'`` degrades un-encodable characters to ``?``
+    instead of crashing. We leave the *encoding* alone so output still
+    matches the terminal's expectations - only the error handler changes.
+
+    Runs at import time so it takes effect before click's argument-
+    parsing emits help text on --help.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, OSError):
+            # Older Python, or stream is wrapped and doesn't expose
+            # reconfigure. Non-fatal - the worst case is the original
+            # crash on cp1252, which only affects Windows default console.
+            pass
+
+
+_tolerate_unencodable_stdio()
 
 # ────────────────────────────────────────────────────────────────────────────
 # Shell completion helpers
@@ -517,7 +547,10 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--output",
-    type=click.Choice(["terminal", "json", "html", "sarif", "both"], case_sensitive=False),
+    type=click.Choice(
+        ["terminal", "json", "html", "sarif", "junit", "markdown", "both"],
+        case_sensitive=False,
+    ),
     default="terminal",
     show_default=True,
     help="Output format.",
@@ -526,7 +559,11 @@ def _install_completion_callback(ctx, _param, value):
     "--output-file",
     default=None,
     metavar="PATH",
-    help="Write HTML or SARIF report to this file (used with --output html/sarif).",
+    help=(
+        "Write the report to this file. Required for --output html. "
+        "Optional for --output sarif/junit/markdown (stdout is used if "
+        "unset)."
+    ),
 )
 @click.option(
     "--standard",
@@ -566,9 +603,9 @@ def _install_completion_callback(ctx, _param, value):
     metavar="NAME",
     shell_complete=_complete_standards,
     help=(
-        "Print the control → check matrix for the named standard and "
+        "Print the control -> check matrix for the named standard and "
         "exit. Includes a 'gaps' section listing controls with no "
-        "mapped checks — useful for auditing standard coverage."
+        "mapped checks - useful for auditing standard coverage."
     ),
 )
 @click.option(
@@ -628,7 +665,7 @@ def _install_completion_callback(ctx, _param, value):
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default=None,
     help=(
-        "Fail the CI gate if any effective finding's severity is ≥ this "
+        "Fail the CI gate if any effective finding's severity is >= this "
         "threshold (e.g. --fail-on HIGH fails on HIGH or CRITICAL)."
     ),
 )
@@ -847,7 +884,7 @@ def scan(
         if std.url:
             click.echo(f"  {std.url}")
         click.echo("")
-        click.echo("Control → check mapping:")
+        click.echo("Control -> check mapping:")
         gaps: list[tuple[str, str]] = []
         for ctrl_id in sorted(std.controls):
             title = std.controls[ctrl_id]
@@ -1163,6 +1200,24 @@ def scan(
                 click.echo(f"SARIF report written to {output_file}", err=True)
             else:
                 click.echo(sarif_text)
+
+        if output == "junit":
+            junit_text = report_junit(findings, score_result)
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(junit_text)
+                click.echo(f"JUnit report written to {output_file}", err=True)
+            else:
+                click.echo(junit_text)
+
+        if output == "markdown":
+            md_text = report_markdown(findings, score_result)
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(md_text)
+                click.echo(f"Markdown report written to {output_file}", err=True)
+            else:
+                click.echo(md_text)
 
         if fix:
             if apply_fixes:

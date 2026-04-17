@@ -166,6 +166,16 @@ details[open] > summary::before { transform: rotate(90deg); }
   background: var(--card); border: 1px solid var(--border); border-radius: 8px;
   padding: 10px 14px; margin-bottom: 14px;
   display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px;
+  position: sticky; top: 0; z-index: 10;
+}
+.bulk-btn {
+  border: 1px solid var(--border); background: var(--card);
+  border-radius: 4px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+  color: var(--muted);
+}
+.bulk-btn:hover { background: var(--row-hover); }
+.findings-table thead th {
+  position: sticky; top: 46px; z-index: 5;
 }
 .filter-group { display: flex; align-items: center; gap: 6px; }
 .filter-group label { font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
@@ -204,20 +214,87 @@ details[open] > summary::before { transform: rotate(90deg); }
 }
 .theme-toggle:hover { background: rgba(255,255,255,.1); }
 
+/* ── Anchor flash when a finding is deep-linked ── */
+:target td { animation: flash 1.5s ease; }
+@keyframes flash {
+  0%   { background: #fff3cd; }
+  100% { background: transparent; }
+}
+.dark :target td { animation-name: flash-dark; }
+@keyframes flash-dark {
+  0%   { background: #3a3a1a; }
+  100% { background: transparent; }
+}
+
 /* ── Footer ── */
 footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px; }
+
+/* ── Print ── */
+@media print {
+  body, .dark { background: #fff !important; color: #000 !important; }
+  header, footer, .filter-bar, .theme-toggle, .copy-ignore-btn, .bulk-btn { display: none !important; }
+  main { max-width: none; margin: 0; padding: 0; }
+  .score-card { break-inside: avoid; border: 1px solid #000; }
+  details { page-break-inside: avoid; }
+  details > summary::before { content: ""; }
+  details > .check-detail { display: block !important; }
+  .findings-table, .findings-table thead th { position: static !important; }
+}
 """
 
 
 _SCRIPT = r"""
 (function () {
+  // ── Theme: honour saved choice → OS preference → light default ──
+  const THEME_KEY = 'pipelinecheck.theme';
+  function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    const prefersDark = window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const useDark = saved === 'dark' || (saved === null && prefersDark);
+    document.body.classList.toggle('dark', useDark);
+  }
+  initTheme();
+  const themeBtn = document.querySelector('.theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const nowDark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', nowDark);
+      localStorage.setItem(THEME_KEY, nowDark ? 'dark' : 'light');
+    });
+  }
+
+  // ── Filter state ───────────────────────────────────────────────
   const rows = document.querySelectorAll('tbody tr[data-check-id]');
-  const sev = document.getElementById('f-sev');
-  const std = document.getElementById('f-std');
-  const prov = document.getElementById('f-prov');
-  const stat = document.getElementById('f-status');
-  const text = document.getElementById('f-text');
+  const sev   = document.getElementById('f-sev');
+  const std   = document.getElementById('f-std');
+  const prov  = document.getElementById('f-prov');
+  const stat  = document.getElementById('f-status');
+  const text  = document.getElementById('f-text');
   const count = document.getElementById('f-count');
+  const FILTER_INPUTS = { sev, std, prov, stat, q: text };
+
+  // Hydrate filters from URL query on load so shared links restore state.
+  function hydrateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    for (const [name, el] of Object.entries(FILTER_INPUTS)) {
+      if (!el) continue;
+      const v = params.get(name);
+      if (v !== null) el.value = v;
+    }
+  }
+
+  // Mirror filter state into the URL without adding history entries so
+  // the back button still exits the report.
+  function serializeToUrl() {
+    const params = new URLSearchParams();
+    for (const [name, el] of Object.entries(FILTER_INPUTS)) {
+      if (el && el.value) params.set(name, el.value);
+    }
+    const qs = params.toString();
+    const url = qs ? ('?' + qs + window.location.hash) : (window.location.pathname + window.location.hash);
+    history.replaceState(null, '', url);
+  }
 
   function visibleCount() {
     let n = 0;
@@ -246,12 +323,56 @@ _SCRIPT = r"""
       r.style.display = ok ? '' : 'none';
     });
     visibleCount();
+    serializeToUrl();
   }
 
+  hydrateFromUrl();
   [sev, std, prov, stat].forEach(el => el.addEventListener('change', apply));
   text.addEventListener('input', apply);
-  visibleCount();
+  apply();
 
+  // ── Expand-all / collapse-all ───────────────────────────────────
+  const expandBtn = document.getElementById('f-expand');
+  const collapseBtn = document.getElementById('f-collapse');
+  function setAll(open) {
+    document.querySelectorAll('tr[data-check-id] details').forEach(d => {
+      // Only toggle rows currently visible after filtering — honours the
+      // user's "show me what's failing" filter even when they expand all.
+      if (d.closest('tr').style.display !== 'none') d.open = open;
+    });
+  }
+  if (expandBtn)   expandBtn.addEventListener('click', () => setAll(true));
+  if (collapseBtn) collapseBtn.addEventListener('click', () => setAll(false));
+
+  // ── Keyboard shortcuts ─────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    // Don't hijack when the user is already typing in an input/textarea.
+    const tag = (e.target.tagName || '').toUpperCase();
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable;
+    if (e.key === '/' && !typing) {
+      e.preventDefault();
+      text.focus();
+      text.select();
+    } else if (e.key === 'Escape' && typing && e.target === text) {
+      text.value = '';
+      apply();
+      text.blur();
+    }
+  });
+
+  // ── Deep-link scrolling: if a finding anchor is present, expand it. ─
+  function openAnchored() {
+    if (!window.location.hash) return;
+    const el = document.querySelector(window.location.hash);
+    if (!el) return;
+    const details = el.querySelector('details');
+    if (details) details.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  openAnchored();
+  window.addEventListener('hashchange', openAnchored);
+
+  // ── Copy-ignore button (existing) ──────────────────────────────
   document.querySelectorAll('.copy-ignore-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -341,12 +462,23 @@ def _severity_summary_html(summary: dict) -> str:
     return f'<div class="sev-row">{"".join(pills)}</div>'
 
 
+# Check-ID prefix → provider slug used in the filter dropdown. Keep in
+# sync when a new rule family is introduced; unknown prefixes fall back
+# to "other" and become invisible to the Provider filter.
 _PROVIDER_PREFIXES = {
+    # CI-provider families
     "GHA": "github", "GL": "gitlab", "BB": "bitbucket", "ADO": "azure",
-    "JF": "jenkins", "CC": "circleci",
+    "JF": "jenkins", "CC": "circleci", "GCB": "cloudbuild",
+    # AWS core pipeline services
     "CB": "aws", "CP": "aws", "CD": "aws", "IAM": "aws", "S3": "aws",
     "ECR": "aws", "PBAC": "aws",
-    "TF": "terraform",
+    # AWS ancillary services (observability, crypto, secrets, code hosting)
+    "CT": "aws", "CWL": "aws", "CW": "aws", "EB": "aws",
+    "SM": "aws", "SSM": "aws", "KMS": "aws",
+    "CA": "aws", "CCM": "aws", "LMB": "aws",
+    "SIGN": "aws",
+    # IaC providers
+    "TF": "terraform", "CF": "cloudformation", "CFN": "cloudformation",
 }
 
 
@@ -442,8 +574,21 @@ def _finding_row(finding: Finding, rule: dict) -> str:
     # ``CHECK_ID:RESOURCE`` — the flat format the gate accepts.
     ignore_rule = f"{finding.check_id}:{finding.resource}"
 
+    # Stable, shareable anchor per finding: ``#finding-<check>-<slug>``.
+    # Collisions across rows are avoided by including the resource slug;
+    # duplicate ``check_id + resource`` pairs are already impossible by
+    # construction (the Scanner dedupes on that tuple).
+    anchor = "finding-" + finding.check_id.lower()
+    if finding.resource:
+        slug = "".join(
+            c if c.isalnum() or c == "-" else "-"
+            for c in finding.resource.lower()
+        ).strip("-")
+        if slug:
+            anchor = f"{anchor}-{slug[:60]}"
+
     return (
-        f'<tr class="{row_cls}" '
+        f'<tr id="{_e(anchor)}" class="{row_cls}" '
         f'data-check-id="{_e(finding.check_id)}" '
         f'data-severity="{_e(finding.severity.value)}" '
         f'data-standards="{_e(",".join(standards))}" '
@@ -498,8 +643,14 @@ def _filter_bar_html(findings: list[Finding]) -> str:
         '<option value="pass">Pass</option>'
         '</select></div>'
         '<div class="filter-group">'
-        '<input id="f-text" type="text" placeholder="Filter by id, title, resource..." />'
+        '<input id="f-text" type="text" '
+        'placeholder="Filter by id, title, resource...  (press / to focus)" '
+        'aria-label="Free-text filter" />'
         '</div>'
+        '<button id="f-expand" class="bulk-btn" type="button" '
+        'title="Expand all visible rows">expand all</button>'
+        '<button id="f-collapse" class="bulk-btn" type="button" '
+        'title="Collapse all rows">collapse</button>'
         '<span class="filter-count" id="f-count"></span>'
         '</div>'
     )
@@ -567,7 +718,7 @@ def report_html(
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-meta">{meta_str}</div>
-      <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">dark/light</button>
+      <button class="theme-toggle" type="button" aria-label="Toggle dark mode">dark/light</button>
     </div>
   </div>
 </header>

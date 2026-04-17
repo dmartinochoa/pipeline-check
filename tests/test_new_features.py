@@ -81,7 +81,7 @@ def test_standard_report_prints_matrix():
     result = CliRunner().invoke(scan, ["--standard-report", "owasp_cicd_top_10"])
     assert result.exit_code == 0
     # Matrix headers + at least one control line.
-    assert "Control → check mapping" in result.output
+    assert "Control -> check mapping" in result.output
     assert "CICD-SEC-" in result.output
 
 

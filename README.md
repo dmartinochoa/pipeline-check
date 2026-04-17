@@ -4,9 +4,9 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
-Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and seven other compliance frameworks. Scores findings A--D so you can gate merges on the result.
+Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**295 checks** across **9 providers** -- mapped to **8 compliance standards** -- with **67 autofixers**
+**277 checks** across **10 providers** -- mapped to **13 compliance standards** -- with **68 autofixers**
 
 [Quick start](#quick-start) |
 [Providers](#supported-providers) |
@@ -24,10 +24,11 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 ```bash
 pip install -e .                  # Python >= 3.10
 
-pipeline_check --pipeline github  # auto-detects .github/workflows/
-pipeline_check --pipeline gitlab  # auto-detects .gitlab-ci.yml
-pipeline_check --pipeline circleci # auto-detects .circleci/config.yml
-pipeline_check                    # live AWS account (default)
+pipeline_check --pipeline github    # auto-detects .github/workflows/
+pipeline_check --pipeline gitlab    # auto-detects .gitlab-ci.yml
+pipeline_check --pipeline circleci  # auto-detects .circleci/config.yml
+pipeline_check --pipeline cloudbuild # auto-detects cloudbuild.yaml
+pipeline_check                      # live AWS account (default)
 ```
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
@@ -39,15 +40,16 @@ standard boto3 credential chain.
 
 | Provider | Input | Auto-detect | Checks |
 |----------|-------|-------------|--------|
-| **AWS** | Live account via boto3 | `--region` | 70 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
+| **AWS** | Live account via boto3 | `--region` | 72 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 27 checks (`GHA-001`--`027`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 25 checks (`GL-001`--`025`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 25 checks (`BB-001`--`025`) |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 26 checks (`ADO-001`--`026`) |
-| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 29 checks (`JF-001`--`029`) |
-| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 26 checks (`CC-001`--`026`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 29 checks (`GHA-001`--`029`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 30 checks (`GL-001`--`030`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 27 checks (`BB-001`--`027`) |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 28 checks (`ADO-001`--`028`) |
+| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
+| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 30 checks (`CC-001`--`030`) |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 9 checks (`GCB-001`--`009`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
