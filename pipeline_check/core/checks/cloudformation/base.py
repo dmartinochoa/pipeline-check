@@ -54,6 +54,25 @@ class CloudFormationContext:
     def __init__(self, templates: list[tuple[str, dict[str, Any]]]) -> None:
         self._templates = templates
         self._resources: list[CloudFormationResource] = list(_iter_resources(templates))
+        #: Merged ``Parameters[name].Default`` values across every template.
+        #: Used by :func:`resolve_literal` to substitute ``Ref`` / ``Fn::Sub``
+        #: references against the author-declared defaults. Pseudo-parameters
+        #: (``AWS::Region`` et al.) are intentionally absent — they are only
+        #: resolvable at stack creation and rules should skip on them.
+        self._parameter_defaults: dict[str, Any] = {}
+        for _path, template in templates:
+            params = template.get("Parameters") or {}
+            if not isinstance(params, dict):
+                continue
+            for name, spec in params.items():
+                if not isinstance(spec, dict):
+                    continue
+                if "Default" in spec:
+                    self._parameter_defaults[name] = spec["Default"]
+
+    @property
+    def parameter_defaults(self) -> dict[str, Any]:
+        return dict(self._parameter_defaults)
 
     @classmethod
     def from_path(cls, path: str | Path) -> CloudFormationContext:
@@ -267,3 +286,102 @@ def as_str(value: Any) -> str:
     on ``{"Ref": "..."}``.
     """
     return value if isinstance(value, str) else ""
+
+
+_SUB_VAR_RE = __import__("re").compile(r"\$\{([A-Za-z0-9:._-]+)\}")
+
+
+def resolve_literal(value: Any, parameters: dict[str, Any] | None = None) -> str | None:
+    """Attempt to reduce *value* to a literal string.
+
+    Handles the trivially-resolvable intrinsics that a static scanner
+    can reason about without evaluating the stack:
+
+    - literal ``str`` / ``bool`` / ``int`` / ``float`` → stringified
+    - ``{"Ref": "ParamName"}`` → ``parameters[ParamName]`` if present
+    - ``{"Fn::Sub": "no-var template"}`` → the template itself
+    - ``{"Fn::Sub": "template with ${Var}"}`` → substituted if every
+      ``${Var}`` resolves against *parameters* or the variable-map form
+      ``{"Fn::Sub": ["template", {"Var": "value"}]}``
+    - ``{"Fn::Join": [delim, [list]]}`` → joined when every list item
+      resolves
+
+    Returns ``None`` when the value is not reducible (unknown intrinsic,
+    pseudo-parameter like ``AWS::Region``, or a ``Ref`` to a parameter
+    with no declared ``Default``). Callers should treat ``None`` the
+    same way they would treat an intrinsic today: skip, don't guess.
+    """
+    params = parameters or {}
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        # bool must be checked before int — bool is a subclass of int.
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if not isinstance(value, dict) or len(value) != 1:
+        return None
+
+    (key, inner), = value.items()
+    if key == "Ref":
+        if isinstance(inner, str) and inner in params:
+            return resolve_literal(params[inner], params)
+        return None
+    if key == "Fn::Sub":
+        return _resolve_sub(inner, params)
+    if key == "Fn::Join":
+        return _resolve_join(inner, params)
+    # Fn::GetAtt, Fn::ImportValue, Fn::If, etc. are runtime-dependent.
+    return None
+
+
+def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
+    """Resolve ``Fn::Sub`` in either string or [template, map] form."""
+    if isinstance(inner, str):
+        template, extra_vars = inner, {}
+    elif isinstance(inner, list) and len(inner) == 2 and isinstance(inner[0], str):
+        template, extra_vars = inner[0], inner[1] if isinstance(inner[1], dict) else {}
+    else:
+        return None
+
+    # Pre-resolve every variable in the extra-var map; bail if any fails.
+    resolved_extras: dict[str, str] = {}
+    for k, v in extra_vars.items():
+        r = resolve_literal(v, params)
+        if r is None:
+            return None
+        resolved_extras[k] = r
+
+    missing: list[str] = []
+
+    def _sub(match):
+        name = match.group(1)
+        if name in resolved_extras:
+            return resolved_extras[name]
+        if name in params:
+            r = resolve_literal(params[name], params)
+            if r is not None:
+                return r
+        missing.append(name)
+        return match.group(0)
+
+    out = _SUB_VAR_RE.sub(_sub, template)
+    if missing:
+        return None
+    return out
+
+
+def _resolve_join(inner: Any, params: dict[str, Any]) -> str | None:
+    """Resolve ``Fn::Join`` when both delimiter and list are literals."""
+    if not isinstance(inner, list) or len(inner) != 2:
+        return None
+    delim, items = inner
+    if not isinstance(delim, str) or not isinstance(items, list):
+        return None
+    parts: list[str] = []
+    for item in items:
+        part = resolve_literal(item, params)
+        if part is None:
+            return None
+        parts.append(part)
+    return delim.join(parts)

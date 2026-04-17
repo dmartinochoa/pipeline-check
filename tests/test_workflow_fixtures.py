@@ -19,6 +19,8 @@ from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
 from pipeline_check.core.checks.circleci.base import CircleCIContext
 from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
+from pipeline_check.core.checks.cloudbuild.base import CloudBuildContext
+from pipeline_check.core.checks.cloudbuild.pipelines import CloudBuildPipelineChecks
 from pipeline_check.core.checks.github.base import GitHubContext
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 from pipeline_check.core.checks.gitlab.base import GitLabContext
@@ -72,7 +74,7 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 28)}
+    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 31)}
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -194,7 +196,7 @@ class TestJenkinsFixtures:
 
 
 class TestCircleCIFixtures:
-    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 29)}
+    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 31)}
 
     def _scan(self, filename: str):
         ctx = CircleCIContext.from_path(FIXTURES / "circleci" / filename)
@@ -221,6 +223,38 @@ class TestCircleCIFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Google Cloud Build
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestCloudBuildFixtures:
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 10)}
+
+    def _scan(self, filename: str):
+        ctx = CloudBuildContext.from_path(FIXTURES / "cloudbuild" / filename)
+        assert ctx.pipelines, f"fixture {filename} produced no parsed documents"
+        return _finding_map(CloudBuildPipelineChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure-cloudbuild.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every GCB check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure-cloudbuild.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every GCB check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Cross-provider sanity — findings carry control refs from enabled standards
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -229,7 +263,7 @@ class TestCircleCIFixtures:
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
      {f"GHA-{i:03d}" for i in range(1, 30)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 28)}),
+     {f"GL-{i:03d}" for i in range(1, 31)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 28)}),
@@ -239,7 +273,10 @@ class TestCircleCIFixtures:
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
      {f"JF-{i:03d}" for i in range(1, 32)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
-     {f"CC-{i:03d}" for i in range(1, 29)}),
+     {f"CC-{i:03d}" for i in range(1, 31)}),
+    ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
+     CloudBuildContext, CloudBuildPipelineChecks,
+     {f"GCB-{i:03d}" for i in range(1, 10)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

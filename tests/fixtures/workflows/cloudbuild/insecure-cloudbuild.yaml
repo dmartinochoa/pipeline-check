@@ -1,0 +1,55 @@
+# Realistic insecure cloudbuild.yaml exhibiting every GCB-* failure mode.
+# Modelled on a container build-and-deploy pipeline assembled quickly
+# and never hardened — the common shape in new GCP projects.
+
+# GCB-004: user substitutions flow into step args with dynamic
+# substitution enabled, giving a trigger editor shell-injection reach.
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+substitutions:
+  _DEPLOY_TARGET: production
+  _ARTIFACT_SUFFIX: latest
+
+# GCB-002: no serviceAccount set — build runs as the default Cloud
+# Build SA, which typically holds project-level editor.
+
+# GCB-005: no explicit ``timeout:`` — inherits the 10-minute default.
+
+# GCB-007: secret reference uses the rolling ``versions/latest`` alias,
+# so rotations happen silently instead of through a config change.
+availableSecrets:
+  secretManager:
+    - versionName: projects/example-project/secrets/db-password/versions/latest
+      env: DB_PASS
+
+steps:
+  # GCB-001: step image is tag-pinned (:latest).
+  - id: build
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'
+      - '.'
+
+  # GCB-003: secret fetched inline via gcloud inside args —
+  # resolved value lands in build logs.
+  # GCB-006: ``eval "$BUILD_CMD"`` re-parses a variable as shell.
+  - id: push
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        DB_PASS=$(gcloud secrets versions access latest --secret=db-password)
+        eval "$BUILD_CMD"
+        echo "deploying to $_DEPLOY_TARGET with $DB_PASS"
+
+# GCB-008: no trivy/grype/snyk step — pipeline builds and pushes an
+# image without scanning it for known vulnerabilities.
+# GCB-009: no cosign/sigstore attestation — unsigned artifact.
+
+images:
+  - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'

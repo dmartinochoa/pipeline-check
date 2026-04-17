@@ -1,0 +1,63 @@
+# Hardened equivalent of insecure-cloudbuild.yaml — every GCB-* check
+# passes. User substitutions are moved out of args (GCB-004 safe) or
+# ``dynamicSubstitutions`` is left at its default of false.
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # GCB-004 safe: dynamic substitutions not enabled.
+
+substitutions:
+  _DEPLOY_TARGET: production
+
+# GCB-005: explicit timeout bounded to the build's realistic worst case.
+timeout: 1200s
+
+# GCB-002: dedicated least-privilege SA scoped to push artefacts and
+# deploy to Cloud Run.
+serviceAccount: projects/example-project/serviceAccounts/build-pipeline@example-project.iam.gserviceaccount.com
+
+# GCB-003: secret mapped once under availableSecrets and referenced
+# via secretEnv — the plaintext never touches args.
+# GCB-007: secret version is pinned to a specific revision, not ``latest``.
+availableSecrets:
+  secretManager:
+    - versionName: projects/example-project/secrets/db-password/versions/7
+      env: DB_PASS
+
+steps:
+  # GCB-001: step image pinned by sha256 digest.
+  - id: build
+    name: 'gcr.io/cloud-builders/docker@sha256:0000000000000000000000000000000000000000000000000000000000000001'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/example-project/app:v1.2.3'
+      - '.'
+
+  # GCB-008: vulnerability scan runs before the image is pushed.
+  - id: scan
+    name: 'aquasec/trivy@sha256:0000000000000000000000000000000000000000000000000000000000000003'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'trivy image --severity HIGH,CRITICAL gcr.io/example-project/app:v1.2.3'
+
+  # GCB-009: cosign signs the built image so downstream verifiers can
+  # distinguish a tampered copy from a legitimate build.
+  - id: sign
+    name: 'gcr.io/projectsigstore/cosign@sha256:0000000000000000000000000000000000000000000000000000000000000004'
+    args: ['sign', '--yes', 'gcr.io/example-project/app:v1.2.3']
+
+  - id: push
+    name: 'gcr.io/cloud-builders/gcloud@sha256:0000000000000000000000000000000000000000000000000000000000000002'
+    entrypoint: 'bash'
+    secretEnv: ['DB_PASS']
+    args:
+      - '-c'
+      - |
+        # Value of DB_PASS is resolved from the mapped secretEnv above;
+        # there is no gcloud fetch and no literal secret URI in args.
+        deploy --env production
+
+images:
+  - 'gcr.io/example-project/app:v1.2.3'

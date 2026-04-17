@@ -13,12 +13,8 @@ def make_context(resources: dict, **top_level) -> CloudFormationContext:
     can be passed via ``**top_level``.
     """
     template = {"Resources": resources, **top_level}
-    ctx = CloudFormationContext.__new__(CloudFormationContext)
-    ctx._templates = [("<in-memory>", template)]
-    # Import lazily to avoid a circular at test-collection time.
-    from pipeline_check.core.checks.cloudformation.base import _iter_resources
-    ctx._resources = list(_iter_resources(ctx._templates))
-    return ctx
+    # Use the real constructor so parameter-default extraction runs.
+    return CloudFormationContext([("<in-memory>", template)])
 
 
 def r(logical_id: str, rtype: str, properties: dict, **attrs) -> dict:

@@ -8,7 +8,6 @@ and is covered — where possible — in services.py.
 from __future__ import annotations
 
 import json
-import re
 
 from .._iam_policy import (
     is_oidc_trust_stmt,
@@ -18,11 +17,10 @@ from .._iam_policy import (
     public_principal,
 )
 from .._malicious import find_malicious_patterns
+from .._primitives.container_image import classify as _classify_image
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str, is_intrinsic, is_true
 
-_DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
-_AWS_MANAGED_RE = re.compile(r"^aws/codebuild/")
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED",
     "PULL_REQUEST_UPDATED",
@@ -126,13 +124,13 @@ def _codebuild(ctx) -> list[Finding]:
                 passed=True,
             ))
         env = props.get("Environment") or {}
-        image = as_str(env.get("Image")).strip()
-        if not image or _AWS_MANAGED_RE.match(image) or _DIGEST_RE.search(image):
+        info = _classify_image(as_str(env.get("Image")))
+        if info.pinned:
             passed = True
             desc = "Image uses AWS-managed or digest-pinned source."
         else:
             passed = False
-            desc = f"Image {image!r} is tag-pinned; registry tag moves get pulled on next build."
+            desc = f"Image {info.ref!r} is tag-pinned; registry tag moves get pulled on next build."
         out.append(Finding(
             check_id="CB-009",
             title="CodeBuild image not pinned by digest",

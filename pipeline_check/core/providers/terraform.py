@@ -28,6 +28,7 @@ from ..checks.terraform.extended import ExtendedChecks
 from ..checks.terraform.iam import IAMChecks
 from ..checks.terraform.pbac import PBACChecks
 from ..checks.terraform.phase3 import Phase3Checks
+from ..checks.terraform.phase4 import Phase4Checks
 from ..checks.terraform.s3 import S3Checks
 from ..checks.terraform.services import ServiceChecks
 from ..inventory import Component
@@ -114,6 +115,7 @@ class TerraformProvider(BaseProvider):
             ExtendedChecks,
             ServiceChecks,
             Phase3Checks,
+            Phase4Checks,
         ]
 
     def inventory(self, context: TerraformContext) -> list[Component]:

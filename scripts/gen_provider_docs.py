@@ -214,6 +214,47 @@ in other providers:
 - **CC-019** — `add_ssh_keys` fingerprint restriction
 """,
     ),
+    "cloudbuild": (
+        "Google Cloud Build",
+        "pipeline_check.core.checks.cloudbuild.rules",
+        _REPO_ROOT / "docs" / "providers" / "cloudbuild.md",
+        """\
+# Google Cloud Build provider
+
+Parses `cloudbuild.yaml` on disk — no Google Cloud credentials, no
+`gcloud` install, no Cloud Build API token required. Each document
+must declare a top-level `steps:` list; files without it (SAM
+templates, ordinary YAML configs) are skipped by the loader.
+
+## Producer workflow
+
+```bash
+# --cloudbuild-path is auto-detected when cloudbuild.yaml/cloudbuild.yml
+# exists at cwd.
+pipeline_check --pipeline cloudbuild
+
+# …or pass it explicitly.
+pipeline_check --pipeline cloudbuild --cloudbuild-path ci/cloudbuild.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Cloud Build-specific checks
+
+Several checks target Cloud Build concepts that have no direct
+analogue in other providers:
+
+- **GCB-002** — `serviceAccount:` must be set; the default Cloud Build
+  SA is typically broader than any single pipeline needs.
+- **GCB-003** — secrets must flow through `availableSecrets.secret
+  Manager[].env` + `secretEnv:`, never via inline `gcloud secrets
+  versions access` in `args`.
+- **GCB-004** — `options.dynamicSubstitutions: true` combined with a
+  user-substitution (`$_FOO`) in step args opens a trigger-editor-
+  controlled shell-injection path.
+""",
+    ),
 }
 
 
@@ -248,6 +289,7 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "azure":     {"prefix": "ADO", "prefix_lc": "ado", "pkg": "azure"},
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
+    "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
 }
 
 

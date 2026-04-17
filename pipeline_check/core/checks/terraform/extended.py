@@ -20,7 +20,6 @@ IAM-008  OIDC-federated role missing audience/subject pin       HIGH    CICD-SEC
 from __future__ import annotations
 
 import json
-import re
 
 from .._iam_policy import (
     is_oidc_trust_stmt,
@@ -30,11 +29,10 @@ from .._iam_policy import (
     public_principal,
 )
 from .._malicious import find_malicious_patterns
+from .._primitives.container_image import classify as _classify_image
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
-_DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
-_AWS_MANAGED_RE = re.compile(r"^aws/codebuild/")
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED",
     "PULL_REQUEST_UPDATED",
@@ -170,13 +168,13 @@ def _cb008(values: dict, address: str) -> Finding:
 
 def _cb009(values: dict, address: str) -> Finding:
     env = _first(values.get("environment"))
-    image = (env.get("image") or "").strip()
-    if not image or _AWS_MANAGED_RE.match(image) or _DIGEST_RE.search(image):
+    info = _classify_image(env.get("image"))
+    if info.pinned:
         passed = True
         desc = "Image uses AWS-managed or digest-pinned source."
     else:
         passed = False
-        desc = f"Image {image!r} is tag-pinned; a tag move would be pulled on next build."
+        desc = f"Image {info.ref!r} is tag-pinned; a tag move would be pulled on next build."
     return Finding(
         check_id="CB-009",
         title="CodeBuild image not pinned by digest",

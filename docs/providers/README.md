@@ -11,12 +11,14 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 |-------------|--------|---------------------------------------------------------|--------------------------------|
 | `aws`       | stable | `boto3.Session` — live AWS account                      | [aws.md](aws.md)               |
 | `terraform` | stable | `TerraformContext` — parsed `terraform show -json` plan | [terraform.md](terraform.md)   |
+| `cloudformation` | stable | `CloudFormationContext` — parsed CFN template (YAML/JSON) | [cloudformation.md](cloudformation.md) |
 | `github`    | stable | `GitHubContext` — parsed GitHub Actions workflow YAML   | [github.md](github.md)         |
 | `gitlab`    | stable | `GitLabContext` — parsed `.gitlab-ci.yml`               | [gitlab.md](gitlab.md)         |
 | `bitbucket` | stable | `BitbucketContext` — parsed `bitbucket-pipelines.yml`   | [bitbucket.md](bitbucket.md)   |
 | `azure`     | stable | `AzureContext` — parsed `azure-pipelines.yml`           | [azure.md](azure.md)           |
 | `jenkins`   | stable | `JenkinsContext` — parsed `Jenkinsfile` text            | [jenkins.md](jenkins.md)       |
 | `circleci`  | stable | `CircleCIContext` — parsed `.circleci/config.yml`       | [circleci.md](circleci.md)     |
+| `cloudbuild`| stable | `CloudBuildContext` — parsed `cloudbuild.yaml`          | [cloudbuild.md](cloudbuild.md) |
 
 ## Adding a new provider
 

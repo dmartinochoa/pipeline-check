@@ -45,6 +45,9 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | GL-025 | Pipeline contains indicators of malicious activity | CRITICAL |
 | GL-026 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | GL-027 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| GL-028 | services: image not pinned | HIGH |
+| GL-029 | Manual deploy job defaults to allow_failure: true | MEDIUM |
+| GL-030 | trigger: include: pulls child pipeline without pinned ref | HIGH |
 
 ---
 
@@ -290,6 +293,33 @@ Complements GL-021 (missing lockfile flag). Git URL installs without a commit pi
 **Recommended action**
 
 Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## GL-028 — services: image not pinned
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+``services:`` entries (top-level or per-job) can be either a string (``redis:7``) or a dict (``{name: redis:7, alias: cache}``). Both forms are normalised via ``image_ref``-style extraction and evaluated with the same floating-tag regex GL-001 uses for ``image:``.
+
+**Recommended action**
+
+Pin every ``services:`` entry the same way ``image:`` is pinned — prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
+
+## GL-029 — Manual deploy job defaults to allow_failure: true
+**Severity:** MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL
+
+This is the most common GitLab deployment gotcha: a manual ``deploy`` job looks like a gate in the UI, but the pipeline reports success on the first run because the job is marked allow_failure by default. Downstream jobs (and the overall pipeline status) proceed as though the human approved.
+
+**Recommended action**
+
+Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab defaults ``allow_failure`` to *true* for manual jobs, which makes the pipeline report success whether or not the operator clicks — exactly the opposite of the gate you meant to add.
+
+## GL-030 — trigger: include: pulls child pipeline without pinned ref
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-TRUSTED-REG
+
+GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``) count as unpinned.
+
+**Recommended action**
+
+Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
 
 ---
 

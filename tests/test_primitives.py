@@ -13,6 +13,7 @@ from __future__ import annotations
 import pytest
 
 from pipeline_check.core.checks._primitives import (
+    container_image,
     lockfile_integrity,
     shell_eval,
 )
@@ -162,3 +163,58 @@ def test_lockfile_integrity_rule_registered_for_every_workflow_provider():
     for pkg, rule_id in expected.items():
         ids = {r.id for r, _ in discover_rules(pkg)}
         assert rule_id in ids, f"{rule_id} missing under {pkg}"
+
+
+# ──────────────────────────────────────────────────────────────────
+# container_image
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestContainerImageClassify:
+    def test_aws_managed_image_is_pinned(self):
+        info = container_image.classify("aws/codebuild/standard:7.0")
+        assert info.aws_managed is True
+        assert info.pinned is True
+        assert info.digest is None
+
+    def test_digest_pinned_image(self):
+        ref = "ghcr.io/corp/builder@sha256:" + "a" * 64
+        info = container_image.classify(ref)
+        assert info.pinned is True
+        assert info.digest == "a" * 64
+        assert info.trusted_registry is True
+
+    def test_tag_only_image_not_pinned(self):
+        info = container_image.classify("ghcr.io/corp/builder:v1")
+        assert info.pinned is False
+        assert info.digest is None
+        assert info.tag == "v1"
+        assert info.trusted_registry is True
+
+    def test_docker_hub_shortform_untrusted(self):
+        info = container_image.classify("python:3.11")
+        assert info.pinned is False
+        assert info.trusted_registry is False
+        assert info.registry == ""
+        assert info.tag == "3.11"
+
+    def test_public_ecr_trusted_but_not_pinned_without_digest(self):
+        info = container_image.classify("public.ecr.aws/amazonlinux/amazonlinux:2023")
+        assert info.trusted_registry is True
+        assert info.pinned is False
+        assert info.registry == "public.ecr.aws"
+
+    def test_registry_with_port_tag_split(self):
+        # ``registry:5000/repo:v1`` must not be misread as tag=``5000/repo:v1``.
+        info = container_image.classify("registry.internal:5000/team/app:v1")
+        assert info.tag == "v1"
+
+    def test_empty_ref_treated_as_pinned(self):
+        info = container_image.classify("")
+        assert info.ref == ""
+        assert info.pinned is True  # nothing for the rule to score against
+
+    def test_none_ref_accepted(self):
+        info = container_image.classify(None)
+        assert info.ref == ""
+        assert info.pinned is True

@@ -122,6 +122,14 @@ jobs:
               --service webapp \
               --force-new-deployment
 
+  # CC-029: machine executor image uses the rolling ``:current`` tag.
+  integration:
+    machine:
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run: echo "integration suite"
+
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.
 # CC-011: No store_test_results step in any job.
@@ -140,6 +148,11 @@ workflows:
             - test
       # CC-009: Deploy job without type: approval predecessor.
       # CC-013: Deploy job without filters.branches restriction.
+      # CC-030: Deploy carries a ``context:`` with production secrets
+      # but is reachable from every push (no branch filter, no
+      # approval predecessor).
       - deploy-production:
+          context: production-secrets
           requires:
             - build
+      - integration

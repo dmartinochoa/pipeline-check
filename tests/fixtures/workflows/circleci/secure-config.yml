@@ -81,6 +81,18 @@ jobs:
               --service webapp \
               --force-new-deployment
 
+  # CC-029: machine executor image pinned to a dated release tag.
+  integration:
+    machine:
+      image: ubuntu-2204:2024.05.1
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Integration suite
+          no_output_timeout: 15m
+          command: ./scripts/integration.sh
+
 workflows:
   build-test-deploy:
     jobs:
@@ -96,11 +108,16 @@ workflows:
           type: approval
           requires:
             - build
-      # CC-013: Deploy job with branch filter.
+      # CC-013 / CC-030: Deploy uses a production context but is
+      # gated by both a branch filter and an approval predecessor.
       - deploy-production:
+          context: production-secrets
           requires:
             - hold-for-approval
           filters:
             branches:
               only:
                 - main
+      - integration:
+          requires:
+            - test

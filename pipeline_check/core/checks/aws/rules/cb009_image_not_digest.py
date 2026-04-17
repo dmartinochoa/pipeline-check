@@ -1,8 +1,7 @@
 """CB-009 — CodeBuild environment image is tag-pinned, not digest-pinned."""
 from __future__ import annotations
 
-import re
-
+from ..._primitives.container_image import classify
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -26,22 +25,19 @@ RULE = Rule(
     ),
 )
 
-_AWS_MANAGED_RE = re.compile(r"^aws/codebuild/")
-_DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
-
-
 def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for project in catalog.codebuild_projects():
         name = project.get("name", "<unnamed>")
         image = (project.get("environment") or {}).get("image", "") or ""
-        if not image or _AWS_MANAGED_RE.match(image):
+        info = classify(image)
+        if not image or info.aws_managed:
             passed = True
             desc = (
                 f"CodeBuild project '{name}' uses an AWS-managed image "
                 f"({image or '<unset>'}); digest pinning is managed by AWS."
             )
-        elif _DIGEST_RE.search(image):
+        elif info.digest:
             passed = True
             desc = f"CodeBuild project '{name}' pins its image by sha256 digest."
         else:

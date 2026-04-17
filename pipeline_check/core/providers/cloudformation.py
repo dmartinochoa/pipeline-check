@@ -27,6 +27,7 @@ from ..checks.cloudformation.extended import ExtendedChecks
 from ..checks.cloudformation.iam import IAMChecks
 from ..checks.cloudformation.pbac import PBACChecks
 from ..checks.cloudformation.phase3 import Phase3Checks
+from ..checks.cloudformation.phase4 import Phase4Checks
 from ..checks.cloudformation.s3 import S3Checks
 from ..checks.cloudformation.services import ServiceChecks
 from ..inventory import Component
@@ -59,6 +60,7 @@ class CloudFormationProvider(BaseProvider):
             ExtendedChecks,
             ServiceChecks,
             Phase3Checks,
+            Phase4Checks,
         ]
 
     def inventory(self, context: CloudFormationContext) -> list[Component]:

@@ -145,7 +145,7 @@ class TestAutoDetect:
         # resolved path was actually loaded and scanned.
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 28)}
+        assert emitted == {f"GL-{i:03d}" for i in range(1, 31)}
 
     def test_bitbucket_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

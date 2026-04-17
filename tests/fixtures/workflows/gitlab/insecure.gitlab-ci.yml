@@ -8,6 +8,10 @@ include:
 
 image: python:latest
 
+# GL-028 — top-level services image not pinned.
+services:
+  - postgres:latest
+
 variables:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
   DATABASE_PASSWORD: hunter2
@@ -53,8 +57,22 @@ deploy-prod:
   # GL-014 — self-managed runner without ephemeral tag.
   tags:
     - custom-runner
+  # GL-029 — manual deploy without allow_failure:false silently
+  # defaults to allow_failure:true, so the pipeline reports success
+  # even when an operator never clicks the button.
+  when: manual
   script:
     - ./scripts/deploy.sh
+
+# GL-030 — job-level trigger:include: pulls a child pipeline from a
+# floating branch in another project (same class of risk as GL-005
+# but nested under trigger: rather than the top-level include:).
+trigger-child:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'platform/child-pipelines'
+        ref: main
 
 # GL-016 — curl piped to shell.
 # GL-017 — docker run --privileged.

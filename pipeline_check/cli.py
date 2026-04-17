@@ -358,7 +358,8 @@ def _install_completion_callback(ctx, _param, value):
         + ". Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
-        "--circleci-path); AWS scans the live account via boto3."
+        "--circleci-path, --cloudbuild-path); AWS scans the live "
+        "account via boto3."
     ),
 )
 @click.option(
@@ -463,6 +464,16 @@ def _install_completion_callback(ctx, _param, value):
         "containing one (required when --pipeline cloudformation). "
         "Auto-detects common names like template.yml, template.json, "
         "cloudformation.yml, cfn.yaml."
+    ),
+)
+@click.option(
+    "--cloudbuild-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a cloudbuild.yaml file or a directory containing one "
+        "(required when --pipeline cloudbuild). Auto-detects "
+        "./cloudbuild.yaml and ./cloudbuild.yml."
     ),
 )
 @click.option(
@@ -755,6 +766,7 @@ def scan(
     jenkinsfile_path: str | None,
     circleci_path: str | None,
     cfn_template: str | None,
+    cloudbuild_path: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1001,6 +1013,23 @@ def scan(
                     f"--cfn-template directory {cfn_template!r} contains no "
                     ".yml / .yaml / .json / .template files."
                 )
+    elif pipeline_lc == "cloudbuild":
+        if not cloudbuild_path:
+            for _candidate in ("cloudbuild.yaml", "cloudbuild.yml"):
+                if os.path.isfile(_candidate):
+                    cloudbuild_path = _candidate
+                    click.echo(
+                        f"[auto] using --cloudbuild-path {cloudbuild_path}",
+                        err=True,
+                    )
+                    break
+        if not cloudbuild_path:
+            raise click.UsageError(
+                "--cloudbuild-path PATH is required when --pipeline cloudbuild "
+                "(no cloudbuild.yaml/cloudbuild.yml found in the current directory)."
+            )
+        if not os.path.exists(cloudbuild_path):
+            raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1041,6 +1070,7 @@ def scan(
         jenkinsfile_path=jenkinsfile_path,
         circleci_path=circleci_path,
         cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
     )
 
     if verbose:

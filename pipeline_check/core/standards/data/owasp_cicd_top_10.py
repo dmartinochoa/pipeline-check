@@ -116,6 +116,14 @@ STANDARD = Standard(
         "EB-001":   ["CICD-SEC-10"],
         "EB-002":   ["CICD-SEC-8"],
         "CW-001":   ["CICD-SEC-10"],
+        # Terraform-native (no AWS runtime analogue)
+        "TF-001":   ["CICD-SEC-6"],
+        "TF-002":   ["CICD-SEC-6"],
+        "TF-003":   ["CICD-SEC-7"],
+        # CloudFormation-native (no AWS runtime analogue)
+        "CF-001":   ["CICD-SEC-6"],
+        "CF-002":   ["CICD-SEC-6"],
+        "CF-003":   ["CICD-SEC-7"],
         # PBAC
         "PBAC-001": ["CICD-SEC-5"],
         "PBAC-002": ["CICD-SEC-5"],
@@ -183,6 +191,9 @@ STANDARD = Standard(
         "GL-025":   ["CICD-SEC-4"],
         "GL-026":   ["CICD-SEC-4"],
         "GL-027":   ["CICD-SEC-3"],
+        "GL-028":   ["CICD-SEC-3"],
+        "GL-029":   ["CICD-SEC-1"],
+        "GL-030":   ["CICD-SEC-3"],
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3"],
         "BB-002":   ["CICD-SEC-4"],
@@ -301,5 +312,17 @@ STANDARD = Standard(
         "CC-026":   ["CICD-SEC-4"],
         "CC-027":   ["CICD-SEC-4"],
         "CC-028":   ["CICD-SEC-3"],
+        "CC-029":   ["CICD-SEC-3"],
+        "CC-030":   ["CICD-SEC-6"],
+        # Google Cloud Build
+        "GCB-001":  ["CICD-SEC-3"],
+        "GCB-002":  ["CICD-SEC-2"],
+        "GCB-003":  ["CICD-SEC-6"],
+        "GCB-004":  ["CICD-SEC-4"],
+        "GCB-005":  ["CICD-SEC-7"],
+        "GCB-006":  ["CICD-SEC-4"],
+        "GCB-007":  ["CICD-SEC-6"],
+        "GCB-008":  ["CICD-SEC-3"],
+        "GCB-009":  ["CICD-SEC-9"],
     },
 )

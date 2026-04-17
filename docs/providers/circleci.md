@@ -58,6 +58,8 @@ in other providers:
 | CC-026 | Config contains indicators of malicious activity | CRITICAL |
 | CC-027 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | CC-028 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| CC-029 | Machine executor image not pinned | HIGH |
+| CC-030 | Workflow job uses context without branch filter or approval gate | MEDIUM |
 
 ---
 
@@ -312,6 +314,24 @@ Complements CC-021 (missing lockfile flag). Git URL installs without a commit pi
 **Recommended action**
 
 Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## CC-029 — Machine executor image not pinned
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+CC-003 covers Docker images declared under ``docker:`` blocks — it does not reach the machine executor, where the image is on ``machine.image``. A rolling tag (``current``, ``edge``, ``default``) pulls a fresh image whenever CircleCI publishes one, reintroducing the same supply-chain risk Docker-image pinning is designed to eliminate.
+
+**Recommended action**
+
+Pin every ``machine.image`` to a dated release tag — ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
+
+## CC-030 — Workflow job uses context without branch filter or approval gate
+**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS, ESF-C-APPROVAL
+
+CircleCI contexts are the recommended way to store shared secrets, but binding a context to a job is only half of least-privilege — the other half is controlling *when* the binding activates. Unrestricted workflow entries with ``context:`` turn every branch push into a secret-read event.
+
+**Recommended action**
+
+Either add ``filters.branches.only: [<protected branches>]`` to restrict when the context-bound job runs, or require a ``type: approval`` job in ``requires:`` so a human gates the secret-carrying execution. Without either gate, every push to the project loads the context's secrets into an ephemeral runner where any compromised step can exfiltrate them.
 
 ---
 
