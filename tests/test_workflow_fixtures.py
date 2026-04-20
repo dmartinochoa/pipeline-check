@@ -228,7 +228,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 10)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 16)}
 
     def _scan(self, filename: str):
         ctx = CloudBuildContext.from_path(FIXTURES / "cloudbuild" / filename)
@@ -276,7 +276,7 @@ class TestCloudBuildFixtures:
      {f"CC-{i:03d}" for i in range(1, 31)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
-     {f"GCB-{i:03d}" for i in range(1, 10)}),
+     {f"GCB-{i:03d}" for i in range(1, 16)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

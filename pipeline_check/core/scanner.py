@@ -12,9 +12,11 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import chains as _chains
 from . import diff as _diff
 from . import providers as _providers
 from . import standards as _standards
+from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
 from .checks.base import Confidence, Finding, clear_blob_cache
@@ -56,10 +58,17 @@ class Scanner:
         profile: str | None = None,
         diff_base: str | None = None,
         secret_patterns: list[str] | tuple[str, ...] | None = None,
+        chains_enabled: bool = True,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
         self._log = log
+        self._chains_enabled = chains_enabled
+        #: Attack-chains detected by the most recent ``run()``. Populated
+        #: as a side effect — chains derive from findings 1:1 with the
+        #: run, so consumers always want both together. Empty list when
+        #: chains are disabled or no chains matched.
+        self.chains: list[Chain] = []
         provider = _providers.get(pipeline)
         if provider is None:
             available = ", ".join(_providers.available()) or "none registered"
@@ -195,6 +204,18 @@ class Scanner:
             # specific findings they want to preserve.
             if not f.confidence_locked:
                 f.confidence = confidence_for(f.check_id)
+
+        # Attack-chain correlation runs after confidence is finalised so
+        # ``min_confidence(triggers)`` reflects the post-demotion value.
+        # A chain rule that crashes never aborts the scan — chains are
+        # an additive signal, not a gate. ``getattr`` guards against
+        # callers that bypass ``__init__`` (older tests use ``__new__``
+        # + manual attribute setting); default-on matches the CLI
+        # default of chains enabled.
+        if getattr(self, "_chains_enabled", True):
+            self.chains = _chains.evaluate(findings)
+        else:
+            self.chains = []
 
         self.metadata.elapsed_seconds = time.monotonic() - t0
 

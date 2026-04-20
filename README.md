@@ -6,7 +6,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**277 checks** across **10 providers** -- mapped to **13 compliance standards** -- with **68 autofixers**
+**283 checks** across **10 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Providers](#supported-providers) |
@@ -53,7 +53,7 @@ standard boto3 credential chain.
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 28 checks (`ADO-001`--`028`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 30 checks (`CC-001`--`030`) |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 9 checks (`GCB-001`--`009`) |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 15 checks (`GCB-001`--`015`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -67,7 +67,7 @@ per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   295 checks across 9 providers
+  Config files   |  Scanner  |   283 checks across 10 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |

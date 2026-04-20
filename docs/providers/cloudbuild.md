@@ -46,6 +46,12 @@ analogue in other providers:
 | GCB-007 | availableSecrets references ``versions/latest`` | MEDIUM |
 | GCB-008 | No vulnerability scanning step in Cloud Build pipeline | MEDIUM |
 | GCB-009 | Artifacts not signed (no cosign / sigstore step) | MEDIUM |
+| GCB-010 | Remote script piped to shell interpreter | HIGH |
+| GCB-011 | TLS / certificate verification bypass | HIGH |
+| GCB-012 | Credential-shaped literal in pipeline body | CRITICAL |
+| GCB-013 | Package install bypasses registry integrity (git / path / tarball) | MEDIUM |
+| GCB-014 | Build logging disabled (options.logging: NONE) | HIGH |
+| GCB-015 | SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) | MEDIUM |
 
 ---
 
@@ -129,6 +135,60 @@ Silent-pass when the pipeline does not appear to produce artifacts (no ``docker 
 **Recommended action**
 
 Add a signing step before ``images:`` is resolved — for example, a step with ``name: gcr.io/projectsigstore/cosign`` that runs ``cosign sign --yes <registry>/<repo>@<digest>``. Pair with an attestation step (``cosign attest --predicate sbom.json --type cyclonedx``) so consumers can verify both the signature and the build provenance.
+
+## GCB-010 — Remote script piped to shell interpreter
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Detects ``curl | bash``, ``wget | sh``, ``bash -c "$(curl …)"``, inline ``python -c urllib.urlopen``, ``curl > x.sh && bash x.sh``, and PowerShell ``irm | iex`` idioms. Vendor-trusted hosts (rustup.rs, get.docker.com, sdk.cloud.google.com, …) are still flagged at HIGH but the hit carries a ``vendor_trusted`` marker so dashboards can stratify known-vendor installers from arbitrary attacker URLs.
+
+**Recommended action**
+
+Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository and invoke it from the checkout — removing the network fetch removes the attacker-controllable content entirely.
+
+## GCB-011 — TLS / certificate verification bypass
+**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+
+Covers ``curl -k`` / ``wget --no-check-certificate``, ``git config http.sslVerify false``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``npm config set strict-ssl false``, ``PYTHONHTTPSVERIFY=0``, ``GOINSECURE=``, ``helm --insecure-skip-tls-verify``, ``kubectl --insecure-skip-tls-verify``, and ``ssh -o StrictHostKeyChecking=no``.
+
+**Recommended action**
+
+Fix the underlying certificate issue — install the correct CA bundle into the step image, or point the tool at a mirror that presents a valid chain. Disabling verification trades a build error for a silent MITM window.
+
+## GCB-012 — Credential-shaped literal in pipeline body
+**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Complements GCB-003 (inline ``gcloud secrets versions access``) and GCB-007 (``/versions/latest`` alias). This rule runs the shared credential-shape catalogue against every string in the YAML — AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private key blocks, and any user-registered ``--secret-pattern`` regex. Known placeholders like ``EXAMPLE``/``CHANGEME`` are already filtered upstream so fixtures and docs don't false-match.
+
+**Recommended action**
+
+Rotate the exposed credential immediately. Move the value to ``availableSecrets.secretManager`` and reference it via ``secretEnv:`` so the plaintext never lands in the YAML or the build logs. For cloud access prefer workload-identity federation over long-lived keys.
+
+## GCB-013 — Package install bypasses registry integrity (git / path / tarball)
+**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+
+Complements GCB-012 (literal secrets) and GCB-010 (curl-pipe). Where those catch attacker content at fetch time, this rule catches installs that silently bypass the lockfile/registry integrity model — the build is technically reproducible but the source of truth is whatever the git ref / filesystem / tarball URL served most recently.
+
+**Recommended action**
+
+Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to Artifact Registry (or another internal registry) instead of installing from a filesystem path or tarball URL.
+
+## GCB-014 — Build logging disabled (options.logging: NONE)
+**Severity:** HIGH · OWASP CICD-SEC-10 · ESF ESF-O-AUDIT
+
+``options.logging`` defaults to ``CLOUD_LOGGING_ONLY`` when omitted, which passes. Only the explicit ``NONE`` value (case- insensitive) trips this rule. ``GCS_ONLY`` / ``LEGACY`` pass — they persist logs, just to a different destination.
+
+**Recommended action**
+
+Remove the ``logging: NONE`` override — or replace it with ``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY`` — so every step's stdout, stderr, and exit code is persisted. Loss of logs is a detection-and-response black hole; the storage cost is measured in cents.
+
+## GCB-015 — SBOM not produced (no CycloneDX / syft / Trivy-SBOM step)
+**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM
+
+Complements GCB-009 (signing) and GCB-008 (vuln scanning). Without an SBOM, downstream consumers cannot audit the exact dependency set shipped in a Cloud Build image, delaying vulnerability response when a transitive dep is disclosed. Pairs naturally with ``cosign attest --type cyclonedx`` in a follow-up step.
+
+**Recommended action**
+
+Add an SBOM generation step — ``syft <image> -o cyclonedx-json``, ``trivy image --format cyclonedx`` — and publish the resulting document alongside the image (typically via a cosign attestation so the SBOM travels with the artifact).
 
 ---
 

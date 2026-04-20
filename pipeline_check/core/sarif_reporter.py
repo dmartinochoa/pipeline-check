@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 
+from .chains import Chain
 from .checks.base import Confidence, Finding, Severity
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
@@ -65,6 +66,7 @@ def report_sarif(
     findings: list[Finding],
     score_result: dict,
     tool_version: str = "",
+    chains: list[Chain] | None = None,
 ) -> str:
     """Serialise findings to a SARIF 2.1.0 JSON string.
 
@@ -80,11 +82,26 @@ def report_sarif(
     tool_version:
         Version string to embed as ``driver.version``. Pass
         ``pipeline_check.__version__`` from the CLI.
+    chains:
+        Optional attack chains from ``Scanner.chains``. Each chain
+        becomes its own SARIF rule + result so GitHub Code Scanning
+        surfaces it as a top-level alert. Triggering check IDs are
+        carried in ``properties.triggering_checks`` for programmatic
+        consumers; MITRE ATT&CK techniques are encoded as ``tags``
+        prefixed with ``mitre/``.
     """
     rules = _build_rules(findings)
     rule_index = {rule["id"]: idx for idx, rule in enumerate(rules)}
 
     results = [_finding_to_result(f, rule_index) for f in findings if not f.passed]
+
+    if chains:
+        chain_rules = _build_chain_rules(chains)
+        for cr in chain_rules:
+            rule_index[cr["id"]] = len(rules)
+            rules.append(cr)
+        for chain in chains:
+            results.append(_chain_to_result(chain, rule_index))
 
     payload = {
         "$schema": _SARIF_SCHEMA,
@@ -107,6 +124,83 @@ def report_sarif(
         ],
     }
     return json.dumps(payload, indent=2)
+
+
+def _build_chain_rules(chains: list[Chain]) -> list[dict]:
+    """Emit one SARIF rule per distinct chain_id."""
+    seen: dict[str, dict] = {}
+    for c in chains:
+        if c.chain_id in seen:
+            continue
+        level, score = _LEVEL_MAP.get(c.severity, ("error", "8.0"))
+        # ``attack-chain`` tag distinguishes correlated multi-finding
+        # alerts from individual rule violations in the GitHub UI.
+        # MITRE technique IDs are tagged as ``mitre/T<NNNN>`` so the
+        # 20-tag cap leaves room for the prefix without truncation.
+        tags = ["security", "attack-chain"]
+        for tech in c.mitre_attack[:15]:
+            tags.append(f"mitre/{tech}")
+        help_md = (
+            f"**Summary**\n\n{c.summary}\n\n---\n\n"
+            f"**Narrative**\n\n{c.narrative}\n\n---\n\n"
+            f"**Recommendation**\n\n{c.recommendation}"
+        )
+        seen[c.chain_id] = {
+            "id": c.chain_id,
+            "name": "AttackChain" + c.chain_id.replace("-", ""),
+            "shortDescription": {"text": c.title},
+            "fullDescription": {"text": c.summary},
+            "help": {"text": c.recommendation, "markdown": help_md},
+            "defaultConfiguration": {"level": level},
+            "properties": {
+                "security-severity": score,
+                "tags": tags[:20],
+                "kill_chain_phase": c.kill_chain_phase,
+                "mitre_attack": list(c.mitre_attack),
+            },
+        }
+    return list(seen.values())
+
+
+def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict:
+    """Encode an attack-chain instance as a SARIF result.
+
+    Locations cover every resource the chain spans (workflow files,
+    AWS ARNs). Triggering check IDs and finding contexts ride in
+    ``properties`` so dashboards can drill from chain → constituent
+    findings without re-running the scanner.
+    """
+    level, _ = _LEVEL_MAP.get(chain.severity, ("error", "8.0"))
+    locations = []
+    for res in chain.resources or [""]:
+        loc: dict = {
+            "physicalLocation": {
+                "artifactLocation": {"uri": _artifact_uri(res or "unknown")}
+            },
+            "logicalLocations": [{"name": res or "unknown", "kind": "resource"}],
+        }
+        locations.append(loc)
+    return {
+        "ruleId": chain.chain_id,
+        "ruleIndex": rule_index.get(chain.chain_id, 0),
+        "level": level,
+        "rank": _CONFIDENCE_RANK.get(chain.confidence, 100.0),
+        "message": {"text": chain.summary, "markdown": chain.narrative},
+        "locations": locations,
+        "properties": {
+            "severity": chain.severity.value,
+            "confidence": chain.confidence.value,
+            "kind": "attack-chain",
+            "triggering_checks": list(chain.triggering_check_ids),
+            "triggering_findings": [
+                {"check_id": f.check_id, "resource": f.resource}
+                for f in chain.triggering_findings
+            ],
+            "mitre_attack": list(chain.mitre_attack),
+            "kill_chain_phase": chain.kill_chain_phase,
+            "references": list(chain.references),
+        },
+    }
 
 
 # ────────────────────────────────────────────────────────────────────────────
