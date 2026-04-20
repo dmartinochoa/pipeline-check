@@ -46,10 +46,10 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import yaml
 
+from ._yaml_strict import DupKeyLoader as _DupKeyIgnoreLoader
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
 
@@ -206,31 +206,6 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
             rules.append(IgnoreRule(check_id=line.strip().upper(),
                                     resource=None))
     return rules
-
-
-class _DupKeyIgnoreLoader(yaml.SafeLoader):
-    """SafeLoader for ignore files that rejects duplicate mapping keys.
-
-    A YAML ignore-file entry with a duplicated field (e.g. two
-    ``resource:`` keys under one rule) silently keeps only the last
-    value under pyyaml's default behaviour. For a suppression file
-    that's a trap — half the user's intent is discarded invisibly.
-    """
-
-    def construct_mapping(self, node, deep=False):  # type: ignore[override]
-        mapping: dict[Any, Any] = {}
-        for key_node, value_node in node.value:
-            key = self.construct_object(key_node, deep=deep)
-            if key in mapping:
-                mark = key_node.start_mark
-                raise yaml.constructor.ConstructorError(
-                    None, None,
-                    f"duplicate key {key!r} at line {mark.line + 1}, "
-                    f"column {mark.column + 1}",
-                    mark,
-                )
-            mapping[key] = self.construct_object(value_node, deep=deep)
-        return mapping
 
 
 def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:

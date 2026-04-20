@@ -21,7 +21,7 @@ def _f(check_id="GHA-001", passed=False, severity=Severity.HIGH, **kw):
 
 
 def _score():
-    return {"grade": "C", "total": 10, "failed": 1, "passed": 1}
+    return {"grade": "C", "score": 65, "summary": {}}
 
 
 class TestShape:
@@ -30,11 +30,19 @@ class TestShape:
         assert md.splitlines()[0] == "# Pipeline Security Report"
 
     def test_summary_line_includes_grade_and_counts(self):
-        md = report_markdown([_f()], {"grade": "B", "total": 45, "failed": 3, "passed": 7})
+        findings = [
+            _f(check_id="GHA-001", passed=False),
+            _f(check_id="GHA-002", passed=False),
+            _f(check_id="GHA-003", passed=False),
+            _f(check_id="GHA-004", passed=True),
+            _f(check_id="GHA-005", passed=True),
+        ]
+        md = report_markdown(findings, {"grade": "B", "score": 85, "summary": {}})
         assert "**Grade:**" in md
         assert " B " in md
+        assert "**Score:** 85/100" in md
         assert "**Failed:** 3" in md
-        assert "**Passed:** 7" in md
+        assert "**Passed:** 2" in md
 
     def test_failures_section_renders_table(self):
         md = report_markdown([_f(severity=Severity.CRITICAL)], _score())
