@@ -11,7 +11,6 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 [Quick start](#quick-start) |
 [Providers](#supported-providers) |
 [How it works](#how-it-works) |
-[CI integration](#ci-integration) |
 [Compliance](#compliance-standards) |
 [Docs](docs/)
 
@@ -115,50 +114,6 @@ pipeline_check --output json                # machine-readable JSON
 pipeline_check --output html --output-file report.html  # self-contained HTML
 pipeline_check --output sarif --output-file scan.sarif  # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output both                # terminal on stderr + JSON on stdout
-```
-
----
-
-## CI integration
-
-### GitHub Actions
-
-```yaml
-- name: Scan CI/CD security posture
-  run: |
-    pip install pipeline-check
-    pipeline_check --pipeline github \
-      --output sarif --output-file pipeline-check.sarif \
-      --fail-on HIGH
-
-- name: Upload SARIF
-  if: always()
-  uses: github/codeql-action/upload-sarif@v3
-  with:
-    sarif_file: pipeline-check.sarif
-```
-
-### GitLab CI
-
-```yaml
-security-scan:
-  script:
-    - pip install pipeline-check
-    - pipeline_check --pipeline gitlab --fail-on HIGH --output json > report.json
-  artifacts:
-    reports:
-      sast: report.json
-```
-
-### Any CI system
-
-```bash
-# Gate on grade
-pipeline_check --pipeline github --min-grade B
-
-# Gate on new findings only (baseline diff)
-pipeline_check --pipeline github --fail-on HIGH \
-  --baseline-from-git origin/main:baseline.json
 ```
 
 Exit codes: `0` = pass, `1` = gate failed, `2` = scanner error, `3` = config error.
