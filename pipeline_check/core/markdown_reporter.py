@@ -129,7 +129,7 @@ def report_markdown(
                 lines.append(f"> {line}" if line.strip() else ">")
             lines.append("")
             lines.append(
-                f"**Triggering checks:** "
+                "**Triggering checks:** "
                 + " ".join(f"`{cid}`" for cid in c.triggering_check_ids)
             )
             if c.mitre_attack:

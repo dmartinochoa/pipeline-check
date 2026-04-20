@@ -6,13 +6,13 @@ from typing import Any
 import yaml as _yaml
 
 from ..standards.base import ControlRef
-from .blob import _BLOB_CACHE, blob_lower, clear_blob_cache, walk_strings
+from .blob import blob_lower, clear_blob_cache, walk_strings
+from .tokens import _ARTIFACT_TOKENS as _ARTIFACT_TOKENS
 from .tokens import (
     PROVENANCE_TOKENS,
     SBOM_DIRECT_TOKENS,
     SIGN_TOKENS,
     VULN_SCAN_TOKENS,
-    _ARTIFACT_TOKENS,
     has_provenance,
     has_sbom,
     has_signing,

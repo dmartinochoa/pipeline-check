@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from ..._primitives.deploy_names import DEPLOY_RE
+from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
 
 # Orb pinning — semver or SHA is considered pinned.
 # Floating: ``circleci/node@volatile``, ``circleci/node@1``.

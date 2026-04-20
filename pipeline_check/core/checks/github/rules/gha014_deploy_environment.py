@@ -4,8 +4,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
 from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 

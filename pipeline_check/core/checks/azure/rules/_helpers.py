@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import re
 
-from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
+from ..._primitives.secret_shapes import AWS_KEY_RE as AWS_KEY_RE
+from ..._primitives.secret_shapes import SECRETISH_KEY_RE as SECRETISH_KEY_RE
 
 TASK_PIN_RE = re.compile(r"@\d+\.\d+(?:\.\d+)?(?:[-.][\w\d]+)*$")
 

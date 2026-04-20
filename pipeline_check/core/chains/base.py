@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ..checks.base import Confidence, Finding, Severity
 

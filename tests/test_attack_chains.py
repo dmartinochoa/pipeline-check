@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import json
 
-import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import scan
 from pipeline_check.core import chains as chains_pkg
 from pipeline_check.core.chains.base import (
     Chain,
-    ChainRule,
     failing,
     group_by_resource,
     has_failing,
@@ -19,7 +17,6 @@ from pipeline_check.core.chains.base import (
 )
 from pipeline_check.core.checks.base import Confidence, Finding, Severity
 from pipeline_check.core.gate import GateConfig, evaluate_gate
-
 
 # ── Synthetic finding factory ─────────────────────────────────────────
 

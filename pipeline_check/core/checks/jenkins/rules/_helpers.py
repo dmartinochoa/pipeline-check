@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from ..._primitives.deploy_names import DEPLOY_RE
+from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
 
 # ── Groovy comment stripping ──────────────────────────────────────────
 # YAML providers benefit from yaml.safe_load stripping comments before

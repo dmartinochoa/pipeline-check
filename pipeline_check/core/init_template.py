@@ -13,7 +13,10 @@ def render(detected_pipeline: str | None = None) -> str:
     pipeline_line = (
         f"pipeline: {detected_pipeline}"
         if detected_pipeline
-        else "# pipeline: github    # aws | github | gitlab | bitbucket | azure | jenkins | circleci | cloudbuild | cloudformation | terraform"
+        else (
+            "# pipeline: github    # aws | github | gitlab | bitbucket | azure"
+            " | jenkins | circleci | cloudbuild | cloudformation | terraform"
+        )
     )
     return f"""# .pipeline-check.yml — configuration for pipeline_check
 # Keys mirror CLI flags (hyphens -> underscores). Env vars

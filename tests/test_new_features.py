@@ -131,6 +131,7 @@ def test_baseline_and_baseline_from_git_mutually_exclusive(tmp_path, monkeypatch
     drop the git-ref lookup (gate evaluates file first). Reject the
     combination at the CLI layer so the user sees their mistake."""
     from click.testing import CliRunner
+
     from pipeline_check.cli import scan
     monkeypatch.chdir(tmp_path)
     baseline_file = tmp_path / "baseline.json"

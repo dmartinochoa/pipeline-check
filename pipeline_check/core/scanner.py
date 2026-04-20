@@ -19,7 +19,7 @@ from . import standards as _standards
 from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
-from .checks.base import Confidence, Finding, clear_blob_cache
+from .checks.base import Finding, clear_blob_cache
 from .inventory import Component
 
 
