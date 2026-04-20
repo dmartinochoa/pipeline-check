@@ -13,14 +13,14 @@ can evidence controls in multiple standards at once.
 | `cis_supply_chain`     | CIS Software Supply Chain Security Guide   | 1.0     | [cis_supply_chain.md](cis_supply_chain.md) |
 | `nist_ssdf`            | NIST Secure Software Development Framework | SP 800-218 v1.1 | [nist_ssdf.md](nist_ssdf.md) |
 | `nist_800_53`          | NIST SP 800-53 Rev. 5 (CI/CD subset)       | Rev. 5  | [nist_800_53.md](nist_800_53.md) |
-| `nist_csf_2`           | NIST Cybersecurity Framework 2.0           | 2.0     | _see module docstring_ |
-| `nist_800_190`         | NIST SP 800-190 Application Container Security | 1.0 (Sep 2017) | _see module docstring_ |
+| `nist_csf_2`           | NIST Cybersecurity Framework 2.0           | 2.0     | [nist_csf_2.md](nist_csf_2.md) |
+| `nist_800_190`         | NIST SP 800-190 Application Container Security | 1.0 (Sep 2017) | [nist_800_190.md](nist_800_190.md) |
 | `slsa`                 | SLSA Build Track                           | 1.0     | [slsa.md](slsa.md) |
 | `pci_dss_v4`           | PCI DSS v4.0 (CI/CD subset)                | 4.0     | [pci_dss_v4.md](pci_dss_v4.md) |
 | `esf_supply_chain`     | NSA/CISA ESF — Securing the Software Supply Chain | 2022 | [esf_supply_chain.md](esf_supply_chain.md) |
-| `openssf_scorecard`    | OpenSSF Scorecard                          | 5       | _see module docstring_ |
-| `s2c2f`                | Secure Supply Chain Consumption Framework  | 2024-05 | _see module docstring_ |
-| `soc2`                 | SOC 2 Trust Services Criteria              | 2017 (revised 2022) | _see module docstring_ |
+| `openssf_scorecard`    | OpenSSF Scorecard                          | 5       | [openssf_scorecard.md](openssf_scorecard.md) |
+| `s2c2f`                | Secure Supply Chain Consumption Framework  | 2024-05 | [s2c2f.md](s2c2f.md) |
+| `soc2`                 | SOC 2 Trust Services Criteria              | 2017 (revised 2022) | [soc2.md](soc2.md) |
 
 List them at runtime with:
 
@@ -76,7 +76,8 @@ automatically.
   itself knowing about any standard.
 - **Easy to audit:** the mapping table lives in one file, not scattered
   across Finding constructor calls.
-- **Easy to extend:** adding SOC 2, ISO 27001, or a bespoke internal
-  policy is one new Python module — the eight registered standards today
-  (OWASP, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, SLSA, PCI
-  DSS, NSA/CISA ESF) are all built this way.
+- **Easy to extend:** adding ISO 27001 or a bespoke internal policy is
+  one new Python module — the thirteen registered standards today
+  (OWASP CI/CD, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, NIST
+  800-190, NIST CSF 2.0, SLSA, PCI DSS v4, NSA/CISA ESF, OpenSSF
+  Scorecard, S2C2F, SOC 2) are all built this way.
