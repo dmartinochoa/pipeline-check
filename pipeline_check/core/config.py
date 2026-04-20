@@ -37,36 +37,7 @@ except ImportError:  # pragma: no cover
 
 import yaml
 
-
-class _DupKeyLoader(yaml.SafeLoader):
-    """SafeLoader that rejects duplicate mapping keys.
-
-    pyyaml's default behaviour is to silently keep the last value when
-    a mapping has the same key twice. For user config files that's a
-    trap — a duplicated ``pipeline:`` or ``gate:`` key hides half the
-    declared settings without warning. We accept the extra strictness
-    at config-load time so typos surface immediately.
-    """
-
-    def construct_mapping(self, node, deep=False):  # type: ignore[override]
-        mapping: dict[Any, Any] = {}
-        for key_node, value_node in node.value:
-            key = self.construct_object(key_node, deep=deep)
-            if key in mapping:
-                mark = key_node.start_mark
-                raise yaml.constructor.ConstructorError(
-                    None, None,
-                    f"duplicate key {key!r} at line {mark.line + 1}, "
-                    f"column {mark.column + 1}",
-                    mark,
-                )
-            mapping[key] = self.construct_object(value_node, deep=deep)
-        return mapping
-
-
-def _safe_load_strict(text: str) -> Any:
-    """YAML load that raises on duplicate mapping keys."""
-    return yaml.load(text, Loader=_DupKeyLoader)
+from ._yaml_strict import safe_load_strict as _safe_load_strict  # noqa: F401
 
 
 # Keys that are allowed in a config file (and map directly to click option names).

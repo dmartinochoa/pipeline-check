@@ -23,7 +23,7 @@ def _f(check_id="GHA-001", passed=False, severity=Severity.HIGH, **kw):
 
 
 def _score():
-    return {"grade": "C", "total": 10, "failed": 3, "passed": 7}
+    return {"grade": "C", "score": 65, "summary": {}}
 
 
 class TestShape:
