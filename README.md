@@ -22,7 +22,7 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 ## Quick start
 
 ```bash
-pip install -e .                  # Python >= 3.10
+pip install pipeline-check          # Python >= 3.10
 
 pipeline_check                      # auto-detects the provider from cwd
 pipeline_check init                 # scaffold .pipeline-check.yml
