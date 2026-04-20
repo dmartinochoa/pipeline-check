@@ -5,6 +5,32 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-04-20
+
+### Added
+
+- **Attack chains engine** — new `pipeline_check.core.chains` module with
+  eight rules (`AC-001`..`AC-008`) that correlate individual findings into
+  higher-signal attack paths (fork-PR credential theft, injection to
+  unprotected deploy, unpinned action to credentials, self-hosted runner
+  foothold, unsigned artifact to prod, cache poisoning, IAM privesc via
+  CodeBuild, dependency confusion window).
+- **Google Cloud Build expansion** — six additional checks (`GCB-010`..
+  `GCB-015`) covering remote-script execution, TLS bypass, literal secrets,
+  package source integrity, logging-disabled, and SBOM generation.
+- **SARIF reporter** (`--output sarif`) — emits SARIF 2.1.0 for GitHub
+  Code Scanning and other SARIF-aware tools.
+- **`pipeline_check init`** — scaffolds a starter `.pipeline-check.yml`
+  config with sensible defaults.
+- **CodeQL workflow** and CI badges in the README.
+
+### Changed
+
+- `core/checks/base.py` refactored into smaller modules (`blob.py`,
+  `tokens.py`, `_primitives/`) to reduce duplication across providers.
+- `release.yml` now verifies the tag matches the built wheel version
+  before uploading artifacts, failing early on version drift.
+
 ## [0.2.0] - 2026-04-17
 
 First public release. Expands provider and standard coverage, adds two new
