@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pipeline_check = "pipeline_check.cli:scan"
+pipeline_check = "pipeline_check.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/dmartinochoa/pipeline-check"

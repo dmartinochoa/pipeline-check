@@ -3,10 +3,20 @@
 Usage
 -----
     pipeline_check [OPTIONS]
+    pipeline_check init [--path PATH] [--force]
 
 Examples
 --------
-    # Scan a live AWS account (default provider).
+    # Auto-detect the provider from cwd (default).
+    pipeline_check
+
+    # Scaffold a starter config file pre-filled from cwd.
+    pipeline_check init
+
+    # Short flags work for the most-typed options.
+    pipeline_check -p github -o json -c GHA-001 -f HIGH
+
+    # Scan a live AWS account.
     pipeline_check --pipeline aws --region eu-west-1 --output both --severity-threshold HIGH
 
     # Run specific checks only.
@@ -14,11 +24,6 @@ Examples
 
     # Scan a Terraform plan — no AWS credentials needed.
     pipeline_check --pipeline terraform --tf-plan plan.json
-
-    # Scan CI YAML on disk — paths auto-detected from cwd when omitted.
-    pipeline_check --pipeline github
-    pipeline_check --pipeline gitlab
-    pipeline_check --pipeline bitbucket
 
     # Annotate findings with a single standard, or list registered standards.
     pipeline_check --standard owasp_cicd_top_10
@@ -54,7 +59,12 @@ from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
-from .core.reporter import report_inventory_terminal, report_json, report_terminal
+from .core.reporter import (
+    report_chains_terminal,
+    report_inventory_terminal,
+    report_json,
+    report_terminal,
+)
 from .core.sarif_reporter import report_sarif
 from .core.scanner import Scanner
 from .core.scorer import score
@@ -86,6 +96,101 @@ def _tolerate_unencodable_stdio() -> None:
 
 
 _tolerate_unencodable_stdio()
+
+
+class _GroupedCommand(click.Command):
+    """Click command that renders ``--help`` options under named sections.
+
+    Keeps option declarations unchanged — the section→flag mapping lives
+    here so adding an option only forces a mapping edit when the author
+    wants it in a specific section. Unmapped options fall into
+    ``Other`` so nothing silently vanishes from help.
+    """
+
+    _SECTIONS: tuple[tuple[str, frozenset[str]], ...] = (
+        ("Target", frozenset({
+            "--pipeline", "--target", "--region", "--profile",
+            "--tf-plan", "--gha-path", "--gitlab-path",
+            "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
+            "--circleci-path", "--cfn-template", "--cloudbuild-path",
+        })),
+        ("Filtering", frozenset({
+            "--checks", "--severity-threshold", "--min-confidence",
+            "--secret-pattern",
+        })),
+        ("Output", frozenset({
+            "--output", "--output-file", "--standard",
+            "--inventory", "--inventory-type", "--inventory-only",
+        })),
+        ("Gate", frozenset({
+            "--fail-on", "--min-grade", "--max-failures",
+            "--fail-on-check", "--baseline", "--baseline-from-git",
+            "--diff-base", "--ignore-file",
+            "--fail-on-chain", "--fail-on-any-chain",
+        })),
+        ("Attack chains", frozenset({
+            "--no-chains", "--list-chains", "--explain-chain",
+        })),
+        ("Autofix", frozenset({"--fix", "--apply"})),
+        ("Info & Help", frozenset({
+            "--list-checks", "--list-standards", "--standard-report",
+            "--explain", "--man", "--config-check",
+            "--install-completion", "--config", "--version",
+            "--help", "--verbose", "--quiet",
+        })),
+    )
+
+    def format_options(self, ctx, formatter):  # type: ignore[override]
+        bucketed: dict[str, list[tuple[str, str]]] = {}
+        section_order = [name for name, _ in self._SECTIONS] + ["Other"]
+        for param in self.get_params(ctx):
+            record = param.get_help_record(ctx)
+            if record is None:
+                continue
+            opts = list(getattr(param, "opts", []))
+            opts.extend(getattr(param, "secondary_opts", []))
+            section = "Other"
+            for name, flags in self._SECTIONS:
+                if any(o in flags for o in opts):
+                    section = name
+                    break
+            bucketed.setdefault(section, []).append(record)
+        for name in section_order:
+            rows = bucketed.get(name)
+            if not rows:
+                continue
+            with formatter.section(name):
+                formatter.write_dl(rows)
+
+
+class _FuzzyChoice(click.Choice):
+    """Click Choice that appends 'Did you mean: X?' on a bad value.
+
+    Mirrors the suggestion style used by ``--explain`` for unknown check
+    IDs (see ``core/explain.py``). Case-insensitive match is up to the
+    base class via ``case_sensitive=False``.
+    """
+
+    def convert(self, value, param, ctx):  # type: ignore[override]
+        try:
+            return super().convert(value, param, ctx)
+        except click.exceptions.BadParameter:
+            import difflib
+            suggestions = difflib.get_close_matches(
+                str(value).lower(),
+                [c.lower() for c in self.choices],
+                n=3,
+            )
+            hint = (
+                f" Did you mean: {', '.join(suggestions)}?"
+                if suggestions else ""
+            )
+            self.fail(
+                f"{value!r} is not one of {', '.join(self.choices)}.{hint}",
+                param,
+                ctx,
+            )
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Shell completion helpers
@@ -216,6 +321,36 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
 
 
+def _detect_pipeline_from_cwd() -> str | None:
+    """Return the best-guess pipeline name based on files present at cwd.
+
+    First match wins. Returns None when nothing recognisable is found;
+    the caller then falls back to ``aws`` (preserves prior default).
+    """
+    if os.path.isdir(".github/workflows"):
+        return "github"
+    if os.path.isfile(".gitlab-ci.yml"):
+        return "gitlab"
+    if os.path.isfile(".circleci/config.yml"):
+        return "circleci"
+    if os.path.isfile("Jenkinsfile"):
+        return "jenkins"
+    if os.path.isfile("azure-pipelines.yml"):
+        return "azure"
+    if os.path.isfile("bitbucket-pipelines.yml"):
+        return "bitbucket"
+    if os.path.isfile("cloudbuild.yaml") or os.path.isfile("cloudbuild.yml"):
+        return "cloudbuild"
+    for _cfn in (
+        "template.yml", "template.yaml", "template.json",
+        "cloudformation.yml", "cloudformation.yaml",
+        "cfn.yml", "cfn.yaml",
+    ):
+        if os.path.isfile(_cfn):
+            return "cloudformation"
+    return None
+
+
 _CHECK_IDS_CACHE: list[str] | None = None
 
 
@@ -274,8 +409,9 @@ _SEVERITY_CHOICES = [
 
 # Derived from the provider registry — no manual list to maintain.
 # Registering a new provider in core/providers/__init__.py automatically
-# makes it available here.
-_PIPELINE_CHOICES = _providers.available()
+# makes it available here. ``auto`` is a CLI-only sentinel that picks
+# a provider by looking at cwd; it is resolved before Scanner runs.
+_PIPELINE_CHOICES = ["auto", *_providers.available()]
 
 
 def _load_config_callback(ctx: click.Context, _param, value):
@@ -353,7 +489,10 @@ def _install_completion_callback(ctx, _param, value):
     ctx.exit(0)
 
 
-@click.command()
+@click.command(cls=_GroupedCommand, epilog=(
+    "Subcommands:\n"
+    "  init    Scaffold a starter .pipeline-check.yml in the current directory."
+))
 @click.version_option(version=__version__, prog_name="pipeline_check")
 @click.option(
     "--install-completion",
@@ -379,13 +518,17 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--pipeline",
-    type=click.Choice(_PIPELINE_CHOICES, case_sensitive=False),
-    default="aws",
+    "-p",
+    type=_FuzzyChoice(_PIPELINE_CHOICES, case_sensitive=False),
+    default="auto",
     show_default=True,
     help=(
         "Pipeline environment to scan. One of: "
         + ", ".join(_PIPELINE_CHOICES)
-        + ". Each provider has a companion path flag "
+        + ". ``auto`` (default) picks a provider by scanning cwd for a "
+        "recognised CI file (``.github/workflows``, ``.gitlab-ci.yml``, "
+        "``Jenkinsfile``, etc.) and falls back to ``aws`` when nothing "
+        "matches. Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path); AWS scans the live "
@@ -403,6 +546,7 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--checks",
+    "-c",
     multiple=True,
     metavar="CHECK_ID",
     shell_complete=_complete_check_ids,
@@ -413,6 +557,7 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--region",
+    "-r",
     default="us-east-1",
     show_default=True,
     help="Region to scan (AWS only).",
@@ -547,6 +692,7 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--output",
+    "-o",
     type=click.Choice(
         ["terminal", "json", "html", "sarif", "junit", "markdown", "both"],
         case_sensitive=False,
@@ -557,6 +703,7 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--output-file",
+    "-O",
     default=None,
     metavar="PATH",
     help=(
@@ -662,6 +809,7 @@ def _install_completion_callback(ctx, _param, value):
 )
 @click.option(
     "--fail-on",
+    "-f",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default=None,
     help=(
@@ -789,6 +937,60 @@ def _install_completion_callback(ctx, _param, value):
         "codes without needing human-readable output."
     ),
 )
+@click.option(
+    "--no-chains",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable attack-chain correlation. By default the scanner "
+        "correlates findings into multi-step attack narratives mapped "
+        "to MITRE ATT&CK (e.g. AC-001 fork-PR credential theft). "
+        "Disable when a downstream consumer doesn't understand the "
+        "``chains`` JSON field, or to shave a few ms off a CI hot path."
+    ),
+)
+@click.option(
+    "--list-chains",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every registered attack chain (one per line: "
+        "``ID  SEVERITY  TITLE``) and exit. No scan is performed."
+    ),
+)
+@click.option(
+    "--explain-chain",
+    "explain_chain_id",
+    default=None,
+    metavar="CHAIN_ID",
+    help=(
+        "Print the full reference for one attack chain (summary, "
+        "narrative template, MITRE ATT&CK techniques, kill-chain "
+        "phase, references) and exit. Takes any ID from --list-chains."
+    ),
+)
+@click.option(
+    "--fail-on-chain",
+    "fail_on_chain_ids",
+    multiple=True,
+    metavar="CHAIN_ID",
+    help=(
+        "Fail the gate if the named attack chain matched. Repeat for "
+        "multiple (e.g. --fail-on-chain AC-001 --fail-on-chain AC-007). "
+        "Chain matches bypass baseline/ignore filtering — a correlated "
+        "attack path is intrinsically a new finding."
+    ),
+)
+@click.option(
+    "--fail-on-any-chain",
+    is_flag=True,
+    default=False,
+    help=(
+        "Fail the gate if any attack chain matched. Use as a blanket "
+        "'no correlated attack paths in this branch' guard for "
+        "high-trust repositories."
+    ),
+)
 def scan(
     pipeline: str,
     target: str | None,
@@ -831,6 +1033,11 @@ def scan(
     ignore_file: str | None,
     verbose: bool,
     quiet: bool,
+    no_chains: bool,
+    list_chains: bool,
+    explain_chain_id: str | None,
+    fail_on_chain_ids: tuple[str, ...],
+    fail_on_any_chain: bool,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
@@ -866,6 +1073,53 @@ def scan(
 
     if list_checks:
         _list_checks_for_pipeline(pipeline.lower())
+        return
+
+    if list_chains:
+        from .core import chains as _chains_pkg
+        rules = _chains_pkg.list_rules()
+        if not rules:
+            click.echo("[list-chains] no attack chains registered.", err=True)
+            sys.exit(3)
+        id_w = max(len(r.id) for r in rules)
+        sev_w = max(len(r.severity.value) for r in rules)
+        for r in sorted(rules, key=lambda x: x.id):
+            click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
+        return
+
+    if explain_chain_id:
+        from .core import chains as _chains_pkg
+        rules = {r.id.upper(): r for r in _chains_pkg.list_rules()}
+        target_id = explain_chain_id.upper()
+        rule = rules.get(target_id)
+        if rule is None:
+            import difflib
+            suggestions = difflib.get_close_matches(target_id, list(rules), n=3)
+            hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+            click.echo(
+                f"[explain-chain] unknown chain {explain_chain_id!r}.{hint}",
+                err=True,
+            )
+            sys.exit(3)
+        click.echo(f"{rule.id} — {rule.title}")
+        click.echo(f"  Severity: {rule.severity.value}")
+        if rule.providers:
+            click.echo(f"  Providers: {', '.join(rule.providers)}")
+        if rule.kill_chain_phase:
+            click.echo(f"  Kill chain: {rule.kill_chain_phase}")
+        if rule.mitre_attack:
+            click.echo(f"  MITRE ATT&CK: {', '.join(rule.mitre_attack)}")
+        click.echo("")
+        click.echo("Summary:")
+        click.echo(f"  {rule.summary}")
+        click.echo("")
+        click.echo("Recommendation:")
+        click.echo(f"  {rule.recommendation}")
+        if rule.references:
+            click.echo("")
+            click.echo("References:")
+            for ref in rule.references:
+                click.echo(f"  - {ref}")
         return
 
     if explain_id:
@@ -944,6 +1198,17 @@ def scan(
         raise click.UsageError(f"--baseline file not found: {baseline}")
 
     pipeline_lc = pipeline.lower()
+    if pipeline_lc == "auto":
+        detected = _detect_pipeline_from_cwd()
+        if detected:
+            click.echo(f"[auto] detected --pipeline {detected}", err=True)
+            pipeline_lc = detected
+        else:
+            click.echo(
+                "[auto] no CI files found at cwd; using --pipeline aws",
+                err=True,
+            )
+            pipeline_lc = "aws"
     if pipeline_lc == "terraform":
         if not tf_plan:
             raise click.UsageError(
@@ -1090,14 +1355,15 @@ def scan(
         if _cfg_src:
             click.echo(f"[config] loaded {_cfg_src}", err=True)
 
-    _debug(f"provider: {pipeline}")
+    _debug(f"provider: {pipeline_lc}")
 
     scanner = Scanner(
-        pipeline=pipeline,
+        pipeline=pipeline_lc,
         region=region,
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
+        chains_enabled=not no_chains,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,
@@ -1138,6 +1404,7 @@ def scan(
 
     if not quiet:
         _emit_scan_summary(scanner.metadata)
+        _maybe_emit_wrong_provider_hint(pipeline_lc, findings)
 
     # Confidence filter applies BEFORE scoring + gate so scores reflect
     # the trusted finding set. ``--min-confidence LOW`` (the default)
@@ -1172,6 +1439,8 @@ def scan(
             click.echo(f"[inventory] failed: {exc}", err=True)
             components = []
 
+    chains = list(getattr(scanner, "chains", []) or [])
+
     if not quiet:
         if output in ("terminal", "both"):
             # When emitting both terminal and JSON, send the human-readable report to
@@ -1179,6 +1448,8 @@ def scan(
             from rich.console import Console as _Console  # local import — only needed here
             console = _Console(stderr=(output == "both"))
             report_terminal(findings, score_result, severity_threshold=threshold, console=console)
+            if chains:
+                report_chains_terminal(chains, console=console)
             if components is not None:
                 report_inventory_terminal(components, console=console)
 
@@ -1186,14 +1457,20 @@ def scan(
             click.echo(report_json(
                 findings, score_result, tool_version=__version__,
                 inventory=components,
+                chains=chains if not no_chains else None,
             ))
 
         if output == "html":
-            report_html(findings, score_result, region=region, target=target or "", output_path=output_file)
+            report_html(
+                findings, score_result, region=region, target=target or "",
+                output_path=output_file, chains=chains,
+            )
             click.echo(f"HTML report written to {output_file}", err=True)
 
         if output == "sarif":
-            sarif_text = report_sarif(findings, score_result, tool_version=__version__)
+            sarif_text = report_sarif(
+                findings, score_result, tool_version=__version__, chains=chains,
+            )
             if output_file:
                 with open(output_file, "w", encoding="utf-8") as fh:
                     fh.write(sarif_text)
@@ -1211,7 +1488,7 @@ def scan(
                 click.echo(junit_text)
 
         if output == "markdown":
-            md_text = report_markdown(findings, score_result)
+            md_text = report_markdown(findings, score_result, chains=chains)
             if output_file:
                 with open(output_file, "w", encoding="utf-8") as fh:
                     fh.write(md_text)
@@ -1233,6 +1510,11 @@ def scan(
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"
     baseline_git_pair: tuple[str, str] | None = None
+    if baseline and baseline_from_git:
+        raise click.UsageError(
+            "--baseline and --baseline-from-git are mutually exclusive. "
+            "Pick one: a file path, or a git REF:PATH lookup."
+        )
     if baseline_from_git:
         if ":" not in baseline_from_git:
             raise click.UsageError(
@@ -1248,6 +1530,8 @@ def scan(
         baseline_path=baseline,
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
+        fail_on_chains={c.upper() for c in fail_on_chain_ids},
+        fail_on_any_chain=fail_on_any_chain,
     )
 
     if verbose:
@@ -1263,7 +1547,7 @@ def scan(
             parts.append(f"baseline-from-git={baseline_from_git}")
         _debug(f"gate config: {', '.join(parts)}")
 
-    gate = evaluate_gate(findings, score_result, gate_config)
+    gate = evaluate_gate(findings, score_result, gate_config, chains=chains)
 
     if not quiet and output != "json":
         _emit_gate_summary(gate)
@@ -1376,6 +1660,29 @@ def _apply_fix_patches(findings) -> None:
     click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
 
 
+def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list) -> None:
+    """Nudge the user when AWS was scanned but a CI config file exists.
+
+    Fires only when the caller explicitly picked ``--pipeline aws`` (or
+    configured it) AND every finding is a degraded ``*-000`` API-access
+    probe AND cwd looks like a CI repo. Designed to catch the common
+    'wrong credentials / wrong provider' first-run mistake without
+    spamming legitimate AWS runs.
+    """
+    if pipeline_lc != "aws" or not findings:
+        return
+    if not all(getattr(f, "check_id", "").endswith("-000") for f in findings):
+        return
+    detected = _detect_pipeline_from_cwd()
+    if not detected:
+        return
+    click.echo(
+        f"[hint] no real AWS results — this looks like a '{detected}' "
+        f"repo; try: pipeline_check --pipeline {detected}",
+        err=True,
+    )
+
+
 def _emit_scan_summary(meta) -> None:
     """Render the scan summary line and any parse warnings to stderr."""
     from .core.scanner import ScanMetadata
@@ -1397,6 +1704,7 @@ def _emit_scan_summary(meta) -> None:
 def _emit_gate_summary(gate) -> None:
     """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
     n_effective = len(gate.effective)
+    n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
     if gate.passed:
         msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
         for cond in getattr(gate, "conditions_evaluated", []):
@@ -1405,6 +1713,9 @@ def _emit_gate_summary(gate) -> None:
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:
             msg_lines.append(f"        - {reason}")
+    if n_chains_tripped:
+        ids = ", ".join(sorted({c.chain_id for c in gate.tripped_chains}))
+        msg_lines.append(f"[gate] {n_chains_tripped} attack chain(s) tripped: {ids}")
     if gate.baseline_matched:
         msg_lines.append(
             f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"
@@ -1422,3 +1733,63 @@ def _emit_gate_summary(gate) -> None:
             )
     for line in msg_lines:
         click.echo(line, err=True)
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# `init` subcommand — scaffold a starter config file.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="init")
+@click.option(
+    "--path",
+    "target_path",
+    default=".pipeline-check.yml",
+    show_default=True,
+    metavar="PATH",
+    help="Write the scaffold to this path.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite the target file if it already exists.",
+)
+def init_cmd(target_path: str, force: bool) -> None:
+    """Write a starter .pipeline-check.yml in the current directory.
+
+    Pre-fills the ``pipeline:`` key when a supported CI file is
+    detected in cwd. Refuses to overwrite unless ``--force`` is set.
+    """
+    from .core.init_template import render as _render_template
+    if os.path.exists(target_path) and not force:
+        raise click.UsageError(
+            f"{target_path} already exists. Re-run with --force to overwrite."
+        )
+    detected = _detect_pipeline_from_cwd()
+    try:
+        with open(target_path, "w", encoding="utf-8") as fh:
+            fh.write(_render_template(detected))
+    except OSError as exc:
+        raise click.UsageError(f"could not write {target_path}: {exc}") from exc
+    suffix = (
+        f" (pipeline: {detected})"
+        if detected
+        else " (no CI files detected — edit the 'pipeline:' line before use)"
+    )
+    click.echo(f"[init] wrote {target_path}{suffix}")
+
+
+def main() -> None:
+    """Console entry point: dispatches between ``scan`` and subcommands.
+
+    Keeping the top-level command as ``scan`` preserves backward
+    compatibility — every documented ``pipeline_check --flag ...``
+    invocation keeps working. Subcommands are opt-in via a bare
+    argv[1] match, so adding more later is cheap.
+    """
+    if len(sys.argv) >= 2 and sys.argv[1] == "init":
+        sys.argv.pop(1)
+        init_cmd()
+        return
+    scan()

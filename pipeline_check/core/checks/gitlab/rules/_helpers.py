@@ -4,6 +4,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+from ..._primitives.secret_shapes import AWS_KEY_RE as AWS_KEY_RE
+from ..._primitives.secret_shapes import SECRETISH_KEY_RE as SECRETISH_KEY_RE
+
 DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 
@@ -20,12 +24,6 @@ UNTRUSTED_VAR_RE = re.compile(
     r"|CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_SHA"
     r")\}?"
 )
-
-AWS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
-SECRETISH_KEY_RE = re.compile(
-    r"(?i)(?:password|passwd|secret|token|apikey|api_key|private_key)"
-)
-DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 # Cache-key taint regex used by GL-012.
 CACHE_TAINT_RE = re.compile(

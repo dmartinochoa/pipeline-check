@@ -12,12 +12,14 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import chains as _chains
 from . import diff as _diff
 from . import providers as _providers
 from . import standards as _standards
+from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
-from .checks.base import Confidence, Finding, clear_blob_cache
+from .checks.base import Finding, clear_blob_cache
 from .inventory import Component
 
 
@@ -56,10 +58,17 @@ class Scanner:
         profile: str | None = None,
         diff_base: str | None = None,
         secret_patterns: list[str] | tuple[str, ...] | None = None,
+        chains_enabled: bool = True,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
         self._log = log
+        self._chains_enabled = chains_enabled
+        #: Attack-chains detected by the most recent ``run()``. Populated
+        #: as a side effect — chains derive from findings 1:1 with the
+        #: run, so consumers always want both together. Empty list when
+        #: chains are disabled or no chains matched.
+        self.chains: list[Chain] = []
         provider = _providers.get(pipeline)
         if provider is None:
             available = ", ".join(_providers.available()) or "none registered"
@@ -187,13 +196,26 @@ class Scanner:
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
-            # Apply the centralised confidence default ONLY when the
-            # rule hasn't explicitly set it (i.e. still at the
-            # dataclass default). Rules that want to override stay in
-            # control — e.g. ``CB-005`` may emit HIGH for two-versions-
-            # behind and MEDIUM for one-behind.
-            if f.confidence == Confidence.HIGH:
+            # Apply the centralised confidence default unless the rule
+            # opted out by setting ``confidence_locked=True`` on the
+            # Finding. Rules that want per-finding control (e.g. CB-005
+            # emitting HIGH for two-versions-behind even though the
+            # blanket default is MEDIUM) set the lock flag on the
+            # specific findings they want to preserve.
+            if not f.confidence_locked:
                 f.confidence = confidence_for(f.check_id)
+
+        # Attack-chain correlation runs after confidence is finalised so
+        # ``min_confidence(triggers)`` reflects the post-demotion value.
+        # A chain rule that crashes never aborts the scan — chains are
+        # an additive signal, not a gate. ``getattr`` guards against
+        # callers that bypass ``__init__`` (older tests use ``__new__``
+        # + manual attribute setting); default-on matches the CLI
+        # default of chains enabled.
+        if getattr(self, "_chains_enabled", True):
+            self.chains = _chains.evaluate(findings)
+        else:
+            self.chains = []
 
         self.metadata.elapsed_seconds = time.monotonic() - t0
 
@@ -268,11 +290,17 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     module_dirs_changed = {
         _tf_dir(p) for p in tf_files_touched if _tf_dir(p)
     }
-    planned = (
-        plan.get("planned_values", {})
-            .get("root_module", {})
-            .get("resources")
-    )
+    # Defensive nested-dict traversal — a malformed plan with a
+    # non-dict ``planned_values`` or ``root_module`` value would
+    # otherwise raise AttributeError here. Missing/wrong shape → skip
+    # the filter (safer to over-scan than to crash the CI run).
+    pv = plan.get("planned_values")
+    if not isinstance(pv, dict):
+        return
+    rm = pv.get("root_module")
+    if not isinstance(rm, dict):
+        return
+    planned = rm.get("resources")
     if not isinstance(planned, list):
         return
 
@@ -292,9 +320,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
         # happens to share a prefix.
         return mod_name in module_dirs_changed
 
-    plan["planned_values"]["root_module"]["resources"] = [
-        r for r in planned if _keep(r)
-    ]
+    rm["resources"] = [r for r in planned if _keep(r)]
 
 
 def _tf_dir(path: str) -> str:

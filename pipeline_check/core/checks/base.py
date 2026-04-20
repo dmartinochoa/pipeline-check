@@ -6,6 +6,56 @@ from typing import Any
 import yaml as _yaml
 
 from ..standards.base import ControlRef
+from .blob import blob_lower, clear_blob_cache, walk_strings
+from .tokens import _ARTIFACT_TOKENS as _ARTIFACT_TOKENS
+from .tokens import (
+    PROVENANCE_TOKENS,
+    SBOM_DIRECT_TOKENS,
+    SIGN_TOKENS,
+    VULN_SCAN_TOKENS,
+    has_provenance,
+    has_sbom,
+    has_signing,
+    has_vuln_scanning,
+    produces_artifacts,
+)
+
+# Re-exports — rule files have imported ``walk_strings`` / ``blob_lower`` /
+# ``has_signing`` / ``SIGN_TOKENS`` / etc. from this module for a long time.
+# The canonical homes are now ``blob.py`` and ``tokens.py`` but we keep the
+# old names resolvable here so existing imports don't need to churn.
+__all__ = [
+    "safe_load_yaml",
+    "Severity",
+    "severity_rank",
+    "Confidence",
+    "confidence_rank",
+    "Finding",
+    "BaseCheck",
+    # re-exported from blob
+    "walk_strings",
+    "blob_lower",
+    "clear_blob_cache",
+    # re-exported from tokens
+    "SIGN_TOKENS",
+    "SBOM_DIRECT_TOKENS",
+    "PROVENANCE_TOKENS",
+    "VULN_SCAN_TOKENS",
+    "produces_artifacts",
+    "has_signing",
+    "has_provenance",
+    "has_sbom",
+    "has_vuln_scanning",
+    # cross-provider script-safety patterns
+    "CURL_PIPE_RE",
+    "DOCKER_INSECURE_RE",
+    "PKG_INSECURE_RE",
+    "PKG_NO_LOCKFILE_RE",
+    "DEP_UPDATE_RE",
+    "has_dep_update",
+    "TLS_BYPASS_RE",
+    "is_quoted_assignment",
+]
 
 # Use the C-accelerated YAML loader when available (libyaml bindings).
 # CSafeLoader is functionally identical to SafeLoader but ~30-50x faster,
@@ -95,6 +145,14 @@ class Finding:
     #: curated list in ``checks/_confidence.py`` so rule authors don't
     #: need to reason about every case.
     confidence: Confidence = Confidence.HIGH
+    #: Whether the rule explicitly locked ``confidence`` to the value
+    #: above. When False (the default), the Scanner post-processes the
+    #: finding by consulting ``checks/_confidence.py`` and may demote
+    #: HIGH to MEDIUM/LOW for heuristic rules. When True, the Scanner
+    #: leaves the confidence untouched — for rules that need per-
+    #: finding control (e.g. CB-005 emitting HIGH for "two+ versions
+    #: behind" even though the rule's blanket default is MEDIUM).
+    confidence_locked: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -127,149 +185,16 @@ class BaseCheck(abc.ABC):
         self.context = context
         #: Optional resource name to scope the scan to (e.g. a pipeline name).
         self.target = target
+        # NB: clearing per-instance guards against id() reuse — a doc
+        # that was GC'd between test fixtures can have its id reassigned
+        # to a fresh doc, and blob_lower would otherwise return the
+        # stale cached blob. The protection outweighs the lost cross-
+        # rule sharing within a single scan, so keep the clear.
         clear_blob_cache()
 
     @abc.abstractmethod
     def run(self) -> list["Finding"]:
         """Execute all checks in this module and return findings."""
-
-
-def walk_strings(node: Any):
-    """Yield every string scalar under a dict/list tree (iterative).
-
-    Uses an explicit stack instead of recursion to reduce function-call
-    overhead — a single large workflow can have hundreds of nested
-    dict/list nodes, each of which would be a separate generator frame
-    in the recursive version.
-    """
-    stack = [node]
-    while stack:
-        item = stack.pop()
-        if isinstance(item, str):
-            yield item
-        elif isinstance(item, dict):
-            stack.extend(item.values())
-        elif isinstance(item, list):
-            stack.extend(item)
-
-
-# Case-insensitive substring tokens; a workflow passes the signing check if
-# any token appears anywhere in its string content.
-SIGN_TOKENS = (
-    "cosign", "sigstore", "slsa-github-generator",
-    "slsa-framework/slsa-", "notation-sign",
-)
-
-# SBOM tokens: direct hits pass on their own. Trivy only passes when combined
-# with "sbom" or "cyclonedx" in the same blob.
-SBOM_DIRECT_TOKENS = (
-    "cyclonedx", "syft", "anchore/sbom-action",
-    "spdx-sbom-generator", "microsoft/sbom-tool",
-)
-
-# Provenance tokens — narrower than SIGN_TOKENS. SLSA Build L3 requires
-# an in-toto attestation produced by a hardened builder, not just a
-# signed artifact. Anything here provably produces a provenance
-# attestation; ``cosign sign`` alone does NOT (it signs the artifact
-# but doesn't emit an in-toto statement describing how it was built).
-PROVENANCE_TOKENS = (
-    "slsa-github-generator",        # GHA — SLSA Level 3 builder
-    "slsa-framework/slsa-",          # SLSA GitHub org actions
-    "actions/attest-build-provenance",  # GHA — native build-provenance action
-    "actions/attest@",               # GHA — generic attest action
-    "cosign attest",                 # sigstore attestation (distinct from `cosign sign`)
-    "witness run",                   # testifysec/witness attestor
-    "in-toto-attestation",           # in-toto library/CLI
-    "intoto.jsonl",                  # standard provenance filename
-    "provenance.intoto",             # common provenance output name
-)
-
-
-# Tokens that indicate a workflow produces deployable artifacts.
-# Used by the signing/SBOM/vuln-scan checks to suppress false positives
-# on lint/test-only workflows that don't produce anything to sign or scan.
-_ARTIFACT_TOKENS = (
-    "docker push", "docker build",
-    "upload-artifact", "actions/upload-artifact",
-    "archiveartifacts",                         # Jenkins
-    "store_artifacts", "persist_to_workspace",  # CircleCI
-    "publish", "deploy", "release",
-    "docker/build-push-action",
-    "docker/metadata-action",
-    "aws s3 cp", "aws s3 sync",
-    "kubectl apply", "helm upgrade", "helm install",
-    "terraform apply",
-    "gcloud app deploy", "gcloud run deploy",
-    "twine upload", "cargo publish", "gem push",
-    "npm publish", "yarn publish",
-)
-
-
-def produces_artifacts(doc: Any) -> bool:
-    """Return True when the workflow appears to produce deployable artifacts.
-
-    Heuristic: if no artifact-production token appears anywhere in the
-    workflow's string content, the workflow is likely lint/test-only and
-    the signing/SBOM/vulnerability-scanning checks should not fire.
-    """
-    blob = blob_lower(doc)
-    return any(tok in blob for tok in _ARTIFACT_TOKENS)
-
-
-def blob_lower(doc: Any) -> str:
-    """Concatenate all string values in ``doc`` into one lowercase blob.
-
-    Memoised on object identity so that the multiple callers each
-    provider uses (``has_signing``, ``has_sbom``, and — through the
-    secrets helper — ``find_secret_values``) share one tree walk per
-    workflow. ``id(doc)`` is stable for as long as the document
-    object is alive, which is the whole ``run()`` invocation.
-    """
-    key = id(doc)
-    cached = _BLOB_CACHE.get(key)
-    if cached is not None:
-        return cached
-    blob = "\n".join(walk_strings(doc)).lower()
-    _BLOB_CACHE[key] = blob
-    return blob
-
-
-# The cache is cleared in ``BaseCheck.__init__`` and in
-# ``Scanner._scan_provider`` so entries from a previous scan
-# (especially in long-lived Lambda containers) can't pin memory
-# or — worse — collide with a newly-allocated doc that reused the
-# freed ``id()``.
-_BLOB_CACHE: dict[int, str] = {}
-
-
-def clear_blob_cache() -> None:
-    _BLOB_CACHE.clear()
-
-
-def has_signing(doc: Any) -> bool:
-    blob = blob_lower(doc)
-    return any(tok in blob for tok in SIGN_TOKENS)
-
-
-def has_provenance(doc: Any) -> bool:
-    """Return True when the workflow emits an in-toto/SLSA provenance attestation.
-
-    Distinct from :func:`has_signing` — a workflow that only runs
-    ``cosign sign`` signs the artifact but doesn't produce a
-    provenance statement describing *how* the artifact was built.
-    SLSA Build Level 3 requires the latter.
-    """
-    blob = blob_lower(doc)
-    return any(tok in blob for tok in PROVENANCE_TOKENS)
-
-
-def has_sbom(doc: Any) -> bool:
-    blob = blob_lower(doc)
-    if any(tok in blob for tok in SBOM_DIRECT_TOKENS):
-        return True
-    if "trivy" in blob and ("sbom" in blob or "cyclonedx" in blob):
-        return True
-    return False
 
 
 import re as _re
@@ -385,23 +310,6 @@ TLS_BYPASS_RE = _re.compile(
     r"|\bgoinsecure\s*=",
     _re.MULTILINE,
 )
-
-
-#: Vulnerability scanning tool tokens — same detection pattern as
-#: ``has_signing`` / ``has_sbom``.
-VULN_SCAN_TOKENS = (
-    "trivy ", "grype ", "snyk ", "npm audit", "yarn audit",
-    "safety check", "pip-audit", "osv-scanner", "govulncheck",
-    "cargo audit", "bundler-audit", "bundle audit",
-    "docker scout", "codeql-action", "github/codeql-action",
-    "semgrep ", "bandit ", "checkov ", "tfsec ",
-)
-
-
-def has_vuln_scanning(doc: Any) -> bool:
-    """Return True if the pipeline invokes a known vulnerability scanner."""
-    blob = blob_lower(doc)
-    return any(tok in blob for tok in VULN_SCAN_TOKENS)
 
 
 # A shell *assignment* like ``VAR="$UNTRUSTED"`` captures the value

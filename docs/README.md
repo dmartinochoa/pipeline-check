@@ -16,6 +16,10 @@
   git ref), `.pipeline-check-ignore.yml` with expiries, `--diff-base`
   scoping, autofix (emit or `--apply`), glob check selection, custom
   secret patterns.
+- [Attack chains](attack_chains.md) — multi-finding correlations mapped
+  to MITRE ATT&CK (AC-001…AC-008). Includes gating (`--fail-on-chain`,
+  `--fail-on-any-chain`), confidence inheritance, and how chains surface
+  in each output format.
 - [Configuration](config.md) — `pyproject.toml` / `.pipeline-check.yml` /
   env-var surface, plus `--config-check` to fail CI on unknown keys.
 - [Compliance standards](standards/README.md) — how findings are annotated

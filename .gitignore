@@ -1,32 +1,74 @@
-# IDE
+# ─── IDE / editor ──────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.iml
+*.swp
+*.swo
+*~
+.#*
 
-# Python
+# ─── Python runtime artefacts ──────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
 .Python
 
-# Virtual environments
+# ─── Virtual environments ──────────────────────────────────────────────
 .venv/
 venv/
 env/
+ENV/
 
-# Build / distribution
+# ─── Build / packaging ─────────────────────────────────────────────────
 dist/
 build/
 *.egg-info/
 *.egg
+pip-wheel-metadata/
 
-# Testing & coverage
+# ─── Testing & coverage ────────────────────────────────────────────────
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+.tox/
+.nox/
+.hypothesis/
 
-# Tool-specific
+# ─── Type-check / lint caches ──────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.pylint.d/
+
+# ─── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ─── Secrets & environment (never commit, especially in a security tool) ─
+# ``.env.example`` stays tracked as the documented template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+.envrc
+.direnv/
+
+# ─── OS junk ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs & ad-hoc local output ────────────────────────────────────────
+*.log
+
+# ─── Tool-specific (assistants, lockfiles not meant for commit) ────────
 .claude/
 /.agents/
 /CLAUDE.md

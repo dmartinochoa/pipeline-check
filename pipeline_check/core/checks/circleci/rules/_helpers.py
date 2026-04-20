@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+
 # Orb pinning — semver or SHA is considered pinned.
 # Floating: ``circleci/node@volatile``, ``circleci/node@1``.
 # Pinned: ``circleci/node@5.1.0``, ``circleci/node@5.1.0-rc.1``.
@@ -21,10 +23,10 @@ UNTRUSTED_ENV_RE = re.compile(
     r")\s*\}?"
 )
 
-# Deploy-like job/workflow names.
-DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
-
-# AWS long-lived key env vars.
+# AWS long-lived key env vars (matches variable *names*, not the key
+# literal — CircleCI rules look for the presence of these env-var names
+# in configs, which is a distinct shape from the ``AKIA…`` literal
+# matched by the shared ``secret_shapes.AWS_KEY_RE``).
 AWS_KEY_RE = re.compile(
     r"\bAWS_ACCESS_KEY_ID\b|\bAWS_SECRET_ACCESS_KEY\b",
 )

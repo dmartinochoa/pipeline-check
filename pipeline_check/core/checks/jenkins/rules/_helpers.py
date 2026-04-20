@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+
 # ── Groovy comment stripping ──────────────────────────────────────────
 # YAML providers benefit from yaml.safe_load stripping comments before
 # token matching.  Jenkins checks work on raw Groovy text, so a comment
@@ -99,8 +101,6 @@ COPY_ARTIFACTS_RE = re.compile(r"\b(?:copyArtifacts|CopyArtifact)\b")
 VERIFY_RE = re.compile(
     r"\b(?:cosign\s+verify|sha256sum\s+(?:--check|-c)|gpg\s+--verify)\b"
 )
-
-DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 # ── JF-024: input step submitter guard ────────────────────────────────
 #: Matches an ``input`` step call (both short and block forms). Used to

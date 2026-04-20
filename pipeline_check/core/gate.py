@@ -46,9 +46,11 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
+from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
 
 # Grade ordering — A is best, D is worst. Kept inline rather than imported
@@ -92,6 +94,13 @@ class GateConfig:
     #: at the CLI layer; if both are set here, file wins.
     baseline_from_git: tuple[str, str] | None = None  # (ref, path)
     ignore_rules: list[IgnoreRule] = field(default_factory=list)
+    #: Specific attack-chain IDs that should fail the gate when matched.
+    #: Use ``{"AC-001", "AC-007"}`` to gate only on chains the team has
+    #: explicitly opted in to.
+    fail_on_chains: set[str] = field(default_factory=set)
+    #: When True, fail the gate if *any* attack chain matched. Useful as
+    #: a blanket "no correlated attack paths" guard for high-trust repos.
+    fail_on_any_chain: bool = False
 
     def any_explicit_gate(self) -> bool:
         """True when at least one gate condition is explicitly configured.
@@ -104,6 +113,8 @@ class GateConfig:
             or self.min_grade
             or self.max_failures is not None
             or self.fail_on_checks
+            or self.fail_on_chains
+            or self.fail_on_any_chain
         )
 
 
@@ -126,6 +137,9 @@ class GateResult:
     expired_rules: list[IgnoreRule] = field(default_factory=list)
     #: Human-readable labels for every gate condition that was evaluated.
     conditions_evaluated: list[str] = field(default_factory=list)
+    #: Attack chains that tripped a chain gate condition. Empty when
+    #: chain gates aren't configured or no chain matched.
+    tripped_chains: list[Chain] = field(default_factory=list)
 
     @property
     def exit_code(self) -> int:
@@ -178,17 +192,50 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
             continue
         if ":" in line:
             check_id, resource = line.split(":", 1)
-            rules.append(IgnoreRule(check_id=check_id.strip().upper(),
-                                    resource=resource.strip()))
+            resource = resource.strip()
+            # An empty resource (``GHA-001:`` or ``GHA-001:   ``) is the
+            # user asking for a blanket suppression, equivalent to
+            # writing the check id alone. Normalise to None so the rule
+            # actually matches something — a literal ``""`` resource
+            # would only suppress findings with an exact empty string.
+            rules.append(IgnoreRule(
+                check_id=check_id.strip().upper(),
+                resource=resource or None,
+            ))
         else:
             rules.append(IgnoreRule(check_id=line.strip().upper(),
                                     resource=None))
     return rules
 
 
+class _DupKeyIgnoreLoader(yaml.SafeLoader):
+    """SafeLoader for ignore files that rejects duplicate mapping keys.
+
+    A YAML ignore-file entry with a duplicated field (e.g. two
+    ``resource:`` keys under one rule) silently keeps only the last
+    value under pyyaml's default behaviour. For a suppression file
+    that's a trap — half the user's intent is discarded invisibly.
+    """
+
+    def construct_mapping(self, node, deep=False):  # type: ignore[override]
+        mapping: dict[Any, Any] = {}
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in mapping:
+                mark = key_node.start_mark
+                raise yaml.constructor.ConstructorError(
+                    None, None,
+                    f"duplicate key {key!r} at line {mark.line + 1}, "
+                    f"column {mark.column + 1}",
+                    mark,
+                )
+            mapping[key] = self.construct_object(value_node, deep=deep)
+        return mapping
+
+
 def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
     try:
-        doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+        doc = yaml.load(p.read_text(encoding="utf-8"), Loader=_DupKeyIgnoreLoader)
     except yaml.YAMLError as exc:
         # Surface the parse error — a typo here silently removes every
         # suppression and the user has no way to tell without diffing
@@ -282,9 +329,24 @@ def load_baseline_from_git(ref: str, path: str, cwd: str | Path = ".") -> set[tu
     return _baseline_from_doc(doc)
 
 
-def _baseline_from_doc(doc: dict) -> set[tuple[str, str]]:
+def _baseline_from_doc(doc: object) -> set[tuple[str, str]]:
+    """Extract failing ``(check_id, resource)`` pairs from a baseline doc.
+
+    Defensive: the baseline JSON comes from whatever the user hands us
+    — an old scan, a hand-edited file, or a completely unrelated JSON.
+    Every downstream caller (``load_baseline``, ``load_baseline_from_git``)
+    already catches parse errors, so any *shape* error here must return
+    an empty set rather than crashing CI.
+    """
     out: set[tuple[str, str]] = set()
-    for f in doc.get("findings", []):
+    if not isinstance(doc, dict):
+        return out
+    findings = doc.get("findings")
+    if not isinstance(findings, list):
+        return out
+    for f in findings:
+        if not isinstance(f, dict):
+            continue
         if not f.get("passed", True):
             out.add((str(f.get("check_id", "")).upper(),
                      str(f.get("resource", ""))))
@@ -311,12 +373,19 @@ def evaluate_gate(
     findings: list[Finding],
     score_result: dict,
     config: GateConfig,
+    chains: list[Chain] | None = None,
 ) -> GateResult:
     """Apply ``config`` to the scan's findings + score and decide pass/fail.
 
     When ``config.any_explicit_gate()`` is false and no baseline/ignore
     filtering is in play, the legacy default kicks in: fail iff
     ``score_result['grade'] == 'D'``. This preserves prior behavior.
+
+    *chains* are optional — when provided and ``config.fail_on_chains``
+    or ``config.fail_on_any_chain`` is set, matching chains add reasons
+    to the gate result. Chains never apply baseline/ignore filtering;
+    the rationale is that a correlated attack path is intrinsically a
+    new finding even when the constituent legs were baselined.
     """
     failing = [f for f in findings if not f.passed]
 
@@ -397,6 +466,31 @@ def evaluate_gate(
                 f"--fail-on-check"
             )
 
+    tripped_chains: list[Chain] = []
+    if chains:
+        if config.fail_on_any_chain:
+            conditions.append("no attack chains — --fail-on-any-chain")
+            if chains:
+                tripped_chains.extend(chains)
+                ids = ", ".join(sorted({c.chain_id for c in chains}))
+                reasons.append(
+                    f"{len(chains)} attack chain(s) detected: {ids} — "
+                    f"--fail-on-any-chain"
+                )
+        elif config.fail_on_chains:
+            wanted = {c.upper() for c in config.fail_on_chains}
+            conditions.append(
+                f"disallowed chains: {', '.join(sorted(wanted))} — --fail-on-chain"
+            )
+            matched = [c for c in chains if c.chain_id.upper() in wanted]
+            if matched:
+                tripped_chains.extend(matched)
+                ids = ", ".join(sorted({c.chain_id for c in matched}))
+                reasons.append(
+                    f"Disallowed attack chain(s) detected: {ids} — "
+                    f"--fail-on-chain"
+                )
+
     expired_rules = [r for r in config.ignore_rules if r.is_expired(today)]
 
     return GateResult(
@@ -407,6 +501,7 @@ def evaluate_gate(
         baseline_matched=baseline_matched,
         expired_rules=expired_rules,
         conditions_evaluated=conditions,
+        tripped_chains=tripped_chains,
     )
 
 

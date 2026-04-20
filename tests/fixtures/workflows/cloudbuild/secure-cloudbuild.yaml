@@ -3,6 +3,8 @@
 # ``dynamicSubstitutions`` is left at its default of false.
 
 options:
+  # GCB-014: logs persisted to Cloud Logging (the default, set
+  # explicitly so reviewers see the intent).
   logging: CLOUD_LOGGING_ONLY
   # GCB-004 safe: dynamic substitutions not enabled.
 
@@ -41,6 +43,15 @@ steps:
     args:
       - '-c'
       - 'trivy image --severity HIGH,CRITICAL gcr.io/example-project/app:v1.2.3'
+
+  # GCB-015: SBOM generated in CycloneDX format. Emitted before signing
+  # so the attestation step can pick it up as a predicate.
+  - id: sbom
+    name: 'aquasec/trivy@sha256:0000000000000000000000000000000000000000000000000000000000000005'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'trivy image --format cyclonedx --output sbom.json gcr.io/example-project/app:v1.2.3'
 
   # GCB-009: cosign signs the built image so downstream verifiers can
   # distinguish a tampered copy from a legitimate build.

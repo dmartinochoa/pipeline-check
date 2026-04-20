@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from .chains import Chain
 from .checks.base import Confidence, Finding, Severity, severity_rank
 from .inventory import Component
 
@@ -181,6 +182,7 @@ def report_json(
     score_result: dict,
     tool_version: str = "",
     inventory: list[Component] | None = None,
+    chains: list[Chain] | None = None,
 ) -> str:
     """Serialise all findings and the score to a JSON string.
 
@@ -193,6 +195,11 @@ def report_json(
     top-level array. Consumers can feature-detect it; it's omitted
     (not just empty) when ``--inventory`` wasn't requested, so
     dashboards can distinguish "nothing found" from "not asked for".
+
+    When *chains* is supplied the payload gains a ``chains`` top-level
+    array — multi-finding attack-chain correlations. Always present
+    (possibly empty) when chain evaluation ran; omitted when the caller
+    explicitly disabled chains via ``--no-chains``.
     """
     payload: dict = {
         "schema_version": JSON_SCHEMA_VERSION,
@@ -202,7 +209,78 @@ def report_json(
     }
     if inventory is not None:
         payload["inventory"] = [c.to_dict() for c in inventory]
+    if chains is not None:
+        payload["chains"] = [c.to_dict() for c in chains]
     return json.dumps(payload, indent=2)
+
+
+def report_chains_terminal(
+    chains: list[Chain],
+    console: Console | None = None,
+) -> None:
+    """Render attack chains as one panel per chain to the terminal.
+
+    A chain is the strongest signal pipeline_check produces — multiple
+    findings combine into a real attack path. Always rendered after
+    the findings table (and before inventory), with a coloured border
+    matching the chain's severity so a CRITICAL chain is immediately
+    visible even on a busy report.
+    """
+    if console is None:
+        console = Console()
+    if not chains:
+        return
+    console.print()
+    console.print(
+        Panel(
+            (
+                f"[bold]{len(chains)} attack chain(s) detected[/bold] — "
+                "multiple findings combine into a real attack path. "
+                "Fix any one finding in a chain to break it."
+            ),
+            title="[bold red]Attack Chains[/bold red]",
+            border_style="red",
+            padding=(0, 2),
+        )
+    )
+    for chain in chains:
+        sev_style = _SEVERITY_STYLE.get(chain.severity, "white")
+        conf_style = _CONFIDENCE_STYLE.get(chain.confidence, "")
+        body_lines = [
+            f"[bold]{chain.summary}[/bold]",
+            "",
+            chain.narrative,
+            "",
+            f"[bold]Triggering checks:[/bold] {', '.join(chain.triggering_check_ids)}",
+        ]
+        if chain.mitre_attack:
+            body_lines.append(
+                f"[bold]MITRE ATT&CK:[/bold] {', '.join(chain.mitre_attack)}"
+            )
+        if chain.kill_chain_phase:
+            body_lines.append(f"[bold]Kill chain:[/bold] {chain.kill_chain_phase}")
+        body_lines.append(f"[bold]Recommendation:[/bold] {chain.recommendation}")
+        if chain.references:
+            body_lines.append("[bold]References:[/bold]")
+            for ref in chain.references:
+                body_lines.append(f"  - {ref}")
+        conf_label = (
+            f"[{conf_style}]{chain.confidence.value}[/{conf_style}]"
+            if conf_style else chain.confidence.value
+        )
+        console.print(
+            Panel(
+                "\n".join(body_lines),
+                title=(
+                    f"[{sev_style}]{chain.chain_id}[/{sev_style}]  "
+                    f"{chain.title}  "
+                    f"[dim](severity: {chain.severity.value}, "
+                    f"confidence: {conf_label})[/dim]"
+                ),
+                border_style=sev_style,
+                padding=(0, 2),
+            )
+        )
 
 
 def report_inventory_terminal(

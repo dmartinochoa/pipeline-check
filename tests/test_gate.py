@@ -320,6 +320,34 @@ class TestIgnoreFile:
     def test_load_missing_ignore_returns_empty(self, tmp_path):
         assert load_ignore_file(tmp_path / "nope") == []
 
+    def test_load_baseline_handles_malformed_doc(self, tmp_path):
+        """A baseline file whose JSON is valid but wrong-shape (list at
+        root, non-list findings, string entries) must not crash CI."""
+        from pipeline_check.core.gate import load_baseline
+        # Valid JSON but not an object.
+        p1 = tmp_path / "b1.json"
+        p1.write_text('["not", "a", "dict"]')
+        assert load_baseline(p1) == set()
+        # Right shape but findings is not a list.
+        p2 = tmp_path / "b2.json"
+        p2.write_text('{"findings": "oops"}')
+        assert load_baseline(p2) == set()
+        # Right shape but a finding is not a dict.
+        p3 = tmp_path / "b3.json"
+        p3.write_text('{"findings": ["just a string"]}')
+        assert load_baseline(p3) == set()
+
+    def test_flat_ignore_empty_resource_normalises_to_none(self, tmp_path):
+        """``CB-001:`` (colon, no resource) is the user asking for a blanket
+        suppression. It must not be stored as an empty-string resource —
+        that would only match findings with exact empty resource strings,
+        silently suppressing nothing."""
+        p = tmp_path / ".pipelinecheckignore"
+        p.write_text("CB-001:\nCB-002:   \n")
+        rules = load_ignore_file(p)
+        assert IgnoreRule(check_id="CB-001", resource=None) in rules
+        assert IgnoreRule(check_id="CB-002", resource=None) in rules
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Interactions

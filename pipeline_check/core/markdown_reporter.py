@@ -27,6 +27,7 @@ Design calls:
 """
 from __future__ import annotations
 
+from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
 
 _SEVERITY_EMOJI: dict[Severity, str] = {
@@ -67,8 +68,18 @@ def _row(f: Finding) -> str:
     return f"| {sev} | `{f.check_id}` | {title} | {resource} | {controls} |"
 
 
-def report_markdown(findings: list[Finding], score_result: dict) -> str:
-    """Render *findings* as a GitHub-Flavored Markdown report string."""
+def report_markdown(
+    findings: list[Finding],
+    score_result: dict,
+    chains: list[Chain] | None = None,
+) -> str:
+    """Render *findings* as a GitHub-Flavored Markdown report string.
+
+    When *chains* is supplied, an Attack Chains section is rendered
+    between the summary line and the Failures table — the chain
+    narrative is the highest-signal artifact in the report and
+    should be the first thing a PR comment reader sees.
+    """
     grade = score_result.get("grade", "?")
     total_score = score_result.get("total", 0)
     max_score = score_result.get("max", score_result.get("total_possible", 0))
@@ -94,6 +105,42 @@ def report_markdown(findings: list[Finding], score_result: dict) -> str:
         f"**Passed:** {passed}",
         "",
     ]
+
+    if chains:
+        lines.append(f"## :warning: Attack Chains ({len(chains)})")
+        lines.append("")
+        lines.append(
+            "_Multiple findings combine into a real attack path. "
+            "Fix any one finding in a chain to break it._"
+        )
+        lines.append("")
+        for c in chains:
+            sev_emoji = _SEVERITY_EMOJI.get(c.severity, "")
+            lines.append(
+                f"### {sev_emoji} `{c.chain_id}` {c.title} "
+                f"_(severity: {c.severity.value}, confidence: {c.confidence.value})_"
+            )
+            lines.append("")
+            lines.append(c.summary)
+            lines.append("")
+            lines.append("**Narrative:**")
+            lines.append("")
+            for line in c.narrative.splitlines():
+                lines.append(f"> {line}" if line.strip() else ">")
+            lines.append("")
+            lines.append(
+                "**Triggering checks:** "
+                + " ".join(f"`{cid}`" for cid in c.triggering_check_ids)
+            )
+            if c.mitre_attack:
+                lines.append(
+                    "**MITRE ATT&CK:** "
+                    + " ".join(f"`{m}`" for m in c.mitre_attack)
+                )
+            if c.kill_chain_phase:
+                lines.append(f"**Kill chain:** {c.kill_chain_phase}")
+            lines.append(f"**Recommendation:** {c.recommendation}")
+            lines.append("")
 
     if fails:
         lines.append(f"## Failures ({len(fails)})")
