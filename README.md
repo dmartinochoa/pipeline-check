@@ -6,9 +6,10 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**283 checks** across **10 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**330+ checks** across **10 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
+[Usage guide](docs/usage.md) |
 [Providers](#supported-providers) |
 [How it works](#how-it-works) |
 [CI integration](#ci-integration) |
@@ -44,7 +45,7 @@ standard boto3 credential chain.
 
 | Provider | Input | Auto-detect | Checks |
 |----------|-------|-------------|--------|
-| **AWS** | Live account via boto3 | `--region` | 72 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
+| **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 29 checks (`GHA-001`--`029`) |
@@ -95,7 +96,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 67 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 68 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json` -- only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -197,10 +198,15 @@ covers multiple audits.
 | [SLSA Build Track](docs/standards/slsa.md) | 1.0 | 6/7 levels (110 check mappings) |
 | [NIST SSDF (SP 800-218)](docs/standards/nist_ssdf.md) | v1.1 | CI/CD subset |
 | [NIST SP 800-53](docs/standards/nist_800_53.md) | Rev. 5 | CI/CD subset |
+| [NIST SP 800-190](docs/standards/nist_800_190.md) | 2017 | Container CI/CD subset |
+| [NIST CSF 2.0](docs/standards/nist_csf_2.md) | 2.0 | CI/CD subset |
 | [CIS Software Supply Chain](docs/standards/cis_supply_chain.md) | 1.0 | CI/CD subset |
 | [CIS AWS Foundations](docs/standards/cis_aws_foundations.md) | 3.0.0 | CI/CD subset |
 | [PCI DSS v4.0](docs/standards/pci_dss_v4.md) | 4.0 | CI/CD subset |
+| [SOC 2 Trust Services Criteria](docs/standards/soc2.md) | 2017 (rev. 2022) | CC6/CC7/CC8 subset |
 | [NSA/CISA ESF Supply Chain](docs/standards/esf_supply_chain.md) | 2022 | CI/CD subset |
+| [OpenSSF Scorecard](docs/standards/openssf_scorecard.md) | v5 | CI/CD subset |
+| [Microsoft S2C2F](docs/standards/s2c2f.md) | 2024-05 | CI/CD subset |
 
 ```bash
 # Explore a standard's control-to-check matrix
@@ -279,16 +285,16 @@ pipeline_check/
     ├── standards/data/        # One module per compliance standard
     └── checks/
         ├── base.py            # Finding, Severity, shared detection patterns
-        ├── aws/               # 32 class-based checks (CB, CP, CD, ECR, IAM, PBAC, S3)
-        │   └── rules/         # 38 rule-based checks (CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW, plus CB-008+/IAM-007+/PBAC-003+/CP-005+/ECR-006+)
+        ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-023
-        ├── gitlab/rules/      # GL-001 .. GL-023
-        ├── bitbucket/rules/   # BB-001 .. BB-023
-        ├── azure/rules/       # ADO-001 .. ADO-023
-        ├── jenkins/rules/     # JF-001 .. JF-027
-        └── circleci/rules/    # CC-001 .. CC-023
+        ├── github/rules/      # GHA-001 .. GHA-029
+        ├── gitlab/rules/      # GL-001 .. GL-030
+        ├── bitbucket/rules/   # BB-001 .. BB-027
+        ├── azure/rules/       # ADO-001 .. ADO-028
+        ├── jenkins/rules/     # JF-001 .. JF-031
+        ├── circleci/rules/    # CC-001 .. CC-030
+        └── cloudbuild/rules/  # GCB-001 .. GCB-015
 ```
 
 Adding a new check is a one-file change. Adding a new provider is three files.
