@@ -1453,36 +1453,36 @@ can evidence controls in multiple standards at once.</p>
 </tbody>
 </table>
 <p>List them at runtime with:</p>
-<p><code>bash
-pipeline_check --list-standards</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--list-standards
+</span></code></pre></div>
 <h2 id="filtering-by-standard">Filtering by standard<a class="headerlink" href="#filtering-by-standard" title="Permanent link">&para;</a></h2>
 <p>To annotate findings with controls from a single standard only:</p>
-<p><code>bash
-pipeline_check --pipeline aws --standard owasp_cicd_top_10</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--standard<span class="w"> </span>owasp_cicd_top_10
+</span></code></pre></div>
 <p>Repeat <code>--standard</code> to select multiple. Omit it to include every registered
 standard.</p>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <p>A standard is pure data — no code. Each one is a Python module in
 <code>pipeline_check/core/standards/data/</code> that defines a module-level <code>STANDARD</code>
 object:</p>
-<p>```python
-from ..base import Standard</p>
-<p>STANDARD = Standard(
-    name="my_standard",
-    title="My Compliance Standard",
-    version="1.0",
-    url="https://example.com",
-    controls={
-        "CTRL-1": "First control",
-        ...
-    },
-    mappings={
-        # check_id → list of control_ids it evidences
-        "IAM-001": ["CTRL-1"],
-        ...
-    },
-)
-```</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Standard</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">STANDARD</span> <span class="o">=</span> <span class="n">Standard</span><span class="p">(</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_standard&quot;</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Compliance Standard&quot;</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">controls</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="s2">&quot;CTRL-1&quot;</span><span class="p">:</span> <span class="s2">&quot;First control&quot;</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="o">...</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="p">},</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">mappings</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="c1"># check_id → list of control_ids it evidences</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="s2">&quot;IAM-001&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CTRL-1&quot;</span><span class="p">],</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="o">...</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="p">},</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">)</span>
+</span></code></pre></div>
 <p>Register it in <code>pipeline_check/core/standards/__init__.py</code> and the scanner,
 CLI (<code>--standard</code>, <code>--list-standards</code>), and reporters pick it up
 automatically.</p>

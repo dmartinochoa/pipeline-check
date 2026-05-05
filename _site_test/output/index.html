@@ -519,6 +519,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="SARIF 2.1.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shape-highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shape highlights
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uploading-to-github-code-scanning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uploading to GitHub code scanning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#html" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTML
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exit-codes-are-independent-of-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit codes are independent of format
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1361,6 +1403,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="SARIF 2.1.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shape-highlights" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shape highlights
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uploading-to-github-code-scanning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uploading to GitHub code scanning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#html" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTML
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exit-codes-are-independent-of-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit codes are independent of format
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1426,29 +1510,29 @@ format carries the same finding set — only the rendering differs.</p>
 </tbody>
 </table>
 <h2 id="json">JSON<a class="headerlink" href="#json" title="Permanent link">&para;</a></h2>
-<p><code>bash
-pipeline_check --output json | jq '.score'</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.score&#39;</span>
+</span></code></pre></div>
 <p>Shape:</p>
-<p><code>json
-{
-  "schema_version": "1.0",
-  "tool_version": "0.7.0",
-  "score": {"grade": "B", "summary": {...}, "score": 82},
-  "findings": [
-    {
-      "check_id": "GHA-001",
-      "title": "Action not pinned to commit SHA",
-      "severity": "HIGH",
-      "resource": ".github/workflows/release.yml",
-      "description": "…",
-      "recommendation": "…",
-      "passed": false,
-      "controls": [
-        {"standard": "owasp_cicd_top_10", "control_id": "CICD-SEC-3", …}
-      ]
-    }
-  ]
-}</code></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;tool_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.7.0&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;grade&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span><span class="w"> </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">82</span><span class="p">},</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;findings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">&quot;check_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GHA-001&quot;</span><span class="p">,</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Action not pinned to commit SHA&quot;</span><span class="p">,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">&quot;severity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HIGH&quot;</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.github/workflows/release.yml&quot;</span><span class="p">,</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">&quot;recommendation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span><span class="nt">&quot;passed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">      </span><span class="nt">&quot;controls&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">        </span><span class="p">{</span><span class="nt">&quot;standard&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;owasp_cicd_top_10&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;control_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CICD-SEC-3&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">…</span><span class="p">}</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span><span class="p">]</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">}</span>
+</span></code></pre></div>
 <ul>
 <li><strong><code>schema_version</code></strong> is bumped on breaking format changes. Adding a
   new optional field does not require a bump; renaming or removing one
@@ -1464,14 +1548,14 @@ on every run.</p>
 SAST, Azure DevOps, and most SAST aggregators. Emitting SARIF turns
 every failing finding into a code-scanning alert — inline on the pull
 request, no custom integration needed.</p>
-<p>```bash</p>
-<h1 id="stream-to-stdout-redirect-yourself">Stream to stdout (redirect yourself)<a class="headerlink" href="#stream-to-stdout-redirect-yourself" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline github --gha-path .github/workflows \
-    --output sarif &gt; pipeline-check.sarif</p>
-<h1 id="or-write-directly-to-a-file">Or write directly to a file<a class="headerlink" href="#or-write-directly-to-a-file" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline github --gha-path .github/workflows \
-    --output sarif --output-file pipeline-check.sarif
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Stream to stdout (redirect yourself)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--gha-path<span class="w"> </span>.github/workflows<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--output<span class="w"> </span>sarif<span class="w"> </span>&gt;<span class="w"> </span>pipeline-check.sarif
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Or write directly to a file</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--gha-path<span class="w"> </span>.github/workflows<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>--output<span class="w"> </span>sarif<span class="w"> </span>--output-file<span class="w"> </span>pipeline-check.sarif
+</span></code></pre></div>
 <h3 id="shape-highlights">Shape highlights<a class="headerlink" href="#shape-highlights" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Only <strong>failed</strong> findings become <code>results</code>. Every distinct <code>check_id</code> is
@@ -1504,30 +1588,24 @@ request, no custom integration needed.</p>
   separate lookup.</li>
 </ul>
 <h3 id="uploading-to-github-code-scanning">Uploading to GitHub code scanning<a class="headerlink" href="#uploading-to-github-code-scanning" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<h1 id="githubworkflowssecurityyml">.github/workflows/security.yml<a class="headerlink" href="#githubworkflowssecurityyml" title="Permanent link">&para;</a></h1>
-<ul>
-<li>
-<p>name: Run pipeline_check
-  run: |
-    pipeline_check --pipeline github --gha-path .github/workflows \
-        --output sarif --output-file pipeline-check.sarif
-  continue-on-error: true</p>
-</li>
-<li>
-<p>name: Upload SARIF
-  uses: github/codeql-action/upload-sarif@v3
-  with:
-    sarif_file: pipeline-check.sarif
-    category: pipeline-check
-```</p>
-</li>
-</ul>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># .github/workflows/security.yml</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run pipeline_check</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="no">pipeline_check --pipeline github --gha-path .github/workflows \</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">        </span><span class="no">--output sarif --output-file pipeline-check.sarif</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Upload SARIF</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github/codeql-action/upload-sarif@v3</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">sarif_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipeline-check.sarif</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipeline-check</span>
+</span></code></pre></div>
 <p>Findings then appear under <strong>Security → Code scanning alerts</strong> and
 annotate diffs on every PR.</p>
 <h2 id="html">HTML<a class="headerlink" href="#html" title="Permanent link">&para;</a></h2>
-<p><code>bash
-pipeline_check --output html --output-file report.html</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>html<span class="w"> </span>--output-file<span class="w"> </span>report.html
+</span></code></pre></div>
 <p>Standalone HTML — embedded CSS and JavaScript, no external CDN calls.
 The report ships with:</p>
 <ul>

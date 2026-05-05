@@ -1608,11 +1608,11 @@ representation Terraform emits post-<code>plan</code>, so checks never parse raw
 <p>Every check ID mirrors its AWS-provider counterpart one-to-one. The
 semantics are identical; only the data source differs.</p>
 <h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
-<p><code>bash
-terraform init
-terraform plan -out=tfplan
-terraform show -json tfplan &gt; plan.json
-pipeline_check --pipeline terraform --tf-plan plan.json</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>terraform<span class="w"> </span>init
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>terraform<span class="w"> </span>plan<span class="w"> </span>-out<span class="o">=</span>tfplan
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>terraform<span class="w"> </span>show<span class="w"> </span>-json<span class="w"> </span>tfplan<span class="w"> </span>&gt;<span class="w"> </span>plan.json
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>terraform<span class="w"> </span>--tf-plan<span class="w"> </span>plan.json
+</span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the AWS provider.</p>
 <h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>

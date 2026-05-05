@@ -1464,9 +1464,10 @@ single critical issue cannot be masked by many low-severity passes.</p>
 </table>
 <p>INFO findings are informational and do not move the score.</p>
 <h2 id="formula">Formula<a class="headerlink" href="#formula" title="Permanent link">&para;</a></h2>
-<p><code>base          = (sum of weights for passing checks) / (sum of all weights) * 100
-critical_pen  = 5 points per CRITICAL failure
-score         = clamp(round(base - critical_pen), 0, 100)</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>base          = (sum of weights for passing checks) / (sum of all weights) * 100
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>critical_pen  = 5 points per CRITICAL failure
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>score         = clamp(round(base - critical_pen), 0, 100)
+</span></code></pre></div>
 <p>If every finding is INFO (or there are none), the score is 100.</p>
 <h2 id="grade-bands">Grade bands<a class="headerlink" href="#grade-bands" title="Permanent link">&para;</a></h2>
 <table>

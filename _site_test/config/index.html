@@ -655,8 +655,59 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pipeline-checkyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      .pipeline-check.yml
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unknown-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unknown keys
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unknown keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-config-check-fail-ci-on-typos" class="md-nav__link">
+    <span class="md-ellipsis">
+      --config-check — fail CI on typos
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
   
 </li>
       
@@ -1406,8 +1457,59 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pipeline-checkyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      .pipeline-check.yml
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unknown-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unknown keys
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unknown keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-config-check-fail-ci-on-typos" class="md-nav__link">
+    <span class="md-ellipsis">
+      --config-check — fail CI on typos
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
   
 </li>
       
@@ -1458,68 +1560,71 @@ a UsageError — no silent fallback).</p>
 <p>Every CLI flag maps to a key with <code>-</code> → <code>_</code>. Gate settings live under a
 nested <code>gate</code> sub-section.</p>
 <h3 id="pyprojecttoml"><code>pyproject.toml</code><a class="headerlink" href="#pyprojecttoml" title="Permanent link">&para;</a></h3>
-<p>```toml
-[tool.pipeline_check]
-pipeline = "aws"
-region = "eu-west-1"
-profile = "prod"
-standards = ["owasp_cicd_top_10", "nist_ssdf"]
-severity_threshold = "MEDIUM"
-output = "sarif"
-output_file = "pipeline-check.sarif"</p>
-<h1 id="provider-specific-paths-auto-detected-if-omitted-and-a-canonical">Provider-specific paths (auto-detected if omitted and a canonical<a class="headerlink" href="#provider-specific-paths-auto-detected-if-omitted-and-a-canonical" title="Permanent link">&para;</a></h1>
-<h1 id="file-exists-at-cwd">file exists at cwd).<a class="headerlink" href="#file-exists-at-cwd" title="Permanent link">&para;</a></h1>
-<p>gha_path = ".github/workflows"
-gitlab_path = ".gitlab-ci.yml"
-bitbucket_path = "bitbucket-pipelines.yml"
-circleci_path = ".circleci/config.yml"
-tf_plan = "plan.json"</p>
-<h1 id="extra-credential-patterns-for-the-secret-scanning-checks">Extra credential patterns for the secret-scanning checks<a class="headerlink" href="#extra-credential-patterns-for-the-secret-scanning-checks" title="Permanent link">&para;</a></h1>
-<h1 id="gha-008-gl-008-bb-008-ado-008-jf-008-cc-008-python-regex-syntax-anchor">(GHA-008, GL-008, BB-008, ADO-008, JF-008, CC-008). Python regex syntax; anchor<a class="headerlink" href="#gha-008-gl-008-bb-008-ado-008-jf-008-cc-008-python-regex-syntax-anchor" title="Permanent link">&para;</a></h1>
-<h1 id="with-for-whole-token-matches">with ^...$ for whole-token matches.<a class="headerlink" href="#with-for-whole-token-matches" title="Permanent link">&para;</a></h1>
-<p>secret_patterns = [
-    '^acme_[a-f0-9]{32}$',     # internal service token
-    '^xoxo-[A-Z0-9]{20,}$',    # vendor-specific API key
-]</p>
-<p>[tool.pipeline_check.gate]
-fail_on = "HIGH"
-min_grade = "B"
-max_failures = 10
-fail_on_checks = ["GHA-002", "CB-002"]
-baseline = "artifacts/baseline.json"
-ignore_file = ".pipelinecheckignore"
-```</p>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.pipeline_check]</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">pipeline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;aws&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;eu-west-1&quot;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">profile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;prod&quot;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">standards</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;owasp_cicd_top_10&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;nist_ssdf&quot;</span><span class="p">]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">severity_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;MEDIUM&quot;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sarif&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pipeline-check.sarif&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Provider-specific paths (auto-detected if omitted and a canonical</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># file exists at cwd).</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">gha_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.github/workflows&quot;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">gitlab_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.gitlab-ci.yml&quot;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">bitbucket_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;bitbucket-pipelines.yml&quot;</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">circleci_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.circleci/config.yml&quot;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">tf_plan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;plan.json&quot;</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Extra credential patterns for the secret-scanning checks</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># (GHA-008, GL-008, BB-008, ADO-008, JF-008, CC-008). Python regex syntax; anchor</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># with ^...$ for whole-token matches.</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">secret_patterns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="s1">&#39;^acme_[a-f0-9]{32}$&#39;</span><span class="p">,</span><span class="w">     </span><span class="c1"># internal service token</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">    </span><span class="s1">&#39;^xoxo-[A-Z0-9]{20,}$&#39;</span><span class="p">,</span><span class="w">    </span><span class="c1"># vendor-specific API key</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">]</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="k">[tool.pipeline_check.gate]</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">fail_on</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;HIGH&quot;</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">min_grade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;B&quot;</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">max_failures</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">fail_on_checks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GHA-002&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CB-002&quot;</span><span class="p">]</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">baseline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;artifacts/baseline.json&quot;</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">ignore_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.pipelinecheckignore&quot;</span>
+</span></code></pre></div>
 <h3 id="pipeline-checkyml"><code>.pipeline-check.yml</code><a class="headerlink" href="#pipeline-checkyml" title="Permanent link">&para;</a></h3>
 <p>Same keys, YAML shape:</p>
-<p>```yaml
-pipeline: aws
-region: eu-west-1
-standards:
-  - owasp_cicd_top_10
-  - nist_ssdf
-severity_threshold: MEDIUM</p>
-<p>secret_patterns:
-  - '^acme_[a-f0-9]{32}$'
-  - '^xoxo-[A-Z0-9]{20,}$'</p>
-<p>gate:
-  fail_on: HIGH
-  min_grade: B
-  max_failures: 10
-  fail_on_checks:
-    - GHA-002
-    - CB-002
-  baseline: artifacts/baseline.json
-  ignore_file: .pipelinecheckignore
-```</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">pipeline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-west-1</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">standards</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owasp_cicd_top_10</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nist_ssdf</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">severity_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MEDIUM</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">secret_patterns</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;^acme_[a-f0-9]{32}$&#39;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;^xoxo-[A-Z0-9]{20,}$&#39;</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="nt">gate</span><span class="p">:</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="nt">fail_on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="nt">min_grade</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">B</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span><span class="nt">max_failures</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">  </span><span class="nt">fail_on_checks</span><span class="p">:</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GHA-002</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CB-002</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">  </span><span class="nt">baseline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/baseline.json</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">  </span><span class="nt">ignore_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.pipelinecheckignore</span>
+</span></code></pre></div>
 <h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
 <p>Upper-snake-case of the option name, prefixed with <code>PIPELINE_CHECK_</code>.
 Gate settings use the <code>PIPELINE_CHECK_GATE_</code> prefix.</p>
-<p><code>bash
-export PIPELINE_CHECK_PIPELINE=aws
-export PIPELINE_CHECK_SEVERITY_THRESHOLD=HIGH
-export PIPELINE_CHECK_STANDARDS=owasp_cicd_top_10,nist_ssdf
-export PIPELINE_CHECK_GATE_FAIL_ON=HIGH
-export PIPELINE_CHECK_GATE_MAX_FAILURES=5</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_PIPELINE</span><span class="o">=</span>aws
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_SEVERITY_THRESHOLD</span><span class="o">=</span>HIGH
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_STANDARDS</span><span class="o">=</span>owasp_cicd_top_10,nist_ssdf
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_GATE_FAIL_ON</span><span class="o">=</span>HIGH
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_GATE_MAX_FAILURES</span><span class="o">=</span><span class="m">5</span>
+</span></code></pre></div>
 <p>Multi-value flags (<code>standards</code>, <code>checks</code>, <code>fail_on_checks</code>,
 <code>secret_patterns</code>) are comma-separated in env vars.</p>
 <p>Env vars override config-file values for the same key — useful in CI
@@ -1528,32 +1633,30 @@ deep scan) needs to tighten a single setting.</p>
 <h2 id="unknown-keys">Unknown keys<a class="headerlink" href="#unknown-keys" title="Permanent link">&para;</a></h2>
 <p>Unknown top-level or gate keys are <strong>ignored with a stderr warning</strong>
 rather than raising:</p>
-<p><code>[config] ignoring 'max_faillures' from pyproject.toml: unknown key</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[config] ignoring &#39;max_faillures&#39; from pyproject.toml: unknown key
+</span></code></pre></div>
 <p>Typos still surface, but a config written for a newer version keeps
 working on an older install.</p>
 <h3 id="-config-check-fail-ci-on-typos"><code>--config-check</code> — fail CI on typos<a class="headerlink" href="#-config-check-fail-ci-on-typos" title="Permanent link">&para;</a></h3>
 <p>The warning is easy to miss in CI logs. Run the dedicated validator
 step to make unknown keys a hard failure:</p>
-<p>```bash
-pipeline_check --config-check</p>
-<h1 id="config-ok-no-unknown-keys">[config] OK — no unknown keys.<a class="headerlink" href="#config-ok-no-unknown-keys" title="Permanent link">&para;</a></h1>
-<h1 id="exit-0">exit 0<a class="headerlink" href="#exit-0" title="Permanent link">&para;</a></h1>
-<p>```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pipeline_check<span class="w"> </span>--config-check
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># [config] OK — no unknown keys.</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># exit 0</span>
+</span></code></pre></div>
 <p>On a typo:</p>
-<p>```bash
-pipeline_check --config-check</p>
-<h1 id="config-pyprojecttoml-max_faillures-unknown-key">[config] pyproject.toml: 'max_faillures' — unknown key<a class="headerlink" href="#config-pyprojecttoml-max_faillures-unknown-key" title="Permanent link">&para;</a></h1>
-<h1 id="config-1-unknown-keys-detected">[config] 1 unknown key(s) detected.<a class="headerlink" href="#config-1-unknown-keys-detected" title="Permanent link">&para;</a></h1>
-<h1 id="exit-3">exit 3<a class="headerlink" href="#exit-3" title="Permanent link">&para;</a></h1>
-<p>```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pipeline_check<span class="w"> </span>--config-check
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># [config] pyproject.toml: &#39;max_faillures&#39; — unknown key</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># [config] 1 unknown key(s) detected.</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># exit 3</span>
+</span></code></pre></div>
 <p>Exit code <code>3</code> is reserved for this validation failure (distinct from
 <code>1</code> for a failed gate and <code>2</code> for a scan error), so CI can branch
 on the cause:</p>
-<p>```yaml
-- name: Validate pipeline_check config
-  run: pipeline_check --config-check</p>
-<h1 id="fails-the-job-immediately-on-any-unknown-key">↑ fails the job immediately on any unknown key<a class="headerlink" href="#fails-the-job-immediately-on-any-unknown-key" title="Permanent link">&para;</a></h1>
-<p>```</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate pipeline_check config</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipeline_check --config-check</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># ↑ fails the job immediately on any unknown key</span>
+</span></code></pre></div>
 <h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Keep <code>pyproject.toml</code> as the single source of truth for Python projects;

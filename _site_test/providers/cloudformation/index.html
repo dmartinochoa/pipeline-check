@@ -790,6 +790,42 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it covers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intrinsic-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Intrinsic handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-gap-fills-and-cfn-native-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-4 gap fills and CFN-native rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1350,6 +1386,42 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it covers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intrinsic-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Intrinsic handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-gap-fills-and-cfn-native-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-4 gap fills and CFN-native rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1381,11 +1453,10 @@ parse time so rules operate on one uniform structure.</p>
 <p>Every check ID mirrors its AWS-provider counterpart one-to-one. The
 semantics are identical; only the data source differs.</p>
 <h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
-<p>```bash
-pipeline_check --pipeline cloudformation --cfn-template path/to/template.yaml</p>
-<h1 id="or-point-at-a-directory-and-every-yml-yaml-json-template-is-scanned">or point at a directory and every <em>.yml / </em>.yaml / <em>.json / </em>.template is scanned<a class="headerlink" href="#or-point-at-a-directory-and-every-yml-yaml-json-template-is-scanned" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline cloudformation --cfn-template infra/
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>cloudformation<span class="w"> </span>--cfn-template<span class="w"> </span>path/to/template.yaml
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or point at a directory and every *.yml / *.yaml / *.json / *.template is scanned</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>cloudformation<span class="w"> </span>--cfn-template<span class="w"> </span>infra/
+</span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the AWS provider.</p>
 <h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
