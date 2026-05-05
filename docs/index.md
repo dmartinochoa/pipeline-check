@@ -10,7 +10,7 @@ hide:
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-<span class="pg-hero__wordmark">pipeline-check · v0.2.1</span>
+<span class="pg-hero__wordmark">pipeline-check · v0.3.0</span>
 
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 

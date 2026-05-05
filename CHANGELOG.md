@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-05
+
+### Added
+
+- **Documentation site** — full MkDocs Material build deployed to
+  GitHub Pages on every push to `master`. Hand-tuned landing page
+  with an interactive scan-pipeline component, animated terminal,
+  and brand-tinted typography across the provider, standards, and
+  reference docs.
+- **AWS IAM permissions reference** in `docs/providers/aws.md` —
+  per-service permission map plus a copy-paste least-privilege
+  IAM policy for running a full live-AWS scan, including a sample
+  GitHub Actions OIDC trust policy.
+
+### Changed
+
+- Pinned `pymdown-extensions` to `10.21.2` to fix a fenced-code
+  rendering bug present in 10.12 that mangled the language tag.
+- GitHub Actions in `.github/workflows/docs.yml` are now pinned to
+  commit SHAs (resolved from current major-version tags).
+- `LocalStack Integration Test` workflow is now manual-trigger only
+  (`workflow_dispatch`); push and nightly schedule triggers removed.
+
+### Internal
+
+- Dependabot kept dependencies and action SHAs current across the
+  release window.
+
 ## [0.2.1] - 2026-04-20
 
 ### Added
