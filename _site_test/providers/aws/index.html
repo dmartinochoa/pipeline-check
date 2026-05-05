@@ -759,6 +759,606 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#required-iam-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Required IAM permissions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Required IAM permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quickest-path-managed-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quickest path: managed policies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-map-by-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission map by service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy-paste-iam-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Copy-paste IAM policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trust-policy-for-an-iam-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trust policy for an IAM role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behaviour-when-permissions-are-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Behaviour when permissions are missing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codebuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeBuild
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodeBuild">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cb-001-secrets-in-plaintext-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-001 — Secrets in plaintext environment variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-002-privileged-mode-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-002 — Privileged mode enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-003-build-logging-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-003 — Build logging not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-004-no-build-timeout-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-004 — No build timeout configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-005-outdated-managed-build-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-005 — Outdated managed build image
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-006-source-auth-uses-long-lived-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-006 — Source auth uses long-lived token
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-007-codebuild-webhook-has-no-filter-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-007 — CodeBuild webhook has no filter group
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codepipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodePipeline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodePipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cp-001-no-approval-action-before-deploy-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-001 — No approval action before deploy stages
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-002-artifact-store-not-encrypted-with-customer-managed-kms-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-002 — Artifact store not encrypted with customer-managed KMS key
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-003-source-stage-using-polling-instead-of-event-driven-trigger" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-003 — Source stage using polling instead of event-driven trigger
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-004-legacy-thirdpartygithub-source-action-oauth-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codedeploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeDeploy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodeDeploy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cd-001-automatic-rollback-on-failure-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-001 — Automatic rollback on failure not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cd-002-allatonce-deployment-config-no-canary-or-rolling-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-002 — AllAtOnce deployment config — no canary or rolling strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cd-003-no-cloudwatch-alarm-monitoring-on-deployment-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-003 — No CloudWatch alarm monitoring on deployment group
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecr" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ECR">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ecr-001-image-scanning-on-push-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-001 — Image scanning on push not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-002-image-tags-are-mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-002 — Image tags are mutable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-003-repository-policy-allows-public-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-003 — Repository policy allows public access
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-004-no-lifecycle-policy-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-004 — No lifecycle policy configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-005-repository-encrypted-with-aes256-rather-than-kms-cmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-005 — Repository encrypted with AES256 rather than KMS CMK
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iam" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IAM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iam-001-cicd-role-has-administratoraccess-policy-attached" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-001 — CI/CD role has AdministratorAccess policy attached
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-002-cicd-role-has-wildcard-action-in-attached-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-002 — CI/CD role has wildcard Action in attached policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-003-cicd-role-has-no-permission-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-003 — CI/CD role has no permission boundary
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-004-cicd-role-can-passrole-to-any-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-004 — CI/CD role can PassRole to any role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-005-cicd-role-trust-policy-missing-stsexternalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-005 — CI/CD role trust policy missing sts:ExternalId
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-006-sensitive-actions-granted-with-wildcard-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-006 — Sensitive actions granted with wildcard Resource
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbac-pipeline-based-access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC (Pipeline-Based Access Control)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PBAC (Pipeline-Based Access Control)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pbac-001-codebuild-project-has-no-vpc-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC-001 — CodeBuild project has no VPC configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbac-002-codebuild-service-role-shared-across-projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC-002 — CodeBuild service role shared across projects
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3-001-artifact-bucket-public-access-block-not-fully-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-001 — Artifact bucket public access block not fully enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-002-artifact-bucket-server-side-encryption-not-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-002 — Artifact bucket server-side encryption not configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-003-artifact-bucket-versioning-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-003 — Artifact bucket versioning not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-004-artifact-bucket-access-logging-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-004 — Artifact bucket access logging not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-005-artifact-bucket-missing-awssecuretransport-deny" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-005 — Artifact bucket missing aws:SecureTransport deny
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-based-checks-phase-1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rule-based checks (Phase 1-3)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rule-based checks (Phase 1-3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#codebuild-cb-008010" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeBuild (CB-008..010)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudtrail-ct-001003" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudTrail (CT-001..003)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudwatch-logs-cwl-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudWatch Logs (CWL-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-manager-sm-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets Manager (SM-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-iam-007-008" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM (IAM-007, 008)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codeartifact-ca-001004" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeArtifact (CA-001..004)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codecommit-ccm-001003" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeCommit (CCM-001..003)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambda-lmb-001004" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lambda (LMB-001..004)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kms-kms-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      KMS (KMS-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssm-parameter-store-ssm-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSM Parameter Store (SSM-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-deeper-detections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-3 deeper detections
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-aws-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a new AWS check
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding a new AWS check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rule-based-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rule-based (preferred)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#class-based-legacy-for-large-new-service-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Class-based (legacy, for large new service modules)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1370,6 +1970,606 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#required-iam-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Required IAM permissions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Required IAM permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quickest-path-managed-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quickest path: managed policies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-map-by-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission map by service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy-paste-iam-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Copy-paste IAM policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trust-policy-for-an-iam-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trust policy for an IAM role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behaviour-when-permissions-are-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Behaviour when permissions are missing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codebuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeBuild
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodeBuild">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cb-001-secrets-in-plaintext-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-001 — Secrets in plaintext environment variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-002-privileged-mode-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-002 — Privileged mode enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-003-build-logging-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-003 — Build logging not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-004-no-build-timeout-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-004 — No build timeout configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-005-outdated-managed-build-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-005 — Outdated managed build image
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-006-source-auth-uses-long-lived-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-006 — Source auth uses long-lived token
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-007-codebuild-webhook-has-no-filter-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      CB-007 — CodeBuild webhook has no filter group
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codepipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodePipeline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodePipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cp-001-no-approval-action-before-deploy-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-001 — No approval action before deploy stages
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-002-artifact-store-not-encrypted-with-customer-managed-kms-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-002 — Artifact store not encrypted with customer-managed KMS key
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-003-source-stage-using-polling-instead-of-event-driven-trigger" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-003 — Source stage using polling instead of event-driven trigger
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cp-004-legacy-thirdpartygithub-source-action-oauth-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codedeploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeDeploy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CodeDeploy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cd-001-automatic-rollback-on-failure-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-001 — Automatic rollback on failure not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cd-002-allatonce-deployment-config-no-canary-or-rolling-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-002 — AllAtOnce deployment config — no canary or rolling strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cd-003-no-cloudwatch-alarm-monitoring-on-deployment-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      CD-003 — No CloudWatch alarm monitoring on deployment group
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecr" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ECR">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ecr-001-image-scanning-on-push-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-001 — Image scanning on push not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-002-image-tags-are-mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-002 — Image tags are mutable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-003-repository-policy-allows-public-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-003 — Repository policy allows public access
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-004-no-lifecycle-policy-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-004 — No lifecycle policy configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecr-005-repository-encrypted-with-aes256-rather-than-kms-cmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      ECR-005 — Repository encrypted with AES256 rather than KMS CMK
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iam" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IAM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iam-001-cicd-role-has-administratoraccess-policy-attached" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-001 — CI/CD role has AdministratorAccess policy attached
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-002-cicd-role-has-wildcard-action-in-attached-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-002 — CI/CD role has wildcard Action in attached policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-003-cicd-role-has-no-permission-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-003 — CI/CD role has no permission boundary
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-004-cicd-role-can-passrole-to-any-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-004 — CI/CD role can PassRole to any role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-005-cicd-role-trust-policy-missing-stsexternalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-005 — CI/CD role trust policy missing sts:ExternalId
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-006-sensitive-actions-granted-with-wildcard-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM-006 — Sensitive actions granted with wildcard Resource
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbac-pipeline-based-access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC (Pipeline-Based Access Control)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PBAC (Pipeline-Based Access Control)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pbac-001-codebuild-project-has-no-vpc-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC-001 — CodeBuild project has no VPC configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbac-002-codebuild-service-role-shared-across-projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      PBAC-002 — CodeBuild service role shared across projects
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3-001-artifact-bucket-public-access-block-not-fully-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-001 — Artifact bucket public access block not fully enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-002-artifact-bucket-server-side-encryption-not-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-002 — Artifact bucket server-side encryption not configured
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-003-artifact-bucket-versioning-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-003 — Artifact bucket versioning not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-004-artifact-bucket-access-logging-not-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-004 — Artifact bucket access logging not enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-005-artifact-bucket-missing-awssecuretransport-deny" class="md-nav__link">
+    <span class="md-ellipsis">
+      S3-005 — Artifact bucket missing aws:SecureTransport deny
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-based-checks-phase-1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rule-based checks (Phase 1-3)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rule-based checks (Phase 1-3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#codebuild-cb-008010" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeBuild (CB-008..010)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudtrail-ct-001003" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudTrail (CT-001..003)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudwatch-logs-cwl-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudWatch Logs (CWL-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-manager-sm-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets Manager (SM-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-iam-007-008" class="md-nav__link">
+    <span class="md-ellipsis">
+      IAM (IAM-007, 008)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codeartifact-ca-001004" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeArtifact (CA-001..004)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codecommit-ccm-001003" class="md-nav__link">
+    <span class="md-ellipsis">
+      CodeCommit (CCM-001..003)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambda-lmb-001004" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lambda (LMB-001..004)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kms-kms-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      KMS (KMS-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssm-parameter-store-ssm-001-002" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSM Parameter Store (SSM-001, 002)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-deeper-detections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-3 deeper detections
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-aws-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a new AWS check
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding a new AWS check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rule-based-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rule-based (preferred)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#class-based-legacy-for-large-new-service-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Class-based (legacy, for large new service modules)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1486,18 +2686,21 @@ supports named AWS CLI profiles via <code>--profile</code> and honours the
 original seven services).</p>
 <hr />
 <h2 id="cli-usage">CLI usage<a class="headerlink" href="#cli-usage" title="Permanent link">&para;</a></h2>
-<p>```bash</p>
-<h1 id="default-scan-us-east-1-with-the-ambient-boto3-credential-chain">Default: scan us-east-1 with the ambient boto3 credential chain<a class="headerlink" href="#default-scan-us-east-1-with-the-ambient-boto3-credential-chain" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline aws</p>
-<h1 id="pick-a-region">Pick a region<a class="headerlink" href="#pick-a-region" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline aws --region eu-west-1</p>
-<h1 id="use-a-named-aws-cli-profile-awscredentials">Use a named AWS CLI profile (~/.aws/credentials)<a class="headerlink" href="#use-a-named-aws-cli-profile-awscredentials" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline aws --profile prod-readonly</p>
-<h1 id="scope-the-scan-to-a-single-resource-eg-one-codepipeline">Scope the scan to a single resource (e.g. one CodePipeline)<a class="headerlink" href="#scope-the-scan-to-a-single-resource-eg-one-codepipeline" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline aws --target my-release-pipeline</p>
-<h1 id="point-boto3-at-a-local-endpoint-localstack-etc">Point boto3 at a local endpoint (LocalStack, etc.)<a class="headerlink" href="#point-boto3-at-a-local-endpoint-localstack-etc" title="Permanent link">&para;</a></h1>
-<p>AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Default: scan us-east-1 with the ambient boto3 credential chain</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Pick a region</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--region<span class="w"> </span>eu-west-1
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Use a named AWS CLI profile (~/.aws/credentials)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--profile<span class="w"> </span>prod-readonly
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Scope the scan to a single resource (e.g. one CodePipeline)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--target<span class="w"> </span>my-release-pipeline
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Point boto3 at a local endpoint (LocalStack, etc.)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nv">AWS_ENDPOINT_URL</span><span class="o">=</span>http://localhost:4566<span class="w"> </span>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws
+</span></code></pre></div>
 <p>Credentials are resolved through the standard
 <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html">boto3 credential chain</a>
 — environment variables, <code>~/.aws/credentials</code>, IMDS on EC2, container
@@ -1645,75 +2848,75 @@ service rather than failing.</p>
 role or user the scanner runs as. Every action is read-only and every
 resource is <code>*</code> because boto3 list/describe APIs do not accept
 resource-level conditions.</p>
-<p><code>json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "PipelineGuardReadOnlyScan",
-      "Effect": "Allow",
-      "Action": [
-        "cloudtrail:DescribeTrails",
-        "cloudtrail:GetTrailStatus",
-        "cloudwatch:DescribeAlarms",
-        "codeartifact:DescribeRepository",
-        "codeartifact:GetDomainPermissionsPolicy",
-        "codeartifact:GetRepositoryPermissionsPolicy",
-        "codeartifact:ListDomains",
-        "codeartifact:ListRepositories",
-        "codebuild:BatchGetProjects",
-        "codebuild:ListProjects",
-        "codebuild:ListSourceCredentials",
-        "codecommit:GetRepository",
-        "codecommit:GetRepositoryTriggers",
-        "codecommit:ListAssociatedApprovalRuleTemplatesForRepository",
-        "codecommit:ListRepositories",
-        "codedeploy:BatchGetDeploymentGroups",
-        "codedeploy:ListApplications",
-        "codedeploy:ListDeploymentGroups",
-        "codepipeline:GetPipeline",
-        "codepipeline:ListPipelines",
-        "ec2:DescribeSecurityGroups",
-        "ecr:DescribePullThroughCacheRules",
-        "ecr:DescribeRepositories",
-        "ecr:GetLifecyclePolicy",
-        "ecr:GetRepositoryPolicy",
-        "events:ListRules",
-        "events:ListTargetsByRule",
-        "iam:GetAccessKeyLastUsed",
-        "iam:GetPolicy",
-        "iam:GetPolicyVersion",
-        "iam:GetRolePolicy",
-        "iam:ListAccessKeys",
-        "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies",
-        "iam:ListRoles",
-        "iam:ListUsers",
-        "inspector2:BatchGetAccountStatus",
-        "kms:DescribeKey",
-        "kms:GetKeyPolicy",
-        "kms:GetKeyRotationStatus",
-        "kms:ListKeys",
-        "lambda:GetFunctionCodeSigningConfig",
-        "lambda:GetFunctionUrlConfig",
-        "lambda:GetPolicy",
-        "lambda:ListFunctions",
-        "logs:DescribeLogGroups",
-        "s3:GetBucketEncryption",
-        "s3:GetBucketLogging",
-        "s3:GetBucketPolicy",
-        "s3:GetBucketVersioning",
-        "s3:GetPublicAccessBlock",
-        "secretsmanager:GetResourcePolicy",
-        "secretsmanager:ListSecrets",
-        "signer:ListSigningProfiles",
-        "ssm:DescribeParameters",
-        "sts:GetCallerIdentity"
-      ],
-      "Resource": "*"
-    }
-  ]
-}</code></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2012-10-17&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PipelineGuardReadOnlyScan&quot;</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">        </span><span class="s2">&quot;cloudtrail:DescribeTrails&quot;</span><span class="p">,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">        </span><span class="s2">&quot;cloudtrail:GetTrailStatus&quot;</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">        </span><span class="s2">&quot;cloudwatch:DescribeAlarms&quot;</span><span class="p">,</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">        </span><span class="s2">&quot;codeartifact:DescribeRepository&quot;</span><span class="p">,</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">        </span><span class="s2">&quot;codeartifact:GetDomainPermissionsPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">        </span><span class="s2">&quot;codeartifact:GetRepositoryPermissionsPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="s2">&quot;codeartifact:ListDomains&quot;</span><span class="p">,</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">        </span><span class="s2">&quot;codeartifact:ListRepositories&quot;</span><span class="p">,</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">        </span><span class="s2">&quot;codebuild:BatchGetProjects&quot;</span><span class="p">,</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">        </span><span class="s2">&quot;codebuild:ListProjects&quot;</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">        </span><span class="s2">&quot;codebuild:ListSourceCredentials&quot;</span><span class="p">,</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="s2">&quot;codecommit:GetRepository&quot;</span><span class="p">,</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">        </span><span class="s2">&quot;codecommit:GetRepositoryTriggers&quot;</span><span class="p">,</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">        </span><span class="s2">&quot;codecommit:ListAssociatedApprovalRuleTemplatesForRepository&quot;</span><span class="p">,</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="s2">&quot;codecommit:ListRepositories&quot;</span><span class="p">,</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">        </span><span class="s2">&quot;codedeploy:BatchGetDeploymentGroups&quot;</span><span class="p">,</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">        </span><span class="s2">&quot;codedeploy:ListApplications&quot;</span><span class="p">,</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">        </span><span class="s2">&quot;codedeploy:ListDeploymentGroups&quot;</span><span class="p">,</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">        </span><span class="s2">&quot;codepipeline:GetPipeline&quot;</span><span class="p">,</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">        </span><span class="s2">&quot;codepipeline:ListPipelines&quot;</span><span class="p">,</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">        </span><span class="s2">&quot;ec2:DescribeSecurityGroups&quot;</span><span class="p">,</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">        </span><span class="s2">&quot;ecr:DescribePullThroughCacheRules&quot;</span><span class="p">,</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">        </span><span class="s2">&quot;ecr:DescribeRepositories&quot;</span><span class="p">,</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">        </span><span class="s2">&quot;ecr:GetLifecyclePolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">        </span><span class="s2">&quot;ecr:GetRepositoryPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">        </span><span class="s2">&quot;events:ListRules&quot;</span><span class="p">,</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">        </span><span class="s2">&quot;events:ListTargetsByRule&quot;</span><span class="p">,</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">        </span><span class="s2">&quot;iam:GetAccessKeyLastUsed&quot;</span><span class="p">,</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">        </span><span class="s2">&quot;iam:GetPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">        </span><span class="s2">&quot;iam:GetPolicyVersion&quot;</span><span class="p">,</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">        </span><span class="s2">&quot;iam:GetRolePolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">        </span><span class="s2">&quot;iam:ListAccessKeys&quot;</span><span class="p">,</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="w">        </span><span class="s2">&quot;iam:ListAttachedRolePolicies&quot;</span><span class="p">,</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">        </span><span class="s2">&quot;iam:ListRolePolicies&quot;</span><span class="p">,</span>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">        </span><span class="s2">&quot;iam:ListRoles&quot;</span><span class="p">,</span>
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">        </span><span class="s2">&quot;iam:ListUsers&quot;</span><span class="p">,</span>
+</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">        </span><span class="s2">&quot;inspector2:BatchGetAccountStatus&quot;</span><span class="p">,</span>
+</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="w">        </span><span class="s2">&quot;kms:DescribeKey&quot;</span><span class="p">,</span>
+</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="w">        </span><span class="s2">&quot;kms:GetKeyPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="w">        </span><span class="s2">&quot;kms:GetKeyRotationStatus&quot;</span><span class="p">,</span>
+</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="w">        </span><span class="s2">&quot;kms:ListKeys&quot;</span><span class="p">,</span>
+</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="w">        </span><span class="s2">&quot;lambda:GetFunctionCodeSigningConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="w">        </span><span class="s2">&quot;lambda:GetFunctionUrlConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="w">        </span><span class="s2">&quot;lambda:GetPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">        </span><span class="s2">&quot;lambda:ListFunctions&quot;</span><span class="p">,</span>
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="w">        </span><span class="s2">&quot;logs:DescribeLogGroups&quot;</span><span class="p">,</span>
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="w">        </span><span class="s2">&quot;s3:GetBucketEncryption&quot;</span><span class="p">,</span>
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="w">        </span><span class="s2">&quot;s3:GetBucketLogging&quot;</span><span class="p">,</span>
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="w">        </span><span class="s2">&quot;s3:GetBucketPolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="w">        </span><span class="s2">&quot;s3:GetBucketVersioning&quot;</span><span class="p">,</span>
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="w">        </span><span class="s2">&quot;s3:GetPublicAccessBlock&quot;</span><span class="p">,</span>
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="w">        </span><span class="s2">&quot;secretsmanager:GetResourcePolicy&quot;</span><span class="p">,</span>
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="w">        </span><span class="s2">&quot;secretsmanager:ListSecrets&quot;</span><span class="p">,</span>
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="w">        </span><span class="s2">&quot;signer:ListSigningProfiles&quot;</span><span class="p">,</span>
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="w">        </span><span class="s2">&quot;ssm:DescribeParameters&quot;</span><span class="p">,</span>
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a><span class="w">        </span><span class="s2">&quot;sts:GetCallerIdentity&quot;</span>
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;*&quot;</span>
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-67"><a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-1-68"><a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a><span class="p">}</span>
+</span></code></pre></div>
 <p>The policy is <strong>2.5 KB</strong> — well inside the 6,144-byte limit for a
 customer-managed policy and the 10,240-byte limit for an inline role
 policy.</p>
@@ -1722,27 +2925,27 @@ policy.</p>
 the policy above with a trust policy that lets your CI system assume
 the role. Below is an example for GitHub Actions OIDC; adapt for your
 provider.</p>
-<p><code>json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:my-org/my-repo:ref:refs/heads/main"
-        }
-      }
-    }
-  ]
-}</code></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2012-10-17&quot;</span><span class="p">,</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">&quot;Principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="nt">&quot;Federated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com&quot;</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sts:AssumeRoleWithWebIdentity&quot;</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="nt">&quot;StringEquals&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">          </span><span class="nt">&quot;token.actions.githubusercontent.com:aud&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sts.amazonaws.com&quot;</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">        </span><span class="p">},</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">        </span><span class="nt">&quot;StringLike&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">          </span><span class="nt">&quot;token.actions.githubusercontent.com:sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;repo:my-org/my-repo:ref:refs/heads/main&quot;</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">}</span>
+</span></code></pre></div>
 <h3 id="behaviour-when-permissions-are-missing">Behaviour when permissions are missing<a class="headerlink" href="#behaviour-when-permissions-are-missing" title="Permanent link">&para;</a></h3>
 <p>The scanner does not fail closed when the principal lacks an action.
 Instead, the per-service enumeration records the error and the
