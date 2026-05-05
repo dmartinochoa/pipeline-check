@@ -179,9 +179,9 @@ flowchart LR
     G -->|fail| I[Block + autofix]
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
-    click B "providers/README/" "Auto-detected from cwd; override with --pipeline NAME"
+    click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
     click C "attack_chains/" "330+ rules emit findings with severity, location, fix"
-    click D "standards/README/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
+    click D "standards/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score with an A/B/C/D grade"
     click F1 "output/#terminal" "Rich color table for humans"
     click F2 "output/#json" "Machine-parseable JSON for scripts"
