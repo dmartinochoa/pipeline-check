@@ -65,28 +65,322 @@ body {
 
 .md-typeset {
   font-feature-settings: "kern", "liga", "calt";
+  font-size: 0.86rem;
+  line-height: 1.7;
 }
+
+/* ----- Heading rhythm ------------------------------------- */
 
 .md-typeset h1,
 .md-typeset h2,
 .md-typeset h3 {
   letter-spacing: -0.02em;
   font-weight: 600;
+  line-height: 1.25;
 }
 
-.md-typeset h1 { letter-spacing: -0.025em; }
+/* H1: page title with a small teal-gradient accent underline.
+   Editorial accent, signals "page start" without an icon. */
+.md-typeset h1 {
+  font-size: clamp(1.85rem, 3vw, 2.3rem);
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin: 0 0 0.85rem;
+}
+
+.md-typeset h1::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pg-teal-500) 0%, var(--pg-teal-300) 100%);
+  border-radius: 2px;
+  margin-top: 0.85rem;
+  opacity: 0.95;
+}
+
+/* H2: left vertical accent bar. Reads as "new section" without
+   an icon, and lets the eye scan the page for section starts. */
+.md-typeset h2 {
+  font-size: clamp(1.35rem, 2.2vw, 1.6rem);
+  font-weight: 650;
+  margin: 3rem 0 1rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.md-typeset h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  bottom: 0.25em;
+  width: 3px;
+  background: var(--pg-teal-500);
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h2::before {
+  background: var(--pg-teal-400);
+}
+
+/* H3: simpler — no accent, just typographic distinction */
+.md-typeset h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 2rem 0 0.6rem;
+  letter-spacing: -0.015em;
+}
+
+/* H4: smallest heading rung */
+.md-typeset h4 {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Constrain prose width for readability — measure ~70-80 char */
+.md-typeset p,
+.md-typeset li,
+.md-typeset blockquote {
+  max-width: 64rem;
+}
+
+/* ----- Inline code & code blocks --------------------------- */
 
 .md-typeset code {
   font-feature-settings: "calt" 0;
   border-radius: 4px;
+  padding: 0.12em 0.4em;
+  font-size: 0.86em;
+  background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-teal-500));
+  color: var(--md-default-fg-color);
+  border: 1px solid color-mix(in oklab, var(--md-default-bg-color) 80%, var(--pg-teal-500));
 }
 
-/* Brand-tinted links (replaces Material's default blue) */
+[data-md-color-scheme="slate"] .md-typeset code {
+  background: color-mix(in oklab, var(--md-default-bg-color) 80%, var(--pg-teal-500));
+  border-color: color-mix(in oklab, var(--md-default-bg-color) 70%, var(--pg-teal-500));
+}
+
+/* Pre/code blocks: rounded, hairline border, restful inner padding */
+.md-typeset pre > code,
+.md-typeset .highlight pre,
+.md-typeset .codehilite pre {
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  padding: 0.95rem 1rem;
+}
+
+.md-typeset .highlight,
+.md-typeset .codehilite {
+  border-radius: 10px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  overflow: hidden;
+  margin: 1.25rem 0;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .highlight,
+[data-md-color-scheme="slate"] .md-typeset .codehilite {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Reset inline code style INSIDE pre blocks (no extra background) */
+.md-typeset pre code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 0.86rem !important;
+}
+
+/* ----- Brand-tinted links --------------------------------- */
 .md-typeset a {
   color: var(--pg-teal-500);
+  text-decoration-color: color-mix(in oklab, var(--pg-teal-500) 35%, transparent);
+  text-underline-offset: 0.18em;
+}
+.md-typeset a:hover {
+  text-decoration-color: var(--pg-teal-500);
 }
 [data-md-color-scheme="slate"] .md-typeset a {
   color: var(--pg-teal-400);
+  text-decoration-color: color-mix(in oklab, var(--pg-teal-400) 40%, transparent);
+}
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+  text-decoration-color: var(--pg-teal-400);
+}
+
+/* External link arrow: small ↗ after links to other domains.
+   Skips badges (img children) and self-links. */
+.md-typeset a[href^="http"]:not([href*="dmartinochoa.github.io"]):not(:has(img))::after {
+  content: " ↗";
+  font-size: 0.85em;
+  opacity: 0.45;
+  margin-left: 0.05em;
+  letter-spacing: 0;
+  display: inline-block;
+  transform: translateY(-0.05em);
+}
+
+/* ----- Tables --------------------------------------------- */
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.84rem;
+  margin: 1.25rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.md-typeset table:not([class]) thead th {
+  background: color-mix(in oklab, var(--md-default-bg-color) 92%, var(--pg-navy-700));
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  text-align: left;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 2px solid var(--pg-teal-500);
+  font-size: 0.8rem;
+  text-transform: none;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) thead th {
+  background: color-mix(in oklab, var(--md-default-bg-color) 75%, var(--pg-navy-700));
+}
+
+.md-typeset table:not([class]) td {
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tbody tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-navy-900));
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tbody tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-navy-900));
+}
+
+.md-typeset table:not([class]) tbody tr:hover td {
+  background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-teal-500));
+}
+
+.md-typeset table:not([class]) tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ----- Admonitions: 3-tone brand palette ------------------- */
+/* Material ships ~12 types in a rainbow palette. Consolidate
+   to: info (teal), caution (amber), danger (coral). */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 10px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-left: 3px solid var(--pg-teal-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
+  box-shadow: none;
+  font-size: 0.86rem;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition,
+[data-md-color-scheme="slate"] .md-typeset details {
+  background: color-mix(in oklab, var(--md-default-bg-color) 88%, var(--pg-teal-500));
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  background: transparent !important;
+  font-weight: 600;
+  font-size: 0.86rem;
+  letter-spacing: -0.005em;
+  padding-block: 0.6rem !important;
+}
+
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+  background-color: var(--pg-teal-500) !important;
+}
+
+/* Caution family: warning, bug, attention */
+.md-typeset .admonition.warning,
+.md-typeset .admonition.bug,
+.md-typeset .admonition.attention,
+.md-typeset details.warning,
+.md-typeset details.bug,
+.md-typeset details.attention {
+  border-left-color: var(--pg-warn-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 95%, var(--pg-warn-500));
+}
+
+.md-typeset .admonition.warning .admonition-title::before,
+.md-typeset .admonition.bug .admonition-title::before,
+.md-typeset .admonition.attention .admonition-title::before {
+  background-color: var(--pg-warn-500) !important;
+}
+
+/* Danger family: danger, failure, error */
+.md-typeset .admonition.danger,
+.md-typeset .admonition.failure,
+.md-typeset .admonition.error,
+.md-typeset details.danger,
+.md-typeset details.failure,
+.md-typeset details.error {
+  border-left-color: var(--pg-crit-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 95%, var(--pg-crit-500));
+}
+
+.md-typeset .admonition.danger .admonition-title::before,
+.md-typeset .admonition.failure .admonition-title::before,
+.md-typeset .admonition.error .admonition-title::before {
+  background-color: var(--pg-crit-500) !important;
+}
+
+/* ----- Blockquotes ---------------------------------------- */
+.md-typeset blockquote {
+  border-left: 3px solid var(--pg-teal-500);
+  padding-left: 1rem;
+  font-style: italic;
+  color: var(--md-default-fg-color--light);
+  margin: 1.25rem 0;
+}
+
+[data-md-color-scheme="slate"] .md-typeset blockquote {
+  border-left-color: var(--pg-teal-400);
+}
+
+/* ----- Lists ---------------------------------------------- */
+.md-typeset ul li::marker,
+.md-typeset ol li::marker {
+  color: var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"] .md-typeset ul li::marker,
+[data-md-color-scheme="slate"] .md-typeset ol li::marker {
+  color: var(--pg-teal-400);
+}
+
+.md-typeset ul li,
+.md-typeset ol li {
+  margin-bottom: 0.35rem;
+}
+
+/* ----- Horizontal rule ------------------------------------ */
+.md-typeset hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--md-default-fg-color--lightest) 20%,
+    var(--md-default-fg-color--lightest) 80%,
+    transparent 100%);
+  margin: 3rem 0;
 }
 
 /* ------------------------------------------------------------
@@ -774,6 +1068,321 @@ body:has(.pg-home) {
   padding: 2rem 1.25rem;
   text-align: center;
 }
+
+/* ============================================================
+   Interactive scan-pipeline flow
+   ============================================================ */
+
+.pg-flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .pg-flow { grid-template-columns: 1fr; }
+}
+
+.pg-flow__step {
+  position: relative;
+  padding: 0 0.5rem;
+}
+
+/* Connector line between steps (desktop horizontal, mobile vertical) */
+.pg-flow__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(90deg,
+    color-mix(in oklab, var(--md-default-fg-color--lightest) 40%, transparent) 0%,
+    var(--pg-teal-500) 100%);
+  opacity: 0.6;
+}
+
+@media (min-width: 901px) {
+  .pg-flow__step:not(:last-child)::after {
+    top: 36px;
+    right: -0.5rem;
+    left: calc(100% - 1rem);
+    height: 2px;
+  }
+}
+
+@media (max-width: 900px) {
+  .pg-flow__step:not(:last-child)::after {
+    left: 24px;
+    top: calc(100% - 0.5rem);
+    bottom: -0.5rem;
+    width: 2px;
+    background: linear-gradient(180deg,
+      color-mix(in oklab, var(--md-default-fg-color--lightest) 40%, transparent) 0%,
+      var(--pg-teal-500) 100%);
+  }
+  .pg-flow__step { margin-bottom: 1rem; }
+}
+
+/* Node — the visible interactive button */
+.pg-flow__node {
+  position: relative;
+  width: 100%;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 12px;
+  padding: 1rem 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease,
+              box-shadow 0.18s ease, background 0.18s ease;
+  z-index: 1;
+}
+
+.pg-flow__node:hover,
+.pg-flow__node:focus-visible {
+  border-color: var(--pg-teal-500);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -16px color-mix(in oklab, var(--pg-teal-500) 60%, transparent);
+  outline: none;
+  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
+}
+
+.pg-flow__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--md-default-bg-color) 86%, var(--pg-teal-500));
+  color: var(--pg-teal-500);
+  margin-bottom: 0.6rem;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.pg-flow__node:hover .pg-flow__icon,
+.pg-flow__node:focus-visible .pg-flow__icon {
+  background: var(--pg-teal-500);
+  color: #fff;
+}
+
+[data-md-color-scheme="slate"] .pg-flow__icon {
+  background: color-mix(in oklab, var(--md-default-bg-color) 80%, var(--pg-teal-500));
+  color: var(--pg-teal-400);
+}
+
+.pg-flow__num {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--md-default-fg-color--lighter);
+  font-weight: 500;
+}
+
+.pg-flow__label {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
+}
+
+.pg-flow__sub {
+  font-size: 0.78rem;
+  color: var(--md-default-fg-color--light);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.01em;
+}
+
+/* Popover card */
+.pg-flow__card {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-top: 3px solid var(--pg-teal-500);
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 24px 48px -16px color-mix(in oklab, var(--pg-navy-900) 35%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  pointer-events: none;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+@media (min-width: 901px) {
+  /* On wider grids, give the popover a comfortable fixed width
+     and let it overlap neighbours via z-index + shadow. */
+  .pg-flow__card {
+    width: 320px;
+    max-width: 320px;
+    right: auto;
+  }
+
+  /* The last two steps' popovers anchor right-edge so they don't
+     overflow the viewport. */
+  .pg-flow__step:nth-child(4) .pg-flow__card,
+  .pg-flow__step:nth-child(5) .pg-flow__card {
+    left: auto;
+    right: 0.5rem;
+  }
+}
+
+.pg-flow__step:hover .pg-flow__card,
+.pg-flow__step:focus-within .pg-flow__card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.pg-flow__card-title {
+  font-weight: 650;
+  font-size: 0.95rem;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.45rem;
+  color: var(--md-default-fg-color);
+}
+
+.pg-flow__card p {
+  margin: 0 0 0.65rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.pg-flow__card ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1rem;
+  list-style: none;
+}
+
+.pg-flow__card ul li {
+  position: relative;
+  padding-left: 0.85rem;
+  margin-bottom: 0.3rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.pg-flow__card ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"] .pg-flow__card ul li::before {
+  background: var(--pg-teal-400);
+}
+
+.pg-flow__card code {
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+}
+
+.pg-flow__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pg-teal-500);
+  text-decoration: none;
+}
+
+.pg-flow__link:hover { text-decoration: underline; }
+.pg-flow__link::after {
+  content: "→";
+  transition: transform 0.15s ease;
+}
+.pg-flow__link:hover::after { transform: translateX(2px); }
+
+[data-md-color-scheme="slate"] .pg-flow__link {
+  color: var(--pg-teal-400);
+}
+
+/* Strip the external-link arrow inside flow cards (it's all
+   internal docs links there) */
+.pg-flow__card a::after { content: ""; }
+
+/* ----- Output formats grid -------------------------------- */
+.pg-outputs {
+  margin-top: 4rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.pg-outputs__head {
+  margin-bottom: 1.25rem;
+}
+
+.pg-outputs__lede {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.4rem 0 0;
+  letter-spacing: -0.015em;
+  color: var(--md-default-fg-color);
+}
+
+.pg-outputs__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.65rem;
+}
+
+.pg-output {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  text-decoration: none !important;
+  color: var(--md-default-fg-color);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.pg-output:hover {
+  border-color: var(--pg-teal-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
+}
+
+.pg-output strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--md-default-fg-color);
+}
+
+.pg-output span {
+  font-size: 0.78rem;
+  color: var(--md-default-fg-color--light);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.01em;
+}
+
+.pg-output:hover strong { color: var(--pg-teal-500); }
+
+[data-md-color-scheme="slate"] .pg-output:hover strong { color: var(--pg-teal-400); }
+
+.pg-output::after { content: "" !important; }
 
 /* ----- Closing CTA (lighter dark, no heavy gradient) ------- */
 .pg-cta {
