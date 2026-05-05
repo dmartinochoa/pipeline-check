@@ -555,46 +555,199 @@ body {
 .pg-doc-card::after { content: "" !important; }
 
 /* ------------------------------------------------------------
-   Top bar — solid brand navy on every page. Earlier revisions
-   tried a transparent treatment over the hero that filled in on
-   scroll; the transition was janky and the search bar / tabs row
-   clashed against the white body once scrolled. Solid is calmer.
+   Top bar — adapts to the page palette.
+   Inner doc pages: header matches the body (white in light mode,
+   slate in dark mode) with a hairline bottom border so it reads
+   as part of the page rather than a separate dark band.
+   Home page: header bleeds into the navy hero — same dark navy
+   so the bar and hero gradient read as one continuous surface.
    ------------------------------------------------------------ */
 .md-header,
 .md-tabs {
-  background: var(--pg-navy-950);
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
   box-shadow: none;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
 }
 
-.md-tabs {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Subtle drop shadow appears once scrolled — Material toggles
-   data-md-state="shadow" at scroll-threshold. Keeps the bar
-   visually anchored to the viewport edge. */
 .md-header[data-md-state="shadow"] {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 2px 12px color-mix(in oklab, var(--md-default-fg-color) 14%, transparent);
 }
 
-/* Header logo / title block */
 .md-header__title {
   font-weight: 600;
   letter-spacing: -0.005em;
+  color: var(--md-default-fg-color);
 }
 
-/* Tabs row: tighter, more editorial */
-.md-tabs__list { padding: 0 0.4rem; }
-.md-tabs__item { height: 2.4rem; }
+.md-header__button {
+  color: var(--md-default-fg-color);
+}
+.md-header__button:hover { color: var(--pg-teal-500); }
+[data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
+
+/* Tabs row: centered, tighter, with dropdown submenus */
+.md-tabs__list {
+  padding: 0 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.md-tabs__item {
+  height: 2.4rem;
+  position: relative;
+}
 .md-tabs__link {
   font-size: 0.78rem;
   font-weight: 500;
-  opacity: 0.78;
+  opacity: 0.72;
   letter-spacing: 0.01em;
+  color: var(--md-default-fg-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
 }
 .md-tabs__link:hover,
-.md-tabs__link--active {
+.md-tabs__link--active,
+.md-tabs__item--active > .md-tabs__link {
   opacity: 1;
+  color: var(--pg-teal-500);
+}
+[data-md-color-scheme="slate"] .md-tabs__link:hover,
+[data-md-color-scheme="slate"] .md-tabs__link--active,
+[data-md-color-scheme="slate"] .md-tabs__item--active > .md-tabs__link {
+  color: var(--pg-teal-400);
+}
+
+/* Chevron indicator for tabs with children */
+.md-tabs__chevron {
+  font-size: 0.62rem;
+  line-height: 1;
+  opacity: 0.5;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  margin-top: 1px;
+}
+.md-tabs__item--has-menu:hover .md-tabs__chevron,
+.md-tabs__item--has-menu:focus-within .md-tabs__chevron {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* ----- Dropdown submenus -------------------------------- */
+.md-tabs__menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  padding: 0.45rem;
+  min-width: 220px;
+  box-shadow: 0 16px 32px -12px color-mix(in oklab, var(--md-default-fg-color) 25%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  z-index: 1100;
+  pointer-events: none;
+}
+
+.md-tabs__menu--wide {
+  min-width: 360px;
+}
+
+.md-tabs__menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.md-tabs__menu--wide ul {
+  columns: 2;
+  column-gap: 0.4rem;
+}
+
+.md-tabs__item--has-menu:hover .md-tabs__menu,
+.md-tabs__item--has-menu:focus-within .md-tabs__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.md-tabs__menu-link {
+  display: block;
+  padding: 0.45rem 0.7rem;
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+  break-inside: avoid;
+}
+
+.md-tabs__menu-link:hover,
+.md-tabs__menu-link.is-active {
+  background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-teal-500));
+  color: var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"] .md-tabs__menu-link:hover,
+[data-md-color-scheme="slate"] .md-tabs__menu-link.is-active {
+  background: color-mix(in oklab, var(--md-default-bg-color) 78%, var(--pg-teal-500));
+  color: var(--pg-teal-300);
+}
+
+/* On home page, the menu sits over a navy header — flip surface */
+body:has(.pg-home) .md-tabs__menu {
+  background: var(--pg-navy-900);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 32px -12px rgba(0, 0, 0, 0.4);
+}
+
+body:has(.pg-home) .md-tabs__menu-link {
+  color: var(--pg-text-on-dark);
+}
+
+body:has(.pg-home) .md-tabs__menu-link:hover,
+body:has(.pg-home) .md-tabs__menu-link.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--pg-teal-400);
+}
+
+/* Suppress menu on small screens (Material switches to drawer nav) */
+@media (max-width: 1219px) {
+  .md-tabs__menu { display: none; }
+  .md-tabs__chevron { display: none; }
+}
+
+/* Home-page override: header bleeds into the hero */
+body:has(.pg-home) .md-header,
+body:has(.pg-home) .md-tabs {
+  background: var(--pg-navy-950);
+  color: var(--pg-text-on-dark);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+body:has(.pg-home) .md-header__title,
+body:has(.pg-home) .md-header__button,
+body:has(.pg-home) .md-tabs__link {
+  color: var(--pg-text-on-dark);
+}
+
+body:has(.pg-home) .md-tabs__link { opacity: 0.78; }
+
+body:has(.pg-home) .md-tabs__link:hover,
+body:has(.pg-home) .md-tabs__link--active,
+body:has(.pg-home) .md-header__button:hover {
+  color: var(--pg-teal-400);
+  opacity: 1;
+}
+
+body:has(.pg-home) .md-header[data-md-state="shadow"] {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 
 /* ------------------------------------------------------------
@@ -678,14 +831,29 @@ body:has(.pg-home) .md-footer__inner {
   display: none;
 }
 
-/* Search input — make it read clearly against the dark header. */
+/* Search input — adapts to the header palette per page. */
 .md-search__form {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklab, var(--md-default-fg-color) 6%, transparent);
   border-radius: 8px;
 }
-.md-search__form:hover { background: rgba(255, 255, 255, 0.12); }
-[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
-  background: rgba(255, 255, 255, 0.96);
+.md-search__form:hover {
+  background: color-mix(in oklab, var(--md-default-fg-color) 10%, transparent);
+}
+.md-search__input { color: var(--md-default-fg-color); }
+.md-search__input::placeholder {
+  color: color-mix(in oklab, var(--md-default-fg-color) 50%, transparent);
+}
+
+/* Home page: search keeps the white-tint treatment over navy. */
+body:has(.pg-home) .md-search__form {
+  background: rgba(255, 255, 255, 0.08);
+}
+body:has(.pg-home) .md-search__form:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+body:has(.pg-home) .md-search__input { color: var(--pg-text-on-dark); }
+body:has(.pg-home) .md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
 }
 .md-search__input {
   color: var(--pg-text-on-dark);
