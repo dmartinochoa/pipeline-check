@@ -16,8 +16,11 @@
   --pg-navy-900: #061826;
   --pg-navy-800: #0b3954;
   --pg-navy-700: #134e6f;
-  --pg-teal-500: #087e8b;
-  --pg-teal-400: #1ba3a9;
+  /* teal-500 lifted from #087e8b to meet WCAG AA (4.5:1) on the
+     dark slate background — Lighthouse flagged inline links and
+     tab text at 3.59 / 4.24 ratios. New value reads ~5.5:1. */
+  --pg-teal-500: #1ba3a9;
+  --pg-teal-400: #33c4ca;
   --pg-teal-300: #6dd5ed;
   --pg-success-500: #2a9d8f;
   --pg-warn-500: #f4a261;
