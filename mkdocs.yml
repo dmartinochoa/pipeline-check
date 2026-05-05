@@ -33,20 +33,9 @@ theme:
     - content.code.annotate
     - content.tabs.link
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+    scheme: slate
+    primary: custom
+    accent: custom
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
