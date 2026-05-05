@@ -28,6 +28,11 @@ build/
 *.egg
 pip-wheel-metadata/
 
+# ─── MkDocs site output ────────────────────────────────────────────────
+site/
+_site/
+_site_test/
+
 # ─── Testing & coverage ────────────────────────────────────────────────
 .pytest_cache/
 .coverage

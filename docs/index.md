@@ -76,7 +76,7 @@ NIST SSDF, SLSA, and the rest — so audit answers don't require leaving the too
 ### OWASP 10/10 coverage
 Every one of the OWASP Top 10 CI/CD Security Risks has at least one rule across
 the supported providers. New risks land here before they land in your pipeline.
-<a class="pg-feature__link" href="standards/owasp_cicd_top_10/">Read more</a>
+<a class="pg-feature__link" href="standards/owasp_cicd_top_10/">Read OWASP coverage</a>
 </div>
 
 <div class="pg-feature" markdown>
