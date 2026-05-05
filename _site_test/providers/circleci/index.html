@@ -916,6 +916,309 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Producer workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#circleci-specific-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CircleCI-specific checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it covers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-001-orb-not-pinned-to-exact-semver" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-001 — Orb not pinned to exact semver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-002-script-injection-via-untrusted-environment-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-002 — Script injection via untrusted environment variable
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-003-docker-image-not-pinned-by-digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-003 — Docker image not pinned by digest
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-004-secret-like-environment-variable-not-managed-via-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-004 — Secret-like environment variable not managed via context
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-005-aws-auth-uses-long-lived-access-keys-in-environment-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-005 — AWS auth uses long-lived access keys in environment block
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-006-artifacts-not-signed-no-cosignsigstore-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-006 — Artifacts not signed (no cosign/sigstore step)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-008-credential-shaped-literal-in-config-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-008 — Credential-shaped literal in config body
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-009-deploy-job-missing-manual-approval-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-009 — Deploy job missing manual approval gate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-010-self-hosted-runner-without-ephemeral-marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-010 — Self-hosted runner without ephemeral marker
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-011-no-store_test_results-step-test-results-not-archived" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-011 — No store_test_results step (test results not archived)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-012-dynamic-config-via-setup-true-enables-code-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-012 — Dynamic config via setup: true enables code injection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-013-deploy-job-in-workflow-has-no-branch-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-013 — Deploy job in workflow has no branch filter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-014-job-missing-resource_class-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-014 — Job missing resource_class declaration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-015-no-no_output_timeout-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-015 — No no_output_timeout configured
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-016-remote-script-piped-to-shell-interpreter" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-016 — Remote script piped to shell interpreter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-017-docker-run-with-insecure-flags-privilegedhost-mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-017 — Docker run with insecure flags (privileged/host mount)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-018-package-install-from-insecure-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-018 — Package install from insecure source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-019-add_ssh_keys-without-fingerprint-restriction" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-019 — add_ssh_keys without fingerprint restriction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-020-no-vulnerability-scanning-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-020 — No vulnerability scanning step
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-021-package-install-without-lockfile-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-021 — Package install without lockfile enforcement
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-022-dependency-update-command-bypasses-lockfile-pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-022 — Dependency update command bypasses lockfile pins
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-023-tls-certificate-verification-bypass" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-023 — TLS / certificate verification bypass
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-024-no-slsa-provenance-attestation-produced" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-024 — No SLSA provenance attestation produced
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-025-cache-key-derives-from-attacker-controllable-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-025 — Cache key derives from attacker-controllable input
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-026-config-contains-indicators-of-malicious-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-026 — Config contains indicators of malicious activity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-028-package-install-bypasses-registry-integrity-git-path-tarball-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-028 — Package install bypasses registry integrity (git / path / tarball source)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-029-machine-executor-image-not-pinned" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-029 — Machine executor image not pinned
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-030-workflow-job-uses-context-without-branch-filter-or-approval-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-030 — Workflow job uses context without branch filter or approval gate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-circleci-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a new CircleCI check
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1350,6 +1653,309 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Producer workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#circleci-specific-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CircleCI-specific checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it covers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-001-orb-not-pinned-to-exact-semver" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-001 — Orb not pinned to exact semver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-002-script-injection-via-untrusted-environment-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-002 — Script injection via untrusted environment variable
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-003-docker-image-not-pinned-by-digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-003 — Docker image not pinned by digest
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-004-secret-like-environment-variable-not-managed-via-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-004 — Secret-like environment variable not managed via context
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-005-aws-auth-uses-long-lived-access-keys-in-environment-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-005 — AWS auth uses long-lived access keys in environment block
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-006-artifacts-not-signed-no-cosignsigstore-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-006 — Artifacts not signed (no cosign/sigstore step)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-008-credential-shaped-literal-in-config-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-008 — Credential-shaped literal in config body
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-009-deploy-job-missing-manual-approval-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-009 — Deploy job missing manual approval gate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-010-self-hosted-runner-without-ephemeral-marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-010 — Self-hosted runner without ephemeral marker
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-011-no-store_test_results-step-test-results-not-archived" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-011 — No store_test_results step (test results not archived)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-012-dynamic-config-via-setup-true-enables-code-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-012 — Dynamic config via setup: true enables code injection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-013-deploy-job-in-workflow-has-no-branch-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-013 — Deploy job in workflow has no branch filter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-014-job-missing-resource_class-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-014 — Job missing resource_class declaration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-015-no-no_output_timeout-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-015 — No no_output_timeout configured
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-016-remote-script-piped-to-shell-interpreter" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-016 — Remote script piped to shell interpreter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-017-docker-run-with-insecure-flags-privilegedhost-mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-017 — Docker run with insecure flags (privileged/host mount)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-018-package-install-from-insecure-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-018 — Package install from insecure source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-019-add_ssh_keys-without-fingerprint-restriction" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-019 — add_ssh_keys without fingerprint restriction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-020-no-vulnerability-scanning-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-020 — No vulnerability scanning step
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-021-package-install-without-lockfile-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-021 — Package install without lockfile enforcement
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-022-dependency-update-command-bypasses-lockfile-pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-022 — Dependency update command bypasses lockfile pins
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-023-tls-certificate-verification-bypass" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-023 — TLS / certificate verification bypass
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-024-no-slsa-provenance-attestation-produced" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-024 — No SLSA provenance attestation produced
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-025-cache-key-derives-from-attacker-controllable-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-025 — Cache key derives from attacker-controllable input
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-026-config-contains-indicators-of-malicious-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-026 — Config contains indicators of malicious activity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-028-package-install-bypasses-registry-integrity-git-path-tarball-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-028 — Package install bypasses registry integrity (git / path / tarball source)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-029-machine-executor-image-not-pinned" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-029 — Machine executor image not pinned
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cc-030-workflow-job-uses-context-without-branch-filter-or-approval-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      CC-030 — Workflow job uses context without branch filter or approval gate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-circleci-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a new CircleCI check
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1379,12 +1985,12 @@
 <p>Parses <code>.circleci/config.yml</code> on disk — no CircleCI API token, no
 runner install.</p>
 <h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
-<p>```bash</p>
-<h1 id="-circleci-path-is-auto-detected-when-circleciconfigyml-exists-at-cwd">--circleci-path is auto-detected when .circleci/config.yml exists at cwd.<a class="headerlink" href="#-circleci-path-is-auto-detected-when-circleciconfigyml-exists-at-cwd" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline circleci</p>
-<h1 id="or-pass-it-explicitly">…or pass it explicitly.<a class="headerlink" href="#or-pass-it-explicitly" title="Permanent link">&para;</a></h1>
-<p>pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --circleci-path is auto-detected when .circleci/config.yml exists at cwd.</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>circleci
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># …or pass it explicitly.</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>circleci<span class="w"> </span>--circleci-path<span class="w"> </span>.circleci/config.yml
+</span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the other providers.</p>
 <h3 id="circleci-specific-checks">CircleCI-specific checks<a class="headerlink" href="#circleci-specific-checks" title="Permanent link">&para;</a></h3>
@@ -1725,8 +2331,8 @@ in other providers:</p>
    <code>tests/test_per_check_real_examples.py::CASES</code>.</li>
 <li>Regenerate this doc:</li>
 </ol>
-<p><code>bash
-   python scripts/gen_provider_docs.py circleci</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>scripts/gen_provider_docs.py<span class="w"> </span>circleci
+</span></code></pre></div>
 
 
 
