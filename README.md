@@ -1,6 +1,6 @@
 <div align="center">
 
-# Pipeline-Check
+# [Pipeline-Check](https://dmartinochoa.github.io/pipeline-check/)
 
 [![CI](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml/badge.svg)](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
