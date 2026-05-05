@@ -1,0 +1,34 @@
+{#-
+  Site-wide template extension. Adds Open Graph + Twitter Card + theme
+  colour metadata into <head> on every page so link unfurls (Slack,
+  LinkedIn, Discord, etc.) and mobile browser chrome render correctly.
+
+  home.html extends this file via its own `{% extends "main.html" %}`
+  declaration; since `custom_dir: overrides` is set, Jinja resolves
+  "main.html" to this file before falling back to Material's default.
+  This file in turn extends Material's `base.html` so all of Material's
+  blocks (header, nav, content, footer, scripts) are inherited.
+-#}
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+
+  {# --- Open Graph (Facebook, Slack, LinkedIn, Discord) --- #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{% if page and page.meta and page.meta.title %}{{ page.meta.title }}{% elif page and page.title %}{{ page.title | striptags }} · {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
+  <meta property="og:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
+  {% if page and page.canonical_url %}
+  <meta property="og:url" content="{{ page.canonical_url }}">
+  {% endif %}
+
+  {# --- Twitter Card --- #}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{% if page and page.title %}{{ page.title | striptags }} · {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
+  <meta name="twitter:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
+
+  {# --- Mobile browser chrome colour, matches the brand navy --- #}
+  <meta name="theme-color" content="#0b3954">
+  <meta name="color-scheme" content="dark">
+{% endblock %}
