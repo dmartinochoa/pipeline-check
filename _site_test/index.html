@@ -417,26 +417,7 @@ finding ships with a control mapping, a fix, and a CI gate.
     </span>
     <span class="pg-terminal__tag">scan</span>
   </div>
-<div class="pg-terminal__body"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span>
-
-<span class="label">Pipeline-Check</span> v0.2.1 · scanning <span class="dim">.github/workflows/</span>
-
-  <span class="crit">CRITICAL</span>  GHA-001  Action pinned to mutable tag
-            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span>
-  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host
-            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span>
-  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled
-            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span>
-  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span>
-
-<span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span>
-        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span>
-
-<span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain
-
-<span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span>
-<span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.
-</div>
+<div class="pg-terminal__body"><span class="line l1"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span></span><span class="line l2"> </span><span class="line l3"><span class="label">Pipeline-Check</span> v0.2.1 · scanning <span class="dim">.github/workflows/</span></span><span class="line l4"> </span><span class="line l5">  <span class="crit">CRITICAL</span>  GHA-001  Action pinned to mutable tag</span><span class="line l6">            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span></span><span class="line l7">  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host</span><span class="line l8">            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span></span><span class="line l9">  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled</span><span class="line l10">            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span></span><span class="line l11">  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span></span><span class="line l12"> </span><span class="line l13"><span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span></span><span class="line l14">        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span></span><span class="line l15"> </span><span class="line l16"><span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain</span><span class="line l17"> </span><span class="line l18"><span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span></span><span class="line l19"><span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.<span class="pg-cursor"></span></span></div>
 </div>
 
 </div>
@@ -454,7 +435,7 @@ finding ships with a control mapping, a fix, and a CI gate.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// capabilities</div>
-<h2 class="pg-section__title" id="one-scanner-every-pipeline-you-ship-through">One scanner. Every pipeline you ship through.<a class="headerlink" href="#one-scanner-every-pipeline-you-ship-through" title="Permanent link">&para;</a></h2>
+<h2 class="pg-section__title" id="one-scanner-every-pipeline-you-ship-through">One scanner. Every pipeline you ship through.</h2>
 <p class="pg-section__lede">
 Same severity model and report format whether you're scanning a Jenkinsfile,
 a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
@@ -466,7 +447,7 @@ NIST SSDF, SLSA, and the rest — so audit answers don't require leaving the too
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 </div>
-<h3 id="owasp-1010-coverage">OWASP 10/10 coverage<a class="headerlink" href="#owasp-1010-coverage" title="Permanent link">&para;</a></h3>
+<h3 id="owasp-1010-coverage">OWASP 10/10 coverage</h3>
 <p>Every one of the OWASP Top 10 CI/CD Security Risks has at least one rule across
 the supported providers. New risks land here before they land in your pipeline.
 <a class="pg-feature__link" href="standards/owasp_cicd_top_10/">Read more</a></p>
@@ -475,7 +456,7 @@ the supported providers. New risks land here before they land in your pipeline.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 </div>
-<h3 id="live-aws-shift-left-iac">Live AWS + shift-left IaC<a class="headerlink" href="#live-aws-shift-left-iac" title="Permanent link">&para;</a></h3>
+<h3 id="live-aws-shift-left-iac">Live AWS + shift-left IaC</h3>
 <p>Scan a running AWS account through boto3, <em>or</em> scan Terraform plans and
 CloudFormation templates before provisioning. Same rule IDs, same severities.
 <a class="pg-feature__link" href="providers/aws/">AWS reference</a></p>
@@ -484,7 +465,7 @@ CloudFormation templates before provisioning. Same rule IDs, same severities.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 </div>
-<h3 id="ci-gate-that-does-its-job">CI gate that does its job<a class="headerlink" href="#ci-gate-that-does-its-job" title="Permanent link">&para;</a></h3>
+<h3 id="ci-gate-that-does-its-job">CI gate that does its job</h3>
 <p>Severity thresholds, baseline diffs against a git ref, ignore files with
 expiries, glob check selection, autofix emit-or-apply. Failing the build is
 the default; turning it off is opt-in.
@@ -494,7 +475,7 @@ the default; turning it off is opt-in.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
-<h3 id="attack-chain-correlation">Attack-chain correlation<a class="headerlink" href="#attack-chain-correlation" title="Permanent link">&para;</a></h3>
+<h3 id="attack-chain-correlation">Attack-chain correlation</h3>
 <p>Multi-finding chains mapped to MITRE ATT&amp;CK. See the kill chain — token leak →
 artifact poisoning → production push — instead of three disconnected findings.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a></p>
@@ -503,7 +484,7 @@ artifact poisoning → production push — instead of three disconnected finding
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
-<h3 id="output-that-integrates">Output that integrates<a class="headerlink" href="#output-that-integrates" title="Permanent link">&para;</a></h3>
+<h3 id="output-that-integrates">Output that integrates</h3>
 <p>Rich terminal table for humans, JSON for scripts, HTML report with client-side
 filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOps.
 <a class="pg-feature__link" href="output/">Output formats</a></p>
@@ -512,7 +493,7 @@ filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOp
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 </div>
-<h3 id="zero-phone-home">Zero phone-home<a class="headerlink" href="#zero-phone-home" title="Permanent link">&para;</a></h3>
+<h3 id="zero-phone-home">Zero phone-home</h3>
 <p>Workflow files are parsed from disk. AWS uses the standard boto3 credential
 chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a></p>
@@ -522,7 +503,7 @@ chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// providers</div>
-<h2 class="pg-section__title" id="wherever-your-builds-run">Wherever your builds run.<a class="headerlink" href="#wherever-your-builds-run" title="Permanent link">&para;</a></h2>
+<h2 class="pg-section__title" id="wherever-your-builds-run">Wherever your builds run.</h2>
 <p class="pg-section__lede">
 Auto-detect picks the provider for you, or pass <code>--pipeline &lt;name&gt;</code>
 to force one. Counts reflect the current rule catalogue.
@@ -544,7 +525,7 @@ to force one. Counts reflect the current rule catalogue.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// flow</div>
-<h2 class="pg-section__title" id="inputs-in-graded-report-out">Inputs in. Graded report out.<a class="headerlink" href="#inputs-in-graded-report-out" title="Permanent link">&para;</a></h2>
+<h2 class="pg-section__title" id="inputs-in-graded-report-out">Inputs in. Graded report out.</h2>
 <p class="pg-section__lede">
 A single scan path: detect the provider, parse its config (or hit boto3),
 run rules, score, gate.
@@ -606,11 +587,6 @@ run rules, score, gate.
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -649,7 +625,7 @@ run rules, score, gate.
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="assets/javascripts/bundle.88dd0f4e.min.js"></script>

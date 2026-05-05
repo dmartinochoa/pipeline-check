@@ -1595,21 +1595,16 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/terraform.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="terraform-provider">Terraform provider<a class="headerlink" href="#terraform-provider" title="Permanent link">&para;</a></h1>
+<h1 id="terraform-provider">Terraform provider</h1>
 <p>Scans a parsed <strong><code>terraform show -json</code></strong> plan document — no live AWS
 credentials required. The provider reads the resolved, typed resource
 representation Terraform emits post-<code>plan</code>, so checks never parse raw HCL.</p>
 <p>Every check ID mirrors its AWS-provider counterpart one-to-one. The
 semantics are identical; only the data source differs.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>terraform<span class="w"> </span>init
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>terraform<span class="w"> </span>plan<span class="w"> </span>-out<span class="o">=</span>tfplan
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>terraform<span class="w"> </span>show<span class="w"> </span>-json<span class="w"> </span>tfplan<span class="w"> </span>&gt;<span class="w"> </span>plan.json
@@ -1617,7 +1612,7 @@ semantics are identical; only the data source differs.</p>
 </span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the AWS provider.</p>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -1685,11 +1680,11 @@ semantics are identical; only the data source differs.</p>
 </tbody>
 </table>
 <p>Child modules are walked recursively; <code>mode="data"</code> entries are skipped.</p>
-<h2 id="per-check-schema-mapping">Per-check schema mapping<a class="headerlink" href="#per-check-schema-mapping" title="Permanent link">&para;</a></h2>
+<h2 id="per-check-schema-mapping">Per-check schema mapping</h2>
 <p>Every check reads Terraform's native attribute names (snake_case); single-
 nested blocks appear as one-item lists. Only the fields each check
 actually reads are listed below.</p>
-<h3 id="codebuild-aws_codebuild_project">CodeBuild (<code>aws_codebuild_project</code>)<a class="headerlink" href="#codebuild-aws_codebuild_project" title="Permanent link">&para;</a></h3>
+<h3 id="codebuild-aws_codebuild_project">CodeBuild (<code>aws_codebuild_project</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -1728,7 +1723,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="codepipeline-aws_codepipeline">CodePipeline (<code>aws_codepipeline</code>)<a class="headerlink" href="#codepipeline-aws_codepipeline" title="Permanent link">&para;</a></h3>
+<h3 id="codepipeline-aws_codepipeline">CodePipeline (<code>aws_codepipeline</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -1755,7 +1750,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="codedeploy-aws_codedeploy_deployment_group">CodeDeploy (<code>aws_codedeploy_deployment_group</code>)<a class="headerlink" href="#codedeploy-aws_codedeploy_deployment_group" title="Permanent link">&para;</a></h3>
+<h3 id="codedeploy-aws_codedeploy_deployment_group">CodeDeploy (<code>aws_codedeploy_deployment_group</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -1778,7 +1773,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="ecr">ECR<a class="headerlink" href="#ecr" title="Permanent link">&para;</a></h3>
+<h3 id="ecr">ECR</h3>
 <table>
 <thead>
 <tr>
@@ -1809,7 +1804,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="iam-only-roles-trusted-by-codebuildpipelinedeploy">IAM (only roles trusted by CodeBuild/Pipeline/Deploy)<a class="headerlink" href="#iam-only-roles-trusted-by-codebuildpipelinedeploy" title="Permanent link">&para;</a></h3>
+<h3 id="iam-only-roles-trusted-by-codebuildpipelinedeploy">IAM (only roles trusted by CodeBuild/Pipeline/Deploy)</h3>
 <p>Scope filter: <code>aws_iam_role.assume_role_policy</code> includes
 <code>codebuild.amazonaws.com</code>, <code>codepipeline.amazonaws.com</code>, or
 <code>codedeploy.amazonaws.com</code> as a <code>Service</code> principal.</p>
@@ -1847,7 +1842,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="pbac-aws_codebuild_project">PBAC (<code>aws_codebuild_project</code>)<a class="headerlink" href="#pbac-aws_codebuild_project" title="Permanent link">&para;</a></h3>
+<h3 id="pbac-aws_codebuild_project">PBAC (<code>aws_codebuild_project</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -1866,7 +1861,7 @@ actually reads are listed below.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="s3-artifact-buckets-discovered-from-pipelines">S3 (artifact buckets discovered from pipelines)<a class="headerlink" href="#s3-artifact-buckets-discovered-from-pipelines" title="Permanent link">&para;</a></h3>
+<h3 id="s3-artifact-buckets-discovered-from-pipelines">S3 (artifact buckets discovered from pipelines)</h3>
 <p>Discovery: the check walks every <code>aws_codepipeline.artifact_store[*].location</code>.
 Per bucket, the helper resources below are joined by <code>bucket</code> name.</p>
 <table>
@@ -1908,7 +1903,7 @@ Per bucket, the helper resources below are joined by <code>bucket</code> name.</
 <p>If a helper resource is absent for a given bucket, the check fails —
 matching the AWS-provider behaviour where the service returns the default
 (usually "not configured").</p>
-<h3 id="phase-4-gap-fills-and-terraform-native-rules">Phase-4 gap fills and Terraform-native rules<a class="headerlink" href="#phase-4-gap-fills-and-terraform-native-rules" title="Permanent link">&para;</a></h3>
+<h3 id="phase-4-gap-fills-and-terraform-native-rules">Phase-4 gap fills and Terraform-native rules</h3>
 <table>
 <thead>
 <tr>
@@ -1950,7 +1945,7 @@ matching the AWS-provider behaviour where the service returns the default
 </tr>
 </tbody>
 </table>
-<h2 id="working-with-data-sources">Working with data sources<a class="headerlink" href="#working-with-data-sources" title="Permanent link">&para;</a></h2>
+<h2 id="working-with-data-sources">Working with data sources</h2>
 <p>The context exposes a second iterator, <code>ctx.data_sources(type=None)</code>,
 for resources with <code>mode="data"</code> (e.g. <code>aws_iam_policy_document</code>,
 <code>aws_caller_identity</code>). Managed-resource iteration via <code>ctx.resources()</code>
@@ -1965,7 +1960,7 @@ or <code>aws_iam_role_policy.policy</code> directly and the IAM checks see it
 without any extra work. The new iterator only matters when the data
 source depends on a to-be-created resource and Terraform defers it to
 apply.</p>
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<h2 id="limitations">Limitations</h2>
 <ul>
 <li><strong>Only the plan's resource set is visible.</strong> Resources provisioned
   outside Terraform (console, other stacks) are not scanned.</li>
@@ -2014,11 +2009,6 @@ apply.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2057,7 +2047,7 @@ apply.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

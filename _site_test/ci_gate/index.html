@@ -1661,15 +1661,10 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/ci_gate.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="ci-gate">CI gate<a class="headerlink" href="#ci-gate" title="Permanent link">&para;</a></h1>
+<h1 id="ci-gate">CI gate</h1>
 <p><code>pipeline_check</code> exits with a non-zero code when the gate fails, so you
 can wire it directly into a pipeline step and let the pipeline block the
 merge. The gate has four orthogonal fail conditions plus two subtractive
@@ -1736,21 +1731,21 @@ precedence.</p>
 </tbody>
 </table>
 <p>Exit codes are unchanged: <code>0</code> pass, <code>1</code> gate fail, <code>2</code> scanner error.</p>
-<h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
-<h3 id="block-critical-only-lenient-rollout">Block CRITICAL only (lenient rollout)<a class="headerlink" href="#block-critical-only-lenient-rollout" title="Permanent link">&para;</a></h3>
+<h2 id="recipes">Recipes</h2>
+<h3 id="block-critical-only-lenient-rollout">Block CRITICAL only (lenient rollout)</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--fail-on<span class="w"> </span>CRITICAL
 </span></code></pre></div>
-<h3 id="enforce-a-b-or-better-grade">Enforce a B-or-better grade<a class="headerlink" href="#enforce-a-b-or-better-grade" title="Permanent link">&para;</a></h3>
+<h3 id="enforce-a-b-or-better-grade">Enforce a B-or-better grade</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--min-grade<span class="w"> </span>B
 </span></code></pre></div>
-<h3 id="zero-tolerance-on-specific-checks">Zero-tolerance on specific checks<a class="headerlink" href="#zero-tolerance-on-specific-checks" title="Permanent link">&para;</a></h3>
+<h3 id="zero-tolerance-on-specific-checks">Zero-tolerance on specific checks</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--gha-path<span class="w"> </span>.github/workflows<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--fail-on-check<span class="w"> </span>GHA-002<span class="w"> </span>--fail-on-check<span class="w"> </span>GHA-005
 </span></code></pre></div>
-<h3 id="cap-total-failures-while-the-team-paydown-debt">Cap total failures while the team paydown debt<a class="headerlink" href="#cap-total-failures-while-the-team-paydown-debt" title="Permanent link">&para;</a></h3>
+<h3 id="cap-total-failures-while-the-team-paydown-debt">Cap total failures while the team paydown debt</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--max-failures<span class="w"> </span><span class="m">5</span>
 </span></code></pre></div>
-<h3 id="only-block-on-new-regressions-baseline-diff">Only block on <em>new</em> regressions (baseline diff)<a class="headerlink" href="#only-block-on-new-regressions-baseline-diff" title="Permanent link">&para;</a></h3>
+<h3 id="only-block-on-new-regressions-baseline-diff">Only block on <em>new</em> regressions (baseline diff)</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># One-time: capture today&#39;s state as the baseline (run on main, store as artifact).</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>&gt;<span class="w"> </span>baseline.json
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -1760,7 +1755,7 @@ precedence.</p>
 <p>When a finding is in the baseline, it is still reported in the terminal
 / HTML / SARIF output — the baseline affects only the gate decision, so
 teams see the whole picture without blocking on it.</p>
-<h3 id="curate-accepted-tech-debt">Curate accepted tech debt<a class="headerlink" href="#curate-accepted-tech-debt" title="Permanent link">&para;</a></h3>
+<h3 id="curate-accepted-tech-debt">Curate accepted tech debt</h3>
 <p>Create a <code>.pipelinecheckignore</code> file at the repo root:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a># Shared secrets are rotated OOB, tracked in INFRA-4123.
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>CB-001:my-legacy-build-project
@@ -1775,7 +1770,7 @@ teams see the whole picture without blocking on it.</p>
 (exact match). <code>#</code> starts a comment.</p>
 <p>The file is discovered automatically when present; override with
 <code>--ignore-file path/to/file</code>.</p>
-<h4 id="expiring-suppressions-yaml-format">Expiring suppressions (YAML format)<a class="headerlink" href="#expiring-suppressions-yaml-format" title="Permanent link">&para;</a></h4>
+<h4 id="expiring-suppressions-yaml-format">Expiring suppressions (YAML format)</h4>
 <p>Pass <code>--ignore-file .pipelineguard-ignore.yml</code> (or any <code>.yml</code> / <code>.yaml</code>
 extension) to use the structured format:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GHA-001</span>
@@ -1791,7 +1786,7 @@ longer applies and the gate summary emits:</p>
 </span></code></pre></div>
 <p>This forces a review rather than letting suppressions rot silently.
 <code>reason</code> is free-form metadata for reviewers.</p>
-<h3 id="combine-new-findings-only-critical-blocks-debt-tracked-explicitly">Combine: new findings only, CRITICAL blocks, debt tracked explicitly<a class="headerlink" href="#combine-new-findings-only-critical-blocks-debt-tracked-explicitly" title="Permanent link">&para;</a></h3>
+<h3 id="combine-new-findings-only-critical-blocks-debt-tracked-explicitly">Combine: new findings only, CRITICAL blocks, debt tracked explicitly</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--baseline<span class="w"> </span>artifacts/baseline.json<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--ignore-file<span class="w"> </span>.pipelinecheckignore<span class="w"> </span><span class="se">\</span>
@@ -1803,7 +1798,7 @@ longer applies and the gate summary emits:</p>
 3. Ignore file suppresses curated entries.
 4. Remaining findings are the <strong>effective</strong> set.
 5. Gate conditions evaluate against that set.</p>
-<h2 id="gate-summary-on-stderr">Gate summary on stderr<a class="headerlink" href="#gate-summary-on-stderr" title="Permanent link">&para;</a></h2>
+<h2 id="gate-summary-on-stderr">Gate summary on stderr</h2>
 <p>Unless <code>--output json</code> is active (stdout must stay clean), every run
 prints a short summary to <strong>stderr</strong>:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>[gate] FAIL
@@ -1813,7 +1808,7 @@ prints a short summary to <strong>stderr</strong>:</p>
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>[gate] 2 finding(s) suppressed by ignore file
 </span></code></pre></div>
 <p>This makes failure diagnosis immediate without parsing the full JSON.</p>
-<h2 id="how-the-default-interacts-with-filters">How the default interacts with filters<a class="headerlink" href="#how-the-default-interacts-with-filters" title="Permanent link">&para;</a></h2>
+<h2 id="how-the-default-interacts-with-filters">How the default interacts with filters</h2>
 <p>The default <code>--fail-on CRITICAL</code> applies to the <strong>effective</strong> set —
 after baseline + ignore-file filtering. So a CRITICAL already in the
 baseline (or explicitly ignored) does not trip the default gate. Only
@@ -1821,7 +1816,7 @@ as-yet-unacknowledged CRITICALs fail CI.</p>
 <p>As soon as any of <code>--fail-on</code>, <code>--min-grade</code>, <code>--max-failures</code>, or
 <code>--fail-on-check</code> is passed, those govern and the implicit default is
 suppressed.</p>
-<h2 id="scoping-to-changed-files-diff-base">Scoping to changed files — <code>--diff-base</code><a class="headerlink" href="#scoping-to-changed-files-diff-base" title="Permanent link">&para;</a></h2>
+<h2 id="scoping-to-changed-files-diff-base">Scoping to changed files — <code>--diff-base</code></h2>
 <p>PR pipelines often only want to scan workflows the PR actually touches.
 <code>--diff-base REF</code> runs <code>git diff --name-only &lt;REF&gt;...HEAD</code> and filters
 the workflow/pipeline documents down to the changed set before checks
@@ -1842,7 +1837,7 @@ everything in CI.</p>
 <li><strong><code>aws</code></strong> — rejected with a clear error. Live AWS resources aren't
   bound to git refs; narrow the scope with <code>--target NAME</code> instead.</li>
 </ul>
-<h2 id="baseline-from-a-git-ref-baseline-from-git-refpath">Baseline from a git ref — <code>--baseline-from-git REF:PATH</code><a class="headerlink" href="#baseline-from-a-git-ref-baseline-from-git-refpath" title="Permanent link">&para;</a></h2>
+<h2 id="baseline-from-a-git-ref-baseline-from-git-refpath">Baseline from a git ref — <code>--baseline-from-git REF:PATH</code></h2>
 <p><code>--baseline</code> reads a JSON report from disk. When baselines are stored
 in the repo itself (committed artifact) or on a merge-base branch,
 <code>--baseline-from-git REF:PATH</code> pulls them via <code>git show</code>:</p>
@@ -1854,7 +1849,7 @@ in the repo itself (committed artifact) or on a merge-base branch,
 <p>Mirrors <code>--diff-base</code>: a git failure (unreachable ref, missing path)
 degrades to "no baseline" instead of raising. <code>--baseline</code> (file path)
 takes precedence if both are set.</p>
-<h2 id="autofix-fix">Autofix — <code>--fix</code><a class="headerlink" href="#autofix-fix" title="Permanent link">&para;</a></h2>
+<h2 id="autofix-fix">Autofix — <code>--fix</code></h2>
 <p>For a subset of checks, <code>pipeline_check</code> can emit the exact source
 edit that would remediate the finding. The output is a standard
 unified diff on stdout, so it composes with <code>git apply</code>:</p>
@@ -1887,7 +1882,7 @@ apply or discard. Currently registered fixers:</p>
 <p>Fixers are idempotent — re-running against already-remediated content
 emits nothing for that finding. A broken fixer logs to stderr and is
 skipped; the rest of the run continues.</p>
-<h3 id="applying-patches-directly-fix-apply">Applying patches directly — <code>--fix --apply</code><a class="headerlink" href="#applying-patches-directly-fix-apply" title="Permanent link">&para;</a></h3>
+<h3 id="applying-patches-directly-fix-apply">Applying patches directly — <code>--fix --apply</code></h3>
 <p>When you trust the fixer catalogue, skip the <code>git apply</code> round-trip:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--fix<span class="w"> </span>--apply
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># [autofix] 3 file(s) modified.</span>
@@ -1899,7 +1894,7 @@ behaves the same.</p>
 <p>When <code>--output</code> is <code>json</code>, <code>sarif</code>, <code>html</code>, or <code>both</code>, patches from
 plain <code>--fix</code> (without <code>--apply</code>) route to stderr automatically so
 the machine-readable stream on stdout stays valid.</p>
-<h2 id="selecting-checks-globs">Selecting checks — globs<a class="headerlink" href="#selecting-checks-globs" title="Permanent link">&para;</a></h2>
+<h2 id="selecting-checks-globs">Selecting checks — globs</h2>
 <p><code>--checks</code> accepts glob patterns (<code>fnmatch</code> syntax), not just exact IDs:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># All secret-scanning checks across every provider</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--checks<span class="w"> </span><span class="s1">&#39;*-008&#39;</span>
@@ -1911,7 +1906,7 @@ the machine-readable stream on stdout stays valid.</p>
 </span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>gitlab<span class="w"> </span>--checks<span class="w"> </span><span class="s1">&#39;GL-00[12]&#39;</span>
 </span></code></pre></div>
 <p>Exact IDs (<code>--checks GHA-001</code>) still work unchanged.</p>
-<h2 id="custom-secret-patterns">Custom secret patterns<a class="headerlink" href="#custom-secret-patterns" title="Permanent link">&para;</a></h2>
+<h2 id="custom-secret-patterns">Custom secret patterns</h2>
 <p>The secret-scanning checks (<code>GHA-008</code>, <code>GL-008</code>, <code>BB-008</code>, <code>ADO-008</code>,
 <code>JF-008</code>) ship with named detectors for <strong>16 vendor token shapes</strong>:</p>
 <table>
@@ -2052,11 +2047,6 @@ on whitespace and common shell separators. See
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2095,7 +2085,7 @@ on whitespace and common shell separators. See
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>

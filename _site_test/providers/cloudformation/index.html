@@ -1439,29 +1439,24 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/cloudformation.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="cloudformation-provider">CloudFormation provider<a class="headerlink" href="#cloudformation-provider" title="Permanent link">&para;</a></h1>
+<h1 id="cloudformation-provider">CloudFormation provider</h1>
 <p>Scans a <strong>CloudFormation template</strong> (YAML or JSON) — no live AWS
 credentials required. Short-form intrinsics (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>,
 <code>!Join</code>, <code>!If</code>, …) are normalised to their JSON-form equivalents at
 parse time so rules operate on one uniform structure.</p>
 <p>Every check ID mirrors its AWS-provider counterpart one-to-one. The
 semantics are identical; only the data source differs.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>cloudformation<span class="w"> </span>--cfn-template<span class="w"> </span>path/to/template.yaml
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or point at a directory and every *.yml / *.yaml / *.json / *.template is scanned</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>cloudformation<span class="w"> </span>--cfn-template<span class="w"> </span>infra/
 </span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the AWS provider.</p>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -1568,7 +1563,7 @@ semantics are identical; only the data source differs.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="intrinsic-handling">Intrinsic handling<a class="headerlink" href="#intrinsic-handling" title="Permanent link">&para;</a></h2>
+<h2 id="intrinsic-handling">Intrinsic handling</h2>
 <p>CFN values may be literals (<code>"ap-southeast-2"</code>), booleans, unresolved
 intrinsics (<code>{"Ref": "Region"}</code>, <code>{"Fn::Sub": "..."}</code>), or condition
 references. The scanner follows two conventions:</p>
@@ -1604,7 +1599,7 @@ references. The scanner follows two conventions:</p>
 </ul>
 <p>This matches cfn-lint and cfn-nag conventions and keeps findings
 useful under the common case where templates are parameterised.</p>
-<h2 id="phase-4-gap-fills-and-cfn-native-rules">Phase-4 gap fills and CFN-native rules<a class="headerlink" href="#phase-4-gap-fills-and-cfn-native-rules" title="Permanent link">&para;</a></h2>
+<h2 id="phase-4-gap-fills-and-cfn-native-rules">Phase-4 gap fills and CFN-native rules</h2>
 <table>
 <thead>
 <tr>
@@ -1646,7 +1641,7 @@ useful under the common case where templates are parameterised.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<h2 id="limitations">Limitations</h2>
 <ul>
 <li><strong>Template-level only.</strong> Resources provisioned outside the template
   (console, SDK, sister stacks) are not scanned — use <code>--pipeline aws</code>
@@ -1702,11 +1697,6 @@ useful under the common case where templates are parameterised.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -1745,7 +1735,7 @@ useful under the common case where templates are parameterised.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

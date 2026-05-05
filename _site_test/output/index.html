@@ -1464,15 +1464,10 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/output.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="output-formats">Output formats<a class="headerlink" href="#output-formats" title="Permanent link">&para;</a></h1>
+<h1 id="output-formats">Output formats</h1>
 <p><code>pipeline_check --output &lt;format&gt;</code> selects the report format. Every
 format carries the same finding set — only the rendering differs.</p>
 <table>
@@ -1511,7 +1506,7 @@ format carries the same finding set — only the rendering differs.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="json">JSON<a class="headerlink" href="#json" title="Permanent link">&para;</a></h2>
+<h2 id="json">JSON</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.score&#39;</span>
 </span></code></pre></div>
 <p>Shape:</p>
@@ -1545,7 +1540,7 @@ format carries the same finding set — only the rendering differs.</p>
 <p>The JSON schema used by <code>--output json</code> is committed as
 <code>tests/report_schema.json</code> and exercised by <code>tests/test_json_schema.py</code>
 on every run.</p>
-<h2 id="sarif-210">SARIF 2.1.0<a class="headerlink" href="#sarif-210" title="Permanent link">&para;</a></h2>
+<h2 id="sarif-210">SARIF 2.1.0</h2>
 <p>SARIF is the OASIS standard consumed by GitHub Advanced Security, GitLab
 SAST, Azure DevOps, and most SAST aggregators. Emitting SARIF turns
 every failing finding into a code-scanning alert — inline on the pull
@@ -1558,7 +1553,7 @@ request, no custom integration needed.</p>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github<span class="w"> </span>--gha-path<span class="w"> </span>.github/workflows<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>--output<span class="w"> </span>sarif<span class="w"> </span>--output-file<span class="w"> </span>pipeline-check.sarif
 </span></code></pre></div>
-<h3 id="shape-highlights">Shape highlights<a class="headerlink" href="#shape-highlights" title="Permanent link">&para;</a></h3>
+<h3 id="shape-highlights">Shape highlights</h3>
 <ul>
 <li>Only <strong>failed</strong> findings become <code>results</code>. Every distinct <code>check_id</code> is
   declared once under <code>runs[0].tool.driver.rules</code>; duplicates across
@@ -1589,7 +1584,7 @@ request, no custom integration needed.</p>
   is parsed from the ARN so filtering SARIF by region doesn't need a
   separate lookup.</li>
 </ul>
-<h3 id="uploading-to-github-code-scanning">Uploading to GitHub code scanning<a class="headerlink" href="#uploading-to-github-code-scanning" title="Permanent link">&para;</a></h3>
+<h3 id="uploading-to-github-code-scanning">Uploading to GitHub code scanning</h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># .github/workflows/security.yml</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run pipeline_check</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
@@ -1605,7 +1600,7 @@ request, no custom integration needed.</p>
 </span></code></pre></div>
 <p>Findings then appear under <strong>Security → Code scanning alerts</strong> and
 annotate diffs on every PR.</p>
-<h2 id="html">HTML<a class="headerlink" href="#html" title="Permanent link">&para;</a></h2>
+<h2 id="html">HTML</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>html<span class="w"> </span>--output-file<span class="w"> </span>report.html
 </span></code></pre></div>
 <p>Standalone HTML — embedded CSS and JavaScript, no external CDN calls.
@@ -1621,7 +1616,7 @@ The report ships with:</p>
 </ul>
 <p>See <a href="../scoring_model/">scoring_model.md</a> for how the grade and severity
 breakdown are computed.</p>
-<h2 id="exit-codes-are-independent-of-format">Exit codes are independent of format<a class="headerlink" href="#exit-codes-are-independent-of-format" title="Permanent link">&para;</a></h2>
+<h2 id="exit-codes-are-independent-of-format">Exit codes are independent of format</h2>
 <p>Regardless of output format, the process exits with:</p>
 <table>
 <thead>
@@ -1688,11 +1683,6 @@ breakdown are computed.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -1731,7 +1721,7 @@ breakdown are computed.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>

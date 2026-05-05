@@ -1650,24 +1650,19 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/usage.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h1>
+<h1 id="usage">Usage</h1>
 <p>Quick-reference task-oriented guide. For deep dives, follow the links at
 the bottom of each section.</p>
-<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<h2 id="install">Install</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pipeline-check<span class="w">       </span><span class="c1"># package name: hyphenated</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--version<span class="w">         </span><span class="c1"># command name: underscored</span>
 </span></code></pre></div>
 <p>Python 3.10+ is required. <code>pipx install pipeline-check</code> also works and
 keeps the CLI out of your project environment.</p>
-<h2 id="first-scan-auto-detect">First scan (auto-detect)<a class="headerlink" href="#first-scan-auto-detect" title="Permanent link">&para;</a></h2>
+<h2 id="first-scan-auto-detect">First scan (auto-detect)</h2>
 <p>Run with no flags in any supported repo — the working directory is
 inspected and the matching provider is selected:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>your-repo
@@ -1678,7 +1673,7 @@ inspected and the matching provider is selected:</p>
 <code>.circleci/config.yml</code>, <code>cloudbuild.yaml</code>, CloudFormation templates
 (<code>*.yml</code>, <code>*.yaml</code>, <code>*.json</code> at repo root), Terraform plan JSON, and
 falls back to <code>aws</code> (live account scan) when nothing matches.</p>
-<h2 id="scan-a-specific-provider">Scan a specific provider<a class="headerlink" href="#scan-a-specific-provider" title="Permanent link">&para;</a></h2>
+<h2 id="scan-a-specific-provider">Scan a specific provider</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pipeline_check<span class="w"> </span>-p<span class="w"> </span>github<span class="w">                        </span><span class="c1"># short flag</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1694,7 +1689,7 @@ falls back to <code>aws</code> (live account scan) when nothing matches.</p>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--region<span class="w"> </span>eu-west-1<span class="w"> </span>--profile<span class="w"> </span>prod
 </span></code></pre></div>
 <p>Full per-provider reference: <a href="../providers/">providers/</a>.</p>
-<h2 id="scaffold-a-config-file">Scaffold a config file<a class="headerlink" href="#scaffold-a-config-file" title="Permanent link">&para;</a></h2>
+<h2 id="scaffold-a-config-file">Scaffold a config file</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pipeline_check<span class="w"> </span>init<span class="w">                 </span><span class="c1"># writes .pipeline-check.yml in cwd</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pipeline_check<span class="w"> </span>init<span class="w"> </span>--path<span class="w"> </span>infra/<span class="w">   </span><span class="c1"># redirect output</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>pipeline_check<span class="w"> </span>init<span class="w"> </span>--force<span class="w">         </span><span class="c1"># overwrite existing</span>
@@ -1702,7 +1697,7 @@ falls back to <code>aws</code> (live account scan) when nothing matches.</p>
 <p>The <code>init</code> subcommand pre-fills the <code>pipeline:</code> key based on what it
 finds in the working directory.</p>
 <p>Config file reference: <a href="../config/">config.md</a>.</p>
-<h2 id="gate-a-ci-build-on-results">Gate a CI build on results<a class="headerlink" href="#gate-a-ci-build-on-results" title="Permanent link">&para;</a></h2>
+<h2 id="gate-a-ci-build-on-results">Gate a CI build on results</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Fail the build if any HIGH or CRITICAL finding exists</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pipeline_check<span class="w"> </span>--fail-on<span class="w"> </span>HIGH
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -1716,7 +1711,7 @@ finds in the working directory.</p>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>pipeline_check<span class="w"> </span>--max-failures<span class="w"> </span><span class="m">10</span>
 </span></code></pre></div>
 <p>Gate details: <a href="../ci_gate/">ci_gate.md</a>.</p>
-<h2 id="aws-live-scans-credentials">AWS live scans — credentials<a class="headerlink" href="#aws-live-scans-credentials" title="Permanent link">&para;</a></h2>
+<h2 id="aws-live-scans-credentials">AWS live scans — credentials</h2>
 <p>The AWS provider uses the standard boto3 credential chain. Any of these
 work:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Named AWS CLI profile</span>
@@ -1734,7 +1729,7 @@ work:</p>
 </span></code></pre></div>
 <p>Required IAM permissions for a full scan, with a copy-paste IAM policy:
 see <a href="../providers/aws/#required-iam-permissions">providers/aws.md#required-iam-permissions</a>.</p>
-<h2 id="output-formats">Output formats<a class="headerlink" href="#output-formats" title="Permanent link">&para;</a></h2>
+<h2 id="output-formats">Output formats</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>terminal<span class="w">                   </span><span class="c1"># default (rich table)</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>json<span class="w">                       </span><span class="c1"># machine-parseable</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>html<span class="w"> </span>-O<span class="w"> </span>report.html<span class="w">        </span><span class="c1"># self-contained file</span>
@@ -1744,7 +1739,7 @@ see <a href="../providers/aws/#required-iam-permissions">providers/aws.md#requir
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>pipeline_check<span class="w"> </span>--output<span class="w"> </span>both<span class="w">                       </span><span class="c1"># terminal→stderr, JSON→stdout</span>
 </span></code></pre></div>
 <p>Format schemas: <a href="../output/">output.md</a>.</p>
-<h2 id="filter-what-gets-scanned">Filter what gets scanned<a class="headerlink" href="#filter-what-gets-scanned" title="Permanent link">&para;</a></h2>
+<h2 id="filter-what-gets-scanned">Filter what gets scanned</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Only run specific checks</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pipeline_check<span class="w"> </span>--checks<span class="w"> </span>GHA-001<span class="w"> </span>--checks<span class="w"> </span>GHA-003
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -1757,7 +1752,7 @@ see <a href="../providers/aws/#required-iam-permissions">providers/aws.md#requir
 </span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># Suppress noisy findings (per-repo .pipelinecheckignore)</span>
 </span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;GHA-019&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>.pipelinecheckignore
 </span></code></pre></div>
-<h2 id="auto-fix-findings">Auto-fix findings<a class="headerlink" href="#auto-fix-findings" title="Permanent link">&para;</a></h2>
+<h2 id="auto-fix-findings">Auto-fix findings</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pipeline_check<span class="w"> </span>--fix<span class="w">              </span><span class="c1"># print unified-diff patches to stdout</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>pipeline_check<span class="w"> </span>--fix<span class="w"> </span>--apply<span class="w">      </span><span class="c1"># write patches in place</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>pipeline_check<span class="w"> </span>--fix<span class="w"> </span><span class="p">|</span><span class="w"> </span>git<span class="w"> </span>apply<span class="w">  </span><span class="c1"># review first, then apply</span>
@@ -1765,7 +1760,7 @@ see <a href="../providers/aws/#required-iam-permissions">providers/aws.md#requir
 <p>68 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, and more. See individual check pages under
 <a href="../providers/">providers/</a> for which have autofix support.</p>
-<h2 id="compliance-annotations">Compliance annotations<a class="headerlink" href="#compliance-annotations" title="Permanent link">&para;</a></h2>
+<h2 id="compliance-annotations">Compliance annotations</h2>
 <p>Every finding carries control IDs from every enabled standard. Filter:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Annotate with a single standard</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>pipeline_check<span class="w"> </span>--standard<span class="w"> </span>owasp_cicd_top_10
@@ -1780,20 +1775,20 @@ injection, Docker flags, and more. See individual check pages under
 </span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>pipeline_check<span class="w"> </span>--standard-report<span class="w"> </span>slsa
 </span></code></pre></div>
 <p>Standards reference: <a href="../standards/">standards/</a>.</p>
-<h2 id="attack-chains">Attack chains<a class="headerlink" href="#attack-chains" title="Permanent link">&para;</a></h2>
+<h2 id="attack-chains">Attack chains</h2>
 <p>The scanner correlates independent findings into MITRE ATT&amp;CK-mapped
 kill chains (e.g. "unpinned action + overpermissive token + no approval
 gate = full-pipeline takeover"). Chains are on by default and print
 after the findings section.</p>
 <p>Chain reference: <a href="../attack_chains/">attack_chains.md</a>.</p>
-<h2 id="inventory">Inventory<a class="headerlink" href="#inventory" title="Permanent link">&para;</a></h2>
+<h2 id="inventory">Inventory</h2>
 <p>Emit the list of resources / workflows / templates the scanner
 discovered, with per-type metadata:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>pipeline_check<span class="w"> </span>--inventory<span class="w">                       </span><span class="c1"># alongside findings</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>pipeline_check<span class="w"> </span>--inventory-only<span class="w">                   </span><span class="c1"># skip checks entirely</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>pipeline_check<span class="w"> </span>--inventory-type<span class="w"> </span><span class="s1">&#39;AWS::IAM::*&#39;</span><span class="w">     </span><span class="c1"># glob filter (repeatable)</span>
 </span></code></pre></div>
-<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<h2 id="environment-variables">Environment variables</h2>
 <p>Every CLI flag has an env-var equivalent: <code>PIPELINE_CHECK_&lt;FLAG&gt;</code> with
 dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">PIPELINE_CHECK_PIPELINE</span><span class="o">=</span>github<span class="w"> </span><span class="se">\</span>
@@ -1801,7 +1796,7 @@ dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>pipeline_check
 </span></code></pre></div>
 <p>Precedence: CLI &gt; env &gt; config file &gt; defaults.</p>
-<h2 id="exit-codes">Exit codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
+<h2 id="exit-codes">Exit codes</h2>
 <table>
 <thead>
 <tr>
@@ -1828,11 +1823,11 @@ dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
 </tr>
 </tbody>
 </table>
-<h2 id="verbose-and-quiet-modes">Verbose and quiet modes<a class="headerlink" href="#verbose-and-quiet-modes" title="Permanent link">&para;</a></h2>
+<h2 id="verbose-and-quiet-modes">Verbose and quiet modes</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pipeline_check<span class="w"> </span>-v<span class="w">       </span><span class="c1"># debug logs to stderr (per-check timing, API calls)</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>pipeline_check<span class="w"> </span>-q<span class="w">       </span><span class="c1"># suppress all output — rely on the exit code</span>
 </span></code></pre></div>
-<h2 id="extended-manual-pages">Extended manual pages<a class="headerlink" href="#extended-manual-pages" title="Permanent link">&para;</a></h2>
+<h2 id="extended-manual-pages">Extended manual pages</h2>
 <p>Topic-specific help without leaving the terminal:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pipeline_check<span class="w"> </span>--man<span class="w">              </span><span class="c1"># list topics</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>pipeline_check<span class="w"> </span>--man<span class="w"> </span>gate
@@ -1840,7 +1835,7 @@ dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>pipeline_check<span class="w"> </span>--man<span class="w"> </span>secrets
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>pipeline_check<span class="w"> </span>--man<span class="w"> </span>standards
 </span></code></pre></div>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<h2 id="see-also">See also</h2>
 <ul>
 <li><a href="../providers/">providers/</a> — per-provider check reference</li>
 <li><a href="../standards/">standards/</a> — compliance mappings</li>
@@ -1891,11 +1886,6 @@ dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -1934,7 +1924,7 @@ dashes converted to underscores. Gate flags nest under <code>GATE</code>:</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>

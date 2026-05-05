@@ -1961,19 +1961,14 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/jenkins.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="jenkins-provider">Jenkins provider<a class="headerlink" href="#jenkins-provider" title="Permanent link">&para;</a></h1>
+<h1 id="jenkins-provider">Jenkins provider</h1>
 <p>Parses Jenkinsfile text — Declarative or Scripted Pipeline — without
 talking to a Jenkins controller. No Groovy interpreter, no plugin
 install, no API token.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --jenkinsfile-path is auto-detected when ./Jenkinsfile exists at cwd.</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>jenkins
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1990,7 +1985,7 @@ other workflow providers use for <code>run:</code> blocks. False positives are
 intentional: better to flag and let the operator suppress than to
 miss a real injection because the parser couldn't follow a dynamic
 expression.</p>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -2158,163 +2153,163 @@ expression.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="jf-001-shared-library-not-pinned-to-a-tag-or-commit">JF-001 — Shared library not pinned to a tag or commit<a class="headerlink" href="#jf-001-shared-library-not-pinned-to-a-tag-or-commit" title="Permanent link">&para;</a></h2>
+<h2 id="jf-001-shared-library-not-pinned-to-a-tag-or-commit">JF-001 — Shared library not pinned to a tag or commit</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p><code>@main</code>, <code>@master</code>, <code>@develop</code>, no-<code>@ref</code>, and any non-semver / non-SHA ref are floating. Whoever controls the upstream library can ship code into your build by pushing to that branch.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every <code>@Library('name@&lt;ref&gt;')</code> to a release tag (e.g. <code>@v1.4.2</code>) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.</p>
-<h2 id="jf-002-script-step-interpolates-attacker-controllable-env-var">JF-002 — Script step interpolates attacker-controllable env var<a class="headerlink" href="#jf-002-script-step-interpolates-attacker-controllable-env-var" title="Permanent link">&para;</a></h2>
+<h2 id="jf-002-script-step-interpolates-attacker-controllable-env-var">JF-002 — Script step interpolates attacker-controllable env var</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>$BRANCH_NAME / $GIT_BRANCH / $TAG_NAME / $CHANGE_* are populated from SCM event metadata the attacker controls. Single-quoted Groovy strings don't interpolate so they're safe; only double-quoted / triple-double-quoted bodies are flagged.</p>
 <p><strong>Recommended action</strong></p>
 <p>Switch the affected <code>sh</code>/<code>bat</code>/<code>powershell</code> step to a single-quoted string (Groovy doesn't interpolate single quotes), and pass values through a quoted shell variable (<code>sh 'echo "$BRANCH"'</code> after <code>withEnv([...])</code>).</p>
-<h2 id="jf-003-pipeline-uses-agent-any-no-executor-isolation">JF-003 — Pipeline uses <code>agent any</code> (no executor isolation)<a class="headerlink" href="#jf-003-pipeline-uses-agent-any-no-executor-isolation" title="Permanent link">&para;</a></h2>
+<h2 id="jf-003-pipeline-uses-agent-any-no-executor-isolation">JF-003 — Pipeline uses <code>agent any</code> (no executor isolation)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-5 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p><code>agent any</code> is the broadest possible executor scope — any registered executor can be picked, including ones with broader IAM / file-system access than this build needs. A compromise of one job blast-radiates across every pool.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>agent any</code> with <code>agent { label 'build-pool' }</code> (targeting a labelled pool) or <code>agent { docker { image '...' } }</code> (ephemeral container). Reserve broad-access agents for jobs that genuinely need them.</p>
-<h2 id="jf-004-aws-auth-uses-long-lived-access-keys-via-withcredentials">JF-004 — AWS auth uses long-lived access keys via withCredentials<a class="headerlink" href="#jf-004-aws-auth-uses-long-lived-access-keys-via-withcredentials" title="Permanent link">&para;</a></h2>
+<h2 id="jf-004-aws-auth-uses-long-lived-access-keys-via-withcredentials">JF-004 — AWS auth uses long-lived access keys via withCredentials</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
 <p>Fires when BOTH a credentialsId containing <code>aws</code> is referenced AND an AWS key variable name appears (requires both so an OIDC role binding doesn't false-positive). Also fires when <code>withAWS(credentials: '…')</code> is used — the safe alternative is <code>withAWS(role: '…')</code>.</p>
 <p><strong>Recommended action</strong></p>
 <p>Switch to the AWS plugin's IAM-role / OIDC binding (e.g. <code>withAWS(role: 'arn:aws:iam::…:role/jenkins')</code>) so each build assumes a short-lived role. Remove the static AWS_ACCESS_KEY_ID secret from the Jenkins credentials store once the role is in place.</p>
-<h2 id="jf-005-deploy-stage-missing-manual-input-approval">JF-005 — Deploy stage missing manual <code>input</code> approval<a class="headerlink" href="#jf-005-deploy-stage-missing-manual-input-approval" title="Permanent link">&para;</a></h2>
+<h2 id="jf-005-deploy-stage-missing-manual-input-approval">JF-005 — Deploy stage missing manual <code>input</code> approval</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL</p>
 <p>A stage named <code>deploy</code> / <code>release</code> / <code>publish</code> / <code>promote</code> should either use the declarative <code>input { ... }</code> directive or call <code>input message: ...</code> somewhere in its body. Without one, any push that triggers the pipeline ships to the target with no human review.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an <code>input</code> step to every deploy-like stage (e.g. <code>input message: 'Promote to prod?', submitter: 'releasers'</code>). Combine with a Jenkins folder-scoped permission so only release engineers see the prompt.</p>
-<h2 id="jf-006-artifacts-not-signed">JF-006 — Artifacts not signed<a class="headerlink" href="#jf-006-artifacts-not-signed" title="Permanent link">&para;</a></h2>
+<h2 id="jf-006-artifacts-not-signed">JF-006 — Artifacts not signed</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
 <p>Passes when cosign / sigstore / slsa-* / notation-sign appears in executable Jenkinsfile text (comments are stripped before matching).</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>sh 'cosign sign --yes …'</code> step (the cosign-installer Jenkins plugin handles binary install). Publish the signature next to the artifact and verify it at deploy.</p>
-<h2 id="jf-007-sbom-not-produced">JF-007 — SBOM not produced<a class="headerlink" href="#jf-007-sbom-not-produced" title="Permanent link">&para;</a></h2>
+<h2 id="jf-007-sbom-not-produced">JF-007 — SBOM not produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
 <p>Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears in executable code, or when Trivy is paired with <code>sbom</code> / <code>cyclonedx</code> in the same file. Comments are stripped before matching.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>sh 'syft . -o cyclonedx-json &gt; sbom.json'</code> step (or Trivy with <code>--format cyclonedx</code>) and archive the result with <code>archiveArtifacts</code>.</p>
-<h2 id="jf-008-credential-shaped-literal-in-pipeline-body">JF-008 — Credential-shaped literal in pipeline body<a class="headerlink" href="#jf-008-credential-shaped-literal-in-pipeline-body" title="Permanent link">&para;</a></h2>
+<h2 id="jf-008-credential-shaped-literal-in-pipeline-body">JF-008 — Credential-shaped literal in pipeline body</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalogue. Secrets committed to Groovy source are visible in every fork and every build log.</p>
 <p><strong>Recommended action</strong></p>
 <p>Rotate the exposed credential. Move the value to a Jenkins credential and reference it via <code>withCredentials([string(credentialsId: '…', variable: '…')])</code>.</p>
-<h2 id="jf-009-agent-docker-image-not-pinned-to-sha256-digest">JF-009 — Agent docker image not pinned to sha256 digest<a class="headerlink" href="#jf-009-agent-docker-image-not-pinned-to-sha256-digest" title="Permanent link">&para;</a></h2>
+<h2 id="jf-009-agent-docker-image-not-pinned-to-sha256-digest">JF-009 — Agent docker image not pinned to sha256 digest</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-IMMUTABLE</p>
 <p><code>agent { docker { image 'name:tag' } }</code> is not digest-pinned, so a repointed registry tag silently swaps the executor under every subsequent build. Unlike the YAML providers, Jenkins has no separate tag-pinning check — so this one fires at HIGH regardless of whether the tag is floating or immutable.</p>
 <p><strong>Recommended action</strong></p>
 <p>Resolve each image to its current digest (<code>docker buildx imagetools inspect &lt;ref&gt;</code> prints it) and reference it via <code>image '&lt;repo&gt;@sha256:&lt;digest&gt;'</code>. Automate refreshes with Renovate.</p>
-<h2 id="jf-010-long-lived-aws-keys-exposed-via-environment-block">JF-010 — Long-lived AWS keys exposed via environment {} block<a class="headerlink" href="#jf-010-long-lived-aws-keys-exposed-via-environment-block" title="Permanent link">&para;</a></h2>
+<h2 id="jf-010-long-lived-aws-keys-exposed-via-environment-block">JF-010 — Long-lived AWS keys exposed via environment {} block</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS, ESF-D-TOKEN-HYGIENE</p>
 <p>Flags <code>environment { AWS_ACCESS_KEY_ID = '...' }</code> when the value is a literal or plain variable reference. Skips <code>credentials('id')</code> helpers and <code>${env.X}</code> that resolve at runtime. Matches both multiline and inline <code>environment { ... }</code> forms.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace the literal with a credentials-store reference: <code>AWS_ACCESS_KEY_ID = credentials('aws-prod-key')</code>. Better: switch to the AWS plugin's role binding (<code>withAWS(role: 'arn:…')</code>) so the build assumes a short-lived role per run.</p>
-<h2 id="jf-011-pipeline-has-no-builddiscarder-retention-policy">JF-011 — Pipeline has no <code>buildDiscarder</code> retention policy<a class="headerlink" href="#jf-011-pipeline-has-no-builddiscarder-retention-policy" title="Permanent link">&para;</a></h2>
+<h2 id="jf-011-pipeline-has-no-builddiscarder-retention-policy">JF-011 — Pipeline has no <code>buildDiscarder</code> retention policy</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-10 · ESF ESF-D-BUILD-LOGS, ESF-C-AUDIT</p>
 <p>Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognises declarative <code>options { buildDiscarder(...) }</code>, scripted <code>properties([buildDiscarder(...)])</code>, and bare <code>logRotator(...)</code>.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>options { buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90')) }</code> (declarative) or the <code>properties([buildDiscarder(...)])</code> equivalent in scripted pipelines. Tune the numbers to your retention policy.</p>
-<h2 id="jf-012-load-step-pulls-groovy-from-disk-without-integrity-pin">JF-012 — <code>load</code> step pulls Groovy from disk without integrity pin<a class="headerlink" href="#jf-012-load-step-pulls-groovy-from-disk-without-integrity-pin" title="Permanent link">&para;</a></h2>
+<h2 id="jf-012-load-step-pulls-groovy-from-disk-without-integrity-pin">JF-012 — <code>load</code> step pulls Groovy from disk without integrity pin</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p><code>load 'foo.groovy'</code> evaluates whatever exists at the path when the build runs — there's no integrity check, so a workspace mutation can swap the loaded code between runs.</p>
 <p><strong>Recommended action</strong></p>
 <p>Move shared Groovy into a Jenkins shared library (<code>@Library('name@&lt;sha&gt;')</code>) — those are version-pinned and JF-001 audits them. Reserve <code>load</code> for one-off development experiments.</p>
-<h2 id="jf-013-copyartifacts-ingests-another-jobs-output-unverified">JF-013 — copyArtifacts ingests another job's output unverified<a class="headerlink" href="#jf-013-copyartifacts-ingests-another-jobs-output-unverified" title="Permanent link">&para;</a></h2>
+<h2 id="jf-013-copyartifacts-ingests-another-jobs-output-unverified">JF-013 — copyArtifacts ingests another job's output unverified</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Recognises both <code>copyArtifacts(projectName: ...)</code> and the older <code>step([$class: 'CopyArtifact', ...])</code> form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a verification step before consuming the artifact: <code>sh 'sha256sum -c manifest.sha256'</code> against a manifest the producer signed, or <code>cosign verify</code> over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.</p>
-<h2 id="jf-014-agent-label-missing-ephemeral-marker">JF-014 — Agent label missing ephemeral marker<a class="headerlink" href="#jf-014-agent-label-missing-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<h2 id="jf-014-agent-label-missing-ephemeral-marker">JF-014 — Agent label missing ephemeral marker</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p>Static Jenkins agents that persist between builds leak workspace files and process state. The check looks for an <code>ephemeral</code> substring in <code>agent { label '...' }</code> blocks.</p>
 <p><strong>Recommended action</strong></p>
 <p>Register Jenkins agents with ephemeral lifecycle (e.g. Kubernetes pod templates or EC2 Fleet plugin) and include <code>ephemeral</code> in the label string so the pipeline declares its expectation.</p>
-<h2 id="jf-015-pipeline-has-no-timeout-wrapper-unbounded-build">JF-015 — Pipeline has no <code>timeout</code> wrapper — unbounded build<a class="headerlink" href="#jf-015-pipeline-has-no-timeout-wrapper-unbounded-build" title="Permanent link">&para;</a></h2>
+<h2 id="jf-015-pipeline-has-no-timeout-wrapper-unbounded-build">JF-015 — Pipeline has no <code>timeout</code> wrapper — unbounded build</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
 <p>Without a <code>timeout()</code> wrapper, the pipeline runs until the Jenkins controller's global timeout (or indefinitely if none is configured). Explicit timeouts cap blast radius and the window during which a compromised step has workspace access.</p>
 <p><strong>Recommended action</strong></p>
 <p>Wrap the pipeline body or individual stages with <code>timeout(time: N, unit: 'MINUTES') { … }</code>. Without an explicit timeout, the build runs until the Jenkins global default (or indefinitely).</p>
-<h2 id="jf-016-remote-script-piped-to-shell-interpreter">JF-016 — Remote script piped to shell interpreter<a class="headerlink" href="#jf-016-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<h2 id="jf-016-remote-script-piped-to-shell-interpreter">JF-016 — Remote script piped to shell interpreter</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a Jenkinsfile. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build agent.</p>
 <p><strong>Recommended action</strong></p>
 <p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
-<h2 id="jf-017-docker-run-with-insecure-flags-privilegedhost-mount">JF-017 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#jf-017-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<h2 id="jf-017-docker-run-with-insecure-flags-privilegedhost-mount">JF-017 — Docker run with insecure flags (privileged/host mount)</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a Jenkinsfile give the container full access to the build agent, enabling container escape and lateral movement.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
-<h2 id="jf-018-package-install-from-insecure-source">JF-018 — Package install from insecure source<a class="headerlink" href="#jf-018-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<h2 id="jf-018-package-install-from-insecure-source">JF-018 — Package install from insecure source</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a Jenkinsfile. These patterns allow man-in-the-middle injection of malicious packages.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
-<h2 id="jf-019-groovy-sandbox-escape-pattern-detected">JF-019 — Groovy sandbox escape pattern detected<a class="headerlink" href="#jf-019-groovy-sandbox-escape-pattern-detected" title="Permanent link">&para;</a></h2>
+<h2 id="jf-019-groovy-sandbox-escape-pattern-detected">JF-019 — Groovy sandbox escape pattern detected</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Detects Groovy patterns that bypass the Jenkins script security sandbox: <code>Runtime.getRuntime()</code>, <code>Class.forName()</code>, <code>.classLoader</code>, <code>ProcessBuilder</code>, and <code>@Grab</code>. These give the pipeline (or an attacker who controls its source) unrestricted access to the Jenkins controller JVM — full RCE.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avoid @Grab for untrusted dependencies.</p>
-<h2 id="jf-020-no-vulnerability-scanning-step">JF-020 — No vulnerability scanning step<a class="headerlink" href="#jf-020-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<h2 id="jf-020-no-vulnerability-scanning-step">JF-020 — No vulnerability scanning step</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
 <p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
-<h2 id="jf-021-package-install-without-lockfile-enforcement">JF-021 — Package install without lockfile enforcement<a class="headerlink" href="#jf-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<h2 id="jf-021-package-install-without-lockfile-enforcement">JF-021 — Package install without lockfile enforcement</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
-<h2 id="jf-022-dependency-update-command-bypasses-lockfile-pins">JF-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#jf-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<h2 id="jf-022-dependency-update-command-bypasses-lockfile-pins">JF-022 — Dependency update command bypasses lockfile pins</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).</p>
-<h2 id="jf-023-tls-certificate-verification-bypass">JF-023 — TLS / certificate verification bypass<a class="headerlink" href="#jf-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<h2 id="jf-023-tls-certificate-verification-bypass">JF-023 — TLS / certificate verification bypass</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
-<h2 id="jf-024-input-approval-step-missing-submitter-restriction">JF-024 — <code>input</code> approval step missing submitter restriction<a class="headerlink" href="#jf-024-input-approval-step-missing-submitter-restriction" title="Permanent link">&para;</a></h2>
+<h2 id="jf-024-input-approval-step-missing-submitter-restriction">JF-024 — <code>input</code> approval step missing submitter restriction</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL</p>
 <p>JF-005 already flags deploy stages with no <code>input</code> step. This rule catches the subtler case: the gate exists, but it doesn't actually restrict approvers. <code>submitter</code> accepts a comma-separated list of Jenkins usernames and group names; scope it to the smallest release-eligible pool.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>submitter: 'releasers,sre'</code> (or a single role) argument to every <code>input</code> step in a deploy-like stage. Without it, any user with the Jenkins job <code>Build</code> permission can approve a production promotion — the approval gate becomes advisory.</p>
-<h2 id="jf-025-kubernetes-agent-pod-template-runs-privileged-or-mounts-hostpath">JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath<a class="headerlink" href="#jf-025-kubernetes-agent-pod-template-runs-privileged-or-mounts-hostpath" title="Permanent link">&para;</a></h2>
+<h2 id="jf-025-kubernetes-agent-pod-template-runs-privileged-or-mounts-hostpath">JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>JF-017 flags inline <code>docker run</code> commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare <code>agent { kubernetes { yaml '''...''' } }</code>. A pod running with <code>privileged: true</code> or mounting <code>hostPath: /</code> gives the build container the same blast radius — container escape, node-credential theft, cross-tenant contamination on a shared cluster.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove <code>privileged: true</code> from the embedded pod YAML, drop <code>hostPath</code>/<code>hostNetwork</code>/<code>hostPID</code>/<code>hostIPC</code> entries, and add a <code>securityContext</code> with <code>runAsNonRoot: true</code> and a <code>readOnlyRootFilesystem</code>. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.</p>
-<h2 id="jf-026-build-job-trigger-ignores-downstream-failure">JF-026 — <code>build job:</code> trigger ignores downstream failure<a class="headerlink" href="#jf-026-build-job-trigger-ignores-downstream-failure" title="Permanent link">&para;</a></h2>
+<h2 id="jf-026-build-job-trigger-ignores-downstream-failure">JF-026 — <code>build job:</code> trigger ignores downstream failure</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-C-APPROVAL</p>
 <p>The Jenkins Pipeline plugin defaults <code>wait</code> to <code>true</code> and <code>propagate</code> to <code>true</code>, but either can be flipped per call. <code>wait: false</code> returns immediately; <code>propagate: false</code> continues even when the downstream job fails or is aborted. Both patterns sever the flow-control link between the upstream approval gate and the work the downstream job is about to do.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove <code>wait: false</code> and <code>propagate: false</code> from every <code>build job:</code> step, or replace them with an explicit <code>currentBuild.result = build(...).result</code> check. A fire-and-forget trigger can silently ship broken artifacts because the upstream job reports success regardless of what the downstream job actually did.</p>
-<h2 id="jf-027-archiveartifacts-does-not-record-a-fingerprint">JF-027 — <code>archiveArtifacts</code> does not record a fingerprint<a class="headerlink" href="#jf-027-archiveartifacts-does-not-record-a-fingerprint" title="Permanent link">&para;</a></h2>
+<h2 id="jf-027-archiveartifacts-does-not-record-a-fingerprint">JF-027 — <code>archiveArtifacts</code> does not record a fingerprint</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-9 · ESF ESF-D-TAMPER</p>
 <p>Fingerprinting hashes the artifact on archive so Jenkins can trace its flow between jobs — the same mechanism JF-013 relies on for verification-step pairing. It's cheap and retroactive: enabling it on the producer job unlocks a build-traceability audit for every downstream consumer.</p>
 <p><strong>Recommended action</strong></p>
 <p>Set <code>fingerprint: true</code> on every <code>archiveArtifacts</code> call (or use <code>archiveArtifacts artifacts: '...', fingerprint: true</code>). Without it, Jenkins can't link the artifact to the build that produced it; <code>copyArtifacts</code> consumers downstream then have no provenance to verify against.</p>
-<h2 id="jf-028-no-slsa-provenance-attestation-produced">JF-028 — No SLSA provenance attestation produced<a class="headerlink" href="#jf-028-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<h2 id="jf-028-no-slsa-provenance-attestation-produced">JF-028 — No SLSA provenance attestation produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
 <p><code>cosign sign</code> signs the artifact bytes. <code>cosign attest</code> signs an in-toto statement describing how the build ran — builder, source commit, input parameters. SLSA L3 verifiers check the latter so consumers can enforce policy on where and how artifacts were produced.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>sh 'cosign attest --predicate=provenance.intoto.jsonl …'</code> step after the build, or integrate the TestifySec <code>witness run</code> attestor. JF-006 covers signing; this rule covers the build-provenance statement SLSA Build L3 requires.</p>
-<h2 id="jf-029-jenkinsfile-contains-indicators-of-malicious-activity">JF-029 — Jenkinsfile contains indicators of malicious activity<a class="headerlink" href="#jf-029-jenkinsfile-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<h2 id="jf-029-jenkinsfile-contains-indicators-of-malicious-activity">JF-029 — Jenkinsfile contains indicators of malicious activity</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox escape). Those flag risky defaults; this flags concrete evidence — reverse shells, base64-decoded execution, miner binaries, exfil channels, credential-dump pipes, shell-history erasure. Runs on the comment-stripped Groovy text so <code>// cosign verify … // webhook.site</code> in a legitimate annotation doesn't false-positive.</p>
 <p><strong>Recommended action</strong></p>
 <p>Treat as a potential compromise. Identify the commit that introduced the matching stage(s), rotate Jenkins credentials the job can reach, review controller/agent audit logs for outbound traffic to the matched hosts, and re-image the agent pool if the compromise may have persisted.</p>
-<h2 id="jf-030-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">JF-030 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#jf-030-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<h2 id="jf-030-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">JF-030 — Dangerous shell idiom (eval, sh -c variable, backtick exec)</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Complements JF-002 (script injection from untrusted build parameters). Fires on intrinsically risky shell idioms — <code>eval</code>, <code>sh -c "$X"</code>, backtick exec — regardless of whether the input source is currently trusted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec with direct command invocation. Validate any value feeding a dynamic command at the boundary, or pass arguments as a list to a real <code>sh</code> step so the shell is not re-invoked.</p>
-<h2 id="jf-031-package-install-bypasses-registry-integrity-git-path-tarball-source">JF-031 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#jf-031-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<h2 id="jf-031-package-install-bypasses-registry-integrity-git-path-tarball-source">JF-031 — Package install bypasses registry integrity (git / path / tarball source)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Complements JF-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Artifactory, Nexus) instead of installing from a filesystem path or tarball URL.</p>
 <hr />
-<h2 id="adding-a-new-jenkins-check">Adding a new Jenkins check<a class="headerlink" href="#adding-a-new-jenkins-check" title="Permanent link">&para;</a></h2>
+<h2 id="adding-a-new-jenkins-check">Adding a new Jenkins check</h2>
 <ol>
 <li>Create a new module at
    <code>pipeline_check/core/checks/jenkins/rules/jfNNN_&lt;name&gt;.py</code>
@@ -2372,11 +2367,6 @@ expression.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2415,7 +2405,7 @@ expression.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

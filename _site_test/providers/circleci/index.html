@@ -1973,18 +1973,13 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/circleci.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="circleci-provider">CircleCI provider<a class="headerlink" href="#circleci-provider" title="Permanent link">&para;</a></h1>
+<h1 id="circleci-provider">CircleCI provider</h1>
 <p>Parses <code>.circleci/config.yml</code> on disk — no CircleCI API token, no
 runner install.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --circleci-path is auto-detected when .circleci/config.yml exists at cwd.</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>circleci
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1993,7 +1988,7 @@ runner install.</p>
 </span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the other providers.</p>
-<h3 id="circleci-specific-checks">CircleCI-specific checks<a class="headerlink" href="#circleci-specific-checks" title="Permanent link">&para;</a></h3>
+<h3 id="circleci-specific-checks">CircleCI-specific checks</h3>
 <p>Several checks target CircleCI concepts that have no direct analogue
 in other providers:</p>
 <ul>
@@ -2002,7 +1997,7 @@ in other providers:</p>
 <li><strong>CC-012</strong> — dynamic config generation via <code>setup: true</code></li>
 <li><strong>CC-019</strong> — <code>add_ssh_keys</code> fingerprint restriction</li>
 </ul>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -2165,158 +2160,158 @@ in other providers:</p>
 </tbody>
 </table>
 <hr />
-<h2 id="cc-001-orb-not-pinned-to-exact-semver">CC-001 — Orb not pinned to exact semver<a class="headerlink" href="#cc-001-orb-not-pinned-to-exact-semver" title="Permanent link">&para;</a></h2>
+<h2 id="cc-001-orb-not-pinned-to-exact-semver">CC-001 — Orb not pinned to exact semver</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Orb references in the <code>orbs:</code> block must include an <code>@x.y.z</code> suffix to lock a specific version. References without <code>@</code>, with <code>@volatile</code>, or with only a major (<code>@1</code>) or major.minor (<code>@5.1</code>) version float and can silently pull in malicious updates.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every orb to an exact semver version (<code>circleci/node@5.1.0</code>). Floating references like <code>@volatile</code>, <code>@1</code>, or bare names without <code>@</code> resolve to whatever is latest at build time, allowing a compromised orb update to execute in the pipeline.</p>
-<h2 id="cc-002-script-injection-via-untrusted-environment-variable">CC-002 — Script injection via untrusted environment variable<a class="headerlink" href="#cc-002-script-injection-via-untrusted-environment-variable" title="Permanent link">&para;</a></h2>
+<h2 id="cc-002-script-injection-via-untrusted-environment-variable">CC-002 — Script injection via untrusted environment variable</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>CircleCI exposes environment variables like <code>$CIRCLE_BRANCH</code>, <code>$CIRCLE_TAG</code>, and <code>$CIRCLE_PR_NUMBER</code> that are controlled by the event source (branch name, tag, PR). Interpolating them unquoted into <code>run:</code> commands allows shell injection via specially crafted branch or tag names.</p>
 <p><strong>Recommended action</strong></p>
 <p>Do not interpolate attacker-controllable environment variables (CIRCLE_BRANCH, CIRCLE_TAG, CIRCLE_PR_NUMBER, etc.) directly into shell commands. Pass them through an intermediate variable and quote them, or use CircleCI pipeline parameters instead.</p>
-<h2 id="cc-003-docker-image-not-pinned-by-digest">CC-003 — Docker image not pinned by digest<a class="headerlink" href="#cc-003-docker-image-not-pinned-by-digest" title="Permanent link">&para;</a></h2>
+<h2 id="cc-003-docker-image-not-pinned-by-digest">CC-003 — Docker image not pinned by digest</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Docker images referenced in <code>docker:</code> blocks under jobs or executors must include an <code>@sha256:...</code> digest suffix. Tag-only references (<code>:latest</code>, <code>:18</code>) are mutable and can be replaced at any time by whoever controls the upstream registry.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every Docker image to its sha256 digest: <code>cimg/node:18@sha256:abc123...</code>. Tags like <code>:latest</code> or <code>:18</code> are mutable — a registry compromise or upstream push silently replaces the image content.</p>
-<h2 id="cc-004-secret-like-environment-variable-not-managed-via-context">CC-004 — Secret-like environment variable not managed via context<a class="headerlink" href="#cc-004-secret-like-environment-variable-not-managed-via-context" title="Permanent link">&para;</a></h2>
+<h2 id="cc-004-secret-like-environment-variable-not-managed-via-context">CC-004 — Secret-like environment variable not managed via context</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Jobs that declare environment variables with secret-looking names (containing PASSWORD, TOKEN, SECRET, or API_KEY) in inline <code>environment:</code> blocks bypass CircleCI's context restrictions — security groups, OIDC claims, and audit logs are only enforced when secrets live in contexts.</p>
 <p><strong>Recommended action</strong></p>
 <p>Move secret-like variables (PASSWORD, TOKEN, SECRET, API_KEY) into a CircleCI context and reference the context in the workflow job configuration. Contexts support security groups and audit logging that inline <code>environment:</code> blocks lack.</p>
-<h2 id="cc-005-aws-auth-uses-long-lived-access-keys-in-environment-block">CC-005 — AWS auth uses long-lived access keys in environment block<a class="headerlink" href="#cc-005-aws-auth-uses-long-lived-access-keys-in-environment-block" title="Permanent link">&para;</a></h2>
+<h2 id="cc-005-aws-auth-uses-long-lived-access-keys-in-environment-block">CC-005 — AWS auth uses long-lived access keys in environment block</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
 <p>Long-lived AWS access keys declared directly in a job's <code>environment:</code> block are visible to anyone who can read the config. They cannot be rotated automatically and remain valid until manually revoked. OIDC-based federation yields short-lived credentials per build.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from the job <code>environment:</code> block. Use CircleCI's OIDC token with <code>aws-cli/setup</code> orb's role-based auth, or store credentials in a context with security group restrictions.</p>
-<h2 id="cc-006-artifacts-not-signed-no-cosignsigstore-step">CC-006 — Artifacts not signed (no cosign/sigstore step)<a class="headerlink" href="#cc-006-artifacts-not-signed-no-cosignsigstore-step" title="Permanent link">&para;</a></h2>
+<h2 id="cc-006-artifacts-not-signed-no-cosignsigstore-step">CC-006 — Artifacts not signed (no cosign/sigstore step)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
 <p>Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-framework, and notation-sign as signing tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a signing step to the pipeline — e.g. install cosign and run <code>cosign sign</code>, or use the <code>sigstore</code> CLI. Publish the signature alongside the artifact and verify it at consumption time.</p>
-<h2 id="cc-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step">CC-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)<a class="headerlink" href="#cc-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step" title="Permanent link">&para;</a></h2>
+<h2 id="cc-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step">CC-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
 <p>Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an SBOM generation step — <code>syft . -o cyclonedx-json</code>, Trivy with <code>--format cyclonedx</code>, or Microsoft's <code>sbom-tool</code>. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.</p>
-<h2 id="cc-008-credential-shaped-literal-in-config-body">CC-008 — Credential-shaped literal in config body<a class="headerlink" href="#cc-008-credential-shaped-literal-in-config-body" title="Permanent link">&para;</a></h2>
+<h2 id="cc-008-credential-shaped-literal-in-config-body">CC-008 — Credential-shaped literal in config body</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Every string in the config is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc.). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.</p>
 <p><strong>Recommended action</strong></p>
 <p>Rotate the exposed credential immediately. Move the value to a CircleCI project environment variable or a context and reference it via the variable name. For cloud access, prefer OIDC federation over long-lived keys.</p>
-<h2 id="cc-009-deploy-job-missing-manual-approval-gate">CC-009 — Deploy job missing manual approval gate<a class="headerlink" href="#cc-009-deploy-job-missing-manual-approval-gate" title="Permanent link">&para;</a></h2>
+<h2 id="cc-009-deploy-job-missing-manual-approval-gate">CC-009 — Deploy job missing manual approval gate</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL, ESF-C-ENV-SEP</p>
 <p>In CircleCI, manual approval is implemented by adding a job with <code>type: approval</code> to the workflow and making the deploy job require it. Without this gate, any push to the triggering branch deploys immediately with no human review.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>type: approval</code> job that precedes the deploy job in the workflow, and list it in the deploy job's <code>requires:</code>. This ensures a human must click Approve in the CircleCI UI before production changes roll out.</p>
-<h2 id="cc-010-self-hosted-runner-without-ephemeral-marker">CC-010 — Self-hosted runner without ephemeral marker<a class="headerlink" href="#cc-010-self-hosted-runner-without-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<h2 id="cc-010-self-hosted-runner-without-ephemeral-marker">CC-010 — Self-hosted runner without ephemeral marker</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p>Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered job writes to <code>/tmp</code>; a subsequent prod-deploy job on the same runner reads it. The check looks for <code>resource_class</code> values containing 'self-hosted' — if found, it checks for 'ephemeral' in the value. Also checks for <code>machine: true</code> combined with a self-hosted resource class.</p>
 <p><strong>Recommended action</strong></p>
 <p>Configure self-hosted runners to tear down between jobs. Use a <code>resource_class</code> value that includes an ephemeral marker, or use CircleCI's machine executor with runner auto-scaling so each job gets a fresh environment.</p>
-<h2 id="cc-011-no-store_test_results-step-test-results-not-archived">CC-011 — No store_test_results step (test results not archived)<a class="headerlink" href="#cc-011-no-store_test_results-step-test-results-not-archived" title="Permanent link">&para;</a></h2>
+<h2 id="cc-011-no-store_test_results-step-test-results-not-archived">CC-011 — No store_test_results step (test results not archived)</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-10 · ESF ESF-C-AUDIT</p>
 <p>Without <code>store_test_results</code>, test output is only available in the raw build log. Archiving test results enables CircleCI's test insights, timing-based splitting, and provides an audit trail that links each build to its test outcomes.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>store_test_results</code> step to jobs that run tests. This archives test results in CircleCI for traceability, trend analysis, and debugging flaky tests.</p>
-<h2 id="cc-012-dynamic-config-via-setup-true-enables-code-injection">CC-012 — Dynamic config via <code>setup: true</code> enables code injection<a class="headerlink" href="#cc-012-dynamic-config-via-setup-true-enables-code-injection" title="Permanent link">&para;</a></h2>
+<h2 id="cc-012-dynamic-config-via-setup-true-enables-code-injection">CC-012 — Dynamic config via <code>setup: true</code> enables code injection</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>When <code>setup: true</code> is set at the top level, the config becomes a setup workflow — it generates the real pipeline config dynamically (typically via the <code>circleci/continuation</code> orb). An attacker who controls the setup job (e.g. via a malicious PR in a fork) can inject arbitrary config for all subsequent jobs, including deploy steps with production secrets.</p>
 <p><strong>Recommended action</strong></p>
 <p>If <code>setup: true</code> is required, restrict the setup job to a trusted branch filter and audit the generated config carefully. Ensure the continuation orb's <code>configuration_path</code> points to a checked-in file, not a dynamically generated one that could be influenced by PR content.</p>
-<h2 id="cc-013-deploy-job-in-workflow-has-no-branch-filter">CC-013 — Deploy job in workflow has no branch filter<a class="headerlink" href="#cc-013-deploy-job-in-workflow-has-no-branch-filter" title="Permanent link">&para;</a></h2>
+<h2 id="cc-013-deploy-job-in-workflow-has-no-branch-filter">CC-013 — Deploy job in workflow has no branch filter</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL</p>
 <p>Without branch filters, a deploy job triggers on every branch push, including feature branches and forks. Restricting sensitive jobs to specific branches limits the blast radius of a compromised commit.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>filters.branches.only</code> to deploy-like workflow jobs so they only run on protected branches (e.g. main, release/*).</p>
-<h2 id="cc-014-job-missing-resource_class-declaration">CC-014 — Job missing <code>resource_class</code> declaration<a class="headerlink" href="#cc-014-job-missing-resource_class-declaration" title="Permanent link">&para;</a></h2>
+<h2 id="cc-014-job-missing-resource_class-declaration">CC-014 — Job missing <code>resource_class</code> declaration</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-5 · ESF ESF-D-BUILD-ENV</p>
 <p>Without an explicit <code>resource_class</code>, CircleCI assigns a default executor. Declaring the class documents the expected scope and prevents accidental use of larger (or self-hosted) executors that may have elevated privileges.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>resource_class:</code> to every job to explicitly control the executor size and capabilities. Use the smallest class that satisfies build requirements.</p>
-<h2 id="cc-015-no-no_output_timeout-configured">CC-015 — No <code>no_output_timeout</code> configured<a class="headerlink" href="#cc-015-no-no_output_timeout-configured" title="Permanent link">&para;</a></h2>
+<h2 id="cc-015-no-no_output_timeout-configured">CC-015 — No <code>no_output_timeout</code> configured</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
 <p>Without <code>no_output_timeout</code>, a hung step can consume executor time indefinitely. Explicit timeouts cap cost and the window during which a compromised step has access to secrets and the build environment.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>no_output_timeout:</code> to long-running run steps, or set it at the job level. A reasonable default is 10-30 minutes. CircleCI's default of 10 minutes may be too long for some pipelines and absent for others.</p>
-<h2 id="cc-016-remote-script-piped-to-shell-interpreter">CC-016 — Remote script piped to shell interpreter<a class="headerlink" href="#cc-016-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<h2 id="cc-016-remote-script-piped-to-shell-interpreter">CC-016 — Remote script piped to shell interpreter</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a CircleCI config. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.</p>
 <p><strong>Recommended action</strong></p>
 <p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
-<h2 id="cc-017-docker-run-with-insecure-flags-privilegedhost-mount">CC-017 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#cc-017-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<h2 id="cc-017-docker-run-with-insecure-flags-privilegedhost-mount">CC-017 — Docker run with insecure flags (privileged/host mount)</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a CircleCI config give the container full access to the runner, enabling container escape and lateral movement.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
-<h2 id="cc-018-package-install-from-insecure-source">CC-018 — Package install from insecure source<a class="headerlink" href="#cc-018-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<h2 id="cc-018-package-install-from-insecure-source">CC-018 — Package install from insecure source</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a CircleCI config. These patterns allow man-in-the-middle injection of malicious packages.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
-<h2 id="cc-019-add_ssh_keys-without-fingerprint-restriction">CC-019 — <code>add_ssh_keys</code> without fingerprint restriction<a class="headerlink" href="#cc-019-add_ssh_keys-without-fingerprint-restriction" title="Permanent link">&para;</a></h2>
+<h2 id="cc-019-add_ssh_keys-without-fingerprint-restriction">CC-019 — <code>add_ssh_keys</code> without fingerprint restriction</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-6 · ESF ESF-C-SECRET-MGMT</p>
 <p>A bare <code>- add_ssh_keys</code> step (without <code>fingerprints:</code>) loads every SSH key configured on the project into the job. This violates least privilege — the job gains access to keys it does not need, increasing the blast radius if the job is compromised.</p>
 <p><strong>Recommended action</strong></p>
 <p>Always specify <code>fingerprints:</code> when using <code>add_ssh_keys</code> to restrict which SSH keys are loaded into the job. A bare <code>add_ssh_keys</code> step loads ALL project SSH keys.</p>
-<h2 id="cc-020-no-vulnerability-scanning-step">CC-020 — No vulnerability scanning step<a class="headerlink" href="#cc-020-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<h2 id="cc-020-no-vulnerability-scanning-step">CC-020 — No vulnerability scanning step</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
 <p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
-<h2 id="cc-021-package-install-without-lockfile-enforcement">CC-021 — Package install without lockfile enforcement<a class="headerlink" href="#cc-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<h2 id="cc-021-package-install-without-lockfile-enforcement">CC-021 — Package install without lockfile enforcement</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
-<h2 id="cc-022-dependency-update-command-bypasses-lockfile-pins">CC-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#cc-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<h2 id="cc-022-dependency-update-command-bypasses-lockfile-pins">CC-022 — Dependency update command bypasses lockfile pins</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR workflow (e.g. Dependabot, Renovate).</p>
-<h2 id="cc-023-tls-certificate-verification-bypass">CC-023 — TLS / certificate verification bypass<a class="headerlink" href="#cc-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<h2 id="cc-023-tls-certificate-verification-bypass">CC-023 — TLS / certificate verification bypass</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
-<h2 id="cc-024-no-slsa-provenance-attestation-produced">CC-024 — No SLSA provenance attestation produced<a class="headerlink" href="#cc-024-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<h2 id="cc-024-no-slsa-provenance-attestation-produced">CC-024 — No SLSA provenance attestation produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
 <p>Signing (<code>cosign sign</code>) binds identity to bytes; attestation (<code>cosign attest</code>) binds a structured claim about <em>how</em> the artifact was built. SLSA verifiers check the latter so consumers can enforce builder/source/parameter policies.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a <code>run: cosign attest</code> command against a <code>provenance.intoto.jsonl</code> statement, or use the <code>circleci/attestation</code> orb. CC-006 covers signing; this rule covers the build-provenance step SLSA Build L3 requires.</p>
-<h2 id="cc-025-cache-key-derives-from-attacker-controllable-input">CC-025 — Cache key derives from attacker-controllable input<a class="headerlink" href="#cc-025-cache-key-derives-from-attacker-controllable-input" title="Permanent link">&para;</a></h2>
+<h2 id="cc-025-cache-key-derives-from-attacker-controllable-input">CC-025 — Cache key derives from attacker-controllable input</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>CircleCI's <code>restore_cache</code> falls through each listed key until it finds a hit. When one of those keys is derived from <code>CIRCLE_BRANCH</code>, <code>CIRCLE_TAG</code>, or <code>CIRCLE_PR_*</code> — values an attacker can set by opening a PR — the attacker can plant a cache entry that a protected job later uses. Uses checksum-of-lockfile or a static version label instead.</p>
 <p><strong>Recommended action</strong></p>
 <p>Derive <code>save_cache</code> and <code>restore_cache</code> keys from values the attacker can't control — the lockfile checksum (<code>{{ checksum "package-lock.json" }}</code>) and the build variant, not <code>{{ .Branch }}</code> or <code>${CIRCLE_PR_NUMBER}</code>. A PR-scoped branch can seed a poisoned cache entry that a later main-branch run restores as trusted.</p>
-<h2 id="cc-026-config-contains-indicators-of-malicious-activity">CC-026 — Config contains indicators of malicious activity<a class="headerlink" href="#cc-026-config-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<h2 id="cc-026-config-contains-indicators-of-malicious-activity">CC-026 — Config contains indicators of malicious activity</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Fires on concrete indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, <code>webhook.site</code> callbacks, credential-dump pipes, history-erasure).</p>
 <p><strong>Recommended action</strong></p>
 <p>Treat as a potential compromise. Identify the PR that added the matching step(s), rotate any contexts/env vars the pipeline can reach, and audit recent CircleCI runs for outbound traffic to the matched hosts.</p>
-<h2 id="cc-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#cc-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<h2 id="cc-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Complements CC-002 (script injection from untrusted context). Fires on intrinsically risky shell idioms — <code>eval</code>, <code>sh -c "$X"</code>, backtick exec — regardless of whether the input source is currently trusted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.</p>
-<h2 id="cc-028-package-install-bypasses-registry-integrity-git-path-tarball-source">CC-028 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#cc-028-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<h2 id="cc-028-package-install-bypasses-registry-integrity-git-path-tarball-source">CC-028 — Package install bypasses registry integrity (git / path / tarball source)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Complements CC-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.</p>
-<h2 id="cc-029-machine-executor-image-not-pinned">CC-029 — Machine executor image not pinned<a class="headerlink" href="#cc-029-machine-executor-image-not-pinned" title="Permanent link">&para;</a></h2>
+<h2 id="cc-029-machine-executor-image-not-pinned">CC-029 — Machine executor image not pinned</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>CC-003 covers Docker images declared under <code>docker:</code> blocks — it does not reach the machine executor, where the image is on <code>machine.image</code>. A rolling tag (<code>current</code>, <code>edge</code>, <code>default</code>) pulls a fresh image whenever CircleCI publishes one, reintroducing the same supply-chain risk Docker-image pinning is designed to eliminate.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every <code>machine.image</code> to a dated release tag — <code>ubuntu-2204:2024.05.1</code> rather than <code>:current</code>, <code>:edge</code>, <code>:default</code>, or a bare image name. CircleCI rotates the <code>current</code> / <code>edge</code> aliases on its own cadence, so builds re-run on an image the author never reviewed.</p>
-<h2 id="cc-030-workflow-job-uses-context-without-branch-filter-or-approval-gate">CC-030 — Workflow job uses context without branch filter or approval gate<a class="headerlink" href="#cc-030-workflow-job-uses-context-without-branch-filter-or-approval-gate" title="Permanent link">&para;</a></h2>
+<h2 id="cc-030-workflow-job-uses-context-without-branch-filter-or-approval-gate">CC-030 — Workflow job uses context without branch filter or approval gate</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS, ESF-C-APPROVAL</p>
 <p>CircleCI contexts are the recommended way to store shared secrets, but binding a context to a job is only half of least-privilege — the other half is controlling <em>when</em> the binding activates. Unrestricted workflow entries with <code>context:</code> turn every branch push into a secret-read event.</p>
 <p><strong>Recommended action</strong></p>
 <p>Either add <code>filters.branches.only: [&lt;protected branches&gt;]</code> to restrict when the context-bound job runs, or require a <code>type: approval</code> job in <code>requires:</code> so a human gates the secret-carrying execution. Without either gate, every push to the project loads the context's secrets into an ephemeral runner where any compromised step can exfiltrate them.</p>
 <hr />
-<h2 id="adding-a-new-circleci-check">Adding a new CircleCI check<a class="headerlink" href="#adding-a-new-circleci-check" title="Permanent link">&para;</a></h2>
+<h2 id="adding-a-new-circleci-check">Adding a new CircleCI check</h2>
 <ol>
 <li>Create a new module at
    <code>pipeline_check/core/checks/circleci/rules/ccNNN_&lt;name&gt;.py</code>
@@ -2374,11 +2369,6 @@ in other providers:</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2417,7 +2407,7 @@ in other providers:</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

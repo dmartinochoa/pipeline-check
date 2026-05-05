@@ -1925,18 +1925,13 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/github.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="github-actions-provider">GitHub Actions provider<a class="headerlink" href="#github-actions-provider" title="Permanent link">&para;</a></h1>
+<h1 id="github-actions-provider">GitHub Actions provider</h1>
 <p>Parses workflow YAML files under a <code>.github/workflows</code> directory — no
 network calls, no GitHub API token, no installed Actions runner required.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --gha-path is auto-detected when .github/workflows exists at cwd;</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># the CLI announces the pick on stderr.</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>github
@@ -1949,7 +1944,7 @@ network calls, no GitHub API token, no installed Actions runner required.</p>
 </span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the AWS and Terraform providers.</p>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -2107,153 +2102,153 @@ network calls, no GitHub API token, no installed Actions runner required.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="gha-001-action-not-pinned-to-commit-sha">GHA-001 — Action not pinned to commit SHA<a class="headerlink" href="#gha-001-action-not-pinned-to-commit-sha" title="Permanent link">&para;</a></h2>
+<h2 id="gha-001-action-not-pinned-to-commit-sha">GHA-001 — Action not pinned to commit SHA</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Every <code>uses:</code> reference should pin a specific 40-char commit SHA. Tag and branch refs (<code>@v4</code>, <code>@main</code>) can be silently moved to malicious commits by whoever controls the upstream repository — a third-party action compromise will propagate into the pipeline on the next run.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace tag/branch references (<code>@v4</code>, <code>@main</code>) with the full 40-char commit SHA. Use Dependabot or StepSecurity to keep the pins fresh.</p>
-<h2 id="gha-002-pull_request_target-checks-out-pr-head">GHA-002 — pull_request_target checks out PR head<a class="headerlink" href="#gha-002-pull_request_target-checks-out-pr-head" title="Permanent link">&para;</a></h2>
+<h2 id="gha-002-pull_request_target-checks-out-pr-head">GHA-002 — pull_request_target checks out PR head</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-D-BUILD-ENV</p>
 <p><code>pull_request_target</code> runs with a write-scope GITHUB_TOKEN and access to repository secrets — deliberately so, since it's how labelling and comment-bot workflows work. When the same workflow then explicitly checks out the PR head (<code>ref: ${{ github.event.pull_request.head.sha }}</code> or <code>.ref</code>) it executes attacker-controlled code with those privileges.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use <code>pull_request</code> instead of <code>pull_request_target</code> for any workflow that must run untrusted code. If you need write scope, split the workflow: a <code>pull_request_target</code> job that labels the PR, and a separate <code>pull_request</code>-triggered job that builds it with read-only secrets.</p>
-<h2 id="gha-003-script-injection-via-untrusted-context">GHA-003 — Script injection via untrusted context<a class="headerlink" href="#gha-003-script-injection-via-untrusted-context" title="Permanent link">&para;</a></h2>
+<h2 id="gha-003-script-injection-via-untrusted-context">GHA-003 — Script injection via untrusted context</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Interpolating attacker-controlled context fields (PR title/body, issue body, comment body, commit message, discussion body, head branch name, <code>github.ref_name</code>, <code>inputs.*</code>, release metadata, deployment payloads) directly into a <code>run:</code> block is shell injection. GitHub expands <code>${{ ... }}</code> BEFORE shell quoting, so any backtick, <code>$()</code>, or <code>;</code> in the source field executes.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pass untrusted values through an intermediate <code>env:</code> variable and reference that variable from the shell script. GitHub's expression evaluation happens before shell quoting, so inline <code>${{ github.event.* }}</code> is always unsafe.</p>
-<h2 id="gha-004-workflow-has-no-explicit-permissions-block">GHA-004 — Workflow has no explicit permissions block<a class="headerlink" href="#gha-004-workflow-has-no-explicit-permissions-block" title="Permanent link">&para;</a></h2>
+<h2 id="gha-004-workflow-has-no-explicit-permissions-block">GHA-004 — Workflow has no explicit permissions block</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-5 · ESF ESF-C-LEAST-PRIV</p>
 <p>Without an explicit <code>permissions:</code> block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope — typically <code>write</code>. A compromised step receives far more privilege than it needs.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a top-level <code>permissions:</code> block (start with <code>contents: read</code>) and grant additional scopes only on the specific jobs that need them.</p>
-<h2 id="gha-005-aws-auth-uses-long-lived-access-keys">GHA-005 — AWS auth uses long-lived access keys<a class="headerlink" href="#gha-005-aws-auth-uses-long-lived-access-keys" title="Permanent link">&para;</a></h2>
+<h2 id="gha-005-aws-auth-uses-long-lived-access-keys">GHA-005 — AWS auth uses long-lived access keys</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
 <p>Long-lived <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> secrets in GitHub Actions can't be rotated on a fine-grained schedule and remain valid until manually revoked. OIDC with <code>role-to-assume</code> yields short-lived credentials per workflow run.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use <code>aws-actions/configure-aws-credentials</code> with <code>role-to-assume</code> + <code>permissions: id-token: write</code> to obtain short-lived credentials via OIDC. Remove the static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY secrets.</p>
-<h2 id="gha-006-artifacts-not-signed-no-cosignsigstore-step">GHA-006 — Artifacts not signed (no cosign/sigstore step)<a class="headerlink" href="#gha-006-artifacts-not-signed-no-cosignsigstore-step" title="Permanent link">&para;</a></h2>
+<h2 id="gha-006-artifacts-not-signed-no-cosignsigstore-step">GHA-006 — Artifacts not signed (no cosign/sigstore step)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
 <p>Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a signing step — e.g. <code>sigstore/cosign-installer</code> followed by <code>cosign sign</code>, or <code>slsa-framework/slsa-github-generator</code> for keyless SLSA provenance. Publish the signature alongside the artifact and verify it at consumption time.</p>
-<h2 id="gha-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step">GHA-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)<a class="headerlink" href="#gha-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step" title="Permanent link">&para;</a></h2>
+<h2 id="gha-007-sbom-not-produced-no-cyclonedxsyfttrivy-sbom-step">GHA-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
 <p>Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an SBOM generation step — <code>anchore/sbom-action</code>, <code>syft . -o cyclonedx-json</code>, Trivy with <code>--format cyclonedx</code>, or Microsoft's <code>sbom-tool</code>. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.</p>
-<h2 id="gha-008-credential-shaped-literal-in-workflow-body">GHA-008 — Credential-shaped literal in workflow body<a class="headerlink" href="#gha-008-credential-shaped-literal-in-workflow-body" title="Permanent link">&para;</a></h2>
+<h2 id="gha-008-credential-shaped-literal-in-workflow-body">GHA-008 — Credential-shaped literal in workflow body</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc. — see <code>--man secrets</code> for the full catalogue). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.</p>
 <p><strong>Recommended action</strong></p>
 <p>Rotate the exposed credential immediately. Move the value to an encrypted repository or environment secret and reference it via <code>${{ secrets.NAME }}</code>. For cloud access, prefer OIDC federation over long-lived keys.</p>
-<h2 id="gha-009-workflow_run-downloads-upstream-artifact-unverified">GHA-009 — workflow_run downloads upstream artifact unverified<a class="headerlink" href="#gha-009-workflow_run-downloads-upstream-artifact-unverified" title="Permanent link">&para;</a></h2>
+<h2 id="gha-009-workflow_run-downloads-upstream-artifact-unverified">GHA-009 — workflow_run downloads upstream artifact unverified</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p><code>on: workflow_run</code> runs in the privileged context of the default branch (write GITHUB_TOKEN, secrets accessible) but consumes artifacts produced by the triggering workflow — which is often a fork PR with no trust boundary. Classic PPE: a malicious PR uploads a tampered artifact, the privileged workflow_run downloads and executes it.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a verification step BEFORE consuming the artifact: <code>cosign verify-attestation --type slsaprovenance ...</code>, <code>gh attestation verify --owner $OWNER ./artifact</code>, or publish a checksum manifest from the trusted producer and <code>sha256sum -c</code> it. Treat any download from a fork as untrusted input.</p>
-<h2 id="gha-010-local-action-path-on-untrusted-trigger-workflow">GHA-010 — Local action (./path) on untrusted-trigger workflow<a class="headerlink" href="#gha-010-local-action-path-on-untrusted-trigger-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="gha-010-local-action-path-on-untrusted-trigger-workflow">GHA-010 — Local action (./path) on untrusted-trigger workflow</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-PIN-DEPS</p>
 <p><code>uses: ./path/to/action</code> resolves the action against the CHECKED-OUT workspace. On <code>pull_request_target</code> / <code>workflow_run</code>, that workspace can be PR-controlled — meaning the attacker supplies the <code>action.yml</code> that runs with default-branch privilege.</p>
 <p><strong>Recommended action</strong></p>
 <p>Move the action to a separate repo under your control and reference it by SHA-pinned <code>uses: org/repo@&lt;sha&gt;</code>, or split the workflow so the privileged work runs only on <code>pull_request</code> (read-only token, no secrets) where PR-controlled action.yml can't escalate.</p>
-<h2 id="gha-011-cache-key-derives-from-attacker-controllable-input">GHA-011 — Cache key derives from attacker-controllable input<a class="headerlink" href="#gha-011-cache-key-derives-from-attacker-controllable-input" title="Permanent link">&para;</a></h2>
+<h2 id="gha-011-cache-key-derives-from-attacker-controllable-input">GHA-011 — Cache key derives from attacker-controllable input</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p><code>actions/cache</code> restores by key (and falls through <code>restore-keys</code> on miss). When the key includes a value the attacker controls (PR title, head ref, workflow_dispatch input), an attacker can plant a poisoned cache entry that a later default-branch run restores and treats as a clean build cache.</p>
 <p><strong>Recommended action</strong></p>
 <p>Build the cache key from values the attacker can't control: <code>${{ runner.os }}</code>, <code>${{ hashFiles('**/*.lock') }}</code> (only when the lockfile is enforced by branch protection), and the workflow file path. Never include <code>github.event.*</code> PR/issue fields, <code>github.head_ref</code>, or <code>inputs.*</code> in the key namespace.</p>
-<h2 id="gha-012-self-hosted-runner-without-ephemeral-marker">GHA-012 — Self-hosted runner without ephemeral marker<a class="headerlink" href="#gha-012-self-hosted-runner-without-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<h2 id="gha-012-self-hosted-runner-without-ephemeral-marker">GHA-012 — Self-hosted runner without ephemeral marker</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p>Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to <code>/tmp</code>; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's <code>--ephemeral</code> mode — the runner exits after one job and re-registers fresh. The check looks for an <code>ephemeral</code> label on the <code>runs-on</code> value; without one, the runner is presumed reusable. Recognises all three <code>runs-on</code> shapes: string, list, and <code>{ group, labels }</code> dict form.</p>
 <p><strong>Recommended action</strong></p>
 <p>Configure the self-hosted runner to register with <code>--ephemeral</code> (the runner exits after one job and is freshly registered), and add an <code>ephemeral</code> label so this check can verify it. Consider actions-runner-controller for ephemeral pools.</p>
-<h2 id="gha-013-issue_comment-trigger-without-author-guard">GHA-013 — issue_comment trigger without author guard<a class="headerlink" href="#gha-013-issue_comment-trigger-without-author-guard" title="Permanent link">&para;</a></h2>
+<h2 id="gha-013-issue_comment-trigger-without-author-guard">GHA-013 — issue_comment trigger without author guard</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p><code>on: issue_comment</code> (and <code>discussion_comment</code>) fires for every comment on every issue or discussion in the repository. On public repos this means any GitHub user can trigger workflow execution. If the workflow runs commands, deploys, or accesses secrets, the attacker controls timing and can inject payloads through the comment body.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an <code>if:</code> condition that checks <code>github.event.comment.author_association</code> (e.g. <code>contains('OWNER MEMBER COLLABORATOR', ...)</code>), <code>github.event.sender.login</code>, or <code>github.actor</code> against an allowlist. Without a guard, any GitHub user can trigger the workflow by posting a comment.</p>
-<h2 id="gha-014-deploy-job-missing-environment-binding">GHA-014 — Deploy job missing environment binding<a class="headerlink" href="#gha-014-deploy-job-missing-environment-binding" title="Permanent link">&para;</a></h2>
+<h2 id="gha-014-deploy-job-missing-environment-binding">GHA-014 — Deploy job missing environment binding</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL, ESF-C-ENV-SEP</p>
 <p>Without an <code>environment:</code> binding, a deploy job can't be gated by required reviewers, deployment-branch policies, or wait timers. Any push to the triggering branch will deploy immediately.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>environment: &lt;name&gt;</code> to jobs that deploy. Configure required reviewers, wait timers, and branch-protection rules on the matching GitHub environment.</p>
-<h2 id="gha-015-job-has-no-timeout-minutes-unbounded-build">GHA-015 — Job has no <code>timeout-minutes</code> — unbounded build<a class="headerlink" href="#gha-015-job-has-no-timeout-minutes-unbounded-build" title="Permanent link">&para;</a></h2>
+<h2 id="gha-015-job-has-no-timeout-minutes-unbounded-build">GHA-015 — Job has no <code>timeout-minutes</code> — unbounded build</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
 <p>Without <code>timeout-minutes</code>, the job runs until GitHub's 6-hour default kills it. Explicit timeouts cap blast radius, cost, and the window during which a compromised step has access to secrets.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>timeout-minutes:</code> to each job, sized to the 95th percentile of historical runtime plus margin. GitHub's default is 360 minutes — an explicitly shorter value limits blast radius and runner cost.</p>
-<h2 id="gha-016-remote-script-piped-to-shell-interpreter">GHA-016 — Remote script piped to shell interpreter<a class="headerlink" href="#gha-016-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<h2 id="gha-016-remote-script-piped-to-shell-interpreter">GHA-016 — Remote script piped to shell interpreter</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a workflow. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.</p>
 <p><strong>Recommended action</strong></p>
 <p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
-<h2 id="gha-017-docker-run-with-insecure-flags-privilegedhost-mount">GHA-017 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#gha-017-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<h2 id="gha-017-docker-run-with-insecure-flags-privilegedhost-mount">GHA-017 — Docker run with insecure flags (privileged/host mount)</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a workflow give the container full access to the runner, enabling container escape and lateral movement.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
-<h2 id="gha-018-package-install-from-insecure-source">GHA-018 — Package install from insecure source<a class="headerlink" href="#gha-018-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<h2 id="gha-018-package-install-from-insecure-source">GHA-018 — Package install from insecure source</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a workflow. These patterns allow man-in-the-middle injection of malicious packages.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
-<h2 id="gha-019-github_token-written-to-persistent-storage">GHA-019 — GITHUB_TOKEN written to persistent storage<a class="headerlink" href="#gha-019-github_token-written-to-persistent-storage" title="Permanent link">&para;</a></h2>
+<h2 id="gha-019-github_token-written-to-persistent-storage">GHA-019 — GITHUB_TOKEN written to persistent storage</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Detects patterns where <code>GITHUB_TOKEN</code> is written to files, environment files (<code>$GITHUB_ENV</code>), or piped through <code>tee</code>. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries — turning a scoped credential into a long-lived one.</p>
 <p><strong>Recommended action</strong></p>
 <p>Never write GITHUB_TOKEN to files, artifacts, or GITHUB_ENV. Use the token inline via ${{ secrets.GITHUB_TOKEN }} in the step that needs it.</p>
-<h2 id="gha-020-no-vulnerability-scanning-step">GHA-020 — No vulnerability scanning step<a class="headerlink" href="#gha-020-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<h2 id="gha-020-no-vulnerability-scanning-step">GHA-020 — No vulnerability scanning step</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
 <p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
-<h2 id="gha-021-package-install-without-lockfile-enforcement">GHA-021 — Package install without lockfile enforcement<a class="headerlink" href="#gha-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<h2 id="gha-021-package-install-without-lockfile-enforcement">GHA-021 — Package install without lockfile enforcement</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
-<h2 id="gha-022-dependency-update-command-bypasses-lockfile-pins">GHA-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#gha-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<h2 id="gha-022-dependency-update-command-bypasses-lockfile-pins">GHA-022 — Dependency update command bypasses lockfile pins</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR workflow (e.g. Dependabot, Renovate).</p>
-<h2 id="gha-023-tls-certificate-verification-bypass">GHA-023 — TLS / certificate verification bypass<a class="headerlink" href="#gha-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<h2 id="gha-023-tls-certificate-verification-bypass">GHA-023 — TLS / certificate verification bypass</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
-<h2 id="gha-024-no-slsa-provenance-attestation-produced">GHA-024 — No SLSA provenance attestation produced<a class="headerlink" href="#gha-024-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<h2 id="gha-024-no-slsa-provenance-attestation-produced">GHA-024 — No SLSA provenance attestation produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
 <p>Provenance generation is distinct from signing. A signed artifact proves <code>who</code> published it; a provenance attestation proves <code>where/how</code> it was built. Consumers can then verify the build happened on a trusted runner, from a specific source commit, with known parameters. Without it, a leaked signing key forges identity but a leaked build environment also forges provenance — you need both for the SLSA L3 non-falsifiability guarantee.</p>
 <p><strong>Recommended action</strong></p>
 <p>Call <code>slsa-framework/slsa-github-generator</code> or <code>actions/attest-build-provenance</code> after the build step to emit an in-toto attestation alongside the artifact. <code>cosign sign</code> alone (covered by GHA-006) signs the artifact but doesn't record <em>how</em> it was built — SLSA Build L3 requires the provenance statement.</p>
-<h2 id="gha-025-reusable-workflow-not-pinned-to-commit-sha">GHA-025 — Reusable workflow not pinned to commit SHA<a class="headerlink" href="#gha-025-reusable-workflow-not-pinned-to-commit-sha" title="Permanent link">&para;</a></h2>
+<h2 id="gha-025-reusable-workflow-not-pinned-to-commit-sha">GHA-025 — Reusable workflow not pinned to commit SHA</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>A reusable workflow runs with the caller's <code>GITHUB_TOKEN</code> and secrets by default. If <code>uses: org/repo/.github/workflows/release.yml@v1</code> resolves to an attacker-modified commit, their code executes with your repository's permissions. This is the same threat model as unpinned step actions (GHA-001) but over a different <code>uses:</code> surface.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every <code>jobs.&lt;id&gt;.uses:</code> reference to a 40-char commit SHA (<code>owner/repo/.github/workflows/foo.yml@&lt;sha&gt;</code>). Tag refs (<code>@v1</code>, <code>@main</code>) can be silently repointed by whoever controls the callee repository.</p>
-<h2 id="gha-026-container-job-disables-isolation-via-options">GHA-026 — Container job disables isolation via <code>options:</code><a class="headerlink" href="#gha-026-container-job-disables-isolation-via-options" title="Permanent link">&para;</a></h2>
+<h2 id="gha-026-container-job-disables-isolation-via-options">GHA-026 — Container job disables isolation via <code>options:</code></h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p>GitHub-hosted runners execute <code>container:</code> jobs inside a Docker container the runner itself manages — normally a hardened, network-namespaced sandbox. <code>options:</code> is a free-text passthrough to <code>docker run</code>; a flag that breaks the sandbox (shares host network/PID, runs privileged, maps the Docker socket) turns the job into an RCE on the runner VM.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove <code>--network host</code>, <code>--privileged</code>, <code>--cap-add</code>, <code>--user 0</code>/<code>--user root</code>, <code>--pid host</code>, <code>--ipc host</code>, and host <code>-v</code> bind-mounts from <code>container.options</code> and <code>services.*.options</code>. If a build genuinely needs one of these, move it to a dedicated self-hosted pool with branch protection so the flag doesn't reach PR runs.</p>
-<h2 id="gha-027-workflow-contains-indicators-of-malicious-activity">GHA-027 — Workflow contains indicators of malicious activity<a class="headerlink" href="#gha-027-workflow-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<h2 id="gha-027-workflow-contains-indicators-of-malicious-activity">GHA-027 — Workflow contains indicators of malicious activity</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Distinct from the hygiene checks. GHA-016 flags <code>curl | bash</code> as a risky default; this rule fires only on concrete indicators — reverse shells, base64-decoded execution, known miner binaries or pool URLs, exfil-channel domains, credential-dump pipes, history-erasure commands. Categories reported: <code>obfuscated-exec</code>, <code>reverse-shell</code>, <code>crypto-miner</code>, <code>exfil-channel</code>, <code>credential-exfil</code>, <code>audit-erasure</code>.</p>
 <p><strong>Recommended action</strong></p>
 <p>Treat this as a potential pipeline compromise. Inspect the matching step(s), identify the author and the PR that introduced them, rotate any credentials the workflow has access to, and audit CloudTrail/AuditLogs for exfil. If the match is a legitimate red-team exercise, whitelist via <code>.pipelinecheckignore</code> with an <code>expires:</code> date — never a permanent suppression.</p>
-<h2 id="gha-028-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">GHA-028 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#gha-028-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<h2 id="gha-028-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">GHA-028 — Dangerous shell idiom (eval, sh -c variable, backtick exec)</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p><code>eval</code>, <code>sh -c "$X"</code>, and <code>`$X`</code> all re-parse the variable's value as shell syntax. If the value contains <code>;</code>, <code>&amp;&amp;</code>, <code>|</code>, backticks, or <code>$()</code>, those metacharacters execute. Even when the variable source looks controlled today, relocating the script or adding a new caller can silently expose it to untrusted input.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec of variables with direct command invocation. If the command really must be dynamic, pass arguments as array members (<code>"${ARGS[@]}"</code>) or validate the input against an allow-list before invocation.</p>
-<h2 id="gha-029-package-install-bypasses-registry-integrity-git-path-tarball-source">GHA-029 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#gha-029-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<h2 id="gha-029-package-install-bypasses-registry-integrity-git-path-tarball-source">GHA-029 — Package install bypasses registry integrity (git / path / tarball source)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Package installs that pull from <code>git+…</code> without a pinned commit, from a local path (<code>./dir</code>, <code>file:…</code>, absolute paths), or from a direct tarball URL are invisible to the normal lockfile integrity controls. A moving branch head, a sibling checkout the build assumes exists, or a tarball whose hash isn't verified all give an attacker who controls any of those surfaces the ability to substitute code into the build.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin git dependencies to a commit SHA (<code>pip install git+https://…/repo@&lt;sha&gt;</code>, <code>cargo install --git … --rev &lt;sha&gt;</code>). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.</p>
 <hr />
-<h2 id="adding-a-new-github-actions-check">Adding a new GitHub Actions check<a class="headerlink" href="#adding-a-new-github-actions-check" title="Permanent link">&para;</a></h2>
+<h2 id="adding-a-new-github-actions-check">Adding a new GitHub Actions check</h2>
 <ol>
 <li>Create a new module at
    <code>pipeline_check/core/checks/github/rules/ghaNNN_&lt;name&gt;.py</code>
@@ -2311,11 +2306,6 @@ network calls, no GitHub API token, no installed Actions runner required.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2354,7 +2344,7 @@ network calls, no GitHub API token, no installed Actions runner required.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

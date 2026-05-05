@@ -1937,18 +1937,13 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/azure.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="azure-devops-pipelines-provider">Azure DevOps Pipelines provider<a class="headerlink" href="#azure-devops-pipelines-provider" title="Permanent link">&para;</a></h1>
+<h1 id="azure-devops-pipelines-provider">Azure DevOps Pipelines provider</h1>
 <p>Parses an <code>azure-pipelines.yml</code> from disk — no network calls, no ADO
 personal access token.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --azure-path is auto-detected when azure-pipelines.yml is present at cwd;</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># the CLI announces the pick on stderr.</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>azure
@@ -1958,7 +1953,7 @@ personal access token.</p>
 </span></code></pre></div>
 <p>All other flags (<code>--output</code>, <code>--severity-threshold</code>, <code>--checks</code>,
 <code>--standard</code>, …) behave the same as with the other providers.</p>
-<h3 id="shape-coverage">Shape coverage<a class="headerlink" href="#shape-coverage" title="Permanent link">&para;</a></h3>
+<h3 id="shape-coverage">Shape coverage</h3>
 <p>The walker handles every layout ADO supports:</p>
 <ul>
 <li>Flat single-job pipeline — top-level <code>steps:</code></li>
@@ -1968,7 +1963,7 @@ personal access token.</p>
   <code>strategy.{runOnce|rolling|canary}.{preDeploy|deploy|routeTraffic|postRouteTraffic}.steps</code>
   and <code>strategy.*.on.{success|failure}.steps</code>.</li>
 </ul>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -2121,148 +2116,148 @@ personal access token.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="ado-001-task-reference-not-pinned-to-specific-version">ADO-001 — Task reference not pinned to specific version<a class="headerlink" href="#ado-001-task-reference-not-pinned-to-specific-version" title="Permanent link">&para;</a></h2>
+<h2 id="ado-001-task-reference-not-pinned-to-specific-version">ADO-001 — Task reference not pinned to specific version</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Floating-major task references (<code>@1</code>, <code>@2</code>) can roll forward silently when the task publisher ships a breaking or malicious update. Pass when every <code>task:</code> reference carries a two- or three-segment semver.</p>
 <p><strong>Recommended action</strong></p>
 <p>Reference tasks by a full semver (<code>DownloadSecureFile@1.2.3</code>) or extension-published-version. Track task updates explicitly via Azure DevOps extension settings rather than letting <code>@1</code> drift.</p>
-<h2 id="ado-002-script-injection-via-attacker-controllable-context">ADO-002 — Script injection via attacker-controllable context<a class="headerlink" href="#ado-002-script-injection-via-attacker-controllable-context" title="Permanent link">&para;</a></h2>
+<h2 id="ado-002-script-injection-via-attacker-controllable-context">ADO-002 — Script injection via attacker-controllable context</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p><code>$(Build.SourceBranch*)</code>, <code>$(Build.SourceVersionMessage)</code>, and <code>$(System.PullRequest.*)</code> are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pass these values through an intermediate pipeline variable declared with <code>readonly: true</code>, and reference that variable through an environment variable rather than <code>$(...)</code> macro interpolation. ADO expands <code>$(…)</code> before shell quoting, so inline use is never safe.</p>
-<h2 id="ado-003-variables-contain-literal-secret-values">ADO-003 — Variables contain literal secret values<a class="headerlink" href="#ado-003-variables-contain-literal-secret-values" title="Permanent link">&para;</a></h2>
+<h2 id="ado-003-variables-contain-literal-secret-values">ADO-003 — Variables contain literal secret values</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Scans <code>variables:</code> in both the mapping form (<code>{KEY: VAL}</code>) and the list form (<code>[{name: X, value: Y}]</code>) that ADO supports. AWS keys are detected by value shape regardless of variable name.</p>
 <p><strong>Recommended action</strong></p>
 <p>Store secrets in an Azure Key Vault or a Library variable group with the secret flag set; reference them via <code>$(SECRET_NAME)</code> at runtime. For cloud access prefer Azure workload identity federation.</p>
-<h2 id="ado-004-deployment-job-missing-environment-binding">ADO-004 — Deployment job missing environment binding<a class="headerlink" href="#ado-004-deployment-job-missing-environment-binding" title="Permanent link">&para;</a></h2>
+<h2 id="ado-004-deployment-job-missing-environment-binding">ADO-004 — Deployment job missing environment binding</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL, ESF-C-ENV-SEP</p>
 <p>Without an <code>environment:</code> binding, ADO cannot enforce approvals, checks, or deployment history against a named resource. Every <code>deployment:</code> job should bind one.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>environment: &lt;name&gt;</code> to every <code>deployment:</code> job. Configure approvals, required branches, and business-hours checks on the matching Environment in the ADO UI.</p>
-<h2 id="ado-005-container-image-not-pinned-to-specific-version">ADO-005 — Container image not pinned to specific version<a class="headerlink" href="#ado-005-container-image-not-pinned-to-specific-version" title="Permanent link">&para;</a></h2>
+<h2 id="ado-005-container-image-not-pinned-to-specific-version">ADO-005 — Container image not pinned to specific version</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-TRUSTED-REG</p>
 <p>Container images can be declared at <code>resources.containers[].image</code> or <code>job.container</code> (string or <code>{image:}</code>). Floating / untagged refs let the publisher swap the image contents.</p>
 <p><strong>Recommended action</strong></p>
 <p>Reference images by <code>@sha256:&lt;digest&gt;</code> or at minimum a full immutable version tag. Avoid <code>:latest</code> and untagged refs.</p>
-<h2 id="ado-006-artifacts-not-signed">ADO-006 — Artifacts not signed<a class="headerlink" href="#ado-006-artifacts-not-signed" title="Permanent link">&para;</a></h2>
+<h2 id="ado-006-artifacts-not-signed">ADO-006 — Artifacts not signed</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
 <p>Passes when cosign / sigstore / slsa-* / notation-sign appears anywhere in the pipeline text.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a task that runs <code>cosign sign</code> or <code>notation sign</code> — Azure Pipelines' workload identity federation enables keyless signing. Publish the signature to the artifact feed and verify it at deploy time.</p>
-<h2 id="ado-007-sbom-not-produced">ADO-007 — SBOM not produced<a class="headerlink" href="#ado-007-sbom-not-produced" title="Permanent link">&para;</a></h2>
+<h2 id="ado-007-sbom-not-produced">ADO-007 — SBOM not produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
 <p>Without an SBOM, downstream consumers can't audit the dependency set shipped in the artifact.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an SBOM step — <code>microsoft/sbom-tool</code>, <code>syft . -o cyclonedx-json</code>, or <code>anchore/sbom-action</code>. Publish the SBOM as a pipeline artifact so downstream consumers can ingest it.</p>
-<h2 id="ado-008-credential-shaped-literal-in-pipeline-body">ADO-008 — Credential-shaped literal in pipeline body<a class="headerlink" href="#ado-008-credential-shaped-literal-in-pipeline-body" title="Permanent link">&para;</a></h2>
+<h2 id="ado-008-credential-shaped-literal-in-pipeline-body">ADO-008 — Credential-shaped literal in pipeline body</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Complements ADO-003 (which looks at <code>variables:</code> keys). ADO-008 scans every string in the pipeline against the cross-provider credential-pattern catalogue.</p>
 <p><strong>Recommended action</strong></p>
 <p>Rotate the exposed credential. Move the value to Azure Key Vault or a secret variable group and reference it via <code>$(SECRET_NAME)</code>.</p>
-<h2 id="ado-009-container-image-pinned-by-tag-rather-than-sha256-digest">ADO-009 — Container image pinned by tag rather than sha256 digest<a class="headerlink" href="#ado-009-container-image-pinned-by-tag-rather-than-sha256-digest" title="Permanent link">&para;</a></h2>
+<h2 id="ado-009-container-image-pinned-by-tag-rather-than-sha256-digest">ADO-009 — Container image pinned by tag rather than sha256 digest</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-IMMUTABLE</p>
 <p>ADO-005 fails floating tags at HIGH; ADO-009 is the stricter tier. Even immutable-looking version tags can be repointed by registry operators.</p>
 <p><strong>Recommended action</strong></p>
 <p>Resolve each image to its current digest and replace the tag with <code>@sha256:&lt;digest&gt;</code>. Schedule regular digest bumps via Renovate or a scheduled pipeline.</p>
-<h2 id="ado-010-cross-pipeline-download-ingestion-unverified">ADO-010 — Cross-pipeline <code>download:</code> ingestion unverified<a class="headerlink" href="#ado-010-cross-pipeline-download-ingestion-unverified" title="Permanent link">&para;</a></h2>
+<h2 id="ado-010-cross-pipeline-download-ingestion-unverified">ADO-010 — Cross-pipeline <code>download:</code> ingestion unverified</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p><code>resources.pipelines:</code> declares an upstream pipeline; a <code>download: &lt;name&gt;</code> step pulls its artifacts. If the upstream accepts PR validation, the artifact may have been built by PR-controlled code.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a verification step before consuming the artifact: <code>cosign verify-attestation</code>, <code>sha256sum -c</code>, or <code>gpg --verify</code> against a manifest the producing pipeline signed.</p>
-<h2 id="ado-011-template-local-path-on-pr-validated-pipeline">ADO-011 — <code>template: &lt;local-path&gt;</code> on PR-validated pipeline<a class="headerlink" href="#ado-011-template-local-path-on-pr-validated-pipeline" title="Permanent link">&para;</a></h2>
+<h2 id="ado-011-template-local-path-on-pr-validated-pipeline">ADO-011 — <code>template: &lt;local-path&gt;</code> on PR-validated pipeline</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-PIN-DEPS</p>
 <p><code>template: &lt;relative-path&gt;</code> includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch — letting the PR author swap the template body. Cross-repo templates (<code>template: foo.yml@my-repo</code>) are version-pinned and not affected.</p>
 <p><strong>Recommended action</strong></p>
 <p>Move the template into a separate, branch-protected repository and reference it via <code>template: foo.yml@&lt;repo-resource&gt;</code> with a pinned <code>ref:</code> on the resource. That way the template content is fixed at PR creation time and can't be modified from the PR branch.</p>
-<h2 id="ado-012-cache2-key-derives-from-systempullrequest">ADO-012 — Cache@2 key derives from $(System.PullRequest.*)<a class="headerlink" href="#ado-012-cache2-key-derives-from-systempullrequest" title="Permanent link">&para;</a></h2>
+<h2 id="ado-012-cache2-key-derives-from-systempullrequest">ADO-012 — Cache@2 key derives from $(System.PullRequest.*)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p><code>Cache@2</code> (and older <code>CacheBeta@1</code>) restore by key. A key including PR-controlled variables on PR-validated pipelines lets a PR seed a poisoned cache entry that a later default-branch pipeline restores.</p>
 <p><strong>Recommended action</strong></p>
 <p>Build the cache key from values the PR can't control: <code>$(Agent.OS)</code>, lockfile hashes, the pipeline name. Never reference <code>$(System.PullRequest.*)</code> or <code>$(Build.SourceBranch*)</code> from a cache key namespace.</p>
-<h2 id="ado-013-self-hosted-pool-without-explicit-ephemeral-marker">ADO-013 — Self-hosted pool without explicit ephemeral marker<a class="headerlink" href="#ado-013-self-hosted-pool-without-explicit-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<h2 id="ado-013-self-hosted-pool-without-explicit-ephemeral-marker">ADO-013 — Self-hosted pool without explicit ephemeral marker</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p><code>pool: { name: &lt;agent-pool&gt; }</code> (or the bare string form <code>pool: &lt;name&gt;</code>) targets a self-hosted agent pool. Without an explicit ephemeral arrangement, agents reuse state across jobs. Microsoft-hosted pools (<code>vmImage:</code> or the <code>Azure Pipelines</code> / <code>Default</code> names) are skipped.</p>
 <p><strong>Recommended action</strong></p>
 <p>Configure the agent pool with autoscaling + ephemeral agents (the Azure VM Scale Set agent), and add <code>demands: [ephemeral -equals true]</code> on the pool block so this check can verify it.</p>
-<h2 id="ado-014-aws-auth-uses-long-lived-access-keys">ADO-014 — AWS auth uses long-lived access keys<a class="headerlink" href="#ado-014-aws-auth-uses-long-lived-access-keys" title="Permanent link">&para;</a></h2>
+<h2 id="ado-014-aws-auth-uses-long-lived-access-keys">ADO-014 — AWS auth uses long-lived access keys</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
 <p>Long-lived <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> values in pipeline variables or task inputs can't be rotated on a fine-grained schedule. Prefer OIDC or vault-based credential injection for cross-cloud access.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use workload identity federation or an Azure Key Vault task to inject short-lived AWS credentials at runtime. Remove static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from pipeline variables and task parameters.</p>
-<h2 id="ado-015-job-has-no-timeoutinminutes-unbounded-build">ADO-015 — Job has no <code>timeoutInMinutes</code> — unbounded build<a class="headerlink" href="#ado-015-job-has-no-timeoutinminutes-unbounded-build" title="Permanent link">&para;</a></h2>
+<h2 id="ado-015-job-has-no-timeoutinminutes-unbounded-build">ADO-015 — Job has no <code>timeoutInMinutes</code> — unbounded build</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
 <p>Without <code>timeoutInMinutes</code>, the job runs until Azure's 60-minute default kills it. Explicit timeouts cap blast radius and the window during which a compromised step has access to service connections.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>timeoutInMinutes:</code> to each job, sized to the 95th percentile of historical runtime plus margin. Azure's default is 60 minutes — an explicitly shorter value limits blast radius and agent cost.</p>
-<h2 id="ado-016-remote-script-piped-to-shell-interpreter">ADO-016 — Remote script piped to shell interpreter<a class="headerlink" href="#ado-016-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<h2 id="ado-016-remote-script-piped-to-shell-interpreter">ADO-016 — Remote script piped to shell interpreter</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a pipeline. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build agent.</p>
 <p><strong>Recommended action</strong></p>
 <p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
-<h2 id="ado-017-docker-run-with-insecure-flags-privilegedhost-mount">ADO-017 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#ado-017-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<h2 id="ado-017-docker-run-with-insecure-flags-privilegedhost-mount">ADO-017 — Docker run with insecure flags (privileged/host mount)</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a pipeline give the container full access to the build agent, enabling container escape and lateral movement.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
-<h2 id="ado-018-package-install-from-insecure-source">ADO-018 — Package install from insecure source<a class="headerlink" href="#ado-018-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<h2 id="ado-018-package-install-from-insecure-source">ADO-018 — Package install from insecure source</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a pipeline. These patterns allow man-in-the-middle injection of malicious packages.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
-<h2 id="ado-019-extends-template-on-pr-validated-pipeline-points-to-local-path">ADO-019 — <code>extends:</code> template on PR-validated pipeline points to local path<a class="headerlink" href="#ado-019-extends-template-on-pr-validated-pipeline-points-to-local-path" title="Permanent link">&para;</a></h2>
+<h2 id="ado-019-extends-template-on-pr-validated-pipeline-points-to-local-path">ADO-019 — <code>extends:</code> template on PR-validated pipeline points to local path</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-PIN-DEPS</p>
 <p><code>extends: template: &lt;local-file&gt;</code> includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch — letting the PR author swap the template body and inject arbitrary pipeline logic. Cross-repo templates (<code>template: foo.yml@my-repo</code>) are version-pinned and not affected.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin the extends template to a protected repository ref (<code>template@ref</code>). Local templates in PR-validated pipelines can be poisoned by the PR author.</p>
-<h2 id="ado-020-no-vulnerability-scanning-step">ADO-020 — No vulnerability scanning step<a class="headerlink" href="#ado-020-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<h2 id="ado-020-no-vulnerability-scanning-step">ADO-020 — No vulnerability scanning step</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
 <p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
-<h2 id="ado-021-package-install-without-lockfile-enforcement">ADO-021 — Package install without lockfile enforcement<a class="headerlink" href="#ado-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<h2 id="ado-021-package-install-without-lockfile-enforcement">ADO-021 — Package install without lockfile enforcement</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
-<h2 id="ado-022-dependency-update-command-bypasses-lockfile-pins">ADO-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#ado-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<h2 id="ado-022-dependency-update-command-bypasses-lockfile-pins">ADO-022 — Dependency update command bypasses lockfile pins</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).</p>
-<h2 id="ado-023-tls-certificate-verification-bypass">ADO-023 — TLS / certificate verification bypass<a class="headerlink" href="#ado-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<h2 id="ado-023-tls-certificate-verification-bypass">ADO-023 — TLS / certificate verification bypass</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
-<h2 id="ado-024-no-slsa-provenance-attestation-produced">ADO-024 — No SLSA provenance attestation produced<a class="headerlink" href="#ado-024-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<h2 id="ado-024-no-slsa-provenance-attestation-produced">ADO-024 — No SLSA provenance attestation produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
 <p>On Azure Pipelines the common pattern is a <code>Bash@3</code> task invoking <code>cosign attest --yes --predicate=provenance.json $(image)</code>. The native Microsoft SBOM tool emits <code>_manifest/spdx_2.2/manifest.spdx.json</code> for SBOM but does not produce provenance on its own.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a task that runs <code>cosign attest</code> against a <code>provenance.intoto.jsonl</code> statement, or Microsoft's <code>sbom-tool</code> in attestation mode. ADO-006 covers signing; this rule covers the in-toto statement SLSA Build L3 additionally requires.</p>
-<h2 id="ado-025-cross-repo-template-not-pinned-to-commit-sha">ADO-025 — Cross-repo template not pinned to commit SHA<a class="headerlink" href="#ado-025-cross-repo-template-not-pinned-to-commit-sha" title="Permanent link">&para;</a></h2>
+<h2 id="ado-025-cross-repo-template-not-pinned-to-commit-sha">ADO-025 — Cross-repo template not pinned to commit SHA</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Azure Pipelines resolves <code>template: build.yml@tools</code> against the <code>tools</code> repo resource's <code>ref:</code> field. When that ref is <code>refs/heads/main</code> (or missing, which defaults to the pipeline's default branch), a push to the callee repo changes what your pipeline runs on the next invocation.</p>
 <p><strong>Recommended action</strong></p>
 <p>On every <code>resources.repositories</code> entry referenced from a <code>template: ...@repo-alias</code> directive, set <code>ref: refs/tags/&lt;sha&gt;</code> or the bare 40-char commit SHA — never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.</p>
-<h2 id="ado-026-pipeline-contains-indicators-of-malicious-activity">ADO-026 — Pipeline contains indicators of malicious activity<a class="headerlink" href="#ado-026-pipeline-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<h2 id="ado-026-pipeline-contains-indicators-of-malicious-activity">ADO-026 — Pipeline contains indicators of malicious activity</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>ADO pipelines can run arbitrary shell via <code>bash</code> / <code>script</code> / <code>powershell</code> tasks — this rule scans every string value for known-bad patterns (reverse shells, base64-decoded execution, miner binaries, exfil channels). Orthogonal to ADO-016/ADO-017/ADO-023.</p>
 <p><strong>Recommended action</strong></p>
 <p>Treat as a potential compromise. Identify the PR/branch that added the matching task(s), rotate any Service Connections the pipeline can reach, and audit Pipeline run logs for outbound traffic to the matched hosts.</p>
-<h2 id="ado-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">ADO-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#ado-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<h2 id="ado-027-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">ADO-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec)</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Complements ADO-002 (script injection from untrusted PR context). Fires on intrinsically risky shell idioms — <code>eval</code>, <code>sh -c "$X"</code>, backtick exec — regardless of whether the input source is currently trusted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec with direct command invocation. Validate any value that must feed a dynamic command at the boundary.</p>
-<h2 id="ado-028-package-install-bypasses-registry-integrity-git-path-tarball-source">ADO-028 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#ado-028-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<h2 id="ado-028-package-install-bypasses-registry-integrity-git-path-tarball-source">ADO-028 — Package install bypasses registry integrity (git / path / tarball source)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Complements ADO-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Azure Artifacts) instead of installing from a filesystem path or tarball URL.</p>
 <hr />
-<h2 id="adding-a-new-azure-devops-pipelines-check">Adding a new Azure DevOps Pipelines check<a class="headerlink" href="#adding-a-new-azure-devops-pipelines-check" title="Permanent link">&para;</a></h2>
+<h2 id="adding-a-new-azure-devops-pipelines-check">Adding a new Azure DevOps Pipelines check</h2>
 <ol>
 <li>Create a new module at
    <code>pipeline_check/core/checks/azure/rules/adoNNN_&lt;name&gt;.py</code>
@@ -2320,11 +2315,6 @@ personal access token.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2363,7 +2353,7 @@ personal access token.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
