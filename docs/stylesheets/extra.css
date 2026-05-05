@@ -734,6 +734,25 @@ body:has(.pg-home) {
   isolation: isolate;
 }
 
+/* Faint grid overlay — 48px square, 0.05 opacity, with a radial
+   mask so it fades out at the edges and reveals the gradient
+   glow underneath. Subtle "blueprint" texture without crowding
+   the hero's foreground content. */
+.pg-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: 0 0;
+  z-index: -1;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
+}
+
 /* Ambient gradient drift — slow low-frequency motion in the
    background glow. ~30s cycle, kept gentle so it never reads
    as movement, just "alive". Disabled for reduced-motion. */
@@ -744,7 +763,7 @@ body:has(.pg-home) {
   background:
     radial-gradient(700px 380px at 75% 10%, rgba(27, 163, 169, 0.22), transparent 60%),
     radial-gradient(500px 260px at 20% 80%, rgba(8, 126, 139, 0.10), transparent 60%);
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
 }
 
