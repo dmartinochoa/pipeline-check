@@ -8,73 +8,53 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 <div class="pg-doc-cards" markdown>
 
 <a class="pg-doc-card" href="aws/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>AWS</h3>
-<p>Live account scan via boto3 — CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more. 71 checks.</p>
-<span class="pg-doc-card__meta"><code>--pipeline aws</code></span>
+<p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
 </a>
 
 <a class="pg-doc-card" href="terraform/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>Terraform</h3>
 <p>Shift-left scan against a parsed <code>terraform show -json</code> plan. AWS-rule parity so findings match the live runtime.</p>
-<span class="pg-doc-card__meta"><code>--tf-plan plan.json</code></span>
 </a>
 
 <a class="pg-doc-card" href="cloudformation/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>CloudFormation</h3>
-<p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>). ~63 AWS-parity checks.</p>
-<span class="pg-doc-card__meta"><code>--cfn-template template.yml</code></span>
+<p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
 </a>
 
 <a class="pg-doc-card" href="github/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>GitHub Actions</h3>
-<p>Scans every workflow under <code>.github/workflows/</code>. 29 rules covering action pinning, OIDC trust, secret hygiene, runner posture.</p>
-<span class="pg-doc-card__meta"><code>--pipeline github</code></span>
+<p>Scans every workflow under <code>.github/workflows/</code>. Action pinning, OIDC trust, secret hygiene, runner posture.</p>
 </a>
 
 <a class="pg-doc-card" href="gitlab/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>GitLab CI</h3>
-<p>Parses <code>.gitlab-ci.yml</code> with <code>include:</code> resolution. 30 rules — image pinning, deploy gating, manual-job posture.</p>
-<span class="pg-doc-card__meta"><code>--gitlab-path .gitlab-ci.yml</code></span>
+<p>Parses <code>.gitlab-ci.yml</code> with <code>include:</code> resolution. Image pinning, deploy gating, manual-job posture.</p>
 </a>
 
 <a class="pg-doc-card" href="bitbucket/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>Bitbucket Pipelines</h3>
-<p>Parses <code>bitbucket-pipelines.yml</code>. 27 rules covering pipe pinning, deployment posture, custom-pipe risk.</p>
-<span class="pg-doc-card__meta"><code>--bitbucket-path bitbucket-pipelines.yml</code></span>
+<p>Parses <code>bitbucket-pipelines.yml</code>. Pipe pinning, deployment posture, custom-pipe risk.</p>
 </a>
 
 <a class="pg-doc-card" href="azure/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>Azure DevOps</h3>
-<p>Parses <code>azure-pipelines.yml</code> with template-resolution support. 28 rules.</p>
-<span class="pg-doc-card__meta"><code>--azure-path azure-pipelines.yml</code></span>
+<p>Parses <code>azure-pipelines.yml</code> with template-resolution support.</p>
 </a>
 
 <a class="pg-doc-card" href="jenkins/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>Jenkins</h3>
-<p>Lexes Declarative + Scripted <code>Jenkinsfile</code>s. 31 rules — credential exposure, agent pinning, sandbox bypass.</p>
-<span class="pg-doc-card__meta"><code>--jenkinsfile-path Jenkinsfile</code></span>
+<p>Lexes Declarative + Scripted <code>Jenkinsfile</code>s. Credential exposure, agent pinning, sandbox bypass.</p>
 </a>
 
 <a class="pg-doc-card" href="circleci/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>CircleCI</h3>
-<p>Parses <code>.circleci/config.yml</code> with orb-mapping support. 30 rules.</p>
-<span class="pg-doc-card__meta"><code>--circleci-path .circleci/config.yml</code></span>
+<p>Parses <code>.circleci/config.yml</code> with orb-mapping support.</p>
 </a>
 
 <a class="pg-doc-card" href="cloudbuild/" markdown>
-<span class="pg-doc-card__tag">stable</span>
 <h3>Google Cloud Build</h3>
-<p>Parses <code>cloudbuild.yaml</code>. 9 rules covering substitution injection, secret retrieval, signing.</p>
-<span class="pg-doc-card__meta"><code>--cloudbuild-path cloudbuild.yaml</code></span>
+<p>Parses <code>cloudbuild.yaml</code>. Substitution injection, secret retrieval, signing posture.</p>
 </a>
 
 </div>
