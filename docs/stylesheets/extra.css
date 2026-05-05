@@ -586,11 +586,9 @@ body {
 .md-header__button:hover { color: var(--pg-teal-500); }
 [data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
 
-/* Tabs row: centered, tighter, with dropdown submenus */
+/* Tabs row: tighter, with dropdown submenus */
 .md-tabs__list {
   padding: 0 0.4rem;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 .md-tabs__item {
   height: 2.4rem;
