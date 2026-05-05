@@ -90,25 +90,29 @@ body {
 }
 
 /* ------------------------------------------------------------
-   Top bar — unified with brand palette, transparent over the
-   landing-page hero so the gradient flows underneath.
+   Top bar — solid brand navy on every page. Earlier revisions
+   tried a transparent treatment over the hero that filled in on
+   scroll; the transition was janky and the search bar / tabs row
+   clashed against the white body once scrolled. Solid is calmer.
    ------------------------------------------------------------ */
 .md-header,
 .md-tabs {
   background: var(--pg-navy-950);
   box-shadow: none;
-  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .md-tabs {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Subtle drop shadow appears once scrolled — Material toggles
+   data-md-state="shadow" at scroll-threshold. Keeps the bar
+   visually anchored to the viewport edge. */
 .md-header[data-md-state="shadow"] {
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 
-/* Header logo / title block: subtler tracking, brand mono accent. */
+/* Header logo / title block */
 .md-header__title {
   font-weight: 600;
   letter-spacing: -0.005em;
@@ -128,24 +132,19 @@ body {
   opacity: 1;
 }
 
-/* Make the header bleed INTO the hero on the home page. The
-   hero's own dark gradient becomes the visible top region; the
-   header sits on top with no fill, no border, so the tabs and
-   the hero read as one continuous surface. */
-body:has(.pg-home) .md-header,
-body:has(.pg-home) .md-tabs {
-  background: transparent;
-  border-bottom: none;
-  box-shadow: none;
+/* Search input — make it read clearly against the dark header. */
+.md-search__form {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
 }
-
-/* When the home page is scrolled past the hero, fade the header
-   back to solid so it doesn't float over the white content. */
-body:has(.pg-home) .md-header[data-md-state="shadow"] {
-  background: rgba(4, 16, 26, 0.92);
-  backdrop-filter: saturate(140%) blur(8px);
-  -webkit-backdrop-filter: saturate(140%) blur(8px);
+.md-search__form:hover { background: rgba(255, 255, 255, 0.12); }
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  background: rgba(255, 255, 255, 0.96);
 }
+.md-search__input {
+  color: var(--pg-text-on-dark);
+}
+.md-search__input::placeholder { color: rgba(255, 255, 255, 0.55); }
 
 /* ============================================================
    Landing page
