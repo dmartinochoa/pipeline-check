@@ -236,9 +236,11 @@ body[data-md-color-scheme] .md-main__inner:has(.pg-home) {
 }
 
 .pg-hero__meta svg {
-  width: 14px;
-  height: 14px;
-  opacity: 0.8;
+  width: 14px !important;
+  height: 14px !important;
+  opacity: 0.85;
+  color: var(--pg-teal-400);
+  flex-shrink: 0;
 }
 
 /* ----- Refined terminal ------------------------------------ */
@@ -270,9 +272,10 @@ body[data-md-color-scheme] .md-main__inner:has(.pg-home) {
 }
 
 .pg-terminal__file svg {
-  width: 12px;
-  height: 12px;
+  width: 12px !important;
+  height: 12px !important;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .pg-terminal__tag {
@@ -453,8 +456,8 @@ body[data-md-color-scheme] .md-main__inner:has(.pg-home) {
 }
 
 .pg-feature__icon svg {
-  width: 26px;
-  height: 26px;
+  width: 26px !important;
+  height: 26px !important;
   stroke-width: 1.6;
 }
 
