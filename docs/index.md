@@ -157,30 +157,134 @@ to force one. Counts reflect the current rule catalogue.
 </div>
 </section>
 
-<section class="pg-section" markdown>
-<div class="pg-section__head" markdown>
+<section class="pg-section">
+<div class="pg-section__head">
 <div class="pg-section__eyebrow">// flow</div>
 <h2 class="pg-section__title">Inputs in. Graded report out.</h2>
-<p class="pg-section__lede">
-A single scan path: detect the provider, parse its config (or hit boto3),
-run rules, score, gate.
-</p>
+<p class="pg-section__lede">A single scan path. Hover or tap any step for details.</p>
 </div>
 
-```mermaid
-flowchart LR
-    A[Repo or AWS account] -->|auto-detect| B[Provider]
-    B --> C[Rule engine<br/>330+ checks]
-    C --> D[Standards mapper<br/>OWASP · NIST · SLSA · …]
-    D --> E[Scorer<br/>A/B/C/D]
-    E --> F1[Terminal]
-    E --> F2[JSON]
-    E --> F3[HTML report]
-    E --> F4[SARIF 2.1.0]
-    E --> G{CI gate}
-    G -->|pass| H[Merge]
-    G -->|fail| I[Block + autofix]
-```
+<ol class="pg-flow" role="list" aria-label="Scan pipeline steps">
+
+  <li class="pg-flow__step">
+    <button class="pg-flow__node" type="button" aria-describedby="flow-card-1">
+      <span class="pg-flow__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </span>
+      <span class="pg-flow__num">01</span>
+      <span class="pg-flow__label">Input</span>
+      <span class="pg-flow__sub">Repo or AWS account</span>
+    </button>
+    <div class="pg-flow__card" id="flow-card-1" role="tooltip">
+      <div class="pg-flow__card-title">Input source</div>
+      <p>The starting point is either a repository on disk or a live AWS account reached through the boto3 credential chain. No API tokens, no SaaS account.</p>
+      <ul>
+        <li>CI configs parsed from disk: GitHub, GitLab, Bitbucket, Azure DevOps, Jenkins, CircleCI, Cloud Build</li>
+        <li>IaC plans: <code>terraform show -json</code> output, CloudFormation YAML/JSON</li>
+        <li>Live AWS scan via standard AWS CLI profile / IAM role</li>
+      </ul>
+      <a class="pg-flow__link" href="usage/">Usage guide</a>
+    </div>
+  </li>
+
+  <li class="pg-flow__step">
+    <button class="pg-flow__node" type="button" aria-describedby="flow-card-2">
+      <span class="pg-flow__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <span class="pg-flow__num">02</span>
+      <span class="pg-flow__label">Detect</span>
+      <span class="pg-flow__sub">Provider</span>
+    </button>
+    <div class="pg-flow__card" id="flow-card-2" role="tooltip">
+      <div class="pg-flow__card-title">Auto-detect</div>
+      <p>The working directory is inspected and the matching provider is selected automatically — no flags required for the common case.</p>
+      <ul>
+        <li>Looks for <code>.github/workflows/</code>, <code>.gitlab-ci.yml</code>, <code>Jenkinsfile</code>, <code>cloudbuild.yaml</code>, <code>azure-pipelines.yml</code>, etc.</li>
+        <li>Falls back to a live AWS scan when no CI config is found</li>
+        <li>Override with <code>--pipeline &lt;name&gt;</code> to force a specific provider</li>
+      </ul>
+      <a class="pg-flow__link" href="providers/README/">All providers</a>
+    </div>
+  </li>
+
+  <li class="pg-flow__step">
+    <button class="pg-flow__node" type="button" aria-describedby="flow-card-3">
+      <span class="pg-flow__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <span class="pg-flow__num">03</span>
+      <span class="pg-flow__label">Scan</span>
+      <span class="pg-flow__sub">330+ checks</span>
+    </button>
+    <div class="pg-flow__card" id="flow-card-3" role="tooltip">
+      <div class="pg-flow__card-title">Rule engine</div>
+      <p>Every rule is a single Python module that consumes a parsed context (workflow YAML, Terraform plan, AWS resource catalog) and emits findings with severity, location, and suggested fix.</p>
+      <ul>
+        <li>Findings classified <strong>CRITICAL · HIGH · MEDIUM · LOW</strong></li>
+        <li>Cross-provider primitives (shell-eval, lockfile-integrity, image-pinning) so a regex bug fixes itself everywhere</li>
+        <li>68 rules ship autofixers — emit-or-apply</li>
+      </ul>
+      <a class="pg-flow__link" href="attack_chains/">Attack chains</a>
+    </div>
+  </li>
+
+  <li class="pg-flow__step">
+    <button class="pg-flow__node" type="button" aria-describedby="flow-card-4">
+      <span class="pg-flow__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </span>
+      <span class="pg-flow__num">04</span>
+      <span class="pg-flow__label">Map</span>
+      <span class="pg-flow__sub">Standards</span>
+    </button>
+    <div class="pg-flow__card" id="flow-card-4" role="tooltip">
+      <div class="pg-flow__card-title">Standards mapper</div>
+      <p>Every finding is annotated with the controls it evidences across thirteen frameworks. Audit answers don't require leaving the tool.</p>
+      <ul>
+        <li>OWASP CI/CD Top 10 (full coverage)</li>
+        <li>NIST SSDF (800-218), 800-53, 800-190, CSF 2.0</li>
+        <li>SLSA Build Track v1.0, CIS, PCI DSS v4.0, ESF, OpenSSF Scorecard, S2C2F, SOC 2</li>
+      </ul>
+      <a class="pg-flow__link" href="standards/README/">Standards reference</a>
+    </div>
+  </li>
+
+  <li class="pg-flow__step">
+    <button class="pg-flow__node" type="button" aria-describedby="flow-card-5">
+      <span class="pg-flow__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </span>
+      <span class="pg-flow__num">05</span>
+      <span class="pg-flow__label">Score</span>
+      <span class="pg-flow__sub">Grade + gate</span>
+    </button>
+    <div class="pg-flow__card" id="flow-card-5" role="tooltip">
+      <div class="pg-flow__card-title">Score &amp; gate</div>
+      <p>Findings are weighted (CRITICAL=20, HIGH=10, MEDIUM=5, LOW=2) and converted to a 0–100 score with an <strong>A/B/C/D</strong> grade.</p>
+      <ul>
+        <li>Pass / fail thresholds: severity caps, max-failures, min-grade</li>
+        <li>Baseline diff against a git ref so existing findings don't block</li>
+        <li>Ignore file with expiries; autofix in CI with <code>--apply</code></li>
+      </ul>
+      <a class="pg-flow__link" href="ci_gate/">CI gate contract</a>
+    </div>
+  </li>
+
+</ol>
+
+<div class="pg-outputs">
+  <div class="pg-outputs__head">
+    <span class="pg-section__eyebrow">// outputs</span>
+    <p class="pg-outputs__lede">Same findings, four shapes.</p>
+  </div>
+  <ul class="pg-outputs__grid" role="list">
+    <li><a class="pg-output" href="output/#terminal"><strong>Terminal</strong><span>Rich color table for humans</span></a></li>
+    <li><a class="pg-output" href="output/#json"><strong>JSON</strong><span>Machine-parseable for scripts</span></a></li>
+    <li><a class="pg-output" href="output/#html"><strong>HTML report</strong><span>Client-side filters, shareable</span></a></li>
+    <li><a class="pg-output" href="output/#sarif"><strong>SARIF 2.1.0</strong><span>GitHub code scanning, Defender</span></a></li>
+  </ul>
+</div>
 </section>
 
 <section class="pg-cta">
