@@ -132,6 +132,87 @@ body {
   opacity: 1;
 }
 
+/* ------------------------------------------------------------
+   Footer — single calm dark band, matched to the top bar.
+   Material's default footer uses two stacked stripes (prev/next
+   strip + copyright strip) in different shades of "footer dark";
+   they read as separate UI rather than one calm bottom band.
+   ------------------------------------------------------------ */
+.md-footer,
+.md-footer-meta {
+  background: var(--pg-navy-950);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.md-footer-meta {
+  border-top-color: rgba(255, 255, 255, 0.04);
+}
+
+.md-footer-meta__inner {
+  padding: 1rem 1rem;
+  font-size: 0.78rem;
+  color: var(--pg-muted-on-dark);
+}
+
+.md-footer-copyright,
+.md-copyright {
+  color: var(--pg-muted-on-dark);
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+
+.md-footer-social {
+  padding-top: 0;
+}
+
+.md-footer-social .md-footer-social__link,
+.md-social__link {
+  color: var(--pg-muted-on-dark);
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.md-footer-social .md-footer-social__link:hover,
+.md-social__link:hover {
+  color: var(--pg-teal-400);
+  opacity: 1;
+}
+
+/* Prev/next nav: tighter padding, less Material default chrome. */
+.md-footer__inner {
+  padding: 1rem 0.75rem;
+}
+
+.md-footer__link {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.md-footer__link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 1;
+}
+
+.md-footer__direction {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+.md-footer__title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Hide prev/next nav on the landing page — there's no logical
+   "next" from home (the page already CTAs into Get started). */
+body:has(.pg-home) .md-footer__inner {
+  display: none;
+}
+
 /* Search input — make it read clearly against the dark header. */
 .md-search__form {
   background: rgba(255, 255, 255, 0.08);
