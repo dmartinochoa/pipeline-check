@@ -1,0 +1,122 @@
+site_name: Pipeline-Check
+site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, and Cloud Build against the OWASP Top 10 CI/CD Risks plus 12 other compliance frameworks.
+site_url: https://dmartinochoa.github.io/pipeline-check/
+repo_url: https://github.com/dmartinochoa/pipeline-check
+repo_name: dmartinochoa/pipeline-check
+edit_uri: edit/master/docs/
+copyright: MIT-licensed. Built with MkDocs Material.
+
+docs_dir: docs
+
+exclude_docs: |
+  /README.md
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dmartinochoa/pipeline-check
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pipeline-check/
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - Output formats: output.md
+  - Scoring & gate:
+      - Scoring model: scoring_model.md
+      - CI gate: ci_gate.md
+  - Configuration: config.md
+  - Attack chains: attack_chains.md
+  - Providers:
+      - Overview: providers/README.md
+      - AWS: providers/aws.md
+      - Terraform: providers/terraform.md
+      - CloudFormation: providers/cloudformation.md
+      - GitHub Actions: providers/github.md
+      - GitLab CI: providers/gitlab.md
+      - Bitbucket Pipelines: providers/bitbucket.md
+      - Azure DevOps: providers/azure.md
+      - Jenkins: providers/jenkins.md
+      - CircleCI: providers/circleci.md
+      - Google Cloud Build: providers/cloudbuild.md
+  - Standards:
+      - Overview: standards/README.md
+      - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
+      - CIS AWS Foundations: standards/cis_aws_foundations.md
+      - CIS Supply Chain: standards/cis_supply_chain.md
+      - NIST SSDF (800-218): standards/nist_ssdf.md
+      - NIST 800-53: standards/nist_800_53.md
+      - NIST 800-190: standards/nist_800_190.md
+      - NIST CSF 2.0: standards/nist_csf_2.md
+      - SLSA: standards/slsa.md
+      - PCI DSS v4.0: standards/pci_dss_v4.md
+      - ESF Supply Chain: standards/esf_supply_chain.md
+      - OpenSSF Scorecard: standards/openssf_scorecard.md
+      - S2C2F: standards/s2c2f.md
+      - SOC 2: standards/soc2.md

@@ -47,7 +47,7 @@ is **D**eveloper, **S**upplier, or **C**ustomer.
 ## Selected check → control mappings
 
 Highlights — the full mapping dict lives in
-[`pipeline_check/core/standards/data/esf_supply_chain.py`](../../pipeline_check/core/standards/data/esf_supply_chain.py).
+[`pipeline_check/core/standards/data/esf_supply_chain.py`](https://github.com/dmartinochoa/pipeline-check/blob/master/pipeline_check/core/standards/data/esf_supply_chain.py).
 
 | Check      | ESF control(s)                                 |
 |------------|------------------------------------------------|

@@ -47,7 +47,7 @@ pipeline_check --pipeline terraform --tf-plan plan.json
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
 ```
 
-Full per-provider reference: [providers/](providers/).
+Full per-provider reference: [providers/](providers/README.md).
 
 ## Scaffold a config file
 
@@ -100,7 +100,8 @@ aws sso login --profile prod && pipeline_check --pipeline aws --profile prod
 AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
 ```
 
-Required IAM permissions for a full scan: see [providers/aws.md](providers/aws.md).
+Required IAM permissions for a full scan, with a copy-paste IAM policy:
+see [providers/aws.md#required-iam-permissions](providers/aws.md#required-iam-permissions).
 
 ## Output formats
 
@@ -142,7 +143,7 @@ pipeline_check --fix | git apply  # review first, then apply
 
 68 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, and more. See individual check pages under
-[providers/](providers/) for which have autofix support.
+[providers/](providers/README.md) for which have autofix support.
 
 ## Compliance annotations
 
@@ -162,7 +163,7 @@ pipeline_check --list-standards
 pipeline_check --standard-report slsa
 ```
 
-Standards reference: [standards/](standards/).
+Standards reference: [standards/](standards/README.md).
 
 ## Attack chains
 
@@ -227,8 +228,8 @@ pipeline_check --man standards
 
 ## See also
 
-- [providers/](providers/) — per-provider check reference
-- [standards/](standards/) — compliance mappings
+- [providers/](providers/README.md) — per-provider check reference
+- [standards/](standards/README.md) — compliance mappings
 - [config.md](config.md) — full config-file schema
 - [ci_gate.md](ci_gate.md) — gate logic and baselines
 - [output.md](output.md) — output format schemas
