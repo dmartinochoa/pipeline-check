@@ -64,12 +64,10 @@
   
     
     
-      
     
     
     
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -120,33 +118,7 @@
     </div>
     
       
-        <form class="md-header__option" data-md-component="palette">
-  
     
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
-      </label>
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -1889,25 +1861,20 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/bitbucket.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="bitbucket-pipelines-provider">Bitbucket Pipelines provider<a class="headerlink" href="#bitbucket-pipelines-provider" title="Permanent link">&para;</a></h1>
+<h1 id="bitbucket-pipelines-provider">Bitbucket Pipelines provider</h1>
 <p>Parses <code>bitbucket-pipelines.yml</code> on disk — no Bitbucket API token, no
 runner install.</p>
-<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<h2 id="producer-workflow">Producer workflow</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># --bitbucket-path auto-detected when bitbucket-pipelines.yml exists at cwd.</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>bitbucket
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># …or pass it explicitly (file or directory).</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>bitbucket<span class="w"> </span>--bitbucket-path<span class="w"> </span>ci/
 </span></code></pre></div>
-<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<h2 id="what-it-covers">What it covers</h2>
 <table>
 <thead>
 <tr>
@@ -2055,143 +2022,143 @@ runner install.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="bb-001-pipe-action-not-pinned-to-exact-version">BB-001 — pipe: action not pinned to exact version<a class="headerlink" href="#bb-001-pipe-action-not-pinned-to-exact-version" title="Permanent link">&para;</a></h2>
+<h2 id="bb-001-pipe-action-not-pinned-to-exact-version">BB-001 — pipe: action not pinned to exact version</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Bitbucket pipes are docker-image references. Major-only (<code>:1</code>) or missing tags let Atlassian/the publisher swap the image contents. Full semver or sha256 digest is required.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin every <code>pipe:</code> to a full semver tag (e.g. <code>atlassian/aws-s3-deploy:1.4.0</code>) or to an immutable SHA. Floating majors like <code>:1</code> can roll to new code silently.</p>
-<h2 id="bb-002-script-injection-via-attacker-controllable-context">BB-002 — Script injection via attacker-controllable context<a class="headerlink" href="#bb-002-script-injection-via-attacker-controllable-context" title="Permanent link">&para;</a></h2>
+<h2 id="bb-002-script-injection-via-attacker-controllable-context">BB-002 — Script injection via attacker-controllable context</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline.</p>
 <p><strong>Recommended action</strong></p>
 <p>Always double-quote interpolations of ref-derived variables (<code>"$BITBUCKET_BRANCH"</code>). Avoid passing them to <code>eval</code>, <code>sh -c</code>, or unquoted command arguments.</p>
-<h2 id="bb-003-variables-contain-literal-secret-values">BB-003 — Variables contain literal secret values<a class="headerlink" href="#bb-003-variables-contain-literal-secret-values" title="Permanent link">&para;</a></h2>
+<h2 id="bb-003-variables-contain-literal-secret-values">BB-003 — Variables contain literal secret values</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Scans <code>definitions.variables</code> and each step's <code>variables:</code> for entries whose KEY looks credential-shaped and whose VALUE is a literal string. AWS access keys are detected by value shape regardless of key name.</p>
 <p><strong>Recommended action</strong></p>
 <p>Store credentials as Repository / Deployment Variables in Bitbucket's Pipelines settings with the 'Secured' flag, and reference them by name. Prefer short-lived OIDC tokens for cloud access.</p>
-<h2 id="bb-004-deploy-step-missing-deployment-environment-gate">BB-004 — Deploy step missing <code>deployment:</code> environment gate<a class="headerlink" href="#bb-004-deploy-step-missing-deployment-environment-gate" title="Permanent link">&para;</a></h2>
+<h2 id="bb-004-deploy-step-missing-deployment-environment-gate">BB-004 — Deploy step missing <code>deployment:</code> environment gate</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL, ESF-C-ENV-SEP</p>
 <p>A step whose name or invoked pipe matches <code>deploy</code> / <code>release</code> / <code>publish</code> / <code>promote</code> should declare a <code>deployment:</code> field so Bitbucket enforces deployment-scoped variables, approvals, and history.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>deployment: production</code> (or <code>staging</code> / <code>test</code>) to the step. Configure the matching environment in the repo's Deployments settings with required reviewers and secured variables.</p>
-<h2 id="bb-005-step-has-no-max-time-unbounded-build">BB-005 — Step has no <code>max-time</code> — unbounded build<a class="headerlink" href="#bb-005-step-has-no-max-time-unbounded-build" title="Permanent link">&para;</a></h2>
+<h2 id="bb-005-step-has-no-max-time-unbounded-build">BB-005 — Step has no <code>max-time</code> — unbounded build</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
 <p>Without <code>max-time</code>, the step runs until Bitbucket's 120-minute global default kills it. Explicit per-step timeouts cap blast radius and cost.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add <code>max-time: &lt;minutes&gt;</code> to each step, sized to the 95th percentile of historical runtime plus margin. Bounded runs limit the blast radius of a compromised build and prevent runaway minute consumption.</p>
-<h2 id="bb-006-artifacts-not-signed">BB-006 — Artifacts not signed<a class="headerlink" href="#bb-006-artifacts-not-signed" title="Permanent link">&para;</a></h2>
+<h2 id="bb-006-artifacts-not-signed">BB-006 — Artifacts not signed</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
 <p>Unsigned artifacts can't be verified downstream. Passes when cosign / sigstore / slsa-* / notation-sign appears in the pipeline body.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a step that runs <code>cosign sign</code> against the built image or archive, using Bitbucket OIDC for keyless signing where possible. Publish the signature next to the artifact and verify it at deploy time.</p>
-<h2 id="bb-007-sbom-not-produced">BB-007 — SBOM not produced<a class="headerlink" href="#bb-007-sbom-not-produced" title="Permanent link">&para;</a></h2>
+<h2 id="bb-007-sbom-not-produced">BB-007 — SBOM not produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
 <p>Without an SBOM, downstream consumers can't audit the dependency set shipped in the artifact. Passes when CycloneDX / syft / anchore / sbom-tool / Trivy-SBOM appears.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add an SBOM step — <code>syft . -o cyclonedx-json</code>, Trivy with <code>--format cyclonedx</code>, or Microsoft's <code>sbom-tool</code>. Attach the SBOM as a build artifact.</p>
-<h2 id="bb-008-credential-shaped-literal-in-pipeline-body">BB-008 — Credential-shaped literal in pipeline body<a class="headerlink" href="#bb-008-credential-shaped-literal-in-pipeline-body" title="Permanent link">&para;</a></h2>
+<h2 id="bb-008-credential-shaped-literal-in-pipeline-body">BB-008 — Credential-shaped literal in pipeline body</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Complements BB-003 (variable-name scan). BB-008 checks every string in the pipeline against the cross-provider credential-pattern catalogue — catches secrets pasted into script bodies or environment blocks.</p>
 <p><strong>Recommended action</strong></p>
 <p>Rotate the exposed credential. Move the value to a Secured Repository or Deployment Variable and reference it by name.</p>
-<h2 id="bb-009-pipe-pinned-by-version-rather-than-sha256-digest">BB-009 — pipe: pinned by version rather than sha256 digest<a class="headerlink" href="#bb-009-pipe-pinned-by-version-rather-than-sha256-digest" title="Permanent link">&para;</a></h2>
+<h2 id="bb-009-pipe-pinned-by-version-rather-than-sha256-digest">BB-009 — pipe: pinned by version rather than sha256 digest</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-IMMUTABLE</p>
 <p>BB-001 fails floating tags at HIGH; BB-009 is the stricter tier. Even immutable-looking semver tags can be repointed by the registry; sha256 digests are tamper-evident.</p>
 <p><strong>Recommended action</strong></p>
 <p>Resolve each pipe to its digest (<code>docker buildx imagetools inspect bitbucketpipelines/&lt;name&gt;:&lt;ver&gt;</code>) and reference it via <code>@sha256:&lt;digest&gt;</code>.</p>
-<h2 id="bb-010-deploy-step-ingests-pull-request-artifact-unverified">BB-010 — Deploy step ingests pull-request artifact unverified<a class="headerlink" href="#bb-010-deploy-step-ingests-pull-request-artifact-unverified" title="Permanent link">&para;</a></h2>
+<h2 id="bb-010-deploy-step-ingests-pull-request-artifact-unverified">BB-010 — Deploy step ingests pull-request artifact unverified</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Bitbucket steps declare artifacts on the producer and downstream steps implicitly receive them. When an unprivileged step produces an artifact and a later <code>deployment:</code> step consumes it without verification, attacker-controlled output flows into the privileged stage.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a verification step before the deploy step consumes the artifact: <code>sha256sum -c artifact.sha256</code> against a manifest the producer signed, or <code>cosign verify</code> over the artifact directly. Alternatively, restrict the artifact-producing step to non-PR pipelines via <code>branches:</code> or <code>custom:</code> triggers.</p>
-<h2 id="bb-011-aws-auth-uses-long-lived-access-keys">BB-011 — AWS auth uses long-lived access keys<a class="headerlink" href="#bb-011-aws-auth-uses-long-lived-access-keys" title="Permanent link">&para;</a></h2>
+<h2 id="bb-011-aws-auth-uses-long-lived-access-keys">BB-011 — AWS auth uses long-lived access keys</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
 <p>Long-lived <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> values embedded in the pipeline file can't be rotated on a fine-grained schedule. Prefer OIDC or Bitbucket secured variables for cross-cloud access.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use Bitbucket OIDC with <code>oidc: true</code> on the AWS pipe, or store credentials as secured Bitbucket variables rather than inline values. Remove static AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from the pipeline file.</p>
-<h2 id="bb-012-remote-script-piped-to-shell-interpreter">BB-012 — Remote script piped to shell interpreter<a class="headerlink" href="#bb-012-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<h2 id="bb-012-remote-script-piped-to-shell-interpreter">BB-012 — Remote script piped to shell interpreter</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a pipeline. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build runner.</p>
 <p><strong>Recommended action</strong></p>
 <p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
-<h2 id="bb-013-docker-run-with-insecure-flags-privilegedhost-mount">BB-013 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#bb-013-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<h2 id="bb-013-docker-run-with-insecure-flags-privilegedhost-mount">BB-013 — Docker run with insecure flags (privileged/host mount)</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a pipeline give the container full access to the build runner, enabling container escape and lateral movement.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
-<h2 id="bb-014-package-install-from-insecure-source">BB-014 — Package install from insecure source<a class="headerlink" href="#bb-014-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<h2 id="bb-014-package-install-from-insecure-source">BB-014 — Package install from insecure source</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a pipeline. These patterns allow man-in-the-middle injection of malicious packages.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
-<h2 id="bb-015-no-vulnerability-scanning-step">BB-015 — No vulnerability scanning step<a class="headerlink" href="#bb-015-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<h2 id="bb-015-no-vulnerability-scanning-step">BB-015 — No vulnerability scanning step</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
 <p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
-<h2 id="bb-016-self-hosted-runner-without-ephemeral-marker">BB-016 — Self-hosted runner without ephemeral marker<a class="headerlink" href="#bb-016-self-hosted-runner-without-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<h2 id="bb-016-self-hosted-runner-without-ephemeral-marker">BB-016 — Self-hosted runner without ephemeral marker</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
 <p>Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered step writes to a well-known path; a subsequent deploy step on the same runner reads it. Detects <code>runs-on: self.hosted</code> without an <code>ephemeral</code> marker or Docker image override.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use Docker-based self-hosted runners or configure runners to tear down between jobs. Add 'ephemeral' to <code>runs-on</code> labels or use Bitbucket's runner images that are rebuilt per-job.</p>
-<h2 id="bb-017-repository-token-written-to-persistent-storage">BB-017 — Repository token written to persistent storage<a class="headerlink" href="#bb-017-repository-token-written-to-persistent-storage" title="Permanent link">&para;</a></h2>
+<h2 id="bb-017-repository-token-written-to-persistent-storage">BB-017 — Repository token written to persistent storage</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Detects patterns where Bitbucket pipeline tokens are redirected to files or piped through <code>tee</code>. Persisted tokens survive the step boundary and can be exfiltrated by later steps, artifacts, or cache entries.</p>
 <p><strong>Recommended action</strong></p>
 <p>Never write BITBUCKET_TOKEN or REPOSITORY_OAUTH_ACCESS_TOKEN to files or artifacts. Use the token inline in the command that needs it and let Bitbucket revoke it after the build.</p>
-<h2 id="bb-018-cache-key-derives-from-attacker-controllable-input">BB-018 — Cache key derives from attacker-controllable input<a class="headerlink" href="#bb-018-cache-key-derives-from-attacker-controllable-input" title="Permanent link">&para;</a></h2>
+<h2 id="bb-018-cache-key-derives-from-attacker-controllable-input">BB-018 — Cache key derives from attacker-controllable input</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Bitbucket caches are restored by key. When the key includes a value the attacker controls (branch name, tag, PR ID), a pull-request pipeline can plant a poisoned cache entry that a subsequent default-branch build restores.</p>
 <p><strong>Recommended action</strong></p>
 <p>Build the cache key from values the attacker cannot control. Prefer <code>hashFiles()</code> on lockfiles enforced by branch protection. Never include $BITBUCKET_BRANCH or PR-related variables in the cache key.</p>
-<h2 id="bb-019-after-script-references-secrets">BB-019 — after-script references secrets<a class="headerlink" href="#bb-019-after-script-references-secrets" title="Permanent link">&para;</a></h2>
+<h2 id="bb-019-after-script-references-secrets">BB-019 — after-script references secrets</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
 <p>Bitbucket's <code>after-script</code> runs unconditionally after the main <code>script</code> block (including on failure). If the <code>after-script</code> references secrets or tokens, those values may leak into build logs or artifacts even when the step fails unexpectedly. This check detects secret-like variable references in <code>after-script</code> blocks.</p>
 <p><strong>Recommended action</strong></p>
 <p>Move secret-dependent operations into the main <code>script:</code> block. <code>after-script</code> runs even when the step fails and executes in a separate shell context — credential exposure here is harder to audit and more likely to persist in logs.</p>
-<h2 id="bb-020-full-clone-depth-exposes-complete-history">BB-020 — Full clone depth exposes complete history<a class="headerlink" href="#bb-020-full-clone-depth-exposes-complete-history" title="Permanent link">&para;</a></h2>
+<h2 id="bb-020-full-clone-depth-exposes-complete-history">BB-020 — Full clone depth exposes complete history</h2>
 <p><strong>Severity:</strong> LOW · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
 <p>By default Bitbucket Pipelines clone with <code>depth: 50</code>. Setting <code>depth: full</code> exposes the entire commit history, including any secrets that were committed and later removed. This check flags explicit <code>clone: depth: full</code> settings.</p>
 <p><strong>Recommended action</strong></p>
 <p>Set <code>clone: depth: 1</code> (or a small number) in pipeline or step options to limit the amount of repository history available in the build environment. Full clones make it easier to extract secrets that were committed and later removed.</p>
-<h2 id="bb-021-package-install-without-lockfile-enforcement">BB-021 — Package install without lockfile enforcement<a class="headerlink" href="#bb-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<h2 id="bb-021-package-install-without-lockfile-enforcement">BB-021 — Package install without lockfile enforcement</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
 <p><strong>Recommended action</strong></p>
 <p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
-<h2 id="bb-022-dependency-update-command-bypasses-lockfile-pins">BB-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#bb-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<h2 id="bb-022-dependency-update-command-bypasses-lockfile-pins">BB-022 — Dependency update command bypasses lockfile pins</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
 <p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).</p>
-<h2 id="bb-023-tls-certificate-verification-bypass">BB-023 — TLS / certificate verification bypass<a class="headerlink" href="#bb-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<h2 id="bb-023-tls-certificate-verification-bypass">BB-023 — TLS / certificate verification bypass</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
 <p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
 <p><strong>Recommended action</strong></p>
 <p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
-<h2 id="bb-024-no-slsa-provenance-attestation-produced">BB-024 — No SLSA provenance attestation produced<a class="headerlink" href="#bb-024-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<h2 id="bb-024-no-slsa-provenance-attestation-produced">BB-024 — No SLSA provenance attestation produced</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
 <p>Bitbucket has no native SLSA builder; self-hosted attestation via <code>cosign attest</code> or <code>witness run</code> is the usual path. Pipes like <code>atlassian/cosign-attest</code> (if published) would also match.</p>
 <p><strong>Recommended action</strong></p>
 <p>Add a step that runs <code>cosign attest</code> against a <code>provenance.intoto.jsonl</code> statement, or integrate the TestifySec <code>witness run</code> attestor. Artifact signing alone (BB-006) doesn't satisfy SLSA Build L3.</p>
-<h2 id="bb-025-pipeline-contains-indicators-of-malicious-activity">BB-025 — Pipeline contains indicators of malicious activity<a class="headerlink" href="#bb-025-pipeline-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<h2 id="bb-025-pipeline-contains-indicators-of-malicious-activity">BB-025 — Pipeline contains indicators of malicious activity</h2>
 <p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
 <p>Specific indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, credential-dump pipes, audit-erasure commands). Does not replace BB-014 (TLS bypass) or BB-013 (Docker insecure) — those are hygiene; this is evidence.</p>
 <p><strong>Recommended action</strong></p>
 <p>Treat as a potential compromise. Identify the PR that added the matching step(s), rotate any credentials referenced from the pipeline's variable groups, and audit recent builds.</p>
-<h2 id="bb-026-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">BB-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#bb-026-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<h2 id="bb-026-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">BB-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec)</h2>
 <p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
 <p>Complements BB-002 (script injection from untrusted PR context). This rule fires on intrinsically risky idioms — <code>eval</code>, <code>sh -c "$X"</code>, backtick exec — regardless of whether the input source is currently trusted.</p>
 <p><strong>Recommended action</strong></p>
 <p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.</p>
-<h2 id="bb-027-package-install-bypasses-registry-integrity-git-path-tarball-source">BB-027 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#bb-027-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<h2 id="bb-027-package-install-bypasses-registry-integrity-git-path-tarball-source">BB-027 — Package install bypasses registry integrity (git / path / tarball source)</h2>
 <p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
 <p>Complements BB-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.</p>
 <p><strong>Recommended action</strong></p>
 <p>Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.</p>
 <hr />
-<h2 id="adding-a-new-bitbucket-pipelines-check">Adding a new Bitbucket Pipelines check<a class="headerlink" href="#adding-a-new-bitbucket-pipelines-check" title="Permanent link">&para;</a></h2>
+<h2 id="adding-a-new-bitbucket-pipelines-check">Adding a new Bitbucket Pipelines check</h2>
 <ol>
 <li>Create a new module at
    <code>pipeline_check/core/checks/bitbucket/rules/bbNNN_&lt;name&gt;.py</code>
@@ -2249,11 +2216,6 @@ runner install.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -2292,7 +2254,7 @@ runner install.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>

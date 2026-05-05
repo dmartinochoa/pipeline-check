@@ -62,12 +62,10 @@
   
     
     
-      
     
     
     
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -118,33 +116,7 @@
     </div>
     
       
-        <form class="md-header__option" data-md-component="palette">
-  
     
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
-      </label>
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -386,7 +358,7 @@
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-<span class="pg-hero__wordmark">pipeline-check · v0.2.1</span>
+<span class="pg-hero__wordmark">pipeline-check · v0.3.0</span>
 
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
@@ -417,26 +389,7 @@ finding ships with a control mapping, a fix, and a CI gate.
     </span>
     <span class="pg-terminal__tag">scan</span>
   </div>
-<div class="pg-terminal__body"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span>
-
-<span class="label">Pipeline-Check</span> v0.2.1 · scanning <span class="dim">.github/workflows/</span>
-
-  <span class="crit">CRITICAL</span>  GHA-001  Action pinned to mutable tag
-            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span>
-  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host
-            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span>
-  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled
-            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span>
-  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span>
-
-<span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span>
-        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span>
-
-<span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain
-
-<span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span>
-<span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.
-</div>
+<div class="pg-terminal__body"><span class="line l1"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span></span><span class="line l2"> </span><span class="line l3"><span class="label">Pipeline-Check</span> v0.3.0 · scanning <span class="dim">.github/workflows/</span></span><span class="line l4"> </span><span class="line l5">  <span class="crit">CRITICAL</span>  GHA-001  Action not pinned to commit SHA</span><span class="line l6">            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span></span><span class="line l7">  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host</span><span class="line l8">            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span></span><span class="line l9">  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled</span><span class="line l10">            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span></span><span class="line l11">  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span></span><span class="line l12"> </span><span class="line l13"><span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span></span><span class="line l14">        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span></span><span class="line l15"> </span><span class="line l16"><span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain</span><span class="line l17"> </span><span class="line l18"><span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span></span><span class="line l19"><span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.<span class="pg-cursor"></span></span></div>
 </div>
 
 </div>
@@ -454,7 +407,7 @@ finding ships with a control mapping, a fix, and a CI gate.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// capabilities</div>
-<h2 class="pg-section__title" id="one-scanner-every-pipeline-you-ship-through">One scanner. Every pipeline you ship through.<a class="headerlink" href="#one-scanner-every-pipeline-you-ship-through" title="Permanent link">&para;</a></h2>
+<h2 class="pg-section__title" id="one-scanner-every-pipeline-you-ship-through">One scanner. Every pipeline you ship through.</h2>
 <p class="pg-section__lede">
 Same severity model and report format whether you're scanning a Jenkinsfile,
 a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
@@ -466,7 +419,7 @@ NIST SSDF, SLSA, and the rest — so audit answers don't require leaving the too
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 </div>
-<h3 id="owasp-1010-coverage">OWASP 10/10 coverage<a class="headerlink" href="#owasp-1010-coverage" title="Permanent link">&para;</a></h3>
+<h3 id="owasp-1010-coverage">OWASP 10/10 coverage</h3>
 <p>Every one of the OWASP Top 10 CI/CD Security Risks has at least one rule across
 the supported providers. New risks land here before they land in your pipeline.
 <a class="pg-feature__link" href="standards/owasp_cicd_top_10/">Read more</a></p>
@@ -475,7 +428,7 @@ the supported providers. New risks land here before they land in your pipeline.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 </div>
-<h3 id="live-aws-shift-left-iac">Live AWS + shift-left IaC<a class="headerlink" href="#live-aws-shift-left-iac" title="Permanent link">&para;</a></h3>
+<h3 id="live-aws-shift-left-iac">Live AWS + shift-left IaC</h3>
 <p>Scan a running AWS account through boto3, <em>or</em> scan Terraform plans and
 CloudFormation templates before provisioning. Same rule IDs, same severities.
 <a class="pg-feature__link" href="providers/aws/">AWS reference</a></p>
@@ -484,7 +437,7 @@ CloudFormation templates before provisioning. Same rule IDs, same severities.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 </div>
-<h3 id="ci-gate-that-does-its-job">CI gate that does its job<a class="headerlink" href="#ci-gate-that-does-its-job" title="Permanent link">&para;</a></h3>
+<h3 id="ci-gate-that-does-its-job">CI gate that does its job</h3>
 <p>Severity thresholds, baseline diffs against a git ref, ignore files with
 expiries, glob check selection, autofix emit-or-apply. Failing the build is
 the default; turning it off is opt-in.
@@ -494,7 +447,7 @@ the default; turning it off is opt-in.
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
-<h3 id="attack-chain-correlation">Attack-chain correlation<a class="headerlink" href="#attack-chain-correlation" title="Permanent link">&para;</a></h3>
+<h3 id="attack-chain-correlation">Attack-chain correlation</h3>
 <p>Multi-finding chains mapped to MITRE ATT&amp;CK. See the kill chain — token leak →
 artifact poisoning → production push — instead of three disconnected findings.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a></p>
@@ -503,7 +456,7 @@ artifact poisoning → production push — instead of three disconnected finding
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
-<h3 id="output-that-integrates">Output that integrates<a class="headerlink" href="#output-that-integrates" title="Permanent link">&para;</a></h3>
+<h3 id="output-that-integrates">Output that integrates</h3>
 <p>Rich terminal table for humans, JSON for scripts, HTML report with client-side
 filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOps.
 <a class="pg-feature__link" href="output/">Output formats</a></p>
@@ -512,7 +465,7 @@ filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOp
 <div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 </div>
-<h3 id="zero-phone-home">Zero phone-home<a class="headerlink" href="#zero-phone-home" title="Permanent link">&para;</a></h3>
+<h3 id="zero-phone-home">Zero phone-home</h3>
 <p>Workflow files are parsed from disk. AWS uses the standard boto3 credential
 chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a></p>
@@ -522,7 +475,7 @@ chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// providers</div>
-<h2 class="pg-section__title" id="wherever-your-builds-run">Wherever your builds run.<a class="headerlink" href="#wherever-your-builds-run" title="Permanent link">&para;</a></h2>
+<h2 class="pg-section__title" id="wherever-your-builds-run">Wherever your builds run.</h2>
 <p class="pg-section__lede">
 Auto-detect picks the provider for you, or pass <code>--pipeline &lt;name&gt;</code>
 to force one. Counts reflect the current rule catalogue.
@@ -544,11 +497,8 @@ to force one. Counts reflect the current rule catalogue.
 <section class="pg-section">
 <div class="pg-section__head">
 <div class="pg-section__eyebrow">// flow</div>
-<h2 class="pg-section__title" id="inputs-in-graded-report-out">Inputs in. Graded report out.<a class="headerlink" href="#inputs-in-graded-report-out" title="Permanent link">&para;</a></h2>
-<p class="pg-section__lede">
-A single scan path: detect the provider, parse its config (or hit boto3),
-run rules, score, gate.
-</p>
+<h2 class="pg-section__title" id="inputs-in-graded-report-out">Inputs in. Graded report out.</h2>
+<p class="pg-section__lede">Hover any node for a quick description; click to jump to its reference page.</p>
 </div>
 <pre class="mermaid"><code>flowchart LR
     A[Repo or AWS account] --&gt;|auto-detect| B[Provider]
@@ -561,7 +511,46 @@ run rules, score, gate.
     E --&gt; F4[SARIF 2.1.0]
     E --&gt; G{CI gate}
     G --&gt;|pass| H[Merge]
-    G --&gt;|fail| I[Block + autofix]</code></pre>
+    G --&gt;|fail| I[Block + autofix]
+
+    click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
+    click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "330+ rules emit findings with severity, location, fix"
+    click D "standards/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
+    click E "scoring_model/" "Severity-weighted 0–100 score with an A/B/C/D grade"
+    click F1 "output/#terminal" "Rich color table for humans"
+    click F2 "output/#json" "Machine-parseable JSON for scripts"
+    click F3 "output/#html" "HTML report with client-side filters"
+    click F4 "output/#sarif" "SARIF 2.1.0 for GitHub code scanning, Defender for DevOps"
+    click G "ci_gate/" "Severity caps, baseline diff, ignore file, autofix — pass/fail contract"
+    click H "ci_gate/" "Severity below thresholds, exit 0"
+    click I "ci_gate/" "Severity above threshold; --apply autofix to clear"
+
+    classDef src      fill:#0b3954,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
+    classDef step     fill:#134e6f,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
+    classDef out      fill:#087e8b,stroke:#6dd5ed,stroke-width:1.5px,color:#fff;
+    classDef gate     fill:#0b3954,stroke:#f4a261,stroke-width:2px,color:#f4a261;
+    classDef pass     fill:#2a9d8f,stroke:#2a9d8f,stroke-width:1.5px,color:#fff;
+    classDef fail     fill:#bf1363,stroke:#bf1363,stroke-width:1.5px,color:#fff;
+
+    class A src;
+    class B,C,D,E step;
+    class F1,F2,F3,F4 out;
+    class G gate;
+    class H pass;
+    class I fail;</code></pre>
+<div class="pg-outputs">
+<div class="pg-outputs__head">
+    <span class="pg-section__eyebrow">// outputs</span>
+    <p class="pg-outputs__lede">Same findings, four shapes.</p>
+  </div>
+<ul class="pg-outputs__grid" role="list">
+    <li><a class="pg-output" href="output/#terminal"><strong>Terminal</strong><span>Rich color table for humans</span></a></li>
+    <li><a class="pg-output" href="output/#json"><strong>JSON</strong><span>Machine-parseable for scripts</span></a></li>
+    <li><a class="pg-output" href="output/#html"><strong>HTML report</strong><span>Client-side filters, shareable</span></a></li>
+    <li><a class="pg-output" href="output/#sarif"><strong>SARIF 2.1.0</strong><span>GitHub code scanning, Defender</span></a></li>
+  </ul>
+</div>
 </section>
 <section class="pg-cta">
 <div class="pg-cta__inner" markdown>
@@ -606,11 +595,6 @@ run rules, score, gate.
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -649,7 +633,7 @@ run rules, score, gate.
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="assets/javascripts/bundle.88dd0f4e.min.js"></script>

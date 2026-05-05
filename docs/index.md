@@ -10,7 +10,7 @@ hide:
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-<span class="pg-hero__wordmark">pipeline-check · v0.2.1</span>
+<span class="pg-hero__wordmark">pipeline-check · v0.3.0</span>
 
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
@@ -41,26 +41,7 @@ finding ships with a control mapping, a fix, and a CI gate.
     </span>
     <span class="pg-terminal__tag">scan</span>
   </div>
-<div class="pg-terminal__body"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span>
-
-<span class="label">Pipeline-Check</span> v0.2.1 · scanning <span class="dim">.github/workflows/</span>
-
-  <span class="crit">CRITICAL</span>  GHA-001  Action pinned to mutable tag
-            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span>
-  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host
-            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span>
-  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled
-            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span>
-  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span>
-
-<span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span>
-        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span>
-
-<span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain
-
-<span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span>
-<span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.
-</div>
+<div class="pg-terminal__body"><span class="line l1"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span></span><span class="line l2"> </span><span class="line l3"><span class="label">Pipeline-Check</span> v0.3.0 · scanning <span class="dim">.github/workflows/</span></span><span class="line l4"> </span><span class="line l5">  <span class="crit">CRITICAL</span>  GHA-001  Action not pinned to commit SHA</span><span class="line l6">            <span class="dim">.github/workflows/release.yml:14  uses: actions/checkout@v4</span></span><span class="line l7">  <span class="high">HIGH    </span>  GHA-016  Pipe-to-shell from untrusted host</span><span class="line l8">            <span class="dim">.github/workflows/build.yml:42  curl … | bash</span></span><span class="line l9">  <span class="med">MEDIUM  </span>  GHA-023  TLS verification disabled</span><span class="line l10">            <span class="dim">.github/workflows/deploy.yml:88  curl --insecure</span></span><span class="line l11">  <span class="low">LOW     </span>  GHA-015  No timeout-minutes on job <span class="dim">test</span></span><span class="line l12"> </span><span class="line l13"><span class="label">Score</span>  47 / 100   <span class="grade-d">Grade D</span></span><span class="line l14">        <span class="dim">2 critical · 4 high · 7 medium · 3 low</span></span><span class="line l15"> </span><span class="line l16"><span class="label">Standards</span>  OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain</span><span class="line l17"> </span><span class="line l18"><span class="ok">→</span> Fix suggestions written to <span class="dim">pipeline-check.sarif</span></span><span class="line l19"><span class="ok">→</span> Run with <span class="dim">--apply</span> to autofix 4 of 16 findings.<span class="pg-cursor"></span></span></div>
 </div>
 
 </div>
@@ -180,10 +161,7 @@ to force one. Counts reflect the current rule catalogue.
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// flow</div>
 <h2 class="pg-section__title">Inputs in. Graded report out.</h2>
-<p class="pg-section__lede">
-A single scan path: detect the provider, parse its config (or hit boto3),
-run rules, score, gate.
-</p>
+<p class="pg-section__lede">Hover any node for a quick description; click to jump to its reference page.</p>
 </div>
 
 ```mermaid
@@ -199,7 +177,47 @@ flowchart LR
     E --> G{CI gate}
     G -->|pass| H[Merge]
     G -->|fail| I[Block + autofix]
+
+    click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
+    click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "330+ rules emit findings with severity, location, fix"
+    click D "standards/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
+    click E "scoring_model/" "Severity-weighted 0–100 score with an A/B/C/D grade"
+    click F1 "output/#terminal" "Rich color table for humans"
+    click F2 "output/#json" "Machine-parseable JSON for scripts"
+    click F3 "output/#html" "HTML report with client-side filters"
+    click F4 "output/#sarif" "SARIF 2.1.0 for GitHub code scanning, Defender for DevOps"
+    click G "ci_gate/" "Severity caps, baseline diff, ignore file, autofix — pass/fail contract"
+    click H "ci_gate/" "Severity below thresholds, exit 0"
+    click I "ci_gate/" "Severity above threshold; --apply autofix to clear"
+
+    classDef src      fill:#0b3954,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
+    classDef step     fill:#134e6f,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
+    classDef out      fill:#087e8b,stroke:#6dd5ed,stroke-width:1.5px,color:#fff;
+    classDef gate     fill:#0b3954,stroke:#f4a261,stroke-width:2px,color:#f4a261;
+    classDef pass     fill:#2a9d8f,stroke:#2a9d8f,stroke-width:1.5px,color:#fff;
+    classDef fail     fill:#bf1363,stroke:#bf1363,stroke-width:1.5px,color:#fff;
+
+    class A src;
+    class B,C,D,E step;
+    class F1,F2,F3,F4 out;
+    class G gate;
+    class H pass;
+    class I fail;
 ```
+
+<div class="pg-outputs">
+  <div class="pg-outputs__head">
+    <span class="pg-section__eyebrow">// outputs</span>
+    <p class="pg-outputs__lede">Same findings, four shapes.</p>
+  </div>
+  <ul class="pg-outputs__grid" role="list">
+    <li><a class="pg-output" href="output/#terminal"><strong>Terminal</strong><span>Rich color table for humans</span></a></li>
+    <li><a class="pg-output" href="output/#json"><strong>JSON</strong><span>Machine-parseable for scripts</span></a></li>
+    <li><a class="pg-output" href="output/#html"><strong>HTML report</strong><span>Client-side filters, shareable</span></a></li>
+    <li><a class="pg-output" href="output/#sarif"><strong>SARIF 2.1.0</strong><span>GitHub code scanning, Defender</span></a></li>
+  </ul>
+</div>
 </section>
 
 <section class="pg-cta">

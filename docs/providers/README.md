@@ -5,20 +5,48 @@ context (credentials, clients) and declares which check modules run against
 it. The scanner's core is provider-agnostic — adding a new platform never
 requires editing `Scanner`, `Reporter`, or the CLI.
 
-## Supported providers
-
-| Name        | Status | Context                                                 | Docs                           |
-|-------------|--------|---------------------------------------------------------|--------------------------------|
-| `aws`       | stable | `boto3.Session` — live AWS account                      | [aws.md](aws.md)               |
-| `terraform` | stable | `TerraformContext` — parsed `terraform show -json` plan | [terraform.md](terraform.md)   |
-| `cloudformation` | stable | `CloudFormationContext` — parsed CFN template (YAML/JSON) | [cloudformation.md](cloudformation.md) |
-| `github`    | stable | `GitHubContext` — parsed GitHub Actions workflow YAML   | [github.md](github.md)         |
-| `gitlab`    | stable | `GitLabContext` — parsed `.gitlab-ci.yml`               | [gitlab.md](gitlab.md)         |
-| `bitbucket` | stable | `BitbucketContext` — parsed `bitbucket-pipelines.yml`   | [bitbucket.md](bitbucket.md)   |
-| `azure`     | stable | `AzureContext` — parsed `azure-pipelines.yml`           | [azure.md](azure.md)           |
-| `jenkins`   | stable | `JenkinsContext` — parsed `Jenkinsfile` text            | [jenkins.md](jenkins.md)       |
-| `circleci`  | stable | `CircleCIContext` — parsed `.circleci/config.yml`       | [circleci.md](circleci.md)     |
-| `cloudbuild`| stable | `CloudBuildContext` — parsed `cloudbuild.yaml`          | [cloudbuild.md](cloudbuild.md) |
+<div class="pg-doc-cards">
+  <a class="pg-doc-card" href="aws/">
+    <h3>AWS</h3>
+    <p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
+  </a>
+  <a class="pg-doc-card" href="terraform/">
+    <h3>Terraform</h3>
+    <p>Shift-left scan against a parsed <code>terraform show -json</code> plan. AWS-rule parity so findings match the live runtime.</p>
+  </a>
+  <a class="pg-doc-card" href="cloudformation/">
+    <h3>CloudFormation</h3>
+    <p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
+  </a>
+  <a class="pg-doc-card" href="github/">
+    <h3>GitHub Actions</h3>
+    <p>Scans every workflow under <code>.github/workflows/</code>. Action pinning, OIDC trust, secret hygiene, runner posture.</p>
+  </a>
+  <a class="pg-doc-card" href="gitlab/">
+    <h3>GitLab CI</h3>
+    <p>Parses <code>.gitlab-ci.yml</code> with <code>include:</code> resolution. Image pinning, deploy gating, manual-job posture.</p>
+  </a>
+  <a class="pg-doc-card" href="bitbucket/">
+    <h3>Bitbucket Pipelines</h3>
+    <p>Parses <code>bitbucket-pipelines.yml</code>. Pipe pinning, deployment posture, custom-pipe risk.</p>
+  </a>
+  <a class="pg-doc-card" href="azure/">
+    <h3>Azure DevOps</h3>
+    <p>Parses <code>azure-pipelines.yml</code> with template-resolution support.</p>
+  </a>
+  <a class="pg-doc-card" href="jenkins/">
+    <h3>Jenkins</h3>
+    <p>Lexes Declarative + Scripted <code>Jenkinsfile</code>s. Credential exposure, agent pinning, sandbox bypass.</p>
+  </a>
+  <a class="pg-doc-card" href="circleci/">
+    <h3>CircleCI</h3>
+    <p>Parses <code>.circleci/config.yml</code> with orb-mapping support.</p>
+  </a>
+  <a class="pg-doc-card" href="cloudbuild/">
+    <h3>Google Cloud Build</h3>
+    <p>Parses <code>cloudbuild.yaml</code>. Substitution injection, secret retrieval, signing posture.</p>
+  </a>
+</div>
 
 ## Adding a new provider
 

@@ -23,7 +23,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 | Service       | IDs               | Terraform resources consumed                                                         |
 |---------------|-------------------|--------------------------------------------------------------------------------------|
-| CodeBuild     | `CB-001…007`      | `aws_codebuild_project`, `aws_codebuild_source_credential`, `aws_codebuild_webhook`  |
+| CodeBuild     | `CB-001…011`      | `aws_codebuild_project`, `aws_codebuild_source_credential`, `aws_codebuild_webhook`  |
 | CodePipeline  | `CP-001…004`      | `aws_codepipeline`                                                                   |
 | CodeDeploy    | `CD-001…003`      | `aws_codedeploy_deployment_group`                                                    |
 | ECR           | `ECR-001…005`     | `aws_ecr_repository`, `aws_ecr_repository_policy`, `aws_ecr_lifecycle_policy`        |

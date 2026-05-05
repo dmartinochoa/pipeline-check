@@ -4,40 +4,71 @@ Every finding produced by the scanner carries a list of `ControlRef` objects
 — references to controls in registered compliance standards. The same check
 can evidence controls in multiple standards at once.
 
-## Registered standards
+<div class="pg-doc-cards">
+  <a class="pg-doc-card pg-doc-card--featured" href="owasp_cicd_top_10/">
+    <span class="pg-doc-card__tag pg-doc-card__tag--accent">flagship · 10/10</span>
+    <h3>OWASP Top 10 CI/CD</h3>
+    <p>The reference framework for CI/CD security risks. Full coverage across every supported provider.</p>
+  </a>
+  <a class="pg-doc-card" href="cis_aws_foundations/">
+    <h3>CIS AWS Foundations</h3>
+    <p>CI/CD-relevant subset of the CIS AWS benchmark — IAM, S3, CloudTrail, KMS hardening.</p>
+  </a>
+  <a class="pg-doc-card" href="cis_supply_chain/">
+    <h3>CIS Supply Chain</h3>
+    <p>CIS Software Supply Chain Security Guide. Source, build, dependency, and artifact controls.</p>
+  </a>
+  <a class="pg-doc-card" href="nist_ssdf/">
+    <h3>NIST SSDF</h3>
+    <p>Secure Software Development Framework — the federal SSDLC reference (SP 800-218).</p>
+  </a>
+  <a class="pg-doc-card" href="nist_800_53/">
+    <h3>NIST 800-53</h3>
+    <p>Federal control catalog (CI/CD subset). Maps findings to AC, AU, CM, IA, SI, SR families.</p>
+  </a>
+  <a class="pg-doc-card" href="nist_csf_2/">
+    <h3>NIST CSF 2.0</h3>
+    <p>Cybersecurity Framework — Govern, Identify, Protect, Detect, Respond, Recover.</p>
+  </a>
+  <a class="pg-doc-card" href="nist_800_190/">
+    <h3>NIST 800-190</h3>
+    <p>Application Container Security Guide — image, registry, runtime, host hardening.</p>
+  </a>
+  <a class="pg-doc-card" href="slsa/">
+    <h3>SLSA Build Track</h3>
+    <p>Supply-chain Levels for Software Artifacts. Provenance, hermeticity, signing posture.</p>
+  </a>
+  <a class="pg-doc-card" href="pci_dss_v4/">
+    <h3>PCI DSS v4.0</h3>
+    <p>Payment Card Industry Data Security Standard, CI/CD subset (logging, secret management, change control).</p>
+  </a>
+  <a class="pg-doc-card" href="esf_supply_chain/">
+    <h3>NSA/CISA ESF</h3>
+    <p>Enduring Security Framework — Securing the Software Supply Chain (developer, customer, supplier).</p>
+  </a>
+  <a class="pg-doc-card" href="openssf_scorecard/">
+    <h3>OpenSSF Scorecard</h3>
+    <p>Open-source project security health metrics. Pinned-deps, branch-protection, signing-keys, dangerous workflows.</p>
+  </a>
+  <a class="pg-doc-card" href="s2c2f/">
+    <h3>S2C2F</h3>
+    <p>Secure Supply Chain Consumption Framework — ingest, inventory, scan, rebuild, fix.</p>
+  </a>
+  <a class="pg-doc-card" href="soc2/">
+    <h3>SOC 2</h3>
+    <p>Trust Services Criteria. Audit-friendly mappings for Security, Confidentiality, and Availability.</p>
+  </a>
+</div>
 
-| Name                   | Title                                      | Version | Docs                                |
-|------------------------|--------------------------------------------|---------|-------------------------------------|
-| `owasp_cicd_top_10`    | OWASP Top 10 CI/CD Security Risks          | 2022    | [owasp_cicd_top_10.md](owasp_cicd_top_10.md) |
-| `cis_aws_foundations`  | CIS AWS Foundations Benchmark (subset)     | 3.0.0   | [cis_aws_foundations.md](cis_aws_foundations.md) |
-| `cis_supply_chain`     | CIS Software Supply Chain Security Guide   | 1.0     | [cis_supply_chain.md](cis_supply_chain.md) |
-| `nist_ssdf`            | NIST Secure Software Development Framework | SP 800-218 v1.1 | [nist_ssdf.md](nist_ssdf.md) |
-| `nist_800_53`          | NIST SP 800-53 Rev. 5 (CI/CD subset)       | Rev. 5  | [nist_800_53.md](nist_800_53.md) |
-| `nist_csf_2`           | NIST Cybersecurity Framework 2.0           | 2.0     | [nist_csf_2.md](nist_csf_2.md) |
-| `nist_800_190`         | NIST SP 800-190 Application Container Security | 1.0 (Sep 2017) | [nist_800_190.md](nist_800_190.md) |
-| `slsa`                 | SLSA Build Track                           | 1.0     | [slsa.md](slsa.md) |
-| `pci_dss_v4`           | PCI DSS v4.0 (CI/CD subset)                | 4.0     | [pci_dss_v4.md](pci_dss_v4.md) |
-| `esf_supply_chain`     | NSA/CISA ESF — Securing the Software Supply Chain | 2022 | [esf_supply_chain.md](esf_supply_chain.md) |
-| `openssf_scorecard`    | OpenSSF Scorecard                          | 5       | [openssf_scorecard.md](openssf_scorecard.md) |
-| `s2c2f`                | Secure Supply Chain Consumption Framework  | 2024-05 | [s2c2f.md](s2c2f.md) |
-| `soc2`                 | SOC 2 Trust Services Criteria              | 2017 (revised 2022) | [soc2.md](soc2.md) |
-
-List them at runtime with:
+## Using standards at runtime
 
 ```bash
-pipeline_check --list-standards
+pipeline_check --list-standards                                                 # list registered standards
+pipeline_check --pipeline aws --standard owasp_cicd_top_10                      # filter to one
+pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf # multiple
 ```
 
-## Filtering by standard
-
-To annotate findings with controls from a single standard only:
-
-```bash
-pipeline_check --pipeline aws --standard owasp_cicd_top_10
-```
-
-Repeat `--standard` to select multiple. Omit it to include every registered
-standard.
+Omit `--standard` to include every registered standard.
 
 ## Architecture
 
@@ -77,7 +108,4 @@ automatically.
 - **Easy to audit:** the mapping table lives in one file, not scattered
   across Finding constructor calls.
 - **Easy to extend:** adding ISO 27001 or a bespoke internal policy is
-  one new Python module — the thirteen registered standards today
-  (OWASP CI/CD, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, NIST
-  800-190, NIST CSF 2.0, SLSA, PCI DSS v4, NSA/CISA ESF, OpenSSF
-  Scorecard, S2C2F, SOC 2) are all built this way.
+  one new Python module.

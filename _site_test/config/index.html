@@ -64,12 +64,10 @@
   
     
     
-      
     
     
     
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -120,33 +118,7 @@
     </div>
     
       
-        <form class="md-header__option" data-md-component="palette">
-  
     
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
-      </label>
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -1530,19 +1502,14 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/config.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="configuration-file">Configuration file<a class="headerlink" href="#configuration-file" title="Permanent link">&para;</a></h1>
+<h1 id="configuration-file">Configuration file</h1>
 <p>Every CLI flag can be set in a config file so CI invocations stay short
 and repo policy lives alongside the code. Both TOML (inside
 <code>pyproject.toml</code>) and YAML (<code>.pipeline-check.yml</code>) are supported.</p>
-<h2 id="precedence">Precedence<a class="headerlink" href="#precedence" title="Permanent link">&para;</a></h2>
+<h2 id="precedence">Precedence</h2>
 <p>Highest wins — matches every standard tool (ruff, mypy, pytest):</p>
 <ol>
 <li><strong>CLI flags</strong> — <code>--pipeline aws --fail-on HIGH</code></li>
@@ -1550,7 +1517,7 @@ and repo policy lives alongside the code. Both TOML (inside
 <li><strong>Config file</strong> — <code>.pipeline-check.yml</code> or <code>[tool.pipeline_check]</code> in <code>pyproject.toml</code></li>
 <li><strong>Built-in defaults</strong></li>
 </ol>
-<h2 id="file-discovery">File discovery<a class="headerlink" href="#file-discovery" title="Permanent link">&para;</a></h2>
+<h2 id="file-discovery">File discovery</h2>
 <p>Without <code>--config</code>, the first file that exists wins:</p>
 <ol>
 <li><code>.pipeline-check.yml</code> / <code>.pipeline-check.yaml</code> at the current working directory</li>
@@ -1558,10 +1525,10 @@ and repo policy lives alongside the code. Both TOML (inside
 </ol>
 <p>Pass <code>--config PATH</code> to select an explicit file (a missing path raises
 a UsageError — no silent fallback).</p>
-<h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
+<h2 id="schema">Schema</h2>
 <p>Every CLI flag maps to a key with <code>-</code> → <code>_</code>. Gate settings live under a
 nested <code>gate</code> sub-section.</p>
-<h3 id="pyprojecttoml"><code>pyproject.toml</code><a class="headerlink" href="#pyprojecttoml" title="Permanent link">&para;</a></h3>
+<h3 id="pyprojecttoml"><code>pyproject.toml</code></h3>
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.pipeline_check]</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">pipeline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;aws&quot;</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;eu-west-1&quot;</span>
@@ -1595,7 +1562,7 @@ nested <code>gate</code> sub-section.</p>
 </span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">baseline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;artifacts/baseline.json&quot;</span>
 </span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">ignore_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.pipelinecheckignore&quot;</span>
 </span></code></pre></div>
-<h3 id="pipeline-checkyml"><code>.pipeline-check.yml</code><a class="headerlink" href="#pipeline-checkyml" title="Permanent link">&para;</a></h3>
+<h3 id="pipeline-checkyml"><code>.pipeline-check.yml</code></h3>
 <p>Same keys, YAML shape:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">pipeline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-west-1</span>
@@ -1618,7 +1585,7 @@ nested <code>gate</code> sub-section.</p>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">  </span><span class="nt">baseline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/baseline.json</span>
 </span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">  </span><span class="nt">ignore_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.pipelinecheckignore</span>
 </span></code></pre></div>
-<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<h2 id="environment-variables">Environment variables</h2>
 <p>Upper-snake-case of the option name, prefixed with <code>PIPELINE_CHECK_</code>.
 Gate settings use the <code>PIPELINE_CHECK_GATE_</code> prefix.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PIPELINE_CHECK_PIPELINE</span><span class="o">=</span>aws
@@ -1632,14 +1599,14 @@ Gate settings use the <code>PIPELINE_CHECK_GATE_</code> prefix.</p>
 <p>Env vars override config-file values for the same key — useful in CI
 where the file encodes repo policy but a specific job (e.g. a nightly
 deep scan) needs to tighten a single setting.</p>
-<h2 id="unknown-keys">Unknown keys<a class="headerlink" href="#unknown-keys" title="Permanent link">&para;</a></h2>
+<h2 id="unknown-keys">Unknown keys</h2>
 <p>Unknown top-level or gate keys are <strong>ignored with a stderr warning</strong>
 rather than raising:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[config] ignoring &#39;max_faillures&#39; from pyproject.toml: unknown key
 </span></code></pre></div>
 <p>Typos still surface, but a config written for a newer version keeps
 working on an older install.</p>
-<h3 id="-config-check-fail-ci-on-typos"><code>--config-check</code> — fail CI on typos<a class="headerlink" href="#-config-check-fail-ci-on-typos" title="Permanent link">&para;</a></h3>
+<h3 id="-config-check-fail-ci-on-typos"><code>--config-check</code> — fail CI on typos</h3>
 <p>The warning is easy to miss in CI logs. Run the dedicated validator
 step to make unknown keys a hard failure:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pipeline_check<span class="w"> </span>--config-check
@@ -1659,7 +1626,7 @@ on the cause:</p>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipeline_check --config-check</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># ↑ fails the job immediately on any unknown key</span>
 </span></code></pre></div>
-<h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
+<h2 id="tips">Tips</h2>
 <ul>
 <li>Keep <code>pyproject.toml</code> as the single source of truth for Python projects;
   it's already the standard place to find <code>[tool.ruff]</code> / <code>[tool.mypy]</code>.</li>
@@ -1711,11 +1678,6 @@ on the cause:</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -1754,7 +1716,7 @@ on the cause:</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>

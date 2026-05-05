@@ -64,12 +64,10 @@
   
     
     
-      
     
     
     
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -120,33 +118,7 @@
     </div>
     
       
-        <form class="md-header__option" data-md-component="palette">
-  
     
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
-      </label>
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -2585,19 +2557,14 @@
                   
 
   
-    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/aws.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
-    </a>
-  
   
 
 
-<h1 id="aws-provider">AWS provider<a class="headerlink" href="#aws-provider" title="Permanent link">&para;</a></h1>
+<h1 id="aws-provider">AWS provider</h1>
 <p>The AWS provider uses a <code>boto3.Session</code> scoped to a single region. It
 supports named AWS CLI profiles via <code>--profile</code> and honours the
 <code>AWS_ENDPOINT_URL</code> environment variable (for LocalStack).</p>
-<h2 id="services-covered">Services covered<a class="headerlink" href="#services-covered" title="Permanent link">&para;</a></h2>
+<h2 id="services-covered">Services covered</h2>
 <table>
 <thead>
 <tr>
@@ -2608,11 +2575,11 @@ supports named AWS CLI profiles via <code>--profile</code> and honours the
 <tbody>
 <tr>
 <td>CodeBuild</td>
-<td>CB-001..007 (class-based); CB-008/009/010 (rules)</td>
+<td>CB-001..011</td>
 </tr>
 <tr>
 <td>CodePipeline</td>
-<td>CP-001..004 (class-based); CP-005/007 (rules)</td>
+<td>CP-001..007</td>
 </tr>
 <tr>
 <td>CodeDeploy</td>
@@ -2620,15 +2587,15 @@ supports named AWS CLI profiles via <code>--profile</code> and honours the
 </tr>
 <tr>
 <td>ECR</td>
-<td>ECR-001..005 (class-based); ECR-006/007 (rules)</td>
+<td>ECR-001..007</td>
 </tr>
 <tr>
 <td>IAM</td>
-<td>IAM-001..006 (class-based); IAM-007/008 (rules)</td>
+<td>IAM-001..008</td>
 </tr>
 <tr>
 <td>PBAC (CodeBuild roles/VPC, pipeline role scoping)</td>
-<td>PBAC-001/002 (class-based); PBAC-003/005 (rules)</td>
+<td>PBAC-001..005</td>
 </tr>
 <tr>
 <td>S3</td>
@@ -2685,7 +2652,7 @@ supports named AWS CLI profiles via <code>--profile</code> and honours the
 <code>pipeline_check/core/checks/aws/rules/*.py</code> (or the class docstrings for the
 original seven services).</p>
 <hr />
-<h2 id="cli-usage">CLI usage<a class="headerlink" href="#cli-usage" title="Permanent link">&para;</a></h2>
+<h2 id="cli-usage">CLI usage</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Default: scan us-east-1 with the ambient boto3 credential chain</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2710,12 +2677,12 @@ account, assume the role first with <code>aws sts assume-role</code> (or
 invoke <code>pipeline_check</code>. The provider does not currently accept an
 <code>--assume-role-arn</code> flag.</p>
 <hr />
-<h2 id="required-iam-permissions">Required IAM permissions<a class="headerlink" href="#required-iam-permissions" title="Permanent link">&para;</a></h2>
+<h2 id="required-iam-permissions">Required IAM permissions</h2>
 <p>The scanner is <strong>read-only</strong>: every API call is a <code>List*</code>, <code>Describe*</code>,
 <code>Get*</code>, or <code>BatchGet*</code>. It never mutates state. Per-resource API calls
 are scoped to the active <code>--region</code>; IAM, S3, and STS are global and are
 reached through the same regional session.</p>
-<h3 id="quickest-path-managed-policies">Quickest path: managed policies<a class="headerlink" href="#quickest-path-managed-policies" title="Permanent link">&para;</a></h3>
+<h3 id="quickest-path-managed-policies">Quickest path: managed policies</h3>
 <p>If you don't care about least-privilege, attach one of:</p>
 <ul>
 <li><code>arn:aws:iam::aws:policy/SecurityAudit</code> — covers everything below
@@ -2727,7 +2694,7 @@ reached through the same regional session.</p>
   scanner uses, plus a great deal more. Convenient but broad.</li>
 </ul>
 <p>For least-privilege, use the policy below.</p>
-<h3 id="permission-map-by-service">Permission map by service<a class="headerlink" href="#permission-map-by-service" title="Permanent link">&para;</a></h3>
+<h3 id="permission-map-by-service">Permission map by service</h3>
 <p>Each row lists the check IDs that depend on the actions in that service.
 If you skip a service entirely, you can drop its row from the policy and
 the scanner will emit a <code>&lt;PREFIX&gt;-000</code> degraded finding (INFO) for that
@@ -2843,7 +2810,7 @@ service rather than failing.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="copy-paste-iam-policy">Copy-paste IAM policy<a class="headerlink" href="#copy-paste-iam-policy" title="Permanent link">&para;</a></h3>
+<h3 id="copy-paste-iam-policy">Copy-paste IAM policy</h3>
 <p>Save the following as <code>pipeline-guard-readonly.json</code> and attach it to the
 role or user the scanner runs as. Every action is read-only and every
 resource is <code>*</code> because boto3 list/describe APIs do not accept
@@ -2920,7 +2887,7 @@ resource-level conditions.</p>
 <p>The policy is <strong>2.5 KB</strong> — well inside the 6,144-byte limit for a
 customer-managed policy and the 10,240-byte limit for an inline role
 policy.</p>
-<h3 id="trust-policy-for-an-iam-role">Trust policy for an IAM role<a class="headerlink" href="#trust-policy-for-an-iam-role" title="Permanent link">&para;</a></h3>
+<h3 id="trust-policy-for-an-iam-role">Trust policy for an IAM role</h3>
 <p>If you run the scanner from CI (e.g. GitHub Actions with OIDC), pair
 the policy above with a trust policy that lets your CI system assume
 the role. Below is an example for GitHub Actions OIDC; adapt for your
@@ -2946,7 +2913,7 @@ provider.</p>
 </span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">  </span><span class="p">]</span>
 </span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">}</span>
 </span></code></pre></div>
-<h3 id="behaviour-when-permissions-are-missing">Behaviour when permissions are missing<a class="headerlink" href="#behaviour-when-permissions-are-missing" title="Permanent link">&para;</a></h3>
+<h3 id="behaviour-when-permissions-are-missing">Behaviour when permissions are missing</h3>
 <p>The scanner does not fail closed when the principal lacks an action.
 Instead, the per-service enumeration records the error and the
 orchestrator emits one <code>&lt;PREFIX&gt;-000</code> finding (INFO severity) per
@@ -2962,8 +2929,8 @@ optional:</p>
   Inspector v2 is not enabled in the region.</li>
 </ul>
 <hr />
-<h2 id="codebuild">CodeBuild<a class="headerlink" href="#codebuild" title="Permanent link">&para;</a></h2>
-<h3 id="cb-001-secrets-in-plaintext-environment-variables">CB-001 — Secrets in plaintext environment variables<a class="headerlink" href="#cb-001-secrets-in-plaintext-environment-variables" title="Permanent link">&para;</a></h3>
+<h2 id="codebuild">CodeBuild</h2>
+<h3 id="cb-001-secrets-in-plaintext-environment-variables">CB-001 — Secrets in plaintext environment variables</h3>
 <p><strong>Severity:</strong> CRITICAL</p>
 <p>Checks for environment variables whose names match common secret patterns
 (PASSWORD, TOKEN, API_KEY, etc.) that are stored with type PLAINTEXT.
@@ -2973,7 +2940,7 @@ build logs to anyone with read access.</p>
 - Move secrets to AWS Secrets Manager or SSM Parameter Store (SecureString).
 - Update the CodeBuild environment variable type to <code>SECRETS_MANAGER</code> or <code>PARAMETER_STORE</code>.
 - Rotate any credentials that may have been exposed in plaintext.</p>
-<h3 id="cb-002-privileged-mode-enabled">CB-002 — Privileged mode enabled<a class="headerlink" href="#cb-002-privileged-mode-enabled" title="Permanent link">&para;</a></h3>
+<h3 id="cb-002-privileged-mode-enabled">CB-002 — Privileged mode enabled</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the CodeBuild project runs with Docker privileged mode
 enabled. Privileged mode grants the build container root-level access to
@@ -2984,7 +2951,7 @@ compromised build.</p>
 - Disable privileged mode unless the project explicitly requires Docker-in-Docker builds.
 - If privileged mode is required, ensure the buildspec is peer-reviewed and sourced from a protected branch.
 - Consider using Kaniko or AWS CodeBuild's native Docker layer caching instead of DinD.</p>
-<h3 id="cb-003-build-logging-not-enabled">CB-003 — Build logging not enabled<a class="headerlink" href="#cb-003-build-logging-not-enabled" title="Permanent link">&para;</a></h3>
+<h3 id="cb-003-build-logging-not-enabled">CB-003 — Build logging not enabled</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the CodeBuild project sends build output logs to CloudWatch
 Logs or S3. Without logs, build activity cannot be audited, security
@@ -2994,7 +2961,7 @@ undetected.</p>
 - Enable CloudWatch Logs in the project's <code>logsConfig.cloudWatchLogs</code> setting.
 - Alternatively, enable S3 logging to a protected bucket with restricted write access.
 - Set a log retention period appropriate for your compliance requirements.</p>
-<h3 id="cb-004-no-build-timeout-configured">CB-004 — No build timeout configured<a class="headerlink" href="#cb-004-no-build-timeout-configured" title="Permanent link">&para;</a></h3>
+<h3 id="cb-004-no-build-timeout-configured">CB-004 — No build timeout configured</h3>
 <p><strong>Severity:</strong> LOW</p>
 <p>Checks whether the CodeBuild project has a build timeout below the AWS
 maximum of 480 minutes. Projects left at the default ceiling allow runaway
@@ -3003,7 +2970,7 @@ pipeline stage.</p>
 <p><strong>Recommended actions</strong>
 - Set a build timeout appropriate for your expected build duration (typically 15–60 minutes).
 - Use build phase reports and CloudWatch alarms to alert on builds that approach their timeout.</p>
-<h3 id="cb-005-outdated-managed-build-image">CB-005 — Outdated managed build image<a class="headerlink" href="#cb-005-outdated-managed-build-image" title="Permanent link">&para;</a></h3>
+<h3 id="cb-005-outdated-managed-build-image">CB-005 — Outdated managed build image</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether projects using the AWS-managed CodeBuild standard image
 are on the latest major version. Older managed images may contain
@@ -3013,7 +2980,7 @@ supply-chain risk into every artifact produced by the pipeline.</p>
 - Update the environment image to the latest <code>aws/codebuild/standard:X.0</code> version.
 - Pin custom or third-party images to a specific digest rather than a mutable tag.
 - Subscribe to AWS CodeBuild release notifications to stay informed of new image versions.</p>
-<h3 id="cb-006-source-auth-uses-long-lived-token">CB-006 — Source auth uses long-lived token<a class="headerlink" href="#cb-006-source-auth-uses-long-lived-token" title="Permanent link">&para;</a></h3>
+<h3 id="cb-006-source-auth-uses-long-lived-token">CB-006 — Source auth uses long-lived token</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether a CodeBuild project with an external source (GitHub, GitHub
 Enterprise, Bitbucket) authenticates using a long-lived OAuth or personal
@@ -3027,7 +2994,7 @@ project uses.</p>
 - Replace OAuth/PAT tokens with a CodeConnections (CodeStar) connection and reference it from the project source.
 - Delete stored source credentials of type <code>OAUTH</code>, <code>PERSONAL_ACCESS_TOKEN</code>, or <code>BASIC_AUTH</code> via <code>codebuild:DeleteSourceCredentials</code>.
 - Rotate any exposed tokens and revoke them in the upstream VCS.</p>
-<h3 id="cb-007-codebuild-webhook-has-no-filter-group">CB-007 — CodeBuild webhook has no filter group<a class="headerlink" href="#cb-007-codebuild-webhook-has-no-filter-group" title="Permanent link">&para;</a></h3>
+<h3 id="cb-007-codebuild-webhook-has-no-filter-group">CB-007 — CodeBuild webhook has no filter group</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether a CodeBuild webhook defines at least one filter group.
 A webhook without filter groups triggers a build on any push from any
@@ -3038,8 +3005,8 @@ enabling poisoned-pipeline execution.</p>
 - Add an <code>ACTOR_ACCOUNT_ID</code> filter to block fork-originated builds for public repositories.
 - Scope <code>HEAD_REF</code> filters to trusted branches (main/release/*) only.</p>
 <hr />
-<h2 id="codepipeline">CodePipeline<a class="headerlink" href="#codepipeline" title="Permanent link">&para;</a></h2>
-<h3 id="cp-001-no-approval-action-before-deploy-stages">CP-001 — No approval action before deploy stages<a class="headerlink" href="#cp-001-no-approval-action-before-deploy-stages" title="Permanent link">&para;</a></h3>
+<h2 id="codepipeline">CodePipeline</h2>
+<h3 id="cp-001-no-approval-action-before-deploy-stages">CP-001 — No approval action before deploy stages</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether every Deploy stage in the pipeline is preceded by at least
 one Manual approval action. Without an approval gate, any code change can
@@ -3049,7 +3016,7 @@ control principles.</p>
 - Add a Manual approval action to a stage that precedes every Deploy stage targeting production.
 - Integrate approval notifications with your team's communication tool (e.g. Slack, email).
 - Consider using AWS CodePipeline approval rules for automated quality gates in addition to manual reviews.</p>
-<h3 id="cp-002-artifact-store-not-encrypted-with-customer-managed-kms-key">CP-002 — Artifact store not encrypted with customer-managed KMS key<a class="headerlink" href="#cp-002-artifact-store-not-encrypted-with-customer-managed-kms-key" title="Permanent link">&para;</a></h3>
+<h3 id="cp-002-artifact-store-not-encrypted-with-customer-managed-kms-key">CP-002 — Artifact store not encrypted with customer-managed KMS key</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the pipeline artifact store (S3 bucket) uses a
 customer-managed KMS key rather than the default AWS-managed key (SSE-S3).
@@ -3059,7 +3026,7 @@ pipeline artifacts.</p>
 - Create a customer-managed KMS key and assign it as the <code>encryptionKey</code> in each artifact store configuration.
 - Apply a key policy that restricts decrypt access to only the pipeline execution role.
 - Enable CloudTrail logging of KMS API calls to audit all artifact decryption events.</p>
-<h3 id="cp-003-source-stage-using-polling-instead-of-event-driven-trigger">CP-003 — Source stage using polling instead of event-driven trigger<a class="headerlink" href="#cp-003-source-stage-using-polling-instead-of-event-driven-trigger" title="Permanent link">&para;</a></h3>
+<h3 id="cp-003-source-stage-using-polling-instead-of-event-driven-trigger">CP-003 — Source stage using polling instead of event-driven trigger</h3>
 <p><strong>Severity:</strong> LOW</p>
 <p>Checks whether any Source action has <code>PollForSourceChanges=true</code>, meaning
 the pipeline polls for changes rather than being triggered by an event.
@@ -3069,7 +3036,7 @@ rapid successive changes.</p>
 - Set <code>PollForSourceChanges=false</code> on all Source actions.
 - Configure an Amazon EventBridge rule or CodeCommit trigger to start the pipeline on change.
 - For GitHub sources, use a CodeStar connection with webhook-based triggering.</p>
-<h3 id="cp-004-legacy-thirdpartygithub-source-action-oauth-token">CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)<a class="headerlink" href="#cp-004-legacy-thirdpartygithub-source-action-oauth-token" title="Permanent link">&para;</a></h3>
+<h3 id="cp-004-legacy-thirdpartygithub-source-action-oauth-token">CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Flags Source actions using the deprecated <code>owner=ThirdParty</code>,
 <code>provider=GitHub</code> configuration. This path authenticates via a long-lived
@@ -3080,8 +3047,8 @@ automatically and is visible to anyone with <code>codepipeline:GetPipeline</code
 - Revoke the legacy OAuth token once migration is complete.
 - Audit git history for any leaked OAuth tokens committed alongside old pipeline definitions.</p>
 <hr />
-<h2 id="codedeploy">CodeDeploy<a class="headerlink" href="#codedeploy" title="Permanent link">&para;</a></h2>
-<h3 id="cd-001-automatic-rollback-on-failure-not-enabled">CD-001 — Automatic rollback on failure not enabled<a class="headerlink" href="#cd-001-automatic-rollback-on-failure-not-enabled" title="Permanent link">&para;</a></h3>
+<h2 id="codedeploy">CodeDeploy</h2>
+<h3 id="cd-001-automatic-rollback-on-failure-not-enabled">CD-001 — Automatic rollback on failure not enabled</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the CodeDeploy deployment group has
 <code>autoRollbackConfiguration</code> enabled with the <code>DEPLOYMENT_FAILURE</code> event.
@@ -3092,7 +3059,7 @@ intervenes.</p>
 - Enable <code>autoRollbackConfiguration</code> on the deployment group with at least the <code>DEPLOYMENT_FAILURE</code> event.
 - Consider also adding <code>DEPLOYMENT_STOP_ON_ALARM</code> to roll back when health metrics degrade.
 - Test rollback behaviour in a non-production environment to validate the configuration.</p>
-<h3 id="cd-002-allatonce-deployment-config-no-canary-or-rolling-strategy">CD-002 — AllAtOnce deployment config — no canary or rolling strategy<a class="headerlink" href="#cd-002-allatonce-deployment-config-no-canary-or-rolling-strategy" title="Permanent link">&para;</a></h3>
+<h3 id="cd-002-allatonce-deployment-config-no-canary-or-rolling-strategy">CD-002 — AllAtOnce deployment config — no canary or rolling strategy</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the deployment group uses an AllAtOnce configuration
 (<code>CodeDeployDefault.AllAtOnce</code>, <code>LambdaAllAtOnce</code>, or <code>ECSAllAtOnce</code>).
@@ -3103,7 +3070,7 @@ validation window.</p>
 - Switch to a canary deployment configuration (e.g. <code>CodeDeployDefault.LambdaCanary10Percent5Minutes</code>).
 - For EC2/on-premises workloads, use a rolling or half-at-a-time deployment config.
 - Pair the graduated deployment with CloudWatch alarms to trigger automatic rollback on error spikes.</p>
-<h3 id="cd-003-no-cloudwatch-alarm-monitoring-on-deployment-group">CD-003 — No CloudWatch alarm monitoring on deployment group<a class="headerlink" href="#cd-003-no-cloudwatch-alarm-monitoring-on-deployment-group" title="Permanent link">&para;</a></h3>
+<h3 id="cd-003-no-cloudwatch-alarm-monitoring-on-deployment-group">CD-003 — No CloudWatch alarm monitoring on deployment group</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the CodeDeploy deployment group has at least one CloudWatch
 alarm configured in its <code>alarmConfiguration</code>. Without alarm-based
@@ -3114,8 +3081,8 @@ deployment will not automatically halt or roll back the release.</p>
 - Enable <code>alarmConfiguration.enabled</code> and set <code>ignoreAlarmMembershipErrors</code> to false.
 - Combine with auto-rollback on <code>DEPLOYMENT_STOP_ON_ALARM</code> to create a self-healing deployment pipeline.</p>
 <hr />
-<h2 id="ecr">ECR<a class="headerlink" href="#ecr" title="Permanent link">&para;</a></h2>
-<h3 id="ecr-001-image-scanning-on-push-not-enabled">ECR-001 — Image scanning on push not enabled<a class="headerlink" href="#ecr-001-image-scanning-on-push-not-enabled" title="Permanent link">&para;</a></h3>
+<h2 id="ecr">ECR</h2>
+<h3 id="ecr-001-image-scanning-on-push-not-enabled">ECR-001 — Image scanning on push not enabled</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the ECR repository has
 <code>imageScanningConfiguration.scanOnPush</code> enabled. Without scan-on-push,
@@ -3126,7 +3093,7 @@ production.</p>
 - Enable <code>imageScanningConfiguration.scanOnPush</code> on the repository.
 - Consider enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 - Integrate scan results into your CI/CD pipeline and fail builds on HIGH or CRITICAL findings.</p>
-<h3 id="ecr-002-image-tags-are-mutable">ECR-002 — Image tags are mutable<a class="headerlink" href="#ecr-002-image-tags-are-mutable" title="Permanent link">&para;</a></h3>
+<h3 id="ecr-002-image-tags-are-mutable">ECR-002 — Image tags are mutable</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the repository has <code>imageTagMutability</code> set to <code>IMMUTABLE</code>.
 With mutable tags, any principal with <code>ecr:PutImage</code> can silently overwrite
@@ -3137,7 +3104,7 @@ verifying a digest.</p>
 - Set <code>imageTagMutability=IMMUTABLE</code> on the repository.
 - Reference container images by digest (<code>sha256:...</code>) in deployment manifests for the strongest immutability guarantees.
 - Enforce digest-pinning in your container admission controller or policy engine.</p>
-<h3 id="ecr-003-repository-policy-allows-public-access">ECR-003 — Repository policy allows public access<a class="headerlink" href="#ecr-003-repository-policy-allows-public-access" title="Permanent link">&para;</a></h3>
+<h3 id="ecr-003-repository-policy-allows-public-access">ECR-003 — Repository policy allows public access</h3>
 <p><strong>Severity:</strong> CRITICAL</p>
 <p>Checks whether the repository resource-based policy contains any Allow
 statement with a wildcard principal (<code>Principal: '*'</code>). Such statements
@@ -3147,7 +3114,7 @@ potentially allowing unauthorised image pulls or pushes.</p>
 - Remove wildcard principals from the repository policy.
 - Grant pull access only to specific AWS account IDs or IAM principals that require it.
 - If cross-account access is needed, use explicit account principal ARNs with the minimum necessary actions.</p>
-<h3 id="ecr-004-no-lifecycle-policy-configured">ECR-004 — No lifecycle policy configured<a class="headerlink" href="#ecr-004-no-lifecycle-policy-configured" title="Permanent link">&para;</a></h3>
+<h3 id="ecr-004-no-lifecycle-policy-configured">ECR-004 — No lifecycle policy configured</h3>
 <p><strong>Severity:</strong> LOW</p>
 <p>Checks whether the ECR repository has a lifecycle policy defined. Without
 automated image cleanup, old and potentially vulnerable images accumulate
@@ -3157,7 +3124,7 @@ able to pull older tagged images.</p>
 - Add a lifecycle policy that expires untagged images after a short period (e.g. 7 days).
 - Limit the number of tagged image versions retained (e.g. keep the last 10 tagged images).
 - Test the lifecycle policy in a non-production repository before applying it to critical repos.</p>
-<h3 id="ecr-005-repository-encrypted-with-aes256-rather-than-kms-cmk">ECR-005 — Repository encrypted with AES256 rather than KMS CMK<a class="headerlink" href="#ecr-005-repository-encrypted-with-aes256-rather-than-kms-cmk" title="Permanent link">&para;</a></h3>
+<h3 id="ecr-005-repository-encrypted-with-aes256-rather-than-kms-cmk">ECR-005 — Repository encrypted with AES256 rather than KMS CMK</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the repository uses <code>encryptionType=KMS</code> with a
 customer-managed key. The default AES256 option uses an AWS-managed key
@@ -3168,8 +3135,8 @@ restricted per-principal.</p>
 - Apply a restrictive key policy limiting decrypt to the pipeline execution role.
 - Enable CloudTrail logging of KMS calls for audit of every image pull that decrypts layers.</p>
 <hr />
-<h2 id="iam">IAM<a class="headerlink" href="#iam" title="Permanent link">&para;</a></h2>
-<h3 id="iam-001-cicd-role-has-administratoraccess-policy-attached">IAM-001 — CI/CD role has AdministratorAccess policy attached<a class="headerlink" href="#iam-001-cicd-role-has-administratoraccess-policy-attached" title="Permanent link">&para;</a></h3>
+<h2 id="iam">IAM</h2>
+<h3 id="iam-001-cicd-role-has-administratoraccess-policy-attached">IAM-001 — CI/CD role has AdministratorAccess policy attached</h3>
 <p><strong>Severity:</strong> CRITICAL</p>
 <p>Checks whether any IAM role with a CI/CD service trust (CodeBuild,
 CodePipeline, or CodeDeploy) has the AWS-managed <code>AdministratorAccess</code>
@@ -3179,7 +3146,7 @@ resources; a compromised pipeline can perform any action in the account.</p>
 - Replace <code>AdministratorAccess</code> with least-privilege policies scoped to the specific actions the role requires.
 - Use IAM Access Analyzer to identify and remove unused permissions.
 - Apply Service Control Policies (SCPs) at the AWS Organizations level to further constrain CI/CD role capabilities.</p>
-<h3 id="iam-002-cicd-role-has-wildcard-action-in-attached-policy">IAM-002 — CI/CD role has wildcard Action in attached policy<a class="headerlink" href="#iam-002-cicd-role-has-wildcard-action-in-attached-policy" title="Permanent link">&para;</a></h3>
+<h3 id="iam-002-cicd-role-has-wildcard-action-in-attached-policy">IAM-002 — CI/CD role has wildcard Action in attached policy</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks every reachable policy on a CI/CD service role — inline policies
 and the default version of attached customer-managed policies — for an
@@ -3192,7 +3159,7 @@ policies are intentionally skipped here; IAM-001 handles
 - Replace wildcard actions with the specific IAM actions the role actually requires.
 - Use CloudTrail last-access data and IAM Access Analyzer to identify the minimal required action set.
 - Periodically review and tighten inline policies as pipeline requirements evolve.</p>
-<h3 id="iam-003-cicd-role-has-no-permission-boundary">IAM-003 — CI/CD role has no permission boundary<a class="headerlink" href="#iam-003-cicd-role-has-no-permission-boundary" title="Permanent link">&para;</a></h3>
+<h3 id="iam-003-cicd-role-has-no-permission-boundary">IAM-003 — CI/CD role has no permission boundary</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether CI/CD service roles have a permissions boundary attached.
 Without a boundary, the role's effective permissions are limited only by
@@ -3203,7 +3170,7 @@ attacker.</p>
 - Attach a permissions boundary to each CI/CD service role defining the maximum permissions it can ever be granted.
 - Create a managed boundary policy that excludes sensitive actions (e.g. <code>iam:CreateRole</code>, <code>iam:AttachRolePolicy</code> without conditions).
 - Enforce boundary attachment through an SCP or IAM condition on role creation.</p>
-<h3 id="iam-004-cicd-role-can-passrole-to-any-role">IAM-004 — CI/CD role can PassRole to any role<a class="headerlink" href="#iam-004-cicd-role-can-passrole-to-any-role" title="Permanent link">&para;</a></h3>
+<h3 id="iam-004-cicd-role-can-passrole-to-any-role">IAM-004 — CI/CD role can PassRole to any role</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether any policy attached to the CI/CD role grants
 <code>iam:PassRole</code> (or <code>iam:*</code> or <code>*</code>) with <code>Resource: '*'</code>. A build that can
@@ -3213,7 +3180,7 @@ trusts, which is a classic CI/CD privilege-escalation path.</p>
 - Restrict <code>iam:PassRole</code> to the specific role ARNs the pipeline must hand off to.
 - Add a <code>Condition</code> with <code>iam:PassedToService</code> restricting the destination service.
 - Use IAM Access Analyzer to confirm the policy surface after tightening.</p>
-<h3 id="iam-005-cicd-role-trust-policy-missing-stsexternalid">IAM-005 — CI/CD role trust policy missing sts:ExternalId<a class="headerlink" href="#iam-005-cicd-role-trust-policy-missing-stsexternalid" title="Permanent link">&para;</a></h3>
+<h3 id="iam-005-cicd-role-trust-policy-missing-stsexternalid">IAM-005 — CI/CD role trust policy missing sts:ExternalId</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the role's trust policy allows assumption by an AWS
 account principal without an <code>sts:ExternalId</code> condition. External-account
@@ -3223,7 +3190,7 @@ described in the IAM Best Practices.</p>
 - Add a <code>Condition</code> requiring <code>sts:ExternalId</code> for every external-principal statement.
 - Prefer service-linked principals over AWS account principals wherever possible.
 - Rotate ExternalIds on a regular schedule and treat them as secrets.</p>
-<h3 id="iam-006-sensitive-actions-granted-with-wildcard-resource">IAM-006 — Sensitive actions granted with wildcard Resource<a class="headerlink" href="#iam-006-sensitive-actions-granted-with-wildcard-resource" title="Permanent link">&para;</a></h3>
+<h3 id="iam-006-sensitive-actions-granted-with-wildcard-resource">IAM-006 — Sensitive actions granted with wildcard Resource</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Flags Allow statements that scope <code>Action</code> (not to <code>'*'</code>) but leave
 <code>Resource</code> as <code>'*'</code> for sensitive services — <code>s3</code>, <code>kms</code>, <code>secretsmanager</code>,
@@ -3235,11 +3202,11 @@ resource" pattern that evades it.</p>
 - Where wildcards are unavoidable (e.g. <code>ec2:Describe*</code>), isolate those statements from write actions.
 - Use IAM Access Analyzer last-access data to produce tighter policies automatically.</p>
 <hr />
-<h2 id="pbac-pipeline-based-access-control">PBAC (Pipeline-Based Access Control)<a class="headerlink" href="#pbac-pipeline-based-access-control" title="Permanent link">&para;</a></h2>
+<h2 id="pbac-pipeline-based-access-control">PBAC (Pipeline-Based Access Control)</h2>
 <p>PBAC checks target the boundary between the pipeline itself and the
 resources it can reach — network reachability and service-role sharing
 across projects.</p>
-<h3 id="pbac-001-codebuild-project-has-no-vpc-configuration">PBAC-001 — CodeBuild project has no VPC configuration<a class="headerlink" href="#pbac-001-codebuild-project-has-no-vpc-configuration" title="Permanent link">&para;</a></h3>
+<h3 id="pbac-001-codebuild-project-has-no-vpc-configuration">PBAC-001 — CodeBuild project has no VPC configuration</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether a CodeBuild project runs with an attached <code>vpcConfig</code>
 block. Without VPC isolation the build container executes on a shared
@@ -3249,7 +3216,7 @@ exfiltrate secrets or artifacts to any destination on the public internet.</p>
 - Attach <code>vpcConfig</code> pointing the project at a private subnet with an egress-controlled security group.
 - Route required traffic through VPC endpoints (S3, ECR, Secrets Manager, CloudWatch Logs) instead of public internet.
 - Deny <code>0.0.0.0/0</code> egress on the build security group unless strictly required.</p>
-<h3 id="pbac-002-codebuild-service-role-shared-across-projects">PBAC-002 — CodeBuild service role shared across projects<a class="headerlink" href="#pbac-002-codebuild-service-role-shared-across-projects" title="Permanent link">&para;</a></h3>
+<h3 id="pbac-002-codebuild-service-role-shared-across-projects">PBAC-002 — CodeBuild service role shared across projects</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether multiple CodeBuild projects reuse the same <code>serviceRole</code>.
 A shared role means any single project's compromise grants the attacker
@@ -3260,8 +3227,8 @@ cross-pipeline escalation path PBAC is meant to prevent.</p>
 - If role duplication is unavoidable, group only projects with identical trust boundaries.
 - Detect new shared-role situations with an AWS Config rule or a recurring scan via this tool.</p>
 <hr />
-<h2 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">&para;</a></h2>
-<h3 id="s3-001-artifact-bucket-public-access-block-not-fully-enabled">S3-001 — Artifact bucket public access block not fully enabled<a class="headerlink" href="#s3-001-artifact-bucket-public-access-block-not-fully-enabled" title="Permanent link">&para;</a></h3>
+<h2 id="s3">S3</h2>
+<h3 id="s3-001-artifact-bucket-public-access-block-not-fully-enabled">S3-001 — Artifact bucket public access block not fully enabled</h3>
 <p><strong>Severity:</strong> CRITICAL</p>
 <p>Checks whether all four S3 Block Public Access settings are enabled on
 CodePipeline artifact buckets: <code>BlockPublicAcls</code>, <code>IgnorePublicAcls</code>,
@@ -3272,7 +3239,7 @@ permissive.</p>
 - Enable all four Block Public Access settings on every artifact bucket.
 - Apply the same settings at the AWS account level as a catch-all default.
 - Use AWS Config rule <code>s3-bucket-public-read-prohibited</code> to continuously audit public access.</p>
-<h3 id="s3-002-artifact-bucket-server-side-encryption-not-configured">S3-002 — Artifact bucket server-side encryption not configured<a class="headerlink" href="#s3-002-artifact-bucket-server-side-encryption-not-configured" title="Permanent link">&para;</a></h3>
+<h3 id="s3-002-artifact-bucket-server-side-encryption-not-configured">S3-002 — Artifact bucket server-side encryption not configured</h3>
 <p><strong>Severity:</strong> HIGH</p>
 <p>Checks whether the CodePipeline artifact bucket has a default server-side
 encryption rule configured. Without encryption at rest, pipeline artifacts
@@ -3282,7 +3249,7 @@ unencrypted, increasing exposure if S3 access controls are misconfigured.</p>
 - Enable default bucket encryption using at minimum AES256 (SSE-S3).
 - For stronger key control, use SSE-KMS with a customer-managed key.
 - Enforce encryption-in-transit by adding a bucket policy that denies requests without <code>aws:SecureTransport</code>.</p>
-<h3 id="s3-003-artifact-bucket-versioning-not-enabled">S3-003 — Artifact bucket versioning not enabled<a class="headerlink" href="#s3-003-artifact-bucket-versioning-not-enabled" title="Permanent link">&para;</a></h3>
+<h3 id="s3-003-artifact-bucket-versioning-not-enabled">S3-003 — Artifact bucket versioning not enabled</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether versioning is enabled on the CodePipeline artifact bucket.
 Without versioning, overwritten or deleted artifacts cannot be recovered,
@@ -3292,7 +3259,7 @@ incident or accidental overwrite.</p>
 - Enable S3 versioning on every artifact bucket.
 - Pair versioning with a lifecycle rule that expires non-current versions after your retention period.
 - Consider enabling MFA Delete for additional protection against accidental or malicious deletion.</p>
-<h3 id="s3-004-artifact-bucket-access-logging-not-enabled">S3-004 — Artifact bucket access logging not enabled<a class="headerlink" href="#s3-004-artifact-bucket-access-logging-not-enabled" title="Permanent link">&para;</a></h3>
+<h3 id="s3-004-artifact-bucket-access-logging-not-enabled">S3-004 — Artifact bucket access logging not enabled</h3>
 <p><strong>Severity:</strong> LOW</p>
 <p>Checks whether S3 server access logging is enabled on CodePipeline
 artifact buckets. Without access logs it is not possible to audit who
@@ -3302,7 +3269,7 @@ investigation.</p>
 - Enable S3 server access logging and direct logs to a separate, centralised logging bucket.
 - Restrict write access to the logging bucket so log entries cannot be tampered with.
 - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.</p>
-<h3 id="s3-005-artifact-bucket-missing-awssecuretransport-deny">S3-005 — Artifact bucket missing aws:SecureTransport deny<a class="headerlink" href="#s3-005-artifact-bucket-missing-awssecuretransport-deny" title="Permanent link">&para;</a></h3>
+<h3 id="s3-005-artifact-bucket-missing-awssecuretransport-deny">S3-005 — Artifact bucket missing aws:SecureTransport deny</h3>
 <p><strong>Severity:</strong> MEDIUM</p>
 <p>Checks whether the artifact bucket has a bucket policy that denies
 <code>s3:*</code> when <code>aws:SecureTransport</code> is false. Without this deny, plaintext
@@ -3313,14 +3280,14 @@ traverse the network unencrypted.</p>
 - Apply the deny at the AWS account level via an SCP for defence-in-depth.
 - Validate the policy with AWS Access Analyzer before applying to production buckets.</p>
 <hr />
-<h2 id="rule-based-checks-phase-1-3">Rule-based checks (Phase 1-3)<a class="headerlink" href="#rule-based-checks-phase-1-3" title="Permanent link">&para;</a></h2>
+<h2 id="rule-based-checks-phase-1-3">Rule-based checks (Phase 1-3)</h2>
 <p>Every check below is one module under
 <code>pipeline_check/core/checks/aws/rules/&lt;id&gt;_&lt;slug&gt;.py</code>. Each exports a
 <code>RULE</code> (metadata) and a <code>check(catalog)</code> callable. Full description,
 recommendation, and prose live in the rule module itself; the
 orchestrator (<code>AWSRuleChecks</code> in <code>aws/workflows.py</code>) loads every rule
 and passes a shared <code>ResourceCatalog</code>.</p>
-<h3 id="codebuild-cb-008010">CodeBuild (CB-008..010)<a class="headerlink" href="#codebuild-cb-008010" title="Permanent link">&para;</a></h3>
+<h3 id="codebuild-cb-008010">CodeBuild (CB-008..010)</h3>
 <table>
 <thead>
 <tr>
@@ -3351,7 +3318,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="cloudtrail-ct-001003">CloudTrail (CT-001..003)<a class="headerlink" href="#cloudtrail-ct-001003" title="Permanent link">&para;</a></h3>
+<h3 id="cloudtrail-ct-001003">CloudTrail (CT-001..003)</h3>
 <table>
 <thead>
 <tr>
@@ -3382,7 +3349,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="cloudwatch-logs-cwl-001-002">CloudWatch Logs (CWL-001, 002)<a class="headerlink" href="#cloudwatch-logs-cwl-001-002" title="Permanent link">&para;</a></h3>
+<h3 id="cloudwatch-logs-cwl-001-002">CloudWatch Logs (CWL-001, 002)</h3>
 <table>
 <thead>
 <tr>
@@ -3407,7 +3374,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="secrets-manager-sm-001-002">Secrets Manager (SM-001, 002)<a class="headerlink" href="#secrets-manager-sm-001-002" title="Permanent link">&para;</a></h3>
+<h3 id="secrets-manager-sm-001-002">Secrets Manager (SM-001, 002)</h3>
 <table>
 <thead>
 <tr>
@@ -3432,7 +3399,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="iam-iam-007-008">IAM (IAM-007, 008)<a class="headerlink" href="#iam-iam-007-008" title="Permanent link">&para;</a></h3>
+<h3 id="iam-iam-007-008">IAM (IAM-007, 008)</h3>
 <table>
 <thead>
 <tr>
@@ -3457,7 +3424,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="codeartifact-ca-001004">CodeArtifact (CA-001..004)<a class="headerlink" href="#codeartifact-ca-001004" title="Permanent link">&para;</a></h3>
+<h3 id="codeartifact-ca-001004">CodeArtifact (CA-001..004)</h3>
 <table>
 <thead>
 <tr>
@@ -3494,7 +3461,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="codecommit-ccm-001003">CodeCommit (CCM-001..003)<a class="headerlink" href="#codecommit-ccm-001003" title="Permanent link">&para;</a></h3>
+<h3 id="codecommit-ccm-001003">CodeCommit (CCM-001..003)</h3>
 <table>
 <thead>
 <tr>
@@ -3525,7 +3492,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="lambda-lmb-001004">Lambda (LMB-001..004)<a class="headerlink" href="#lambda-lmb-001004" title="Permanent link">&para;</a></h3>
+<h3 id="lambda-lmb-001004">Lambda (LMB-001..004)</h3>
 <table>
 <thead>
 <tr>
@@ -3562,7 +3529,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="kms-kms-001-002">KMS (KMS-001, 002)<a class="headerlink" href="#kms-kms-001-002" title="Permanent link">&para;</a></h3>
+<h3 id="kms-kms-001-002">KMS (KMS-001, 002)</h3>
 <table>
 <thead>
 <tr>
@@ -3587,7 +3554,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="ssm-parameter-store-ssm-001-002">SSM Parameter Store (SSM-001, 002)<a class="headerlink" href="#ssm-parameter-store-ssm-001-002" title="Permanent link">&para;</a></h3>
+<h3 id="ssm-parameter-store-ssm-001-002">SSM Parameter Store (SSM-001, 002)</h3>
 <table>
 <thead>
 <tr>
@@ -3612,7 +3579,7 @@ and passes a shared <code>ResourceCatalog</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="phase-3-deeper-detections">Phase-3 deeper detections<a class="headerlink" href="#phase-3-deeper-detections" title="Permanent link">&para;</a></h3>
+<h3 id="phase-3-deeper-detections">Phase-3 deeper detections</h3>
 <table>
 <thead>
 <tr>
@@ -3696,8 +3663,8 @@ for a service, the orchestrator emits one <code>&lt;PREFIX&gt;-000</code> findin
 severity) per failed service — <code>CT-000</code>, <code>CA-000</code>, <code>LMB-000</code>, etc. —
 instead of every dependent rule emitting its own error copy.</p>
 <hr />
-<h2 id="adding-a-new-aws-check">Adding a new AWS check<a class="headerlink" href="#adding-a-new-aws-check" title="Permanent link">&para;</a></h2>
-<h3 id="rule-based-preferred">Rule-based (preferred)<a class="headerlink" href="#rule-based-preferred" title="Permanent link">&para;</a></h3>
+<h2 id="adding-a-new-aws-check">Adding a new AWS check</h2>
+<h3 id="rule-based-preferred">Rule-based (preferred)</h3>
 <ol>
 <li>Drop a single module in <code>pipeline_check/core/checks/aws/rules/&lt;id&gt;_&lt;slug&gt;.py</code>
    exporting a <code>RULE</code> (metadata) and a <code>check(catalog)</code> callable. The
@@ -3712,7 +3679,7 @@ instead of every dependent rule emitting its own error copy.</p>
    <code>pipeline_check/core/checks/terraform/{extended,services,phase3}.py</code> so
    shift-left scans stay at parity with runtime.</li>
 </ol>
-<h3 id="class-based-legacy-for-large-new-service-modules">Class-based (legacy, for large new service modules)<a class="headerlink" href="#class-based-legacy-for-large-new-service-modules" title="Permanent link">&para;</a></h3>
+<h3 id="class-based-legacy-for-large-new-service-modules">Class-based (legacy, for large new service modules)</h3>
 <ol>
 <li>Create <code>pipeline_check/core/checks/aws/&lt;service&gt;.py</code> subclassing
    <code>AWSBaseCheck</code>. Use <code>self.client("&lt;svc&gt;")</code> (retry-configured, cached).</li>
@@ -3765,11 +3732,6 @@ instead of every dependent rule emitting its own error copy.</p>
     </div>
   
   
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
 </div>
       
         <div class="md-social">
@@ -3808,7 +3770,7 @@ instead of every dependent rule emitting its own error copy.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
