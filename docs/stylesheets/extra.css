@@ -586,7 +586,24 @@ body {
 .md-header__button:hover { color: var(--pg-teal-500); }
 [data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
 
-/* Tabs row: tighter, with dropdown submenus */
+/* Tabs row: tighter, with dropdown submenus.
+   Material's defaults give .md-tabs and its inner wrappers an
+   overflow-x: auto to handle horizontal scroll on narrow viewports.
+   That same clip hides the dropdown menus that extend BELOW the
+   bar — so we explicitly clear overflow on every wrapper layer
+   and lift z-index above the page content. */
+.md-tabs,
+.md-tabs__inner,
+.md-tabs > .md-grid,
+.md-tabs__list {
+  overflow: visible !important;
+}
+
+.md-tabs {
+  position: relative;
+  z-index: 5;
+}
+
 .md-tabs__list {
   padding: 0 0.4rem;
 }
