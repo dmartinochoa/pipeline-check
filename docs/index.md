@@ -6,18 +6,18 @@ hide:
   - toc
 ---
 
-<section class="pg-hero" markdown>
+<section class="pg-hero">
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-<span class="pg-hero__eyebrow"><span class="dot"></span>Open source · MIT licensed</span>
+<span class="pg-hero__wordmark">pipeline-check · v0.2.1</span>
 
-# Find security risks in your <span class="accent">CI/CD pipelines</span> before attackers do.
+# Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-Pipeline-Check scans CI/CD configurations across ten platforms and a live AWS account
-against the <strong>OWASP Top 10 CI/CD Risks</strong> plus twelve other compliance
-frameworks. Every finding ships with a fix, a control mapping, and a CI gate.
+A read-only scanner for ten CI/CD providers and live AWS — graded against
+the OWASP Top 10 CI/CD Risks plus twelve compliance frameworks. Every
+finding ships with a control mapping, a fix, and a CI gate.
 </p>
 
 <div class="pg-hero__cta">
@@ -25,18 +25,21 @@ frameworks. Every finding ships with a fix, a control mapping, and a CI gate.
   <a class="md-button" href="https://github.com/dmartinochoa/pipeline-check" target="_blank" rel="noopener">View on GitHub</a>
 </div>
 
-<div class="pg-hero__badges">
-  <a href="https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml"><img alt="CI" src="https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/pipeline-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pipeline-check.svg"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue">
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg">
+<div class="pg-hero__meta">
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> MIT licensed</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> No telemetry</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> No API tokens</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Python 3.10+</span>
 </div>
 </div>
 
 <div class="pg-terminal" aria-hidden="true">
   <div class="pg-terminal__chrome">
-    <span class="red"></span><span class="amber"></span><span class="green"></span>
-    <span class="title">~/projects/payments-api</span>
+    <span class="pg-terminal__file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      payments-api · github
+    </span>
+    <span class="pg-terminal__tag">scan</span>
   </div>
 <div class="pg-terminal__body"><span class="prompt">$</span> pipeline_check <span class="arg">--pipeline github</span>
 
@@ -63,7 +66,7 @@ frameworks. Every finding ships with a fix, a control mapping, and a CI gate.
 </div>
 </section>
 
-<section class="pg-stats" markdown>
+<section class="pg-stats">
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num">330+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">10</div><div class="pg-stat__label">Providers</div></div>
@@ -73,113 +76,115 @@ frameworks. Every finding ships with a fix, a control mapping, and a CI gate.
 </section>
 
 <section class="pg-section" markdown>
-<div class="pg-section__eyebrow">Why Pipeline-Check</div>
+<div class="pg-section__head" markdown>
+<div class="pg-section__eyebrow">// capabilities</div>
 <h2 class="pg-section__title">One scanner. Every pipeline you ship through.</h2>
 <p class="pg-section__lede">
-The same severity model and report format whether you're scanning a Jenkinsfile,
-a Terraform plan, or a live AWS account. Every finding is mapped to OWASP, NIST
-SSDF, SLSA, and the rest — so you can answer audit questions without leaving the
-tool.
+Same severity model and report format whether you're scanning a Jenkinsfile,
+a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
+NIST SSDF, SLSA, and the rest — so audit answers don't require leaving the tool.
 </p>
+</div>
 
 <div class="pg-features" markdown>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 </div>
 ### OWASP 10/10 coverage
-Every one of the OWASP Top 10 CI/CD Security Risks has at least one check across
+Every one of the OWASP Top 10 CI/CD Security Risks has at least one rule across
 the supported providers. New risks land here before they land in your pipeline.
-[Read more →](standards/owasp_cicd_top_10.md)
+<a class="pg-feature__link" href="standards/owasp_cicd_top_10/">Read more</a>
 </div>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 </div>
 ### Live AWS + shift-left IaC
 Scan a running AWS account through boto3, *or* scan Terraform plans and
-CloudFormation templates before provisioning — same rule IDs, same severities.
-[AWS reference →](providers/aws.md)
+CloudFormation templates before provisioning. Same rule IDs, same severities.
+<a class="pg-feature__link" href="providers/aws/">AWS reference</a>
 </div>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 </div>
 ### CI gate that does its job
 Severity thresholds, baseline diffs against a git ref, ignore files with
-expiries, glob check selection, autofix emit-or-apply. Failing your build is the
-default; turning it off is opt-in.
-[CI gate →](ci_gate.md)
+expiries, glob check selection, autofix emit-or-apply. Failing the build is
+the default; turning it off is opt-in.
+<a class="pg-feature__link" href="ci_gate/">CI gate</a>
 </div>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
 Multi-finding chains mapped to MITRE ATT&CK. See the kill chain — token leak →
 artifact poisoning → production push — instead of three disconnected findings.
-[Attack chains →](attack_chains.md)
+<a class="pg-feature__link" href="attack_chains/">Attack chains</a>
 </div>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 ### Output that integrates
 Rich terminal table for humans, JSON for scripts, HTML report with client-side
-filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for
-DevOps.
-[Output formats →](output.md)
+filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOps.
+<a class="pg-feature__link" href="output/">Output formats</a>
 </div>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 </div>
-### No telemetry, no API tokens
+### Zero phone-home
 Workflow files are parsed from disk. AWS uses the standard boto3 credential
-chain. Nothing leaves your machine. MIT licensed, no phone-home, no account.
-[GitHub →](https://github.com/dmartinochoa/pipeline-check)
+chain. Nothing leaves your machine. MIT licensed, no signup, no account.
+<a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a>
 </div>
 
-</div>
-</section>
-
-<section class="pg-section--alt">
-<div class="pg-section__inner" markdown>
-<div class="pg-section__eyebrow">Providers</div>
-<h2 class="pg-section__title">Wherever your builds run.</h2>
-<p class="pg-section__lede">
-Auto-detect picks the provider for you, or pass <code>--pipeline &lt;name&gt;</code>
-to force one. Counts below reflect the current rule catalogue.
-</p>
-
-<div class="pg-providers" markdown>
-  <a class="pg-provider" href="providers/aws/">AWS<span class="pg-provider__count">71 checks</span></a>
-  <a class="pg-provider" href="providers/terraform/">Terraform<span class="pg-provider__count">parity</span></a>
-  <a class="pg-provider" href="providers/cloudformation/">CloudFormation<span class="pg-provider__count">~63 checks</span></a>
-  <a class="pg-provider" href="providers/github/">GitHub Actions<span class="pg-provider__count">29 checks</span></a>
-  <a class="pg-provider" href="providers/gitlab/">GitLab CI<span class="pg-provider__count">30 checks</span></a>
-  <a class="pg-provider" href="providers/bitbucket/">Bitbucket<span class="pg-provider__count">27 checks</span></a>
-  <a class="pg-provider" href="providers/azure/">Azure DevOps<span class="pg-provider__count">28 checks</span></a>
-  <a class="pg-provider" href="providers/jenkins/">Jenkins<span class="pg-provider__count">31 checks</span></a>
-  <a class="pg-provider" href="providers/circleci/">CircleCI<span class="pg-provider__count">30 checks</span></a>
-  <a class="pg-provider" href="providers/cloudbuild/">Cloud Build<span class="pg-provider__count">9 checks</span></a>
-</div>
 </div>
 </section>
 
 <section class="pg-section" markdown>
-<div class="pg-section__eyebrow">How it works</div>
-<h2 class="pg-section__title">Inputs in, graded report out.</h2>
+<div class="pg-section__head" markdown>
+<div class="pg-section__eyebrow">// providers</div>
+<h2 class="pg-section__title">Wherever your builds run.</h2>
 <p class="pg-section__lede">
-A single scan flow: detect the provider, parse its config (or hit boto3 for
-AWS), run rules, score, gate.
+Auto-detect picks the provider for you, or pass <code>--pipeline &lt;name&gt;</code>
+to force one. Counts reflect the current rule catalogue.
 </p>
+</div>
+
+<div class="pg-providers">
+  <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">71 checks</span></a>
+  <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">aws-parity</span></a>
+  <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">~63 checks</span></a>
+  <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">29 checks</span></a>
+  <a class="pg-provider" href="providers/gitlab/"><span class="pg-provider__name">GitLab CI</span><span class="pg-provider__count">30 checks</span></a>
+  <a class="pg-provider" href="providers/bitbucket/"><span class="pg-provider__name">Bitbucket</span><span class="pg-provider__count">27 checks</span></a>
+  <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">28 checks</span></a>
+  <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">31 checks</span></a>
+  <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">30 checks</span></a>
+  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">9 checks</span></a>
+</div>
+</section>
+
+<section class="pg-section" markdown>
+<div class="pg-section__head" markdown>
+<div class="pg-section__eyebrow">// flow</div>
+<h2 class="pg-section__title">Inputs in. Graded report out.</h2>
+<p class="pg-section__lede">
+A single scan path: detect the provider, parse its config (or hit boto3),
+run rules, score, gate.
+</p>
+</div>
 
 ```mermaid
 flowchart LR
@@ -202,13 +207,10 @@ flowchart LR
 ## Ship pipelines you trust.
 <p>Install in under 30 seconds. Scan your first repo in under a minute.</p>
 
-```bash
-pip install pipeline-check
-pipeline_check
-```
+<div class="pg-install">pip install pipeline-check</div>
 
-<div class="pg-hero__cta" style="justify-content: center; margin-top: 1.5rem;">
-  <a class="md-button md-button--primary" href="usage/">Read the usage guide</a>
+<div class="pg-cta__buttons">
+  <a class="md-button md-button--primary" href="usage/">Read the docs</a>
   <a class="md-button" href="https://github.com/dmartinochoa/pipeline-check">Star on GitHub</a>
 </div>
 </div>

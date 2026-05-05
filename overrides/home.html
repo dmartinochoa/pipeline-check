@@ -1,13 +1,8 @@
 {% extends "main.html" %}
 
-{#
-  Custom landing-page template. Hides the side navigation, table of
-  contents, and breadcrumbs on the home route only — every other page
-  inherits the stock Material chrome from main.html.
-
-  Activated for any page whose front-matter sets `template: home.html`
-  (see docs/index.md).
-#}
+{# Custom landing-page template. Hides nav/toc on the home route only;
+   every other page inherits the stock Material chrome. Activated for
+   pages whose front-matter declares `template: home.html`. #}
 
 {% block site_nav %}{% endblock %}
 
