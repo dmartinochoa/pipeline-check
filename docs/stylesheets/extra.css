@@ -237,11 +237,25 @@ body:has(.pg-home) .md-footer__inner {
   padding: 0;
 }
 
-/* Make landing span full viewport width */
-body[data-md-color-scheme] .md-main__inner:has(.pg-home) {
-  max-width: none;
-  margin: 0;
-  padding: 0;
+/* Make landing span full viewport width AND bleed edge-to-edge.
+   Material's default chrome wraps content in .md-main → .md-content
+   → .md-content__inner, each adding padding/margin/max-width that
+   reveals the page background between sections (or above/below the
+   navy hero/CTA bands). Zero them all on the home route so the
+   navy gradients touch the header and footer with no seam. */
+body:has(.pg-home) .md-main,
+body:has(.pg-home) .md-main__inner,
+body:has(.pg-home) .md-content,
+body:has(.pg-home) .md-content__inner {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Body fallback: any uncovered viewport edge falls back to the
+   same navy as the hero/CTA so a stray pixel of grey can't show. */
+body:has(.pg-home) {
+  background: var(--pg-navy-950);
 }
 
 /* ----- Hero ------------------------------------------------- */
