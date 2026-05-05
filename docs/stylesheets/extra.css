@@ -601,7 +601,19 @@ body {
 
 .md-tabs {
   position: relative;
-  z-index: 5;
+  z-index: 1000;
+}
+
+/* Material's article / sidebar / TOC may lift their own stacking
+   context (transforms, filters, etc.). Make sure none of them
+   stack above the tabs row, so the dropdown menus we anchor to
+   .md-tabs are not obscured by page chrome. */
+.md-main,
+.md-main__inner,
+.md-content,
+.md-content__inner,
+.md-sidebar {
+  z-index: 1;
 }
 
 .md-tabs__list {
