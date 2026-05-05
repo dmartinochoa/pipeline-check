@@ -1295,9 +1295,90 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-providers" class="md-nav__link">
+  <a href="#aws" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported providers
+      AWS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#terraform" class="md-nav__link">
+    <span class="md-ellipsis">
+      Terraform
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cloudformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudFormation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      GitHub Actions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gitlab-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      GitLab CI
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bitbucket-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bitbucket Pipelines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#azure-devops" class="md-nav__link">
+    <span class="md-ellipsis">
+      Azure DevOps
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jenkins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Jenkins
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#circleci" class="md-nav__link">
+    <span class="md-ellipsis">
+      CircleCI
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-cloud-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      Google Cloud Build
     </span>
   </a>
   
@@ -1335,79 +1416,48 @@
 context (credentials, clients) and declares which check modules run against
 it. The scanner's core is provider-agnostic — adding a new platform never
 requires editing <code>Scanner</code>, <code>Reporter</code>, or the CLI.</p>
-<h2 id="supported-providers">Supported providers</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Status</th>
-<th>Context</th>
-<th>Docs</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>aws</code></td>
-<td>stable</td>
-<td><code>boto3.Session</code> — live AWS account</td>
-<td><a href="aws/">aws.md</a></td>
-</tr>
-<tr>
-<td><code>terraform</code></td>
-<td>stable</td>
-<td><code>TerraformContext</code> — parsed <code>terraform show -json</code> plan</td>
-<td><a href="terraform/">terraform.md</a></td>
-</tr>
-<tr>
-<td><code>cloudformation</code></td>
-<td>stable</td>
-<td><code>CloudFormationContext</code> — parsed CFN template (YAML/JSON)</td>
-<td><a href="cloudformation/">cloudformation.md</a></td>
-</tr>
-<tr>
-<td><code>github</code></td>
-<td>stable</td>
-<td><code>GitHubContext</code> — parsed GitHub Actions workflow YAML</td>
-<td><a href="github/">github.md</a></td>
-</tr>
-<tr>
-<td><code>gitlab</code></td>
-<td>stable</td>
-<td><code>GitLabContext</code> — parsed <code>.gitlab-ci.yml</code></td>
-<td><a href="gitlab/">gitlab.md</a></td>
-</tr>
-<tr>
-<td><code>bitbucket</code></td>
-<td>stable</td>
-<td><code>BitbucketContext</code> — parsed <code>bitbucket-pipelines.yml</code></td>
-<td><a href="bitbucket/">bitbucket.md</a></td>
-</tr>
-<tr>
-<td><code>azure</code></td>
-<td>stable</td>
-<td><code>AzureContext</code> — parsed <code>azure-pipelines.yml</code></td>
-<td><a href="azure/">azure.md</a></td>
-</tr>
-<tr>
-<td><code>jenkins</code></td>
-<td>stable</td>
-<td><code>JenkinsContext</code> — parsed <code>Jenkinsfile</code> text</td>
-<td><a href="jenkins/">jenkins.md</a></td>
-</tr>
-<tr>
-<td><code>circleci</code></td>
-<td>stable</td>
-<td><code>CircleCIContext</code> — parsed <code>.circleci/config.yml</code></td>
-<td><a href="circleci/">circleci.md</a></td>
-</tr>
-<tr>
-<td><code>cloudbuild</code></td>
-<td>stable</td>
-<td><code>CloudBuildContext</code> — parsed <code>cloudbuild.yaml</code></td>
-<td><a href="cloudbuild/">cloudbuild.md</a></td>
-</tr>
-</tbody>
-</table>
+<div class="pg-doc-cards">
+<p><a class="pg-doc-card" href="aws/" markdown></p>
+<h3 id="aws">AWS</h3>
+<p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="terraform/" markdown></p>
+<h3 id="terraform">Terraform</h3>
+<p>Shift-left scan against a parsed <code>terraform show -json</code> plan. AWS-rule parity so findings match the live runtime.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="cloudformation/" markdown></p>
+<h3 id="cloudformation">CloudFormation</h3>
+<p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="github/" markdown></p>
+<h3 id="github-actions">GitHub Actions</h3>
+<p>Scans every workflow under <code>.github/workflows/</code>. Action pinning, OIDC trust, secret hygiene, runner posture.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="gitlab/" markdown></p>
+<h3 id="gitlab-ci">GitLab CI</h3>
+<p>Parses <code>.gitlab-ci.yml</code> with <code>include:</code> resolution. Image pinning, deploy gating, manual-job posture.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="bitbucket/" markdown></p>
+<h3 id="bitbucket-pipelines">Bitbucket Pipelines</h3>
+<p>Parses <code>bitbucket-pipelines.yml</code>. Pipe pinning, deployment posture, custom-pipe risk.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="azure/" markdown></p>
+<h3 id="azure-devops">Azure DevOps</h3>
+<p>Parses <code>azure-pipelines.yml</code> with template-resolution support.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="jenkins/" markdown></p>
+<h3 id="jenkins">Jenkins</h3>
+<p>Lexes Declarative + Scripted <code>Jenkinsfile</code>s. Credential exposure, agent pinning, sandbox bypass.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="circleci/" markdown></p>
+<h3 id="circleci">CircleCI</h3>
+<p>Parses <code>.circleci/config.yml</code> with orb-mapping support.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="cloudbuild/" markdown></p>
+<h3 id="google-cloud-build">Google Cloud Build</h3>
+<p>Parses <code>cloudbuild.yaml</code>. Substitution injection, secret retrieval, signing posture.</p>
+<p></a></p>
+</div>
 <h2 id="adding-a-new-provider">Adding a new provider</h2>
 <ol>
 <li>Create <code>pipeline_check/core/providers/&lt;name&gt;.py</code> subclassing <code>BaseProvider</code>.</li>

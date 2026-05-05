@@ -1295,18 +1295,126 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#registered-standards" class="md-nav__link">
+  <a href="#owasp-top-10-cicd" class="md-nav__link">
     <span class="md-ellipsis">
-      Registered standards
+      OWASP Top 10 CI/CD
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#filtering-by-standard" class="md-nav__link">
+  <a href="#cis-aws-foundations" class="md-nav__link">
     <span class="md-ellipsis">
-      Filtering by standard
+      CIS AWS Foundations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cis-supply-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      CIS Supply Chain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nist-ssdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      NIST SSDF
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nist-800-53" class="md-nav__link">
+    <span class="md-ellipsis">
+      NIST 800-53
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nist-csf-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      NIST CSF 2.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nist-800-190" class="md-nav__link">
+    <span class="md-ellipsis">
+      NIST 800-190
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#slsa-build-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      SLSA Build Track
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pci-dss-v40" class="md-nav__link">
+    <span class="md-ellipsis">
+      PCI DSS v4.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nsacisa-esf" class="md-nav__link">
+    <span class="md-ellipsis">
+      NSA/CISA ESF
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openssf-scorecard" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenSSF Scorecard
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s2c2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      S2C2F
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#soc-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      SOC 2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-standards-at-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using standards at runtime
     </span>
   </a>
   
@@ -1358,127 +1466,88 @@
 <p>Every finding produced by the scanner carries a list of <code>ControlRef</code> objects
 — references to controls in registered compliance standards. The same check
 can evidence controls in multiple standards at once.</p>
-<h2 id="registered-standards">Registered standards</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Title</th>
-<th>Version</th>
-<th>Docs</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>owasp_cicd_top_10</code></td>
-<td>OWASP Top 10 CI/CD Security Risks</td>
-<td>2022</td>
-<td><a href="owasp_cicd_top_10/">owasp_cicd_top_10.md</a></td>
-</tr>
-<tr>
-<td><code>cis_aws_foundations</code></td>
-<td>CIS AWS Foundations Benchmark (subset)</td>
-<td>3.0.0</td>
-<td><a href="cis_aws_foundations/">cis_aws_foundations.md</a></td>
-</tr>
-<tr>
-<td><code>cis_supply_chain</code></td>
-<td>CIS Software Supply Chain Security Guide</td>
-<td>1.0</td>
-<td><a href="cis_supply_chain/">cis_supply_chain.md</a></td>
-</tr>
-<tr>
-<td><code>nist_ssdf</code></td>
-<td>NIST Secure Software Development Framework</td>
-<td>SP 800-218 v1.1</td>
-<td><a href="nist_ssdf/">nist_ssdf.md</a></td>
-</tr>
-<tr>
-<td><code>nist_800_53</code></td>
-<td>NIST SP 800-53 Rev. 5 (CI/CD subset)</td>
-<td>Rev. 5</td>
-<td><a href="nist_800_53/">nist_800_53.md</a></td>
-</tr>
-<tr>
-<td><code>nist_csf_2</code></td>
-<td>NIST Cybersecurity Framework 2.0</td>
-<td>2.0</td>
-<td><a href="nist_csf_2/">nist_csf_2.md</a></td>
-</tr>
-<tr>
-<td><code>nist_800_190</code></td>
-<td>NIST SP 800-190 Application Container Security</td>
-<td>1.0 (Sep 2017)</td>
-<td><a href="nist_800_190/">nist_800_190.md</a></td>
-</tr>
-<tr>
-<td><code>slsa</code></td>
-<td>SLSA Build Track</td>
-<td>1.0</td>
-<td><a href="slsa/">slsa.md</a></td>
-</tr>
-<tr>
-<td><code>pci_dss_v4</code></td>
-<td>PCI DSS v4.0 (CI/CD subset)</td>
-<td>4.0</td>
-<td><a href="pci_dss_v4/">pci_dss_v4.md</a></td>
-</tr>
-<tr>
-<td><code>esf_supply_chain</code></td>
-<td>NSA/CISA ESF — Securing the Software Supply Chain</td>
-<td>2022</td>
-<td><a href="esf_supply_chain/">esf_supply_chain.md</a></td>
-</tr>
-<tr>
-<td><code>openssf_scorecard</code></td>
-<td>OpenSSF Scorecard</td>
-<td>5</td>
-<td><a href="openssf_scorecard/">openssf_scorecard.md</a></td>
-</tr>
-<tr>
-<td><code>s2c2f</code></td>
-<td>Secure Supply Chain Consumption Framework</td>
-<td>2024-05</td>
-<td><a href="s2c2f/">s2c2f.md</a></td>
-</tr>
-<tr>
-<td><code>soc2</code></td>
-<td>SOC 2 Trust Services Criteria</td>
-<td>2017 (revised 2022)</td>
-<td><a href="soc2/">soc2.md</a></td>
-</tr>
-</tbody>
-</table>
-<p>List them at runtime with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--list-standards
+<div class="pg-doc-cards">
+<p><a class="pg-doc-card pg-doc-card--featured" href="owasp_cicd_top_10/" markdown>
+<span class="pg-doc-card__tag pg-doc-card__tag--accent">flagship · 10/10</span></p>
+<h3 id="owasp-top-10-cicd">OWASP Top 10 CI/CD</h3>
+<p>The reference framework for CI/CD security risks. Full coverage across every supported provider.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="cis_aws_foundations/" markdown></p>
+<h3 id="cis-aws-foundations">CIS AWS Foundations</h3>
+<p>CI/CD-relevant subset of the CIS AWS benchmark — IAM, S3, CloudTrail, KMS hardening.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="cis_supply_chain/" markdown></p>
+<h3 id="cis-supply-chain">CIS Supply Chain</h3>
+<p>CIS Software Supply Chain Security Guide. Source, build, dependency, and artifact controls.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="nist_ssdf/" markdown></p>
+<h3 id="nist-ssdf">NIST SSDF</h3>
+<p>Secure Software Development Framework — the federal SSDLC reference (SP 800-218).</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="nist_800_53/" markdown></p>
+<h3 id="nist-800-53">NIST 800-53</h3>
+<p>Federal control catalog (CI/CD subset). Maps findings to AC, AU, CM, IA, SI, SR families.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="nist_csf_2/" markdown></p>
+<h3 id="nist-csf-20">NIST CSF 2.0</h3>
+<p>Cybersecurity Framework — Govern, Identify, Protect, Detect, Respond, Recover.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="nist_800_190/" markdown></p>
+<h3 id="nist-800-190">NIST 800-190</h3>
+<p>Application Container Security Guide — image, registry, runtime, host hardening.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="slsa/" markdown></p>
+<h3 id="slsa-build-track">SLSA Build Track</h3>
+<p>Supply-chain Levels for Software Artifacts. Provenance, hermeticity, signing posture.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="pci_dss_v4/" markdown></p>
+<h3 id="pci-dss-v40">PCI DSS v4.0</h3>
+<p>Payment Card Industry Data Security Standard, CI/CD subset (logging, secret management, change control).</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="esf_supply_chain/" markdown></p>
+<h3 id="nsacisa-esf">NSA/CISA ESF</h3>
+<p>Enduring Security Framework — Securing the Software Supply Chain (developer, customer, supplier).</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="openssf_scorecard/" markdown></p>
+<h3 id="openssf-scorecard">OpenSSF Scorecard</h3>
+<p>Open-source project security health metrics. Pinned-deps, branch-protection, signing-keys, dangerous workflows.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="s2c2f/" markdown></p>
+<h3 id="s2c2f">S2C2F</h3>
+<p>Secure Supply Chain Consumption Framework — ingest, inventory, scan, rebuild, fix.</p>
+<p></a></p>
+<p><a class="pg-doc-card" href="soc2/" markdown></p>
+<h3 id="soc-2">SOC 2</h3>
+<p>Trust Services Criteria. Audit-friendly mappings for Security, Confidentiality, and Availability.</p>
+<p></a></p>
+</div>
+<h2 id="using-standards-at-runtime">Using standards at runtime</h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipeline_check<span class="w"> </span>--list-standards<span class="w">                          </span><span class="c1"># list registered standards</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--standard<span class="w"> </span>owasp_cicd_top_10<span class="w">  </span><span class="c1"># filter to one</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--standard<span class="w"> </span>owasp_cicd_top_10<span class="w"> </span>--standard<span class="w"> </span>nist_ssdf<span class="w">  </span><span class="c1"># multiple</span>
 </span></code></pre></div>
-<h2 id="filtering-by-standard">Filtering by standard</h2>
-<p>To annotate findings with controls from a single standard only:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pipeline_check<span class="w"> </span>--pipeline<span class="w"> </span>aws<span class="w"> </span>--standard<span class="w"> </span>owasp_cicd_top_10
-</span></code></pre></div>
-<p>Repeat <code>--standard</code> to select multiple. Omit it to include every registered
-standard.</p>
+<p>Omit <code>--standard</code> to include every registered standard.</p>
 <h2 id="architecture">Architecture</h2>
 <p>A standard is pure data — no code. Each one is a Python module in
 <code>pipeline_check/core/standards/data/</code> that defines a module-level <code>STANDARD</code>
 object:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Standard</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">STANDARD</span> <span class="o">=</span> <span class="n">Standard</span><span class="p">(</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_standard&quot;</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Compliance Standard&quot;</span><span class="p">,</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://example.com&quot;</span><span class="p">,</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">controls</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="s2">&quot;CTRL-1&quot;</span><span class="p">:</span> <span class="s2">&quot;First control&quot;</span><span class="p">,</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="o">...</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="p">},</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">mappings</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="c1"># check_id → list of control_ids it evidences</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="s2">&quot;IAM-001&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CTRL-1&quot;</span><span class="p">],</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="o">...</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="p">},</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Standard</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">STANDARD</span> <span class="o">=</span> <span class="n">Standard</span><span class="p">(</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_standard&quot;</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Compliance Standard&quot;</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">controls</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="s2">&quot;CTRL-1&quot;</span><span class="p">:</span> <span class="s2">&quot;First control&quot;</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="o">...</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="p">},</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">mappings</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="c1"># check_id → list of control_ids it evidences</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="s2">&quot;IAM-001&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CTRL-1&quot;</span><span class="p">],</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="o">...</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="p">},</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>Register it in <code>pipeline_check/core/standards/__init__.py</code> and the scanner,
 CLI (<code>--standard</code>, <code>--list-standards</code>), and reporters pick it up
@@ -1491,10 +1560,7 @@ automatically.</p>
 <li><strong>Easy to audit:</strong> the mapping table lives in one file, not scattered
   across Finding constructor calls.</li>
 <li><strong>Easy to extend:</strong> adding ISO 27001 or a bespoke internal policy is
-  one new Python module — the thirteen registered standards today
-  (OWASP CI/CD, CIS AWS, CIS Supply Chain, NIST SSDF, NIST 800-53, NIST
-  800-190, NIST CSF 2.0, SLSA, PCI DSS v4, NSA/CISA ESF, OpenSSF
-  Scorecard, S2C2F, SOC 2) are all built this way.</li>
+  one new Python module.</li>
 </ul>
 
 
