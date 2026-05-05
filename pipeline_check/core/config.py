@@ -39,7 +39,6 @@ import yaml
 
 from ._yaml_strict import safe_load_strict as _safe_load_strict  # noqa: F401
 
-
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",

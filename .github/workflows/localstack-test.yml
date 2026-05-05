@@ -1,17 +1,9 @@
 name: LocalStack Integration Test
 
 on:
-  # Manual trigger kept for debugging.
+  # Manual-only — push and nightly schedule triggers were removed so
+  # the LocalStack integration suite runs on demand from the Actions tab.
   workflow_dispatch:
-  # Run on merges to master so integration drift between the scanner
-  # and real AWS behaviour (via LocalStack) surfaces at merge time,
-  # not weeks later when someone notices.
-  push:
-    branches: ["master"]
-  # Nightly schedule catches LocalStack / AWS SDK upstream drift that
-  # wouldn't otherwise show up between PRs.
-  schedule:
-    - cron: "17 4 * * *"  # 04:17 UTC daily — off-peak for GH runners
 
 permissions:
   contents: read
