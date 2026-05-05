@@ -783,6 +783,18 @@ body:has(.pg-home) {
   background: var(--pg-navy-950);
 }
 
+/* The primary nav sidebar is kept in the DOM on the home page so the
+   mobile hamburger drawer still has something to open (Material reuses
+   the same .md-sidebar--primary element for both the desktop rail and
+   the < 76.25em slide-out drawer). Hide the desktop rail only — the
+   drawer's visibility is driven by the [data-md-toggle="drawer"]
+   checkbox at smaller widths and stays untouched. */
+@media screen and (min-width: 76.25em) {
+  body:has(.pg-home) .md-sidebar--primary {
+    display: none;
+  }
+}
+
 /* ----- Hero ------------------------------------------------- */
 .pg-hero {
   position: relative;

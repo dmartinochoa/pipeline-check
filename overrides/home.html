@@ -1,10 +1,29 @@
 {% extends "main.html" %}
 
-{# Custom landing-page template. Hides nav/toc on the home route only;
-   every other page inherits the stock Material chrome. Activated for
-   pages whose front-matter declares `template: home.html`. #}
+{# Custom landing-page template. Hides the desktop nav/toc sidebars on
+   the home route only; every other page inherits the stock Material
+   chrome. Activated for pages whose front-matter declares
+   `template: home.html`.
 
-{% block site_nav %}{% endblock %}
+   The primary sidebar (`.md-sidebar--primary`) is kept in the DOM —
+   on viewports < 76.25em it doubles as the slide-out drawer that the
+   header hamburger toggles. Removing it would silently break the
+   mobile menu. CSS in extra.css hides it on wider viewports where it
+   would otherwise render as a left-rail sidebar. The TOC sidebar is
+   omitted entirely since the landing page has no useful headings to
+   navigate. #}
+
+{% block site_nav %}
+  {% if nav %}
+    <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+      <div class="md-sidebar__scrollwrap">
+        <div class="md-sidebar__inner">
+          {% include "partials/nav.html" %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
 
 {% block tabs %}
   {{ super() }}
