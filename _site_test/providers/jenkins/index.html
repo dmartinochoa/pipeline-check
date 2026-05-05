@@ -1,0 +1,1828 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CI/CD Security Posture Scanner — scores AWS, Terraform, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, and Cloud Build against the OWASP Top 10 CI/CD Risks plus 12 other compliance frameworks.">
+      
+      
+      
+        <link rel="canonical" href="https://dmartinochoa.github.io/pipeline-check/providers/jenkins/">
+      
+      
+        <link rel="prev" href="../azure/">
+      
+      
+        <link rel="next" href="../circleci/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Jenkins - Pipeline-Check</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#jenkins-provider" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Pipeline-Check" class="md-header__button md-logo" aria-label="Pipeline-Check" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Pipeline-Check
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Jenkins
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/dmartinochoa/pipeline-check" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    dmartinochoa/pipeline-check
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../usage/" class="md-tabs__link">
+        
+  
+    
+  
+  Usage
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../output/" class="md-tabs__link">
+        
+  
+    
+  
+  Output formats
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../scoring_model/" class="md-tabs__link">
+          
+  
+    
+  
+  Scoring & gate
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../config/" class="md-tabs__link">
+        
+  
+    
+  
+  Configuration
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../attack_chains/" class="md-tabs__link">
+        
+  
+    
+  
+  Attack chains
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Providers
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../standards/" class="md-tabs__link">
+          
+  
+    
+  
+  Standards
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Pipeline-Check" class="md-nav__button md-logo" aria-label="Pipeline-Check" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Pipeline-Check
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/dmartinochoa/pipeline-check" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    dmartinochoa/pipeline-check
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output formats
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Scoring & gate
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Scoring & gate
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scoring_model/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scoring model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ci_gate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI gate
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../attack_chains/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Attack chains
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Providers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terraform/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Terraform
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudformation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CloudFormation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub Actions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gitlab/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitLab CI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bitbucket/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bitbucket Pipelines
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure DevOps
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Jenkins
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Jenkins
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#producer-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Producer workflow
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../circleci/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CircleCI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudbuild/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Google Cloud Build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../standards/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Standards
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Standards
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/owasp_cicd_top_10/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OWASP Top 10 CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/cis_aws_foundations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CIS AWS Foundations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/cis_supply_chain/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CIS Supply Chain
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/nist_ssdf/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NIST SSDF (800-218)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/nist_800_53/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NIST 800-53
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/nist_800_190/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NIST 800-190
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/nist_csf_2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NIST CSF 2.0
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/slsa/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SLSA
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/pci_dss_v4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PCI DSS v4.0
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/esf_supply_chain/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ESF Supply Chain
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/openssf_scorecard/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenSSF Scorecard
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/s2c2f/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S2C2F
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/soc2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SOC 2
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#producer-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Producer workflow
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/dmartinochoa/pipeline-check/edit/master/docs/providers/jenkins.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="jenkins-provider">Jenkins provider<a class="headerlink" href="#jenkins-provider" title="Permanent link">&para;</a></h1>
+<p>Parses Jenkinsfile text — Declarative or Scripted Pipeline — without
+talking to a Jenkins controller. No Groovy interpreter, no plugin
+install, no API token.</p>
+<h2 id="producer-workflow">Producer workflow<a class="headerlink" href="#producer-workflow" title="Permanent link">&para;</a></h2>
+<p>```bash</p>
+<h1 id="-jenkinsfile-path-is-auto-detected-when-jenkinsfile-exists-at-cwd">--jenkinsfile-path is auto-detected when ./Jenkinsfile exists at cwd.<a class="headerlink" href="#-jenkinsfile-path-is-auto-detected-when-jenkinsfile-exists-at-cwd" title="Permanent link">&para;</a></h1>
+<p>pipeline_check --pipeline jenkins</p>
+<h1 id="or-pass-it-explicitly">…or pass it explicitly.<a class="headerlink" href="#or-pass-it-explicitly" title="Permanent link">&para;</a></h1>
+<p>pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile</p>
+<h1 id="scan-a-directory-of-multiple-jenkinsfiles-eg-monorepo-with-per-app-pipelines">Scan a directory of multiple Jenkinsfiles (e.g. monorepo with per-app pipelines).<a class="headerlink" href="#scan-a-directory-of-multiple-jenkinsfiles-eg-monorepo-with-per-app-pipelines" title="Permanent link">&para;</a></h1>
+<p>pipeline_check --pipeline jenkins --jenkinsfile-path ci/
+```</p>
+<p>The loader recognises files named <code>Jenkinsfile</code> exactly, plus anything
+ending in <code>.jenkinsfile</code> or <code>.groovy</code>. It treats every file as text —
+no Groovy parsing — and applies the same regex-driven heuristics the
+other workflow providers use for <code>run:</code> blocks. False positives are
+intentional: better to flag and let the operator suppress than to
+miss a real injection because the parser couldn't follow a dynamic
+expression.</p>
+<h2 id="what-it-covers">What it covers<a class="headerlink" href="#what-it-covers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Title</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JF-001</td>
+<td>Shared library not pinned to a tag or commit</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-002</td>
+<td>Script step interpolates attacker-controllable env var</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-003</td>
+<td>Pipeline uses <code>agent any</code> (no executor isolation)</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-004</td>
+<td>AWS auth uses long-lived access keys via withCredentials</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-005</td>
+<td>Deploy stage missing manual <code>input</code> approval</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-006</td>
+<td>Artifacts not signed</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-007</td>
+<td>SBOM not produced</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-008</td>
+<td>Credential-shaped literal in pipeline body</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>JF-009</td>
+<td>Agent docker image not pinned to sha256 digest</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-010</td>
+<td>Long-lived AWS keys exposed via environment {} block</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-011</td>
+<td>Pipeline has no <code>buildDiscarder</code> retention policy</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td>JF-012</td>
+<td><code>load</code> step pulls Groovy from disk without integrity pin</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-013</td>
+<td>copyArtifacts ingests another job's output unverified</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>JF-014</td>
+<td>Agent label missing ephemeral marker</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-015</td>
+<td>Pipeline has no <code>timeout</code> wrapper — unbounded build</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-016</td>
+<td>Remote script piped to shell interpreter</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-017</td>
+<td>Docker run with insecure flags (privileged/host mount)</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>JF-018</td>
+<td>Package install from insecure source</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-019</td>
+<td>Groovy sandbox escape pattern detected</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>JF-020</td>
+<td>No vulnerability scanning step</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-021</td>
+<td>Package install without lockfile enforcement</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-022</td>
+<td>Dependency update command bypasses lockfile pins</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-023</td>
+<td>TLS / certificate verification bypass</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-024</td>
+<td><code>input</code> approval step missing submitter restriction</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-025</td>
+<td>Kubernetes agent pod template runs privileged or mounts hostPath</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-026</td>
+<td><code>build job:</code> trigger ignores downstream failure</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-027</td>
+<td><code>archiveArtifacts</code> does not record a fingerprint</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td>JF-028</td>
+<td>No SLSA provenance attestation produced</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>JF-029</td>
+<td>Jenkinsfile contains indicators of malicious activity</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>JF-030</td>
+<td>Dangerous shell idiom (eval, sh -c variable, backtick exec)</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>JF-031</td>
+<td>Package install bypasses registry integrity (git / path / tarball source)</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="jf-001-shared-library-not-pinned-to-a-tag-or-commit">JF-001 — Shared library not pinned to a tag or commit<a class="headerlink" href="#jf-001-shared-library-not-pinned-to-a-tag-or-commit" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
+<p><code>@main</code>, <code>@master</code>, <code>@develop</code>, no-<code>@ref</code>, and any non-semver / non-SHA ref are floating. Whoever controls the upstream library can ship code into your build by pushing to that branch.</p>
+<p><strong>Recommended action</strong></p>
+<p>Pin every <code>@Library('name@&lt;ref&gt;')</code> to a release tag (e.g. <code>@v1.4.2</code>) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.</p>
+<h2 id="jf-002-script-step-interpolates-attacker-controllable-env-var">JF-002 — Script step interpolates attacker-controllable env var<a class="headerlink" href="#jf-002-script-step-interpolates-attacker-controllable-env-var" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
+<p>$BRANCH_NAME / $GIT_BRANCH / $TAG_NAME / $CHANGE_* are populated from SCM event metadata the attacker controls. Single-quoted Groovy strings don't interpolate so they're safe; only double-quoted / triple-double-quoted bodies are flagged.</p>
+<p><strong>Recommended action</strong></p>
+<p>Switch the affected <code>sh</code>/<code>bat</code>/<code>powershell</code> step to a single-quoted string (Groovy doesn't interpolate single quotes), and pass values through a quoted shell variable (<code>sh 'echo "$BRANCH"'</code> after <code>withEnv([...])</code>).</p>
+<h2 id="jf-003-pipeline-uses-agent-any-no-executor-isolation">JF-003 — Pipeline uses <code>agent any</code> (no executor isolation)<a class="headerlink" href="#jf-003-pipeline-uses-agent-any-no-executor-isolation" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-5 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
+<p><code>agent any</code> is the broadest possible executor scope — any registered executor can be picked, including ones with broader IAM / file-system access than this build needs. A compromise of one job blast-radiates across every pool.</p>
+<p><strong>Recommended action</strong></p>
+<p>Replace <code>agent any</code> with <code>agent { label 'build-pool' }</code> (targeting a labelled pool) or <code>agent { docker { image '...' } }</code> (ephemeral container). Reserve broad-access agents for jobs that genuinely need them.</p>
+<h2 id="jf-004-aws-auth-uses-long-lived-access-keys-via-withcredentials">JF-004 — AWS auth uses long-lived access keys via withCredentials<a class="headerlink" href="#jf-004-aws-auth-uses-long-lived-access-keys-via-withcredentials" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE</p>
+<p>Fires when BOTH a credentialsId containing <code>aws</code> is referenced AND an AWS key variable name appears (requires both so an OIDC role binding doesn't false-positive). Also fires when <code>withAWS(credentials: '…')</code> is used — the safe alternative is <code>withAWS(role: '…')</code>.</p>
+<p><strong>Recommended action</strong></p>
+<p>Switch to the AWS plugin's IAM-role / OIDC binding (e.g. <code>withAWS(role: 'arn:aws:iam::…:role/jenkins')</code>) so each build assumes a short-lived role. Remove the static AWS_ACCESS_KEY_ID secret from the Jenkins credentials store once the role is in place.</p>
+<h2 id="jf-005-deploy-stage-missing-manual-input-approval">JF-005 — Deploy stage missing manual <code>input</code> approval<a class="headerlink" href="#jf-005-deploy-stage-missing-manual-input-approval" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL</p>
+<p>A stage named <code>deploy</code> / <code>release</code> / <code>publish</code> / <code>promote</code> should either use the declarative <code>input { ... }</code> directive or call <code>input message: ...</code> somewhere in its body. Without one, any push that triggers the pipeline ships to the target with no human review.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add an <code>input</code> step to every deploy-like stage (e.g. <code>input message: 'Promote to prod?', submitter: 'releasers'</code>). Combine with a Jenkins folder-scoped permission so only release engineers see the prompt.</p>
+<h2 id="jf-006-artifacts-not-signed">JF-006 — Artifacts not signed<a class="headerlink" href="#jf-006-artifacts-not-signed" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS</p>
+<p>Passes when cosign / sigstore / slsa-* / notation-sign appears in executable Jenkinsfile text (comments are stripped before matching).</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a <code>sh 'cosign sign --yes …'</code> step (the cosign-installer Jenkins plugin handles binary install). Publish the signature next to the artifact and verify it at deploy.</p>
+<h2 id="jf-007-sbom-not-produced">JF-007 — SBOM not produced<a class="headerlink" href="#jf-007-sbom-not-produced" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM</p>
+<p>Passes when a direct SBOM tool token (CycloneDX, syft, anchore, spdx-sbom-generator, sbom-tool) appears in executable code, or when Trivy is paired with <code>sbom</code> / <code>cyclonedx</code> in the same file. Comments are stripped before matching.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a <code>sh 'syft . -o cyclonedx-json &gt; sbom.json'</code> step (or Trivy with <code>--format cyclonedx</code>) and archive the result with <code>archiveArtifacts</code>.</p>
+<h2 id="jf-008-credential-shaped-literal-in-pipeline-body">JF-008 — Credential-shaped literal in pipeline body<a class="headerlink" href="#jf-008-credential-shaped-literal-in-pipeline-body" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS</p>
+<p>Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalogue. Secrets committed to Groovy source are visible in every fork and every build log.</p>
+<p><strong>Recommended action</strong></p>
+<p>Rotate the exposed credential. Move the value to a Jenkins credential and reference it via <code>withCredentials([string(credentialsId: '…', variable: '…')])</code>.</p>
+<h2 id="jf-009-agent-docker-image-not-pinned-to-sha256-digest">JF-009 — Agent docker image not pinned to sha256 digest<a class="headerlink" href="#jf-009-agent-docker-image-not-pinned-to-sha256-digest" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-IMMUTABLE</p>
+<p><code>agent { docker { image 'name:tag' } }</code> is not digest-pinned, so a repointed registry tag silently swaps the executor under every subsequent build. Unlike the YAML providers, Jenkins has no separate tag-pinning check — so this one fires at HIGH regardless of whether the tag is floating or immutable.</p>
+<p><strong>Recommended action</strong></p>
+<p>Resolve each image to its current digest (<code>docker buildx imagetools inspect &lt;ref&gt;</code> prints it) and reference it via <code>image '&lt;repo&gt;@sha256:&lt;digest&gt;'</code>. Automate refreshes with Renovate.</p>
+<h2 id="jf-010-long-lived-aws-keys-exposed-via-environment-block">JF-010 — Long-lived AWS keys exposed via environment {} block<a class="headerlink" href="#jf-010-long-lived-aws-keys-exposed-via-environment-block" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS, ESF-D-TOKEN-HYGIENE</p>
+<p>Flags <code>environment { AWS_ACCESS_KEY_ID = '...' }</code> when the value is a literal or plain variable reference. Skips <code>credentials('id')</code> helpers and <code>${env.X}</code> that resolve at runtime. Matches both multiline and inline <code>environment { ... }</code> forms.</p>
+<p><strong>Recommended action</strong></p>
+<p>Replace the literal with a credentials-store reference: <code>AWS_ACCESS_KEY_ID = credentials('aws-prod-key')</code>. Better: switch to the AWS plugin's role binding (<code>withAWS(role: 'arn:…')</code>) so the build assumes a short-lived role per run.</p>
+<h2 id="jf-011-pipeline-has-no-builddiscarder-retention-policy">JF-011 — Pipeline has no <code>buildDiscarder</code> retention policy<a class="headerlink" href="#jf-011-pipeline-has-no-builddiscarder-retention-policy" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> LOW · OWASP CICD-SEC-10 · ESF ESF-D-BUILD-LOGS, ESF-C-AUDIT</p>
+<p>Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognises declarative <code>options { buildDiscarder(...) }</code>, scripted <code>properties([buildDiscarder(...)])</code>, and bare <code>logRotator(...)</code>.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add <code>options { buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90')) }</code> (declarative) or the <code>properties([buildDiscarder(...)])</code> equivalent in scripted pipelines. Tune the numbers to your retention policy.</p>
+<h2 id="jf-012-load-step-pulls-groovy-from-disk-without-integrity-pin">JF-012 — <code>load</code> step pulls Groovy from disk without integrity pin<a class="headerlink" href="#jf-012-load-step-pulls-groovy-from-disk-without-integrity-pin" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
+<p><code>load 'foo.groovy'</code> evaluates whatever exists at the path when the build runs — there's no integrity check, so a workspace mutation can swap the loaded code between runs.</p>
+<p><strong>Recommended action</strong></p>
+<p>Move shared Groovy into a Jenkins shared library (<code>@Library('name@&lt;sha&gt;')</code>) — those are version-pinned and JF-001 audits them. Reserve <code>load</code> for one-off development experiments.</p>
+<h2 id="jf-013-copyartifacts-ingests-another-jobs-output-unverified">JF-013 — copyArtifacts ingests another job's output unverified<a class="headerlink" href="#jf-013-copyartifacts-ingests-another-jobs-output-unverified" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
+<p>Recognises both <code>copyArtifacts(projectName: ...)</code> and the older <code>step([$class: 'CopyArtifact', ...])</code> form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a verification step before consuming the artifact: <code>sh 'sha256sum -c manifest.sha256'</code> against a manifest the producer signed, or <code>cosign verify</code> over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.</p>
+<h2 id="jf-014-agent-label-missing-ephemeral-marker">JF-014 — Agent label missing ephemeral marker<a class="headerlink" href="#jf-014-agent-label-missing-ephemeral-marker" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV, ESF-D-PRIV-BUILD</p>
+<p>Static Jenkins agents that persist between builds leak workspace files and process state. The check looks for an <code>ephemeral</code> substring in <code>agent { label '...' }</code> blocks.</p>
+<p><strong>Recommended action</strong></p>
+<p>Register Jenkins agents with ephemeral lifecycle (e.g. Kubernetes pod templates or EC2 Fleet plugin) and include <code>ephemeral</code> in the label string so the pipeline declares its expectation.</p>
+<h2 id="jf-015-pipeline-has-no-timeout-wrapper-unbounded-build">JF-015 — Pipeline has no <code>timeout</code> wrapper — unbounded build<a class="headerlink" href="#jf-015-pipeline-has-no-timeout-wrapper-unbounded-build" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-TIMEOUT</p>
+<p>Without a <code>timeout()</code> wrapper, the pipeline runs until the Jenkins controller's global timeout (or indefinitely if none is configured). Explicit timeouts cap blast radius and the window during which a compromised step has workspace access.</p>
+<p><strong>Recommended action</strong></p>
+<p>Wrap the pipeline body or individual stages with <code>timeout(time: N, unit: 'MINUTES') { … }</code>. Without an explicit timeout, the build runs until the Jenkins global default (or indefinitely).</p>
+<h2 id="jf-016-remote-script-piped-to-shell-interpreter">JF-016 — Remote script piped to shell interpreter<a class="headerlink" href="#jf-016-remote-script-piped-to-shell-interpreter" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
+<p>Detects <code>curl | bash</code>, <code>wget | sh</code>, and similar patterns that pipe remote content directly into a shell interpreter inside a Jenkinsfile. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build agent.</p>
+<p><strong>Recommended action</strong></p>
+<p>Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.</p>
+<h2 id="jf-017-docker-run-with-insecure-flags-privilegedhost-mount">JF-017 — Docker run with insecure flags (privileged/host mount)<a class="headerlink" href="#jf-017-docker-run-with-insecure-flags-privilegedhost-mount" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
+<p>Flags like <code>--privileged</code>, <code>--cap-add</code>, <code>--net=host</code>, or host-root volume mounts (<code>-v /:/</code>) in a Jenkinsfile give the container full access to the build agent, enabling container escape and lateral movement.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.</p>
+<h2 id="jf-018-package-install-from-insecure-source">JF-018 — Package install from insecure source<a class="headerlink" href="#jf-018-package-install-from-insecure-source" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
+<p>Detects package-manager invocations that use plain HTTP registries (<code>--index-url http://</code>, <code>--registry=http://</code>) or disable TLS verification (<code>--trusted-host</code>, <code>--no-verify</code>) in a Jenkinsfile. These patterns allow man-in-the-middle injection of malicious packages.</p>
+<p><strong>Recommended action</strong></p>
+<p>Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.</p>
+<h2 id="jf-019-groovy-sandbox-escape-pattern-detected">JF-019 — Groovy sandbox escape pattern detected<a class="headerlink" href="#jf-019-groovy-sandbox-escape-pattern-detected" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
+<p>Detects Groovy patterns that bypass the Jenkins script security sandbox: <code>Runtime.getRuntime()</code>, <code>Class.forName()</code>, <code>.classLoader</code>, <code>ProcessBuilder</code>, and <code>@Grab</code>. These give the pipeline (or an attacker who controls its source) unrestricted access to the Jenkins controller JVM — full RCE.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avoid @Grab for untrusted dependencies.</p>
+<h2 id="jf-020-no-vulnerability-scanning-step">JF-020 — No vulnerability scanning step<a class="headerlink" href="#jf-020-no-vulnerability-scanning-step" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-MGMT</p>
+<p>Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.</p>
+<h2 id="jf-021-package-install-without-lockfile-enforcement">JF-021 — Package install without lockfile enforcement<a class="headerlink" href="#jf-021-package-install-without-lockfile-enforcement" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
+<p>Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.</p>
+<p><strong>Recommended action</strong></p>
+<p>Use lockfile-enforcing install commands: <code>npm ci</code> instead of <code>npm install</code>, <code>pip install --require-hashes -r requirements.txt</code>, <code>yarn install --frozen-lockfile</code>, <code>bundle install --frozen</code>, and <code>go install tool@v1.2.3</code>.</p>
+<h2 id="jf-022-dependency-update-command-bypasses-lockfile-pins">JF-022 — Dependency update command bypasses lockfile pins<a class="headerlink" href="#jf-022-dependency-update-command-bypasses-lockfile-pins" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS</p>
+<p>Detects <code>pip install --upgrade</code>, <code>npm update</code>, <code>yarn upgrade</code>, <code>bundle update</code>, <code>cargo update</code>, <code>go get -u</code>, and <code>composer update</code>. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (<code>pip install --upgrade pip</code>) are exempted.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove dependency-update commands from CI. Use lockfile-pinned install commands (<code>npm ci</code>, <code>pip install -r requirements.txt</code>) and update dependencies via a dedicated PR pipeline (e.g. Dependabot, Renovate).</p>
+<h2 id="jf-023-tls-certificate-verification-bypass">JF-023 — TLS / certificate verification bypass<a class="headerlink" href="#jf-023-tls-certificate-verification-bypass" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS</p>
+<p>Detects patterns that disable TLS certificate verification: <code>git config http.sslVerify false</code>, <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, <code>npm config set strict-ssl false</code>, <code>curl -k</code>, <code>wget --no-check-certificate</code>, <code>PYTHONHTTPSVERIFY=0</code>, and <code>GOINSECURE=</code>. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove TLS verification bypasses. Fix certificate issues at the source (install CA certificates, configure proper trust stores) instead of disabling verification.</p>
+<h2 id="jf-024-input-approval-step-missing-submitter-restriction">JF-024 — <code>input</code> approval step missing submitter restriction<a class="headerlink" href="#jf-024-input-approval-step-missing-submitter-restriction" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-1 · ESF ESF-C-APPROVAL</p>
+<p>JF-005 already flags deploy stages with no <code>input</code> step. This rule catches the subtler case: the gate exists, but it doesn't actually restrict approvers. <code>submitter</code> accepts a comma-separated list of Jenkins usernames and group names; scope it to the smallest release-eligible pool.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a <code>submitter: 'releasers,sre'</code> (or a single role) argument to every <code>input</code> step in a deploy-like stage. Without it, any user with the Jenkins job <code>Build</code> permission can approve a production promotion — the approval gate becomes advisory.</p>
+<h2 id="jf-025-kubernetes-agent-pod-template-runs-privileged-or-mounts-hostpath">JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath<a class="headerlink" href="#jf-025-kubernetes-agent-pod-template-runs-privileged-or-mounts-hostpath" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-7 · ESF ESF-D-BUILD-ENV</p>
+<p>JF-017 flags inline <code>docker run</code> commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare <code>agent { kubernetes { yaml '''...''' } }</code>. A pod running with <code>privileged: true</code> or mounting <code>hostPath: /</code> gives the build container the same blast radius — container escape, node-credential theft, cross-tenant contamination on a shared cluster.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove <code>privileged: true</code> from the embedded pod YAML, drop <code>hostPath</code>/<code>hostNetwork</code>/<code>hostPID</code>/<code>hostIPC</code> entries, and add a <code>securityContext</code> with <code>runAsNonRoot: true</code> and a <code>readOnlyRootFilesystem</code>. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.</p>
+<h2 id="jf-026-build-job-trigger-ignores-downstream-failure">JF-026 — <code>build job:</code> trigger ignores downstream failure<a class="headerlink" href="#jf-026-build-job-trigger-ignores-downstream-failure" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-4 · ESF ESF-C-APPROVAL</p>
+<p>The Jenkins Pipeline plugin defaults <code>wait</code> to <code>true</code> and <code>propagate</code> to <code>true</code>, but either can be flipped per call. <code>wait: false</code> returns immediately; <code>propagate: false</code> continues even when the downstream job fails or is aborted. Both patterns sever the flow-control link between the upstream approval gate and the work the downstream job is about to do.</p>
+<p><strong>Recommended action</strong></p>
+<p>Remove <code>wait: false</code> and <code>propagate: false</code> from every <code>build job:</code> step, or replace them with an explicit <code>currentBuild.result = build(...).result</code> check. A fire-and-forget trigger can silently ship broken artifacts because the upstream job reports success regardless of what the downstream job actually did.</p>
+<h2 id="jf-027-archiveartifacts-does-not-record-a-fingerprint">JF-027 — <code>archiveArtifacts</code> does not record a fingerprint<a class="headerlink" href="#jf-027-archiveartifacts-does-not-record-a-fingerprint" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> LOW · OWASP CICD-SEC-9 · ESF ESF-D-TAMPER</p>
+<p>Fingerprinting hashes the artifact on archive so Jenkins can trace its flow between jobs — the same mechanism JF-013 relies on for verification-step pairing. It's cheap and retroactive: enabling it on the producer job unlocks a build-traceability audit for every downstream consumer.</p>
+<p><strong>Recommended action</strong></p>
+<p>Set <code>fingerprint: true</code> on every <code>archiveArtifacts</code> call (or use <code>archiveArtifacts artifacts: '...', fingerprint: true</code>). Without it, Jenkins can't link the artifact to the build that produced it; <code>copyArtifacts</code> consumers downstream then have no provenance to verify against.</p>
+<h2 id="jf-028-no-slsa-provenance-attestation-produced">JF-028 — No SLSA provenance attestation produced<a class="headerlink" href="#jf-028-no-slsa-provenance-attestation-produced" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-9 · ESF ESF-S-PROVENANCE</p>
+<p><code>cosign sign</code> signs the artifact bytes. <code>cosign attest</code> signs an in-toto statement describing how the build ran — builder, source commit, input parameters. SLSA L3 verifiers check the latter so consumers can enforce policy on where and how artifacts were produced.</p>
+<p><strong>Recommended action</strong></p>
+<p>Add a <code>sh 'cosign attest --predicate=provenance.intoto.jsonl …'</code> step after the build, or integrate the TestifySec <code>witness run</code> attestor. JF-006 covers signing; this rule covers the build-provenance statement SLSA Build L3 requires.</p>
+<h2 id="jf-029-jenkinsfile-contains-indicators-of-malicious-activity">JF-029 — Jenkinsfile contains indicators of malicious activity<a class="headerlink" href="#jf-029-jenkinsfile-contains-indicators-of-malicious-activity" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> CRITICAL · OWASP CICD-SEC-4, CICD-SEC-7 · ESF ESF-D-INJECTION, ESF-S-VERIFY-DEPS</p>
+<p>Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox escape). Those flag risky defaults; this flags concrete evidence — reverse shells, base64-decoded execution, miner binaries, exfil channels, credential-dump pipes, shell-history erasure. Runs on the comment-stripped Groovy text so <code>// cosign verify … // webhook.site</code> in a legitimate annotation doesn't false-positive.</p>
+<p><strong>Recommended action</strong></p>
+<p>Treat as a potential compromise. Identify the commit that introduced the matching stage(s), rotate Jenkins credentials the job can reach, review controller/agent audit logs for outbound traffic to the matched hosts, and re-image the agent pool if the compromise may have persisted.</p>
+<h2 id="jf-030-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec">JF-030 — Dangerous shell idiom (eval, sh -c variable, backtick exec)<a class="headerlink" href="#jf-030-dangerous-shell-idiom-eval-sh-c-variable-backtick-exec" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION</p>
+<p>Complements JF-002 (script injection from untrusted build parameters). Fires on intrinsically risky shell idioms — <code>eval</code>, <code>sh -c "$X"</code>, backtick exec — regardless of whether the input source is currently trusted.</p>
+<p><strong>Recommended action</strong></p>
+<p>Replace <code>eval "$VAR"</code> / <code>sh -c "$VAR"</code> / backtick exec with direct command invocation. Validate any value feeding a dynamic command at the boundary, or pass arguments as a list to a real <code>sh</code> step so the shell is not re-invoked.</p>
+<h2 id="jf-031-package-install-bypasses-registry-integrity-git-path-tarball-source">JF-031 — Package install bypasses registry integrity (git / path / tarball source)<a class="headerlink" href="#jf-031-package-install-bypasses-registry-integrity-git-path-tarball-source" title="Permanent link">&para;</a></h2>
+<p><strong>Severity:</strong> MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS</p>
+<p>Complements JF-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs bypass the registry integrity controls the lockfile relies on.</p>
+<p><strong>Recommended action</strong></p>
+<p>Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Artifactory, Nexus) instead of installing from a filesystem path or tarball URL.</p>
+<hr />
+<h2 id="adding-a-new-jenkins-check">Adding a new Jenkins check<a class="headerlink" href="#adding-a-new-jenkins-check" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create a new module at
+   <code>pipeline_check/core/checks/jenkins/rules/jfNNN_&lt;name&gt;.py</code>
+   exporting a top-level <code>RULE = Rule(...)</code> and a <code>check(path, doc) -&gt;
+   Finding</code> function. The orchestrator auto-discovers it.</li>
+<li>Add a mapping for the new ID in
+   <code>pipeline_check/core/standards/data/owasp_cicd_top_10.py</code> (and any
+   other standard that applies).</li>
+<li>Drop unsafe/safe snippets at
+   <code>tests/fixtures/per_check/jenkins/JF-NNN.{unsafe,safe}.yml</code>
+   and add a <code>CheckCase</code> entry in
+   <code>tests/test_per_check_real_examples.py::CASES</code>.</li>
+<li>Regenerate this doc:</li>
+</ol>
+<p><code>bash
+   python scripts/gen_provider_docs.py jenkins</code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      MIT-licensed. Built with MkDocs Material.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/dmartinochoa/pipeline-check" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/pipeline-check/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 404c11.1 0 20.1 9.1 20.1 20.3 0 11.3-9 20.4-20.1 20.4-11 0-20.1-9.2-20.1-20.4.1-11.3 9.1-20.3 20.1-20.3M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.7-142.6c-11.1 0-20.1-9.1-20.1-20.3.1-11.3 9-20.4 20.1-20.4 11 0 20.1 9.2 20.1 20.4s-9 20.3-20.1 20.3"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>

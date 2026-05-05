@@ -49,5 +49,5 @@ is *not* the default gate criterion; use `--min-grade` to gate on it
 explicitly. See [ci_gate.md](ci_gate.md) for the full gate contract.
 
 The implementation lives in
-[`pipeline_check/core/scorer.py`](../pipeline_check/core/scorer.py) and
-[`pipeline_check/core/gate.py`](../pipeline_check/core/gate.py).
+[`pipeline_check/core/scorer.py`](https://github.com/dmartinochoa/pipeline-check/blob/master/pipeline_check/core/scorer.py) and
+[`pipeline_check/core/gate.py`](https://github.com/dmartinochoa/pipeline-check/blob/master/pipeline_check/core/gate.py).

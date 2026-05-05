@@ -35,6 +35,218 @@ original seven services).
 
 ---
 
+## CLI usage
+
+```bash
+# Default: scan us-east-1 with the ambient boto3 credential chain
+pipeline_check --pipeline aws
+
+# Pick a region
+pipeline_check --pipeline aws --region eu-west-1
+
+# Use a named AWS CLI profile (~/.aws/credentials)
+pipeline_check --pipeline aws --profile prod-readonly
+
+# Scope the scan to a single resource (e.g. one CodePipeline)
+pipeline_check --pipeline aws --target my-release-pipeline
+
+# Point boto3 at a local endpoint (LocalStack, etc.)
+AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
+```
+
+Credentials are resolved through the standard
+[boto3 credential chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)
+— environment variables, `~/.aws/credentials`, IMDS on EC2, container
+credentials on ECS/Fargate, EKS Pod Identity, or SSO. To scan a different
+account, assume the role first with `aws sts assume-role` (or
+`aws sso login` / `aws-vault`) and export the resulting credentials, then
+invoke `pipeline_check`. The provider does not currently accept an
+`--assume-role-arn` flag.
+
+---
+
+## Required IAM permissions
+
+The scanner is **read-only**: every API call is a `List*`, `Describe*`,
+`Get*`, or `BatchGet*`. It never mutates state. Per-resource API calls
+are scoped to the active `--region`; IAM, S3, and STS are global and are
+reached through the same regional session.
+
+### Quickest path: managed policies
+
+If you don't care about least-privilege, attach one of:
+
+- `arn:aws:iam::aws:policy/SecurityAudit` — covers everything below
+  except a few `Get*Policy` calls; produces the same findings minus
+  `S3-005` (bucket policies), `LMB-004` (Lambda resource policy),
+  `KMS-002` (key policy), `CA-003`/`CA-004` (CodeArtifact policies),
+  `ECR-003` (repo policy), `SM-002` (secret resource policy).
+- `arn:aws:iam::aws:policy/ReadOnlyAccess` — covers every action the
+  scanner uses, plus a great deal more. Convenient but broad.
+
+For least-privilege, use the policy below.
+
+### Permission map by service
+
+Each row lists the check IDs that depend on the actions in that service.
+If you skip a service entirely, you can drop its row from the policy and
+the scanner will emit a `<PREFIX>-000` degraded finding (INFO) for that
+service rather than failing.
+
+| Service | Check IDs that need it | Required actions |
+|---|---|---|
+| CodeBuild | CB-001..011, PBAC-001 | `codebuild:ListProjects`, `codebuild:BatchGetProjects`, `codebuild:ListSourceCredentials` |
+| CodePipeline | CP-001..007, PBAC-005 (also feeds S3 artifact-bucket discovery) | `codepipeline:ListPipelines`, `codepipeline:GetPipeline` |
+| CodeDeploy | CD-001..003 | `codedeploy:ListApplications`, `codedeploy:ListDeploymentGroups`, `codedeploy:BatchGetDeploymentGroups` |
+| ECR | ECR-001..007 | `ecr:DescribeRepositories`, `ecr:GetRepositoryPolicy`, `ecr:GetLifecyclePolicy`, `ecr:DescribePullThroughCacheRules` |
+| Inspector v2 | ECR-007 | `inspector2:BatchGetAccountStatus` |
+| IAM | IAM-001..008, PBAC-002, CICD-role enumeration | `iam:ListRoles`, `iam:ListUsers`, `iam:ListAccessKeys`, `iam:GetAccessKeyLastUsed`, `iam:ListRolePolicies`, `iam:GetRolePolicy`, `iam:ListAttachedRolePolicies`, `iam:GetPolicy`, `iam:GetPolicyVersion` |
+| CloudTrail | CT-001..003 | `cloudtrail:DescribeTrails`, `cloudtrail:GetTrailStatus` |
+| CloudWatch Logs | CWL-001, CWL-002 | `logs:DescribeLogGroups` |
+| CloudWatch Alarms | CW-001 | `cloudwatch:DescribeAlarms` |
+| Secrets Manager | SM-001, SM-002 | `secretsmanager:ListSecrets`, `secretsmanager:GetResourcePolicy` |
+| CodeArtifact | CA-001..004 | `codeartifact:ListDomains`, `codeartifact:ListRepositories`, `codeartifact:DescribeRepository`, `codeartifact:GetDomainPermissionsPolicy`, `codeartifact:GetRepositoryPermissionsPolicy` |
+| CodeCommit | CCM-001..003 | `codecommit:ListRepositories`, `codecommit:GetRepository`, `codecommit:GetRepositoryTriggers`, `codecommit:ListAssociatedApprovalRuleTemplatesForRepository` |
+| Lambda | LMB-001..004 | `lambda:ListFunctions`, `lambda:GetFunctionCodeSigningConfig`, `lambda:GetFunctionUrlConfig`, `lambda:GetPolicy` |
+| KMS | KMS-001, KMS-002 | `kms:ListKeys`, `kms:DescribeKey`, `kms:GetKeyRotationStatus`, `kms:GetKeyPolicy` |
+| SSM Parameter Store | SSM-001, SSM-002 | `ssm:DescribeParameters` |
+| EventBridge | EB-001, EB-002 | `events:ListRules`, `events:ListTargetsByRule` |
+| Signer | SIGN-001, SIGN-002 | `signer:ListSigningProfiles` |
+| S3 | S3-001..005 (artifact buckets discovered via CodePipeline) | `s3:GetPublicAccessBlock`, `s3:GetBucketEncryption`, `s3:GetBucketVersioning`, `s3:GetBucketLogging`, `s3:GetBucketPolicy` |
+| EC2 | PBAC-003 (CodeBuild VPC security groups) | `ec2:DescribeSecurityGroups` |
+| STS | CCM-003 (current account ID for cross-account trigger detection) | `sts:GetCallerIdentity` |
+
+### Copy-paste IAM policy
+
+Save the following as `pipeline-guard-readonly.json` and attach it to the
+role or user the scanner runs as. Every action is read-only and every
+resource is `*` because boto3 list/describe APIs do not accept
+resource-level conditions.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PipelineGuardReadOnlyScan",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:DescribeTrails",
+        "cloudtrail:GetTrailStatus",
+        "cloudwatch:DescribeAlarms",
+        "codeartifact:DescribeRepository",
+        "codeartifact:GetDomainPermissionsPolicy",
+        "codeartifact:GetRepositoryPermissionsPolicy",
+        "codeartifact:ListDomains",
+        "codeartifact:ListRepositories",
+        "codebuild:BatchGetProjects",
+        "codebuild:ListProjects",
+        "codebuild:ListSourceCredentials",
+        "codecommit:GetRepository",
+        "codecommit:GetRepositoryTriggers",
+        "codecommit:ListAssociatedApprovalRuleTemplatesForRepository",
+        "codecommit:ListRepositories",
+        "codedeploy:BatchGetDeploymentGroups",
+        "codedeploy:ListApplications",
+        "codedeploy:ListDeploymentGroups",
+        "codepipeline:GetPipeline",
+        "codepipeline:ListPipelines",
+        "ec2:DescribeSecurityGroups",
+        "ecr:DescribePullThroughCacheRules",
+        "ecr:DescribeRepositories",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetRepositoryPolicy",
+        "events:ListRules",
+        "events:ListTargetsByRule",
+        "iam:GetAccessKeyLastUsed",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:GetRolePolicy",
+        "iam:ListAccessKeys",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoles",
+        "iam:ListUsers",
+        "inspector2:BatchGetAccountStatus",
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListKeys",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetFunctionUrlConfig",
+        "lambda:GetPolicy",
+        "lambda:ListFunctions",
+        "logs:DescribeLogGroups",
+        "s3:GetBucketEncryption",
+        "s3:GetBucketLogging",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketVersioning",
+        "s3:GetPublicAccessBlock",
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:ListSecrets",
+        "signer:ListSigningProfiles",
+        "ssm:DescribeParameters",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+The policy is **2.5 KB** — well inside the 6,144-byte limit for a
+customer-managed policy and the 10,240-byte limit for an inline role
+policy.
+
+### Trust policy for an IAM role
+
+If you run the scanner from CI (e.g. GitHub Actions with OIDC), pair
+the policy above with a trust policy that lets your CI system assume
+the role. Below is an example for GitHub Actions OIDC; adapt for your
+provider.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:my-org/my-repo:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Behaviour when permissions are missing
+
+The scanner does not fail closed when the principal lacks an action.
+Instead, the per-service enumeration records the error and the
+orchestrator emits one `<PREFIX>-000` finding (INFO severity) per
+degraded service — for example `CT-000`, `LMB-000`, `KMS-000`. Every
+rule that depends on that service is suppressed for the run. Operators
+can therefore see exactly which permission gaps are masking findings.
+
+Two exceptions are tolerated silently because their endpoints are
+optional:
+
+- `ecr:DescribePullThroughCacheRules` — not all regions/accounts have
+  PTC; only ECR-006 is suppressed if it fails.
+- `inspector2:BatchGetAccountStatus` — only ECR-007 is suppressed if
+  Inspector v2 is not enabled in the region.
+
+---
+
 ## CodeBuild
 
 ### CB-001 — Secrets in plaintext environment variables

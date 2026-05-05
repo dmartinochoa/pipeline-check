@@ -73,7 +73,7 @@ def report_junit(findings: list[Finding], score_result: dict) -> str:
     total = len(findings)
     failures = sum(1 for f in findings if not f.passed)
     grade = score_result.get("grade", "")
-    score = f"{score_result.get('total', 0)}"
+    score = f"{score_result.get('score', 0)}"
 
     out: list[str] = ['<?xml version="1.0" encoding="UTF-8"?>']
     out.append(

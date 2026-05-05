@@ -81,10 +81,9 @@ def report_markdown(
     should be the first thing a PR comment reader sees.
     """
     grade = score_result.get("grade", "?")
-    total_score = score_result.get("total", 0)
-    max_score = score_result.get("max", score_result.get("total_possible", 0))
-    failed = score_result.get("failed", sum(1 for f in findings if not f.passed))
-    passed = score_result.get("passed", sum(1 for f in findings if f.passed))
+    score_value = score_result.get("score", 0)
+    failed = sum(1 for f in findings if not f.passed)
+    passed = sum(1 for f in findings if f.passed)
 
     grade_emoji = _GRADE_EMOJI.get(grade, "")
     # Sort: failures first, then by severity rank desc, then by check_id.
@@ -95,12 +94,11 @@ def report_markdown(
     fails = [f for f in sorted_findings if not f.passed]
     passes = [f for f in sorted_findings if f.passed]
 
-    score_suffix = f"/{max_score}" if max_score else ""
     lines: list[str] = [
         "# Pipeline Security Report",
         "",
         f"**Grade:** {grade_emoji} {grade} &nbsp;·&nbsp; "
-        f"**Score:** {total_score}{score_suffix} &nbsp;·&nbsp; "
+        f"**Score:** {score_value}/100 &nbsp;·&nbsp; "
         f"**Failed:** {failed} &nbsp;·&nbsp; "
         f"**Passed:** {passed}",
         "",
