@@ -8,12 +8,12 @@ supports named AWS CLI profiles via `--profile` and honours the
 
 | Service | Check IDs |
 |---|---|
-| CodeBuild | CB-001..007 (class-based); CB-008/009/010 (rules) |
-| CodePipeline | CP-001..004 (class-based); CP-005/007 (rules) |
+| CodeBuild | CB-001..011 |
+| CodePipeline | CP-001..007 |
 | CodeDeploy | CD-001, CD-002, CD-003 |
-| ECR | ECR-001..005 (class-based); ECR-006/007 (rules) |
-| IAM | IAM-001..006 (class-based); IAM-007/008 (rules) |
-| PBAC (CodeBuild roles/VPC, pipeline role scoping) | PBAC-001/002 (class-based); PBAC-003/005 (rules) |
+| ECR | ECR-001..007 |
+| IAM | IAM-001..008 |
+| PBAC (CodeBuild roles/VPC, pipeline role scoping) | PBAC-001..005 |
 | S3 | S3-001, S3-002, S3-003, S3-004, S3-005 |
 | CloudTrail | CT-001, CT-002, CT-003 |
 | CloudWatch Logs | CWL-001, CWL-002 |

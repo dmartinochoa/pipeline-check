@@ -17,9 +17,10 @@
 | 6.4.3       | Changes to systems are managed via documented change control                      |
 | 6.5.1       | Changes to system components follow secure development procedures                 |
 | 7.2.1       | Access control is defined per job role with least privilege                       |
-| 7.2.2       | Access is assigned based on job classification                                    |
+| 7.2.2       | Access is assigned based on job classification and function                       |
 | 7.2.5       | System and application accounts have least-privilege access                       |
 | 8.2.1       | Strong unique identifiers are assigned to each user and service account           |
+| 8.2.2       | Group, shared, or generic accounts are managed and justified                      |
 | 10.2.1      | Audit logs are enabled and active for all system components                       |
 | 10.3.2      | Audit logs are protected from unauthorized modifications                          |
 | 10.3.3      | Audit logs are promptly backed up to a centralized log server                     |

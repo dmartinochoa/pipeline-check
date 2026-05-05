@@ -22,7 +22,7 @@ Shape:
 ```json
 {
   "schema_version": "1.0",
-  "tool_version": "0.7.0",
+  "tool_version": "0.3.0",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
     {
@@ -143,11 +143,12 @@ breakdown are computed.
 
 Regardless of output format, the process exits with:
 
-| Code | Meaning        |
-|------|----------------|
-| `0`  | Gate passed    |
-| `1`  | Gate failed    |
-| `2`  | Scanner error  |
+| Code | Meaning              |
+|------|----------------------|
+| `0`  | Gate passed          |
+| `1`  | Gate failed          |
+| `2`  | Scanner error        |
+| `3`  | Usage / config error |
 
 Gating is governed by the CI gate, not by the output format — see
 [ci_gate.md](ci_gate.md).
