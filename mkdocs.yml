@@ -31,7 +31,6 @@ theme:
     - search.share
     - content.code.copy
     - content.code.annotate
-    - content.action.edit
     - content.tabs.link
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -70,7 +69,7 @@ markdown_extensions:
   - md_in_html
   - tables
   - toc:
-      permalink: true
+      permalink: false
       toc_depth: 3
   - pymdownx.details
   - pymdownx.highlight:
