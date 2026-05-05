@@ -306,6 +306,79 @@ body[data-md-color-scheme] .md-main__inner:has(.pg-home) {
 .pg-terminal .dim       { color: var(--pg-muted-on-dark); }
 .pg-terminal .label     { color: #fff; font-weight: 600; }
 
+/* ----- Animated scan output -------------------------------- */
+/* Each line lands sequentially with realistic scanner cadence:
+   short pauses between findings, longer pauses around section
+   breaks. Plays once on page load. Reduced-motion users get the
+   final state instantly. */
+
+.pg-terminal .line {
+  display: block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-terminal .line {
+    opacity: 0;
+    transform: translateY(4px);
+    animation: pg-line-in 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  }
+
+  .pg-terminal .l1  { animation-delay: 0.20s; }
+  .pg-terminal .l2  { animation-delay: 0.32s; }
+  .pg-terminal .l3  { animation-delay: 0.50s; }
+  .pg-terminal .l4  { animation-delay: 0.68s; }
+  .pg-terminal .l5  { animation-delay: 1.00s; }
+  .pg-terminal .l6  { animation-delay: 1.18s; }
+  .pg-terminal .l7  { animation-delay: 1.50s; }
+  .pg-terminal .l8  { animation-delay: 1.68s; }
+  .pg-terminal .l9  { animation-delay: 2.00s; }
+  .pg-terminal .l10 { animation-delay: 2.18s; }
+  .pg-terminal .l11 { animation-delay: 2.45s; }
+  .pg-terminal .l12 { animation-delay: 2.65s; }
+  .pg-terminal .l13 { animation-delay: 2.85s; }
+  .pg-terminal .l14 { animation-delay: 3.00s; }
+  .pg-terminal .l15 { animation-delay: 3.20s; }
+  .pg-terminal .l16 { animation-delay: 3.40s; }
+  .pg-terminal .l17 { animation-delay: 3.62s; }
+  .pg-terminal .l18 { animation-delay: 3.82s; }
+  .pg-terminal .l19 { animation-delay: 4.05s; }
+}
+
+@keyframes pg-line-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Blinking cursor at the prompt position after the last line lands. */
+.pg-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--pg-teal-400);
+  vertical-align: -0.12em;
+  margin-left: 0.35em;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-cursor {
+    animation: pg-cursor-blink 1.05s steps(1, end) 4.5s infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-cursor {
+    opacity: 1;
+  }
+}
+
+@keyframes pg-cursor-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
 /* ============================================================
    Stat row (tabular numerics, no boxes)
    ============================================================ */
