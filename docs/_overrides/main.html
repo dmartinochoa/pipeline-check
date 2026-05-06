@@ -1,6 +1,6 @@
 {#-
   Site-wide template extension. Adds Open Graph + Twitter Card + theme
-  colour metadata into <head> on every page so link unfurls (Slack,
+  color metadata into <head> on every page so link unfurls (Slack,
   LinkedIn, Discord, etc.) and mobile browser chrome render correctly.
 
   home.html extends this file via its own `{% extends "main.html" %}`
@@ -14,14 +14,24 @@
 {% block extrahead %}
   {{ super() }}
 
-  {# --- Open Graph (Facebook, Slack, LinkedIn, Discord) --- #}
+  {# --- Open Graph (Facebook, Slack, LinkedIn, Discord) ---
+       ``twitter:card = summary_large_image`` requires a 1200×630-ish
+       banner; the default ``summary`` form takes the same favicon
+       sized image. We expose ``logo.png`` and let consumers pick
+       which crop they prefer. #}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{ config.site_name }}">
   <meta property="og:title" content="{% if page and page.meta and page.meta.title %}{{ page.meta.title }}{% elif page and page.title %}{{ page.title | striptags }} · {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
   <meta property="og:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
   <meta property="og:image" content="{{ config.site_url }}logo.png">
+  <meta property="og:image:alt" content="{{ config.site_name }} — {{ config.site_description }}">
   {% if page and page.canonical_url %}
   <meta property="og:url" content="{{ page.canonical_url }}">
+  {% endif %}
+  {% if page and page.meta and page.meta.description %}
+  <meta name="description" content="{{ page.meta.description }}">
+  {% else %}
+  <meta name="description" content="{{ config.site_description }}">
   {% endif %}
 
   {# --- Twitter Card --- #}
@@ -29,8 +39,14 @@
   <meta name="twitter:title" content="{% if page and page.title %}{{ page.title | striptags }} · {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
   <meta name="twitter:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
   <meta name="twitter:image" content="{{ config.site_url }}logo.png">
+  <meta name="twitter:image:alt" content="{{ config.site_name }} logo">
 
-  {# --- Mobile browser chrome colour, matches the brand navy --- #}
-  <meta name="theme-color" content="#0b3954">
-  <meta name="color-scheme" content="dark">
+  {# --- Mobile browser chrome color, scheme-aware ---
+       Two ``theme-color`` declarations let mobile Safari and Chrome
+       pick the right tint based on the user's system preference.
+       Light scheme → near-white; dark scheme → the brand navy
+       (matches ``--pg-navy-950`` in extra.css). #}
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#04101a" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
 {% endblock %}

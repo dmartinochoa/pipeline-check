@@ -99,6 +99,10 @@ hooks:
   # docs at build time. Was hardcoded; drifted between v0.3.0 and
   # v0.3.3 across release cycles.
   - hooks/mkdocs_version.py
+  # Templates `{{ standards.<name>.checks }}` / `{{ standards.<name>.controls }}`
+  # tokens from the live standards data modules. Used by the
+  # standards index to show per-framework coverage counts inline.
+  - hooks/mkdocs_standards_stats.py
 
 nav:
   - Home: index.md

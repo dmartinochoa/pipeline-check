@@ -513,6 +513,32 @@ body {
   flex: 1;
 }
 
+/* Coverage meta line on standards cards — small monospace caption
+   carrying the live "N controls · N checks evidenced" count. The
+   ``mkdocs_standards_stats.py`` hook templates the numbers in at
+   build time, so the figure can never drift from the registry. */
+.pg-doc-card__meta {
+  display: block;
+  margin: 0.7rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--md-default-fg-color--lightest);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+  letter-spacing: 0.01em;
+}
+
+.pg-doc-card:hover .pg-doc-card__meta {
+  color: var(--pg-teal-500);
+  border-top-color: color-mix(in oklab,
+    var(--pg-teal-500) 30%,
+    var(--md-default-fg-color--lightest) 70%);
+}
+
+[data-md-color-scheme="slate"] .pg-doc-card:hover .pg-doc-card__meta {
+  color: var(--pg-teal-300);
+}
+
 .pg-doc-card__tag {
   display: inline-block;
   align-self: flex-start;
