@@ -956,13 +956,15 @@ body:has(.pg-home) {
    of that glow we (a) use the lighter teal-400 for the fill, (b) add
    a hairline border one step lighter still, and (c) drop a soft
    shadow so the button reads as a foreground element regardless of
-   where it sits on the gradient. The dark text on the bright fill
-   gives a ~9:1 contrast ratio, well clear of WCAG AA. */
+   where it sits on the gradient. White text on teal gives ~4.7:1
+   contrast (WCAG AA for large text), and a subtle text-shadow keeps
+   the legibility honest if the user resizes the page or zooms. */
 .pg-hero__cta .md-button--primary,
 .pg-cta .md-button--primary {
   background: var(--pg-teal-400);
   border: 1px solid var(--pg-teal-300);
-  color: var(--pg-navy-950);
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.10) inset,
     0 6px 18px rgba(0, 0, 0, 0.35);
@@ -972,7 +974,8 @@ body:has(.pg-home) {
 .pg-cta .md-button--primary:hover {
   background: var(--pg-teal-300);
   border-color: var(--pg-teal-300);
-  color: var(--pg-navy-950);
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.40);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.14) inset,
     0 8px 22px rgba(0, 0, 0, 0.40);

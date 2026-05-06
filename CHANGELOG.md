@@ -48,6 +48,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   top-level `timeout: '600s'` for `GCB-005`, drop `logging: NONE`
   for `GCB-014`, comment-only TODO above unpinned step images for
   `GCB-001`, plus shared TLS-bypass mitigation for `GCB-011`.
+- **One more attack chain — Kubernetes cluster takeover.** `AC-011`
+  fires when `K8S-013` (hostPath volume) AND `K8S-020` (cluster-admin
+  ClusterRoleBinding) both fail in the same manifest set. Together
+  those two settings give an attacker who lands code in any pod on a
+  poisoned node both an escape to the host filesystem and the API
+  privileges to pivot the entire cluster — read every Secret, deploy
+  privileged DaemonSets across all nodes, impersonate any
+  ServiceAccount. Severity CRITICAL, MITRE T1611 (Escape to Host) +
+  T1098.003 + T1078. Chain catalog goes from 10 to 11.
 - **Two new attack chains.** `AC-009` Supply Chain Repo Poisoning
   fires when GHA-001 (unpinned action), GHA-002 (script-injection
   sink), and GHA-008 (literal secrets in YAML) all hit the same

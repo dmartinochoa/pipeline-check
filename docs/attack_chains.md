@@ -26,6 +26,7 @@ attack paths. Fix any one leg and the chain breaks.
 | `AC-008` | Dependency Confusion Window | HIGH | github | `GHA-021` + `GHA-029` |
 | `AC-009` | Supply Chain Repo Poisoning | CRITICAL | github | `GHA-001` + `GHA-002` + `GHA-008` |
 | `AC-010` | Self-Hosted Runner Environment Exfiltration | CRITICAL | github | `GHA-012` + (`GHA-016` or `GHA-019`) |
+| `AC-011` | Kubernetes Cluster Takeover via hostPath + cluster-admin | CRITICAL | kubernetes | `K8S-013` + `K8S-020` |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
