@@ -45,6 +45,11 @@ spec:
       containers:
         - name: app
           image: nginx:latest
+          # K8S-028: hostPort exposes the container directly on the
+          # node IP, bypassing the Service abstraction.
+          ports:
+            - containerPort: 8080
+              hostPort: 8080
           env:
             - name: AWS_ACCESS_KEY_ID
               value: AKIAIOSFODNN7EXAMPLE
@@ -156,3 +161,23 @@ spec:
     - name: http
       port: 80
       targetPort: 8080
+---
+# Ingress without TLS configuration — exercises K8S-027. Plaintext
+# HTTP at the load balancer + plaintext upstream.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: insecure-plaintext
+  namespace: insecure-apps
+spec:
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: insecure-public-lb
+                port:
+                  number: 80

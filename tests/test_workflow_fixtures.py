@@ -232,7 +232,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 19)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 20)}
 
     def _scan(self, filename: str):
         ctx = CloudBuildContext.from_path(FIXTURES / "cloudbuild" / filename)
@@ -264,7 +264,7 @@ class TestCloudBuildFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 17)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 19)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)
@@ -296,7 +296,7 @@ class TestDockerfileFixtures:
 
 
 class TestKubernetesFixtures:
-    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 27)}
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 29)}
 
     def _scan(self, filename: str):
         ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
@@ -344,13 +344,13 @@ class TestKubernetesFixtures:
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
-     {f"GCB-{i:03d}" for i in range(1, 19)}),
+     {f"GCB-{i:03d}" for i in range(1, 20)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
-     {f"DF-{i:03d}" for i in range(1, 17)}),
+     {f"DF-{i:03d}" for i in range(1, 19)}),
     ("kubernetes", "k8s/insecure.yaml",
      KubernetesContext, KubernetesManifestChecks,
-     {f"K8S-{i:03d}" for i in range(1, 27)}),
+     {f"K8S-{i:03d}" for i in range(1, 29)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

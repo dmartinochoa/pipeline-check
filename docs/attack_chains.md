@@ -24,6 +24,8 @@ attack paths. Fix any one leg and the chain breaks.
 | `AC-006` | Cache Poisoning via Untrusted Trigger | HIGH | github | `GHA-002` + `GHA-011` |
 | `AC-007` | IAM Privilege Escalation via CodeBuild | CRITICAL | aws / terraform / cloudformation | `CB-002` + (`IAM-002` or `IAM-004`) |
 | `AC-008` | Dependency Confusion Window | HIGH | github | `GHA-021` + `GHA-029` |
+| `AC-009` | Supply Chain Repo Poisoning | CRITICAL | github | `GHA-001` + `GHA-002` + `GHA-008` |
+| `AC-010` | Self-Hosted Runner Environment Exfiltration | CRITICAL | github | `GHA-012` + (`GHA-016` or `GHA-019`) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
