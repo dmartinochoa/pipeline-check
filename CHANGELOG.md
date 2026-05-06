@@ -5,6 +5,58 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-05-06
+
+(0.3.1 was tagged but never built — the version-vs-tag guard caught
+that the bump commit hadn't been merged before tagging. Re-cut as
+0.3.2 with the bump on master.)
+
+
+
+### Added
+
+- **Kubernetes manifest provider** — parses Kubernetes API documents
+  (`Deployment`, `Pod`, `Job`, `CronJob`, `DaemonSet`, `StatefulSet`,
+  `ReplicaSet`, `Service`, `Secret`, `Role`, `ClusterRole`,
+  `RoleBinding`, `ClusterRoleBinding`) from YAML on disk. Multi-doc
+  files (`---`-separated) and directories of manifests are both
+  supported; helm `values.yaml`, `Chart.yaml`, and kustomization
+  files are silently skipped. New CLI flag `--k8s-path`, registered
+  as the 12th provider, with auto-detection of `kubernetes/`, `k8s/`,
+  or `manifests/` directories. Ships 22 checks (`K8S-001`..`K8S-022`)
+  covering image digest pinning, host-namespace sharing
+  (`hostNetwork`/`hostPID`/`hostIPC`), `securityContext` (`privileged`,
+  `allowPrivilegeEscalation`, `runAsNonRoot`, `readOnlyRootFilesystem`,
+  capabilities, seccompProfile), service-account hygiene,
+  `automountServiceAccountToken`, `hostPath` volumes (with
+  sensitive-path upgrade to CRITICAL for `docker.sock`,
+  `/var/lib/kubelet`, `/etc`, `/`, etc.), resource limits, env-var
+  / Secret credential leakage (with base64-decoded scanning of
+  `Secret.data`), default-namespace placement, ClusterRoleBinding
+  to `cluster-admin`/`system:masters`, wildcard verbs+resources in
+  Roles/ClusterRoles, and Services exposing port 22 (SSH).
+- **Standards coverage** for Kubernetes rules — every `K8S-*` rule is
+  mapped into OWASP Top 10 CI/CD and NIST SP 800-190 (Application
+  Container Security).
+
+### Changed
+
+- `pyproject.toml` description now lists every supported provider
+  (CloudFormation, CircleCI, Cloud Build, Dockerfile previously
+  omitted).
+- README provider table, architecture ASCII, rule-tree listing, and
+  the docs-site landing page are reconciled against the current rule
+  catalogue (370+ checks across 12 providers, was incorrectly stated
+  as 330+ across 10/11 in places).
+
+### Fixed
+
+- Config file loader (`core/config._TOPLEVEL_KEYS`) now recognises
+  `cloudbuild_path`, `dockerfile_path`, `cfn_template`,
+  `jenkinsfile_path`, and `k8s_path`. These keys were already documented
+  by `pipeline_check init`'s scaffolded template but were silently
+  rejected by the strict schema validator.
+
 ## [0.3.0] - 2026-05-05
 
 ### Added

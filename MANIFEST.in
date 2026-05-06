@@ -1,0 +1,39 @@
+# PyPI sdist contents.
+#
+# Setuptools auto-includes pyproject.toml, README.md, LICENSE, and every
+# Python package found via [tool.setuptools.packages.find]. Anything else
+# at the repo root must be opted into here, and anything that should NOT
+# ship in the sdist must be explicitly pruned.
+
+include CHANGELOG.md
+
+# ── Defence-in-depth: keep the GitHub Pages docs site out of the sdist.
+# These are already excluded by setuptools' default rules (none are part
+# of a found package), but pinning them here means a future build-backend
+# change can't accidentally bundle the MkDocs Material site (~2 MB of
+# generated HTML/CSS/JS) into a PyPI release.
+prune docs
+prune _site
+prune _site_test
+exclude mkdocs.yml
+
+# CI / repo tooling — not useful to a PyPI consumer.
+prune .github
+prune scripts
+prune .agents
+prune .claude
+exclude .pipelinecheckignore
+exclude SECURITY.md
+exclude .pre-commit-config.yaml
+
+# Local build / cache artefacts.
+prune build
+prune dist
+prune .pytest_cache
+prune .ruff_cache
+prune .mypy_cache
+prune .venv
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.swp
+global-exclude .DS_Store
