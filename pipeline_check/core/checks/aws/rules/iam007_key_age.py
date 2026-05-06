@@ -44,7 +44,9 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         stale: list[tuple[str, int]] = []
         for key in active:
             created = key.get("CreateDate")
-            if not hasattr(created, "tzinfo"):
+            # ``hasattr`` doesn't narrow None for mypy; check the type
+            # explicitly so the subtraction below is well-typed.
+            if not isinstance(created, datetime):
                 continue
             age = now - created
             if age > threshold:

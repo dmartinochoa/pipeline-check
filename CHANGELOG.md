@@ -15,13 +15,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 - GitHub issue templates under `.github/ISSUE_TEMPLATE/`: bug report,
   feature request, and a dedicated false-positive form that requires
   `check_id` plus a minimal repro YAML.
-- **Per-rule unit tests for CircleCI** under `tests/circleci/` —
-  `conftest.py` shares the YAML-snippet -> `Finding` helper, and
-  three test modules cover positive/negative cases for CC-001
-  (orb pinning), CC-003 (docker image pinning), CC-005 (long-lived
-  AWS keys), CC-008 (literal secrets), CC-015 (no_output_timeout),
-  CC-016 (curl-pipe), CC-023 (TLS bypass). Sets the pattern for
-  the eventual full Track A backfill.
+- **Per-rule unit tests for the five CI providers** following the
+  ``tests/<provider>/conftest.py`` + per-area-module pattern. As of
+  this release, rule-test coverage by provider:
+    - GitHub Actions: 17/33 (52%)
+    - GitLab: 18/31 (58%)
+    - Bitbucket: 16/28 (57%)
+    - CircleCI: 15/31 (48%)
+    - Jenkins: 12/31 (39%)
+    - Cloud Build: 18/18 (100%, full)
+    - Kubernetes: 4/26 (the K8S-023..026 additions)
+    - Dockerfile: 2/16 (the DF-015..016 additions)
+    - Azure: 6/29 (existing tests only — no new modules)
+  Test modules are split by area: pinning, secrets-and-creds,
+  runtime-hardening, supply-chain. Each conftest exposes a
+  ``run_check(snippet, check_id)`` helper that runs the orchestrator
+  against an inline YAML/Groovy snippet and returns the matching
+  ``Finding``.
+- **Rule-coverage meta-test** at ``tests/test_rule_test_coverage.py``
+  locks the per-provider floors above to prevent regressions: a new
+  rule landing without a ``class Test<RULE_ID>...`` will dip the
+  floor and fail this guard. Bumping the floor in the file is the
+  documented way to record backfill progress.
 - **13 new autofixers** for Kubernetes and Cloud Build, lifting the
   catalog from 68 to 81. K8s: drop-line fixers for `K8S-002`/`-003`/
   `-004`/`-005` (`hostNetwork`, `hostPID`, `hostIPC`, `privileged:
@@ -120,6 +135,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   variable names that collided with outer-scope loop variables
   of incompatible types. Renamed locally so mypy can narrow them
   cleanly without changing user-visible behavior.
+- **mypy lax-mode is now clean** (80 errors -> 0). Closed the
+  remaining ~50 real type bugs across `_secrets.py` (label reuse
+  widening), `_iam_policy.py` (json.loads narrowing), gl004 (bool
+  cast), cloudformation/services.py (env_vars annotation),
+  autofix.py:1398 (regex slice), cloudformation/s3.py:_target_key
+  (Ref/GetAtt narrowing), terraform/phase3.py (nested branches
+  narrowing), lambda_handler (s3_key widening),
+  providers/aws.py (s3 client narrowing), iam007_key_age
+  (isinstance(datetime)), aws/_catalog.py (result tuple type),
+  github/base.py (YAML 1.1 ``on``->``True`` cast),
+  cloudformation/base.py (is_intrinsic + Sub return-type narrowing),
+  jenkins/rules/_helpers.py (Match[str] generic).
+- yaml-stub spam silenced via `disable_error_code = ["import-untyped"]`
+  in `pyproject.toml` plus `types-PyYAML` added to `requirements-dev.in`
+  (next pip-compile cycle will lock it in).
+- AWS-leaning modules covered by a per-module mypy override
+  (boto3's untyped responses produce ~22 near-identical errors;
+  the documented escape hatch until `boto3-stubs` is adopted).
+- **`continue-on-error: true` removed from `.github/workflows/python-app.yml`.**
+  mypy is now a required CI gate. Strict mode (`strict = true`)
+  remains a follow-up PR (~400 strict-only errors across rule
+  modules).
 
 ## [0.3.3] - 2026-05-06
 

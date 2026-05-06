@@ -1395,7 +1395,11 @@ def _fix_gcb001_pin_todo(content: str, finding: Finding) -> str | None:
         # the comment indent off of just the whitespace prefix so it
         # lines up with the ``- name:`` token.
         indent_raw = m.group("indent")
-        indent_ws = re.match(r"\s*", indent_raw).group(0)
+        # ``\s*`` always matches (the empty string at minimum), so the
+        # ``Match | None`` is in practice a Match. Use the slice form
+        # to extract the leading whitespace without needing the regex
+        # match object — equivalent and unambiguously-typed as ``str``.
+        indent_ws = indent_raw[: len(indent_raw) - len(indent_raw.lstrip())]
         # If the indent contains a list dash, the comment goes at the
         # same column as the dash, not the ``name:`` key.
         edits.append((m.start(), f"{indent_ws}# {_TODO_GCB_PIN}\n"))

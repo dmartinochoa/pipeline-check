@@ -48,7 +48,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
     for name, job in iter_jobs(doc):
         stage = job.get("stage")
-        is_deploy = (
+        # Cast each ``DEPLOY_RE.search(...)`` to bool so the variable's
+        # inferred type stays ``bool`` across both assignments. mypy
+        # otherwise widens to ``Match[str] | None | bool``, which then
+        # fails the second assignment.
+        is_deploy: bool = bool(
             (isinstance(stage, str) and DEPLOY_RE.search(stage))
             or DEPLOY_RE.search(name)
         )

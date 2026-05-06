@@ -37,8 +37,8 @@ def strip_groovy_comments(text: str) -> str:
     Returns the text with comment bodies replaced by whitespace so
     line numbers stay stable for downstream regex matches.
     """
-    def _replace(m: re.Match) -> str:
-        s = m.group()
+    def _replace(m: re.Match[str]) -> str:
+        s: str = m.group()
         if s.startswith(("'", '"')):
             return s  # keep string literals
         # Replace comment with spaces (preserve newlines for line counts)

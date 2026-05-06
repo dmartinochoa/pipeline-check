@@ -86,12 +86,20 @@ def _tolerate_unencodable_stdio() -> None:
     parsing emits help text on --help.
     """
     for stream in (sys.stdout, sys.stderr):
+        # ``reconfigure`` is only present on ``io.TextIOWrapper``, which
+        # is the type sys.stdout/stderr carry when not redirected.
+        # When they're redirected (a pipe, a captured fixture in tests)
+        # they may be a plain TextIO without ``reconfigure`` — caught
+        # by the AttributeError below.
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
         try:
-            stream.reconfigure(errors="replace")
-        except (AttributeError, OSError):
-            # Older Python, or stream is wrapped and doesn't expose
-            # reconfigure. Non-fatal - the worst case is the original
-            # crash on cp1252, which only affects Windows default console.
+            reconfigure(errors="replace")
+        except OSError:
+            # Stream rejects the reconfigure (e.g. detached). Non-fatal:
+            # the worst case is the original crash on cp1252, which only
+            # affects Windows default console.
             pass
 
 
@@ -292,8 +300,11 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         )
         for class_pkg_name in class_pkg_names:
             try:
-                pkg = importlib.import_module(class_pkg_name)
-                for info in pkgutil.iter_modules(pkg.__path__):
+                # ``class_pkg_module`` is distinct from the ``pkg`` loop
+                # variables earlier and later in this function (which are
+                # strings) so mypy doesn't carry a stale ``str`` inference.
+                class_pkg_module = importlib.import_module(class_pkg_name)
+                for info in pkgutil.iter_modules(class_pkg_module.__path__):
                     if info.name.startswith("_") or info.name == "rules":
                         continue
                     mod = importlib.import_module(f"{class_pkg_name}.{info.name}")
@@ -397,8 +408,11 @@ def _all_check_ids() -> list[str]:
         try:
             import importlib
             import pkgutil
-            pkg = importlib.import_module(provider_pkg_name)
-            for info in pkgutil.iter_modules(pkg.__path__):
+            # Distinct from the ``pkg`` loop variables earlier (lines
+            # 264, 378) which iterate over strings — the inferred
+            # ``str`` type would conflict with this Module assignment.
+            provider_pkg_module = importlib.import_module(provider_pkg_name)
+            for info in pkgutil.iter_modules(provider_pkg_module.__path__):
                 mod = importlib.import_module(f"{provider_pkg_name}.{info.name}")
                 if mod.__file__:
                     with open(mod.__file__, encoding="utf-8") as fh:

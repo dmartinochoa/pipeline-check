@@ -60,12 +60,13 @@ jobs:
           ruff check pipeline_check/ tests/
 
       - name: Type check with mypy
-        # Kept non-blocking while the type-annotation pass is ongoing.
-        # Flip when clean.
+        # Lax-mode is clean as of v0.4.0. Module-level overrides for
+        # boto3-leaning code live in pyproject.toml. Strict mode is
+        # not yet flipped on (~400 strict-only errors remain across
+        # rule modules); flipping it is its own focused PR.
         run: |
           pip install mypy
           mypy pipeline_check/ --ignore-missing-imports
-        continue-on-error: true
 
       - name: Test with pytest
         # --cov-fail-under gates the build on coverage regressions. Bump

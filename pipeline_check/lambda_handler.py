@@ -129,7 +129,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     report = report_json(findings, score_result, tool_version=__version__)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    s3_key = f"reports/{timestamp}/pipeline_check-report.json"
+    s3_key: str | None = f"reports/{timestamp}/pipeline_check-report.json"
 
     # Persist to S3. ``report_s3_status`` lets downstream consumers
     # distinguish three outcomes that a plain None can't express:

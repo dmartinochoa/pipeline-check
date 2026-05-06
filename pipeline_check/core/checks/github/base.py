@@ -111,7 +111,14 @@ def workflow_triggers(workflow: dict[str, Any]) -> list[str]:
     """
     on = workflow.get("on")
     if on is None:
-        on = workflow.get(True)  # YAML 1.1 "on" → boolean True
+        # YAML 1.1 parses bare ``on:`` as the boolean ``True``. The
+        # ``workflow`` dict is typed ``dict[str, Any]``, but PyYAML may
+        # populate it with a ``True`` key in this corner case.
+        # ``cast`` widens the key type just for this lookup so mypy
+        # accepts it.
+        from typing import cast
+        wf_any: dict[Any, Any] = cast("dict[Any, Any]", workflow)
+        on = wf_any.get(True)
     if on is None:
         return []
     if isinstance(on, str):

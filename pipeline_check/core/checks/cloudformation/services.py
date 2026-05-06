@@ -211,12 +211,11 @@ def _lambda(ctx) -> list[Finding]:
             passed=bool(signing),
         ))
         env = fn.properties.get("Environment") or {}
-        if is_intrinsic(env):
-            env_vars = {}
-        else:
-            env_vars = env.get("Variables") or {}
-        if is_intrinsic(env_vars):
-            env_vars = {}
+        env_vars: dict[str, object] = {}
+        if not is_intrinsic(env):
+            raw_vars = env.get("Variables") or {}
+            if not is_intrinsic(raw_vars) and isinstance(raw_vars, dict):
+                env_vars = raw_vars
         suspicious: list[str] = []
         for k, v in env_vars.items():
             if not isinstance(k, str):

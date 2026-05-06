@@ -245,8 +245,15 @@ class AWSProvider(BaseProvider):
         # dereferenced for their per-bucket config. Per-bucket API calls
         # aren't worth hoisting into the catalog (no rule shares them).
         artifact_buckets = catalog.s3_artifact_buckets()
-        s3 = context.client("s3") if artifact_buckets else None
+        # ``s3`` is non-None whenever ``artifact_buckets`` is truthy,
+        # which is exactly when the loop body runs. Construct it inside
+        # the conditional so mypy can narrow without an extra ``assert``.
+        if artifact_buckets:
+            s3 = context.client("s3")
+        else:
+            s3 = None
         for bucket in artifact_buckets:
+            assert s3 is not None  # invariant: non-empty artifact_buckets ⇒ s3 created
             meta: dict = {"bucket_name": bucket}
             try:
                 ver = s3.get_bucket_versioning(Bucket=bucket)

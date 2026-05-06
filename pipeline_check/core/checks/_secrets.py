@@ -121,11 +121,14 @@ def find_secret_values(doc: Any) -> list[str]:
                 continue
             if PLACEHOLDER_MARKER_RE.search(token):
                 continue
-            label = _classify(token)
-            if label is None:
+            # ``token_label`` is distinct from the ``label`` used for
+            # PEM blocks above (always ``str``) so mypy doesn't widen
+            # the variable's inferred type to ``str | None``.
+            token_label = _classify(token)
+            if token_label is None:
                 continue
             seen_tokens.add(token)
-            hits.append(f"{label}:{_redact(token)}")
+            hits.append(f"{token_label}:{_redact(token)}")
     return hits
 
 

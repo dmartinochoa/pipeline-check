@@ -305,7 +305,7 @@ pipeline_check/
         ├── jenkins/rules/     # JF-001 .. JF-031
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-018
-        ├── dockerfile/rules/  # DF-001 .. DF-014
+        ├── dockerfile/rules/  # DF-001 .. DF-016
         └── kubernetes/rules/  # K8S-001 .. K8S-026
 ```
 

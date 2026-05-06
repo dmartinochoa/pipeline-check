@@ -144,11 +144,12 @@ def _pbac005_cp005_cp007(ctx) -> list[Finding]:
                 git = trig.get("git_configuration") or {}
                 if isinstance(git, list) and git:
                     git = git[0]
-                pr_cfg = (git.get("pull_request") or [])
+                pr_cfg = (git.get("pull_request") or []) if isinstance(git, dict) else []
                 for pr in pr_cfg:
-                    branches = (pr.get("branches") or {})
-                    if isinstance(branches, list) and branches:
-                        branches = branches[0]
+                    branches_raw = (pr.get("branches") or {}) if isinstance(pr, dict) else {}
+                    if isinstance(branches_raw, list) and branches_raw:
+                        branches_raw = branches_raw[0]
+                    branches = branches_raw if isinstance(branches_raw, dict) else {}
                     includes = branches.get("includes") or []
                     if not includes or "*" in includes:
                         open_triggers.append(f"trigger[{idx}]")
