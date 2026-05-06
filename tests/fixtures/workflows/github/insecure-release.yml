@@ -121,6 +121,20 @@ jobs:
       # GHA-029: pip install from an unpinned git URL — lockfile
       # cannot protect against a moving branch head on the remote.
       - run: pip install git+https://example.com/internal/helper.git
+      # GHA-031: retired ::set-output:: command channel — anything
+      # in stdout that starts with `::` injects into the workflow's
+      # output map.
+      - run: echo "::set-output name=version::$VERSION"
+      # GHA-032: invokes a local script under the pull_request_target
+      # trigger declared at the top of this workflow. The script
+      # body resolves against the PR-controlled checkout.
+      - run: bash ./scripts/setup.sh
+      # GHA-033: secret value echoed to the build log. Log redaction
+      # is best-effort and API readers see the raw stream.
+      - name: Print release credentials
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: echo "Deploying with $DEPLOY_TOKEN"
 
   # GHA-030: requests `id-token: write` and invokes
   # aws-actions/configure-aws-credentials without an `environment:`

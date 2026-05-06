@@ -233,6 +233,79 @@ class TestRuleContent:
         assert out["runs"][0]["results"][0]["message"]["text"].startswith("CB-001:")
 
 
+class TestRuleTagsCap:
+    """GitHub Code Scanning rejects rules whose ``properties.tags``
+    list exceeds 10 entries. Pipeline-check maps a single check to up
+    to 13 standards (one tag each, plus ``security`` itself), so the
+    SARIF emitter has to cap and prioritise.
+    """
+
+    _ALL_STANDARDS = (
+        "cis_aws_foundations", "cis_supply_chain", "esf_supply_chain",
+        "nist_800_190", "nist_800_53", "nist_csf_2", "nist_ssdf",
+        "openssf_scorecard", "owasp_cicd_top_10", "pci_dss_v4",
+        "s2c2f", "slsa", "soc2",
+    )
+
+    def _finding_with_n_standards(self, n: int) -> Finding:
+        controls = [
+            ControlRef(standard=s, standard_title=s,
+                       control_id="X", control_title="Y")
+            for s in self._ALL_STANDARDS[:n]
+        ]
+        return _f(controls=controls)
+
+    def test_tags_capped_at_ten_when_all_standards_apply(self):
+        f = self._finding_with_n_standards(len(self._ALL_STANDARDS))
+        out = json.loads(report_sarif([f], _score()))
+        tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
+        assert len(tags) == 10, (
+            f"GitHub caps SARIF rule tags at 10; emitter produced "
+            f"{len(tags)} — uploads will warn and silently drop "
+            f"the overflow"
+        )
+
+    def test_tags_uncapped_when_under_limit(self):
+        f = self._finding_with_n_standards(3)
+        out = json.loads(report_sarif([f], _score()))
+        tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
+        # ``security`` + 3 standards = 4
+        assert len(tags) == 4
+
+    def test_security_tag_always_first(self):
+        f = self._finding_with_n_standards(0)  # no standards mapped
+        out = json.loads(report_sarif([f], _score()))
+        tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
+        assert tags == ["security"]
+
+    def test_priority_standards_survive_truncation(self):
+        """When the cap kicks in, the most user-facing frameworks
+        (OWASP CICD Top 10, NIST SSDF, SLSA, CIS Supply Chain,
+        OpenSSF Scorecard) must remain in the tag list — those are
+        what users filter the GitHub Code Scanning UI by."""
+        f = self._finding_with_n_standards(len(self._ALL_STANDARDS))
+        out = json.loads(report_sarif([f], _score()))
+        tags = out["runs"][0]["tool"]["driver"]["rules"][0]["properties"]["tags"]
+        for must_keep in (
+            "owasp_cicd_top_10", "nist_ssdf", "slsa",
+            "cis_supply_chain", "openssf_scorecard",
+        ):
+            assert must_keep in tags, (
+                f"{must_keep!r} dropped by truncation; got {tags}"
+            )
+
+    def test_overflowed_standards_still_visible_on_result(self):
+        """Standards truncated from the rule's ``tags`` must still
+        appear in full on the per-result ``properties.controls`` so
+        no audit information is lost — only the UI-filter convenience
+        is."""
+        f = self._finding_with_n_standards(len(self._ALL_STANDARDS))
+        out = json.loads(report_sarif([f], _score()))
+        result_controls = out["runs"][0]["results"][0]["properties"]["controls"]
+        emitted_standards = {c["standard"] for c in result_controls}
+        assert emitted_standards == set(self._ALL_STANDARDS)
+
+
 class TestCweEnrichment:
     def test_cwe_appears_in_rule_properties(self):
         f = _f(cwe=["CWE-798"])

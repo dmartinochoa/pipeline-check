@@ -44,7 +44,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 31)}
+    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 34)}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -262,7 +262,7 @@ class TestCloudBuildFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 9)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 15)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)
@@ -295,7 +295,7 @@ class TestDockerfileFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 31)}),
+     {f"GHA-{i:03d}" for i in range(1, 34)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 32)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
@@ -313,7 +313,7 @@ class TestDockerfileFixtures:
      {f"GCB-{i:03d}" for i in range(1, 16)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
-     {f"DF-{i:03d}" for i in range(1, 9)}),
+     {f"DF-{i:03d}" for i in range(1, 15)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

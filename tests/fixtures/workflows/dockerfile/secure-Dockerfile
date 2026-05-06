@@ -3,6 +3,7 @@
 # DF-001 safe: FROM pinned by sha256 digest.
 FROM python@sha256:0000000000000000000000000000000000000000000000000000000000000001
 
+# DF-014 safe: WORKDIR points at a dedicated app dir.
 WORKDIR /app
 
 # DF-006 safe: no ENV / ARG carries a credential-shaped literal.
@@ -13,14 +14,25 @@ WORKDIR /app
 ADD --checksum=sha256:0000000000000000000000000000000000000000000000000000000000000002 \
     https://example.com/internal/helper.tar.gz /opt/
 
-# DF-004 / DF-005 / DF-008 safe: download to file, verify checksum, then run.
-# No eval, no docker --privileged.
-RUN curl -fsSL https://example.com/install.sh -o /tmp/install.sh && \
+# DF-009 safe: COPY used for local files (no URL, no tarball extract).
+COPY ./config.json /opt/config.json
+
+# DF-004 / DF-005 / DF-008 / DF-010 / DF-011 / DF-012 safe:
+# - download to file, verify checksum, then run (no curl-pipe, no eval, no privileged)
+# - apt-get install pinned packages with same-layer cleanup
+# - no sudo, no dist-upgrade
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl=7.88.1-* && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://example.com/install.sh -o /tmp/install.sh && \
     echo "0000000000000000000000000000000000000000000000000000000000000003  /tmp/install.sh" \
         | sha256sum -c && \
     bash /tmp/install.sh
 
 COPY . .
+
+# DF-013 safe: EXPOSE only the application port, not a remote-access port.
+EXPOSE 8080
 
 # DF-002 safe: drop to a non-root user before runtime.
 RUN useradd --uid 1001 --create-home appuser

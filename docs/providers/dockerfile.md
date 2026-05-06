@@ -56,6 +56,12 @@ analogue in other providers:
 | DF-006 | ENV or ARG carries a credential-shaped literal value | CRITICAL |
 | DF-007 | No HEALTHCHECK directive declared | LOW |
 | DF-008 | RUN invokes docker --privileged or escalates capabilities | HIGH |
+| DF-009 | ADD used where COPY would suffice | LOW |
+| DF-010 | apt-get dist-upgrade / upgrade pulls unknown package versions | LOW |
+| DF-011 | Package manager install without cache cleanup in same layer | LOW |
+| DF-012 | RUN invokes sudo | HIGH |
+| DF-013 | EXPOSE declares sensitive remote-access port | CRITICAL |
+| DF-014 | WORKDIR set to a system / kernel filesystem path | CRITICAL |
 
 ---
 
@@ -130,6 +136,60 @@ Mirrors GHA-017 / GL-017 / BB-013 / ADO-017 / CC-017 / JF-017 (``docker run --pr
 **Recommended action**
 
 A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If the build genuinely requires elevated capabilities (e.g. compiling a kernel module), do it in a sealed builder image and ``COPY`` the artifact out — don't carry the privileged execution into the runtime image.
+
+## DF-009 — ADD used where COPY would suffice
+**Severity:** LOW
+
+Pure-local ``ADD <path> <dest>`` is functionally identical to ``COPY``, but ships extra-feature surface (URL fetch, tarball auto-extract) that adds nothing and turns a benign-looking filename change into a behaviour change. The Docker docs have recommended ``COPY`` for non-URL inputs since 2014.
+
+**Recommended action**
+
+Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behaviours that make it the wrong default — it fetches HTTP(S) URLs and it auto-extracts ``.tar`` / ``.tar.gz`` archives. Both are easy to invoke accidentally and neither is reproducible. Reserve ``ADD`` for a deliberate URL-pull (covered by DF-003) or an explicit tarball extract.
+
+## DF-010 — apt-get dist-upgrade / upgrade pulls unknown package versions
+**Severity:** LOW · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
+
+Running ``apt-get upgrade`` (or ``dist-upgrade``) inside a Dockerfile is the classic pet-vs-cattle anti-pattern. Two back-to-back builds with the same Dockerfile can produce different images because the upstream archive moved between the two ``RUN`` invocations. ``dist-upgrade`` additionally relaxes dependency resolution — it can install / remove arbitrary packages to satisfy upgrades, so the resulting image's package set isn't even bounded by what the Dockerfile declares.
+
+**Recommended action**
+
+Drop the upgrade step. Build on a recent base image instead (rebuild your image when the base image gets a security patch — pin the base by digest per DF-001 so the rebuild is deterministic). ``apt-get install pkg=<version>`` for specific packages stays reproducible; ``upgrade`` / ``dist-upgrade`` does not.
+
+## DF-011 — Package manager install without cache cleanup in same layer
+**Severity:** LOW
+
+Each Dockerfile ``RUN`` produces a layer. Installing packages in one layer and cleaning the cache in a later layer leaves the cache files in the lower layer forever — final image size is unchanged and the residual files broaden the attack surface (e.g. apt's signed-by keys, package metadata). The fix is layout, not behaviour: do install + cleanup in the same ``RUN``.
+
+**Recommended action**
+
+Combine the install and cleanup into the same ``RUN`` so the cache lands in a single layer that gets discarded together. Idiomatic pattern: ``RUN apt-get update && apt-get install -y <pkgs> && rm -rf /var/lib/apt/lists/*``. Equivalent forms: ``apk add --no-cache <pkgs>``, ``dnf install -y … && dnf clean all``, ``yum install -y … && yum clean all``, ``zypper -n in … && zypper clean -a``.
+
+## DF-012 — RUN invokes sudo
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+``sudo`` inside a Dockerfile is almost always a copy-paste from a host README. Its presence usually means one of three things, all of them wrong: (a) the build is silently running as root and the operator misread it, (b) the image carries an unrestricted ``sudoers`` line that a runtime escape can abuse, or (c) the package install chain depends on TTY-aware ``sudo`` behaviour that breaks under non-TTY ``docker build``. None of these cases benefit from keeping the directive.
+
+**Recommended action**
+
+Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the default before any ``USER`` directive), in which case ``sudo`` is no-op noise, or the build switched to a non-root ``USER`` and needs root for a specific step — in which case temporarily revert with ``USER root`` for that ``RUN`` and switch back afterward.
+
+## DF-013 — EXPOSE declares sensitive remote-access port
+**Severity:** CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+``EXPOSE`` is documentation, not a firewall — it doesn't actually open the port. But ``EXPOSE 22`` is a strong signal the image runs sshd, and any remote-access daemon inside the container blows up the threat model: now you have an extra auth surface, an extra service to keep patched, and a way for a compromised app to phone home from the outside. The container runtime / orchestrator's exec path covers every operational use case sshd traditionally served.
+
+**Recommended action**
+
+Remove the ``EXPOSE`` line for the remote-access port. If the operator legitimately needs to reach the container, exec into it (``docker exec`` / ``kubectl exec``) — that path uses the orchestrator's auth and audit, doesn't open a network port, and doesn't ship an extra daemon inside the image. Containers should not run sshd / telnetd / ftpd / rsh-d / vncd / RDP alongside the application.
+
+## DF-014 — WORKDIR set to a system / kernel filesystem path
+**Severity:** CRITICAL · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``ADD …``) resolve relative paths against the active ``WORKDIR``. A ``WORKDIR /sys`` followed by ``COPY conf.txt config.txt`` writes into the kernel's sysfs surface — at best a build-time error, at worst a container-escape primitive that lets a compromised step manipulate cgroups, devices, or kernel config.
+
+**Recommended action**
+
+Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories — pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
 
 ---
 
