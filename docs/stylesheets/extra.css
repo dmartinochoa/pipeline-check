@@ -920,7 +920,11 @@ body:has(.pg-home) {
   margin-bottom: 2rem;
 }
 
-.pg-hero__cta .md-button {
+/* Buttons sitting on a dark navy band (hero + closing CTA share the
+   same chrome). Both the top hero and bottom CTA are dark surfaces,
+   so they get the same teal-primary / ghost-secondary treatment. */
+.pg-hero__cta .md-button,
+.pg-cta .md-button {
   border-radius: 8px;
   padding: 0.65rem 1.15rem;
   font-weight: 600;
@@ -929,25 +933,29 @@ body:has(.pg-home) {
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.pg-hero__cta .md-button--primary {
+.pg-hero__cta .md-button--primary,
+.pg-cta .md-button--primary {
   background: var(--pg-teal-500);
   border-color: var(--pg-teal-500);
   color: #fff;
 }
 
-.pg-hero__cta .md-button--primary:hover {
+.pg-hero__cta .md-button--primary:hover,
+.pg-cta .md-button--primary:hover {
   background: var(--pg-teal-400);
   border-color: var(--pg-teal-400);
   color: #fff;
 }
 
-.pg-hero__cta .md-button:not(.md-button--primary) {
+.pg-hero__cta .md-button:not(.md-button--primary),
+.pg-cta .md-button:not(.md-button--primary) {
   color: var(--pg-text-on-dark);
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: transparent;
 }
 
-.pg-hero__cta .md-button:not(.md-button--primary):hover {
+.pg-hero__cta .md-button:not(.md-button--primary):hover,
+.pg-cta .md-button:not(.md-button--primary):hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.32);
   color: #fff;
@@ -1739,9 +1747,3 @@ body:has(.pg-home) {
   margin-top: 1.5rem;
 }
 
-/* Same button overrides as hero, applied to closing CTA */
-.pg-cta .md-button { border-radius: 8px; padding: 0.65rem 1.15rem; font-weight: 600; font-size: 0.92rem; }
-.pg-cta .md-button--primary { background: var(--pg-teal-500); border-color: var(--pg-teal-500); color: #fff; }
-.pg-cta .md-button--primary:hover { background: var(--pg-teal-400); border-color: var(--pg-teal-400); }
-.pg-cta .md-button:not(.md-button--primary) { color: var(--pg-text-on-dark); border: 1px solid rgba(255,255,255,0.18); background: transparent; }
-.pg-cta .md-button:not(.md-button--primary):hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.32); color: #fff; }

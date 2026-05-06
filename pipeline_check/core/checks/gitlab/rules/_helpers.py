@@ -5,11 +5,10 @@ import re
 from typing import Any
 
 from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+from ..._primitives.image_pinning import DIGEST_RE as DIGEST_RE
+from ..._primitives.image_pinning import VERSION_TAG_RE as VERSION_TAG_RE
 from ..._primitives.secret_shapes import AWS_KEY_RE as AWS_KEY_RE
 from ..._primitives.secret_shapes import SECRETISH_KEY_RE as SECRETISH_KEY_RE
-
-DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
-VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 
 # Attacker-controllable GitLab CI predefined variables.
 UNTRUSTED_VAR_RE = re.compile(
