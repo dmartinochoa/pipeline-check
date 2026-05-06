@@ -30,8 +30,8 @@ TESTS_DIR = REPO / "tests"
 # Provider package -> minimum acceptable test coverage (percent).
 # Set to the floor as of v0.4.0; ratchet upward over time.
 PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
-    "github":     ("pipeline_check.core.checks.github.rules",     50),
-    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     55),
+    "github":     ("pipeline_check.core.checks.github.rules",     65),
+    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     70),
     "bitbucket":  ("pipeline_check.core.checks.bitbucket.rules",  55),
     "azure":      ("pipeline_check.core.checks.azure.rules",      20),
     "jenkins":    ("pipeline_check.core.checks.jenkins.rules",    60),
@@ -140,8 +140,9 @@ def test_at_least_half_of_ci_providers_cross_60_percent():
         matched = _covered_rule_ids(test_blob, rule_ids)
         if 100 * len(matched) / max(1, len(rule_ids)) >= 60:
             above_60 += 1
-    # As of v0.4.0 the count is 0; bump this floor as backfill lands.
-    assert above_60 >= 0, (
+    # GHA, GitLab, Jenkins, CircleCI cross 60% as of this session;
+    # Bitbucket sits at 57% pending another batch of backfill.
+    assert above_60 >= 4, (
         f"Only {above_60}/5 CI providers cross 60% rule-test coverage. "
         f"Pick the provider closest to the threshold and backfill."
     )
