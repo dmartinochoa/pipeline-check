@@ -30,15 +30,15 @@ TESTS_DIR = REPO / "tests"
 # Provider package -> minimum acceptable test coverage (percent).
 # Set to the floor as of v0.4.0; ratchet upward over time.
 PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
-    "github":     ("pipeline_check.core.checks.github.rules",     80),
-    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     80),
-    "bitbucket":  ("pipeline_check.core.checks.bitbucket.rules",  75),
-    "azure":      ("pipeline_check.core.checks.azure.rules",      75),
-    "jenkins":    ("pipeline_check.core.checks.jenkins.rules",    80),
-    "circleci":   ("pipeline_check.core.checks.circleci.rules",   80),
-    "cloudbuild": ("pipeline_check.core.checks.cloudbuild.rules", 80),
-    "dockerfile": ("pipeline_check.core.checks.dockerfile.rules", 95),
-    "kubernetes": ("pipeline_check.core.checks.kubernetes.rules", 85),
+    "github":     ("pipeline_check.core.checks.github.rules",     100),
+    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     100),
+    "bitbucket":  ("pipeline_check.core.checks.bitbucket.rules",  100),
+    "azure":      ("pipeline_check.core.checks.azure.rules",      100),
+    "jenkins":    ("pipeline_check.core.checks.jenkins.rules",    100),
+    "circleci":   ("pipeline_check.core.checks.circleci.rules",   100),
+    "cloudbuild": ("pipeline_check.core.checks.cloudbuild.rules", 100),
+    "dockerfile": ("pipeline_check.core.checks.dockerfile.rules", 100),
+    "kubernetes": ("pipeline_check.core.checks.kubernetes.rules", 100),
 }
 
 
@@ -66,7 +66,7 @@ def _read_all_test_text() -> str:
 def _covered_rule_ids(test_blob: str, rule_ids: set[str]) -> set[str]:
     """Subset of *rule_ids* that have at least one test class somewhere.
 
-    Recognises both zero-padded (``TestGHA001``) and unpadded
+    Recognizes both zero-padded (``TestGHA001``) and unpadded
     (``TestGHA1``) class-name forms — the convention is the padded one
     but a few legacy classes use the unpadded form.
     """

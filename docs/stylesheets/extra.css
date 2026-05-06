@@ -27,7 +27,11 @@
   --pg-crit-500: #ef476f;
 
   --pg-text-on-dark: #e7eef5;
-  --pg-muted-on-dark: #9fb3c8;
+  /* Brightened from #9fb3c8 to give the hero lede + meta extra
+     contrast headroom over the brighter portions of the hero's
+     radial-gradient glow. ~10.5:1 on the navy bg, ~5:1 over the
+     glow center. */
+  --pg-muted-on-dark: #b6c4d4;
 
   /* Material palette overrides (palette: custom) */
   --md-primary-fg-color:        #0b3954;
@@ -946,18 +950,32 @@ body:has(.pg-home) {
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+/* Primary CTA. The hero has a teal radial-gradient glow at ~75% 10%
+   (and a fainter one at ~20% 80%) that uses the same family hue as
+   the button. To stay visually distinct against the brightest part
+   of that glow we (a) use the lighter teal-400 for the fill, (b) add
+   a hairline border one step lighter still, and (c) drop a soft
+   shadow so the button reads as a foreground element regardless of
+   where it sits on the gradient. The dark text on the bright fill
+   gives a ~9:1 contrast ratio, well clear of WCAG AA. */
 .pg-hero__cta .md-button--primary,
 .pg-cta .md-button--primary {
-  background: var(--pg-teal-500);
-  border-color: var(--pg-teal-500);
-  color: #fff;
+  background: var(--pg-teal-400);
+  border: 1px solid var(--pg-teal-300);
+  color: var(--pg-navy-950);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .pg-hero__cta .md-button--primary:hover,
 .pg-cta .md-button--primary:hover {
-  background: var(--pg-teal-400);
-  border-color: var(--pg-teal-400);
-  color: #fff;
+  background: var(--pg-teal-300);
+  border-color: var(--pg-teal-300);
+  color: var(--pg-navy-950);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 8px 22px rgba(0, 0, 0, 0.40);
 }
 
 .pg-hero__cta .md-button:not(.md-button--primary),

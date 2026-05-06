@@ -55,6 +55,7 @@ analogue in other providers:
 | GCB-016 | Step dir field contains parent-directory escape (..) | MEDIUM |
 | GCB-017 | Image-producing build does not request SLSA provenance | MEDIUM |
 | GCB-018 | Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) | MEDIUM |
+| GCB-019 | Shell entrypoint inlines a user substitution into args | HIGH |
 
 ---
 
@@ -219,6 +220,15 @@ Cloud Build supports two secret-injection mechanisms. The older ``secrets:`` blo
 **Recommended action**
 
 Migrate from the top-level ``secrets:`` block (KMS-encrypted values stored inline in the YAML) to ``availableSecrets`` + Secret Manager. Replace each ``secrets[].secretEnv`` mapping with a ``versionName`` reference under ``availableSecrets.secretManager``. Secret Manager rotates without re-encrypting and re-committing the YAML, scopes access via IAM rather than the KMS key's IAM, and produces an explicit audit log entry on every read.
+
+## GCB-019 — Shell entrypoint inlines a user substitution into args
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-S-INPUT-VAL, ESF-D-INJECTION
+
+Distinct from GCB-004, which fires only when ``options.dynamicSubstitutions: true`` re-evaluates bash syntax after expansion. GCB-019 fires whenever a step uses a shell as its entrypoint AND a ``$_USER_VAR`` token lands inside ``args``: Cloud Build expands the substitution before the step runs, and the shell then interprets any metacharacters the substitution carried — straight command injection through trigger configuration.
+
+**Recommended action**
+
+Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values) and reference them inside a checked-in shell script rather than splicing them directly into ``args``. If the step truly needs to invoke shell logic inline, switch the entrypoint to the underlying tool (``docker``, ``gcloud``, ``gsutil``) and let the tool see the substitution as an argument, not as shell text.
 
 ---
 

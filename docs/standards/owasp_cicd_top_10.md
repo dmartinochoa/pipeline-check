@@ -2,7 +2,11 @@
 
 - **Version:** 2022
 - **URL:** https://owasp.org/www-project-top-10-ci-cd-security-risks/
-- **Scope:** Applies to every check emitted by this scanner.
+- **Source of truth:** `pipeline_check/core/standards/data/owasp_cicd_top_10.py`
+- **Scope:** The OWASP CI/CD Top 10 is the canonical risk taxonomy
+  this scanner organises around. Every other compliance standard's
+  ``check_id`` set is a subset of OWASP's; the cross-standard
+  integrity test in ``tests/test_standards.py`` enforces it.
 
 ## Controls
 
@@ -19,17 +23,361 @@
 | CICD-SEC-9   | Improper Artifact Integrity Validation     |
 | CICD-SEC-10  | Insufficient Logging and Visibility        |
 
-## Mapping to checks
+## Coverage summary
 
-| Control      | Checks                                                                 |
-|--------------|------------------------------------------------------------------------|
-| CICD-SEC-1   | CB-007, CP-001, CD-001, CD-002, GL-004, BB-004, ADO-004                |
-| CICD-SEC-2   | IAM-001, IAM-002, IAM-003, IAM-004, IAM-005, IAM-006                   |
-| CICD-SEC-3   | ECR-001, GHA-001, GL-001, GL-005, BB-001, ADO-001, ADO-005             |
-| CICD-SEC-4   | CP-003, GHA-002, GHA-003, GL-002, BB-002, ADO-002                      |
-| CICD-SEC-5   | PBAC-001, PBAC-002, GHA-004                                            |
-| CICD-SEC-6   | CB-001, CB-006, CP-004, GHA-005, GL-003, BB-003, ADO-003               |
-| CICD-SEC-7   | CB-002, CB-004, CB-005, ECR-004, BB-005                                |
-| CICD-SEC-8   | ECR-003                                                                |
-| CICD-SEC-9   | CP-002, ECR-002, ECR-005, S3-001, S3-002, S3-003, S3-005, GHA-006, GHA-007, GL-006, GL-007, BB-006, BB-007, ADO-006, ADO-007 |
-| CICD-SEC-10  | CB-003, CD-003, S3-004                                                 |
+Number of distinct ``check_id`` values mapping to each risk. The
+scanner's catalog is intentionally weighted toward dependency-chain
+abuse (CICD-SEC-3) and poisoned-pipeline-execution (CICD-SEC-4),
+which together account for the bulk of real-world CI/CD incidents.
+
+| Control      | Description                                | Checks |
+|--------------|--------------------------------------------|-------:|
+| CICD-SEC-1   | Insufficient Flow Control Mechanisms       |     15 |
+| CICD-SEC-2   | Inadequate Identity and Access Management  |     16 |
+| CICD-SEC-3   | Dependency Chain Abuse                     |     77 |
+| CICD-SEC-4   | Poisoned Pipeline Execution                |     45 |
+| CICD-SEC-5   | Insufficient PBAC                          |     10 |
+| CICD-SEC-6   | Insufficient Credential Hygiene            |     43 |
+| CICD-SEC-7   | Insecure System Configuration              |     52 |
+| CICD-SEC-8   | Ungoverned Usage of 3rd-Party Services     |      7 |
+| CICD-SEC-9   | Improper Artifact Integrity Validation     |     37 |
+| CICD-SEC-10  | Insufficient Logging and Visibility        |     31 |
+
+## Mapping (check -> control)
+
+The full per-check mapping. Regenerate with:
+
+```bash
+python scripts/gen_standards_mappings.py owasp_cicd_top_10     --out docs/standards/_owasp_table.md
+```
+
+| Check | Control(s) |
+|-------|------------|
+| `ADO-001` | `CICD-SEC-3` |
+| `ADO-002` | `CICD-SEC-4` |
+| `ADO-003` | `CICD-SEC-6` |
+| `ADO-004` | `CICD-SEC-1` |
+| `ADO-005` | `CICD-SEC-3` |
+| `ADO-006` | `CICD-SEC-9` |
+| `ADO-007` | `CICD-SEC-9` |
+| `ADO-008` | `CICD-SEC-6` |
+| `ADO-009` | `CICD-SEC-3` |
+| `ADO-010` | `CICD-SEC-4` |
+| `ADO-011` | `CICD-SEC-4` |
+| `ADO-012` | `CICD-SEC-4` |
+| `ADO-013` | `CICD-SEC-7` |
+| `ADO-014` | `CICD-SEC-6` |
+| `ADO-015` | `CICD-SEC-7` |
+| `ADO-016` | `CICD-SEC-3` |
+| `ADO-017` | `CICD-SEC-7` |
+| `ADO-018` | `CICD-SEC-3` |
+| `ADO-019` | `CICD-SEC-4` |
+| `ADO-020` | `CICD-SEC-3` |
+| `ADO-021` | `CICD-SEC-3` |
+| `ADO-022` | `CICD-SEC-3` |
+| `ADO-023` | `CICD-SEC-3` |
+| `ADO-024` | `CICD-SEC-9` |
+| `ADO-025` | `CICD-SEC-3` |
+| `ADO-026` | `CICD-SEC-4` |
+| `ADO-027` | `CICD-SEC-4` |
+| `ADO-028` | `CICD-SEC-3` |
+| `BB-001` | `CICD-SEC-3` |
+| `BB-002` | `CICD-SEC-4` |
+| `BB-003` | `CICD-SEC-6` |
+| `BB-004` | `CICD-SEC-1` |
+| `BB-005` | `CICD-SEC-7` |
+| `BB-006` | `CICD-SEC-9` |
+| `BB-007` | `CICD-SEC-9` |
+| `BB-008` | `CICD-SEC-6` |
+| `BB-009` | `CICD-SEC-3` |
+| `BB-010` | `CICD-SEC-4` |
+| `BB-011` | `CICD-SEC-6` |
+| `BB-012` | `CICD-SEC-3` |
+| `BB-013` | `CICD-SEC-7` |
+| `BB-014` | `CICD-SEC-3` |
+| `BB-015` | `CICD-SEC-3` |
+| `BB-016` | `CICD-SEC-7` |
+| `BB-017` | `CICD-SEC-6` |
+| `BB-018` | `CICD-SEC-4` |
+| `BB-019` | `CICD-SEC-6` |
+| `BB-020` | `CICD-SEC-7` |
+| `BB-021` | `CICD-SEC-3` |
+| `BB-022` | `CICD-SEC-3` |
+| `BB-023` | `CICD-SEC-3` |
+| `BB-024` | `CICD-SEC-9` |
+| `BB-025` | `CICD-SEC-4` |
+| `BB-026` | `CICD-SEC-4` |
+| `BB-027` | `CICD-SEC-3` |
+| `CA-000` | `CICD-SEC-10` |
+| `CA-001` | `CICD-SEC-9` |
+| `CA-002` | `CICD-SEC-3` |
+| `CA-003` | `CICD-SEC-8` |
+| `CA-004` | `CICD-SEC-2` |
+| `CB-000` | `CICD-SEC-10` |
+| `CB-001` | `CICD-SEC-6` |
+| `CB-002` | `CICD-SEC-7` |
+| `CB-003` | `CICD-SEC-10` |
+| `CB-004` | `CICD-SEC-7` |
+| `CB-005` | `CICD-SEC-7` |
+| `CB-006` | `CICD-SEC-6` |
+| `CB-007` | `CICD-SEC-1` |
+| `CB-008` | `CICD-SEC-4` |
+| `CB-009` | `CICD-SEC-3` |
+| `CB-010` | `CICD-SEC-4` |
+| `CB-011` | `CICD-SEC-4` |
+| `CC-001` | `CICD-SEC-3` |
+| `CC-002` | `CICD-SEC-4` |
+| `CC-003` | `CICD-SEC-3` |
+| `CC-004` | `CICD-SEC-6` |
+| `CC-005` | `CICD-SEC-6` |
+| `CC-006` | `CICD-SEC-9` |
+| `CC-007` | `CICD-SEC-9` |
+| `CC-008` | `CICD-SEC-6` |
+| `CC-009` | `CICD-SEC-1` |
+| `CC-010` | `CICD-SEC-7` |
+| `CC-011` | `CICD-SEC-10` |
+| `CC-012` | `CICD-SEC-4` |
+| `CC-013` | `CICD-SEC-1` |
+| `CC-014` | `CICD-SEC-5` |
+| `CC-015` | `CICD-SEC-7` |
+| `CC-016` | `CICD-SEC-3` |
+| `CC-017` | `CICD-SEC-7` |
+| `CC-018` | `CICD-SEC-3` |
+| `CC-019` | `CICD-SEC-6` |
+| `CC-020` | `CICD-SEC-3` |
+| `CC-021` | `CICD-SEC-3` |
+| `CC-022` | `CICD-SEC-3` |
+| `CC-023` | `CICD-SEC-3` |
+| `CC-024` | `CICD-SEC-9` |
+| `CC-025` | `CICD-SEC-4` |
+| `CC-026` | `CICD-SEC-4` |
+| `CC-027` | `CICD-SEC-4` |
+| `CC-028` | `CICD-SEC-3` |
+| `CC-029` | `CICD-SEC-3` |
+| `CC-030` | `CICD-SEC-6` |
+| `CCM-000` | `CICD-SEC-10` |
+| `CCM-001` | `CICD-SEC-1` |
+| `CCM-002` | `CICD-SEC-9` |
+| `CCM-003` | `CICD-SEC-8` |
+| `CD-000` | `CICD-SEC-10` |
+| `CD-001` | `CICD-SEC-1` |
+| `CD-002` | `CICD-SEC-1` |
+| `CD-003` | `CICD-SEC-10` |
+| `CF-001` | `CICD-SEC-6` |
+| `CF-002` | `CICD-SEC-6` |
+| `CF-003` | `CICD-SEC-7` |
+| `CP-000` | `CICD-SEC-10` |
+| `CP-001` | `CICD-SEC-1` |
+| `CP-002` | `CICD-SEC-9` |
+| `CP-003` | `CICD-SEC-4` |
+| `CP-004` | `CICD-SEC-6` |
+| `CP-005` | `CICD-SEC-1` |
+| `CP-007` | `CICD-SEC-4` |
+| `CT-000` | `CICD-SEC-10` |
+| `CT-001` | `CICD-SEC-10` |
+| `CT-002` | `CICD-SEC-10` |
+| `CT-003` | `CICD-SEC-10` |
+| `CW-001` | `CICD-SEC-10` |
+| `CWL-000` | `CICD-SEC-10` |
+| `CWL-001` | `CICD-SEC-10` |
+| `CWL-002` | `CICD-SEC-9` |
+| `DF-001` | `CICD-SEC-3` |
+| `DF-002` | `CICD-SEC-7` |
+| `DF-003` | `CICD-SEC-3` |
+| `DF-004` | `CICD-SEC-3` |
+| `DF-005` | `CICD-SEC-4` |
+| `DF-006` | `CICD-SEC-6` |
+| `DF-007` | `CICD-SEC-10` |
+| `DF-008` | `CICD-SEC-7` |
+| `DF-009` | `CICD-SEC-3` |
+| `DF-010` | `CICD-SEC-3` |
+| `DF-011` | `CICD-SEC-7` |
+| `DF-012` | `CICD-SEC-7` |
+| `DF-013` | `CICD-SEC-7` |
+| `DF-014` | `CICD-SEC-7` |
+| `DF-015` | `CICD-SEC-7` |
+| `DF-016` | `CICD-SEC-9` |
+| `EB-000` | `CICD-SEC-10` |
+| `EB-001` | `CICD-SEC-10` |
+| `EB-002` | `CICD-SEC-8` |
+| `ECR-000` | `CICD-SEC-10` |
+| `ECR-001` | `CICD-SEC-3` |
+| `ECR-002` | `CICD-SEC-9` |
+| `ECR-003` | `CICD-SEC-8` |
+| `ECR-004` | `CICD-SEC-7` |
+| `ECR-005` | `CICD-SEC-9` |
+| `ECR-006` | `CICD-SEC-3` |
+| `ECR-007` | `CICD-SEC-3` |
+| `GCB-001` | `CICD-SEC-3` |
+| `GCB-002` | `CICD-SEC-2` |
+| `GCB-003` | `CICD-SEC-6` |
+| `GCB-004` | `CICD-SEC-4` |
+| `GCB-005` | `CICD-SEC-7` |
+| `GCB-006` | `CICD-SEC-4` |
+| `GCB-007` | `CICD-SEC-6` |
+| `GCB-008` | `CICD-SEC-3` |
+| `GCB-009` | `CICD-SEC-9` |
+| `GCB-010` | `CICD-SEC-3` |
+| `GCB-011` | `CICD-SEC-3` |
+| `GCB-012` | `CICD-SEC-6` |
+| `GCB-013` | `CICD-SEC-3` |
+| `GCB-014` | `CICD-SEC-10` |
+| `GCB-015` | `CICD-SEC-9` |
+| `GCB-016` | `CICD-SEC-7` |
+| `GCB-017` | `CICD-SEC-9` · `CICD-SEC-10` |
+| `GCB-018` | `CICD-SEC-6` |
+| `GHA-001` | `CICD-SEC-3` |
+| `GHA-002` | `CICD-SEC-4` |
+| `GHA-003` | `CICD-SEC-4` |
+| `GHA-004` | `CICD-SEC-5` |
+| `GHA-005` | `CICD-SEC-6` |
+| `GHA-006` | `CICD-SEC-9` |
+| `GHA-007` | `CICD-SEC-9` |
+| `GHA-008` | `CICD-SEC-6` |
+| `GHA-009` | `CICD-SEC-4` |
+| `GHA-010` | `CICD-SEC-4` |
+| `GHA-011` | `CICD-SEC-4` |
+| `GHA-012` | `CICD-SEC-7` |
+| `GHA-013` | `CICD-SEC-4` |
+| `GHA-014` | `CICD-SEC-1` |
+| `GHA-015` | `CICD-SEC-7` |
+| `GHA-016` | `CICD-SEC-3` |
+| `GHA-017` | `CICD-SEC-7` |
+| `GHA-018` | `CICD-SEC-3` |
+| `GHA-019` | `CICD-SEC-6` |
+| `GHA-020` | `CICD-SEC-3` |
+| `GHA-021` | `CICD-SEC-3` |
+| `GHA-022` | `CICD-SEC-3` |
+| `GHA-023` | `CICD-SEC-3` |
+| `GHA-024` | `CICD-SEC-9` |
+| `GHA-025` | `CICD-SEC-3` |
+| `GHA-026` | `CICD-SEC-7` |
+| `GHA-027` | `CICD-SEC-4` |
+| `GHA-028` | `CICD-SEC-4` |
+| `GHA-029` | `CICD-SEC-3` |
+| `GL-001` | `CICD-SEC-3` |
+| `GL-002` | `CICD-SEC-4` |
+| `GL-003` | `CICD-SEC-6` |
+| `GL-004` | `CICD-SEC-1` |
+| `GL-005` | `CICD-SEC-3` |
+| `GL-006` | `CICD-SEC-9` |
+| `GL-007` | `CICD-SEC-9` |
+| `GL-008` | `CICD-SEC-6` |
+| `GL-009` | `CICD-SEC-3` |
+| `GL-010` | `CICD-SEC-4` |
+| `GL-011` | `CICD-SEC-4` |
+| `GL-012` | `CICD-SEC-4` |
+| `GL-013` | `CICD-SEC-6` |
+| `GL-014` | `CICD-SEC-7` |
+| `GL-015` | `CICD-SEC-7` |
+| `GL-016` | `CICD-SEC-3` |
+| `GL-017` | `CICD-SEC-7` |
+| `GL-018` | `CICD-SEC-3` |
+| `GL-019` | `CICD-SEC-3` |
+| `GL-020` | `CICD-SEC-6` |
+| `GL-021` | `CICD-SEC-3` |
+| `GL-022` | `CICD-SEC-3` |
+| `GL-023` | `CICD-SEC-3` |
+| `GL-024` | `CICD-SEC-9` |
+| `GL-025` | `CICD-SEC-4` |
+| `GL-026` | `CICD-SEC-4` |
+| `GL-027` | `CICD-SEC-3` |
+| `GL-028` | `CICD-SEC-3` |
+| `GL-029` | `CICD-SEC-1` |
+| `GL-030` | `CICD-SEC-3` |
+| `IAM-000` | `CICD-SEC-10` |
+| `IAM-001` | `CICD-SEC-2` |
+| `IAM-002` | `CICD-SEC-2` |
+| `IAM-003` | `CICD-SEC-2` |
+| `IAM-004` | `CICD-SEC-2` |
+| `IAM-005` | `CICD-SEC-2` |
+| `IAM-006` | `CICD-SEC-2` |
+| `IAM-007` | `CICD-SEC-6` |
+| `IAM-008` | `CICD-SEC-2` |
+| `JF-001` | `CICD-SEC-3` |
+| `JF-002` | `CICD-SEC-4` |
+| `JF-003` | `CICD-SEC-5` |
+| `JF-004` | `CICD-SEC-6` |
+| `JF-005` | `CICD-SEC-1` |
+| `JF-006` | `CICD-SEC-9` |
+| `JF-007` | `CICD-SEC-9` |
+| `JF-008` | `CICD-SEC-6` |
+| `JF-009` | `CICD-SEC-3` |
+| `JF-010` | `CICD-SEC-6` |
+| `JF-011` | `CICD-SEC-10` |
+| `JF-012` | `CICD-SEC-3` |
+| `JF-013` | `CICD-SEC-4` |
+| `JF-014` | `CICD-SEC-7` |
+| `JF-015` | `CICD-SEC-7` |
+| `JF-016` | `CICD-SEC-3` |
+| `JF-017` | `CICD-SEC-7` |
+| `JF-018` | `CICD-SEC-3` |
+| `JF-019` | `CICD-SEC-4` |
+| `JF-020` | `CICD-SEC-3` |
+| `JF-021` | `CICD-SEC-3` |
+| `JF-022` | `CICD-SEC-3` |
+| `JF-023` | `CICD-SEC-3` |
+| `JF-024` | `CICD-SEC-1` |
+| `JF-025` | `CICD-SEC-7` |
+| `JF-026` | `CICD-SEC-4` |
+| `JF-027` | `CICD-SEC-9` |
+| `JF-028` | `CICD-SEC-9` |
+| `JF-029` | `CICD-SEC-4` |
+| `JF-030` | `CICD-SEC-4` |
+| `JF-031` | `CICD-SEC-3` |
+| `K8S-001` | `CICD-SEC-3` |
+| `K8S-002` | `CICD-SEC-7` |
+| `K8S-003` | `CICD-SEC-7` |
+| `K8S-004` | `CICD-SEC-7` |
+| `K8S-005` | `CICD-SEC-7` |
+| `K8S-006` | `CICD-SEC-7` |
+| `K8S-007` | `CICD-SEC-7` |
+| `K8S-008` | `CICD-SEC-7` |
+| `K8S-009` | `CICD-SEC-7` |
+| `K8S-010` | `CICD-SEC-7` |
+| `K8S-011` | `CICD-SEC-2` |
+| `K8S-012` | `CICD-SEC-2` · `CICD-SEC-6` |
+| `K8S-013` | `CICD-SEC-7` |
+| `K8S-014` | `CICD-SEC-7` |
+| `K8S-015` | `CICD-SEC-7` |
+| `K8S-016` | `CICD-SEC-7` |
+| `K8S-017` | `CICD-SEC-6` |
+| `K8S-018` | `CICD-SEC-6` |
+| `K8S-019` | `CICD-SEC-2` |
+| `K8S-020` | `CICD-SEC-2` · `CICD-SEC-5` |
+| `K8S-021` | `CICD-SEC-2` · `CICD-SEC-5` |
+| `K8S-022` | `CICD-SEC-7` |
+| `K8S-023` | `CICD-SEC-7` |
+| `K8S-024` | `CICD-SEC-10` |
+| `K8S-025` | `CICD-SEC-2` · `CICD-SEC-5` |
+| `K8S-026` | `CICD-SEC-7` |
+| `KMS-000` | `CICD-SEC-10` |
+| `KMS-001` | `CICD-SEC-6` |
+| `KMS-002` | `CICD-SEC-2` |
+| `LMB-000` | `CICD-SEC-10` |
+| `LMB-001` | `CICD-SEC-9` |
+| `LMB-002` | `CICD-SEC-8` |
+| `LMB-003` | `CICD-SEC-6` |
+| `LMB-004` | `CICD-SEC-8` |
+| `PBAC-000` | `CICD-SEC-10` |
+| `PBAC-001` | `CICD-SEC-5` |
+| `PBAC-002` | `CICD-SEC-5` |
+| `PBAC-003` | `CICD-SEC-5` |
+| `PBAC-005` | `CICD-SEC-5` |
+| `S3-000` | `CICD-SEC-10` |
+| `S3-001` | `CICD-SEC-9` |
+| `S3-002` | `CICD-SEC-9` |
+| `S3-003` | `CICD-SEC-9` |
+| `S3-004` | `CICD-SEC-10` |
+| `S3-005` | `CICD-SEC-9` |
+| `SIGN-001` | `CICD-SEC-9` |
+| `SIGN-002` | `CICD-SEC-9` |
+| `SM-000` | `CICD-SEC-10` |
+| `SM-001` | `CICD-SEC-6` |
+| `SM-002` | `CICD-SEC-8` |
+| `SSM-000` | `CICD-SEC-10` |
+| `SSM-001` | `CICD-SEC-6` |
+| `SSM-002` | `CICD-SEC-9` |
+| `TF-001` | `CICD-SEC-6` |
+| `TF-002` | `CICD-SEC-6` |
+| `TF-003` | `CICD-SEC-7` |

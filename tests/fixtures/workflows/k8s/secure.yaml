@@ -180,3 +180,27 @@ spec:
   loadBalancerSourceRanges:
     - 198.51.100.0/24
     - 203.0.113.0/24
+---
+# Ingress — K8S-027 safe: spec.tls populated with a hostname/secret
+# pair. Forces HTTPS termination at the LB.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: secure-app-ingress
+  namespace: secure-apps
+spec:
+  tls:
+    - hosts:
+        - api.example.com
+      secretName: secure-app-tls
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: secure-app-lb
+                port:
+                  number: 443

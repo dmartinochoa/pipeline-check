@@ -19,6 +19,12 @@ ARG DATABASE_PASSWORD=EXAMPLE-FAKE-PASSWORD
 # only configuration directories.
 WORKDIR /etc/app-config
 
+# DF-017: ENV PATH prepends a world-writable directory (/tmp). Anyone
+# inside the container can drop a binary there to shadow system bins.
+# DF-018: a later RUN below chowns /etc/myapp, granting the runtime
+# user write access to a system directory.
+ENV PATH=/tmp/bin:$PATH
+
 # DF-003: ADD pulls a remote URL without --checksum= integrity flag.
 ADD https://example.com/internal/helper.tar.gz /opt/
 
@@ -37,6 +43,7 @@ RUN apt-get update && apt-get dist-upgrade -y && \
     apt-get install -y curl wget && \
     sudo chown -R nobody /opt && \
     chmod 777 /opt/shared && \
+    chown -R nobody /etc/myapp && \
     curl -fsSL https://example.com/install.sh | bash && \
     eval "$BUILD_CMD" && \
     docker run --privileged builder-image make all

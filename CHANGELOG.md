@@ -15,28 +15,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 - GitHub issue templates under `.github/ISSUE_TEMPLATE/`: bug report,
   feature request, and a dedicated false-positive form that requires
   `check_id` plus a minimal repro YAML.
-- **Per-rule unit tests for the five CI providers** following the
-  ``tests/<provider>/conftest.py`` + per-area-module pattern. As of
-  this release, rule-test coverage by provider:
-    - GitHub Actions: 17/33 (52%)
-    - GitLab: 18/31 (58%)
-    - Bitbucket: 16/28 (57%)
-    - CircleCI: 15/31 (48%)
-    - Jenkins: 12/31 (39%)
-    - Cloud Build: 18/18 (100%, full)
-    - Kubernetes: 4/26 (the K8S-023..026 additions)
-    - Dockerfile: 2/16 (the DF-015..016 additions)
-    - Azure: 6/29 (existing tests only — no new modules)
-  Test modules are split by area: pinning, secrets-and-creds,
-  runtime-hardening, supply-chain. Each conftest exposes a
+- **Per-rule unit tests at 100% across every provider.** Following the
+  ``tests/<provider>/conftest.py`` + per-area-module pattern, every
+  rule under ``github``, ``gitlab``, ``bitbucket``, ``azure``,
+  ``circleci``, ``jenkins``, ``cloudbuild``, ``dockerfile``, and
+  ``kubernetes`` now has at least one ``Test<RULE_ID>`` class with
+  positive and negative cases. Test modules are split by area
+  (pinning, secrets-and-creds, runtime-hardening, supply-chain,
+  provenance, threats). Each conftest exposes a
   ``run_check(snippet, check_id)`` helper that runs the orchestrator
   against an inline YAML/Groovy snippet and returns the matching
   ``Finding``.
+- **Performance smoke gate** under ``tests/perf/test_smoke.py``.
+  Scans a synthetic 500-job GHA workflow and 500 K8s manifests with
+  generously-padded ceilings (5s median over 3 runs). Catches
+  catastrophic regressions (an O(n) rule that becomes O(n²), a
+  per-step regex compile that should be module-level) without
+  taking on a ``pytest-benchmark`` dependency. Real benchmark gate
+  with baselines is still tracked on the roadmap.
 - **Rule-coverage meta-test** at ``tests/test_rule_test_coverage.py``
-  locks the per-provider floors above to prevent regressions: a new
-  rule landing without a ``class Test<RULE_ID>...`` will dip the
-  floor and fail this guard. Bumping the floor in the file is the
-  documented way to record backfill progress.
+  locks every provider's floor at 100% to prevent regressions: a new
+  rule landing without a ``class Test<RULE_ID>...`` immediately
+  trips this guard.
 - **13 new autofixers** for Kubernetes and Cloud Build, lifting the
   catalog from 68 to 81. K8s: drop-line fixers for `K8S-002`/`-003`/
   `-004`/`-005` (`hostNetwork`, `hostPID`, `hostIPC`, `privileged:
@@ -80,6 +80,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   are the de-facto OCI provenance standard; without them a pulled
   image can't be traced back to a source revision during incident
   response. Dockerfile rule catalog goes from 14 to 16.
+- **Two more Kubernetes rules.** `K8S-027` flags Ingress objects with
+  no `spec.tls` block (or an empty list). HTTP-only Ingress lets a
+  network attacker downgrade the connection and read or rewrite
+  request bodies — meaningful for any path carrying credentials,
+  session cookies, or PII. `K8S-028` flags containers that declare
+  `ports[*].hostPort`, which binds directly to the node IP and
+  bypasses the cluster's Service / NetworkPolicy / kube-proxy
+  layer. Kubernetes rule catalog: 26 to 28.
+- **Two more Dockerfile rules.** `DF-017` flags `ENV PATH=` directives
+  that prepend a world-writable prefix (`/tmp`, `/var/tmp`,
+  `/dev/shm`, `/run/lock`) ahead of the existing `$PATH` reference.
+  A writable PATH entry that comes before the system bins lets any
+  process inside the container shadow `ls`, `apt-get`, `cat`, etc.
+  by dropping a binary of the same name into the writable dir.
+  `DF-018` flags `RUN chown` / `RUN chgrp` calls that rewrite
+  ownership of a system path (`/etc`, `/usr`, `/sbin`, `/bin`,
+  `/lib`, `/lib64`, `/boot`, `/root`). Dockerfile rule catalog:
+  16 to 18.
+- **One more Cloud Build rule.** `GCB-019` flags steps that combine
+  a shell `entrypoint:` (`bash`, `sh`, `zsh`, etc.) with a
+  user-substitution token (`$_FOO`) inside `args`. Distinct from
+  `GCB-004`, which fires only when `options.dynamicSubstitutions:
+  true` is set — `GCB-019` catches the substitution → shell
+  evaluation surface even with the default substitution mode,
+  because Cloud Build expands `$_USER_VAR` literally before the
+  shell sees it. Cloud Build rule catalog: 18 to 19.
 - **Three new Cloud Build rules.** `GCB-016` flags step `dir:`
   fields that traverse out of `/workspace` via `..` (path-escape
   into the builder image filesystem). `GCB-017` flags

@@ -84,6 +84,8 @@ Four rules target non-workload kinds:
 | K8S-024 | Container missing both livenessProbe and readinessProbe | MEDIUM |
 | K8S-025 | System priority class used outside kube-system | HIGH |
 | K8S-026 | LoadBalancer Service has no loadBalancerSourceRanges | HIGH |
+| K8S-027 | Ingress has no TLS configuration | MEDIUM |
+| K8S-028 | Container declares hostPort | MEDIUM |
 
 ---
 
@@ -327,6 +329,24 @@ Internal-only services should use ``type: ClusterIP`` (and an Ingress for HTTP) 
 **Recommended action**
 
 Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSourceRanges``. The default behavior is to provision an internet-facing load balancer that accepts traffic from 0.0.0.0/0, which exposes whatever the Service fronts to the entire internet. A short list of CIDRs scoped to known clients (office IPs, a NAT gateway, peered VPCs) removes the pre-auth attack surface entirely.
+
+## K8S-027 — Ingress has no TLS configuration
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-NETWORK-SEG, ESF-S-VERIFY-DEPS
+
+An Ingress with no ``spec.tls`` (or an empty list) terminates HTTP at the load balancer and proxies plaintext upstream. Ingress controllers will respect ``ssl-redirect`` annotations, but those are advisory until ``tls:`` is populated. If the Ingress is intentionally HTTP-only (e.g. an ACME challenge endpoint or an internal-only path served behind a network policy), suppress via ``.pipelinecheckignore`` with a short rationale rather than leaving it open.
+
+**Recommended action**
+
+Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entry pairs one or more hostnames with a Secret holding the certificate / key — the canonical pattern is to provision the Secret via cert-manager and a ClusterIssuer pointing at Let's Encrypt or an internal CA. Plaintext-only Ingress lets a network attacker downgrade the connection and read or rewrite request bodies, which matters for any path carrying credentials, session cookies, or PII.
+
+## K8S-028 — Container declares hostPort
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-NETWORK-SEG
+
+``hostPort`` was the pre-Service way to publish a pod's port and survives in legacy manifests. Modern clusters use Services, which integrate with the kube-proxy, ingress controllers, and NetworkPolicies. ``hostPort`` is invisible to all of those — a port-scan from any other pod that knows the node IP reaches the workload directly. If a DaemonSet legitimately needs it (host-agent shape), suppress this rule with a brief ``.pipelinecheckignore`` rationale rather than leaving it open across the catalog.
+
+**Recommended action**
+
+Drop ``hostPort`` from container ports and use a Service (ClusterIP / NodePort / LoadBalancer) to publish the workload. ``hostPort`` binds directly to the node IP, bypasses the cluster's network model, and creates a node-level scheduling constraint that fails replicas with the same port. Workloads that genuinely need node-port binding (some CNI/storage agents) should declare it on a DaemonSet with ``hostNetwork: true`` already approved by review.
 
 ---
 

@@ -64,6 +64,8 @@ analogue in other providers:
 | DF-014 | WORKDIR set to a system / kernel filesystem path | CRITICAL |
 | DF-015 | RUN grants world-writable permissions (chmod 777 / a+w) | MEDIUM |
 | DF-016 | Image lacks OCI provenance labels | LOW |
+| DF-017 | ENV PATH prepends a world-writable directory | MEDIUM |
+| DF-018 | RUN chown rewrites ownership of a system path | MEDIUM |
 
 ---
 
@@ -210,6 +212,24 @@ The OCI image-spec annotation set is a small de facto standard maintained by the
 **Recommended action**
 
 Add a ``LABEL`` line carrying at least ``org.opencontainers.image.source`` (the URL of the source repo) and ``org.opencontainers.image.revision`` (the commit SHA built into the image). Most registries surface those fields in the UI and on ``manifest inspect``, which closes the source-to-image gap that GHA-006 / SLSA Build-L2 provenance attestation also addresses.
+
+## DF-017 — ENV PATH prepends a world-writable directory
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-PRIV-BUILD
+
+A writable PATH entry that comes before the system bins lets any process inside the container shadow ``ls``, ``ps``, ``apt-get``, ``cat``, etc. by dropping a binary of the same name into the writable dir. On a multi-tenant image — or any image where an exploit can reach the filesystem — this is a free privilege-escalation vector.
+
+**Recommended action**
+
+Don't put ``/tmp``, ``/var/tmp``, ``/dev/shm``, or any other world-writable path in ``PATH`` ahead of the system binary directories. Drop those entries entirely, or place them at the tail (``ENV PATH=/usr/bin:$PATH:/tmp``) so legitimate binaries always shadow anything dropped into the writable dir at runtime.
+
+## DF-018 — RUN chown rewrites ownership of a system path
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+Recognises ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful — the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
+
+**Recommended action**
+
+Don't ``chown`` system directories at build time. If the runtime user needs to own a workload-specific subtree, ``COPY --chown=<user>:<group>`` it into the image at the subtree root, or place the workload under a dedicated directory (e.g. ``/app``, ``/srv/app``) and ``chown`` only that path. Granting the runtime user write access to ``/etc``, ``/usr``, ``/sbin``, or ``/lib`` lets a process exploit later steps to stage a binary the system trusts.
 
 ---
 
