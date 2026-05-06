@@ -31,7 +31,7 @@ TESTS_DIR = REPO / "tests"
 # Set to the floor as of v0.4.0; ratchet upward over time.
 PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
     "github":     ("pipeline_check.core.checks.github.rules",     75),
-    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     70),
+    "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     80),
     "bitbucket":  ("pipeline_check.core.checks.bitbucket.rules",  75),
     "azure":      ("pipeline_check.core.checks.azure.rules",      75),
     "jenkins":    ("pipeline_check.core.checks.jenkins.rules",    70),
