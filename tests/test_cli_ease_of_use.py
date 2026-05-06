@@ -55,6 +55,11 @@ class TestAutoDetect:
         (tmp_path / "cloudbuild.yaml").write_text("steps: []\n")
         assert _detect_pipeline_from_cwd() == "cloudbuild"
 
+    def test_detects_kubernetes(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "kubernetes").mkdir()
+        assert _detect_pipeline_from_cwd() == "kubernetes"
+
     def test_detects_cloudformation(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "template.yml").write_text("Resources: {}\n")

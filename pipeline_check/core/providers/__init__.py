@@ -23,6 +23,7 @@ from .dockerfile import DockerfileProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .jenkins import JenkinsProvider
+from .kubernetes import KubernetesProvider
 from .terraform import TerraformProvider
 
 _REGISTRY: dict[str, BaseProvider] = {}
@@ -57,3 +58,4 @@ register(JenkinsProvider())
 register(CircleCIProvider())
 register(CloudBuildProvider())
 register(DockerfileProvider())
+register(KubernetesProvider())

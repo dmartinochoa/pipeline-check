@@ -43,7 +43,8 @@ from ._yaml_strict import safe_load_strict as _safe_load_strict  # noqa: F401
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",
     "tf_plan", "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
-    "circleci_path",
+    "circleci_path", "jenkinsfile_path", "cfn_template",
+    "cloudbuild_path", "dockerfile_path", "k8s_path",
     "output", "output_file",
     "standards", "severity_threshold",
     "secret_patterns",

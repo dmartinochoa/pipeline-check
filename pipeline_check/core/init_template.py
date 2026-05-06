@@ -16,6 +16,7 @@ def render(detected_pipeline: str | None = None) -> str:
         else (
             "# pipeline: github    # aws | github | gitlab | bitbucket | azure"
             " | jenkins | circleci | cloudbuild | cloudformation | terraform"
+            " | dockerfile | kubernetes"
         )
     )
     return f"""# .pipeline-check.yml — configuration for pipeline_check
@@ -46,6 +47,9 @@ def render(detected_pipeline: str | None = None) -> str:
 # bitbucket_path: bitbucket-pipelines.yml
 # azure_path: azure-pipelines.yml
 # circleci_path: .circleci/config.yml
+# cloudbuild_path: cloudbuild.yaml
+# dockerfile_path: Dockerfile
+# k8s_path: kubernetes/
 
 # ── CI gate ────────────────────────────────────────────────────────────────
 gate:

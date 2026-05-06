@@ -255,6 +255,68 @@ analogue in other providers:
   controlled shell-injection path.
 """,
     ),
+    "kubernetes": (
+        "Kubernetes",
+        "pipeline_check.core.checks.kubernetes.rules",
+        _REPO_ROOT / "docs" / "providers" / "kubernetes.md",
+        """\
+# Kubernetes manifest provider
+
+Parses Kubernetes API documents (`apiVersion:` + `kind:`) from `.yaml`
+/ `.yml` files on disk — text-only static analysis. No `kubectl`, no
+cluster access, no Helm or Kustomize rendering. Multi-document YAML
+(`---`-separated) is fully supported; each document is parsed into
+its own `Manifest` record.
+
+Helm chart values, kustomization base files, and other YAML that
+doesn't carry the canonical `apiVersion` + `kind` shape are silently
+skipped, so a directory mixing manifests with `Chart.yaml` /
+`values.yaml` / `kustomization.yaml` won't trip the loader.
+
+## Producer workflow
+
+```bash
+# --k8s-path is auto-detected when ./kubernetes/, ./k8s/, or
+# ./manifests/ exist at cwd.
+pipeline_check --pipeline kubernetes
+
+# …or pass it explicitly (file or directory).
+pipeline_check --pipeline kubernetes --k8s-path k8s/
+
+# A single multi-document manifest works too.
+pipeline_check --pipeline kubernetes --k8s-path deploy.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Workload coverage
+
+The walker recognises every kind that carries a pod spec:
+
+- `Pod` — pod spec at `spec`
+- `Deployment` / `StatefulSet` / `DaemonSet` / `ReplicaSet` / `Job`
+  — pod spec at `spec.template.spec`
+- `CronJob` — pod spec at `spec.jobTemplate.spec.template.spec`
+
+Container-level rules walk all three container lists (`containers`,
+`initContainers`, `ephemeralContainers`), so init-time and ephemeral
+debug containers are covered along with the long-lived workload.
+
+### RBAC and Service rules
+
+Four rules target non-workload kinds:
+
+- **K8S-018** — `Kind: Secret` carrying credential-shaped literals
+  in `stringData` or `data`. Base64 values in `data:` are decoded
+  and re-checked for AKIA-shaped AWS keys.
+- **K8S-020** — `ClusterRoleBinding` to `cluster-admin`, `admin`,
+  or `system:masters`.
+- **K8S-021** — `Role` / `ClusterRole` granting wildcard verbs+
+  resources (both `verbs: ["*"]` and `resources: ["*"]`).
+- **K8S-022** — `Service` exposing port 22 (SSH).
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -343,6 +405,7 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
     "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
+    "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
 }
 
 

@@ -113,7 +113,7 @@ class _GroupedCommand(click.Command):
             "--tf-plan", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
-            "--dockerfile-path",
+            "--dockerfile-path", "--k8s-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -351,6 +351,11 @@ def _detect_pipeline_from_cwd() -> str | None:
     ):
         if os.path.isfile(_cfn):
             return "cloudformation"
+    # Kubernetes is detected last because its indicators are
+    # generic directory names that other providers might use too.
+    for _k8s in ("kubernetes", "k8s", "manifests"):
+        if os.path.isdir(_k8s):
+            return "kubernetes"
     return None
 
 
@@ -534,7 +539,8 @@ def _install_completion_callback(ctx, _param, value):
         "matches. Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
-        "--circleci-path, --cloudbuild-path, --dockerfile-path); "
+        "--circleci-path, --cloudbuild-path, --dockerfile-path, "
+        "--k8s-path); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -662,6 +668,16 @@ def _install_completion_callback(ctx, _param, value):
         "Path to a Dockerfile / Containerfile or a directory containing "
         "one (required when --pipeline dockerfile). Auto-detects "
         "./Dockerfile and ./Containerfile."
+    ),
+)
+@click.option(
+    "--k8s-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Kubernetes manifest (YAML) or a directory containing "
+        "one (required when --pipeline kubernetes). Auto-detects "
+        "./kubernetes/, ./k8s/, ./manifests/."
     ),
 )
 @click.option(
@@ -1020,6 +1036,7 @@ def scan(
     cfn_template: str | None,
     cloudbuild_path: str | None,
     dockerfile_path: str | None,
+    k8s_path: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1363,6 +1380,23 @@ def scan(
             )
         if not os.path.exists(dockerfile_path):
             raise click.UsageError(f"--dockerfile-path not found: {dockerfile_path}")
+    elif pipeline_lc == "kubernetes":
+        if not k8s_path:
+            for _candidate in ("kubernetes", "k8s", "manifests"):
+                if os.path.isdir(_candidate):
+                    k8s_path = _candidate
+                    click.echo(
+                        f"[auto] using --k8s-path {k8s_path}",
+                        err=True,
+                    )
+                    break
+        if not k8s_path:
+            raise click.UsageError(
+                "--k8s-path PATH is required when --pipeline kubernetes "
+                "(no kubernetes/, k8s/, or manifests/ directory found in cwd)."
+            )
+        if not os.path.exists(k8s_path):
+            raise click.UsageError(f"--k8s-path not found: {k8s_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1406,6 +1440,7 @@ def scan(
         cfn_template=cfn_template,
         cloudbuild_path=cloudbuild_path,
         dockerfile_path=dockerfile_path,
+        k8s_path=k8s_path,
     )
 
     if verbose:
