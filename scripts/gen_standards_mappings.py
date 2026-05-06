@@ -30,6 +30,27 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 
+def _check_id_link(check_id: str) -> str:
+    """Render a check_id as a markdown link to the right provider doc.
+
+    Imports lazily so the script stays standalone if the linker
+    helper module ever moves. Falls back to a bare backticked id if
+    the prefix isn't recognized — keeps the generator robust against
+    new providers landing before the prefix table is updated.
+    """
+    try:
+        from link_standards_check_ids import (
+            PREFIX_TO_PROVIDER,
+            _link_for,
+        )
+    except ImportError:
+        return f"`{check_id}`"
+    prefix = check_id.split("-", 1)[0]
+    if prefix not in PREFIX_TO_PROVIDER:
+        return f"`{check_id}`"
+    return _link_for(check_id, prefix)
+
+
 def render_table(standard_name: str) -> str:
     mod = importlib.import_module(
         f"pipeline_check.core.standards.data.{standard_name}"
@@ -43,7 +64,7 @@ def render_table(standard_name: str) -> str:
     ]
     for check_id, controls in rows:
         controls_str = " · ".join(f"`{c}`" for c in controls)
-        lines.append(f"| `{check_id}` | {controls_str} |")
+        lines.append(f"| {_check_id_link(check_id)} | {controls_str} |")
     return "\n".join(lines) + "\n"
 
 

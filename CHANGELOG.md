@@ -142,6 +142,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Per-rule UI overhaul on every provider doc.** The summary table
+  now uses color-coded severity chips (rose / coral / amber / teal /
+  gray) so the eye can scan a 30-rule provider page by urgency. Each
+  rule renders inside a card-shaped block with a severity-matching
+  left rail; a chip row at the top carries the severity + OWASP /
+  ESF / CWE pill tags; recommendations sit in a framed, teal-tinted
+  "Recommended action" block separated from the body narrative.
+  ``scripts/gen_provider_docs.py`` rewritten to emit the new
+  structure; nine provider docs regenerated.
+- **Standards docs link through to the matching rule.** All 882
+  bare ``\`<PREFIX>-<N>\``` mentions across the seven mapping-
+  carrying standards docs (``cis_aws_foundations``,
+  ``cis_supply_chain``, ``nist_800_53``, ``nist_ssdf``,
+  ``owasp_cicd_top_10``, ``pci_dss_v4``, ``slsa``) are now markdown
+  links into the corresponding provider page. CI providers land on
+  the per-rule pinned anchor; AWS / Terraform / CloudFormation
+  prefixes (whose pages are hand-maintained without per-rule
+  anchors) link to the page top. ``scripts/link_standards_check_ids.py``
+  rewrote the existing docs; ``scripts/gen_standards_mappings.py``
+  updated to emit the link form natively for future regenerations.
 - **CIS AWS Foundations standard mappings densified.** Added
   `1.14` (key rotation), `3.2` (CloudTrail log file validation),
   `3.7` (CloudTrail logs encrypted with KMS) to the controls
