@@ -37,6 +37,19 @@ pipelines:
         script:
           - ./dist/install.sh
 
+    # BB-028 — `oidc: true` step without `deployment:` gate. The
+    # OIDC JWT is issued for any branch push, with no environment
+    # to enforce reviewers / restricted vars / audit on the role
+    # assumption.
+    - step:
+        name: Publish via OIDC
+        oidc: true
+        script:
+          - pipe: atlassian/aws-s3-deploy:1
+            variables:
+              AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE
+              S3_BUCKET: 'example-bucket'
+
     # BB-012 — curl piped to shell.
     # BB-013 — docker run --privileged.
     # BB-014 — pip install from insecure source.

@@ -44,6 +44,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | BB-025 | Pipeline contains indicators of malicious activity | CRITICAL |
 | BB-026 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | BB-027 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| BB-028 | OIDC step without deployment-gated environment | HIGH |
 
 ---
 
@@ -289,6 +290,15 @@ Complements BB-021 (missing lockfile flag). Git URL installs without a commit pi
 **Recommended action**
 
 Pin git dependencies to a commit SHA. Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## BB-028 — OIDC step without deployment-gated environment
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the Bitbucket-side workflow can't request a token without a deployment gate. Bitbucket's ``pull-requests:`` triggers from forks so OIDC under that branch is always an unbounded blast radius.
+
+**Recommended action**
+
+Every step that sets ``oidc: true`` must also declare a ``deployment:`` (production / staging / test). Bitbucket deployments enforce manual approvals, restricted variables, and audit logs that an ungated step bypasses. Steps reached through ``pull-requests:`` should never request OIDC tokens — any forked PR can drive the role assumption.
 
 ---
 

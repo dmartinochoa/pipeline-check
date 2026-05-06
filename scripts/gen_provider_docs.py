@@ -255,6 +255,58 @@ analogue in other providers:
   controlled shell-injection path.
 """,
     ),
+    "dockerfile": (
+        "Dockerfile",
+        "pipeline_check.core.checks.dockerfile.rules",
+        _REPO_ROOT / "docs" / "providers" / "dockerfile.md",
+        """\
+# Dockerfile provider
+
+Parses `Dockerfile` / `Containerfile` documents on disk — text-only
+static analysis, no image build, no registry pull, no daemon access.
+Multi-stage builds are flattened: rules see the full instruction
+stream and decide for themselves whether to scope by stage (e.g.
+DF-002 only checks the *final* stage's `USER`).
+
+## Producer workflow
+
+```bash
+# --dockerfile-path is auto-detected when Dockerfile/Containerfile
+# exists at cwd.
+pipeline_check --pipeline dockerfile
+
+# …or pass it explicitly.
+pipeline_check --pipeline dockerfile --dockerfile-path docker/api.Dockerfile
+
+# Recursively scan a service directory containing many per-service
+# Dockerfiles. The loader matches Dockerfile, Containerfile,
+# Dockerfile.<suffix>, and *.Dockerfile by default.
+pipeline_check --pipeline dockerfile --dockerfile-path services/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Dockerfile-specific checks
+
+Several checks target Dockerfile concepts that have no direct
+analogue in other providers:
+
+- **DF-001** — `FROM` must pin by `@sha256:<digest>`. Reuses the same
+  classifier as GL-001 / JF-009 / ADO-009 / CC-003 so the
+  floating-tag vocabulary matches across the tool.
+- **DF-002** — final stage must run as a non-root `USER`. Multi-stage
+  builds: only the runtime image's identity matters, so this rule
+  scopes USER tracking to the directives after the *last* `FROM`.
+- **DF-003** — `ADD <url>` must carry a BuildKit `--checksum=sha256:`
+  flag, otherwise it pulls remote content with no integrity check.
+- **DF-006** — `ENV` / `ARG` values are baked into image layers;
+  ``docker history`` reads them even after they're overwritten. Any
+  literal credential-shaped value (AKIA-prefixed, or a key named
+  `*_PASSWORD` / `*_TOKEN` / `*_SECRET` with a non-empty literal) is
+  CRITICAL.
+""",
+    ),
 }
 
 
@@ -290,6 +342,7 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
     "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
+    "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
 }
 
 

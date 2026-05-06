@@ -17,6 +17,8 @@ theme:
   # Lives inside docs/ (mkdocs auto-skips paths beginning with `_`
   # during the build, so the templates aren't published as pages).
   custom_dir: docs/_overrides
+  logo: logo.png
+  favicon: logo.png
   font:
     text: Inter
     code: JetBrains Mono
@@ -107,6 +109,7 @@ nav:
       - Jenkins: providers/jenkins.md
       - CircleCI: providers/circleci.md
       - Google Cloud Build: providers/cloudbuild.md
+      - Dockerfile: providers/dockerfile.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

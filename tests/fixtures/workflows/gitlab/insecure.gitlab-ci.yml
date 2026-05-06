@@ -74,6 +74,22 @@ trigger-child:
       - project: 'platform/child-pipelines'
         ref: main
 
+# GL-031 — id_tokens: declared without an audience pin AND without
+# an environment binding. The empty ``aud:`` accepts any consumer's
+# OIDC trust; the missing ``environment:`` means any branch can
+# drive the role assumption.
+oidc-deploy:
+  stage: deploy
+  id_tokens:
+    AWS_ID_TOKEN:
+      aud: ""
+  script:
+    - aws sts assume-role-with-web-identity
+        --role-arn arn:aws:iam::123456789012:role/release
+        --role-session-name release
+        --web-identity-token "$AWS_ID_TOKEN"
+    - aws s3 cp dist/ s3://release-bucket/ --recursive
+
 # GL-016 — curl piped to shell.
 # GL-017 — docker run --privileged.
 # GL-018 — pip install from insecure source.

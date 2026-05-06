@@ -22,7 +22,10 @@ Key shape notes:
   scanning UI can filter by standard; individual *control IDs*
   (``CICD-SEC-6``, ``CC6.1``, ``Dangerous-Workflow``) live only on the
   per-result ``properties.controls`` array. GitHub caps rule tags at
-  20, which is why control IDs can't go there.
+  10 — the docstring formerly said 20, but a SARIF upload exceeding
+  10 tags surfaces a runtime warning and silently drops the
+  overflow, which is why the cap is enforced here. Tags that get
+  truncated are still present in full on ``properties.controls``.
 """
 from __future__ import annotations
 
@@ -41,6 +44,33 @@ _CONFIDENCE_RANK: dict[Confidence, float] = {
     Confidence.MEDIUM: 50.0,
     Confidence.LOW: 20.0,
 }
+
+#: GitHub Code Scanning's hard cap on per-rule SARIF tags. Uploads
+#: that exceed it warn ``Rule tags in SARIF file exceed limits`` and
+#: silently drop the overflow. Tags above the cap are still preserved
+#: in ``properties.controls`` (per finding) and ``properties.standards``
+#: (when applicable) for full audit fidelity.
+_MAX_RULE_TAGS = 10
+
+#: Priority slugs surface first within the truncated tag list so
+#: filter-by-standard in GitHub's code-scanning UI keeps working for
+#: the most commonly searched frameworks even when overall tag count
+#: exceeds the cap. Anything not in this list sorts alphabetically
+#: after these. Order reflects user-facing relevance, not severity.
+_TAG_PRIORITY: tuple[str, ...] = (
+    "owasp_cicd_top_10",
+    "nist_ssdf",
+    "slsa",
+    "cis_supply_chain",
+    "openssf_scorecard",
+)
+
+
+def _ordered_tags(standards: set[str]) -> list[str]:
+    """Return ``standards`` ordered priority-first then alphabetical."""
+    priority_present = [s for s in _TAG_PRIORITY if s in standards]
+    rest = sorted(standards - set(_TAG_PRIORITY))
+    return priority_present + rest
 
 _SARIF_VERSION = "2.1.0"
 _SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -135,10 +165,12 @@ def _build_chain_rules(chains: list[Chain]) -> list[dict]:
         level, score = _LEVEL_MAP.get(c.severity, ("error", "8.0"))
         # ``attack-chain`` tag distinguishes correlated multi-finding
         # alerts from individual rule violations in the GitHub UI.
-        # MITRE technique IDs are tagged as ``mitre/T<NNNN>`` so the
-        # 20-tag cap leaves room for the prefix without truncation.
+        # MITRE technique IDs are tagged as ``mitre/T<NNNN>``. The
+        # 10-tag GitHub cap means ``security`` + ``attack-chain`` +
+        # up to 8 MITRE prefixes fit; chains with more techniques
+        # still expose the full list via ``properties.mitre_attack``.
         tags = ["security", "attack-chain"]
-        for tech in c.mitre_attack[:15]:
+        for tech in c.mitre_attack[: _MAX_RULE_TAGS - 2]:
             tags.append(f"mitre/{tech}")
         help_md = (
             f"**Summary**\n\n{c.summary}\n\n---\n\n"
@@ -154,7 +186,7 @@ def _build_chain_rules(chains: list[Chain]) -> list[dict]:
             "defaultConfiguration": {"level": level},
             "properties": {
                 "security-severity": score,
-                "tags": tags[:20],
+                "tags": tags[:_MAX_RULE_TAGS],
                 "kill_chain_phase": c.kill_chain_phase,
                 "mitre_attack": list(c.mitre_attack),
             },
@@ -221,12 +253,15 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         if f.check_id in seen:
             continue
         level, score = _LEVEL_MAP.get(f.severity, ("warning", "5.0"))
-        # Tags: "security" + the standard slugs this check maps to.
-        # Control IDs are NOT included here — GitHub code-scanning caps
-        # tags per rule at 20, and structured control data is already
-        # exposed via ``properties.controls`` for programmatic consumers.
-        standard_tags = sorted({c.standard for c in f.controls})
-        tags = ["security", *standard_tags][:20]
+        # Tags: "security" + the standard slugs this check maps to,
+        # priority-ordered so the most user-facing frameworks survive
+        # the truncation when the rule maps to more standards than fit.
+        # Control IDs are NOT included here — GitHub code-scanning
+        # caps tags per rule at 10, and structured control data is
+        # already exposed via ``properties.controls`` for programmatic
+        # consumers without losing fidelity.
+        ordered = _ordered_tags({c.standard for c in f.controls})
+        tags = ["security", *ordered][:_MAX_RULE_TAGS]
         rule_props: dict = {
             "security-severity": score,
             "tags": tags,

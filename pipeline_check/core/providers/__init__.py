@@ -19,6 +19,7 @@ from .bitbucket import BitbucketProvider
 from .circleci import CircleCIProvider
 from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
+from .dockerfile import DockerfileProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .jenkins import JenkinsProvider
@@ -55,3 +56,4 @@ register(AzureProvider())
 register(JenkinsProvider())
 register(CircleCIProvider())
 register(CloudBuildProvider())
+register(DockerfileProvider())

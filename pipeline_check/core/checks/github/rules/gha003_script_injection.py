@@ -1,10 +1,13 @@
 """GHA-003 — `run:` blocks must not interpolate attacker-controllable context."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from ...base import Finding, Severity, is_quoted_assignment
+from ..._primitives.tainted_variables import (
+    has_direct_taint,
+    has_unsafe_reference,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import UNTRUSTED_CONTEXT_RE
@@ -35,37 +38,20 @@ RULE = Rule(
 
 
 def _tainted_env_vars(env_block: Any) -> set[str]:
-    """Return env var names whose values contain untrusted context."""
+    """Return env var names whose values reference untrusted context."""
     if not isinstance(env_block, dict):
         return set()
-    tainted: set[str] = set()
-    for name, value in env_block.items():
-        if isinstance(value, str) and UNTRUSTED_CONTEXT_RE.search(value):
-            tainted.add(str(name))
-    return tainted
+    return {
+        str(name)
+        for name, value in env_block.items()
+        if isinstance(value, str) and UNTRUSTED_CONTEXT_RE.search(value)
+    }
 
 
-def _env_ref_in_run(run: str, var_names: set[str]) -> bool:
-    """Check whether *run* unsafely references any tainted env var.
-
-    References inside double-quoted strings (``"$VAR"``) are safe —
-    bash does not re-evaluate command substitution inside variable
-    expansion, so the value is treated as a literal.
-    """
-    for name in var_names:
-        # $VAR, ${VAR}, or ${{ env.VAR }}
-        ref_re = re.compile(
-            rf"(?:\$\{{{name}\}}|\${name}\b|\${{{{[\s]*env\.{name}[\s]*}}}})"
-        )
-        for line in run.splitlines():
-            if not ref_re.search(line):
-                continue
-            # If every reference on this line sits inside "...", it's safe.
-            # Remove double-quoted segments and re-check.
-            stripped = re.sub(r'"[^"]*"', "", line)
-            if ref_re.search(stripped):
-                return True  # unquoted reference found
-    return False
+def _gha_ref_pattern(name: str) -> str:
+    """Match every GHA reference syntax for *name*: ``$VAR``, ``${VAR}``,
+    or ``${{ env.VAR }}``."""
+    return rf"(?:\$\{{{name}\}}|\${name}\b|\${{{{[\s]*env\.{name}[\s]*}}}})"
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
@@ -79,16 +65,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             run = step.get("run")
             if not isinstance(run, str):
                 continue
+            lines = run.splitlines()
             # Step-level env inherits job + workflow taint.
             step_tainted = job_tainted | _tainted_env_vars(step.get("env"))
-            # 1. Direct interpolation (existing detection).
-            if UNTRUSTED_CONTEXT_RE.search(run) and not all(
-                is_quoted_assignment(line) for line in run.splitlines()
-                if UNTRUSTED_CONTEXT_RE.search(line)
-            ):
+            # 1. Direct interpolation of untrusted context expressions.
+            if has_direct_taint(lines, UNTRUSTED_CONTEXT_RE):
                 offenders.append(f"{job_id}[{idx}]")
             # 2. Indirect: tainted env var referenced in run block.
-            elif step_tainted and _env_ref_in_run(run, step_tainted):
+            elif step_tainted and has_unsafe_reference(
+                lines, step_tainted, ref_pattern=_gha_ref_pattern
+            ):
                 offenders.append(f"{job_id}[{idx}]")
     passed = not offenders
     desc = (

@@ -97,3 +97,22 @@ stages:
                 - task: AzureWebApp@1
                   inputs:
                     appName: 'my-web-app'
+
+  # ADO-029 — regular ``job:`` (not ``deployment:``) that uses an
+  # Azure service connection without a branch condition. Any
+  # branch push drives the federated assume-role on Azure AD.
+  - stage: Promote
+    dependsOn: Build
+    jobs:
+      - job: PromoteToProd
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'prod-service-connection'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az webapp deployment slot swap \
+                  --resource-group rg-prod \
+                  --name my-web-app \
+                  --slot staging

@@ -56,6 +56,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GHA-027 | Workflow contains indicators of malicious activity | CRITICAL |
 | GHA-028 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | GHA-029 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| GHA-030 | OIDC token requested without environment-protected job | HIGH |
+| GHA-031 | Workflow uses retired set-output / save-state command | HIGH |
+| GHA-032 | run: invokes local script on untrusted-trigger workflow | CRITICAL |
+| GHA-033 | Secret value echoed / printed in a run: block | CRITICAL |
 
 ---
 
@@ -319,6 +323,42 @@ Package installs that pull from ``git+…`` without a pinned commit, from a loca
 **Recommended action**
 
 Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## GHA-030 — OIDC token requested without environment-protected job
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 — IAM-008 verifies the AWS-side trust policy pins audience + subject; this rule verifies the GitHub-side workflow can't request the token from any branch without a deployment gate. A misconfiguration on either side defeats the OIDC story.
+
+**Recommended action**
+
+Bind every job that exchanges the GHA OIDC token for cloud credentials to a protected ``environment:`` (e.g. ``environment: production``). Environment protections layer in branch restrictions, required reviewers, and deployment windows that the IdP-side trust policy cannot enforce alone.
+
+## GHA-031 — Workflow uses retired set-output / save-state command
+**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+GitHub deprecated ``::set-output::`` and ``::save-state::`` in October 2022 because they read from the runner's stdout as a control channel. Any tool whose output happens to contain ``::set-output…`` (a CI job's own diagnostic, a downloaded log, an upstream test framework) silently sets a step output. The replacement workflow commands (``$GITHUB_OUTPUT`` / ``$GITHUB_STATE`` files) close that injection channel. Workflows still using the retired commands also depend on a deprecation timer that GitHub has extended several times — they will eventually break.
+
+**Recommended action**
+
+Replace ``echo "::set-output name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_OUTPUT"`` and ``echo "::save-state name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_STATE"``. The old commands stream through the runner's stdout, which lets any log line that happens to start with ``::`` inject into the command channel. The file-redirect forms write to a private file the runner reads after the step exits — no log-line interleaving, no injection.
+
+## GHA-032 — run: invokes local script on untrusted-trigger workflow
+**Severity:** CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+
+GHA-010 flags ``uses: ./action`` — the *action* form of the same threat. This rule extends to direct shell invocation: ``run: ./scripts/setup.sh`` / ``run: bash scripts/setup.sh`` / ``run: python tools/build.py`` resolve against the checked-out workspace, which on ``pull_request_target`` / ``workflow_run`` is PR-controlled. The attacker ships an edited script and gets a default-branch-privileged shell.
+
+**Recommended action**
+
+Either don't run the script under an untrusted trigger, or split the workflow: keep the privileged work on the default branch (``push`` / ``release`` triggers, no PR fork content), and run untrusted-trigger steps in a separate workflow with no secrets and a minimal ``GITHUB_TOKEN`` scope. Pinning the script via ``uses: org/repo@<sha>`` from a separate trusted repo is the canonical fix.
+
+## GHA-033 — Secret value echoed / printed in a run: block
+**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Two distinct shapes are flagged: (1) printing a secret context expression directly, e.g. ``echo "${{ secrets.X }}"`` or ``cat <<<${{ secrets.X }}``; (2) printing an env var whose value comes from a secret, when the surrounding step's ``env:`` declares it as ``X: ${{ secrets.X }}``. The first is the obvious foot-gun; the second is the indirect form that slips past lint passes that only scan for ``${{ secrets...}}`` literals.
+
+**Recommended action**
+
+Don't print secret values from a script. GitHub's log redaction is a best-effort string match — it doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
 
 ---
 

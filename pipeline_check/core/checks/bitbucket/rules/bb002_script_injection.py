@@ -4,7 +4,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity, is_quoted_assignment
+from ..._primitives.tainted_variables import (
+    has_direct_taint,
+    has_unsafe_reference,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_steps, step_scripts
 from ._helpers import UNTRUSTED_VAR_RE
@@ -29,12 +33,17 @@ RULE = Rule(
     ),
 )
 
-# Matches ``export VAR=...$BITBUCKET_BRANCH...`` or ``VAR=...$BITBUCKET_BRANCH...``
+# Captures the assigned name in ``export VAR=...`` or ``VAR=...`` lines.
 _EXPORT_RE = re.compile(r"(?:export\s+)?(\w+)=")
 
 
 def _tainted_exports(lines: list[str]) -> set[str]:
-    """Return variable names assigned from untrusted BITBUCKET_* values."""
+    """Return shell variable names assigned from untrusted BITBUCKET_* values.
+
+    Bitbucket has no declarative variables block — taint sources are
+    scraped from inline ``export`` / bare-assignment statements in the
+    script body itself.
+    """
     tainted: set[str] = set()
     for line in lines:
         m = _EXPORT_RE.match(line.strip())
@@ -43,19 +52,9 @@ def _tainted_exports(lines: list[str]) -> set[str]:
     return tainted
 
 
-def _var_ref_in_scripts(lines: list[str], var_names: set[str]) -> bool:
-    """Return True if any *line* unsafely references a tainted variable."""
-    for name in var_names:
-        ref_re = re.compile(rf"\$\{{?{re.escape(name)}\}}?")
-        for line in lines:
-            if not ref_re.search(line):
-                continue
-            if is_quoted_assignment(line):
-                continue
-            stripped = re.sub(r'"[^"]*"', "", line)
-            if ref_re.search(stripped):
-                return True
-    return False
+def _bb_ref_pattern(name: str) -> str:
+    """Match Bitbucket shell reference syntax for *name*: ``$VAR`` / ``${VAR}``."""
+    return rf"\$\{{?{re.escape(name)}\}}?"
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
@@ -63,18 +62,15 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for loc, step in iter_steps(doc):
         scripts = step_scripts(step)
         # 1. Direct interpolation of untrusted predefined vars.
-        direct_hit = False
-        for line in scripts:
-            if UNTRUSTED_VAR_RE.search(line) and not is_quoted_assignment(line):
-                offenders.append(loc)
-                direct_hit = True
-                break
-        if direct_hit:
+        if has_direct_taint(scripts, UNTRUSTED_VAR_RE):
+            offenders.append(loc)
             continue
         # 2. Indirect: script exports tainted value into a local var
         #    then references that var unquoted in a later line.
         tainted = _tainted_exports(scripts)
-        if tainted and _var_ref_in_scripts(scripts, tainted):
+        if tainted and has_unsafe_reference(
+            scripts, tainted, ref_pattern=_bb_ref_pattern
+        ):
             offenders.append(loc)
     passed = not offenders
     desc = (
