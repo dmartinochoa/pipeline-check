@@ -16,17 +16,17 @@ attack paths. Fix any one leg and the chain breaks.
 
 | ID | Title | Severity | Providers | Triggering checks |
 |----|-------|----------|-----------|-------------------|
-| `AC-001` | Fork-PR Credential Theft (`pull_request_target`) | CRITICAL | github | `GHA-002` + `GHA-005` |
-| `AC-002` | Script Injection to Unprotected Deploy | CRITICAL | github | `GHA-003` + `GHA-014` |
-| `AC-003` | Unpinned Action to Credential Exfiltration | HIGH | github | `GHA-001` + `GHA-005` |
-| `AC-004` | Self-Hosted Runner Persistent Foothold | CRITICAL | github | `GHA-002` + `GHA-012` |
-| `AC-005` | Unsigned Artifact to Production | HIGH | (cross-provider) | build-side `*-006` / `SIGN-001` + deploy-gate `*-014` / `GCB-009` / `CP-001` / `CP-005` |
-| `AC-006` | Cache Poisoning via Untrusted Trigger | HIGH | github | `GHA-002` + `GHA-011` |
-| `AC-007` | IAM Privilege Escalation via CodeBuild | CRITICAL | aws / terraform / cloudformation | `CB-002` + (`IAM-002` or `IAM-004`) |
-| `AC-008` | Dependency Confusion Window | HIGH | github | `GHA-021` + `GHA-029` |
-| `AC-009` | Supply Chain Repo Poisoning | CRITICAL | github | `GHA-001` + `GHA-002` + `GHA-008` |
-| `AC-010` | Self-Hosted Runner Environment Exfiltration | CRITICAL | github | `GHA-012` + (`GHA-016` or `GHA-019`) |
-| `AC-011` | Kubernetes Cluster Takeover via hostPath + cluster-admin | CRITICAL | kubernetes | `K8S-013` + `K8S-020` |
+| `AC-001` | Fork-PR Credential Theft (`pull_request_target`) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-002`](providers/github.md#gha-002) + [`GHA-005`](providers/github.md#gha-005) |
+| `AC-002` | Script Injection to Unprotected Deploy | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-003`](providers/github.md#gha-003) + [`GHA-014`](providers/github.md#gha-014) |
+| `AC-003` | Unpinned Action to Credential Exfiltration | <span class="pg-sev pg-sev--high">HIGH</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-005`](providers/github.md#gha-005) |
+| `AC-004` | Self-Hosted Runner Persistent Foothold | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-002`](providers/github.md#gha-002) + [`GHA-012`](providers/github.md#gha-012) |
+| `AC-005` | Unsigned Artifact to Production | <span class="pg-sev pg-sev--high">HIGH</span> | (cross-provider) | build-side `*-006` / [`SIGN-001`](providers/aws.md) + deploy-gate `*-014` / [`GCB-009`](providers/cloudbuild.md#gcb-009) / [`CP-001`](providers/aws.md) / [`CP-005`](providers/aws.md) |
+| `AC-006` | Cache Poisoning via Untrusted Trigger | <span class="pg-sev pg-sev--high">HIGH</span> | github | [`GHA-002`](providers/github.md#gha-002) + [`GHA-011`](providers/github.md#gha-011) |
+| `AC-007` | IAM Privilege Escalation via CodeBuild | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws / terraform / cloudformation | [`CB-002`](providers/aws.md) + ([`IAM-002`](providers/aws.md) or [`IAM-004`](providers/aws.md)) |
+| `AC-008` | Dependency Confusion Window | <span class="pg-sev pg-sev--high">HIGH</span> | github | [`GHA-021`](providers/github.md#gha-021) + [`GHA-029`](providers/github.md#gha-029) |
+| `AC-009` | Supply Chain Repo Poisoning | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-002`](providers/github.md#gha-002) + [`GHA-008`](providers/github.md#gha-008) |
+| `AC-010` | Self-Hosted Runner Environment Exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-012`](providers/github.md#gha-012) + ([`GHA-016`](providers/github.md#gha-016) or [`GHA-019`](providers/github.md#gha-019)) |
+| `AC-011` | Kubernetes Cluster Takeover via hostPath + cluster-admin | <span class="pg-sev pg-sev--critical">CRITICAL</span> | kubernetes | [`K8S-013`](providers/kubernetes.md#k8s-013) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference

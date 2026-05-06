@@ -415,11 +415,19 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     lines: list[str] = [header.rstrip() + "\n\n"]
 
     # ── Summary table ──
+    # Each check ID links to the per-rule section further down via a
+    # pinned attr-list anchor (``{ #gha-001 }``) on the rendered H2.
+    # The severity column emits a color-coded chip so the table
+    # doubles as a click-through priority list.
     lines.append("## What it covers\n\n")
     lines.append("| Check | Title | Severity |\n")
     lines.append("|-------|-------|----------|\n")
     for rule, _ in pairs:
-        lines.append(f"| {rule.id} | {rule.title} | {rule.severity.value} |\n")
+        anchor = _rule_anchor(rule.id)
+        sev_chip = _severity_chip(rule.severity.value)
+        lines.append(
+            f"| [{rule.id}](#{anchor}) | {rule.title} | {sev_chip} |\n"
+        )
     lines.append("\n---\n\n")
 
     # ── Per-rule section ──
@@ -431,21 +439,85 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     return "".join(lines)
 
 
+def _rule_anchor(rule_id: str) -> str:
+    """Stable in-page anchor for a rule_id.
+
+    Pinned via ``attr_list`` ``{ #gha-001 }`` on the H2, so the slug
+    is deterministic regardless of the title text or its punctuation.
+    Markdown's default ``toc`` slugifier would strip the em-dash and
+    derive the slug from the title — fine, but couples the anchor to
+    the wording. A pinned ID survives title rephrases.
+    """
+    return rule_id.lower()
+
+
+def _severity_chip(severity: str) -> str:
+    """HTML chip used in summary tables. Uses a CSS class per severity
+    so the color is theme-aware (different on light vs slate)."""
+    sev_lc = severity.lower()
+    return f'<span class="pg-sev pg-sev--{sev_lc}">{severity}</span>'
+
+
 def _render_rule(rule: Rule) -> str:
-    """Render one ``## GHA-001 — <title>`` section."""
+    """Render one rule as a card-style section with severity rail.
+
+    Output shape (renders in MkDocs' ``md_in_html`` extension; the
+    ``markdown`` attribute lets nested markdown inside the
+    ``<div>`` cascades work as expected):
+
+        <div class="pg-rule pg-rule--high" markdown>
+
+        ## GHA-001 — title { #gha-001 }
+
+        <div class="pg-rule__tags">…severity chip + tag pills…</div>
+
+        Body text (docs_note prose).
+
+        <div class="pg-rule__rec" markdown>
+        **Recommended action**
+        …recommendation prose…
+        </div>
+
+        </div>
+
+    The CSS picks up ``pg-rule--<severity>`` to color the left
+    rail, the chip, and the recommendation block accent.
+    """
     parts: list[str] = []
-    parts.append(f"## {rule.id} — {rule.title}\n")
-    sev_line = f"**Severity:** {rule.severity.value}"
-    if rule.owasp:
-        sev_line += " · OWASP " + ", ".join(rule.owasp)
-    if rule.esf:
-        sev_line += " · ESF " + ", ".join(rule.esf)
-    parts.append(sev_line + "\n\n")
+    anchor = _rule_anchor(rule.id)
+    sev = rule.severity.value
+    sev_lc = sev.lower()
+
+    parts.append(f'<div class="pg-rule pg-rule--{sev_lc}" markdown>\n\n')
+    parts.append(f"## {rule.id} — {rule.title} {{ #{anchor} }}\n\n")
+
+    # ── Tag chip row: severity + OWASP + ESF + CWE ──
+    chips: list[str] = [_severity_chip(sev)]
+    for tag in rule.owasp:
+        chips.append(f'<span class="pg-tag pg-tag--owasp">{tag}</span>')
+    for tag in rule.esf:
+        chips.append(f'<span class="pg-tag pg-tag--esf">{tag}</span>')
+    for tag in rule.cwe:
+        chips.append(f'<span class="pg-tag pg-tag--cwe">{tag}</span>')
+    parts.append('<div class="pg-rule__tags">\n')
+    parts.append(" ".join(chips) + "\n")
+    parts.append("</div>\n\n")
+
+    # ── Body — the rule's ``docs_note`` is the "why this matters"
+    # narrative; render as plain prose. ──
     if rule.docs_note:
         parts.append(rule.docs_note.strip() + "\n\n")
+
+    # ── Recommendation: framed block so it stands out from the body
+    # narrative. Marked with ``markdown`` so embedded code blocks /
+    # bullet lists in the recommendation render. ──
     if rule.recommendation:
+        parts.append('<div class="pg-rule__rec" markdown>\n\n')
         parts.append("**Recommended action**\n\n")
         parts.append(rule.recommendation.strip() + "\n\n")
+        parts.append("</div>\n\n")
+
+    parts.append("</div>\n\n")
     return "".join(parts)
 
 

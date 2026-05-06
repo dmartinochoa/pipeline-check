@@ -65,6 +65,26 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+# Strict-mode flags we can enable without touching the rule packs.
+# Full ``strict = true`` adds ``disallow_any_generics`` /
+# ``disallow_untyped_defs`` etc. that would require ~300 mechanical
+# annotations across the AWS / Terraform / CloudFormation rule
+# modules — that's its own focused PR. The flags below are the
+# subset that catches real bugs without that yak-shave:
+#   - ``no_implicit_optional`` is the modern default.
+#   - ``warn_redundant_casts`` flags ``cast()`` calls that already
+#     match the inferred type.
+#   - ``warn_unused_ignores`` flags ``# type: ignore`` comments that
+#     no longer suppress anything (rot from earlier mypy versions).
+#   - ``strict_equality`` flags ``==`` between types whose values
+#     can never equal (e.g. ``str == bytes``).
+#   - ``check_untyped_defs`` type-checks the bodies of unannotated
+#     functions instead of skipping them entirely.
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+check_untyped_defs = true
 # Silence "Library stubs not installed for X" until requirements-dev.txt
 # is regenerated to include types-PyYAML. The runtime behavior is fine;
 # this only affects mypy's static checks on yaml.* call sites.

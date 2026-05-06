@@ -513,6 +513,32 @@ body {
   flex: 1;
 }
 
+/* Coverage meta line on standards cards — small monospace caption
+   carrying the live "N controls · N checks evidenced" count. The
+   ``mkdocs_standards_stats.py`` hook templates the numbers in at
+   build time, so the figure can never drift from the registry. */
+.pg-doc-card__meta {
+  display: block;
+  margin: 0.7rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--md-default-fg-color--lightest);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+  letter-spacing: 0.01em;
+}
+
+.pg-doc-card:hover .pg-doc-card__meta {
+  color: var(--pg-teal-500);
+  border-top-color: color-mix(in oklab,
+    var(--pg-teal-500) 30%,
+    var(--md-default-fg-color--lightest) 70%);
+}
+
+[data-md-color-scheme="slate"] .pg-doc-card:hover .pg-doc-card__meta {
+  color: var(--pg-teal-300);
+}
+
 .pg-doc-card__tag {
   display: inline-block;
   align-self: flex-start;
@@ -1855,31 +1881,56 @@ th.pg-sortable:focus-visible {
 }
 
 /* ============================================================
-   Mobile / drawer cleanup pass
+   Mobile / drawer pass
    ============================================================
-   Several rules on the home page (``body:has(.pg-home) ...``)
-   intentionally repaint the header / tabs / outer chrome navy so
-   the hero gradient bleeds edge to edge. At widths where Material
-   collapses the primary nav into a slide-out drawer (< 76.25em),
-   the drawer is *inside* the body and inherits some of those rules
-   by accident — drawer titles render in white-on-white, the inner
-   nav shows a navy band where Material expects the body palette,
-   and the header strip on top of the drawer looks mismatched
-   against the drawer body.
-
-   This block resets the drawer (``.md-sidebar--primary`` at narrow
-   widths) to the page palette, regardless of whether the page that
-   opened it is the navy-hero home or a regular doc page.
+   At widths where Material collapses the primary nav into a slide-
+   out drawer (< 76.25em), the drawer is *inside* the body and
+   inherits some of the home page's ``body:has(.pg-home) ...`` navy
+   chrome by accident — drawer titles render in white-on-white, the
+   inner nav shows a navy band where Material expects the body
+   palette. We reset to the page palette, then dress the drawer up
+   with depth, accent rails, and proper hover/active states so it
+   reads as a modern slide-out rather than a plain stacked list.
    ============================================================ */
 
 @media screen and (max-width: 76.1875em) {
-  /* Drawer surface uses the page palette, even when the home page's
-     navy chrome is in effect. Material renders the drawer with its
-     own background by default; the home rules don't touch
-     ``.md-sidebar--primary``, but the drawer's nested ``.md-nav__title``
-     bar is positioned absolutely against the drawer's top edge and
-     can pick up the home-scoped navy header background unless we
-     pin it. Belt-and-braces explicit reset here. */
+  /* ── Backdrop ───────────────────────────────────────────────────
+     Material renders ``.md-overlay`` behind the drawer when open.
+     Default is a flat semi-opaque black; we add a slight blur for
+     depth on browsers that support ``backdrop-filter``. The blur
+     is gracefully ignored elsewhere — opacity alone still dims. */
+  .md-overlay {
+    background: rgba(8, 14, 22, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  /* ── Drawer surface ─────────────────────────────────────────────
+     Soft drop shadow on the right edge for depth. Slight rounding
+     on the right edge so the drawer reads as an over-laid panel
+     rather than a flush-cut sidebar. Material uses a transform-
+     based slide-in — keep the hardware acceleration intact. */
+  .md-sidebar--primary {
+    background: var(--md-default-bg-color);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18),
+                4px 0 24px rgba(0, 0, 0, 0.08);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  [data-md-color-scheme="slate"] .md-sidebar--primary {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45),
+                4px 0 24px rgba(0, 0, 0, 0.30);
+  }
+
+  /* Reset drawer interior to page palette. The home page's
+     ``body:has(.pg-home)`` navy rules would otherwise leak into
+     ``.md-nav__title``. Belt-and-braces explicit reset for both
+     home and inner pages. */
+  .md-sidebar--primary,
+  .md-sidebar--primary .md-nav,
   body:has(.pg-home) .md-sidebar--primary,
   body:has(.pg-home) .md-sidebar--primary .md-nav,
   body:has(.pg-home) .md-sidebar--primary .md-nav__title {
@@ -1892,30 +1943,178 @@ th.pg-sortable:focus-visible {
     color: var(--md-default-fg-color);
   }
 
-  /* Drawer header bar — Material draws a thin top strip with the
-     site title. Give it a hairline bottom border that matches the
-     surrounding page rather than the navy hero. */
+  /* ── Drawer header strip ────────────────────────────────────────
+     Material draws a top-aligned ``.md-nav__title`` carrying the
+     site title + close button. We give it a teal accent under-
+     line, a slightly larger wordmark, and tighter chrome so it
+     reads as a brand strip rather than a generic title bar. */
   .md-sidebar--primary .md-nav--primary > .md-nav__title {
+    background: var(--md-default-bg-color);
+    color: var(--md-default-fg-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.3;
+    padding: 1rem 1rem 0.95rem;
     border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    box-shadow: 0 1px 0 0 color-mix(in oklab, var(--pg-teal-500) 35%, transparent);
+    position: relative;
+  }
+
+  /* Teal accent rail at the bottom of the drawer header — a
+     hairline stripe in the brand colour that visually separates
+     the wordmark strip from the nav list below. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__title::after {
+    content: "";
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg,
+      var(--pg-teal-500) 0%,
+      color-mix(in oklab, var(--pg-teal-500) 0%, transparent) 100%);
+    border-radius: 2px;
+  }
+
+  /* The site logo inside the drawer header — bump it up so the
+     shield mark reads as a brand element, not a thumbnail. */
+  .md-sidebar--primary .md-nav__button.md-logo img,
+  .md-sidebar--primary .md-nav__button.md-logo svg {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  /* Close button — match the rest of the chrome rather than
+     Material's default chunky inverted style. */
+  .md-sidebar--primary .md-nav__title .md-nav__button[type="checkbox"] + label,
+  .md-sidebar--primary .md-nav__title .md-nav__icon {
+    color: var(--md-default-fg-color--light);
+    opacity: 0.7;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+
+  .md-sidebar--primary .md-nav__title .md-nav__icon:hover {
+    opacity: 1;
+    color: var(--pg-teal-500);
+  }
+
+  /* ── Section titles (nested ``.md-nav__title`` inside groups) ───
+     Sections like "Providers" / "Standards" get small-caps tracking
+     so they read as labels rather than competing with item text. */
+  .md-sidebar--primary .md-nav .md-nav .md-nav__title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--md-default-fg-color--light);
+    padding: 1.1rem 1rem 0.4rem;
+    background: transparent;
     box-shadow: none;
   }
 
-  /* Bigger tap targets in the mobile drawer. Material's defaults
-     are fine for a mouse but tight on a thumb; bump the line
-     height to ~44px (Apple HIG / WCAG minimum tap target). */
-  .md-sidebar--primary .md-nav__link {
-    padding-top: 0.7rem;
-    padding-bottom: 0.7rem;
-    line-height: 1.4;
+  /* ── Nav items — rounded hover/active states ────────────────────
+     Material's defaults render flat full-bleed link rows. We round
+     them slightly and inset by 0.4rem so the hover/active fill
+     reads as a discrete chip rather than a band crossing the
+     drawer edge to edge. */
+  .md-sidebar--primary .md-nav__list {
+    padding: 0.4rem 0.5rem;
   }
 
-  /* Wide tables (provider rule lists, NIST/OWASP control matrices)
-     don't fit a phone viewport. Material wraps them in a
-     ``data-md-component="table"`` div with ``overflow-x: auto``,
-     but only when the markdown table is the direct child of a
-     paragraph. Force the scrollable wrapper so any nested table
-     also gets it. The shadow on the right edge is a visual hint
-     that there's more content off-screen. */
+  .md-sidebar--primary .md-nav__item {
+    margin: 0;
+  }
+
+  .md-sidebar--primary .md-nav__link {
+    padding: 0.65rem 0.85rem;
+    line-height: 1.4;
+    border-radius: 8px;
+    color: var(--md-default-fg-color);
+    transition: background 0.12s ease, color 0.12s ease;
+    position: relative;
+  }
+
+  .md-sidebar--primary .md-nav__link:hover {
+    background: color-mix(in oklab,
+      var(--md-default-bg-color) 86%, var(--pg-teal-500));
+    color: var(--md-default-fg-color);
+  }
+
+  /* Active page — left rail accent + teal text. The rail is
+     ``::before`` because Material reserves the link's own padding
+     box for content. */
+  .md-sidebar--primary .md-nav__link--active {
+    color: var(--pg-teal-500);
+    font-weight: 600;
+    background: color-mix(in oklab,
+      var(--md-default-bg-color) 92%, var(--pg-teal-500));
+  }
+
+  [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active {
+    color: var(--pg-teal-300);
+  }
+
+  .md-sidebar--primary .md-nav__link--active::before {
+    content: "";
+    position: absolute;
+    left: -0.5rem;
+    top: 0.45rem;
+    bottom: 0.45rem;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--pg-teal-500);
+  }
+
+  [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active::before {
+    background: var(--pg-teal-300);
+  }
+
+  /* Disclosure caret (``▶``) for nested groups — recolor to the
+     brand muted tone so it doesn't compete with the link text. */
+  .md-sidebar--primary .md-nav__icon {
+    color: var(--md-default-fg-color--light);
+    transition: color 0.12s ease, transform 0.18s ease;
+  }
+
+  .md-sidebar--primary .md-nav__link:hover .md-nav__icon {
+    color: var(--pg-teal-500);
+  }
+
+  /* ── Scroll inertia + scrollbar polish ──────────────────────────
+     iOS gets momentum scrolling. Modern Chrome/Edge get a thinner
+     scrollbar (Firefox has its own ``scrollbar-width`` knob). */
+  .md-sidebar--primary .md-sidebar__scrollwrap {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--md-default-fg-color--lighter) transparent;
+  }
+
+  .md-sidebar--primary .md-sidebar__scrollwrap::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .md-sidebar--primary .md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+    background: var(--md-default-fg-color--lighter);
+    border-radius: 3px;
+  }
+
+  /* ── Reduced motion ────────────────────────────────────────────
+     Strip the slide animation when the user has asked for it.
+     Material handles this for the transform itself; this catches
+     the colour transitions on links/icons too. */
+  @media (prefers-reduced-motion: reduce) {
+    .md-sidebar--primary,
+    .md-sidebar--primary .md-nav__link,
+    .md-sidebar--primary .md-nav__icon {
+      transition: none;
+    }
+  }
+
+  /* ── Wide tables — already handled, kept here for context ──────
+     Provider rule lists and NIST/OWASP control matrices don't fit
+     a phone viewport. Force horizontal scroll on the table itself
+     so the layout doesn't bust. */
   .md-typeset__scrollwrap,
   .md-typeset .pg-doc-cards,
   .md-typeset table:not([class]) {
@@ -1929,17 +2128,504 @@ th.pg-sortable:focus-visible {
   }
 
   /* Hero — pull padding in slightly on phones so the band doesn't
-     monopolize the first viewport. clamp() already does most of
-     this; this just trims the lower bound. */
+     monopolize the first viewport. */
   .pg-hero {
     padding-top: 3rem;
     padding-bottom: 3.25rem;
   }
+}
 
-  /* The home-page hides the prev/next footer nav (``body:has(.pg-home)
-     .md-footer__inner { display: none; }``). On mobile inner pages
-     the footer nav cards stack vertically by default — fine. No
-     extra rules needed here. */
+/* ============================================================
+   Mermaid flow chart container
+   ============================================================
+   The "Inputs in. Graded report out." flow renders via Mermaid
+   inside a ``<div class="pg-flowchart">`` wrapper. Out of the box
+   Mermaid's SVG output reads as raw geometry — the colors come from
+   ``classDef`` declarations in the markdown but the *frame* around
+   the whole thing has none of the project's chrome (subtle border,
+   drop shadow, max width, dark surface in slate mode). This block
+   wraps the SVG in a card so it sits in the page rhythm rather
+   than floating against bare background. We also override the
+   default Mermaid font with Inter to keep typography consistent
+   with the rest of the page.
+   ============================================================ */
+
+.pg-flowchart {
+  margin: 1.75rem 0 0;
+  padding: 1.5rem 1rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 14px;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--md-default-bg-color) 100%, transparent) 0%,
+    color-mix(in oklab, var(--md-default-bg-color) 92%, var(--pg-navy-900)) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
+              0 18px 40px -28px color-mix(in oklab, var(--pg-navy-900) 50%, transparent);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Material wraps the mermaid block in a ``.mermaid`` div with
+     ``display: flex; justify-content: center;`` — keep the SVG
+     centred even when the wrapper isn't full-width. */
+  text-align: center;
+}
+
+[data-md-color-scheme="slate"] .pg-flowchart {
+  background: linear-gradient(180deg,
+    var(--pg-navy-900) 0%,
+    color-mix(in oklab, var(--pg-navy-900) 70%, var(--pg-navy-950)) 100%);
+}
+
+.pg-flowchart .mermaid {
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/* Type rendering inside the SVG. Mermaid emits ``<text>`` and
+   ``<foreignObject>`` for labels — both pick up font from inline
+   ``style`` if we don't insist via CSS. ``font-family`` set on
+   ``foreignObject`` cascades into nested HTML; ``text`` needs its
+   own declaration. The ``classDef``-set fill stays untouched. */
+.pg-flowchart .mermaid svg text,
+.pg-flowchart .mermaid svg foreignObject {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+}
+
+/* Mermaid renders node text via ``foreignObject`` containing a
+   ``<div class="nodeLabel">``. The default has zero internal
+   margin against the SVG ``<rect>`` border, which produces the
+   "text touching the box edge" effect at certain breakpoints.
+   Force breathing room and prevent line-wrap clipping. */
+.pg-flowchart .mermaid svg .nodeLabel,
+.pg-flowchart .mermaid svg .label foreignObject div {
+  padding: 4px 6px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* Drop shadow on the rendered nodes so they read as foreground
+   elements rather than flat shapes. ``filter: drop-shadow`` is the
+   SVG-friendly way; ``box-shadow`` doesn't work on SVG ``<g>``.
+   Filters on a parent cascade to children, so we apply at the
+   cluster level. */
+.pg-flowchart .mermaid svg .nodes g.node > rect,
+.pg-flowchart .mermaid svg .nodes g.node > polygon,
+.pg-flowchart .mermaid svg .nodes g.node > path {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+  transition: filter 0.18s ease;
+}
+
+[data-md-color-scheme="slate"]
+.pg-flowchart .mermaid svg .nodes g.node > rect,
+[data-md-color-scheme="slate"]
+.pg-flowchart .mermaid svg .nodes g.node > polygon,
+[data-md-color-scheme="slate"]
+.pg-flowchart .mermaid svg .nodes g.node > path {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
+}
+
+/* Hover lift for clickable nodes. Mermaid sets ``cursor: pointer``
+   on nodes that have a ``click`` directive; we accentuate it with a
+   subtle filter bump so the user gets visual confirmation. */
+.pg-flowchart .mermaid svg .nodes g.node[style*="pointer"]:hover > rect,
+.pg-flowchart .mermaid svg .nodes g.node[style*="pointer"]:hover > polygon,
+.pg-flowchart .mermaid svg .nodes g.node[style*="pointer"]:hover > path {
+  filter: drop-shadow(0 6px 16px rgba(27, 163, 169, 0.35));
+}
+
+/* Edge labels (the "auto-detect", "pass", "fail" stickers on the
+   arrows). Default Mermaid renders them with a small white box;
+   we make them tiny pills that match the chrome instead. */
+.pg-flowchart .mermaid svg .edgeLabel {
+  background: var(--md-default-bg-color);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  font-size: 11px;
+  color: var(--md-default-fg-color--light);
+  letter-spacing: 0.01em;
+}
+
+[data-md-color-scheme="slate"] .pg-flowchart .mermaid svg .edgeLabel {
+  background: var(--pg-navy-900);
+}
+
+/* Edges themselves — slightly translucent so the nodes pop. */
+.pg-flowchart .mermaid svg .flowchart-link {
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+/* Mobile — let the chart scroll horizontally instead of squashing
+   itself unreadable into a phone viewport. Vertical layout would
+   require regenerating the diagram with ``flowchart TB``; the
+   horizontal-with-scroll pattern is the lower-friction win. */
+@media screen and (max-width: 720px) {
+  .pg-flowchart {
+    padding: 1rem 0.5rem;
+  }
+
+  .pg-flowchart .mermaid {
+    min-width: 720px;
+  }
+}
+
+/* ============================================================
+   Cross-size defensive layout pass
+   ============================================================
+   Bootstrap-style "containers always lay out cleanly at any
+   width" without actually pulling Bootstrap in. Each rule below
+   addresses an observed text-touching-border failure mode at a
+   specific breakpoint, not a hypothetical one.
+
+   The defensive utility we lean on most is ``min-width: 0`` on
+   every flex/grid item — without it, items refuse to shrink past
+   their content's intrinsic minimum, which is what causes long
+   labels to overflow their cards and overlap neighbouring
+   borders. ``overflow-wrap: break-word`` is the secondary belt:
+   a word that's wider than the column should break instead of
+   horizontal-scrolling the page.
+   ============================================================ */
+
+/* Every ``pg-*`` card is a flex/grid item somewhere; let them
+   shrink and wrap honestly. */
+.pg-stat,
+.pg-provider,
+.pg-doc-card,
+.pg-output,
+.pg-flow__step,
+.pg-flow__node {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Provider chips — long names ("Google Cloud Build") were clipping
+   when the column dropped below ~200px. Allow the secondary
+   "checks" count to wrap to its own line on narrow widths. */
+.pg-provider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  text-decoration: none !important;
+}
+
+.pg-provider__name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+}
+
+.pg-provider__count {
+  font-size: 0.78rem;
+  color: var(--md-default-fg-color--light);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Stat numbers — at very narrow widths the four-column grid drops
+   to two and ``font-size: clamp(2.2rem, 3.6vw, 2.9rem)`` could
+   leave numbers like "430+" running into the divider rail.
+   Tabular numerals + a slightly tighter clamp on the small end
+   keep them aligned and inside the gutter. */
+.pg-stat {
+  padding: 0.65rem 0.5rem;
+}
+
+.pg-stat__num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+}
+
+.pg-stat__label {
+  font-size: clamp(0.7rem, 1.2vw, 0.78rem);
+  overflow-wrap: anywhere;
+}
+
+/* Doc cards (the providers/standards card lists) — their inner
+   ``code`` snippets can be long enough to push the card over its
+   container width on phones. Ditto provider names. */
+.pg-doc-card * {
+  min-width: 0;
+}
+
+.pg-doc-card code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The ``.pg-install`` pill on the closing CTA contains
+   ``pip install pipeline-check`` — short enough on desktop, but
+   on phones it sometimes ran to a second line and the text
+   crossed the rounded background edge. Center + cap width. */
+.pg-install {
+  max-width: min(100%, 24rem);
+  margin: 0 auto;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Section heads — long titles ("Inputs in. Graded report out.")
+   could wrap to three lines on a 320px screen and the leading
+   ``//`` eyebrow could touch the next character if no margin. */
+.pg-section__eyebrow {
+  margin-bottom: 0.4rem;
+}
+
+.pg-section__title {
+  overflow-wrap: balance;
+  hyphens: auto;
+}
+
+/* Make sure section padding scales down on phones so the band
+   edges don't crowd the card content. */
+@media screen and (max-width: 720px) {
+  .pg-section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .pg-stats__inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ============================================================
+   Severity chips + per-rule cards
+   ============================================================
+   Provider docs are long lists (30+ rules per CI provider). The
+   pre-existing render emitted each rule as a flat H2 + plain-text
+   ``**Severity:** HIGH`` line, which gave the eye no grip when
+   skimming. This section adds three pieces:
+
+   1. ``.pg-sev`` — a colour-coded severity chip (red/orange/amber/
+      teal/grey) used both in the summary table and the per-rule
+      tag row. Same chip in both places so eye flows from table
+      to body without re-mapping.
+   2. ``.pg-tag`` — neutral pill chips for OWASP / ESF / CWE
+      mappings. Visually quiet so they don't compete with the
+      severity chip.
+   3. ``.pg-rule`` — a card wrapper around each rule with a
+      severity-coloured left rail. Combined with the
+      ``.pg-rule__rec`` framed recommendation block, the page
+      reads as "scan severity → drill into rule → here's the fix"
+      rather than as one long undifferentiated stream.
+
+   Colour palette principles:
+   - Critical / High: warm hues (rose/coral) → urgency
+   - Medium: amber → "attention needed"
+   - Low / Info: cool hues (teal/grey) → "nice to fix"
+   - Slate-mode variants brighten the foregrounds because the
+     low-saturation low-luminance tones disappear on dark.
+   ============================================================ */
+
+.pg-sev {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+.pg-sev--critical {
+  background: rgba(157, 39, 85, 0.14);
+  color: #8a224b;
+  border-color: rgba(157, 39, 85, 0.35);
+}
+
+.pg-sev--high {
+  background: rgba(231, 111, 81, 0.14);
+  color: #c84e2e;
+  border-color: rgba(231, 111, 81, 0.35);
+}
+
+.pg-sev--medium {
+  background: rgba(244, 185, 66, 0.14);
+  color: #a36e0e;
+  border-color: rgba(244, 185, 66, 0.45);
+}
+
+.pg-sev--low {
+  background: rgba(42, 157, 143, 0.14);
+  color: #1e7468;
+  border-color: rgba(42, 157, 143, 0.35);
+}
+
+.pg-sev--info {
+  background: var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  border-color: var(--md-default-fg-color--lighter);
+}
+
+[data-md-color-scheme="slate"] .pg-sev--critical {
+  background: rgba(231, 88, 142, 0.18);
+  color: #f0739a;
+  border-color: rgba(231, 88, 142, 0.42);
+}
+
+[data-md-color-scheme="slate"] .pg-sev--high {
+  background: rgba(243, 145, 117, 0.18);
+  color: #f29470;
+  border-color: rgba(243, 145, 117, 0.42);
+}
+
+[data-md-color-scheme="slate"] .pg-sev--medium {
+  background: rgba(244, 185, 66, 0.16);
+  color: #f4b942;
+  border-color: rgba(244, 185, 66, 0.42);
+}
+
+[data-md-color-scheme="slate"] .pg-sev--low {
+  background: rgba(95, 212, 200, 0.14);
+  color: #5fdce0;
+  border-color: rgba(95, 212, 200, 0.35);
+}
+
+/* ── OWASP / ESF / CWE neutral pill chips ──────────────────── */
+
+.pg-tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 92%,
+    var(--md-default-fg-color));
+  color: var(--md-default-fg-color--light);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
+.pg-tag--owasp {
+  color: var(--pg-teal-500);
+  border-color: color-mix(in oklab,
+    var(--md-default-fg-color--lightest) 60%,
+    var(--pg-teal-500) 40%);
+}
+
+[data-md-color-scheme="slate"] .pg-tag--owasp {
+  color: var(--pg-teal-300);
+}
+
+.pg-tag--cwe {
+  font-style: italic;
+}
+
+/* ── Per-rule card ─────────────────────────────────────────── */
+
+.pg-rule {
+  position: relative;
+  margin: 2rem 0 2.25rem;
+  padding: 0.4rem 0 0.4rem 1.1rem;
+  border-left: 3px solid var(--md-default-fg-color--lightest);
+  border-radius: 0 6px 6px 0;
+}
+
+.pg-rule--critical { border-left-color: #9d2755; }
+.pg-rule--high     { border-left-color: #e76f51; }
+.pg-rule--medium   { border-left-color: #f4b942; }
+.pg-rule--low      { border-left-color: #2a9d8f; }
+.pg-rule--info     { border-left-color: var(--md-default-fg-color--lighter); }
+
+[data-md-color-scheme="slate"] .pg-rule--critical { border-left-color: #f0739a; }
+[data-md-color-scheme="slate"] .pg-rule--high     { border-left-color: #f29470; }
+[data-md-color-scheme="slate"] .pg-rule--medium   { border-left-color: #f4b942; }
+[data-md-color-scheme="slate"] .pg-rule--low      { border-left-color: #5fdce0; }
+
+/* Tighter top margin on the H2 so the rail aligns with the text */
+.pg-rule > h2:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.pg-rule__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.4rem;
+  margin: 0.4rem 0 1rem;
+  align-items: center;
+}
+
+/* ── Recommendation block ──────────────────────────────────── */
+
+.pg-rule__rec {
+  margin-top: 1.1rem;
+  padding: 0.85rem 1.1rem 1rem;
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 95%,
+    var(--pg-teal-500));
+  border-left: 2px solid var(--pg-teal-500);
+  border-radius: 0 8px 8px 0;
+}
+
+[data-md-color-scheme="slate"] .pg-rule__rec {
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 86%,
+    var(--pg-teal-500));
+  border-left-color: var(--pg-teal-400);
+}
+
+.pg-rule__rec > p:first-child,
+.pg-rule__rec > p:first-of-type {
+  margin-top: 0;
+}
+
+.pg-rule__rec > *:last-child {
+  margin-bottom: 0;
+}
+
+/* The "Recommended action" lead — slightly smaller, uppercase
+   tracking so it reads as a label rather than competing with
+   surrounding H3s. Markdown emits this as ``<p><strong>...``. */
+.pg-rule__rec > p:first-of-type strong:first-child {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pg-teal-500);
+  display: inline-block;
+  margin-bottom: 0.3rem;
+}
+
+[data-md-color-scheme="slate"] .pg-rule__rec > p:first-of-type strong:first-child {
+  color: var(--pg-teal-300);
+}
+
+/* Severity column in the summary table — let the chip hug its
+   content rather than stretch to the column width. */
+.md-typeset table:not([class]) td .pg-sev {
+  font-size: 0.66rem;
+}
+
+/* Mobile — the tag row gets crowded; drop chip padding a touch. */
+@media screen and (max-width: 720px) {
+  .pg-rule {
+    padding-left: 0.85rem;
+  }
+
+  .pg-rule__rec {
+    padding: 0.7rem 0.85rem 0.8rem;
+  }
+
+  .pg-tag {
+    font-size: 0.66rem;
+  }
 }
 
 /* Mid-screen TOC sidebar (``.md-sidebar--secondary``) overlap. At

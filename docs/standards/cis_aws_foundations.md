@@ -32,18 +32,18 @@
 
 | Control | Checks                                                  |
 |---------|---------------------------------------------------------|
-| 1.14    | `IAM-007`                                               |
-| 1.16    | `IAM-001`, `IAM-002`, `IAM-003`, `IAM-004`, `IAM-006`, `KMS-002` |
-| 2.1.1   | `S3-002`                                                |
-| 2.1.2   | `S3-003`, `S3-005`                                      |
-| 2.1.4   | `S3-001`                                                |
-| 3.1     | `CT-001`, `CT-003`                                      |
-| 3.2     | `CT-002`                                                |
-| 3.4     | `CB-003`, `CD-003`, `CWL-001`                           |
-| 3.6     | `S3-004`                                                |
-| 3.7     | `CWL-002`                                               |
-| 3.8     | `KMS-001`                                               |
-| 4.16    | `ECR-001`, `ECR-007`                                    |
+| 1.14    | [`IAM-007`](../providers/aws.md)                                               |
+| 1.16    | [`IAM-001`](../providers/aws.md), [`IAM-002`](../providers/aws.md), [`IAM-003`](../providers/aws.md), [`IAM-004`](../providers/aws.md), [`IAM-006`](../providers/aws.md), [`KMS-002`](../providers/aws.md) |
+| 2.1.1   | [`S3-002`](../providers/aws.md)                                                |
+| 2.1.2   | [`S3-003`](../providers/aws.md), [`S3-005`](../providers/aws.md)                                      |
+| 2.1.4   | [`S3-001`](../providers/aws.md)                                                |
+| 3.1     | [`CT-001`](../providers/aws.md), [`CT-003`](../providers/aws.md)                                      |
+| 3.2     | [`CT-002`](../providers/aws.md)                                                |
+| 3.4     | [`CB-003`](../providers/aws.md), [`CD-003`](../providers/aws.md), [`CWL-001`](../providers/aws.md)                           |
+| 3.6     | [`S3-004`](../providers/aws.md)                                                |
+| 3.7     | [`CWL-002`](../providers/aws.md)                                               |
+| 3.8     | [`KMS-001`](../providers/aws.md)                                               |
+| 4.16    | [`ECR-001`](../providers/aws.md), [`ECR-007`](../providers/aws.md)                                    |
 
 ## Not yet covered
 

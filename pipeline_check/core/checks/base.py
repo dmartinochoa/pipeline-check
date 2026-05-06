@@ -61,9 +61,9 @@ __all__ = [
 # CSafeLoader is functionally identical to SafeLoader but ~30-50x faster,
 # which matters when scanning 100+ workflow files in a monorepo.
 try:
-    _YAML_LOADER = _yaml.CSafeLoader  # type: ignore[attr-defined]
+    _YAML_LOADER = _yaml.CSafeLoader
 except AttributeError:
-    _YAML_LOADER = _yaml.SafeLoader  # type: ignore[assignment]
+    _YAML_LOADER = _yaml.SafeLoader
 
 
 def safe_load_yaml(text: str) -> Any:

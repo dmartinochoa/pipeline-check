@@ -142,6 +142,54 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Standards index shows live coverage counts.** Every card on
+  ``docs/standards/index.md`` now displays "N controls · N checks
+  evidenced" pulled live from the standard's mapping data via a
+  new ``hooks/mkdocs_standards_stats.py`` MkDocs hook. The hook
+  walks ``pipeline_check/core/standards/data/*.py`` via ``ast``,
+  counts the keys in each ``STANDARD = Standard(...)`` call's
+  ``mappings={...}`` and ``controls={...}`` kwargs, and substitutes
+  ``{{ standards.<name>.checks }}`` / ``{{ standards.<name>.controls }}``
+  tokens at build time. AST parsing (rather than importing the
+  package) keeps the docs CI build self-contained — same pattern
+  the existing version-templating hook uses. New
+  ``tests/test_mkdocs_standards_stats_hook.py`` covers token
+  substitution, unknown-name fallback, and no-token short-circuit.
+- **Severity chips + linked check IDs in ``attack_chains.md``.** The
+  registered-chains table now uses the same colored severity chips
+  as the provider docs (CRITICAL rose, HIGH coral) and every
+  triggering check ID is a click-through link to the corresponding
+  provider rule. Cross-provider chains (AC-005, AC-007) link to
+  the AWS provider page top since AWS rules are hand-authored
+  without per-rule anchors.
+- **Page-level metadata sweep in ``docs/_overrides/main.html``.**
+  Mobile browser chrome ``theme-color`` is now scheme-aware
+  (``#ffffff`` for light, ``#04101a`` matching ``--pg-navy-950``
+  for dark) via ``prefers-color-scheme`` media queries.
+  ``color-scheme`` switched from forced ``dark`` to ``light dark``.
+  Added explicit ``meta name="description"`` (Material doesn't emit
+  one by default) and ``og:image:alt`` / ``twitter:image:alt`` for
+  accessibility on link unfurls.
+- **Per-rule UI overhaul on every provider doc.** The summary table
+  now uses color-coded severity chips (rose / coral / amber / teal /
+  gray) so the eye can scan a 30-rule provider page by urgency. Each
+  rule renders inside a card-shaped block with a severity-matching
+  left rail; a chip row at the top carries the severity + OWASP /
+  ESF / CWE pill tags; recommendations sit in a framed, teal-tinted
+  "Recommended action" block separated from the body narrative.
+  ``scripts/gen_provider_docs.py`` rewritten to emit the new
+  structure; nine provider docs regenerated.
+- **Standards docs link through to the matching rule.** All 882
+  bare ``\`<PREFIX>-<N>\``` mentions across the seven mapping-
+  carrying standards docs (``cis_aws_foundations``,
+  ``cis_supply_chain``, ``nist_800_53``, ``nist_ssdf``,
+  ``owasp_cicd_top_10``, ``pci_dss_v4``, ``slsa``) are now markdown
+  links into the corresponding provider page. CI providers land on
+  the per-rule pinned anchor; AWS / Terraform / CloudFormation
+  prefixes (whose pages are hand-maintained without per-rule
+  anchors) link to the page top. ``scripts/link_standards_check_ids.py``
+  rewrote the existing docs; ``scripts/gen_standards_mappings.py``
+  updated to emit the link form natively for future regenerations.
 - **CIS AWS Foundations standard mappings densified.** Added
   `1.14` (key rotation), `3.2` (CloudTrail log file validation),
   `3.7` (CloudTrail logs encrypted with KMS) to the controls

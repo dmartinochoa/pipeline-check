@@ -149,7 +149,7 @@ class _GroupedCommand(click.Command):
         })),
     )
 
-    def format_options(self, ctx, formatter):  # type: ignore[override]
+    def format_options(self, ctx, formatter):
         bucketed: dict[str, list[tuple[str, str]]] = {}
         section_order = [name for name, _ in self._SECTIONS] + ["Other"]
         for param in self.get_params(ctx):
@@ -180,7 +180,7 @@ class _FuzzyChoice(click.Choice):
     base class via ``case_sensitive=False``.
     """
 
-    def convert(self, value, param, ctx):  # type: ignore[override]
+    def convert(self, value, param, ctx):
         try:
             return super().convert(value, param, ctx)
         except click.exceptions.BadParameter:
