@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.png" alt="Pipeline-Check logo" width="120">
+
 # [Pipeline-Check](https://dmartinochoa.github.io/pipeline-check/)
 
 [![CI](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml/badge.svg)](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml)
