@@ -589,6 +589,19 @@ body {
 .md-header__button:hover { color: var(--pg-teal-500); }
 [data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
 
+/* Brand logo — Material's default (~1.2rem) reads as a tiny favicon
+   next to the site title; bump it to ~1.9rem so the shield mark is
+   legible without making the header chrome taller. */
+.md-header__button.md-logo {
+  padding: 0.2rem;
+  margin-right: 0.2rem;
+}
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.9rem;
+  width: auto;
+}
+
 /* Tabs row: tighter, more editorial */
 .md-tabs__list {
   padding: 0 0.4rem;
