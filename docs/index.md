@@ -23,7 +23,7 @@ patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
-  <a class="md-button md-button--primary" href="usage/">Get started</a>
+  <a class="md-button" href="usage/">Get started</a>
   <a class="md-button" href="https://github.com/dmartinochoa/pipeline-check" target="_blank" rel="noopener">View on GitHub</a>
 </div>
 
