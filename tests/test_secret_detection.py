@@ -1,4 +1,4 @@
-"""Per-detector tests for the expanded secret catalogue, plus the
+"""Per-detector tests for the expanded secret catalog, plus the
 placeholder-suppression and PEM-block-detection layers.
 
 Each ``DETECTOR`` entry pairs a detector name with a positive token

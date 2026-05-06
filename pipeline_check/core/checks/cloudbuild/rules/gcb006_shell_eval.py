@@ -1,7 +1,7 @@
 """GCB-006 — dangerous shell idioms (``eval``, ``sh -c $VAR``, backtick exec).
 
 Reuses the shared ``_primitives.shell_eval`` detector so Cloud Build
-benefits from the same pattern catalogue as GHA-028 / GL-026 / BB-026 /
+benefits from the same pattern catalog as GHA-028 / GL-026 / BB-026 /
 ADO-027 / CC-027 / JF-030.
 """
 from __future__ import annotations

@@ -85,7 +85,7 @@ def test_best_effort_line_returns_none_for_non_file_resource():
 def test_best_effort_line_returns_none_when_no_pattern_matches(tmp_path):
     from pipeline_check.core.checks.base import Finding, Severity
     from pipeline_check.core.sarif_reporter import _best_effort_line
-    # A file with no signature the pattern catalogue knows about.
+    # A file with no signature the pattern catalog knows about.
     wf = tmp_path / "ci.yml"
     wf.write_text("name: ci\non: push\njobs: {}\n")
     f = Finding(

@@ -20,7 +20,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Scans the raw Jenkinsfile text against the cross-provider "
-        "credential-pattern catalogue. Secrets committed to Groovy "
+        "credential-pattern catalog. Secrets committed to Groovy "
         "source are visible in every fork and every build log."
     ),
 )

@@ -504,7 +504,7 @@ class ResourceCatalog:
         # lacks this endpoint, or AccessDenied in prod) only costs ECR-006
         # visibility — not the entire ECR rule family. Without this,
         # self._memo would taint catalog.errors["ecr"] and the orchestrator
-        # would suppress ECR-001..005 in favour of a single ECR-000.
+        # would suppress ECR-001..005 in favor of a single ECR-000.
         def _load() -> list[dict]:
             client = self.client("ecr")
             try:

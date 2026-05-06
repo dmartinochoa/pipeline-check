@@ -228,7 +228,7 @@ provider.
 }
 ```
 
-### Behaviour when permissions are missing
+### Behavior when permissions are missing
 
 The scanner does not fail closed when the principal lacks an action.
 Instead, the per-service enumeration records the error and the
@@ -281,7 +281,7 @@ compromised build.
 
 Checks whether the CodeBuild project sends build output logs to CloudWatch
 Logs or S3. Without logs, build activity cannot be audited, security
-incidents cannot be investigated, and anomalous build behaviour goes
+incidents cannot be investigated, and anomalous build behavior goes
 undetected.
 
 **Recommended actions**
@@ -416,7 +416,7 @@ intervenes.
 **Recommended actions**
 - Enable `autoRollbackConfiguration` on the deployment group with at least the `DEPLOYMENT_FAILURE` event.
 - Consider also adding `DEPLOYMENT_STOP_ON_ALARM` to roll back when health metrics degrade.
-- Test rollback behaviour in a non-production environment to validate the configuration.
+- Test rollback behavior in a non-production environment to validate the configuration.
 
 ### CD-002 — AllAtOnce deployment config — no canary or rolling strategy
 **Severity:** HIGH
@@ -704,7 +704,7 @@ traverse the network unencrypted.
 
 **Recommended actions**
 - Attach a bucket policy with a Deny statement for `s3:*` where `Bool aws:SecureTransport=false`.
-- Apply the deny at the AWS account level via an SCP for defence-in-depth.
+- Apply the deny at the AWS account level via an SCP for defense-in-depth.
 - Validate the policy with AWS Access Analyzer before applying to production buckets.
 
 ---
@@ -802,7 +802,7 @@ and passes a shared `ResourceCatalog`.
 | ECR-006 | HIGH | CICD-SEC-3 | Pull-through cache rule has an unauthenticated untrusted upstream |
 | ECR-007 | MEDIUM | CICD-SEC-3 | Inspector v2 enhanced scanning for ECR is disabled |
 | SIGN-001 | MEDIUM | CICD-SEC-9 | No active AWS Signer profile exists for the Lambda platform |
-| SIGN-002 | HIGH | CICD-SEC-9 | Signer profile is revoked or cancelled |
+| SIGN-002 | HIGH | CICD-SEC-9 | Signer profile is revoked or canceled |
 | EB-001 | MEDIUM | CICD-SEC-10 | No EventBridge rule for `CodePipeline ... FAILED` events |
 | EB-002 | HIGH | CICD-SEC-8 | EventBridge rule has a wildcard target ARN |
 | CW-001 | LOW | CICD-SEC-10 | No CloudWatch alarm on `AWS/CodeBuild FailedBuilds` |

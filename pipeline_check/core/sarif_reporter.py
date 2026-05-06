@@ -98,13 +98,13 @@ def report_sarif(
     tool_version: str = "",
     chains: list[Chain] | None = None,
 ) -> str:
-    """Serialise findings to a SARIF 2.1.0 JSON string.
+    """Serialize findings to a SARIF 2.1.0 JSON string.
 
     Parameters
     ----------
     findings:
         The full set of findings from the scanner — both passed and
-        failed. Passed findings are used to complete the rule catalogue
+        failed. Passed findings are used to complete the rule catalog
         but do not emit results.
     score_result:
         The dict returned by ``score()``. Surfaced as run-level

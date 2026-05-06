@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Complements ADO-003 (which looks at `variables:` keys). "
         "ADO-008 scans every string in the pipeline against the "
-        "cross-provider credential-pattern catalogue."
+        "cross-provider credential-pattern catalog."
     ),
 )
 

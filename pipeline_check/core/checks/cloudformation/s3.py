@@ -78,7 +78,7 @@ class S3Checks(CloudFormationBaseCheck):
 
 
 def _target_key(value) -> str:
-    """Normalise a bucket reference to either a literal name or logical id."""
+    """Normalize a bucket reference to either a literal name or logical id."""
     if isinstance(value, str):
         return value
     if isinstance(value, dict):

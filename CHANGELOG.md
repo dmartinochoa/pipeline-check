@@ -5,57 +5,96 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.2] - 2026-05-06
-
-(0.3.1 was tagged but never built — the version-vs-tag guard caught
-that the bump commit hadn't been merged before tagging. Re-cut as
-0.3.2 with the bump on master.)
-
-
-
-### Added
-
-- **Kubernetes manifest provider** — parses Kubernetes API documents
-  (`Deployment`, `Pod`, `Job`, `CronJob`, `DaemonSet`, `StatefulSet`,
-  `ReplicaSet`, `Service`, `Secret`, `Role`, `ClusterRole`,
-  `RoleBinding`, `ClusterRoleBinding`) from YAML on disk. Multi-doc
-  files (`---`-separated) and directories of manifests are both
-  supported; helm `values.yaml`, `Chart.yaml`, and kustomization
-  files are silently skipped. New CLI flag `--k8s-path`, registered
-  as the 12th provider, with auto-detection of `kubernetes/`, `k8s/`,
-  or `manifests/` directories. Ships 22 checks (`K8S-001`..`K8S-022`)
-  covering image digest pinning, host-namespace sharing
-  (`hostNetwork`/`hostPID`/`hostIPC`), `securityContext` (`privileged`,
-  `allowPrivilegeEscalation`, `runAsNonRoot`, `readOnlyRootFilesystem`,
-  capabilities, seccompProfile), service-account hygiene,
-  `automountServiceAccountToken`, `hostPath` volumes (with
-  sensitive-path upgrade to CRITICAL for `docker.sock`,
-  `/var/lib/kubelet`, `/etc`, `/`, etc.), resource limits, env-var
-  / Secret credential leakage (with base64-decoded scanning of
-  `Secret.data`), default-namespace placement, ClusterRoleBinding
-  to `cluster-admin`/`system:masters`, wildcard verbs+resources in
-  Roles/ClusterRoles, and Services exposing port 22 (SSH).
-- **Standards coverage** for Kubernetes rules — every `K8S-*` rule is
-  mapped into OWASP Top 10 CI/CD and NIST SP 800-190 (Application
-  Container Security).
+## [0.3.3] - 2026-05-06
 
 ### Changed
 
-- `pyproject.toml` description now lists every supported provider
-  (CloudFormation, CircleCI, Cloud Build, Dockerfile previously
-  omitted).
-- README provider table, architecture ASCII, rule-tree listing, and
-  the docs-site landing page are reconciled against the current rule
-  catalogue (370+ checks across 12 providers, was incorrectly stated
-  as 330+ across 10/11 in places).
+- **GitHub Actions workflow audit.** `pypi-publish.yml` was duplicating
+  `release.yml`'s tag-push behavior without the version-vs-wheel
+  guard, which is the failure mode that produced the v0.3.1 mess.
+  Auto-trigger removed; it stays as a manual-only fallback path with
+  its own pyproject-version check. `docs.yml` and `pypi-publish.yml`
+  checkout steps now set `persist-credentials: false` (GHA-002).
+  `localstack-test.yml` pins LocalStack Pro to `:3` instead of
+  `:latest` so a major-version bump can't surprise CI.
+- README now uses `pipeline_check` long_description's logo URL pinned
+  to the absolute `raw.githubusercontent.com` path. The relative
+  `docs/logo.png` no longer rendered on PyPI after MANIFEST.in
+  pruned `docs/` from the sdist.
 
 ### Fixed
 
-- Config file loader (`core/config._TOPLEVEL_KEYS`) now recognises
+- Removed dead-code import block in `tests/test_doc_claims.py`
+  (`_count_awslike_checks` was never called and the imports were
+  flagged by ruff F401 in CI on Windows).
+
+## [0.3.2] - 2026-05-06
+
+0.3.1 was tagged but the version-vs-tag guard caught that the bump
+commit hadn't been merged. Re-cut as 0.3.2 with the bump on master.
+
+### Added
+
+- **Kubernetes manifest provider.** Parses K8s API documents
+  (`Deployment`, `Pod`, `Job`, `CronJob`, `DaemonSet`, `StatefulSet`,
+  `ReplicaSet`, `Service`, `Secret`, `Role`, `ClusterRole`,
+  `RoleBinding`, `ClusterRoleBinding`) from YAML on disk. Multi-doc
+  files and directories of manifests both work. Helm `values.yaml`,
+  `Chart.yaml`, and kustomization files are silently skipped. New
+  CLI flag `--k8s-path`, auto-detection of `kubernetes/`, `k8s/`,
+  or `manifests/` at cwd. 22 checks (`K8S-001`..`K8S-022`) covering:
+  image digest pinning, host-namespace sharing
+  (`hostNetwork`/`hostPID`/`hostIPC`), `securityContext`
+  (`privileged`, `allowPrivilegeEscalation`, `runAsNonRoot`,
+  `readOnlyRootFilesystem`, capabilities, seccompProfile),
+  service-account hygiene, `automountServiceAccountToken`,
+  `hostPath` volumes (with a sensitive-path upgrade to CRITICAL for
+  `docker.sock`, `/var/lib/kubelet`, `/etc`, `/`), resource limits,
+  env-var and Secret credential leakage (with base64-decoded scans
+  of `Secret.data`), default-namespace placement,
+  ClusterRoleBinding to `cluster-admin` or `system:masters`,
+  wildcard verbs+resources in Roles/ClusterRoles, and Services
+  exposing port 22 (SSH).
+- **Standards coverage for Kubernetes.** Every `K8S-*` rule is
+  mapped into OWASP Top 10 CI/CD and NIST SP 800-190 (Application
+  Container Security).
+- **MANIFEST.in.** Defense-in-depth filter on the PyPI sdist to keep
+  the GitHub Pages docs site, repo tooling, and local cache
+  artifacts out of releases. Ships `CHANGELOG.md` (was previously
+  absent from the sdist).
+- **`tests/test_doc_claims.py`.** Locks the README and
+  `docs/index.md` numerical claims (providers, standards,
+  autofixers, attack chains, total checks) against the live
+  registries so doc drift fails CI.
+- **`tests/test_english_variant.py`.** Fails the suite if a British
+  spelling lands in any tracked source or doc file. Convention
+  documented in `CLAUDE.md`.
+
+### Changed
+
+- `pyproject.toml` description now lists every supported provider.
+  CloudFormation, CircleCI, Cloud Build, and Dockerfile were
+  previously omitted.
+- README provider table, architecture ASCII, rule-tree listing, and
+  the docs site landing page reconciled against the current rule
+  catalog: 430+ checks across 12 providers. Older claims of "330+
+  across 10/11" replaced.
+- README logo points at the absolute GitHub raw URL so the PyPI
+  long_description renders the image. The relative `docs/logo.png`
+  path no longer resolved on PyPI after the sdist filter pruned
+  `docs/`.
+- Project switched to American English throughout. Convention
+  documented in `CLAUDE.md`; bulk converter lives at
+  `scripts/_apply_american_english.py`; enforcement via
+  `tests/test_english_variant.py`.
+
+### Fixed
+
+- Config file loader (`core/config._TOPLEVEL_KEYS`) now accepts
   `cloudbuild_path`, `dockerfile_path`, `cfn_template`,
-  `jenkinsfile_path`, and `k8s_path`. These keys were already documented
-  by `pipeline_check init`'s scaffolded template but were silently
-  rejected by the strict schema validator.
+  `jenkinsfile_path`, and `k8s_path`. These keys were already
+  documented by `pipeline_check init`'s scaffolded template but were
+  silently rejected by the strict schema validator.
 
 ## [0.3.0] - 2026-05-05
 

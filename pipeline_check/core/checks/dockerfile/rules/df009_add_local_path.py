@@ -15,7 +15,7 @@ RULE = Rule(
     cwe=("CWE-1357",),
     recommendation=(
         "Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has "
-        "two implicit behaviours that make it the wrong default — it "
+        "two implicit behaviors that make it the wrong default — it "
         "fetches HTTP(S) URLs and it auto-extracts ``.tar`` / "
         "``.tar.gz`` archives. Both are easy to invoke accidentally "
         "and neither is reproducible. Reserve ``ADD`` for a deliberate "
@@ -25,7 +25,7 @@ RULE = Rule(
         "Pure-local ``ADD <path> <dest>`` is functionally identical to "
         "``COPY``, but ships extra-feature surface (URL fetch, tarball "
         "auto-extract) that adds nothing and turns a benign-looking "
-        "filename change into a behaviour change. The Docker docs have "
+        "filename change into a behavior change. The Docker docs have "
         "recommended ``COPY`` for non-URL inputs since 2014."
     ),
 )

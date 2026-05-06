@@ -89,7 +89,7 @@ def test_cli_man_with_topic_prints_only_that_topic():
 def test_cli_man_unknown_topic_exits_nonzero_with_error():
     """Unknown topic exits 3 (config error) so automation piping the
     output through ``| grep`` catches the typo. The previous "print
-    index and exit 0" behaviour hid typos in CI scripts."""
+    index and exit 0" behavior hid typos in CI scripts."""
     result = CliRunner().invoke(scan, ["--man", "nope"])
     assert result.exit_code == 3
     assert "Unknown topic: 'nope'" in result.output

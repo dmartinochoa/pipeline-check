@@ -61,7 +61,7 @@ _LOW: frozenset[str] = frozenset({
     "GHA-027", "GL-025", "BB-025", "ADO-026", "CC-026", "JF-029",
     "CB-011",
     # Credential-shaped literals in pipeline body — AKIA/JWT patterns
-    # appear in fixtures/docs even when `example` labelling isn't
+    # appear in fixtures/docs even when `example` labeling isn't
     # matched by the context helper.
     "GHA-008", "GL-008", "BB-008", "ADO-008", "JF-008", "CC-008",
 })

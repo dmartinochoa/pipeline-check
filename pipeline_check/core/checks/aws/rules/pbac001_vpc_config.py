@@ -27,7 +27,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         vpc_cfg = project.get("vpcConfig", {}) or {}
         # Require all three fields so a stub vpcConfig with empty subnets
         # doesn't pass. Real AWS rejects incomplete VPC configs at creation
-        # time, but defence-in-depth is cheap here.
+        # time, but defense-in-depth is cheap here.
         has_vpc = bool(
             vpc_cfg.get("vpcId")
             and vpc_cfg.get("subnets")

@@ -16,7 +16,7 @@ RULE = Rule(
     recommendation=(
         "Rotate the signing profile: create a replacement and update every "
         "code-signing config that references the revoked profile. A "
-        "revoked or cancelled profile invalidates every signature it "
+        "revoked or canceled profile invalidates every signature it "
         "produced — lambdas relying on it will fail verification."
     ),
 )

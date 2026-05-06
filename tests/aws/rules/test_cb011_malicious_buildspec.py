@@ -25,7 +25,7 @@ def test_no_buildspec_skipped(make_catalog):
 
 def test_repo_reference_skipped(make_catalog):
     """A single-line path (``ci/build.yml``) is a repo reference; the
-    scanner has no text to analyse, so the rule stays silent."""
+    scanner has no text to analyze, so the rule stays silent."""
     cat = _cat([_project(buildspec="ci/build.yml")], make_catalog)
     assert rule.check(cat) == []
 

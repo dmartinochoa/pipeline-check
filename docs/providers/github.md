@@ -75,7 +75,7 @@ Replace tag/branch references (`@v4`, `@main`) with the full 40-char commit SHA.
 ## GHA-002 — pull_request_target checks out PR head
 **Severity:** CRITICAL · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION, ESF-D-BUILD-ENV
 
-`pull_request_target` runs with a write-scope GITHUB_TOKEN and access to repository secrets — deliberately so, since it's how labelling and comment-bot workflows work. When the same workflow then explicitly checks out the PR head (`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) it executes attacker-controlled code with those privileges.
+`pull_request_target` runs with a write-scope GITHUB_TOKEN and access to repository secrets — deliberately so, since it's how labeling and comment-bot workflows work. When the same workflow then explicitly checks out the PR head (`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) it executes attacker-controlled code with those privileges.
 
 **Recommended action**
 
@@ -129,7 +129,7 @@ Add an SBOM generation step — `anchore/sbom-action`, `syft . -o cyclonedx-json
 ## GHA-008 — Credential-shaped literal in workflow body
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
 
-Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc. — see `--man secrets` for the full catalogue). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.
+Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc. — see `--man secrets` for the full catalog). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.
 
 **Recommended action**
 

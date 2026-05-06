@@ -34,7 +34,7 @@ RULE = Rule(
 
 #: Path prefixes that should never be the active ``WORKDIR``. The
 #: filesystem root itself is included separately because any "starts-
-#: with-/" rule would over-match. Ending slash is normalised away.
+#: with-/" rule would over-match. Ending slash is normalized away.
 _DANGEROUS_PREFIXES: tuple[str, ...] = (
     "/sys",
     "/proc",

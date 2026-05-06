@@ -38,7 +38,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# ── Pattern catalogue ────────────────────────────────────────────
+# ── Pattern catalog ────────────────────────────────────────────
 
 # ``eval`` followed by any variable expansion (``$X``, ``${X}``,
 # ``"$X"``, ``"${X}"``). Matches the variable form even if wrapped

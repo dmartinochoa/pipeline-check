@@ -15,7 +15,7 @@ because the signal only exists in declarative source):
 
 The gap-fill IDs are whitelisted: we only emit them when the plan
 declares resources the check can actually reason about, matching the
-gating behaviour of ``EB-001``/``CT-001``. Without that, an empty plan
+gating behavior of ``EB-001``/``CT-001``. Without that, an empty plan
 would flood reports with spurious findings.
 """
 from __future__ import annotations

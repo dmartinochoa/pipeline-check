@@ -112,7 +112,7 @@ class TestS3005:
         assert _by(_run(plan), "S3-005").passed
 
     def test_string_equals_secure_transport_deny_passes(self):
-        # Alternative operator; check must still recognise the deny.
+        # Alternative operator; check must still recognize the deny.
         policy = json.dumps({"Statement": [{
             "Effect": "Deny", "Action": "s3:*", "Resource": "arn:aws:s3:::bkt/*",
             "Principal": "*",

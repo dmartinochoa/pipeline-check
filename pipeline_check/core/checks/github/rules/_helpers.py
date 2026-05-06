@@ -1,7 +1,7 @@
 """Shared regex patterns and constants used by multiple GHA rules.
 
 Keeping these in one module means when the attacker-controllable-
-context catalogue (``_UNTRUSTED_CONTEXT_RE``) grows, only one place
+context catalog (``_UNTRUSTED_CONTEXT_RE``) grows, only one place
 needs editing — and every rule that shares the regex picks up the
 change automatically.
 """
@@ -13,7 +13,7 @@ import re
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 # Untrusted attacker-controllable context expressions inside `run:`
-# bodies. Catalogue assembled from StepSecurity / GitHub Security Lab
+# bodies. Catalog assembled from StepSecurity / GitHub Security Lab
 # advisories plus PPE write-ups (CICD-SEC-4). Three classes of
 # expression:
 #

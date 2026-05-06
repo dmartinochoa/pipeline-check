@@ -15,7 +15,7 @@ import re
 
 # Key / attribute names that signal the surrounding string is an
 # example, not production data. Matched against the *nearest enclosing
-# YAML key or HCL attribute name* walking backwards from the match.
+# YAML key or HCL attribute name* walking backward from the match.
 _EXAMPLE_KEY_RE = re.compile(
     r"(?i)\b(?:example|examples|sample|samples|demo|"
     r"doc|docs|documentation|fixture|fixtures|test|tests|"

@@ -114,7 +114,7 @@ Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`
 ## BB-008 — Credential-shaped literal in pipeline body
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
 
-Complements BB-003 (variable-name scan). BB-008 checks every string in the pipeline against the cross-provider credential-pattern catalogue — catches secrets pasted into script bodies or environment blocks.
+Complements BB-003 (variable-name scan). BB-008 checks every string in the pipeline against the cross-provider credential-pattern catalog — catches secrets pasted into script bodies or environment blocks.
 
 **Recommended action**
 

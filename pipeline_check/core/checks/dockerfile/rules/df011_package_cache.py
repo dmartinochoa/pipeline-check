@@ -28,7 +28,7 @@ RULE = Rule(
         "the cache files in the lower layer forever — final image "
         "size is unchanged and the residual files broaden the attack "
         "surface (e.g. apt's signed-by keys, package metadata). The "
-        "fix is layout, not behaviour: do install + cleanup in the "
+        "fix is layout, not behavior: do install + cleanup in the "
         "same ``RUN``."
     ),
 )

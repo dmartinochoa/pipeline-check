@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.png" alt="Pipeline-Check logo" width="120">
+<img src="https://raw.githubusercontent.com/dmartinochoa/pipeline-check/master/docs/logo.png" alt="Pipeline-Check logo" width="120">
 
 # [Pipeline-Check](https://dmartinochoa.github.io/pipeline-check/)
 
@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**370+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -78,7 +78,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   370+ checks across 12 providers
+  Config files   |  Scanner  |   430+ checks across 12 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -286,7 +286,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 67 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 68 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0

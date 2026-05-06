@@ -29,7 +29,7 @@ RULE = Rule(
         "as root and the operator misread it, (b) the image carries "
         "an unrestricted ``sudoers`` line that a runtime escape can "
         "abuse, or (c) the package install chain depends on TTY-aware "
-        "``sudo`` behaviour that breaks under non-TTY ``docker build``. "
+        "``sudo`` behavior that breaks under non-TTY ``docker build``. "
         "None of these cases benefit from keeping the directive."
     ),
 )

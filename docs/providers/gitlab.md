@@ -118,7 +118,7 @@ Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`
 ## GL-008 — Credential-shaped literal in pipeline body
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
 
-Complements GL-003 (which looks at `variables:` block keys). GL-008 scans every string in the pipeline against the cross-provider credential-pattern catalogue — catches secrets pasted into `script:` bodies or environment blocks where the name-based detector can't see them.
+Complements GL-003 (which looks at `variables:` block keys). GL-008 scans every string in the pipeline against the cross-provider credential-pattern catalog — catches secrets pasted into `script:` bodies or environment blocks where the name-based detector can't see them.
 
 **Recommended action**
 
@@ -298,7 +298,7 @@ Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``
 ## GL-028 — services: image not pinned
 **Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
 
-``services:`` entries (top-level or per-job) can be either a string (``redis:7``) or a dict (``{name: redis:7, alias: cache}``). Both forms are normalised via ``image_ref``-style extraction and evaluated with the same floating-tag regex GL-001 uses for ``image:``.
+``services:`` entries (top-level or per-job) can be either a string (``redis:7``) or a dict (``{name: redis:7, alias: cache}``). Both forms are normalized via ``image_ref``-style extraction and evaluated with the same floating-tag regex GL-001 uses for ``image:``.
 
 **Recommended action**
 

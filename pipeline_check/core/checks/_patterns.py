@@ -4,7 +4,7 @@ Kept in one place so AWS (live boto3) and Terraform (plan JSON) checks stay
 in sync — any update to a credential detector or managed-image version
 automatically applies to both.
 
-The credential catalogue below is the authoritative list of "shape-based"
+The credential catalog below is the authoritative list of "shape-based"
 detectors. Each entry is keyed by a stable name (used as the label in
 secret-scanning hits) so operators can write targeted ignore rules like
 ``GHA-008:stripe_live_secret`` instead of suppressing the whole check.

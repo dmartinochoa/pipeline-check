@@ -161,7 +161,7 @@ def _cb004_timeout(properties: dict, address: str) -> Finding:
     timeout = properties.get("TimeoutInMinutes")
     # CFN accepts both an integer (``TimeoutInMinutes: 30``) and its
     # stringified form (``TimeoutInMinutes: "30"``) — the latter is
-    # common when the value comes from a parameter default. Normalise
+    # common when the value comes from a parameter default. Normalize
     # both before the threshold comparison so a valid string doesn't
     # false-positive.
     numeric_value: float | None = None

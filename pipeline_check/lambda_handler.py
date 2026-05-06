@@ -53,7 +53,7 @@ Failure handling
   ``null`` so downstream consumers can't reference a key that was never
   written. The function still returns 200 so Lambda does not retry.
 - SNS ``publish`` failures are logged but do not affect the return value.
-- Any error inside the scan itself propagates — Lambda retry behaviour
+- Any error inside the scan itself propagates — Lambda retry behavior
   applies per the function's configured event source.
 """
 

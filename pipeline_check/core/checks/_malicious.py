@@ -9,7 +9,7 @@ should gate merges on their own — the cost of a false-negative is
 orders of magnitude worse than a false-positive.
 
 Patterns are grouped into categories so a finding can name the
-specific class of behaviour observed rather than just "something
+specific class of behavior observed rather than just "something
 suspicious":
 
     category         intent                                    example
@@ -277,7 +277,7 @@ def find_malicious_patterns(
     deterministically.
 
     When ``suppress_examples`` is True (the default), matches that
-    appear inside a YAML/HCL key labelled as example/doc/fixture
+    appear inside a YAML/HCL key labeled as example/doc/fixture
     content, or next to inline example markers, are filtered out.
     Callers wanting the raw unsuppressed set (e.g. for regression
     tests) can pass ``suppress_examples=False``.

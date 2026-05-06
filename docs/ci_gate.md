@@ -226,7 +226,7 @@ skipped; the rest of the run continues.
 
 ### Applying patches directly — `--fix --apply`
 
-When you trust the fixer catalogue, skip the `git apply` round-trip:
+When you trust the fixer catalog, skip the `git apply` round-trip:
 
 ```bash
 pipeline_check --pipeline github --fix --apply
@@ -286,7 +286,7 @@ The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
 Plus a multi-line `private_key` detector that fires on any
 `-----BEGIN PRIVATE KEY-----` block (RSA, EC, OPENSSH, PGP).
 
-Each hit is labelled with the matched detector — finding descriptions
+Each hit is labeled with the matched detector — finding descriptions
 read like ``aws_access_key:AKIA…LE, stripe_secret:sk_l…23`` so
 operators can write **targeted** ignore rules per-detector instead of
 suppressing the whole `*-008` check.

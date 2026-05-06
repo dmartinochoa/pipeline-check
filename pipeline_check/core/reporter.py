@@ -129,7 +129,7 @@ def report_terminal(
         conf_style = _CONFIDENCE_STYLE.get(f.confidence, "")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
         # Abbreviate confidence to fit column width. LOW confidence is
-        # visually de-emphasised so HIGH failures stand out when
+        # visually de-emphasized so HIGH failures stand out when
         # scanning a long table.
         conf_label = f.confidence.value[:3]
         conf_cell = (
@@ -184,7 +184,7 @@ def report_json(
     inventory: list[Component] | None = None,
     chains: list[Chain] | None = None,
 ) -> str:
-    """Serialise all findings and the score to a JSON string.
+    """Serialize all findings and the score to a JSON string.
 
     The payload carries ``schema_version`` (bumped on breaking format
     changes) and ``tool_version`` (the pipeline_check release that
@@ -222,7 +222,7 @@ def report_chains_terminal(
 
     A chain is the strongest signal pipeline_check produces — multiple
     findings combine into a real attack path. Always rendered after
-    the findings table (and before inventory), with a coloured border
+    the findings table (and before inventory), with a colored border
     matching the chain's severity so a CRITICAL chain is immediately
     visible even on a busy report.
     """

@@ -103,7 +103,7 @@ class TestLoaderResilience:
 class TestGitHubEdgeCases:
     def test_yaml_1_1_on_coerced_to_true(self):
         """YAML 1.1 parses bareword ``on`` as boolean True. workflow_triggers
-        must normalise this back to the event list."""
+        must normalize this back to the event list."""
         yaml.safe_load("on: push\njobs: {b: {runs-on: x}}\n")
         # pyyaml ≥ 6.0 treats `on:` as literal "on" string under safe_load,
         # but older parsers / some config surfaces may coerce. Exercise both.

@@ -9,7 +9,7 @@
   recommended_actions:
     - Enable autoRollbackConfiguration on the deployment group with at least the DEPLOYMENT_FAILURE event.
     - Consider also adding DEPLOYMENT_STOP_ON_ALARM to roll back when health metrics degrade.
-    - Test rollback behaviour in a non-production environment to validate the configuration.
+    - Test rollback behavior in a non-production environment to validate the configuration.
   owasp_cicd: "CICD-SEC-1: Insufficient Flow Control Mechanisms"
 
 - id: CD-002

@@ -1,5 +1,5 @@
 # Realistic insecure cloudbuild.yaml exhibiting every GCB-* failure mode.
-# Modelled on a container build-and-deploy pipeline assembled quickly
+# Modeled on a container build-and-deploy pipeline assembled quickly
 # and never hardened — the common shape in new GCP projects.
 
 # GCB-004: user substitutions flow into step args with dynamic
@@ -14,7 +14,7 @@ substitutions:
   _DEPLOY_TARGET: production
   _ARTIFACT_SUFFIX: latest
   # GCB-012: an AWS access key pasted into substitutions. The
-  # ``AKIA`` shape is caught by the cross-provider secret catalogue.
+  # ``AKIA`` shape is caught by the cross-provider secret catalog.
   _AWS_KEY: AKIAIOSFODNN7EXAMPLE
 
 # GCB-002: no serviceAccount set — build runs as the default Cloud

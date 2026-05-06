@@ -3,7 +3,7 @@
 ``--help`` is the one-line-per-flag reference; this module is the
 narrative that ``--help`` deliberately omits. Each topic is a
 self-contained chunk of plain text suitable for a terminal: no rich
-markup, no ANSI colours, no required width. Pipe to ``less`` or
+markup, no ANSI colors, no required width. Pipe to ``less`` or
 ``cat`` and it reads the same.
 
 Topic content is owned here rather than in the CLI module so it can
@@ -250,7 +250,7 @@ flag any token matching one of the built-in credential-shape
 detectors. Each hit carries its detector name so operators can
 group findings by secret type and write targeted ignore rules.
 
-Built-in detector catalogue:
+Built-in detector catalog:
 
   aws_access_key        AKIA...... / ASIA......
   github_token          ghp_ / gho_ / ghu_ / ghs_ / ghr_
@@ -483,7 +483,7 @@ TOPIC: lambda
 
 pipeline_check ships an AWS Lambda entry point at
 ``pipeline_check.lambda_handler.handler``. The same Scanner code
-runs from CLI and Lambda — no behavioural divergence.
+runs from CLI and Lambda — no behavioral divergence.
 
 Build the package
 -----------------
@@ -550,7 +550,7 @@ the top-level README.
 RECIPES = """\
 TOPIC: recipes
 
-Common end-to-end command lines, organised by the workflow you're
+Common end-to-end command lines, organized by the workflow you're
 building.
 
 PR gate (block on regressions only)

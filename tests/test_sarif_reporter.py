@@ -237,7 +237,7 @@ class TestRuleTagsCap:
     """GitHub Code Scanning rejects rules whose ``properties.tags``
     list exceeds 10 entries. Pipeline-check maps a single check to up
     to 13 standards (one tag each, plus ``security`` itself), so the
-    SARIF emitter has to cap and prioritise.
+    SARIF emitter has to cap and prioritize.
     """
 
     _ALL_STANDARDS = (

@@ -9,7 +9,7 @@ document and flags any value matching a known credential pattern from
 else a contributor might land them — places the name-based detector
 can't see.
 
-The detector catalogue is shape-based, not entropy-based. False
+The detector catalog is shape-based, not entropy-based. False
 positives are cheap to suppress via the ignore file (and the
 ``PLACEHOLDER_MARKER_RE`` filter handles obvious documentation
 placeholders before they ever reach the user); false negatives from
@@ -61,7 +61,7 @@ def register_pattern(pattern: str | Pattern[str]) -> None:
 
 
 def reset_patterns() -> None:
-    """Drop every custom pattern, keeping only the built-in catalogue.
+    """Drop every custom pattern, keeping only the built-in catalog.
 
     Exists for test isolation and for the long-lived Lambda container
     case where a prior invocation's patterns shouldn't leak into the
@@ -70,13 +70,13 @@ def reset_patterns() -> None:
     _USER_PATTERNS.clear()
 
 
-# Backwards-compat alias for tests that introspected the old internal
+# Backward-compat alias for tests that introspected the old internal
 # name. Keeps a stable surface even though the storage moved.
 _PATTERNS = _USER_PATTERNS
 
 
 def find_secret_values(doc: Any) -> list[str]:
-    """Return labelled credential hits found anywhere in ``doc``.
+    """Return labeled credential hits found anywhere in ``doc``.
 
     Each hit is a string of the form ``"<detector>:<redacted-token>"``
     (or ``"private_key:<kind>"`` for PEM blocks). The detector label

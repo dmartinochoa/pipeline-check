@@ -8,7 +8,7 @@ provider differences are entirely in the *vocabulary*:
   (``CI_COMMIT_MESSAGE`` for GitLab, ``Build.SourceBranch`` for ADO,
   ``${{ github.event.* }}`` for GitHub, ``BITBUCKET_BRANCH`` for
   Bitbucket),
-- which reference syntaxes the rule needs to recognise (``$VAR``,
+- which reference syntaxes the rule needs to recognize (``$VAR``,
   ``${VAR}``, ADO ``$(VAR)``, PowerShell ``$env:VAR``,
   GitHub ``${{ env.VAR }}``).
 
@@ -45,7 +45,7 @@ def has_direct_taint(
     """Return True if any *line* directly interpolates an untrusted-
     context expression and is not a defensively-quoted assignment.
 
-    ``untrusted_re`` is the provider-specific catalogue of attacker-
+    ``untrusted_re`` is the provider-specific catalog of attacker-
     controllable shapes. ``is_quoted_assignment`` is the cross-provider
     safe-idiom recogniser owned by ``checks.base``.
     """

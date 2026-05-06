@@ -25,7 +25,7 @@ Resources:
 
 
 def test_parse_yaml_short_form_getatt_dotted():
-    """``!GetAtt Resource.Attr`` must normalise to the JSON-form list."""
+    """``!GetAtt Resource.Attr`` must normalize to the JSON-form list."""
     tmpl = _parse_template("""
 Resources:
   R:

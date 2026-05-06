@@ -4,7 +4,7 @@ Many checks answer questions of the form "does this workflow mention
 token X anywhere in its string content?" (signing, SBOM, vulnerability
 scanning, artifact-production heuristic). Doing that as N independent
 tree walks is quadratic in rule count; instead we flatten every string
-scalar into a single lowercase blob once per document and memoise on
+scalar into a single lowercase blob once per document and memoize on
 ``id(doc)``.
 
 The cache is cleared in :class:`~pipeline_check.core.checks.base.BaseCheck`
@@ -43,7 +43,7 @@ _BLOB_CACHE: dict[int, str] = {}
 def blob_lower(doc: Any) -> str:
     """Concatenate all string values in ``doc`` into one lowercase blob.
 
-    Memoised on object identity so that the multiple callers each
+    Memoized on object identity so that the multiple callers each
     provider uses (``has_signing``, ``has_sbom``, and — through the
     secrets helper — ``find_secret_values``) share one tree walk per
     workflow. ``id(doc)`` is stable for as long as the document

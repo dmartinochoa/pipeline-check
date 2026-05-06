@@ -21,7 +21,7 @@ RULE = Rule(
     cwe=("CWE-770",),
     recommendation=(
         "Set ``resources.limits.cpu`` on every container. CPU "
-        "throttling is the kernel's defence against a neighbour "
+        "throttling is the kernel's defense against a neighbour "
         "consuming all node cycles — without a limit, a "
         "compromised container can stall everything else on the "
         "node, including the kubelet. Pair the limit with a "

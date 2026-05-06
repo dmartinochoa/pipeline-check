@@ -32,7 +32,7 @@ RULE = Rule(
     docs_note=(
         "``services:`` entries (top-level or per-job) can be either a "
         "string (``redis:7``) or a dict (``{name: redis:7, alias: "
-        "cache}``). Both forms are normalised via ``image_ref``-style "
+        "cache}``). Both forms are normalized via ``image_ref``-style "
         "extraction and evaluated with the same floating-tag regex "
         "GL-001 uses for ``image:``."
     ),

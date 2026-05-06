@@ -1,5 +1,5 @@
 # Realistic-looking CircleCI config exhibiting every CC-* failure mode.
-# Modelled on a Node.js web-app build/test/deploy pipeline that was
+# Modeled on a Node.js web-app build/test/deploy pipeline that was
 # assembled quickly and never hardened — a common pattern in startup
 # repos. Used as a fixture to assert the scanner flags all 23 issues.
 version: 2.1

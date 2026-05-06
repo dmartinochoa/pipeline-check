@@ -63,6 +63,6 @@
     traverse the network unencrypted.
   recommended_actions:
     - Attach a bucket policy with a Deny statement for s3:* where Bool aws:SecureTransport=false.
-    - Apply the deny at the AWS account level via an SCP for defence-in-depth.
+    - Apply the deny at the AWS account level via an SCP for defense-in-depth.
     - Validate the policy with AWS Access Analyzer before applying to production buckets.
   owasp_cicd: "CICD-SEC-9: Improper Artifact Integrity Validation"

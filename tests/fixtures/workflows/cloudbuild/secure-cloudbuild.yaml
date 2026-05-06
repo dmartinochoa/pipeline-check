@@ -14,7 +14,7 @@ substitutions:
 # GCB-005: explicit timeout bounded to the build's realistic worst case.
 timeout: 1200s
 
-# GCB-002: dedicated least-privilege SA scoped to push artefacts and
+# GCB-002: dedicated least-privilege SA scoped to push artifacts and
 # deploy to Cloud Run.
 serviceAccount: projects/example-project/serviceAccounts/build-pipeline@example-project.iam.gserviceaccount.com
 

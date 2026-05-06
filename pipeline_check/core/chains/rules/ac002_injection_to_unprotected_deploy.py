@@ -52,7 +52,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             "binding (GHA-014), so no required-reviewer gate fires.\n"
             "  3. Attacker submits a PR whose title contains a shell "
             "payload; the runner executes it and the deploy step pushes "
-            "attacker artefacts to production."
+            "attacker artifacts to production."
         )
         out.append(Chain(
             chain_id=RULE.id,

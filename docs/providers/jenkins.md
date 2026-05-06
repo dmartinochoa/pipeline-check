@@ -88,7 +88,7 @@ Switch the affected `sh`/`bat`/`powershell` step to a single-quoted string (Groo
 
 **Recommended action**
 
-Replace `agent any` with `agent { label 'build-pool' }` (targeting a labelled pool) or `agent { docker { image '...' } }` (ephemeral container). Reserve broad-access agents for jobs that genuinely need them.
+Replace `agent any` with `agent { label 'build-pool' }` (targeting a labeled pool) or `agent { docker { image '...' } }` (ephemeral container). Reserve broad-access agents for jobs that genuinely need them.
 
 ## JF-004 — AWS auth uses long-lived access keys via withCredentials
 **Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-TOKEN-HYGIENE
@@ -129,7 +129,7 @@ Add a `sh 'syft . -o cyclonedx-json > sbom.json'` step (or Trivy with `--format 
 ## JF-008 — Credential-shaped literal in pipeline body
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
 
-Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalogue. Secrets committed to Groovy source are visible in every fork and every build log.
+Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalog. Secrets committed to Groovy source are visible in every fork and every build log.
 
 **Recommended action**
 

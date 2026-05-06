@@ -11,7 +11,7 @@ validate semantics. Its job is to surface the directive shape so
 per-rule regexes don't each reimplement comment-stripping, line-
 continuation handling, and tokenisation.
 
-Behaviour notes:
+Behavior notes:
 
 - Line continuations (``\\`` at end of line) are joined into a single
   logical line. The parser preserves the *first* line number so
@@ -19,7 +19,7 @@ Behaviour notes:
 - Comments (``#``) at the start of a line (after stripping leading
   whitespace) are dropped. Inline ``#`` is NOT a comment in
   Dockerfile syntax (it's part of the value), so it's preserved.
-- Directive case is normalised to upper-case (``FROM``, ``RUN``).
+- Directive case is normalized to upper-case (``FROM``, ``RUN``).
 - Multi-stage builds are flattened — every ``FROM`` opens a new
   stage but rules see the linear instruction stream and decide for
   themselves whether to scope by stage.
