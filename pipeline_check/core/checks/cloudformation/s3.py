@@ -83,10 +83,11 @@ def _target_key(value) -> str:
         return value
     if isinstance(value, dict):
         if "Ref" in value:
-            return value["Ref"]
+            ref = value["Ref"]
+            return ref if isinstance(ref, str) else ""
         if "Fn::GetAtt" in value:
             att = value["Fn::GetAtt"]
-            if isinstance(att, list) and att:
+            if isinstance(att, list) and att and isinstance(att[0], str):
                 return att[0]
     return ""
 

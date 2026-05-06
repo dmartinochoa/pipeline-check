@@ -3,6 +3,10 @@
 # DF-001 safe: FROM pinned by sha256 digest.
 FROM python@sha256:0000000000000000000000000000000000000000000000000000000000000001
 
+# DF-016 safe: OCI provenance labels declared.
+LABEL org.opencontainers.image.source="https://github.com/example/app" \
+      org.opencontainers.image.revision="0000000000000000000000000000000000000000"
+
 # DF-014 safe: WORKDIR points at a dedicated app dir.
 WORKDIR /app
 
@@ -24,6 +28,7 @@ COPY ./config.json /opt/config.json
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl=7.88.1-* && \
     rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /opt/shared && chmod 755 /opt/shared && \
     curl -fsSL https://example.com/install.sh -o /tmp/install.sh && \
     echo "0000000000000000000000000000000000000000000000000000000000000003  /tmp/install.sh" \
         | sha256sum -c && \

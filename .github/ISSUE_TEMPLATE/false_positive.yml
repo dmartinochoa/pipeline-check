@@ -1,0 +1,61 @@
+name: False positive
+description: A rule fired on a config that's actually compliant.
+title: "[FP] "
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        False positives are the highest-signal feedback for a security
+        scanner. Filing one with a minimal repro lets us add it to
+        `tests/<provider>/` as a negative case so it stays fixed.
+
+  - type: input
+    id: check_id
+    attributes:
+      label: Check ID
+      description: |
+        The rule that fired. Format: `GHA-001`, `K8S-005`, `AWS-IAM-007`,
+        etc. Visible in terminal output, JSON, and SARIF.
+      placeholder: "GHA-001"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Pipeline-Check version
+      placeholder: "0.3.3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal repro
+      description: |
+        The smallest workflow / manifest / template that triggers the
+        finding. Keep it under 30 lines if possible. Inline YAML, not
+        a link.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: why_compliant
+    attributes:
+      label: Why this config is compliant
+      description: |
+        Explain why the rule shouldn't fire here. Cite the relevant
+        spec section, action documentation, or OWASP guidance if the
+        rule's recommendation is wrong on its face. If it's a "this
+        rule is too coarse" case, say what discriminator would
+        separate the false positive from the real ones.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      render: shell

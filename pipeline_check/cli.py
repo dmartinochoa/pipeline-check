@@ -86,12 +86,20 @@ def _tolerate_unencodable_stdio() -> None:
     parsing emits help text on --help.
     """
     for stream in (sys.stdout, sys.stderr):
+        # ``reconfigure`` is only present on ``io.TextIOWrapper``, which
+        # is the type sys.stdout/stderr carry when not redirected.
+        # When they're redirected (a pipe, a captured fixture in tests)
+        # they may be a plain TextIO without ``reconfigure`` — caught
+        # by the AttributeError below.
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
         try:
-            stream.reconfigure(errors="replace")
-        except (AttributeError, OSError):
-            # Older Python, or stream is wrapped and doesn't expose
-            # reconfigure. Non-fatal - the worst case is the original
-            # crash on cp1252, which only affects Windows default console.
+            reconfigure(errors="replace")
+        except OSError:
+            # Stream rejects the reconfigure (e.g. detached). Non-fatal:
+            # the worst case is the original crash on cp1252, which only
+            # affects Windows default console.
             pass
 
 
@@ -292,8 +300,11 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         )
         for class_pkg_name in class_pkg_names:
             try:
-                pkg = importlib.import_module(class_pkg_name)
-                for info in pkgutil.iter_modules(pkg.__path__):
+                # ``class_pkg_module`` is distinct from the ``pkg`` loop
+                # variables earlier and later in this function (which are
+                # strings) so mypy doesn't carry a stale ``str`` inference.
+                class_pkg_module = importlib.import_module(class_pkg_name)
+                for info in pkgutil.iter_modules(class_pkg_module.__path__):
                     if info.name.startswith("_") or info.name == "rules":
                         continue
                     mod = importlib.import_module(f"{class_pkg_name}.{info.name}")
@@ -397,8 +408,11 @@ def _all_check_ids() -> list[str]:
         try:
             import importlib
             import pkgutil
-            pkg = importlib.import_module(provider_pkg_name)
-            for info in pkgutil.iter_modules(pkg.__path__):
+            # Distinct from the ``pkg`` loop variables earlier (lines
+            # 264, 378) which iterate over strings — the inferred
+            # ``str`` type would conflict with this Module assignment.
+            provider_pkg_module = importlib.import_module(provider_pkg_name)
+            for info in pkgutil.iter_modules(provider_pkg_module.__path__):
                 mod = importlib.import_module(f"{provider_pkg_name}.{info.name}")
                 if mod.__file__:
                     with open(mod.__file__, encoding="utf-8") as fh:
@@ -1120,12 +1134,15 @@ def scan(
 
     if explain_chain_id:
         from .core import chains as _chains_pkg
-        rules = {r.id.upper(): r for r in _chains_pkg.list_rules()}
+        # Distinct name from the ``rules`` list a few lines above so mypy
+        # doesn't carry the list-typed inference across the reassignment.
+        rules_by_id = {r.id.upper(): r for r in _chains_pkg.list_rules()}
         target_id = explain_chain_id.upper()
-        rule = rules.get(target_id)
+        rule = rules_by_id.get(target_id)
         if rule is None:
             import difflib
-            suggestions = difflib.get_close_matches(target_id, list(rules), n=3)
+            rule_ids: list[str] = list(rules_by_id.keys())
+            suggestions = difflib.get_close_matches(target_id, rule_ids, n=3)
             hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
             click.echo(
                 f"[explain-chain] unknown chain {explain_chain_id!r}.{hint}",
@@ -1158,23 +1175,27 @@ def scan(
         sys.exit(print_explain(explain_id))
 
     if standard_report:
-        std = _standards.get(standard_report)
-        if std is None:
+        # Distinct name from the ``std`` loop variable above (line 1099)
+        # so mypy can narrow ``Standard | None`` to ``Standard`` after
+        # the None check without conflicting with the loop variable's
+        # narrower inferred type.
+        report_std = _standards.get(standard_report)
+        if report_std is None:
             available = ", ".join(_standards.available())
             raise click.UsageError(
                 f"Unknown standard {standard_report!r}. "
                 f"Available: {available or 'none'}."
             )
-        click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
-        if std.url:
-            click.echo(f"  {std.url}")
+        click.echo(f"{report_std.name}  —  {report_std.title} (v{report_std.version or 'n/a'})")
+        if report_std.url:
+            click.echo(f"  {report_std.url}")
         click.echo("")
         click.echo("Control -> check mapping:")
         gaps: list[tuple[str, str]] = []
-        for ctrl_id in sorted(std.controls):
-            title = std.controls[ctrl_id]
+        for ctrl_id in sorted(report_std.controls):
+            title = report_std.controls[ctrl_id]
             check_ids = [
-                cid for cid, controls in std.mappings.items()
+                cid for cid, controls in report_std.mappings.items()
                 if ctrl_id in controls
             ]
             if check_ids:

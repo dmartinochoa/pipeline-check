@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a new rule, provider, attack chain, output format, or CLI flag.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, search the existing issues to see whether
+        someone has already proposed this. The CHANGELOG's
+        `[Unreleased]` section also covers what's currently in
+        flight on `dev`.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of feature?
+      options:
+        - New rule (existing provider)
+        - New provider
+        - New attack chain
+        - New output format or reporter
+        - New CLI flag or behavior
+        - New autofixer
+        - New compliance standard mapping
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: |
+        What does the current state miss? A real example helps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape
+      description: |
+        Sketch the rule, provider, or flag. For new rules: cite an
+        OWASP CICD-SEC, CIS Benchmark, NIST control, or attack write-up
+        the rule maps to. For new providers: include 2 to 3 example
+        findings the provider would catch.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Other tools that already do this, or workarounds.

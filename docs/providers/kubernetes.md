@@ -80,6 +80,10 @@ Four rules target non-workload kinds:
 | K8S-020 | ClusterRoleBinding grants cluster-admin or system:masters | CRITICAL |
 | K8S-021 | Role or ClusterRole grants wildcard verbs+resources | HIGH |
 | K8S-022 | Service exposes SSH (port 22) | MEDIUM |
+| K8S-023 | Namespace missing Pod Security Admission enforcement label | HIGH |
+| K8S-024 | Container missing both livenessProbe and readinessProbe | MEDIUM |
+| K8S-025 | System priority class used outside kube-system | HIGH |
+| K8S-026 | LoadBalancer Service has no loadBalancerSourceRanges | HIGH |
 
 ---
 
@@ -287,6 +291,42 @@ Mirrors DF-013 (``EXPOSE 22`` in a Dockerfile) at the Service level. The check f
 **Recommended action**
 
 Containers should not run sshd. If you need an interactive shell into a running pod, use ``kubectl exec`` (subject to RBAC) or ``kubectl debug``. Removing the port-22 Service removes a pre-auth network surface that's a frequent lateral-movement target after initial cluster compromise.
+
+## K8S-023 — Namespace missing Pod Security Admission enforcement label
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV, ESF-D-NETWORK-SEG
+
+Pod Security Admission (PSA) replaced the deprecated PodSecurityPolicy in 1.25. The three levels are ``privileged``, ``baseline``, and ``restricted``; ``baseline`` is a sensible production default and ``restricted`` matches the spirit of K8S-005..010. ``kube-system`` is exempt by convention since control-plane pods may legitimately need elevated permissions.
+
+**Recommended action**
+
+Set ``metadata.labels.pod-security.kubernetes.io/enforce`` to ``baseline`` or ``restricted`` on every Namespace. Without an enforce label the namespace runs the cluster's default policy, which on most installations is ``privileged`` and silently admits pods that violate every K8S-002..010 rule.
+
+## K8S-024 — Container missing both livenessProbe and readinessProbe
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-MONITOR
+
+Init containers and ephemeral debug containers are exempt — neither makes sense to probe. Jobs and CronJobs are also exempt because Kubernetes treats them as one-shot work; completion is the lifecycle signal, not health.
+
+**Recommended action**
+
+Define at least one of ``livenessProbe`` or ``readinessProbe`` on every long-running container. Without probes, a wedged pod stays listed as ``Running`` and keeps receiving traffic, which masks incidents and amplifies the blast radius of a single faulty replica.
+
+## K8S-025 — System priority class used outside kube-system
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+The kubelet reserves the two ``system-*`` priority classes for its own pods (kube-proxy, CNI agents). Granting them to a user workload also grants the right to preempt and evict anything below 2000000000, which is every non-system pod on the cluster. Outside kube-system this is almost always a misconfiguration copy-pasted from a control-plane manifest.
+
+**Recommended action**
+
+Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classes for control-plane workloads in ``kube-system``. Application pods that adopt them gain the right to evict normal workloads under resource pressure, which is a quiet path to a cluster-wide outage if the application has a bug or the attacker has any control over its spec.
+
+## K8S-026 — LoadBalancer Service has no loadBalancerSourceRanges
+**Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-NETWORK-SEG
+
+Internal-only services should use ``type: ClusterIP`` (and an Ingress for HTTP) or set the cloud-provider-specific internal-LB annotation. ``loadBalancerSourceRanges`` is the Kubernetes-native, cloud-portable way to scope an external LB; cloud-specific firewalls (AWS security groups, GCP firewall rules) are equivalent at the L4 level but invisible to a manifest scanner.
+
+**Recommended action**
+
+Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSourceRanges``. The default behavior is to provision an internet-facing load balancer that accepts traffic from 0.0.0.0/0, which exposes whatever the Service fronts to the entire internet. A short list of CIDRs scoped to known clients (office IPs, a NAT gateway, peered VPCs) removes the pre-auth attack surface entirely.
 
 ---
 

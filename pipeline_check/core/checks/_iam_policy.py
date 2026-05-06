@@ -38,9 +38,10 @@ def parse_doc(raw) -> dict:
     if isinstance(raw, dict):
         return raw
     try:
-        return json.loads(raw)
+        loaded = json.loads(raw)
     except (TypeError, json.JSONDecodeError):
         return {}
+    return loaded if isinstance(loaded, dict) else {}
 
 
 def iter_allow(doc: dict) -> Iterable[dict]:

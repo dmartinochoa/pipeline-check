@@ -324,6 +324,15 @@ STANDARD = Standard(
         "GCB-007":  ["CICD-SEC-6"],
         "GCB-008":  ["CICD-SEC-3"],
         "GCB-009":  ["CICD-SEC-9"],
+        "GCB-010":  ["CICD-SEC-3"],   # remote script via curl-pipe
+        "GCB-011":  ["CICD-SEC-3"],   # TLS bypass
+        "GCB-012":  ["CICD-SEC-6"],   # literal secret in YAML
+        "GCB-013":  ["CICD-SEC-3"],   # package source integrity
+        "GCB-014":  ["CICD-SEC-10"],  # logging disabled
+        "GCB-015":  ["CICD-SEC-9"],   # no SBOM
+        "GCB-016":  ["CICD-SEC-7"],   # dir path escape
+        "GCB-017":  ["CICD-SEC-9", "CICD-SEC-10"],  # no SLSA provenance
+        "GCB-018":  ["CICD-SEC-6"],   # legacy KMS secrets block
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],
@@ -347,5 +356,26 @@ STANDARD = Standard(
         "K8S-020":  ["CICD-SEC-2", "CICD-SEC-5"],
         "K8S-021":  ["CICD-SEC-2", "CICD-SEC-5"],
         "K8S-022":  ["CICD-SEC-7"],
+        "K8S-023":  ["CICD-SEC-7"],   # PSA enforce label missing
+        "K8S-024":  ["CICD-SEC-10"],  # missing health probes
+        "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5"],  # system-* priority class
+        "K8S-026":  ["CICD-SEC-7"],   # LB without source ranges
+        # Dockerfile
+        "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
+        "DF-002":   ["CICD-SEC-7"],   # no USER
+        "DF-003":   ["CICD-SEC-3"],   # ADD URL no checksum
+        "DF-004":   ["CICD-SEC-3"],   # curl-pipe in RUN
+        "DF-005":   ["CICD-SEC-4"],   # shell-eval idiom
+        "DF-006":   ["CICD-SEC-6"],   # secret in ENV/ARG
+        "DF-007":   ["CICD-SEC-10"],  # no HEALTHCHECK
+        "DF-008":   ["CICD-SEC-7"],   # docker --privileged in RUN
+        "DF-009":   ["CICD-SEC-3"],   # ADD where COPY suffices
+        "DF-010":   ["CICD-SEC-3"],   # apt-get dist-upgrade
+        "DF-011":   ["CICD-SEC-7"],   # apt cache not cleaned
+        "DF-012":   ["CICD-SEC-7"],   # sudo in RUN
+        "DF-013":   ["CICD-SEC-7"],   # EXPOSE 22 / remote-access port
+        "DF-014":   ["CICD-SEC-7"],   # WORKDIR system path
+        "DF-015":   ["CICD-SEC-7"],   # chmod 777 / world-writable
+        "DF-016":   ["CICD-SEC-9"],   # missing OCI provenance labels
     },
 )

@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **81 autofixers** -- plus **10 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -60,9 +60,9 @@ standard boto3 credential chain.
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 29 checks (`ADO-001`--`029`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 15 checks (`GCB-001`--`015`) |
-| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 14 checks (`DF-001`--`014`) |
-| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 22 checks (`K8S-001`--`022`) |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 18 checks (`GCB-001`--`018`) |
+| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 16 checks (`DF-001`--`016`) |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 26 checks (`K8S-001`--`026`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -106,7 +106,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 68 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 81 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json` -- only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -286,7 +286,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 68 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 81 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -304,9 +304,9 @@ pipeline_check/
         ├── azure/rules/       # ADO-001 .. ADO-029
         ├── jenkins/rules/     # JF-001 .. JF-031
         ├── circleci/rules/    # CC-001 .. CC-031
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-015
-        ├── dockerfile/rules/  # DF-001 .. DF-014
-        └── kubernetes/rules/  # K8S-001 .. K8S-022
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-018
+        ├── dockerfile/rules/  # DF-001 .. DF-016
+        └── kubernetes/rules/  # K8S-001 .. K8S-026
 ```
 
 Adding a new check is a one-file change. Adding a new provider is three files.

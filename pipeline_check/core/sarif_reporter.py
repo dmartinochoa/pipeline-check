@@ -33,6 +33,7 @@ import json
 
 from .chains import Chain
 from .checks.base import Confidence, Finding, Severity
+from .scorer import ScoreResult
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
 # result is" independent of severity. GitHub Code Scanning surfaces it
@@ -94,7 +95,7 @@ _LEVEL_MAP: dict[Severity, tuple[str, str]] = {
 
 def report_sarif(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     tool_version: str = "",
     chains: list[Chain] | None = None,
 ) -> str:

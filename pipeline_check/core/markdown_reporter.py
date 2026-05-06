@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
+from .scorer import ScoreResult
 
 _SEVERITY_EMOJI: dict[Severity, str] = {
     Severity.CRITICAL: "🔴",
@@ -70,7 +71,7 @@ def _row(f: Finding) -> str:
 
 def report_markdown(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     chains: list[Chain] | None = None,
 ) -> str:
     """Render *findings* as a GitHub-Flavored Markdown report string.

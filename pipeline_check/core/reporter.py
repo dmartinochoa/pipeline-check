@@ -10,6 +10,7 @@ from rich.table import Table
 from .chains import Chain
 from .checks.base import Confidence, Finding, Severity, severity_rank
 from .inventory import Component
+from .scorer import ScoreResult
 
 _CONFIDENCE_STYLE: dict[Confidence, str] = {
     Confidence.HIGH: "bold",
@@ -58,7 +59,7 @@ def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
 
 def report_terminal(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     severity_threshold: Severity = Severity.INFO,
     console: Console | None = None,
 ) -> None:
@@ -179,7 +180,7 @@ def report_terminal(
 
 def report_json(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     tool_version: str = "",
     inventory: list[Component] | None = None,
     chains: list[Chain] | None = None,

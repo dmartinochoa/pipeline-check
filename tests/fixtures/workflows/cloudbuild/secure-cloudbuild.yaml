@@ -7,6 +7,9 @@ options:
   # explicitly so reviewers see the intent).
   logging: CLOUD_LOGGING_ONLY
   # GCB-004 safe: dynamic substitutions not enabled.
+  # GCB-017 safe: ask Cloud Build to emit a signed SLSA provenance
+  # attestation alongside the published image.
+  requestedVerifyOption: VERIFIED
 
 substitutions:
   _DEPLOY_TARGET: production
@@ -28,8 +31,10 @@ availableSecrets:
 
 steps:
   # GCB-001: step image pinned by sha256 digest.
+  # GCB-016 safe: ``dir`` is an absolute path under /workspace.
   - id: build
     name: 'gcr.io/cloud-builders/docker@sha256:0000000000000000000000000000000000000000000000000000000000000001'
+    dir: '/workspace/app'
     args:
       - 'build'
       - '-t'

@@ -31,8 +31,10 @@ availableSecrets:
 
 steps:
   # GCB-001: step image is tag-pinned (:latest).
+  # GCB-016: ``dir`` field traverses out of /workspace via ``..``.
   - id: build
     name: 'gcr.io/cloud-builders/docker'
+    dir: '../shared-cache'
     args:
       - 'build'
       - '-t'
@@ -61,6 +63,17 @@ steps:
 # image without scanning it for known vulnerabilities.
 # GCB-009: no cosign/sigstore attestation — unsigned artifact.
 # GCB-015: no syft / cyclonedx / trivy-sbom step — no SBOM produced.
+# GCB-017: build publishes images but does not set
+# ``options.requestedVerifyOption: VERIFIED``, so no SLSA provenance
+# attestation is emitted.
+
+# GCB-018: legacy KMS-encrypted ``secrets:`` block. Deprecated in favor
+# of ``availableSecrets`` + Secret Manager. Both forms are present here
+# because real pipelines accumulate cruft during migrations.
+secrets:
+  - kmsKeyName: projects/example-project/locations/global/keyRings/build/cryptoKeys/legacy
+    secretEnv:
+      LEGACY_TOKEN: CiQA...EXAMPLE-CIPHERTEXT-PLACEHOLDER...
 
 images:
   - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'

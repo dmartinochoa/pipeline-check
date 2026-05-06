@@ -5,6 +5,159 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+PRs landing on `dev` between releases append entries below. The
+release commit collapses this section into `## [X.Y.Z] - <date>`.
+
+### Added
+
+- GitHub issue templates under `.github/ISSUE_TEMPLATE/`: bug report,
+  feature request, and a dedicated false-positive form that requires
+  `check_id` plus a minimal repro YAML.
+- **Per-rule unit tests for the five CI providers** following the
+  ``tests/<provider>/conftest.py`` + per-area-module pattern. As of
+  this release, rule-test coverage by provider:
+    - GitHub Actions: 17/33 (52%)
+    - GitLab: 18/31 (58%)
+    - Bitbucket: 16/28 (57%)
+    - CircleCI: 15/31 (48%)
+    - Jenkins: 12/31 (39%)
+    - Cloud Build: 18/18 (100%, full)
+    - Kubernetes: 4/26 (the K8S-023..026 additions)
+    - Dockerfile: 2/16 (the DF-015..016 additions)
+    - Azure: 6/29 (existing tests only — no new modules)
+  Test modules are split by area: pinning, secrets-and-creds,
+  runtime-hardening, supply-chain. Each conftest exposes a
+  ``run_check(snippet, check_id)`` helper that runs the orchestrator
+  against an inline YAML/Groovy snippet and returns the matching
+  ``Finding``.
+- **Rule-coverage meta-test** at ``tests/test_rule_test_coverage.py``
+  locks the per-provider floors above to prevent regressions: a new
+  rule landing without a ``class Test<RULE_ID>...`` will dip the
+  floor and fail this guard. Bumping the floor in the file is the
+  documented way to record backfill progress.
+- **13 new autofixers** for Kubernetes and Cloud Build, lifting the
+  catalog from 68 to 81. K8s: drop-line fixers for `K8S-002`/`-003`/
+  `-004`/`-005` (`hostNetwork`, `hostPID`, `hostIPC`, `privileged:
+  true`); flip-value fixers for `K8S-006`/`-007`/`-008` (flip
+  `allowPrivilegeEscalation`, `runAsNonRoot`, `readOnlyRootFilesystem`
+  to the safe value while preserving inline comments); comment-only
+  TODOs for `K8S-013` (`hostPath` volumes) and `K8S-020`
+  (`cluster-admin` / `system:masters` bindings). Cloud Build: insert
+  top-level `timeout: '600s'` for `GCB-005`, drop `logging: NONE`
+  for `GCB-014`, comment-only TODO above unpinned step images for
+  `GCB-001`, plus shared TLS-bypass mitigation for `GCB-011`.
+- **Two new attack chains.** `AC-009` Supply Chain Repo Poisoning
+  fires when GHA-001 (unpinned action), GHA-002 (script-injection
+  sink), and GHA-008 (literal secrets in YAML) all hit the same
+  workflow file. `AC-010` Self-Hosted Runner Environment Exfiltration
+  fires when GHA-012 (non-ephemeral self-hosted runner) coincides
+  with GHA-016 (curl-pipe) or GHA-019 (token persistence) on the
+  same workflow. Both are CRITICAL, mapped to MITRE T1195.002 +
+  T1078.004 + T1552.001 as appropriate. Chain catalog goes from 8
+  to 10.
+- **Four new Kubernetes rules.** `K8S-023` flags Namespaces missing a
+  `pod-security.kubernetes.io/enforce` label set to baseline or
+  restricted (kube-system, kube-public, kube-node-lease are exempt).
+  `K8S-024` flags long-running containers without a livenessProbe
+  or readinessProbe (Jobs and CronJobs are exempt because their
+  lifecycle signal is completion, not health). `K8S-025` flags
+  workloads outside `kube-system` that claim `system-cluster-critical`
+  or `system-node-critical` priority — those classes give the right
+  to evict every non-system pod on the cluster. `K8S-026` flags
+  Services of type LoadBalancer that don't set
+  `spec.loadBalancerSourceRanges`, which is the cloud-portable way
+  to cap an external LB at known client CIDRs. K8s rule catalog
+  goes from 22 to 26.
+- **Two new Dockerfile rules.** `DF-015` flags `RUN` instructions
+  that grant world-writable permissions (`chmod 777`, `chmod 0777`,
+  `chmod a+w`, `chmod a+rwx`, `chmod ugo+w`). World-writable
+  directories under `/` are an established container-escape vector.
+  `DF-016` flags images that don't declare both
+  `org.opencontainers.image.source` and
+  `org.opencontainers.image.revision` LABELs. The two annotations
+  are the de-facto OCI provenance standard; without them a pulled
+  image can't be traced back to a source revision during incident
+  response. Dockerfile rule catalog goes from 14 to 16.
+- **Three new Cloud Build rules.** `GCB-016` flags step `dir:`
+  fields that traverse out of `/workspace` via `..` (path-escape
+  into the builder image filesystem). `GCB-017` flags
+  image-producing builds that don't set
+  `options.requestedVerifyOption: VERIFIED`, which is how Cloud
+  Build emits signed SLSA provenance attestations alongside the
+  pushed image; aligns with SLSA Build Level 2. `GCB-018` flags
+  the legacy KMS-encrypted top-level `secrets:` block in favor
+  of `availableSecrets` + Secret Manager (which rotates without
+  re-committing ciphertext and produces explicit audit-log
+  entries on every read). Cloud Build rule catalog goes from 15
+  to 18.
+
+### Changed
+
+- **CIS AWS Foundations standard mappings densified.** Added
+  `1.14` (key rotation), `3.2` (CloudTrail log file validation),
+  `3.7` (CloudTrail logs encrypted with KMS) to the controls
+  table. Mapped `IAM-007`, `KMS-001`, `KMS-002`, `CT-001..003`,
+  `CWL-001..002`, and `ECR-007` into the appropriate CIS
+  controls. The `cis_aws_foundations` mapping nearly doubled in
+  scope.
+- **NIST 800-53 standard mappings densified.** Added `AU-11`
+  (Audit Record Retention) to the controls table. Added
+  mappings for the previously-uncovered Cloud Build (GCB-001
+  through GCB-018), Kubernetes (K8S-001 through K8S-026),
+  Dockerfile (DF-001 through DF-016), Jenkins (selected JF-*),
+  and the missing AWS services (KMS, CT, CWL, CW, SM, SSM,
+  SIGN, LMB, EB, CCM, CA). The `nist_800_53` mapping size grew
+  from ~150 lines to ~250.
+- OWASP CI/CD Top 10 mappings extended for new GCB-010..018,
+  K8S-023..026, and the previously-unmapped Dockerfile rules
+  (DF-001..016) so the cross-standards integrity check passes.
+- `docs/index.md` wordmark and the inline terminal animation now
+  read the version from `pipeline_check.__version__` via a mkdocs
+  hook (`hooks/mkdocs_version.py`). The hardcoded `v0.3.0` and
+  `v0.3.3` literals had drifted across release cycles.
+
+### Fixed
+
+- Reporter and gate function signatures (`report_terminal`,
+  `report_json`, `report_html`, `report_sarif`, `report_junit`,
+  `report_markdown`, `evaluate_gate`) now accept the actual
+  `ScoreResult` `TypedDict` from `core.scorer` instead of an
+  unparameterised `dict`. Closes a real type-inference gap that
+  mypy was flagging in `cli.py` lines 1517–1617 and unblocks part
+  of the eventual strict-mode flip.
+- `GCB-018` rule narrowing: replaced the boolean-flag pattern with
+  direct `isinstance(legacy, list) and legacy` so mypy narrows
+  `legacy` to a list before iteration. The runtime behavior is
+  unchanged; the type checker now agrees with the code.
+- `cli.py` `--explain-chain` and `--standard-report` paths used
+  variable names that collided with outer-scope loop variables
+  of incompatible types. Renamed locally so mypy can narrow them
+  cleanly without changing user-visible behavior.
+- **mypy lax-mode is now clean** (80 errors -> 0). Closed the
+  remaining ~50 real type bugs across `_secrets.py` (label reuse
+  widening), `_iam_policy.py` (json.loads narrowing), gl004 (bool
+  cast), cloudformation/services.py (env_vars annotation),
+  autofix.py:1398 (regex slice), cloudformation/s3.py:_target_key
+  (Ref/GetAtt narrowing), terraform/phase3.py (nested branches
+  narrowing), lambda_handler (s3_key widening),
+  providers/aws.py (s3 client narrowing), iam007_key_age
+  (isinstance(datetime)), aws/_catalog.py (result tuple type),
+  github/base.py (YAML 1.1 ``on``->``True`` cast),
+  cloudformation/base.py (is_intrinsic + Sub return-type narrowing),
+  jenkins/rules/_helpers.py (Match[str] generic).
+- yaml-stub spam silenced via `disable_error_code = ["import-untyped"]`
+  in `pyproject.toml` plus `types-PyYAML` added to `requirements-dev.in`
+  (next pip-compile cycle will lock it in).
+- AWS-leaning modules covered by a per-module mypy override
+  (boto3's untyped responses produce ~22 near-identical errors;
+  the documented escape hatch until `boto3-stubs` is adopted).
+- **`continue-on-error: true` removed from `.github/workflows/python-app.yml`.**
+  mypy is now a required CI gate. Strict mode (`strict = true`)
+  remains a follow-up PR (~400 strict-only errors across rule
+  modules).
+
 ## [0.3.3] - 2026-05-06
 
 ### Changed

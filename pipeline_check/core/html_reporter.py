@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
+from .scorer import ScoreResult
 
 try:
     import yaml as _yaml
@@ -734,7 +735,7 @@ def _filter_bar_html(findings: list[Finding]) -> str:
 
 def report_html(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     region: str = "",
     target: str = "",
     output_path: str | None = None,

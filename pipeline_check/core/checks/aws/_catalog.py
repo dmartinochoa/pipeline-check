@@ -272,6 +272,7 @@ class ResourceCatalog:
         if cached is not None:
             return cached
         client = self.client("iam")
+        result: tuple[list[str], str | None]
         try:
             resp = client.list_attached_role_policies(RoleName=role_name)
             arns = [p["PolicyArn"] for p in resp.get("AttachedPolicies", [])]

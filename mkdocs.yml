@@ -88,6 +88,12 @@ markdown_extensions:
 plugins:
   - search
 
+hooks:
+  # Templates `{{ version }}` from `pipeline_check.__version__` into
+  # docs at build time. Was hardcoded; drifted between v0.3.0 and
+  # v0.3.3 across release cycles.
+  - hooks/mkdocs_version.py
+
 nav:
   - Home: index.md
   - Usage: usage.md

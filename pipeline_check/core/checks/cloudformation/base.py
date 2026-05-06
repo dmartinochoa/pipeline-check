@@ -275,6 +275,8 @@ def is_intrinsic(value: Any) -> bool:
     if len(value) != 1:
         return False
     (key,) = value.keys()
+    if not isinstance(key, str):
+        return False
     return key == "Ref" or key == "Condition" or key.startswith("Fn::")
 
 
@@ -365,7 +367,10 @@ def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
         missing.append(name)
         return match.group(0)
 
-    out = _SUB_VAR_RE.sub(_sub, template)
+    # ``_SUB_VAR_RE.sub`` returns ``str`` at runtime; the explicit cast
+    # keeps the return type narrow when ``template`` arrives as ``Any``
+    # via the ``Fn::Sub`` intrinsic body.
+    out: str = _SUB_VAR_RE.sub(_sub, template)
     if missing:
         return None
     return out

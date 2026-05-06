@@ -1,0 +1,75 @@
+name: Bug report
+description: Pipeline-Check crashed, gave a wrong result, or behaved differently from the docs.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file. The more we can reproduce
+        the issue locally, the faster it gets fixed.
+
+        For false positives (rule fires on a config that should be
+        clean), use the **False positive** form instead. It asks for
+        the right shape of repro so a fix lands faster.
+
+  - type: input
+    id: version
+    attributes:
+      label: Pipeline-Check version
+      description: Output of `pipeline_check --version`.
+      placeholder: "0.3.3"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python --version`.
+      placeholder: "3.12.7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      description: The full `pipeline_check ...` invocation, with any flags.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Paste the output. If the run crashed, include the traceback.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Config file, environment variables, anything that shaped the run.

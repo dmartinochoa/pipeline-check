@@ -92,12 +92,13 @@ class TestHelpers:
 
 
 class TestEngine:
-    def test_list_rules_discovers_all_eight_chains(self):
+    def test_list_rules_discovers_all_chains(self):
         rule_ids = {r.id for r in chains_pkg.list_rules()}
         # Lock the current set so additions are an explicit decision.
         assert rule_ids == {
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
+            "AC-009", "AC-010",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -268,6 +269,88 @@ class TestChainAC007:
     def test_does_not_fire_without_iam_leg(self):
         out = chains_pkg.evaluate([_f("CB-002", "arn:aws:codebuild:.../proj")])
         assert not any(c.chain_id == "AC-007" for c in out)
+
+
+class TestChainAC009:
+    """AC-009 — Supply Chain Repo Poisoning."""
+
+    def test_fires_with_all_three_legs_on_same_workflow(self):
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-001", wf),
+            _f("GHA-002", wf),
+            _f("GHA-008", wf),
+        ])
+        ac9 = [c for c in out if c.chain_id == "AC-009"]
+        assert len(ac9) == 1
+        assert ac9[0].severity is Severity.CRITICAL
+        assert "T1195.002" in ac9[0].mitre_attack
+
+    def test_does_not_fire_with_only_two_legs(self):
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-001", wf),
+            _f("GHA-002", wf),
+        ])
+        assert not any(c.chain_id == "AC-009" for c in out)
+
+    def test_does_not_fire_when_legs_are_on_different_workflows(self):
+        # Three legs across three workflows is not the same threat as
+        # all three on one workflow — the chain should ignore.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", ".github/workflows/a.yml"),
+            _f("GHA-002", ".github/workflows/b.yml"),
+            _f("GHA-008", ".github/workflows/c.yml"),
+        ])
+        assert not any(c.chain_id == "AC-009" for c in out)
+
+
+class TestChainAC010:
+    """AC-010 — Self-Hosted Runner Environment Exfiltration."""
+
+    def test_fires_with_self_hosted_plus_curl_pipe(self):
+        wf = ".github/workflows/build.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-012", wf),
+            _f("GHA-016", wf),
+        ])
+        ac10 = [c for c in out if c.chain_id == "AC-010"]
+        assert len(ac10) == 1
+        assert ac10[0].severity is Severity.CRITICAL
+
+    def test_fires_with_self_hosted_plus_token_persistence(self):
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-012", wf),
+            _f("GHA-019", wf),
+        ])
+        assert any(c.chain_id == "AC-010" for c in out)
+
+    def test_fires_with_all_three_legs(self):
+        # Both secondary legs on the same runner is the strongest case.
+        wf = ".github/workflows/build.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-012", wf),
+            _f("GHA-016", wf),
+            _f("GHA-019", wf),
+        ])
+        ac10 = [c for c in out if c.chain_id == "AC-010"]
+        assert len(ac10) == 1
+        # Both legs surface in the chain's narrative.
+        assert "GHA-016" in ac10[0].triggering_check_ids
+        assert "GHA-019" in ac10[0].triggering_check_ids
+
+    def test_does_not_fire_without_self_hosted_leg(self):
+        # curl-pipe alone is bad but isn't this chain — AC-010 needs
+        # the persistence vector that a non-ephemeral runner gives.
+        wf = ".github/workflows/build.yml"
+        out = chains_pkg.evaluate([_f("GHA-016", wf), _f("GHA-019", wf)])
+        assert not any(c.chain_id == "AC-010" for c in out)
+
+    def test_does_not_fire_with_only_self_hosted(self):
+        wf = ".github/workflows/build.yml"
+        out = chains_pkg.evaluate([_f("GHA-012", wf)])
+        assert not any(c.chain_id == "AC-010" for c in out)
 
 
 # ── Gate integration ─────────────────────────────────────────────────
