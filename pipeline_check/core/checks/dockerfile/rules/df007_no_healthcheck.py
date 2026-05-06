@@ -19,7 +19,7 @@ RULE = Rule(
         "intermediate images — only the runtime image needs one."
     ),
     docs_note=(
-        "This is a defence-in-depth signal rather than an exploitation "
+        "This is a defense-in-depth signal rather than an exploitation "
         "indicator — severity is LOW. A missing healthcheck doesn't "
         "create a vulnerability on its own, but downstream orchestrators "
         "(Kubernetes, ECS, Compose) cannot recover an unhealthy "

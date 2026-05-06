@@ -24,7 +24,7 @@ RULE = Rule(
         "Every string in the workflow is scanned against a set of "
         "credential patterns (AWS access keys, GitHub tokens, Slack "
         "tokens, JWTs, Stripe, Google, Anthropic, etc. — see "
-        "`--man secrets` for the full catalogue). A match means a "
+        "`--man secrets` for the full catalog). A match means a "
         "secret was pasted into YAML — the value is visible in every "
         "fork and every build log and must be treated as compromised."
     ),

@@ -1,4 +1,4 @@
-"""Token catalogues and blob-level detection helpers.
+"""Token catalogs and blob-level detection helpers.
 
 These live separate from :mod:`base` because they're cross-provider
 content heuristics, not framework primitives. Rule files that just

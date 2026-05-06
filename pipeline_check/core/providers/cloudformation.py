@@ -95,7 +95,7 @@ class CloudFormationProvider(BaseProvider):
 def _cfn_metadata(resource_type: str, props: dict) -> dict:
     """Per-CFN-type security/audit-relevant metadata extractor.
 
-    Only fields that characterise security posture without running the
+    Only fields that characterize security posture without running the
     checks. Intrinsics (``{"Ref": ...}``, ``{"Fn::GetAtt": ...}``)
     pass through as-is — consumers that understand CFN can resolve
     them; those that don't can flag the entry for manual review.

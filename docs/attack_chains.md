@@ -33,7 +33,7 @@ recommendation).
 ## How chains surface in output
 
 - **Terminal** — a panel per chain after the findings table, with a
-  coloured border matching the chain's severity and the full narrative
+  colored border matching the chain's severity and the full narrative
   inline.
 - **JSON** — `chains` top-level array carrying every field plus
   `triggering_findings: [{check_id, resource}, …]`. Omitted (not empty)

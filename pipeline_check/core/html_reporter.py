@@ -246,7 +246,7 @@ footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px
 
 _SCRIPT = r"""
 (function () {
-  // ── Theme: honour saved choice → OS preference → light default ──
+  // ── Theme: honor saved choice → OS preference → light default ──
   const THEME_KEY = 'pipelinecheck.theme';
   function initTheme() {
     const saved = localStorage.getItem(THEME_KEY);

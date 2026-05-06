@@ -21,7 +21,7 @@ RULE = Rule(
     docs_note=(
         "Complements BB-003 (variable-name scan). BB-008 checks "
         "every string in the pipeline against the cross-provider "
-        "credential-pattern catalogue — catches secrets pasted into "
+        "credential-pattern catalog — catches secrets pasted into "
         "script bodies or environment blocks."
     ),
 )

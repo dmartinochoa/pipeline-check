@@ -6,7 +6,7 @@ attestation. Without one, downstream consumers cannot distinguish a
 tampered image from a legitimate build.
 
 Reuses the cross-provider ``has_signing`` helper so the tool
-catalogue (cosign / sigstore / slsa-framework / notation) stays in
+catalog (cosign / sigstore / slsa-framework / notation) stays in
 sync with GHA-006 / GL-006 / BB-006 / ADO-006 / CC-006 / JF-006.
 """
 from __future__ import annotations

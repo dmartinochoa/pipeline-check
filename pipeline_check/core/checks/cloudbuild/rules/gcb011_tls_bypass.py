@@ -5,7 +5,7 @@ Cloud Build steps that disable TLS verification (``curl -k``,
 ``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``PYTHONHTTPSVERIFY=0``) open the
 build up to MITM injection of malicious packages, tooling, or
 repositories. Reuses the cross-provider ``_primitives.tls_bypass``
-detector so the idiom catalogue stays aligned with GHA-023 / GL-023
+detector so the idiom catalog stays aligned with GHA-023 / GL-023
 / BB-023 / ADO-023 / CC-023 / JF-023.
 """
 from __future__ import annotations

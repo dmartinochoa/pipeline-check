@@ -47,7 +47,7 @@ def _b64_to_text(s: str) -> str:
 
 
 def _value_text(value: Any, *, base64_encoded: bool) -> str:
-    """Normalise ``data`` (b64) and ``stringData`` (plain) to a text view."""
+    """Normalize ``data`` (b64) and ``stringData`` (plain) to a text view."""
     if not isinstance(value, str):
         return ""
     if base64_encoded:

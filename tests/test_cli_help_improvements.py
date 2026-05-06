@@ -1,7 +1,7 @@
 """Regression tests for the --help / user-error / --list-checks pass.
 
-Scope: exclusively the new behaviours added in the code-review round.
-Broader CLI behaviour is covered by test_cli.py and test_manual.py.
+Scope: exclusively the new behaviors added in the code-review round.
+Broader CLI behavior is covered by test_cli.py and test_manual.py.
 """
 from __future__ import annotations
 

@@ -34,7 +34,7 @@
   description: >
     Checks whether the CodeBuild project sends build output logs to CloudWatch Logs
     or S3. Without logs, build activity cannot be audited, security incidents cannot
-    be investigated, and anomalous build behaviour goes undetected.
+    be investigated, and anomalous build behavior goes undetected.
   recommended_actions:
     - Enable CloudWatch Logs in the project's logsConfig.cloudWatchLogs setting.
     - Alternatively, enable S3 logging to a protected bucket with restricted write access.

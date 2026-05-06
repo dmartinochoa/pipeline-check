@@ -2,7 +2,7 @@
 
 Long-lived secret credentials have recognizable lexical shapes that are
 independent of the CI/CD provider carrying them. Consolidating the
-regexes here means that when the shape catalogue grows (e.g. a new AWS
+regexes here means that when the shape catalog grows (e.g. a new AWS
 key prefix, additional secret-looking identifiers), the update lands in
 one place and every provider picks it up.
 

@@ -25,7 +25,7 @@ RULE = Rule(
     docs_note=(
         "`pull_request_target` runs with a write-scope GITHUB_TOKEN "
         "and access to repository secrets — deliberately so, since "
-        "it's how labelling and comment-bot workflows work. When the "
+        "it's how labeling and comment-bot workflows work. When the "
         "same workflow then explicitly checks out the PR head "
         "(`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) "
         "it executes attacker-controlled code with those privileges."

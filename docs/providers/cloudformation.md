@@ -2,7 +2,7 @@
 
 Scans a **CloudFormation template** (YAML or JSON) — no live AWS
 credentials required. Short-form intrinsics (`!Ref`, `!Sub`, `!GetAtt`,
-`!Join`, `!If`, …) are normalised to their JSON-form equivalents at
+`!Join`, `!If`, …) are normalized to their JSON-form equivalents at
 parse time so rules operate on one uniform structure.
 
 Every check ID mirrors its AWS-provider counterpart one-to-one. The

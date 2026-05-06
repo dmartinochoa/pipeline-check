@@ -53,7 +53,7 @@ def _scan(text: str, tmp_path: Path):
 
 
 # ────────────────────────────────────────────────────────────────────────
-# GHA-003 — expanded untrusted-context catalogue
+# GHA-003 — expanded untrusted-context catalog
 # ────────────────────────────────────────────────────────────────────────
 
 

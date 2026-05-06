@@ -31,4 +31,4 @@ Include, where possible:
   release notes.
 
 There is no hard fix SLA — this is a solo-maintained open-source project — but
-critical issues are prioritised over feature work.
+critical issues are prioritized over feature work.

@@ -1,6 +1,6 @@
 """Strict YAML loading helpers.
 
-pyyaml's default mapping behaviour keeps the *last* value when a key
+pyyaml's default mapping behavior keeps the *last* value when a key
 appears twice, silently discarding the earlier declaration. For the
 user-facing files this project loads — config files and ignore files —
 that's a trap: a duplicated ``pipeline:`` key or a repeated

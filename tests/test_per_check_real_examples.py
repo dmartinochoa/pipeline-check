@@ -10,7 +10,7 @@ For every workflow-provider check (60 total: 12 GHA + 12 GL + 10 BB +
      and asserts the targeted check passes.
 
 Other checks may pass or fail on either snippet; the per-check tests
-only assert behaviour for the targeted check_id. The broader sweep
+only assert behavior for the targeted check_id. The broader sweep
 in ``test_workflow_fixtures.py`` covers cross-check coordination on
 the larger fixtures.
 
@@ -151,13 +151,13 @@ def _assert_esf(finding: Finding, expected: tuple[str, ...]) -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Catalogue — one entry per workflow check.
+# Catalog — one entry per workflow check.
 # ──────────────────────────────────────────────────────────────────────
 #
 # The snippet bodies live on disk; this list owns only the metadata
 # the assertions care about. Adding an entry here without dropping
 # the matching snippet files makes ``_run_one_check`` raise
-# ``FileNotFoundError``, which is caught by the catalogue-completeness
+# ``FileNotFoundError``, which is caught by the catalog-completeness
 # guard at the bottom.
 
 CASES: list[CheckCase] = [
@@ -334,7 +334,7 @@ def test_unsafe_snippet_triggers_check_with_correct_standards(case, tmp_path):
 def test_safe_snippet_does_not_trigger_check(case, tmp_path):
     """The safe snippet at ``case.safe_path`` must produce a PASSING
     finding for the targeted check. Other checks may pass or fail —
-    we only assert behaviour for the targeted ID."""
+    we only assert behavior for the targeted ID."""
     f = _run_one_check(case.check_id, case.safe_path, tmp_path)
     assert f.passed is True, (
         f"{case.check_id}: safe snippet triggered the check unexpectedly.\n"
@@ -345,7 +345,7 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 
 
 def test_every_workflow_check_has_a_case():
-    """Lock in that this catalogue stays in sync with the registered
+    """Lock in that this catalog stays in sync with the registered
     workflow checks. If a new check ships without an entry here, this
     test fails — forcing the author to write a real-example case."""
     expected_ids = (
@@ -358,7 +358,7 @@ def test_every_workflow_check_has_a_case():
     covered = {c.check_id for c in CASES}
     missing = expected_ids - covered
     assert not missing, (
-        f"per-check catalogue is missing entries for: {sorted(missing)}. "
+        f"per-check catalog is missing entries for: {sorted(missing)}. "
         f"Add a CheckCase + snippet pair for each so future regressions "
         f"are caught."
     )

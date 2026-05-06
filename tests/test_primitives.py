@@ -1,8 +1,8 @@
 """Unit tests for the cross-provider detection primitives under
 ``pipeline_check/core/checks/_primitives/``.
 
-These lock in the positive / negative behaviour for each pattern
-catalogue. Per-provider rule modules are thin wrappers that call
+These lock in the positive / negative behavior for each pattern
+catalog. Per-provider rule modules are thin wrappers that call
 these primitives, so the rule-level tests (see
 ``tests/test_workflow_fixtures.py``) exercise the wiring; these
 tests exercise the primitive's logic in isolation without the YAML

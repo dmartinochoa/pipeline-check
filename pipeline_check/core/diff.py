@@ -46,7 +46,7 @@ def changed_files(base_ref: str, cwd: str | Path = ".") -> set[str] | None:
             continue
         out.add(rel)
         out.add(str(root / rel))
-        # Also add the forward-slash-normalised absolute form so the
+        # Also add the forward-slash-normalized absolute form so the
         # filter matches on Windows where Path strings use backslashes.
         out.add((root / rel).as_posix())
     return out

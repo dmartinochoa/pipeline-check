@@ -1,7 +1,7 @@
 """GCB-008 — No vulnerability scanning step anywhere in the pipeline.
 
 Reuses the cross-provider ``has_vuln_scanning`` helper so the
-scanner-name catalogue (trivy / grype / snyk / osv-scanner / pip-audit
+scanner-name catalog (trivy / grype / snyk / osv-scanner / pip-audit
 / npm audit / govulncheck) stays in sync across GHA-020 / GL-019 /
 BB-019 / ADO-019 / CC-020 / JF-020.
 """

@@ -16,7 +16,7 @@ RULE = Rule(
     cwe=("CWE-250",),
     recommendation=(
         "Replace `agent any` with `agent { label 'build-pool' }` "
-        "(targeting a labelled pool) or `agent { docker { image "
+        "(targeting a labeled pool) or `agent { docker { image "
         "'...' } }` (ephemeral container). Reserve broad-access "
         "agents for jobs that genuinely need them."
     ),

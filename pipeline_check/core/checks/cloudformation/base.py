@@ -1,7 +1,7 @@
 """CloudFormation parser, context, and base check.
 
 Templates are either YAML (the common idiom) or JSON (the stricter
-sibling). Both normalise to a flat resource list:
+sibling). Both normalize to a flat resource list:
 
     [CloudFormationResource("MyRole", "AWS::IAM::Role", {"AssumeRolePolicyDocument": ...}), ...]
 
@@ -147,7 +147,7 @@ class _CfnSafeLoader(yaml.SafeLoader):
 
     Subclassed rather than modifying ``yaml.SafeLoader`` directly so
     that other YAML parsing in the codebase (workflow providers) keeps
-    its strict behaviour. PyYAML looks up constructors by
+    its strict behavior. PyYAML looks up constructors by
     ``(loader_class, tag)`` — registering on the subclass keeps the
     effect scoped.
     """

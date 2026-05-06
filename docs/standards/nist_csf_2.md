@@ -64,7 +64,7 @@
 
 The following controls are listed above for completeness but have
 no checks mapped to them in this scanner — they typically require
-process evidence, runtime telemetry, or audit artefacts outside
+process evidence, runtime telemetry, or audit artifacts outside
 the pipeline-config surface.
 
 - **GV.SC-08** — Relevant suppliers and other third parties are included in incident planning, response, and recovery activities

@@ -8,7 +8,7 @@ the build.
 
 Mirrors GHA-029 / GL-027 / BB-027 / ADO-028 / CC-028 / JF-031. Uses
 the cross-provider ``_primitives.lockfile_integrity`` primitive so
-the install-shape catalogue stays aligned.
+the install-shape catalog stays aligned.
 """
 from __future__ import annotations
 

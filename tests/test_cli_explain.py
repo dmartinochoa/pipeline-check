@@ -157,7 +157,7 @@ def test_available_ids_includes_rule_based_and_class_based():
 def test_build_index_is_cached_across_calls():
     first = _build_index()
     second = _build_index()
-    assert first is second  # Same object — memoised.
+    assert first is second  # Same object — memoized.
 
 
 # ─── Manual integration ────────────────────────────────────────────────────

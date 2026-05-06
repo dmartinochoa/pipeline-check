@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Complements GL-003 (which looks at `variables:` block keys). "
         "GL-008 scans every string in the pipeline against the "
-        "cross-provider credential-pattern catalogue — catches "
+        "cross-provider credential-pattern catalog — catches "
         "secrets pasted into `script:` bodies or environment blocks "
         "where the name-based detector can't see them."
     ),

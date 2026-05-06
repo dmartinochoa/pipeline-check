@@ -4,7 +4,7 @@ Cloud Build steps that run ``curl <url> | bash`` (or the wget,
 python, perl, ruby, or PowerShell equivalents) execute
 attacker-controllable content the moment the URL's host is
 compromised or DNS/CDN is poisoned. Reuses the cross-provider
-``_primitives.remote_script_exec`` detector so the idiom catalogue
+``_primitives.remote_script_exec`` detector so the idiom catalog
 stays aligned with GHA-016 / GL-016 / BB-012 / ADO-016 / CC-016 /
 JF-016.
 """

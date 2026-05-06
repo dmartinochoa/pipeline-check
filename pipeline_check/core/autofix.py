@@ -150,7 +150,7 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 
     Doesn't resolve the underlying GHA-002 (pull_request_target +
     PR head) on its own — that requires a workflow redesign — but
-    the checkout option is a defence-in-depth measure that reduces
+    the checkout option is a defense-in-depth measure that reduces
     the blast radius of the issue and is always safe to apply.
     Idempotent: skips checkout steps that already set the flag.
     """
@@ -163,7 +163,7 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
         after = content[m.end():]
         # A ``with:`` block sits right under the uses line at the same
         # column, followed by at least one child indented two spaces
-        # deeper. Recognise either style of quoting for the child.
+        # deeper. Recognize either style of quoting for the child.
         block_match = re.match(
             r"\n" + re.escape(uses_col) + r"with:\s*\n"
             r"(?:" + re.escape(child_col) + r"\S[^\n]*\n?)+",
@@ -190,7 +190,7 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
             edits.append((m.end(), m.end(), insertion))
     if not edits:
         return None
-    # Apply edits from the end backwards so earlier offsets stay valid.
+    # Apply edits from the end backward so earlier offsets stay valid.
     out = content
     for start, end, text in sorted(edits, reverse=True):
         out = out[:start] + text + out[end:]

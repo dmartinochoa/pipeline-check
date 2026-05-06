@@ -118,7 +118,7 @@ Per bucket, the helper resources below are joined by `bucket` name.
 | S3-005  | `aws_s3_bucket_policy`                                     | `policy` (JSON) — requires Deny on `s3:*` where `aws:SecureTransport=false`        |
 
 If a helper resource is absent for a given bucket, the check fails —
-matching the AWS-provider behaviour where the service returns the default
+matching the AWS-provider behavior where the service returns the default
 (usually "not configured").
 
 ### Phase-4 gap fills and Terraform-native rules

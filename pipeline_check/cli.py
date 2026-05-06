@@ -534,7 +534,7 @@ def _install_completion_callback(ctx, _param, value):
         "Pipeline environment to scan. One of: "
         + ", ".join(_PIPELINE_CHOICES)
         + ". ``auto`` (default) picks a provider by scanning cwd for a "
-        "recognised CI file (``.github/workflows``, ``.gitlab-ci.yml``, "
+        "recognized CI file (``.github/workflows``, ``.gitlab-ci.yml``, "
         "``Jenkinsfile``, etc.) and falls back to ``aws`` when nothing "
         "matches. Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
@@ -1072,7 +1072,7 @@ def scan(
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
-    Analyses CI/CD configurations and scores them against the
+    Analyzes CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
     """
     # --quiet wins over --verbose.

@@ -122,7 +122,7 @@ Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the i
 ## DF-007 — No HEALTHCHECK directive declared
 **Severity:** LOW
 
-This is a defence-in-depth signal rather than an exploitation indicator — severity is LOW. A missing healthcheck doesn't create a vulnerability on its own, but downstream orchestrators (Kubernetes, ECS, Compose) cannot recover an unhealthy container they cannot detect, and that turns a soft failure (slow leak, deadlock) into a stale-process incident.
+This is a defense-in-depth signal rather than an exploitation indicator — severity is LOW. A missing healthcheck doesn't create a vulnerability on its own, but downstream orchestrators (Kubernetes, ECS, Compose) cannot recover an unhealthy container they cannot detect, and that turns a soft failure (slow leak, deadlock) into a stale-process incident.
 
 **Recommended action**
 
@@ -140,11 +140,11 @@ A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--
 ## DF-009 — ADD used where COPY would suffice
 **Severity:** LOW
 
-Pure-local ``ADD <path> <dest>`` is functionally identical to ``COPY``, but ships extra-feature surface (URL fetch, tarball auto-extract) that adds nothing and turns a benign-looking filename change into a behaviour change. The Docker docs have recommended ``COPY`` for non-URL inputs since 2014.
+Pure-local ``ADD <path> <dest>`` is functionally identical to ``COPY``, but ships extra-feature surface (URL fetch, tarball auto-extract) that adds nothing and turns a benign-looking filename change into a behavior change. The Docker docs have recommended ``COPY`` for non-URL inputs since 2014.
 
 **Recommended action**
 
-Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behaviours that make it the wrong default — it fetches HTTP(S) URLs and it auto-extracts ``.tar`` / ``.tar.gz`` archives. Both are easy to invoke accidentally and neither is reproducible. Reserve ``ADD`` for a deliberate URL-pull (covered by DF-003) or an explicit tarball extract.
+Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behaviors that make it the wrong default — it fetches HTTP(S) URLs and it auto-extracts ``.tar`` / ``.tar.gz`` archives. Both are easy to invoke accidentally and neither is reproducible. Reserve ``ADD`` for a deliberate URL-pull (covered by DF-003) or an explicit tarball extract.
 
 ## DF-010 — apt-get dist-upgrade / upgrade pulls unknown package versions
 **Severity:** LOW · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS
@@ -158,7 +158,7 @@ Drop the upgrade step. Build on a recent base image instead (rebuild your image 
 ## DF-011 — Package manager install without cache cleanup in same layer
 **Severity:** LOW
 
-Each Dockerfile ``RUN`` produces a layer. Installing packages in one layer and cleaning the cache in a later layer leaves the cache files in the lower layer forever — final image size is unchanged and the residual files broaden the attack surface (e.g. apt's signed-by keys, package metadata). The fix is layout, not behaviour: do install + cleanup in the same ``RUN``.
+Each Dockerfile ``RUN`` produces a layer. Installing packages in one layer and cleaning the cache in a later layer leaves the cache files in the lower layer forever — final image size is unchanged and the residual files broaden the attack surface (e.g. apt's signed-by keys, package metadata). The fix is layout, not behavior: do install + cleanup in the same ``RUN``.
 
 **Recommended action**
 
@@ -167,7 +167,7 @@ Combine the install and cleanup into the same ``RUN`` so the cache lands in a si
 ## DF-012 — RUN invokes sudo
 **Severity:** HIGH · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
 
-``sudo`` inside a Dockerfile is almost always a copy-paste from a host README. Its presence usually means one of three things, all of them wrong: (a) the build is silently running as root and the operator misread it, (b) the image carries an unrestricted ``sudoers`` line that a runtime escape can abuse, or (c) the package install chain depends on TTY-aware ``sudo`` behaviour that breaks under non-TTY ``docker build``. None of these cases benefit from keeping the directive.
+``sudo`` inside a Dockerfile is almost always a copy-paste from a host README. Its presence usually means one of three things, all of them wrong: (a) the build is silently running as root and the operator misread it, (b) the image carries an unrestricted ``sudoers`` line that a runtime escape can abuse, or (c) the package install chain depends on TTY-aware ``sudo`` behavior that breaks under non-TTY ``docker build``. None of these cases benefit from keeping the directive.
 
 **Recommended action**
 

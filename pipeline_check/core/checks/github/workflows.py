@@ -8,7 +8,7 @@ document.
 
 Adding a check is a one-file change — drop ``ghaNNN_<name>.py`` into
 ``rules/`` exporting ``RULE`` and ``check``. The orchestrator, the
-test fixtures catalogue, and the provider reference doc all pick it
+test fixtures catalog, and the provider reference doc all pick it
 up automatically.
 """
 from __future__ import annotations

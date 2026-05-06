@@ -130,7 +130,7 @@ Add an SBOM step — `microsoft/sbom-tool`, `syft . -o cyclonedx-json`, or `anch
 ## ADO-008 — Credential-shaped literal in pipeline body
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
 
-Complements ADO-003 (which looks at `variables:` keys). ADO-008 scans every string in the pipeline against the cross-provider credential-pattern catalogue.
+Complements ADO-003 (which looks at `variables:` keys). ADO-008 scans every string in the pipeline against the cross-provider credential-pattern catalog.
 
 **Recommended action**
 

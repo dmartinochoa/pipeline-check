@@ -17,7 +17,7 @@ prune _site
 prune _site_test
 exclude mkdocs.yml
 
-# CI / repo tooling — not useful to a PyPI consumer.
+# CI / repo tooling. Not useful to a PyPI consumer.
 prune .github
 prune scripts
 prune .agents

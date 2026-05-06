@@ -232,7 +232,7 @@ Lower severity than K8S-015 because CPU throttling is self-healing (workloads sl
 
 **Recommended action**
 
-Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defence against a neighbour consuming all node cycles — without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
+Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbour consuming all node cycles — without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
 
 ## K8S-017 — Container env value carries a credential-shaped literal
 **Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS

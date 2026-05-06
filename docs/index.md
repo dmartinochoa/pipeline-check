@@ -15,10 +15,11 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for eleven CI/CD providers and live AWS — graded against
-the OWASP Top 10 CI/CD Risks plus twelve compliance frameworks. Every
-finding ships with a control mapping and a written remediation; 68 of the
-370+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for twelve providers — eleven file-based formats and
+live AWS via boto3 — graded against the OWASP Top 10 CI/CD Risks plus
+twelve compliance frameworks. Every finding ships with a control mapping
+and a written remediation; 68 of the 430+ checks also emit a one-shot
+patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -50,7 +51,7 @@ finding ships with a control mapping and a written remediation; 68 of the
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">370+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">430+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">12</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">68</div><div class="pg-stat__label">Autofixers</div></div>
@@ -140,7 +141,7 @@ chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <h2 class="pg-section__title">Wherever your builds run.</h2>
 <p class="pg-section__lede">
 Auto-detect picks the provider for you, or pass <code>--pipeline &lt;name&gt;</code>
-to force one. Counts reflect the current rule catalogue.
+to force one. Counts reflect the current rule catalog.
 </p>
 </div>
 
@@ -170,7 +171,7 @@ to force one. Counts reflect the current rule catalogue.
 ```mermaid
 flowchart LR
     A[Repo or AWS account] -->|auto-detect| B[Provider]
-    B --> C[Rule engine<br/>370+ checks]
+    B --> C[Rule engine<br/>430+ checks]
     C --> D[Standards mapper<br/>OWASP · NIST · SLSA · …]
     D --> E[Scorer<br/>A/B/C/D]
     E --> F1[Terminal]
@@ -183,7 +184,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
     click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "370+ rules emit findings with severity, location, fix"
+    click C "attack_chains/" "430+ rules emit findings with severity, location, fix"
     click D "standards/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score with an A/B/C/D grade"
     click F1 "output/#terminal" "Rich color table for humans"

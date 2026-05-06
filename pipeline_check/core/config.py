@@ -21,7 +21,7 @@ a ``gate:`` sub-mapping (YAML).
 
 The returned dict is suitable for ``click.Context.default_map`` — which
 means option names must match click parameter names. Anything we don't
-recognise is dropped from the returned map.
+recognize is dropped from the returned map.
 """
 from __future__ import annotations
 
@@ -179,7 +179,7 @@ def _load_pyproject(p: Path) -> dict[str, Any]:
 def _flatten(raw: dict[str, Any], *, source: str) -> dict[str, Any]:
     """Flatten the nested config dict into click-option-name keys.
 
-    Top-level keys and ``gate.*`` sub-keys are recognised; anything else
+    Top-level keys and ``gate.*`` sub-keys are recognized; anything else
     is dropped with a stderr warning.
     """
     out: dict[str, Any] = {}

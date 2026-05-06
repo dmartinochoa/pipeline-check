@@ -1,6 +1,6 @@
 """GCB-015 — Pipeline should produce a software bill of materials.
 
-Reuses the cross-provider ``has_sbom`` helper so the tool catalogue
+Reuses the cross-provider ``has_sbom`` helper so the tool catalog
 (syft / CycloneDX / spdx-sbom-generator / Microsoft sbom-tool /
 Trivy-SBOM) stays in sync with GHA-007 / GL-007 / BB-007 / ADO-007 /
 CC-007 / JF-007. Silent-pass when the pipeline does not appear to

@@ -4,7 +4,7 @@ CI pipelines frequently need to talk to registries, git hosts, and
 cluster APIs. When certificate verification is disabled anywhere on
 that path, an attacker who can MITM the connection (compromised
 corporate proxy, malicious runner network, DNS poisoning) can inject
-payloads into the build. This primitive catalogues the idioms that
+payloads into the build. This primitive catalogs the idioms that
 turn verification off across the tooling commonly found in CI:
 
 * **Package managers**: ``npm``, ``yarn``, ``pip`` trust overrides.
@@ -30,7 +30,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# ── Pattern catalogue ────────────────────────────────────────────
+# ── Pattern catalog ────────────────────────────────────────────
 #
 # One regex per tool keeps the dispatch table readable and lets
 # rule consumers cite the specific offender ("npm disabled strict-

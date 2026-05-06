@@ -27,7 +27,7 @@ Vendor-trusted classification
 A short allowlist of well-known installer hosts (rustup.rs,
 get.docker.com, bun.sh/install, cli.github.com, …) is tracked so
 callers can downgrade confidence uniformly. The allowlist matches
-the GHA-016 ``known_fp`` catalogue — every other provider's
+the GHA-016 ``known_fp`` catalog — every other provider's
 wrapper inherits the same distinction without re-stating it.
 
 The primitive itself does NOT emit Findings, set severity, or
@@ -68,7 +68,7 @@ _VENDOR_HOSTS = frozenset({
 })
 
 
-# ── Pattern catalogue ────────────────────────────────────────────
+# ── Pattern catalog ────────────────────────────────────────────
 
 # A URL captured up to the first whitespace / pipe / redirect / term.
 _URL = r"https?://[^\s|;&'\">`]+"

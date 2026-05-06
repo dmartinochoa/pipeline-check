@@ -195,7 +195,7 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
             resource = resource.strip()
             # An empty resource (``GHA-001:`` or ``GHA-001:   ``) is the
             # user asking for a blanket suppression, equivalent to
-            # writing the check id alone. Normalise to None so the rule
+            # writing the check id alone. Normalize to None so the rule
             # actually matches something — a literal ``""`` resource
             # would only suppress findings with an exact empty string.
             rules.append(IgnoreRule(

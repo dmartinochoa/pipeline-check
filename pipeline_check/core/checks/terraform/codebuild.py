@@ -141,7 +141,7 @@ def _cb003_logging_enabled(values: dict, address: str) -> Finding:
     cw = _first(logs.get("cloudwatch_logs"))
     s3 = _first(logs.get("s3_logs"))
     # Terraform default for aws_codebuild_project: cloudwatch_logs status=ENABLED,
-    # s3_logs status=DISABLED. Honour that when the sub-block is omitted.
+    # s3_logs status=DISABLED. Honor that when the sub-block is omitted.
     cw_enabled = (cw.get("status") or "ENABLED") == "ENABLED"
     s3_enabled = (s3.get("status") or "DISABLED") == "ENABLED"
     passed = cw_enabled or s3_enabled

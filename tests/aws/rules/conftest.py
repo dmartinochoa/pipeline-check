@@ -31,7 +31,7 @@ class FakeClient:
 
     def __getattr__(self, item):
         # Raise AttributeError only for dunder lookups so MagicMock-like
-        # behaviour for arbitrary method names works.
+        # behavior for arbitrary method names works.
         if item.startswith("__"):
             raise AttributeError(item)
         resp = self._responses.get(item)

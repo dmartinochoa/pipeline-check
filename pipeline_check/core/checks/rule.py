@@ -1,4 +1,4 @@
-"""Rule framework — metadata + behaviour for a single check, in one module.
+"""Rule framework — metadata + behavior for a single check, in one module.
 
 Before this lived, every provider packed its checks into one class
 with hundreds of inlined methods, and the accompanying prose was
@@ -10,7 +10,7 @@ With this pattern, a rule is a self-contained module:
 
     pipeline_check/core/checks/github/rules/gha001_pinned_actions.py
 
-that exposes a ``RULE`` (metadata) and a ``check(...)`` (behaviour).
+that exposes a ``RULE`` (metadata) and a ``check(...)`` (behavior).
 The provider's orchestrator auto-discovers every rule in its
 ``rules/`` package; the doc generator (``scripts/gen_provider_docs.py``)
 walks the same registry so the provider reference doc is produced

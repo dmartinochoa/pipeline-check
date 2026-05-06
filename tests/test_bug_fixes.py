@@ -72,7 +72,7 @@ def test_bug_a_gha002_idempotent_on_named_form_already_set():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Bug B — Lambda fan-out must honour the ``provider`` kwarg.
+# Bug B — Lambda fan-out must honor the ``provider`` kwarg.
 # ────────────────────────────────────────────────────────────────────────
 
 def test_bug_b_fanout_forwards_provider_to_scanner(monkeypatch):
@@ -124,7 +124,7 @@ def test_bug_b_fanout_iterates_providers(monkeypatch):
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Bug C — is_quoted_assignment must recognise GitHub ${{ … }} expressions.
+# Bug C — is_quoted_assignment must recognize GitHub ${{ … }} expressions.
 # ────────────────────────────────────────────────────────────────────────
 
 def test_bug_c_is_quoted_assignment_github_expression():
