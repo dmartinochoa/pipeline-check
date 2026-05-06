@@ -98,7 +98,7 @@ class TestEngine:
         assert rule_ids == {
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
-            "AC-009", "AC-010",
+            "AC-009", "AC-010", "AC-011",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -351,6 +351,42 @@ class TestChainAC010:
         wf = ".github/workflows/build.yml"
         out = chains_pkg.evaluate([_f("GHA-012", wf)])
         assert not any(c.chain_id == "AC-010" for c in out)
+
+
+class TestChainAC011:
+    """AC-011 — Kubernetes Cluster Takeover via hostPath + cluster-admin."""
+
+    K8S_RESOURCE = "kubernetes/manifests"
+
+    def test_fires_with_hostpath_and_cluster_admin(self):
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE),
+            _f("K8S-020", self.K8S_RESOURCE),
+        ])
+        ac11 = [c for c in out if c.chain_id == "AC-011"]
+        assert len(ac11) == 1
+        assert ac11[0].severity is Severity.CRITICAL
+        assert "K8S-013" in ac11[0].triggering_check_ids
+        assert "K8S-020" in ac11[0].triggering_check_ids
+
+    def test_does_not_fire_without_hostpath(self):
+        # cluster-admin alone is bad but doesn't give the node escape
+        # leg this chain models.
+        out = chains_pkg.evaluate([_f("K8S-020", self.K8S_RESOURCE)])
+        assert not any(c.chain_id == "AC-011" for c in out)
+
+    def test_does_not_fire_without_cluster_admin(self):
+        # hostPath alone gives node escape but not cluster API authority.
+        out = chains_pkg.evaluate([_f("K8S-013", self.K8S_RESOURCE)])
+        assert not any(c.chain_id == "AC-011" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        # Findings present but green — neither rule actually triggered.
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE, passed=True),
+            _f("K8S-020", self.K8S_RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-011" for c in out)
 
 
 # ── Gate integration ─────────────────────────────────────────────────
