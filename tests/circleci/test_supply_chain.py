@@ -1,7 +1,7 @@
 """Per-rule tests for the CircleCI supply-chain rules:
 CC-006 (signing), CC-007 (SBOM), CC-017 (docker insecure flags),
-CC-018 (insecure package source), CC-021 (lockfile enforcement),
-CC-022 (dependency-update commands).
+CC-018 (insecure package source), CC-020 (vulnerability scanning),
+CC-021 (lockfile enforcement), CC-022 (dependency-update commands).
 
 Mirrors the GHA / GL versions of the same supply-chain test
 matrix. Cross-provider rule numbers are deliberately aligned so
@@ -108,6 +108,55 @@ class TestCC007SBOM:
             jobs: [build]
         """
         f = run_check(cfg, "CC-007")
+        assert f.passed
+
+
+# ── CC-017 docker insecure flags ────────────────────────────────────
+
+
+# ── CC-020 vulnerability scanning ───────────────────────────────────
+
+
+class TestCC020VulnScanning:
+    def test_fails_when_artifact_built_without_vuln_scan(self):
+        cfg = """
+        version: 2.1
+        jobs:
+          build:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: |
+                    docker build -t registry.example.com/app:v1 .
+                    docker push registry.example.com/app:v1
+        workflows:
+          main:
+            jobs: [build]
+        """
+        f = run_check(cfg, "CC-020")
+        assert not f.passed
+
+    def test_passes_with_trivy_step(self):
+        cfg = """
+        version: 2.1
+        jobs:
+          build:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: |
+                    docker build -t registry.example.com/app:v1 .
+                    trivy image --severity HIGH,CRITICAL registry.example.com/app:v1
+                    docker push registry.example.com/app:v1
+        workflows:
+          main:
+            jobs: [build]
+        """
+        f = run_check(cfg, "CC-020")
         assert f.passed
 
 

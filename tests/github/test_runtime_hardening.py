@@ -1,9 +1,11 @@
-"""Per-rule tests for GitHub GHA-008 (literal secrets), GHA-015 (timeout),
+"""Per-rule tests for GitHub Actions runtime-hardening rules:
+GHA-008 (literal secrets), GHA-012 (self-hosted ephemeral marker),
+GHA-014 (deploy job environment), GHA-015 (timeout-minutes),
 GHA-016 (curl-pipe), GHA-019 (token persistence), GHA-023 (TLS bypass).
 
 Complements the existing ``test_workflows.py`` (GHA-001..GHA-005) by
-covering five high-impact runtime-hardening rules. Each rule gets a
-positive case (compliant), at least one negative case (triggers
+covering the runtime-hardening half of the GitHub catalog. Each rule
+gets a positive case (compliant), at least one negative case (triggers
 finding), and an edge case where applicable.
 """
 from __future__ import annotations
@@ -248,4 +250,106 @@ class TestGHA023TLSBypass:
               - run: curl -fsSL https://example.com/data
         """
         f = run_check(wf, "GHA-023")
+        assert f.passed
+
+
+# ── GHA-012 self-hosted runner ──────────────────────────────────────
+
+
+class TestGHA012SelfHostedEphemeral:
+    def test_fails_when_self_hosted_lacks_ephemeral(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: [self-hosted, linux, x64]
+            timeout-minutes: 30
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-012")
+        assert not f.passed
+
+    def test_passes_with_ephemeral_label(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: [self-hosted, linux, ephemeral]
+            timeout-minutes: 30
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-012")
+        assert f.passed
+
+    def test_passes_on_github_hosted_runner(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-012")
+        assert f.passed
+
+
+# ── GHA-014 deploy job environment ──────────────────────────────────
+
+
+class TestGHA014DeployEnvironment:
+    def test_fails_when_deploy_job_has_no_environment(self):
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: deploy.sh production
+        """
+        f = run_check(wf, "GHA-014")
+        assert not f.passed
+
+    def test_passes_with_explicit_environment(self):
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            environment: production
+            steps:
+              - run: deploy.sh production
+        """
+        f = run_check(wf, "GHA-014")
+        assert f.passed
+
+    def test_passes_for_non_deploy_job(self):
+        # Lint-only job, no deploy keyword in name. Rule shouldn't fire.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          lint:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: ruff check .
+        """
+        f = run_check(wf, "GHA-014")
         assert f.passed

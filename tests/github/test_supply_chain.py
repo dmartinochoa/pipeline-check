@@ -1,7 +1,8 @@
 """Per-rule tests for the GitHub Actions supply-chain rules:
 GHA-006 (signing), GHA-007 (SBOM), GHA-017 (docker insecure flags),
-GHA-018 (insecure package source), GHA-021 (lockfile enforcement),
-GHA-022 (dependency-update commands).
+GHA-018 (insecure package source), GHA-020 (vulnerability scanning),
+GHA-021 (lockfile enforcement), GHA-022 (dependency-update commands),
+GHA-024 (SLSA provenance), GHA-029 (package source integrity).
 
 Each rule guards a different leg of the build-to-deploy chain. The
 tests cover positive (compliant) and negative (triggers finding)
@@ -318,4 +319,120 @@ class TestGHA022DepUpdate:
               - run: pip install --require-hashes -r requirements.txt
         """
         f = run_check(wf, "GHA-022")
+        assert f.passed
+
+
+# ── GHA-020 vulnerability scanning ──────────────────────────────────
+
+
+class TestGHA020VulnScanning:
+    def test_fails_when_artifact_built_without_scan(self):
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+              - run: docker build -t ghcr.io/example/app:v1 .
+              - run: docker push ghcr.io/example/app:v1
+        """
+        f = run_check(wf, "GHA-020")
+        assert not f.passed
+
+    def test_passes_with_trivy_step(self):
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+              - run: docker build -t ghcr.io/example/app:v1 .
+              - run: trivy image --severity HIGH,CRITICAL ghcr.io/example/app:v1
+              - run: docker push ghcr.io/example/app:v1
+        """
+        f = run_check(wf, "GHA-020")
+        assert f.passed
+
+
+# ── GHA-024 SLSA provenance ─────────────────────────────────────────
+
+
+class TestGHA024SLSAProvenance:
+    def test_fails_when_artifact_built_without_provenance(self):
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+              - run: docker build -t ghcr.io/example/app:v1 .
+              - run: docker push ghcr.io/example/app:v1
+        """
+        f = run_check(wf, "GHA-024")
+        assert not f.passed
+
+    def test_passes_with_slsa_generator(self):
+        wf = """
+        name: release
+        on: push
+        permissions:
+          contents: read
+          id-token: write
+        jobs:
+          build:
+            uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
+            with:
+              image: ghcr.io/example/app
+              digest: sha256:abc
+        """
+        f = run_check(wf, "GHA-024")
+        assert f.passed
+
+
+# ── GHA-029 package source integrity ────────────────────────────────
+
+
+class TestGHA029PackageSourceIntegrity:
+    def test_fails_on_pip_install_git_url(self):
+        # Installing from a git URL without a commit SHA pin lets the
+        # upstream repo silently swap the installed code at run time.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install git+https://github.com/example/tool.git
+        """
+        f = run_check(wf, "GHA-029")
+        assert not f.passed
+
+    def test_passes_with_lockfile_install(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install --require-hashes -r requirements.txt
+        """
+        f = run_check(wf, "GHA-029")
         assert f.passed

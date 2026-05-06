@@ -1,7 +1,7 @@
 """Per-rule tests for the Jenkins supply-chain rules:
 JF-006 (signing), JF-007 (SBOM), JF-017 (docker insecure flags),
-JF-018 (insecure package source), JF-021 (lockfile enforcement),
-JF-022 (dependency-update commands).
+JF-018 (insecure package source), JF-020 (vulnerability scanning),
+JF-021 (lockfile enforcement), JF-022 (dependency-update commands).
 
 Mirrors the GHA / GL / CC / BB supply-chain matrix for the Jenkins
 provider. Jenkinsfile is Groovy so the helper builds an inline
@@ -92,6 +92,48 @@ class TestJF007SBOM:
         }
         """
         f = run_check(groovy, "JF-007")
+        assert f.passed
+
+
+# ── JF-020 vulnerability scanning ───────────────────────────────────
+
+
+class TestJF020VulnScanning:
+    def test_fails_when_artifact_built_without_vuln_scan(self):
+        groovy = """
+        pipeline {
+            agent { label 'linux-ephemeral' }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages {
+                stage('build') {
+                    steps {
+                        sh 'docker build -t registry.example.com/app:v1 .'
+                        sh 'docker push registry.example.com/app:v1'
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-020")
+        assert not f.passed
+
+    def test_passes_with_trivy_scan(self):
+        groovy = """
+        pipeline {
+            agent { label 'linux-ephemeral' }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages {
+                stage('build') {
+                    steps {
+                        sh 'docker build -t registry.example.com/app:v1 .'
+                        sh 'trivy image --severity HIGH,CRITICAL registry.example.com/app:v1'
+                        sh 'docker push registry.example.com/app:v1'
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-020")
         assert f.passed
 
 
