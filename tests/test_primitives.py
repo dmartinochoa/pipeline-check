@@ -20,6 +20,7 @@ from pipeline_check.core.checks._primitives import (
     remote_script_exec,
     secret_shapes,
     shell_eval,
+    tainted_variables,
     tls_bypass,
 )
 
@@ -522,3 +523,125 @@ class TestSecretShapes:
     ])
     def test_non_secret_names_do_not_match(self, name):
         assert secret_shapes.SECRETISH_KEY_RE.search(name) is None
+
+
+# ──────────────────────────────────────────────────────────────────
+# tainted_variables — script-injection consumer-side primitive
+# ──────────────────────────────────────────────────────────────────
+
+
+# Provider-shaped untrusted-context regex. Constructed once and reused
+# across the test cases below; mirrors the regex shape that GitLab and
+# Bitbucket helpers ship.
+import re as _re  # noqa: E402
+
+_UNTRUSTED_RE = _re.compile(r"\$\{?(?:CI_COMMIT_MESSAGE|BITBUCKET_BRANCH)\}?")
+
+
+def _shell_ref(name: str) -> str:
+    """Mimic GitLab / Bitbucket ``$VAR`` / ``${VAR}`` reference syntax."""
+    return rf"\$\{{?{_re.escape(name)}\}}?"
+
+
+class TestHasDirectTaint:
+    @pytest.mark.parametrize("line", [
+        # Bare reference, no quoting.
+        "echo $CI_COMMIT_MESSAGE",
+        "git log --grep $BITBUCKET_BRANCH",
+        # Brace form.
+        "msg=${CI_COMMIT_MESSAGE}",
+        # Reference embedded in a longer command — still a hit.
+        "deploy --tag prefix-$CI_COMMIT_MESSAGE",
+    ])
+    def test_unquoted_reference_flagged(self, line):
+        assert tainted_variables.has_direct_taint([line], _UNTRUSTED_RE) is True
+
+    @pytest.mark.parametrize("line", [
+        # Defensive double-quoted assignment — captured into a string.
+        'BRANCH="$BITBUCKET_BRANCH"',
+        'MSG="${CI_COMMIT_MESSAGE}"',
+        # Bare line with no untrusted reference.
+        "echo hello",
+        # Untrusted name appears only in a comment.
+        "# CI_COMMIT_MESSAGE is the message",
+    ])
+    def test_safe_line_not_flagged(self, line):
+        assert tainted_variables.has_direct_taint([line], _UNTRUSTED_RE) is False
+
+    def test_multiline_returns_true_if_any_line_unsafe(self):
+        body = (
+            'SAFE="$CI_COMMIT_MESSAGE"\n'
+            "echo $CI_COMMIT_MESSAGE\n"  # this line is unsafe
+        )
+        assert tainted_variables.has_direct_taint(body.splitlines(), _UNTRUSTED_RE) is True
+
+    def test_multiline_all_safe_returns_false(self):
+        body = (
+            'A="$CI_COMMIT_MESSAGE"\n'
+            'B="${CI_COMMIT_MESSAGE}"\n'
+        )
+        assert tainted_variables.has_direct_taint(body.splitlines(), _UNTRUSTED_RE) is False
+
+
+class TestHasUnsafeReference:
+    def test_bare_reference_flagged(self):
+        assert tainted_variables.has_unsafe_reference(
+            ["deploy --branch $TAINTED"], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is True
+
+    def test_brace_reference_flagged(self):
+        assert tainted_variables.has_unsafe_reference(
+            ["deploy --branch ${TAINTED}"], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is True
+
+    def test_double_quoted_reference_safe(self):
+        """``"$X"`` is safe in bash — the value is interpolated as a
+        single literal argument, no re-evaluation."""
+        assert tainted_variables.has_unsafe_reference(
+            ['deploy --branch "$TAINTED"'], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is False
+
+    def test_quoted_assignment_safe(self):
+        """``VAR="...$X..."`` is the established defensive idiom; the
+        primitive must short-circuit on it via is_quoted_assignment."""
+        assert tainted_variables.has_unsafe_reference(
+            ['LOCAL="$TAINTED"'], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is False
+
+    def test_reference_outside_quotes_on_quoted_line_flagged(self):
+        """A line that mixes quoted + unquoted references is unsafe.
+        The double-quote-strip removes ``"safe"`` and exposes ``$X``."""
+        assert tainted_variables.has_unsafe_reference(
+            ['echo "safe-string" $TAINTED'], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is True
+
+    def test_no_reference_returns_false(self):
+        assert tainted_variables.has_unsafe_reference(
+            ["echo hello"], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is False
+
+    def test_empty_names_returns_false(self):
+        """No tainted names → nothing to look for, never flag."""
+        assert tainted_variables.has_unsafe_reference(
+            ["echo $ANY"], set(), ref_pattern=_shell_ref,
+        ) is False
+
+    def test_multiple_names_finds_first_unsafe(self):
+        assert tainted_variables.has_unsafe_reference(
+            ["echo $A", 'echo "$B"', "echo $C"],
+            {"A", "B", "C"},
+            ref_pattern=_shell_ref,
+        ) is True
+
+    def test_ref_pattern_called_per_name(self):
+        """The provider-supplied ``ref_pattern`` is the abstraction
+        knob — exercise that ADO-style ``$(VAR)`` matching works
+        through the same primitive."""
+        def ado_ref(n): return rf"\$\(\s*{_re.escape(n)}\s*\)"
+        assert tainted_variables.has_unsafe_reference(
+            ["deploy --branch $(TAINTED)"], {"TAINTED"}, ref_pattern=ado_ref,
+        ) is True
+        # Same input, but with the bash-style ref_pattern — must NOT match.
+        assert tainted_variables.has_unsafe_reference(
+            ["deploy --branch $(TAINTED)"], {"TAINTED"}, ref_pattern=_shell_ref,
+        ) is False

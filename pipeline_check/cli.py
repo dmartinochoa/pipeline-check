@@ -113,6 +113,7 @@ class _GroupedCommand(click.Command):
             "--tf-plan", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
+            "--dockerfile-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -341,6 +342,8 @@ def _detect_pipeline_from_cwd() -> str | None:
         return "bitbucket"
     if os.path.isfile("cloudbuild.yaml") or os.path.isfile("cloudbuild.yml"):
         return "cloudbuild"
+    if os.path.isfile("Dockerfile") or os.path.isfile("Containerfile"):
+        return "dockerfile"
     for _cfn in (
         "template.yml", "template.yaml", "template.json",
         "cloudformation.yml", "cloudformation.yaml",
@@ -531,8 +534,8 @@ def _install_completion_callback(ctx, _param, value):
         "matches. Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
-        "--circleci-path, --cloudbuild-path); AWS scans the live "
-        "account via boto3."
+        "--circleci-path, --cloudbuild-path, --dockerfile-path); "
+        "AWS scans the live account via boto3."
     ),
 )
 @click.option(
@@ -649,6 +652,16 @@ def _install_completion_callback(ctx, _param, value):
         "Path to a cloudbuild.yaml file or a directory containing one "
         "(required when --pipeline cloudbuild). Auto-detects "
         "./cloudbuild.yaml and ./cloudbuild.yml."
+    ),
+)
+@click.option(
+    "--dockerfile-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Dockerfile / Containerfile or a directory containing "
+        "one (required when --pipeline dockerfile). Auto-detects "
+        "./Dockerfile and ./Containerfile."
     ),
 )
 @click.option(
@@ -1006,6 +1019,7 @@ def scan(
     circleci_path: str | None,
     cfn_template: str | None,
     cloudbuild_path: str | None,
+    dockerfile_path: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1332,6 +1346,23 @@ def scan(
             )
         if not os.path.exists(cloudbuild_path):
             raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
+    elif pipeline_lc == "dockerfile":
+        if not dockerfile_path:
+            for _candidate in ("Dockerfile", "Containerfile"):
+                if os.path.isfile(_candidate):
+                    dockerfile_path = _candidate
+                    click.echo(
+                        f"[auto] using --dockerfile-path {dockerfile_path}",
+                        err=True,
+                    )
+                    break
+        if not dockerfile_path:
+            raise click.UsageError(
+                "--dockerfile-path PATH is required when --pipeline dockerfile "
+                "(no Dockerfile/Containerfile found in the current directory)."
+            )
+        if not os.path.exists(dockerfile_path):
+            raise click.UsageError(f"--dockerfile-path not found: {dockerfile_path}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1374,6 +1405,7 @@ def scan(
         circleci_path=circleci_path,
         cfn_template=cfn_template,
         cloudbuild_path=cloudbuild_path,
+        dockerfile_path=dockerfile_path,
     )
 
     if verbose:

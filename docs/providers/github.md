@@ -56,6 +56,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | GHA-027 | Workflow contains indicators of malicious activity | CRITICAL |
 | GHA-028 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | GHA-029 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| GHA-030 | OIDC token requested without environment-protected job | HIGH |
 
 ---
 
@@ -319,6 +320,15 @@ Package installs that pull from ``git+…`` without a pinned commit, from a loca
 **Recommended action**
 
 Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to an internal registry instead of installing from a filesystem path or tarball URL.
+
+## GHA-030 — OIDC token requested without environment-protected job
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 — IAM-008 verifies the AWS-side trust policy pins audience + subject; this rule verifies the GitHub-side workflow can't request the token from any branch without a deployment gate. A misconfiguration on either side defeats the OIDC story.
+
+**Recommended action**
+
+Bind every job that exchanges the GHA OIDC token for cloud credentials to a protected ``environment:`` (e.g. ``environment: production``). Environment protections layer in branch restrictions, required reviewers, and deployment windows that the IdP-side trust policy cannot enforce alone.
 
 ---
 

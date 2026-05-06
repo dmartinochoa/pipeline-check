@@ -4,7 +4,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity, is_quoted_assignment
+from ..._primitives.tainted_variables import (
+    has_direct_taint,
+    has_unsafe_reference,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 from ._helpers import UNTRUSTED_VAR_RE
@@ -32,34 +36,24 @@ RULE = Rule(
 
 
 def _tainted_vars(variables_block: Any) -> set[str]:
-    """Return variable names whose values contain untrusted CI variables."""
+    """Return variable names whose values reference untrusted CI variables.
+
+    GitLab variable values can be either a plain string or a dict
+    ``{value: "...", description: "..."}`` — both shapes are accepted.
+    """
     if not isinstance(variables_block, dict):
         return set()
     tainted: set[str] = set()
     for name, value in variables_block.items():
-        raw = value
-        # GitLab variables can be ``{value: "...", description: "..."}``.
-        if isinstance(value, dict):
-            raw = value.get("value")
+        raw = value.get("value") if isinstance(value, dict) else value
         if isinstance(raw, str) and UNTRUSTED_VAR_RE.search(raw):
             tainted.add(str(name))
     return tainted
 
 
-def _var_ref_in_scripts(lines: list[str], var_names: set[str]) -> bool:
-    """Return True if any *line* unsafely references a tainted variable."""
-    for name in var_names:
-        ref_re = re.compile(rf"\$\{{?{re.escape(name)}\}}?")
-        for line in lines:
-            if not ref_re.search(line):
-                continue
-            if is_quoted_assignment(line):
-                continue
-            # Remove double-quoted segments and re-check.
-            stripped = re.sub(r'"[^"]*"', "", line)
-            if ref_re.search(stripped):
-                return True
-    return False
+def _gl_ref_pattern(name: str) -> str:
+    """Match GitLab shell reference syntax for *name*: ``$VAR`` / ``${VAR}``."""
+    return rf"\$\{{?{re.escape(name)}\}}?"
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
@@ -69,16 +63,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for name, job in iter_jobs(doc):
         scripts = job_scripts(job)
         # 1. Direct interpolation of untrusted predefined vars.
-        for line in scripts:
-            if UNTRUSTED_VAR_RE.search(line) and not is_quoted_assignment(line):
-                offenders.append(name)
-                break
-        else:
-            # 2. Indirect: tainted variable set in variables: block then
-            #    referenced unquoted in a script line.
-            job_tainted = global_tainted | _tainted_vars(job.get("variables"))
-            if job_tainted and _var_ref_in_scripts(scripts, job_tainted):
-                offenders.append(name)
+        if has_direct_taint(scripts, UNTRUSTED_VAR_RE):
+            offenders.append(name)
+            continue
+        # 2. Indirect: tainted variable set in variables: block then
+        #    referenced unquoted in a script line.
+        job_tainted = global_tainted | _tainted_vars(job.get("variables"))
+        if job_tainted and has_unsafe_reference(
+            scripts, job_tainted, ref_pattern=_gl_ref_pattern
+        ):
+            offenders.append(name)
     passed = not offenders
     desc = (
         "No script interpolates attacker-controllable commit/MR metadata."

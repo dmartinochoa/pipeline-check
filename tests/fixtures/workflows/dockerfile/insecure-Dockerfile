@@ -1,0 +1,30 @@
+# Realistic insecure Dockerfile exhibiting every DF-* failure mode.
+# Modelled on patterns commonly seen in public repos, used as a fixture
+# to assert the scanner flags every rule in one sweep.
+
+# DF-001: FROM uses a floating tag, not a sha256 digest.
+FROM python:3.12-slim
+
+# DF-006: ENV / ARG carries credential-shaped literals.
+ENV API_KEY=sk_live_abcd1234567890abcd1234567890ab
+ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+ARG DATABASE_PASSWORD=hunter2
+
+WORKDIR /app
+
+# DF-003: ADD pulls a remote URL without --checksum= integrity flag.
+ADD https://example.com/internal/helper.tar.gz /opt/
+
+# DF-004: RUN curl-piped to bash without checksum verification.
+# DF-005: RUN uses dangerous shell-eval idiom (eval on a variable).
+# DF-008: RUN invokes docker --privileged inside the build.
+RUN curl -fsSL https://example.com/install.sh | bash && \
+    eval "$BUILD_CMD" && \
+    docker run --privileged builder-image make all
+
+COPY . .
+
+# DF-002: no USER directive — image runs as root.
+# DF-007: no HEALTHCHECK directive.
+
+CMD ["python", "app.py"]

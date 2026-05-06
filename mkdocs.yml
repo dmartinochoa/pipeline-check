@@ -107,6 +107,7 @@ nav:
       - Jenkins: providers/jenkins.md
       - CircleCI: providers/circleci.md
       - Google Cloud Build: providers/cloudbuild.md
+      - Dockerfile: providers/dockerfile.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

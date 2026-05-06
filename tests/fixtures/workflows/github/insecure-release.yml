@@ -121,3 +121,18 @@ jobs:
       # GHA-029: pip install from an unpinned git URL — lockfile
       # cannot protect against a moving branch head on the remote.
       - run: pip install git+https://example.com/internal/helper.git
+
+  # GHA-030: requests `id-token: write` and invokes
+  # aws-actions/configure-aws-credentials without an `environment:`
+  # binding — any branch can trigger the cloud-role assumption.
+  oidc-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/release-oidc
+          aws-region: us-east-1
+      - run: aws s3 cp dist/ s3://release-bucket/ --recursive

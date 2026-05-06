@@ -60,6 +60,7 @@ in other providers:
 | CC-028 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
 | CC-029 | Machine executor image not pinned | HIGH |
 | CC-030 | Workflow job uses context without branch filter or approval gate | MEDIUM |
+| CC-031 | OIDC role assumption without branch filter or approval gate | HIGH |
 
 ---
 
@@ -332,6 +333,15 @@ CircleCI contexts are the recommended way to store shared secrets, but binding a
 **Recommended action**
 
 Either add ``filters.branches.only: [<protected branches>]`` to restrict when the context-bound job runs, or require a ``type: approval`` job in ``requires:`` so a human gates the secret-carrying execution. Without either gate, every push to the project loads the context's secrets into an ephemeral runner where any compromised step can exfiltrate them.
+
+## CC-031 — OIDC role assumption without branch filter or approval gate
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the CircleCI-side workflow can't drive the role assumption from any branch. Distinct from CC-030 (broad context binding, MEDIUM); CC-031 narrows to OIDC role assumption and is HIGH because role-bound credentials reach further than the project-scoped secrets in a context.
+
+**Recommended action**
+
+Restrict every workflow job that passes a cloud ``role_arn`` (or equivalent OIDC parameter) to a protected branch list, or require a ``type: approval`` predecessor. Without either gate, any push triggers a cloud-role assumption with the full blast radius of the IdP-side trust policy.
 
 ---
 

@@ -60,6 +60,7 @@ The walker handles every layout ADO supports:
 | ADO-026 | Pipeline contains indicators of malicious activity | CRITICAL |
 | ADO-027 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
 | ADO-028 | Package install bypasses registry integrity (git / path / tarball source) | MEDIUM |
+| ADO-029 | Service-connection-using job without environment or branch gate | HIGH |
 
 ---
 
@@ -314,6 +315,15 @@ Complements ADO-021 (missing lockfile flag). Git URL installs without a commit p
 **Recommended action**
 
 Pin git dependencies to a commit SHA. Publish private packages to an internal registry (Azure Artifacts) instead of installing from a filesystem path or tarball URL.
+
+## ADO-029 — Service-connection-using job without environment or branch gate
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 (the AWS-side OIDC rule) — Azure's equivalent trust path runs through service connections that map to Azure AD federated identity credentials. The ADO-side gate is either a deployment + environment or a branch-pinned condition; this rule flags jobs that have neither.
+
+**Recommended action**
+
+Every job that consumes an Azure service connection (via ``AzureCLI@``, ``AzurePowerShell@``, ``AzureKeyVault@``, ``AzureWebApp@``, etc.) must either be a ``deployment:`` job bound to an ``environment:`` (which carries approval checks and audit) or carry a ``condition:`` that pins ``Build.SourceBranch`` to a protected ref. Without one of those gates, any branch push drives the federated assume-role on Azure AD.
 
 ---
 

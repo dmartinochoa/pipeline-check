@@ -48,6 +48,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | GL-028 | services: image not pinned | HIGH |
 | GL-029 | Manual deploy job defaults to allow_failure: true | MEDIUM |
 | GL-030 | trigger: include: pulls child pipeline without pinned ref | HIGH |
+| GL-031 | id_tokens: missing audience pin or environment binding | HIGH |
 
 ---
 
@@ -320,6 +321,15 @@ GL-005 only audits top-level ``include:``. Parent-child and multi-project pipeli
 **Recommended action**
 
 Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
+
+## GL-031 — id_tokens: missing audience pin or environment binding
+**Severity:** HIGH · OWASP CICD-SEC-2
+
+Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the GitLab-side workflow can't request a token without an audience claim or without a deployment gate.
+
+**Recommended action**
+
+For every job that declares an ``id_tokens:`` block, pin a non-wildcard ``aud:`` (a literal string the consumer trusts) AND bind the job to a protected ``environment:``. Audience pinning prevents token replay against unintended consumers; the environment binding gates which refs can drive the assume-role on the consumer side.
 
 ---
 

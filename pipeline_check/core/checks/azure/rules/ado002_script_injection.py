@@ -4,7 +4,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity, is_quoted_assignment
+from ..._primitives.tainted_variables import (
+    has_direct_taint,
+    has_unsafe_reference,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import UNTRUSTED_VAR_RE
@@ -33,51 +37,45 @@ RULE = Rule(
 
 
 def _tainted_vars(variables_block: Any) -> set[str]:
-    """Return variable names whose values contain untrusted ADO macros."""
-    if not isinstance(variables_block, (dict, list)):
-        return set()
+    """Return variable names whose values reference untrusted ADO macros.
+
+    Azure pipelines accept two shapes for ``variables:`` — a dict
+    (``{NAME: VALUE}``) or a list of single-key dicts
+    (``- name: NAME, value: VALUE``). Both are scanned.
+    """
     tainted: set[str] = set()
     if isinstance(variables_block, dict):
         for name, value in variables_block.items():
             if isinstance(value, str) and UNTRUSTED_VAR_RE.search(value):
                 tainted.add(str(name))
-    else:
+    elif isinstance(variables_block, list):
         for item in variables_block:
             if not isinstance(item, dict):
                 continue
             name = item.get("name")
             value = item.get("value")
-            if isinstance(name, str) and isinstance(value, str) and UNTRUSTED_VAR_RE.search(value):
+            if (
+                isinstance(name, str)
+                and isinstance(value, str)
+                and UNTRUSTED_VAR_RE.search(value)
+            ):
                 tainted.add(name)
     return tainted
 
 
-def _var_ref_in_body(body: str, var_names: set[str]) -> bool:
-    """Return True if *body* unsafely references a tainted variable.
-
-    Checks ADO ``$(VAR)`` macro syntax, ``$env:VAR`` (PowerShell),
-    and ``$VAR`` / ``${VAR}`` (bash) references.
-    """
-    for name in var_names:
-        ref_re = re.compile(
-            rf"\$\(\s*{re.escape(name)}\s*\)"        # $(VAR)
-            rf"|\$env:{re.escape(name)}\b"            # $env:VAR
-            rf"|\$\{{?{re.escape(name)}\}}?"          # $VAR / ${VAR}
-        )
-        for line in body.splitlines():
-            if not ref_re.search(line):
-                continue
-            if is_quoted_assignment(line):
-                continue
-            stripped = re.sub(r'"[^"]*"', "", line)
-            if ref_re.search(stripped):
-                return True
-    return False
+def _ado_ref_pattern(name: str) -> str:
+    """Match every ADO reference syntax for *name*: ``$(VAR)`` (macro),
+    ``$env:VAR`` (PowerShell), and ``$VAR`` / ``${VAR}`` (bash)."""
+    n = re.escape(name)
+    return (
+        rf"\$\(\s*{n}\s*\)"        # $(VAR)
+        rf"|\$env:{n}\b"            # $env:VAR
+        rf"|\$\{{?{n}\}}?"          # $VAR / ${VAR}
+    )
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
-    # Pipeline-level tainted variables.
     pipeline_tainted = _tainted_vars(doc.get("variables"))
     for job_loc, job in iter_jobs(doc):
         job_tainted = pipeline_tainted | _tainted_vars(job.get("variables"))
@@ -86,13 +84,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 body = step.get(key)
                 if not isinstance(body, str):
                     continue
+                lines = body.splitlines()
                 loc = f"{job_loc}.{step_loc}"
                 # 1. Direct interpolation of untrusted ADO macros.
-                if UNTRUSTED_VAR_RE.search(body) and not is_quoted_assignment(body):
+                if has_direct_taint(lines, UNTRUSTED_VAR_RE):
                     offenders.append(loc)
                     break
                 # 2. Indirect: tainted variable referenced unquoted.
-                if job_tainted and _var_ref_in_body(body, job_tainted):
+                if job_tainted and has_unsafe_reference(
+                    lines, job_tainted, ref_pattern=_ado_ref_pattern
+                ):
                     offenders.append(loc)
                     break
     passed = not offenders

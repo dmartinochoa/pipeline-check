@@ -1,0 +1,33 @@
+# Hardened equivalent of insecure-Dockerfile — every DF-* check passes.
+
+# DF-001 safe: FROM pinned by sha256 digest.
+FROM python@sha256:0000000000000000000000000000000000000000000000000000000000000001
+
+WORKDIR /app
+
+# DF-006 safe: no ENV / ARG carries a credential-shaped literal.
+# Build-time secrets come through ``RUN --mount=type=secret``;
+# runtime secrets through orchestrator env injection.
+
+# DF-003 safe: ADD with --checksum= integrity flag.
+ADD --checksum=sha256:0000000000000000000000000000000000000000000000000000000000000002 \
+    https://example.com/internal/helper.tar.gz /opt/
+
+# DF-004 / DF-005 / DF-008 safe: download to file, verify checksum, then run.
+# No eval, no docker --privileged.
+RUN curl -fsSL https://example.com/install.sh -o /tmp/install.sh && \
+    echo "0000000000000000000000000000000000000000000000000000000000000003  /tmp/install.sh" \
+        | sha256sum -c && \
+    bash /tmp/install.sh
+
+COPY . .
+
+# DF-002 safe: drop to a non-root user before runtime.
+RUN useradd --uid 1001 --create-home appuser
+USER appuser
+
+# DF-007 safe: HEALTHCHECK declared.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -fsS http://localhost:8080/healthz || exit 1
+
+CMD ["python", "app.py"]
