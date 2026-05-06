@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 
 from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+from ..._primitives.image_pinning import DIGEST_RE as DIGEST_RE
+from ..._primitives.image_pinning import VERSION_TAG_RE as VERSION_TAG_RE
 
 # ── Groovy comment stripping ──────────────────────────────────────────
 # YAML providers benefit from yaml.safe_load stripping comments before
@@ -85,8 +87,6 @@ DOCKER_IMAGE_RE = re.compile(
     r"docker\s*\{\s*[^}]*?\bimage\s+['\"]([^'\"]+)['\"]",
     re.DOTALL,
 )
-DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
-VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 
 ENV_AWS_KEY_RE = re.compile(
     r"(?:^|[\s{])(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN)\s*=\s*['\"]([^'\"]+)['\"]",

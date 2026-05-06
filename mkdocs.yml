@@ -14,7 +14,9 @@ exclude_docs: |
 theme:
   name: material
   language: en
-  custom_dir: overrides
+  # Lives inside docs/ (mkdocs auto-skips paths beginning with `_`
+  # during the build, so the templates aren't published as pages).
+  custom_dir: docs/_overrides
   font:
     text: Inter
     code: JetBrains Mono

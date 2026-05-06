@@ -16,7 +16,7 @@ Design rules:
   re-serialising destroys comments, blank lines, and YAML style that
   maintainers rely on; text patches preserve them.
 
-67 registered fixers covering all 8 providers.  Key categories:
+68 registered fixers covering all 8 providers.  Key categories:
 
 - **Permissions** — ``GHA-004`` (contents: read), ``GHA-002``
   (persist-credentials: false).

@@ -14,8 +14,11 @@ import pytest
 
 from pipeline_check.core.checks._primitives import (
     container_image,
+    deploy_names,
+    image_pinning,
     lockfile_integrity,
     remote_script_exec,
+    secret_shapes,
     shell_eval,
     tls_bypass,
 )
@@ -342,3 +345,180 @@ class TestTlsBypassNegatives:
     ])
     def test_safe_usage_not_flagged(self, text):
         assert tls_bypass.scan(text) == []
+
+
+# ──────────────────────────────────────────────────────────────────
+# image_pinning
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestImagePinningClassify:
+    @pytest.mark.parametrize("ref", [
+        "python@sha256:" + "a" * 64,
+        "ghcr.io/corp/builder@sha256:" + "0" * 64,
+        # Registry with port still terminates in the digest.
+        "registry.internal:5000/team/app@sha256:" + "f" * 64,
+    ])
+    def test_digest_pin(self, ref):
+        assert image_pinning.classify(ref) is image_pinning.PinKind.DIGEST
+
+    @pytest.mark.parametrize("ref", [
+        # Bare names — Docker Hub default tag is implicit ``latest`` but
+        # the surface form has no ``:`` after the last path segment.
+        "python",
+        "ghcr.io/corp/builder",
+        # Registry with port and no tag — must not be misread as
+        # ``:5000/team/app``.
+        "registry.internal:5000/team/app",
+    ])
+    def test_no_tag(self, ref):
+        assert image_pinning.classify(ref) is image_pinning.PinKind.NO_TAG
+
+    @pytest.mark.parametrize("ref", [
+        "python:latest",
+        "ghcr.io/corp/builder:latest",
+        # Tag with no digit — treated as floating (e.g. ``stable``,
+        # ``edge``, ``alpine``).
+        "python:stable",
+        "alpine:edge",
+        # Unique gotcha: a registry-with-port image whose tag happens to
+        # be ``latest`` should still be FLOATING, not NO_TAG.
+        "registry.internal:5000/app:latest",
+    ])
+    def test_floating(self, ref):
+        assert image_pinning.classify(ref) is image_pinning.PinKind.FLOATING
+
+    @pytest.mark.parametrize("ref", [
+        "python:3.12.1",
+        "python:3.12.1-slim",
+        # Tag with a digit anywhere counts as version-shaped.
+        "node:20-bookworm",
+        "ghcr.io/corp/builder:v1.2.3-rc.1",
+        "registry.internal:5000/app:1.0.0",
+    ])
+    def test_pinned_tag(self, ref):
+        assert image_pinning.classify(ref) is image_pinning.PinKind.PINNED_TAG
+
+    def test_digest_re_does_not_match_arbitrary_at_sign(self):
+        """``user@host`` shapes in ssh-like strings must not classify
+        as digest-pinned."""
+        assert image_pinning.classify("foo@bar") is image_pinning.PinKind.NO_TAG
+
+    def test_provider_helpers_re_export_the_primitive_objects(self):
+        """The four provider _helpers.py modules re-export DIGEST_RE /
+        VERSION_TAG_RE — they must be the *same object* as the
+        primitive's, otherwise a future regex tweak in the primitive
+        wouldn't propagate."""
+        from pipeline_check.core.checks.azure.rules._helpers import (
+            DIGEST_RE as az_d,
+        )
+        from pipeline_check.core.checks.azure.rules._helpers import (
+            VERSION_TAG_RE as az_v,
+        )
+        from pipeline_check.core.checks.circleci.rules._helpers import (
+            DIGEST_RE as cc_d,
+        )
+        from pipeline_check.core.checks.gitlab.rules._helpers import (
+            DIGEST_RE as gl_d,
+        )
+        from pipeline_check.core.checks.gitlab.rules._helpers import (
+            VERSION_TAG_RE as gl_v,
+        )
+        from pipeline_check.core.checks.jenkins.rules._helpers import (
+            DIGEST_RE as jf_d,
+        )
+        from pipeline_check.core.checks.jenkins.rules._helpers import (
+            VERSION_TAG_RE as jf_v,
+        )
+        assert image_pinning.DIGEST_RE is az_d is gl_d is cc_d is jf_d
+        assert image_pinning.VERSION_TAG_RE is az_v is gl_v is jf_v
+
+
+# ──────────────────────────────────────────────────────────────────
+# deploy_names
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestDeployNames:
+    @pytest.mark.parametrize("name", [
+        "deploy",
+        "deploy-prod",
+        "release",
+        "Release-Notes",
+        "publish-npm",
+        "promote",
+        # Case-insensitive — the regex carries (?i).
+        "DEPLOY",
+        "Promote",
+    ])
+    def test_deploy_like_names_match(self, name):
+        assert deploy_names.DEPLOY_RE.search(name) is not None
+
+    @pytest.mark.parametrize("name", [
+        "build",
+        "test",
+        "lint",
+        "compile",
+        # Words that *contain* deploy as a substring but on a word
+        # boundary they don't — \b in the regex prevents this.
+        "redeployer",  # \bdeploy\b doesn't match because of preceding 're'
+    ])
+    def test_unrelated_names_dont_match(self, name):
+        assert deploy_names.DEPLOY_RE.search(name) is None
+
+    def test_underscore_separated_names_do_not_match(self):
+        """Python's ``\\b`` treats ``_`` as a word character, so
+        ``deploy_to_prod`` does NOT match the primitive's regex even
+        though autofix.py's looser ``_DEPLOY_NAME_RE`` does.
+
+        Callers that want to catch underscore-suffixed deploy names
+        must either split on ``_`` first or use their own regex —
+        the primitive prefers the false-negative over the false-
+        positive (``builddeploy`` would otherwise hit too)."""
+        assert deploy_names.DEPLOY_RE.search("deploy_to_prod") is None
+
+
+# ──────────────────────────────────────────────────────────────────
+# secret_shapes
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestSecretShapes:
+    @pytest.mark.parametrize("text", [
+        "AKIA" + "A" * 16,
+        "AKIA1234567890123456",
+        "value: AKIAIOSFODNN7EXAMPLE",
+    ])
+    def test_aws_key_shape_matches(self, text):
+        assert secret_shapes.AWS_KEY_RE.search(text) is not None
+
+    @pytest.mark.parametrize("text", [
+        # Wrong prefix length / characters.
+        "AKIA1234",                       # too short
+        "AKIA" + "a" * 16,                # lowercase rejected
+        "ASIA" + "A" * 16,                # ASIA = STS, deliberately not matched
+        "BKIA" + "A" * 16,                # not the AKIA prefix
+    ])
+    def test_aws_key_shape_does_not_match(self, text):
+        assert secret_shapes.AWS_KEY_RE.search(text) is None
+
+    @pytest.mark.parametrize("name", [
+        "password",
+        "DatabasePassword",
+        "API_KEY",
+        "apikey",
+        "SECRET",
+        "private_key",
+        "service_token",
+    ])
+    def test_secretish_key_names_match(self, name):
+        assert secret_shapes.SECRETISH_KEY_RE.search(name) is not None
+
+    @pytest.mark.parametrize("name", [
+        "username",
+        "host",
+        "build_id",
+        "publickey",  # 'public' alone does not include 'private_key'
+    ])
+    def test_non_secret_names_do_not_match(self, name):
+        assert secret_shapes.SECRETISH_KEY_RE.search(name) is None

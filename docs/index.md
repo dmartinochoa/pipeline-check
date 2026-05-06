@@ -17,7 +17,8 @@ hide:
 <p class="pg-hero__lede">
 A read-only scanner for ten CI/CD providers and live AWS — graded against
 the OWASP Top 10 CI/CD Risks plus twelve compliance frameworks. Every
-finding ships with a control mapping, a fix, and a CI gate.
+finding ships with a control mapping and a written remediation; 68 of the
+330+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -176,7 +177,7 @@ flowchart LR
     E --> F4[SARIF 2.1.0]
     E --> G{CI gate}
     G -->|pass| H[Merge]
-    G -->|fail| I[Block + autofix]
+    G -->|fail| I[Block + report]
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
     click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
@@ -187,9 +188,9 @@ flowchart LR
     click F2 "output/#json" "Machine-parseable JSON for scripts"
     click F3 "output/#html" "HTML report with client-side filters"
     click F4 "output/#sarif" "SARIF 2.1.0 for GitHub code scanning, Defender for DevOps"
-    click G "ci_gate/" "Severity caps, baseline diff, ignore file, autofix — pass/fail contract"
+    click G "ci_gate/" "Severity caps, baseline diff, ignore file — pass/fail contract"
     click H "ci_gate/" "Severity below thresholds, exit 0"
-    click I "ci_gate/" "Severity above threshold; --apply autofix to clear"
+    click I "ci_gate/" "Severity above threshold; non-zero exit + report (--fix patches the subset that has a fixer)"
 
     classDef src      fill:#0b3954,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
     classDef step     fill:#134e6f,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;

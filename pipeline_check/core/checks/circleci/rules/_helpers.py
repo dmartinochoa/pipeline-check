@@ -4,15 +4,13 @@ from __future__ import annotations
 import re
 
 from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
+from ..._primitives.image_pinning import DIGEST_RE as DIGEST_RE
 
 # Orb pinning — semver or SHA is considered pinned.
 # Floating: ``circleci/node@volatile``, ``circleci/node@1``.
 # Pinned: ``circleci/node@5.1.0``, ``circleci/node@5.1.0-rc.1``.
 PINNED_ORB_RE = re.compile(r"@v?\d+\.\d+\.\d+")
 VOLATILE_ORB_RE = re.compile(r"@volatile\b", re.IGNORECASE)
-
-# Docker image digest.
-DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 
 # CircleCI attacker-controllable environment variables.
 UNTRUSTED_ENV_RE = re.compile(
