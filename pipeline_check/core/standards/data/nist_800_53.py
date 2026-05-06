@@ -29,6 +29,7 @@ STANDARD = Standard(
         # Audit and Accountability
         "AU-2":  "Event Logging",
         "AU-9":  "Protection of Audit Information",
+        "AU-11": "Audit Record Retention",
         "AU-12": "Audit Record Generation",
         # Configuration Management
         "CM-2":  "Baseline Configuration",
@@ -145,5 +146,105 @@ STANDARD = Standard(
         "CC-021":   ["SR-3", "SR-11"],                   # no lockfile
         "CC-022":   ["SI-2", "SR-3"],                    # no dependency updates
         "CC-023":   ["SC-8"],                            # TLS verification bypass
+        # Jenkins
+        "JF-001":   ["SR-3", "SR-11"],                   # tools / agents not pinned
+        "JF-004":   ["IA-5"],                            # plaintext credentials in Jenkinsfile
+        "JF-008":   ["IA-5"],                            # literal secrets in Groovy
+        "JF-010":   ["IA-5"],                            # long-lived AWS keys
+        "JF-011":   ["AU-2", "AU-12"],                   # build log retention
+        "JF-015":   ["CM-6"],                            # no timeout
+        # Cloud Build
+        "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
+        "GCB-002":  ["AC-3", "AC-6"],                    # default service account
+        "GCB-003":  ["IA-5"],                            # secrets fetched in args
+        "GCB-005":  ["CM-6"],                            # no timeout
+        "GCB-006":  ["CM-6", "SA-11"],                   # shell-eval idiom
+        "GCB-007":  ["CM-2", "SR-4"],                    # rolling 'latest' secret version
+        "GCB-008":  ["RA-5", "SI-2", "SA-11"],           # no vuln scanning
+        "GCB-009":  ["SI-7", "SR-4"],                    # unsigned artifact
+        "GCB-010":  ["SR-3", "SR-11"],                   # remote script via curl-pipe
+        "GCB-011":  ["SC-8"],                            # TLS bypass
+        "GCB-012":  ["IA-5"],                            # literal secret in YAML
+        "GCB-013":  ["SR-3", "SR-11"],                   # package source integrity
+        "GCB-014":  ["AU-2", "AU-12", "AU-9"],           # logging disabled
+        "GCB-015":  ["SR-4", "CM-8"],                    # no SBOM
+        "GCB-016":  ["CM-6", "AC-6"],                    # dir path escape
+        "GCB-017":  ["SR-4", "SI-7", "CM-2"],            # no SLSA provenance
+        "GCB-018":  ["IA-5", "CM-2"],                    # legacy KMS secrets block
+        # Kubernetes — runtime configuration evidences SC-7 (boundary
+        # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
+        # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
+        "K8S-001":  ["SR-3", "SR-11", "SI-2"],           # image not digest-pinned
+        "K8S-002":  ["SC-7", "CM-7"],                    # hostNetwork: true
+        "K8S-003":  ["SC-7", "CM-7"],                    # hostPID: true
+        "K8S-004":  ["SC-7", "CM-7"],                    # hostIPC: true
+        "K8S-005":  ["AC-6", "CM-6", "CM-7"],            # privileged container
+        "K8S-006":  ["AC-6", "CM-6"],                    # allowPrivilegeEscalation
+        "K8S-007":  ["AC-6", "CM-6"],                    # runAsNonRoot
+        "K8S-008":  ["SC-28", "CM-6"],                   # readOnlyRootFilesystem
+        "K8S-009":  ["AC-6", "CM-7"],                    # capabilities
+        "K8S-010":  ["CM-6", "SI-7"],                    # seccompProfile missing
+        "K8S-011":  ["AC-2", "AC-6"],                    # default service account
+        "K8S-012":  ["AC-6", "CM-7"],                    # automountServiceAccountToken
+        "K8S-013":  ["SC-7", "AC-6", "SI-7"],            # hostPath volumes
+        "K8S-014":  ["SC-7", "AC-6", "SI-7"],            # sensitive hostPath
+        "K8S-015":  ["CM-6"],                            # no memory limit
+        "K8S-016":  ["CM-6"],                            # no CPU limit
+        "K8S-017":  ["IA-5"],                            # credential literals in env
+        "K8S-018":  ["IA-5", "SC-28"],                   # Secret carries plaintext
+        "K8S-019":  ["CM-6"],                            # default namespace
+        "K8S-020":  ["AC-3", "AC-6"],                    # cluster-admin binding
+        "K8S-021":  ["AC-3", "AC-6", "CM-7"],            # wildcard RBAC
+        "K8S-022":  ["SC-7", "CM-7"],                    # service exposes SSH
+        "K8S-023":  ["AC-6", "CM-6"],                    # PSA enforce label missing
+        "K8S-024":  ["AU-2", "SI-2"],                    # missing health probes
+        "K8S-025":  ["AC-6", "CM-7"],                    # system-* priority class
+        "K8S-026":  ["SC-7", "AC-3"],                    # LB without source ranges
+        # Dockerfile — image build choices evidence supply-chain (SR)
+        # and configuration (CM) controls primarily.
+        "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
+        "DF-002":   ["AC-6", "CM-6"],                    # no USER
+        "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum
+        "DF-004":   ["SR-3", "SR-11", "SI-7"],           # curl-pipe
+        "DF-005":   ["CM-6", "SA-11"],                   # shell-eval
+        "DF-006":   ["IA-5"],                            # secret in ENV/ARG
+        "DF-007":   ["SI-2", "AU-2"],                    # no HEALTHCHECK
+        "DF-008":   ["AC-6", "CM-7"],                    # privileged in RUN
+        "DF-009":   ["CM-6"],                            # ADD where COPY suffices
+        "DF-010":   ["CM-2", "SR-3", "SI-2"],            # apt dist-upgrade
+        "DF-011":   ["CM-6"],                            # apt cache not cleaned
+        "DF-012":   ["AC-6", "CM-6"],                    # sudo in RUN
+        "DF-013":   ["SC-7", "CM-7"],                    # EXPOSE 22
+        "DF-014":   ["CM-6", "AC-6"],                    # WORKDIR system path
+        "DF-015":   ["AC-6", "CM-6"],                    # chmod 777
+        "DF-016":   ["SR-4", "CM-8"],                    # OCI provenance labels
+        # Additional AWS services not previously mapped.
+        "KMS-001":  ["SC-12", "SC-13"],                  # CMK rotation disabled
+        "KMS-002":  ["AC-3", "AC-6"],                    # CMK policy wildcard
+        "CT-001":   ["AU-2", "AU-12", "AU-9"],           # no trail
+        "CT-002":   ["AU-9", "SI-7"],                    # log file validation off
+        "CT-003":   ["AU-2", "AU-12"],                   # not multi-region
+        "CWL-001":  ["AU-2", "AU-11"],                   # no log retention
+        "CWL-002":  ["AU-9", "SC-12", "SC-28"],          # logs not KMS-encrypted
+        "CW-001":   ["AU-2", "SI-2"],                    # failed-build alarm
+        "SM-001":   ["IA-5", "SC-12"],                   # secret rotation off
+        "SM-002":   ["AC-3", "SC-7"],                    # secret resource policy public
+        "SSM-001":  ["IA-5"],                            # SSM string not SecureString
+        "SSM-002":  ["SC-12", "SC-13"],                  # SSM default KMS key
+        "SIGN-001": ["SI-7", "SR-4"],                    # signing profile missing
+        "SIGN-002": ["SI-7", "SR-4"],                    # signing profile revoked
+        "LMB-001":  ["SI-7", "SR-4"],                    # Lambda code-signing config
+        "LMB-002":  ["AC-3"],                            # function URL no auth
+        "LMB-003":  ["IA-5"],                            # Lambda env plaintext secret
+        "LMB-004":  ["AC-3", "SC-7"],                    # Lambda resource policy public
+        "EB-001":   ["AU-2", "SI-2"],                    # no pipeline-failure rule
+        "EB-002":   ["AC-6"],                            # wildcard event target
+        "CCM-001":  ["SA-10", "AC-3"],                   # CodeCommit approval rules
+        "CCM-002":  ["SC-12", "SC-28"],                  # CodeCommit repo not KMS
+        "CCM-003":  ["AC-3", "SC-7"],                    # cross-account trigger
+        "CA-001":   ["SC-12", "SC-13"],                  # CodeArtifact domain encryption
+        "CA-002":   ["SR-3", "SR-11"],                   # public upstream repo
+        "CA-003":   ["AC-3", "SC-7"],                    # domain policy public
+        "CA-004":   ["AC-6"],                            # repo wildcard actions
     },
 )

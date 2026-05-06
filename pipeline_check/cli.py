@@ -1120,12 +1120,15 @@ def scan(
 
     if explain_chain_id:
         from .core import chains as _chains_pkg
-        rules = {r.id.upper(): r for r in _chains_pkg.list_rules()}
+        # Distinct name from the ``rules`` list a few lines above so mypy
+        # doesn't carry the list-typed inference across the reassignment.
+        rules_by_id = {r.id.upper(): r for r in _chains_pkg.list_rules()}
         target_id = explain_chain_id.upper()
-        rule = rules.get(target_id)
+        rule = rules_by_id.get(target_id)
         if rule is None:
             import difflib
-            suggestions = difflib.get_close_matches(target_id, list(rules), n=3)
+            rule_ids: list[str] = list(rules_by_id.keys())
+            suggestions = difflib.get_close_matches(target_id, rule_ids, n=3)
             hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
             click.echo(
                 f"[explain-chain] unknown chain {explain_chain_id!r}.{hint}",
@@ -1158,23 +1161,27 @@ def scan(
         sys.exit(print_explain(explain_id))
 
     if standard_report:
-        std = _standards.get(standard_report)
-        if std is None:
+        # Distinct name from the ``std`` loop variable above (line 1099)
+        # so mypy can narrow ``Standard | None`` to ``Standard`` after
+        # the None check without conflicting with the loop variable's
+        # narrower inferred type.
+        report_std = _standards.get(standard_report)
+        if report_std is None:
             available = ", ".join(_standards.available())
             raise click.UsageError(
                 f"Unknown standard {standard_report!r}. "
                 f"Available: {available or 'none'}."
             )
-        click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
-        if std.url:
-            click.echo(f"  {std.url}")
+        click.echo(f"{report_std.name}  —  {report_std.title} (v{report_std.version or 'n/a'})")
+        if report_std.url:
+            click.echo(f"  {report_std.url}")
         click.echo("")
         click.echo("Control -> check mapping:")
         gaps: list[tuple[str, str]] = []
-        for ctrl_id in sorted(std.controls):
-            title = std.controls[ctrl_id]
+        for ctrl_id in sorted(report_std.controls):
+            title = report_std.controls[ctrl_id]
             check_ids = [
-                cid for cid, controls in std.mappings.items()
+                cid for cid, controls in report_std.mappings.items()
                 if ctrl_id in controls
             ]
             if check_ids:

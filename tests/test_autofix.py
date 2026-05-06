@@ -337,3 +337,256 @@ class TestGHA014DeployEnvStub:
     def test_skips_non_deploy_job(self):
         wf = "jobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
         assert autofix.generate_fix(_finding("GHA-014"), wf) is None
+
+
+# ── Kubernetes drop-line fixers ───────────────────────────────────────
+
+
+class TestK8sDropTrueLine:
+    """K8S-002 / K8S-003 / K8S-004 / K8S-005 all drop a YAML key set to
+    ``true``. Parameterised over the four rule IDs since the logic is
+    identical."""
+
+    def test_k8s005_drops_privileged_true(self):
+        manifest = (
+            "apiVersion: v1\n"
+            "kind: Pod\n"
+            "spec:\n"
+            "  containers:\n"
+            "    - name: c\n"
+            "      image: nginx@sha256:abc\n"
+            "      securityContext:\n"
+            "        privileged: true\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-005"), manifest)
+        assert after is not None
+        assert "privileged" not in after
+        # Surrounding context preserved.
+        assert "securityContext:" in after
+        assert "image: nginx@sha256:abc" in after
+
+    def test_k8s002_drops_host_network(self):
+        manifest = "spec:\n  hostNetwork: true\n  containers: []\n"
+        after = autofix.generate_fix(_finding("K8S-002"), manifest)
+        assert after is not None
+        assert "hostNetwork" not in after
+        assert "containers: []" in after
+
+    def test_k8s003_drops_host_pid(self):
+        manifest = "spec:\n  hostPID: true\n"
+        after = autofix.generate_fix(_finding("K8S-003"), manifest)
+        assert after is not None
+        assert "hostPID" not in after
+
+    def test_k8s004_drops_host_ipc(self):
+        manifest = "spec:\n  hostIPC: true\n"
+        after = autofix.generate_fix(_finding("K8S-004"), manifest)
+        assert after is not None
+        assert "hostIPC" not in after
+
+    def test_idempotent_when_key_absent(self):
+        manifest = "spec:\n  containers: []\n"
+        assert autofix.generate_fix(_finding("K8S-005"), manifest) is None
+        assert autofix.generate_fix(_finding("K8S-002"), manifest) is None
+
+    def test_skips_when_value_is_false(self):
+        # Already at the safe default. No edit, ``None`` returned.
+        manifest = "spec:\n  hostPID: false\n"
+        assert autofix.generate_fix(_finding("K8S-003"), manifest) is None
+
+    def test_each_rule_only_targets_its_own_key(self):
+        # K8S-002 must not touch a hostPID line, etc.
+        manifest = "spec:\n  hostNetwork: true\n  hostPID: true\n"
+        after = autofix.generate_fix(_finding("K8S-002"), manifest)
+        assert after is not None
+        assert "hostNetwork" not in after
+        assert "hostPID: true" in after
+
+
+# ── Kubernetes flip-value fixers ──────────────────────────────────────
+
+
+class TestK8sFlipValue:
+    """K8S-006 / K8S-007 / K8S-008 flip an unsafe value in place
+    rather than dropping the line, so any surrounding comment stays."""
+
+    def test_k8s006_flips_allow_priv_escalation(self):
+        manifest = "        allowPrivilegeEscalation: true\n"
+        after = autofix.generate_fix(_finding("K8S-006"), manifest)
+        assert after is not None
+        assert "allowPrivilegeEscalation: false" in after
+
+    def test_k8s007_flips_run_as_non_root(self):
+        manifest = "        runAsNonRoot: false\n"
+        after = autofix.generate_fix(_finding("K8S-007"), manifest)
+        assert after is not None
+        assert "runAsNonRoot: true" in after
+
+    def test_k8s008_flips_read_only_root_fs(self):
+        manifest = "        readOnlyRootFilesystem: false\n"
+        after = autofix.generate_fix(_finding("K8S-008"), manifest)
+        assert after is not None
+        assert "readOnlyRootFilesystem: true" in after
+
+    def test_preserves_inline_comment(self):
+        manifest = "        readOnlyRootFilesystem: false  # legacy bug\n"
+        after = autofix.generate_fix(_finding("K8S-008"), manifest)
+        assert after is not None
+        assert "readOnlyRootFilesystem: true" in after
+        assert "# legacy bug" in after
+
+    def test_idempotent_when_already_safe(self):
+        # Flipped values are already correct.
+        m6 = "        allowPrivilegeEscalation: false\n"
+        m7 = "        runAsNonRoot: true\n"
+        m8 = "        readOnlyRootFilesystem: true\n"
+        assert autofix.generate_fix(_finding("K8S-006"), m6) is None
+        assert autofix.generate_fix(_finding("K8S-007"), m7) is None
+        assert autofix.generate_fix(_finding("K8S-008"), m8) is None
+
+    def test_no_op_when_key_absent(self):
+        manifest = "spec:\n  containers: []\n"
+        assert autofix.generate_fix(_finding("K8S-006"), manifest) is None
+        assert autofix.generate_fix(_finding("K8S-007"), manifest) is None
+        assert autofix.generate_fix(_finding("K8S-008"), manifest) is None
+
+
+# ── Kubernetes comment-only TODO fixers ───────────────────────────────
+
+
+class TestK8s013HostPathTODO:
+    def test_inserts_todo_above_hostpath(self):
+        manifest = (
+            "spec:\n"
+            "  volumes:\n"
+            "    - name: data\n"
+            "      hostPath:\n"
+            "        path: /var/log\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-013"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-013)" in after
+        # Comment lands above the hostPath: line, not below.
+        idx_todo = after.index("TODO(pipelineguard K8S-013)")
+        idx_hp = after.index("hostPath:")
+        assert idx_todo < idx_hp
+
+    def test_idempotent_after_run(self):
+        manifest = (
+            "spec:\n"
+            "  volumes:\n"
+            "    - name: data\n"
+            "      hostPath:\n"
+            "        path: /var/log\n"
+        )
+        once = autofix.generate_fix(_finding("K8S-013"), manifest)
+        assert once is not None
+        twice = autofix.generate_fix(_finding("K8S-013"), once)
+        assert twice is None
+
+    def test_no_op_when_no_hostpath(self):
+        manifest = "spec:\n  volumes: []\n"
+        assert autofix.generate_fix(_finding("K8S-013"), manifest) is None
+
+
+class TestK8s020ClusterAdminTODO:
+    def test_inserts_todo_above_cluster_admin_name(self):
+        manifest = (
+            "kind: ClusterRoleBinding\n"
+            "roleRef:\n"
+            "  apiGroup: rbac.authorization.k8s.io\n"
+            "  kind: ClusterRole\n"
+            "  name: cluster-admin\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-020"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-020)" in after
+
+    def test_matches_system_masters_too(self):
+        manifest = "  name: system:masters\n"
+        after = autofix.generate_fix(_finding("K8S-020"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-020)" in after
+
+    def test_skips_unrelated_name_lines(self):
+        manifest = "metadata:\n  name: my-deployment\n"
+        assert autofix.generate_fix(_finding("K8S-020"), manifest) is None
+
+    def test_idempotent_after_run(self):
+        manifest = "  name: cluster-admin\n"
+        once = autofix.generate_fix(_finding("K8S-020"), manifest)
+        assert once is not None
+        twice = autofix.generate_fix(_finding("K8S-020"), once)
+        assert twice is None
+
+
+# ── Cloud Build fixers ────────────────────────────────────────────────
+
+
+class TestGCB005Timeout:
+    def test_inserts_timeout_at_top(self):
+        cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud'\n    args: ['version']\n"
+        after = autofix.generate_fix(_finding("GCB-005"), cb)
+        assert after is not None
+        assert after.startswith("timeout: '600s'\n")
+
+    def test_idempotent_when_timeout_present(self):
+        cb = "timeout: '300s'\nsteps: []\n"
+        assert autofix.generate_fix(_finding("GCB-005"), cb) is None
+
+    def test_no_op_when_not_a_cloudbuild_doc(self):
+        # No top-level cloudbuild keys at all — fixer punts rather than
+        # inserting at column 0 of a random doc.
+        assert autofix.generate_fix(_finding("GCB-005"), "name: not-cb\n") is None
+
+
+class TestGCB014Logging:
+    def test_drops_logging_none(self):
+        cb = "options:\n  logging: NONE\nsteps: []\n"
+        after = autofix.generate_fix(_finding("GCB-014"), cb)
+        assert after is not None
+        assert "logging: NONE" not in after
+        assert "options:" in after
+
+    def test_handles_quoted_value(self):
+        cb = "options:\n  logging: 'NONE'\n"
+        after = autofix.generate_fix(_finding("GCB-014"), cb)
+        assert after is not None
+        assert "logging" not in after
+
+    def test_idempotent_when_absent(self):
+        assert autofix.generate_fix(_finding("GCB-014"), "options:\n  machineType: N1_HIGHCPU_8\n") is None
+
+
+class TestGCB001PinTODO:
+    def test_inserts_todo_above_unpinned_step(self):
+        cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud'\n"
+        after = autofix.generate_fix(_finding("GCB-001"), cb)
+        assert after is not None
+        assert "TODO(pipelineguard GCB-001)" in after
+
+    def test_skips_already_digest_pinned(self):
+        cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud@sha256:abcd'\n"
+        assert autofix.generate_fix(_finding("GCB-001"), cb) is None
+
+    def test_idempotent_after_run(self):
+        cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud'\n"
+        once = autofix.generate_fix(_finding("GCB-001"), cb)
+        assert once is not None
+        twice = autofix.generate_fix(_finding("GCB-001"), once)
+        assert twice is None
+
+
+class TestGCB011TLSBypass:
+    def test_reuses_shared_tls_bypass_fixer(self):
+        # GCB-011 piggybacks on the same _comment_tls_bypass logic the
+        # CI providers use. Use a curl -k command on its own line so
+        # the shared TLS_BYPASS_RE matches.
+        cb = (
+            "steps:\n"
+            "  - name: bash\n"
+            "    script: curl -k https://example.com\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-011"), cb)
+        assert after is not None
+        assert "TODO(pipelineguard): remove TLS/SSL verification bypass" in after

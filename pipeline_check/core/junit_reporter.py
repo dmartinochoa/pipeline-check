@@ -29,6 +29,7 @@ from xml.sax.saxutils import escape as _xml_escape
 from xml.sax.saxutils import quoteattr as _xml_attr
 
 from .checks.base import Finding
+from .scorer import ScoreResult
 
 
 def _prefix(check_id: str) -> str:
@@ -57,7 +58,7 @@ def _failure_body(f: Finding) -> str:
     return "\n".join(parts)
 
 
-def report_junit(findings: list[Finding], score_result: dict) -> str:
+def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
     """Render *findings* as a JUnit XML 4.x report string.
 
     Returns the XML as a string, prologue included. The caller decides

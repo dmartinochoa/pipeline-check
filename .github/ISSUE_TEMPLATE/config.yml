@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/dmartinochoa/pipeline-check/discussions
+    about: Open-ended questions, ideas not ready for an issue, "is this a bug?" before filing.

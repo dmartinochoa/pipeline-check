@@ -15,6 +15,7 @@ STANDARD = Standard(
     url="https://www.cisecurity.org/benchmark/amazon_web_services",
     controls={
         # IAM
+        "1.14": "Ensure access keys are rotated every 90 days or less",
         "1.16": "Ensure IAM policies that allow full '*:*' administrative privileges are not attached",
         "1.17": "Ensure a support role has been created to manage incidents with AWS Support",
         # Storage
@@ -23,8 +24,10 @@ STANDARD = Standard(
         "2.1.4": "Ensure that S3 Buckets are configured with 'Block public access'",
         # Logging
         "3.1":  "Ensure CloudTrail is enabled in all regions",
+        "3.2":  "Ensure CloudTrail log file validation is enabled",
         "3.4":  "Ensure CloudTrail trails are integrated with CloudWatch Logs",
         "3.6":  "Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket",
+        "3.7":  "Ensure CloudTrail logs are encrypted at rest using KMS CMKs",
         "3.8":  "Ensure rotation for customer-created symmetric CMKs is enabled",
         # Monitoring (CI/CD-adjacent)
         "4.3":  "Ensure a log metric filter and alarm exist for usage of the root account",
@@ -37,16 +40,34 @@ STANDARD = Standard(
         "IAM-003": ["1.16"],
         "IAM-004": ["1.16"],
         "IAM-006": ["1.16"],
+        # IAM-007 (access key age): the canonical CIS 1.14 control.
+        "IAM-007": ["1.14"],
         # S3 artifact buckets
         "S3-001":  ["2.1.4"],
         "S3-002":  ["2.1.1"],
         "S3-003":  ["2.1.2"],
         "S3-004":  ["3.6"],
         "S3-005":  ["2.1.2"],
+        # KMS — rotation is direct (3.8); a wildcard policy on a CMK is
+        # the same admin-privilege failure mode CIS 1.16 calls out for
+        # IAM, applied to a key resource policy.
+        "KMS-001": ["3.8"],
+        "KMS-002": ["1.16"],
+        # CloudTrail — trail existence + multi-region together evidence
+        # 3.1; log file validation is the dedicated 3.2 control.
+        "CT-001":  ["3.1"],
+        "CT-002":  ["3.2"],
+        "CT-003":  ["3.1"],
+        # CloudWatch Logs integration is 3.4; KMS-encrypted log groups
+        # are 3.7 (the same encryption-at-rest control CIS scopes to
+        # CloudTrail's log delivery target).
+        "CWL-001": ["3.4"],
+        "CWL-002": ["3.7"],
         # CodeBuild / CodeDeploy logging (CloudWatch integration)
         "CB-003":  ["3.4"],
         "CD-003":  ["3.4"],
         # ECR scanning complements Security Hub posture
         "ECR-001": ["4.16"],
+        "ECR-007": ["4.16"],
     },
 )

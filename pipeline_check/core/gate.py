@@ -52,6 +52,7 @@ import yaml
 from ._yaml_strict import DupKeyLoader as _DupKeyIgnoreLoader
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
+from .scorer import ScoreResult
 
 # Grade ordering — A is best, D is worst. Kept inline rather than imported
 # from the scorer so this module has no upward coupling.
@@ -346,7 +347,7 @@ def _is_ignored(f: Finding, rules: Iterable[IgnoreRule], today: _dt.date) -> boo
 
 def evaluate_gate(
     findings: list[Finding],
-    score_result: dict,
+    score_result: ScoreResult,
     config: GateConfig,
     chains: list[Chain] | None = None,
 ) -> GateResult:

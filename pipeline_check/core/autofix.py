@@ -16,7 +16,8 @@ Design rules:
   re-serialising destroys comments, blank lines, and YAML style that
   maintainers rely on; text patches preserve them.
 
-68 registered fixers covering all 8 providers.  Key categories:
+81 registered fixers covering 8 CI/CD providers plus Kubernetes
+manifests and Cloud Build. Key categories:
 
 - **Permissions** — ``GHA-004`` (contents: read), ``GHA-002``
   (persist-credentials: false).
@@ -1169,3 +1170,238 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
 
 for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023"):
     register(_cid)(_comment_tls_bypass)
+
+
+# Cloud Build TLS bypass reuses the same heuristic as the CI providers.
+register("GCB-011")(_comment_tls_bypass)
+
+
+# ── Kubernetes drop-line fixers (K8S-002/003/004/005) ────────────────
+#
+# These four rules all flag a YAML key set to ``true`` that should
+# either be ``false`` or omitted (default false). The safe edit is to
+# drop the line entirely; the cluster falls back to the secure default.
+# Idempotent because the line being absent is the post-fix state.
+
+# Each rule maps to one specific key. Stricter than a generic
+# alternation so K8S-002 doesn't try to fix a hostPID issue and vice
+# versa.
+_K8S_DROP_TRUE_KEYS: dict[str, str] = {
+    "K8S-002": "hostNetwork",
+    "K8S-003": "hostPID",
+    "K8S-004": "hostIPC",
+    "K8S-005": "privileged",
+}
+
+
+def _fix_k8s_drop_true_line(content: str, finding: Finding) -> str | None:
+    key = _K8S_DROP_TRUE_KEYS.get(finding.check_id.upper())
+    if key is None:
+        return None
+    # Match a whole line: optional indent, the exact key, ``: true``,
+    # optional inline comment. Keep an optional trailing newline so the
+    # match consumes the line break too and we don't leave a blank gap.
+    pat = re.compile(
+        rf"^[ \t]*{re.escape(key)}\s*:\s*true\s*(?:#[^\n]*)?\n?",
+        re.MULTILINE,
+    )
+    new = pat.sub("", content)
+    if new == content:
+        return None
+    return new
+
+
+for _cid in _K8S_DROP_TRUE_KEYS:
+    register(_cid)(_fix_k8s_drop_true_line)
+
+
+# ── Kubernetes flip-value fixers (K8S-006/007/008) ───────────────────
+#
+# These rules flag a securityContext field set to the unsafe value.
+# Flipping in-place preserves the surrounding indent and any comment
+# the operator left on the line. The "key is missing entirely" case
+# (no securityContext at all) is left to manual edit — inserting a
+# block at the right indent level is too easy to get wrong with text
+# patches, and the rule's recommendation already explains the shape.
+
+# Each entry: (key, unsafe_literal, safe_literal).
+_K8S_FLIP_VALUE: dict[str, tuple[str, str, str]] = {
+    "K8S-006": ("allowPrivilegeEscalation", "true", "false"),
+    "K8S-007": ("runAsNonRoot", "false", "true"),
+    "K8S-008": ("readOnlyRootFilesystem", "false", "true"),
+}
+
+
+def _fix_k8s_flip_value(content: str, finding: Finding) -> str | None:
+    entry = _K8S_FLIP_VALUE.get(finding.check_id.upper())
+    if entry is None:
+        return None
+    key, bad, good = entry
+    pat = re.compile(
+        rf"(^[ \t]*{re.escape(key)}\s*:\s*){re.escape(bad)}(\s*(?:#[^\n]*)?)$",
+        re.MULTILINE,
+    )
+    new, n = pat.subn(rf"\g<1>{good}\g<2>", content)
+    if n == 0:
+        return None
+    return new
+
+
+for _cid in _K8S_FLIP_VALUE:
+    register(_cid)(_fix_k8s_flip_value)
+
+
+# ── Kubernetes comment-only TODO fixers (K8S-013, K8S-020) ───────────
+#
+# Some K8s findings can't be auto-rewritten safely. ``hostPath``
+# volumes need to become ``persistentVolumeClaim`` references with a
+# matching PVC manifest, which the scanner can't synthesize. A
+# ClusterRoleBinding to ``cluster-admin`` needs a least-privilege
+# Role drafted by hand. For both, the fixer leaves a ``TODO`` comment
+# above the offending line so the change is visible in review.
+
+_TODO_K8S_HOSTPATH = (
+    "TODO(pipelineguard K8S-013): replace hostPath with a "
+    "persistentVolumeClaim referencing a PVC scoped to this namespace"
+)
+
+_HOSTPATH_RE = re.compile(r"^(\s*)hostPath\s*:\s*$", re.MULTILINE)
+
+
+@register("K8S-013")
+def _fix_k8s013_hostpath(content: str, finding: Finding) -> str | None:
+    if _TODO_K8S_HOSTPATH in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _HOSTPATH_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_K8S_HOSTPATH}\n"))
+    if not edits:
+        return None
+    out = content
+    for start, text in sorted(edits, reverse=True):
+        out = out[:start] + text + out[start:]
+    return out
+
+
+_TODO_K8S_CLUSTER_ADMIN = (
+    "TODO(pipelineguard K8S-020): replace cluster-admin binding with "
+    "a least-privilege Role + RoleBinding scoped to a namespace"
+)
+
+# Match the roleRef body that points at cluster-admin or system:masters.
+# Anchored to ``name:`` because that's the line carrying the
+# offending value; a comment one line above is the most readable spot.
+_CLUSTER_ADMIN_NAME_RE = re.compile(
+    r"^(\s*)name\s*:\s*[\"']?(?:cluster-admin|system:masters)[\"']?\s*$",
+    re.MULTILINE,
+)
+
+
+@register("K8S-020")
+def _fix_k8s020_cluster_admin(content: str, finding: Finding) -> str | None:
+    if _TODO_K8S_CLUSTER_ADMIN in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _CLUSTER_ADMIN_NAME_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_K8S_CLUSTER_ADMIN}\n"))
+    if not edits:
+        return None
+    out = content
+    for start, text in sorted(edits, reverse=True):
+        out = out[:start] + text + out[start:]
+    return out
+
+
+# ── Cloud Build fixers ───────────────────────────────────────────────
+
+
+_GCB_TIMEOUT_RE = re.compile(r"^timeout\s*:", re.MULTILINE)
+_GCB_FIRST_TOPLEVEL_RE = re.compile(
+    r"^(?:steps|substitutions|options|images|artifacts|tags|"
+    r"availableSecrets|serviceAccount|logsBucket)\s*:",
+    re.MULTILINE,
+)
+
+
+@register("GCB-005")
+def _fix_gcb005_timeout(content: str, finding: Finding) -> str | None:
+    """Insert ``timeout: '600s'`` at the top of cloudbuild.yaml.
+
+    Idempotent: returns ``None`` if a top-level ``timeout:`` already
+    exists. 600s is the longest of the conservative bounds the rule
+    accepts; the operator can tune it down once the build's actual
+    duration is known.
+    """
+    if _GCB_TIMEOUT_RE.search(content):
+        return None
+    anchor = _GCB_FIRST_TOPLEVEL_RE.search(content)
+    if anchor is None:
+        return None
+    insert_at = anchor.start()
+    return content[:insert_at] + "timeout: '600s'\n" + content[insert_at:]
+
+
+_GCB_LOGGING_NONE_RE = re.compile(
+    r"^[ \t]*logging\s*:\s*[\"']?NONE[\"']?\s*(?:#[^\n]*)?\n?",
+    re.MULTILINE,
+)
+
+
+@register("GCB-014")
+def _fix_gcb014_logging(content: str, finding: Finding) -> str | None:
+    """Drop ``logging: NONE`` so Cloud Build falls back to logging
+    enabled. The operator can re-pick a logging mode (``CLOUD_LOGGING_ONLY``,
+    ``GCS_ONLY``, etc.) explicitly if the default isn't right for them.
+    """
+    new = _GCB_LOGGING_NONE_RE.sub("", content)
+    if new == content:
+        return None
+    return new
+
+
+_TODO_GCB_PIN = (
+    "TODO(pipelineguard GCB-001): pin step image to a digest "
+    "(``gcr.io/.../foo@sha256:<digest>``) instead of a mutable tag"
+)
+
+# Step image lines look like ``- name: 'gcr.io/cloud-builders/gcloud'``
+# or ``  name: gcr.io/foo/bar:tag``. Match a name: key whose value
+# contains a slash (the registry path) and *no* ``@sha256:`` digest.
+_GCB_STEP_NAME_RE = re.compile(
+    r"^(?P<indent>\s*-?\s*)name\s*:\s*[\"']?"
+    r"(?P<image>[^\s\"'@]+/[^\s\"'@]+(?::[^\s\"'@]+)?)"
+    r"[\"']?\s*$",
+    re.MULTILINE,
+)
+
+
+@register("GCB-001")
+def _fix_gcb001_pin_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each step image line that isn't pinned to
+    a digest. Comment-only — pinning to a real digest needs an out-
+    of-band registry lookup (``gcloud container images describe``)
+    that the scanner can't make.
+    """
+    if _TODO_GCB_PIN in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _GCB_STEP_NAME_RE.finditer(content):
+        image = m.group("image")
+        if "@sha256:" in image:
+            continue
+        # The leading dash, if any, already lives in ``indent``. Pull
+        # the comment indent off of just the whitespace prefix so it
+        # lines up with the ``- name:`` token.
+        indent_raw = m.group("indent")
+        indent_ws = re.match(r"\s*", indent_raw).group(0)
+        # If the indent contains a list dash, the comment goes at the
+        # same column as the dash, not the ``name:`` key.
+        edits.append((m.start(), f"{indent_ws}# {_TODO_GCB_PIN}\n"))
+    if not edits:
+        return None
+    out = content
+    for start, text in sorted(edits, reverse=True):
+        out = out[:start] + text + out[start:]
+    return out

@@ -52,6 +52,9 @@ analogue in other providers:
 | GCB-013 | Package install bypasses registry integrity (git / path / tarball) | MEDIUM |
 | GCB-014 | Build logging disabled (options.logging: NONE) | HIGH |
 | GCB-015 | SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) | MEDIUM |
+| GCB-016 | Step dir field contains parent-directory escape (..) | MEDIUM |
+| GCB-017 | Image-producing build does not request SLSA provenance | MEDIUM |
+| GCB-018 | Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) | MEDIUM |
 
 ---
 
@@ -189,6 +192,33 @@ Complements GCB-009 (signing) and GCB-008 (vuln scanning). Without an SBOM, down
 **Recommended action**
 
 Add an SBOM generation step — ``syft <image> -o cyclonedx-json``, ``trivy image --format cyclonedx`` — and publish the resulting document alongside the image (typically via a cosign attestation so the SBOM travels with the artifact).
+
+## GCB-016 — Step dir field contains parent-directory escape (..)
+**Severity:** MEDIUM · OWASP CICD-SEC-7, CICD-SEC-4 · ESF ESF-D-LEAST-PRIV
+
+Cloud Build doesn't sandbox the ``dir:`` value beyond a join against ``/workspace``. ``dir: ../etc`` resolves to ``/etc`` inside the builder container, which is rarely the intent. The check fires on any literal ``..`` segment; single-dot ``./`` and absolute paths are fine.
+
+**Recommended action**
+
+Replace ``..`` traversals in ``dir:`` with absolute paths rooted under ``/workspace`` (e.g. ``dir: /workspace/sub``) or split the work across multiple steps that each set ``dir:`` to an exact subdirectory. The Cloud Build worker starts each step with the workspace mounted at ``/workspace``; a ``..`` escape from there reaches the builder image's root filesystem and any credentials the image carries.
+
+## GCB-017 — Image-producing build does not request SLSA provenance
+**Severity:** MEDIUM · OWASP CICD-SEC-3, CICD-SEC-10 · ESF ESF-S-PROVENANCE
+
+SLSA Build Level 2 requires that the build platform produce signed provenance. Cloud Build's ``VERIFIED`` verify option is the documented way to opt in. The check is silent when the build does not produce an image (no top-level ``images:`` and no ``docker push`` / ``gcloud run deploy`` style steps); for those, signing and provenance aren't applicable.
+
+**Recommended action**
+
+Set ``options.requestedVerifyOption: VERIFIED`` on builds that publish container images. Cloud Build then emits a signed SLSA provenance attestation alongside the image, which downstream verifiers (Binary Authorization, cosign verify-attestation, gcloud artifacts docker images describe) can use to check that an image was built by the configured pipeline rather than smuggled in from elsewhere.
+
+## GCB-018 — Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager)
+**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+
+Cloud Build supports two secret-injection mechanisms. The older ``secrets:`` block carries KMS-encrypted ciphertext directly in the YAML; the cipher is decrypted at build time if the build's service account has ``cloudkms.cryptoKeyDecrypter`` on the key. The newer ``availableSecrets`` block references Secret Manager versions by URL, which is the documented modern approach. The legacy form still works, but rotating a value means re-encrypting and committing a new ciphertext.
+
+**Recommended action**
+
+Migrate from the top-level ``secrets:`` block (KMS-encrypted values stored inline in the YAML) to ``availableSecrets`` + Secret Manager. Replace each ``secrets[].secretEnv`` mapping with a ``versionName`` reference under ``availableSecrets.secretManager``. Secret Manager rotates without re-encrypting and re-committing the YAML, scopes access via IAM rather than the KMS key's IAM, and produces an explicit audit log entry on every read.
 
 ---
 

@@ -110,3 +110,49 @@ spec:
     - name: ssh
       port: 22
       targetPort: 22
+---
+# Namespace without PSA enforce label — exercises K8S-023.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: insecure-apps
+  labels:
+    team: platform
+---
+# Deployment using a system-* priority class outside kube-system —
+# exercises K8S-025 (and K8S-024: containers have no probes).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-priority
+  namespace: insecure-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-priority
+  template:
+    metadata:
+      labels:
+        app: insecure-priority
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: worker
+          image: busybox@sha256:0000000000000000000000000000000000000000000000000000000000000002
+          command: ["sleep", "infinity"]
+---
+# LoadBalancer Service without source ranges — exercises K8S-026.
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-public-lb
+  namespace: insecure-apps
+spec:
+  type: LoadBalancer
+  selector:
+    app: insecure-priority
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

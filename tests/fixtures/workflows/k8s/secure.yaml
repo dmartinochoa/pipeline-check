@@ -67,6 +67,17 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "100m"
+          # K8S-024 safe: at least one health probe declared.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            periodSeconds: 5
       # K8S-013/014 safe: configMap volume, not hostPath.
       volumes:
         - name: app-config
@@ -139,3 +150,33 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+---
+# Namespace — K8S-023 safe: PSA enforce label set to ``restricted``.
+# K8S-025 safe: workloads in this namespace use the default
+# priorityClass; the system-* classes are reserved for kube-system.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-apps
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+# LoadBalancer Service — K8S-026 safe: source ranges restrict
+# inbound traffic to a known office CIDR + a peered VPC.
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-app-lb
+  namespace: secure-apps
+spec:
+  type: LoadBalancer
+  selector:
+    app: secure-app
+  ports:
+    - name: https
+      port: 443
+      targetPort: 8443
+  loadBalancerSourceRanges:
+    - 198.51.100.0/24
+    - 203.0.113.0/24

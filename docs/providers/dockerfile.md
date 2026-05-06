@@ -62,6 +62,8 @@ analogue in other providers:
 | DF-012 | RUN invokes sudo | HIGH |
 | DF-013 | EXPOSE declares sensitive remote-access port | CRITICAL |
 | DF-014 | WORKDIR set to a system / kernel filesystem path | CRITICAL |
+| DF-015 | RUN grants world-writable permissions (chmod 777 / a+w) | MEDIUM |
+| DF-016 | Image lacks OCI provenance labels | LOW |
 
 ---
 
@@ -190,6 +192,24 @@ Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``AD
 **Recommended action**
 
 Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories — pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
+
+## DF-015 — RUN grants world-writable permissions (chmod 777 / a+w)
+**Severity:** MEDIUM · OWASP CICD-SEC-7 · ESF ESF-D-LEAST-PRIV
+
+World-writable directories under ``/`` are an established container-escape vector: any compromised process running as non-root can drop a payload that root-owned daemons later execute. The rule fires on the literal ``777``, ``a+w``, and ``a+rwx`` modes; the more conservative ``775`` and ``ugo+x`` are not flagged.
+
+**Recommended action**
+
+Replace ``chmod 777 <path>`` with the narrowest permissions the workload actually needs. ``chmod 755`` is enough for executables under a read-only root filesystem; ``640`` or ``600`` for files the runtime user reads. ``a+w`` is almost always copy-pasted from a SO answer and almost never the correct fix.
+
+## DF-016 — Image lacks OCI provenance labels
+**Severity:** LOW · OWASP CICD-SEC-3, CICD-SEC-10 · ESF ESF-S-PROVENANCE, ESF-S-IMMUTABLE
+
+The OCI image-spec annotation set is a small de facto standard maintained by the OCI working group. Only ``image.source`` and ``image.revision`` are checked because they're the two whose absence makes incident response materially harder; ``image.title`` / ``image.description`` are nice-to-have but the rule doesn't fire on those.
+
+**Recommended action**
+
+Add a ``LABEL`` line carrying at least ``org.opencontainers.image.source`` (the URL of the source repo) and ``org.opencontainers.image.revision`` (the commit SHA built into the image). Most registries surface those fields in the UI and on ``manifest inspect``, which closes the source-to-image gap that GHA-006 / SLSA Build-L2 provenance attestation also addresses.
 
 ---
 

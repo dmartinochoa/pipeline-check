@@ -32,9 +32,11 @@ ADD ./config.json /opt/config.json
 # DF-010: apt-get dist-upgrade pulls unknown package versions.
 # DF-011: apt-get install without same-layer cache cleanup.
 # DF-012: sudo invocation inside RUN.
+# DF-015: chmod 777 grants world-writable permissions.
 RUN apt-get update && apt-get dist-upgrade -y && \
     apt-get install -y curl wget && \
     sudo chown -R nobody /opt && \
+    chmod 777 /opt/shared && \
     curl -fsSL https://example.com/install.sh | bash && \
     eval "$BUILD_CMD" && \
     docker run --privileged builder-image make all
@@ -46,5 +48,7 @@ EXPOSE 22
 
 # DF-002: no USER directive — image runs as root.
 # DF-007: no HEALTHCHECK directive.
+# DF-016: no LABEL line declares OCI provenance fields
+# (``org.opencontainers.image.source`` / ``image.revision``).
 
 CMD ["python", "app.py"]
