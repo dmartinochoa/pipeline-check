@@ -30,7 +30,7 @@ TESTS_DIR = REPO / "tests"
 # Provider package -> minimum acceptable test coverage (percent).
 # Set to the floor as of v0.4.0; ratchet upward over time.
 PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
-    "github":     ("pipeline_check.core.checks.github.rules",     65),
+    "github":     ("pipeline_check.core.checks.github.rules",     75),
     "gitlab":     ("pipeline_check.core.checks.gitlab.rules",     70),
     "bitbucket":  ("pipeline_check.core.checks.bitbucket.rules",  65),
     "azure":      ("pipeline_check.core.checks.azure.rules",      65),
