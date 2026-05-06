@@ -60,6 +60,8 @@ jobs:
           ruff check pipeline_check/ tests/
 
       - name: Type check with mypy
+        # Kept non-blocking while the type-annotation pass is ongoing.
+        # Flip when clean.
         run: |
           pip install mypy
           mypy pipeline_check/ --ignore-missing-imports

@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-05-06
+
+### Changed
+
+- **GitHub Actions workflow audit.** `pypi-publish.yml` was duplicating
+  `release.yml`'s tag-push behavior without the version-vs-wheel
+  guard, which is the failure mode that produced the v0.3.1 mess.
+  Auto-trigger removed; it stays as a manual-only fallback path with
+  its own pyproject-version check. `docs.yml` and `pypi-publish.yml`
+  checkout steps now set `persist-credentials: false` (GHA-002).
+  `localstack-test.yml` pins LocalStack Pro to `:3` instead of
+  `:latest` so a major-version bump can't surprise CI.
+- README now uses `pipeline_check` long_description's logo URL pinned
+  to the absolute `raw.githubusercontent.com` path. The relative
+  `docs/logo.png` no longer rendered on PyPI after MANIFEST.in
+  pruned `docs/` from the sdist.
+
+### Fixed
+
+- Removed dead-code import block in `tests/test_doc_claims.py`
+  (`_count_awslike_checks` was never called and the imports were
+  flagged by ruff F401 in CI on Windows).
+
 ## [0.3.2] - 2026-05-06
 
 0.3.1 was tagged but the version-vs-tag guard caught that the bump

@@ -72,28 +72,6 @@ def _count_attack_chains() -> int:
     )
 
 
-# Per-provider check counts that aren't in a ``rules/`` directory.
-# AWS, Terraform, and CloudFormation each carry their checks inside a
-# single class hierarchy rather than as one-rule-per-file. We count
-# them by importing the orchestrator and asking how many checks it
-# would run, same as ``Scanner`` does at runtime, so the test sees
-# exactly the catalog the user gets.
-def _count_awslike_checks() -> int:
-    """Count distinct check IDs reachable via the AWS, Terraform, and
-    CloudFormation provider stacks, without invoking AWS APIs."""
-    from pipeline_check.core.checks.aws.iam import IAMChecks  # noqa: F401
-    from pipeline_check.core.checks.aws import (
-        codebuild, codepipeline, codedeploy, ecr, iam, s3, cloudtrail,
-        cloudwatch_logs, secrets_manager, codeartifact, codecommit,
-        lambda_ as lambda_mod, kms, ssm, eventbridge, signer,
-    )
-    # Walk every "Check" suffix class and count its run() output IDs
-    # would be heavy; instead count rule files where the provider
-    # uses that pattern, falling back to a conservative count for
-    # AWS/TF/CFN derived from the README provider table.
-    return _count_rule_files()
-
-
 def _count_rule_files() -> int:
     """Count one-rule-per-file modules under every provider's rules/ dir."""
     checks_dir = REPO / "pipeline_check" / "core" / "checks"
