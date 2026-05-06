@@ -590,3 +590,142 @@ class TestGCB011TLSBypass:
         after = autofix.generate_fix(_finding("GCB-011"), cb)
         assert after is not None
         assert "TODO(pipelineguard): remove TLS/SSL verification bypass" in after
+
+
+# ── Dockerfile comment-only TODO fixers ───────────────────────────────
+
+
+class TestDF001PinTODO:
+    def test_inserts_todo_above_floating_from(self):
+        df = "FROM python:3.12-slim\nRUN echo hi\n"
+        after = autofix.generate_fix(_finding("DF-001"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-001)" in after
+        idx_todo = after.index("TODO(pipelineguard DF-001)")
+        idx_from = after.index("FROM python:3.12-slim")
+        assert idx_todo < idx_from
+
+    def test_skips_already_digest_pinned(self):
+        df = "FROM python@sha256:" + "0" * 63 + "1\n"
+        assert autofix.generate_fix(_finding("DF-001"), df) is None
+
+    def test_handles_multistage_partially_pinned(self):
+        # First FROM is digest-pinned (skipped), second is floating
+        # (annotated). Only one TODO inserted.
+        df = (
+            "FROM python@sha256:" + "0" * 63 + "1 AS build\n"
+            "RUN make\n"
+            "FROM debian:12.5\n"
+            "COPY --from=build /out /app\n"
+        )
+        after = autofix.generate_fix(_finding("DF-001"), df)
+        assert after is not None
+        assert after.count("TODO(pipelineguard DF-001)") == 1
+
+    def test_idempotent_after_run(self):
+        df = "FROM debian:12.5\n"
+        once = autofix.generate_fix(_finding("DF-001"), df)
+        assert once is not None
+        assert autofix.generate_fix(_finding("DF-001"), once) is None
+
+
+class TestDF002UserTODO:
+    def test_inserts_todo_above_cmd(self):
+        df = "FROM debian:12.5\nCMD [\"sh\"]\n"
+        after = autofix.generate_fix(_finding("DF-002"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-002)" in after
+        idx_todo = after.index("TODO(pipelineguard DF-002)")
+        idx_cmd = after.index("CMD")
+        assert idx_todo < idx_cmd
+
+    def test_skips_when_user_directive_present(self):
+        df = "FROM debian:12.5\nUSER appuser\nCMD [\"sh\"]\n"
+        assert autofix.generate_fix(_finding("DF-002"), df) is None
+
+    def test_no_op_when_no_cmd_or_entrypoint(self):
+        df = "FROM debian:12.5\nRUN echo hi\n"
+        assert autofix.generate_fix(_finding("DF-002"), df) is None
+
+
+class TestDF007HealthCheckTODO:
+    def test_inserts_todo_above_cmd(self):
+        df = "FROM debian:12.5\nCMD [\"sh\"]\n"
+        after = autofix.generate_fix(_finding("DF-007"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-007)" in after
+
+    def test_skips_when_healthcheck_present(self):
+        df = (
+            "FROM debian:12.5\n"
+            "HEALTHCHECK CMD curl -fsS http://localhost/healthz || exit 1\n"
+            "CMD [\"sh\"]\n"
+        )
+        assert autofix.generate_fix(_finding("DF-007"), df) is None
+
+
+class TestDF013ExposeSSHTODO:
+    def test_inserts_todo_above_expose_22(self):
+        df = "FROM debian:12.5\nEXPOSE 22\n"
+        after = autofix.generate_fix(_finding("DF-013"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-013)" in after
+
+    def test_no_op_for_application_port(self):
+        df = "FROM debian:12.5\nEXPOSE 8080\n"
+        assert autofix.generate_fix(_finding("DF-013"), df) is None
+
+    def test_idempotent(self):
+        df = "FROM debian:12.5\nEXPOSE 22\n"
+        once = autofix.generate_fix(_finding("DF-013"), df)
+        assert once is not None
+        assert autofix.generate_fix(_finding("DF-013"), once) is None
+
+
+class TestDF017PathTODO:
+    def test_inserts_todo_above_tmp_prepend(self):
+        df = "FROM debian:12.5\nENV PATH=/tmp:$PATH\n"
+        after = autofix.generate_fix(_finding("DF-017"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-017)" in after
+
+    def test_no_op_when_writable_dir_at_tail(self):
+        # Tail-position writable entry is harmless — system bins shadow
+        # it. The fixer mirrors the rule's logic, so it shouldn't fire.
+        df = "FROM debian:12.5\nENV PATH=$PATH:/tmp\n"
+        assert autofix.generate_fix(_finding("DF-017"), df) is None
+
+    def test_no_op_when_path_is_only_system_bins(self):
+        df = "FROM debian:12.5\nENV PATH=/usr/bin:/usr/local/bin\n"
+        assert autofix.generate_fix(_finding("DF-017"), df) is None
+
+
+# ── Cloud Build comment-only TODO fixer (GCB-007) ────────────────────
+
+
+class TestGCB007LatestVersionTODO:
+    def test_inserts_todo_above_versions_latest(self):
+        cb = (
+            "availableSecrets:\n"
+            "  secretManager:\n"
+            "    - versionName: projects/p/secrets/db/versions/latest\n"
+            "      env: DB_PASS\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-007"), cb)
+        assert after is not None
+        assert "TODO(pipelineguard GCB-007)" in after
+
+    def test_no_op_when_pinned_version(self):
+        cb = (
+            "availableSecrets:\n"
+            "  secretManager:\n"
+            "    - versionName: projects/p/secrets/db/versions/7\n"
+            "      env: DB_PASS\n"
+        )
+        assert autofix.generate_fix(_finding("GCB-007"), cb) is None
+
+    def test_idempotent(self):
+        cb = "    - versionName: projects/p/secrets/db/versions/latest\n"
+        once = autofix.generate_fix(_finding("GCB-007"), cb)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GCB-007"), once) is None

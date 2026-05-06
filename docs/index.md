@@ -18,7 +18,7 @@ hide:
 A read-only scanner for twelve providers — eleven file-based formats and
 live AWS via boto3 — graded against the OWASP Top 10 CI/CD Risks plus
 twelve compliance frameworks. Every finding ships with a control mapping
-and a written remediation; 81 of the 430+ checks also emit a one-shot
+and a written remediation; 87 of the 430+ checks also emit a one-shot
 patch you can apply with <code>--fix</code>.
 </p>
 
@@ -54,7 +54,7 @@ patch you can apply with <code>--fix</code>.
   <div class="pg-stat"><div class="pg-stat__num">430+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">12</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">81</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">87</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 

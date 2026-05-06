@@ -47,6 +47,12 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
+extra_javascript:
+  # Click-to-sort on every <table> inside <article>. Self-hosted (no
+  # CDN call) so the docs site stays consistent with the no-telemetry
+  # claim on the home page. Tables can opt out via class="no-sort".
+  - javascripts/tablesort.js
+
 extra:
   generator: false
   social:

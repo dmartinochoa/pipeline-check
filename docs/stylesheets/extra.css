@@ -753,7 +753,11 @@ body:has(.pg-home) .md-footer__inner {
   color: color-mix(in oklab, var(--md-default-fg-color) 50%, transparent);
 }
 
-/* Home page: search keeps the white-tint treatment over navy. */
+/* Home page: search keeps the white-tint treatment over navy. The
+   inner-page search input inherits the body palette via
+   ``.md-search__input { color: var(--md-default-fg-color) }`` above —
+   if those rules are dropped, light-mode search text becomes invisible
+   on the white-near header. */
 body:has(.pg-home) .md-search__form {
   background: rgba(255, 255, 255, 0.08);
 }
@@ -764,10 +768,6 @@ body:has(.pg-home) .md-search__input { color: var(--pg-text-on-dark); }
 body:has(.pg-home) .md-search__input::placeholder {
   color: rgba(255, 255, 255, 0.55);
 }
-.md-search__input {
-  color: var(--pg-text-on-dark);
-}
-.md-search__input::placeholder { color: rgba(255, 255, 255, 0.55); }
 
 /* ============================================================
    Landing page
@@ -958,12 +958,21 @@ body:has(.pg-home) {
    shadow so the button reads as a foreground element regardless of
    where it sits on the gradient. White text on teal gives ~4.7:1
    contrast (WCAG AA for large text), and a subtle text-shadow keeps
-   the legibility honest if the user resizes the page or zooms. */
+   the legibility honest if the user resizes the page or zooms.
+
+   ``!important`` on color/background/border because Material's own
+   ``.md-typeset .md-button--primary`` rule reaches the same
+   specificity (0,2,0) by way of the ``md-typeset`` page wrapper, and
+   the cascade resolution depends on stylesheet order. The hero CTA
+   is one of the most visible elements on the site — explicit beats
+   subtle here. */
 .pg-hero__cta .md-button--primary,
-.pg-cta .md-button--primary {
-  background: var(--pg-teal-400);
-  border: 1px solid var(--pg-teal-300);
-  color: #ffffff;
+.pg-cta .md-button--primary,
+.md-typeset .pg-hero__cta .md-button--primary,
+.md-typeset .pg-cta .md-button--primary {
+  background: var(--pg-teal-400) !important;
+  border: 1px solid var(--pg-teal-300) !important;
+  color: #ffffff !important;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.10) inset,
@@ -971,10 +980,12 @@ body:has(.pg-home) {
 }
 
 .pg-hero__cta .md-button--primary:hover,
-.pg-cta .md-button--primary:hover {
-  background: var(--pg-teal-300);
-  border-color: var(--pg-teal-300);
-  color: #ffffff;
+.pg-cta .md-button--primary:hover,
+.md-typeset .pg-hero__cta .md-button--primary:hover,
+.md-typeset .pg-cta .md-button--primary:hover {
+  background: var(--pg-teal-300) !important;
+  border-color: var(--pg-teal-300) !important;
+  color: #ffffff !important;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.40);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.14) inset,
@@ -1779,5 +1790,165 @@ body:has(.pg-home) {
   flex-wrap: wrap;
   gap: 0.65rem;
   margin-top: 1.5rem;
+}
+
+/* ── Sortable tables ─────────────────────────────────────────────────
+   Every <th> that ``tablesort.js`` attaches a handler to gets the
+   ``pg-sortable`` class. The chevron is drawn via ``::after`` so we
+   don't have to touch the markdown source. Three states:
+
+   - default (``aria-sort="none"``): faint up-down chevron (¦),
+     hinting "click me to sort"
+   - ascending (``aria-sort="ascending"``): solid ▲
+   - descending (``aria-sort="descending"``): solid ▼
+
+   Cursor + hover affordance signals interactivity without changing
+   the layout. The header keeps its column width because the chevron
+   is ``inline-block`` and reserves its own space at all three states. */
+th.pg-sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  /* Reserve room for the chevron so the column doesn't shift when the
+     state flips between ascending and descending. */
+  padding-right: 1.4em !important;
+}
+
+th.pg-sortable:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+th.pg-sortable::after {
+  content: "↕";
+  display: inline-block;
+  position: absolute;
+  right: 0.55em;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.4;
+  font-size: 0.85em;
+  transition: opacity 0.15s ease;
+}
+
+th.pg-sortable:hover::after {
+  opacity: 0.75;
+}
+
+th.pg-sortable.pg-sort-asc::after {
+  content: "▲";
+  opacity: 0.95;
+  color: var(--pg-teal-300);
+}
+
+th.pg-sortable.pg-sort-desc::after {
+  content: "▼";
+  opacity: 0.95;
+  color: var(--pg-teal-300);
+}
+
+/* Keyboard focus ring — keeps the affordance accessible. The header
+   gets ``role="button" tabindex="0"`` from the JS, so Tab lands on
+   each sortable header. */
+th.pg-sortable:focus-visible {
+  outline: 2px solid var(--pg-teal-300);
+  outline-offset: -2px;
+}
+
+/* ============================================================
+   Mobile / drawer cleanup pass
+   ============================================================
+   Several rules on the home page (``body:has(.pg-home) ...``)
+   intentionally repaint the header / tabs / outer chrome navy so
+   the hero gradient bleeds edge to edge. At widths where Material
+   collapses the primary nav into a slide-out drawer (< 76.25em),
+   the drawer is *inside* the body and inherits some of those rules
+   by accident — drawer titles render in white-on-white, the inner
+   nav shows a navy band where Material expects the body palette,
+   and the header strip on top of the drawer looks mismatched
+   against the drawer body.
+
+   This block resets the drawer (``.md-sidebar--primary`` at narrow
+   widths) to the page palette, regardless of whether the page that
+   opened it is the navy-hero home or a regular doc page.
+   ============================================================ */
+
+@media screen and (max-width: 76.1875em) {
+  /* Drawer surface uses the page palette, even when the home page's
+     navy chrome is in effect. Material renders the drawer with its
+     own background by default; the home rules don't touch
+     ``.md-sidebar--primary``, but the drawer's nested ``.md-nav__title``
+     bar is positioned absolutely against the drawer's top edge and
+     can pick up the home-scoped navy header background unless we
+     pin it. Belt-and-braces explicit reset here. */
+  body:has(.pg-home) .md-sidebar--primary,
+  body:has(.pg-home) .md-sidebar--primary .md-nav,
+  body:has(.pg-home) .md-sidebar--primary .md-nav__title {
+    background: var(--md-default-bg-color);
+    color: var(--md-default-fg-color);
+  }
+
+  body:has(.pg-home) .md-sidebar--primary .md-nav__link,
+  body:has(.pg-home) .md-sidebar--primary .md-nav__title {
+    color: var(--md-default-fg-color);
+  }
+
+  /* Drawer header bar — Material draws a thin top strip with the
+     site title. Give it a hairline bottom border that matches the
+     surrounding page rather than the navy hero. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__title {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    box-shadow: none;
+  }
+
+  /* Bigger tap targets in the mobile drawer. Material's defaults
+     are fine for a mouse but tight on a thumb; bump the line
+     height to ~44px (Apple HIG / WCAG minimum tap target). */
+  .md-sidebar--primary .md-nav__link {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+    line-height: 1.4;
+  }
+
+  /* Wide tables (provider rule lists, NIST/OWASP control matrices)
+     don't fit a phone viewport. Material wraps them in a
+     ``data-md-component="table"`` div with ``overflow-x: auto``,
+     but only when the markdown table is the direct child of a
+     paragraph. Force the scrollable wrapper so any nested table
+     also gets it. The shadow on the right edge is a visual hint
+     that there's more content off-screen. */
+  .md-typeset__scrollwrap,
+  .md-typeset .pg-doc-cards,
+  .md-typeset table:not([class]) {
+    max-width: 100%;
+  }
+
+  .md-typeset table:not([class]) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hero — pull padding in slightly on phones so the band doesn't
+     monopolize the first viewport. clamp() already does most of
+     this; this just trims the lower bound. */
+  .pg-hero {
+    padding-top: 3rem;
+    padding-bottom: 3.25rem;
+  }
+
+  /* The home-page hides the prev/next footer nav (``body:has(.pg-home)
+     .md-footer__inner { display: none; }``). On mobile inner pages
+     the footer nav cards stack vertically by default — fine. No
+     extra rules needed here. */
+}
+
+/* Mid-screen TOC sidebar (``.md-sidebar--secondary``) overlap. At
+   widths where the secondary sidebar is shown but cramped (say
+   60-76em), Material lets it crowd the article. Hide it below the
+   primary breakpoint so the article gets the full content column. */
+@media screen and (max-width: 60em) {
+  .md-sidebar--secondary {
+    display: none;
+  }
 }
 
