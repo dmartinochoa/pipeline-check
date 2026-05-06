@@ -1,0 +1,141 @@
+# Hardened equivalent of insecure.yaml — every K8S-* check passes.
+# Each documented "safe" choice mirrors the failure that the insecure
+# fixture exercises. Multi-doc YAML is parsed into one Manifest per
+# document; the test asserts every check ID emits passed=True at least
+# once across the document set.
+---
+# Deployment — all container/pod-level checks pass.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-app
+  namespace: secure-apps          # K8S-019 safe: not 'default'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-app
+  template:
+    metadata:
+      labels:
+        app: secure-app
+    spec:
+      # K8S-002/003/004: host namespaces explicitly disabled.
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      # K8S-011: dedicated SA, not 'default'.
+      serviceAccountName: secure-app-sa
+      # K8S-012: SA token not auto-mounted.
+      automountServiceAccountToken: false
+      securityContext:
+        # Pod-level seccomp covers K8S-010 for every container.
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          # K8S-001 safe: pinned by sha256 digest.
+          image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          # K8S-017 safe: env values come from secretKeyRef, not literals.
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: secure-secret
+                  key: AWS_ACCESS_KEY_ID
+          securityContext:
+            # K8S-005 safe.
+            privileged: false
+            # K8S-006 safe.
+            allowPrivilegeEscalation: false
+            # K8S-007 safe.
+            runAsNonRoot: true
+            runAsUser: 1001
+            # K8S-008 safe.
+            readOnlyRootFilesystem: true
+            # K8S-009 safe: drop ALL, add nothing dangerous.
+            capabilities:
+              drop: ["ALL"]
+            # K8S-010 safe (also at container level for belt-and-braces).
+            seccompProfile:
+              type: RuntimeDefault
+          # K8S-015/016 safe.
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+      # K8S-013/014 safe: configMap volume, not hostPath.
+      volumes:
+        - name: app-config
+          configMap:
+            name: secure-app-config
+---
+# Secret — K8S-018 safe: stringData carries a non-credential-shaped
+# placeholder. Real secrets come from an external store (e.g. SealedSecrets,
+# ExternalSecrets, KMS-encrypted SOPS) and aren't committed.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secure-secret
+  namespace: secure-apps
+type: Opaque
+stringData:
+  CONFIG_PROFILE: production
+---
+# RoleBinding — K8S-020 safe: targets a narrow role, not cluster-admin.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: secure-binding
+  namespace: secure-apps
+subjects:
+  - kind: ServiceAccount
+    name: secure-app-sa
+    namespace: secure-apps
+roleRef:
+  kind: Role
+  name: secure-app-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# ClusterRoleBinding — K8S-020 safe: bound to a non-admin role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: secure-cluster-binding
+subjects:
+  - kind: ServiceAccount
+    name: secure-app-sa
+    namespace: secure-apps
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role — K8S-021 safe: explicit verbs and resources, no wildcards.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secure-app-reader
+  namespace: secure-apps
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+# Service — K8S-022 safe: exposes only the application port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-app
+  namespace: secure-apps
+spec:
+  type: ClusterIP
+  selector:
+    app: secure-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

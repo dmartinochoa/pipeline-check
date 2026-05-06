@@ -1,0 +1,112 @@
+# Realistic insecure Kubernetes manifest set exhibiting every K8S-* failure mode.
+# Each document below is intentionally configured to fail one or more rules so
+# the scanner exercises the full check matrix in one sweep. Placeholder
+# credentials use obvious throwaway values so secret scanners don't false-
+# positive on the fixture itself.
+---
+# Deployment — every container-level rule fires here.
+# K8S-001  : image floats on :latest tag, no @sha256 digest
+# K8S-002  : hostNetwork: true
+# K8S-003  : hostPID: true
+# K8S-004  : hostIPC: true
+# K8S-005  : container securityContext.privileged: true
+# K8S-006  : allowPrivilegeEscalation defaults to true (not explicitly false)
+# K8S-007  : runAsNonRoot not set; runAsUser is 0
+# K8S-008  : readOnlyRootFilesystem not set
+# K8S-009  : capabilities.add includes SYS_ADMIN, drop missing ALL
+# K8S-010  : seccompProfile not set
+# K8S-011  : serviceAccountName: default
+# K8S-012  : automountServiceAccountToken not explicitly false
+# K8S-013  : volume of type hostPath
+# K8S-014  : that hostPath references /var/run/docker.sock (sensitive)
+# K8S-015  : container has no resources.limits.memory
+# K8S-016  : container has no resources.limits.cpu
+# K8S-017  : env carries a credential-shaped literal value
+# K8S-019  : workload deployed in the 'default' namespace
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      serviceAccountName: default
+      containers:
+        - name: app
+          image: nginx:latest
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: AKIAIOSFODNN7EXAMPLE
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            capabilities:
+              add: ["SYS_ADMIN", "NET_ADMIN"]
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+---
+# Secret — exercises K8S-018 (literal credential in stringData).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: insecure-secret
+  namespace: default
+type: Opaque
+stringData:
+  AWS_SECRET_ACCESS_KEY: AKIAEXAMPLE0000000000FAKE
+---
+# ClusterRoleBinding granting cluster-admin — exercises K8S-020.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insecure-binding
+subjects:
+  - kind: User
+    name: dev-team
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# ClusterRole with wildcard verbs+resources — exercises K8S-021.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insecure-wildcard-role
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+# Service exposing SSH (port 22) — exercises K8S-022.
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-ssh-jumpbox
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: insecure-app
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22

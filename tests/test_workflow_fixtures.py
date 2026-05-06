@@ -29,6 +29,8 @@ from pipeline_check.core.checks.gitlab.base import GitLabContext
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
 from pipeline_check.core.checks.jenkins.base import JenkinsContext
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
+from pipeline_check.core.checks.kubernetes.base import KubernetesContext
+from pipeline_check.core.checks.kubernetes.manifests import KubernetesManifestChecks
 
 FIXTURES = Path(__file__).parent / "fixtures" / "workflows"
 
@@ -289,6 +291,38 @@ class TestDockerfileFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Kubernetes manifests
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestKubernetesFixtures:
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 23)}
+
+    def _scan(self, filename: str):
+        ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
+        assert ctx.manifests, f"fixture {filename} produced no parsed manifests"
+        return _finding_map(KubernetesManifestChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every K8S check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every K8S check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Cross-provider sanity — findings carry control refs from enabled standards
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -314,6 +348,9 @@ class TestDockerfileFixtures:
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
      {f"DF-{i:03d}" for i in range(1, 15)}),
+    ("kubernetes", "k8s/insecure.yaml",
+     KubernetesContext, KubernetesManifestChecks,
+     {f"K8S-{i:03d}" for i in range(1, 23)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

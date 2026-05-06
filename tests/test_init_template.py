@@ -27,6 +27,7 @@ def test_render_without_detected_pipeline_emits_commented_placeholder():
 @pytest.mark.parametrize("name", [
     "github", "gitlab", "aws", "terraform", "cloudformation",
     "bitbucket", "azure", "jenkins", "circleci", "cloudbuild",
+    "dockerfile", "kubernetes",
 ])
 def test_render_with_detected_pipeline_uncomments_pipeline_line(name):
     out = init_template.render(name)

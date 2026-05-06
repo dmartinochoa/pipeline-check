@@ -218,5 +218,32 @@ STANDARD = Standard(
         "ADO-012":  ["4.4.6"],
         "CC-025":   ["4.4.6"],
         "CC-013":   ["4.4.6"],             # no branch filter = rogue input
+
+        # ── Kubernetes manifests ────────────────────────────────────
+        # K8s rules are doubly-mapped because most controls evidence
+        # both an image-config defect (4.1.2) AND an insecure runtime
+        # configuration (4.4.4 — privileged, host-namespace sharing).
+        # Orchestrator risks (4.3) are out of scope per the file
+        # docstring, so K8S-019..021 (RBAC, namespace) intentionally
+        # have no mapping here — they live in OWASP CICD-SEC-2/5.
+        "K8S-001":  ["4.1.5"],
+        "K8S-002":  ["4.4.4"],
+        "K8S-003":  ["4.4.4"],
+        "K8S-004":  ["4.4.4"],
+        "K8S-005":  ["4.1.2", "4.4.4"],
+        "K8S-006":  ["4.1.2", "4.4.4"],
+        "K8S-007":  ["4.1.2", "4.4.4"],
+        "K8S-008":  ["4.1.2", "4.4.4"],
+        "K8S-009":  ["4.1.2", "4.4.4"],
+        "K8S-010":  ["4.1.2", "4.4.4"],
+        "K8S-011":  ["4.1.2"],
+        "K8S-012":  ["4.1.2"],
+        "K8S-013":  ["4.4.4"],
+        "K8S-014":  ["4.4.4"],
+        "K8S-015":  ["4.4.4"],
+        "K8S-016":  ["4.4.4"],
+        "K8S-017":  ["4.1.4"],
+        "K8S-018":  ["4.1.4"],
+        "K8S-022":  ["4.4.4"],
     },
 )

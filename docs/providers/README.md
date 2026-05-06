@@ -46,6 +46,14 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Google Cloud Build</h3>
     <p>Parses <code>cloudbuild.yaml</code>. Substitution injection, secret retrieval, signing posture.</p>
   </a>
+  <a class="pg-doc-card" href="dockerfile/">
+    <h3>Dockerfile</h3>
+    <p>Parses <code>Dockerfile</code> / <code>Containerfile</code>. Image pinning, USER hygiene, secret-in-env, RUN posture.</p>
+  </a>
+  <a class="pg-doc-card" href="kubernetes/">
+    <h3>Kubernetes</h3>
+    <p>Parses manifest YAML (Deployment, Pod, Job, …). securityContext, hostPath, RBAC blast radius, Secret hygiene.</p>
+  </a>
 </div>
 
 ## Adding a new provider

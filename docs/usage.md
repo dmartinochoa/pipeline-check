@@ -25,9 +25,11 @@ pipeline_check
 
 Auto-detect looks for, in order: `.github/workflows/`, `.gitlab-ci.yml`,
 `bitbucket-pipelines.yml`, `azure-pipelines.yml`, `Jenkinsfile`,
-`.circleci/config.yml`, `cloudbuild.yaml`, CloudFormation templates
-(`*.yml`, `*.yaml`, `*.json` at repo root), Terraform plan JSON, and
-falls back to `aws` (live account scan) when nothing matches.
+`.circleci/config.yml`, `cloudbuild.yaml`, `Dockerfile`/`Containerfile`,
+CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
+a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
+Terraform plan JSON, and falls back to `aws` (live account scan)
+when nothing matches.
 
 ## Scan a specific provider
 
@@ -41,6 +43,8 @@ pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
 pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
 pipeline_check --pipeline cloudbuild --cloudbuild-path cloudbuild.yaml
+pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
+pipeline_check --pipeline kubernetes --k8s-path manifests/
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json

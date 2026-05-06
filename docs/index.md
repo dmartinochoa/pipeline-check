@@ -15,10 +15,10 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for ten CI/CD providers and live AWS — graded against
+A read-only scanner for eleven CI/CD providers and live AWS — graded against
 the OWASP Top 10 CI/CD Risks plus twelve compliance frameworks. Every
 finding ships with a control mapping and a written remediation; 68 of the
-330+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+370+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -154,8 +154,9 @@ to force one. Counts reflect the current rule catalogue.
   <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">29 checks</span></a>
   <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">31 checks</span></a>
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">31 checks</span></a>
-  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">9 checks</span></a>
+  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">15 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">14 checks</span></a>
+  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">22 checks</span></a>
 </div>
 </section>
 
@@ -169,7 +170,7 @@ to force one. Counts reflect the current rule catalogue.
 ```mermaid
 flowchart LR
     A[Repo or AWS account] -->|auto-detect| B[Provider]
-    B --> C[Rule engine<br/>330+ checks]
+    B --> C[Rule engine<br/>370+ checks]
     C --> D[Standards mapper<br/>OWASP · NIST · SLSA · …]
     D --> E[Scorer<br/>A/B/C/D]
     E --> F1[Terminal]

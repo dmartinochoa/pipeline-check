@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**330+ checks** across **11 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**370+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **68 autofixers** -- plus **8 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -62,12 +62,15 @@ standard boto3 credential chain.
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 15 checks (`GCB-001`--`015`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 14 checks (`DF-001`--`014`) |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 22 checks (`K8S-001`--`022`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
 security, package integrity, timeout enforcement, vulnerability scanning, TLS
-verification, and more. See [docs/providers/](docs/providers/) for the full
-per-check reference.
+verification, and more. The Kubernetes provider focuses on workload posture
+(image digest pinning, securityContext, hostPath / host-namespace exposure,
+RBAC blast radius, Secret hygiene). See [docs/providers/](docs/providers/)
+for the full per-check reference.
 
 ---
 
@@ -75,7 +78,7 @@ per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   283 checks across 10 providers
+  Config files   |  Scanner  |   370+ checks across 12 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -295,13 +298,15 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-029
-        ├── gitlab/rules/      # GL-001 .. GL-030
-        ├── bitbucket/rules/   # BB-001 .. BB-027
-        ├── azure/rules/       # ADO-001 .. ADO-028
+        ├── github/rules/      # GHA-001 .. GHA-033
+        ├── gitlab/rules/      # GL-001 .. GL-031
+        ├── bitbucket/rules/   # BB-001 .. BB-028
+        ├── azure/rules/       # ADO-001 .. ADO-029
         ├── jenkins/rules/     # JF-001 .. JF-031
-        ├── circleci/rules/    # CC-001 .. CC-030
-        └── cloudbuild/rules/  # GCB-001 .. GCB-015
+        ├── circleci/rules/    # CC-001 .. CC-031
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-015
+        ├── dockerfile/rules/  # DF-001 .. DF-014
+        └── kubernetes/rules/  # K8S-001 .. K8S-022
 ```
 
 Adding a new check is a one-file change. Adding a new provider is three files.
