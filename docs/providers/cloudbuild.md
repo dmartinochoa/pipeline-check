@@ -37,198 +37,407 @@ analogue in other providers:
 
 | Check | Title | Severity |
 |-------|-------|----------|
-| GCB-001 | Cloud Build step image not pinned by digest | HIGH |
-| GCB-002 | Cloud Build uses the default service account | HIGH |
-| GCB-003 | Secret Manager value referenced in step args | HIGH |
-| GCB-004 | dynamicSubstitutions on with user substitutions in step args | HIGH |
-| GCB-005 | Build timeout unset or excessive | LOW |
-| GCB-006 | Dangerous shell idiom (eval, sh -c variable, backtick exec) | HIGH |
-| GCB-007 | availableSecrets references ``versions/latest`` | MEDIUM |
-| GCB-008 | No vulnerability scanning step in Cloud Build pipeline | MEDIUM |
-| GCB-009 | Artifacts not signed (no cosign / sigstore step) | MEDIUM |
-| GCB-010 | Remote script piped to shell interpreter | HIGH |
-| GCB-011 | TLS / certificate verification bypass | HIGH |
-| GCB-012 | Credential-shaped literal in pipeline body | CRITICAL |
-| GCB-013 | Package install bypasses registry integrity (git / path / tarball) | MEDIUM |
-| GCB-014 | Build logging disabled (options.logging: NONE) | HIGH |
-| GCB-015 | SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) | MEDIUM |
-| GCB-016 | Step dir field contains parent-directory escape (..) | MEDIUM |
-| GCB-017 | Image-producing build does not request SLSA provenance | MEDIUM |
-| GCB-018 | Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) | MEDIUM |
-| GCB-019 | Shell entrypoint inlines a user substitution into args | HIGH |
+| [GCB-001](#gcb-001) | Cloud Build step image not pinned by digest | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-002](#gcb-002) | Cloud Build uses the default service account | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-003](#gcb-003) | Secret Manager value referenced in step args | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-004](#gcb-004) | dynamicSubstitutions on with user substitutions in step args | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-005](#gcb-005) | Build timeout unset or excessive | <span class="pg-sev pg-sev--low">LOW</span> |
+| [GCB-006](#gcb-006) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-007](#gcb-007) | availableSecrets references ``versions/latest`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-008](#gcb-008) | No vulnerability scanning step in Cloud Build pipeline | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-009](#gcb-009) | Artifacts not signed (no cosign / sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-010](#gcb-010) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-011](#gcb-011) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-012](#gcb-012) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> |
+| [GCB-013](#gcb-013) | Package install bypasses registry integrity (git / path / tarball) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-014](#gcb-014) | Build logging disabled (options.logging: NONE) | <span class="pg-sev pg-sev--high">HIGH</span> |
+| [GCB-015](#gcb-015) | SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-016](#gcb-016) | Step dir field contains parent-directory escape (..) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-017](#gcb-017) | Image-producing build does not request SLSA provenance | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-018](#gcb-018) | Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |
+| [GCB-019](#gcb-019) | Shell entrypoint inlines a user substitution into args | <span class="pg-sev pg-sev--high">HIGH</span> |
 
 ---
 
-## GCB-001 — Cloud Build step image not pinned by digest
-**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-001 — Cloud Build step image not pinned by digest { #gcb-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
 
 Bare references (``gcr.io/cloud-builders/docker``) are treated as ``:latest`` by Cloud Build. Tag-only references (``:20``, ``:latest``) count as unpinned. Only ``@sha256:…`` suffixes pass.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Pin every ``steps[].name`` image to an ``@sha256:<digest>`` suffix. ``gcr.io/cloud-builders/docker:latest`` is mutable; Google publishes new builder images frequently and the next build would pull whatever is current. Resolve the digest with ``gcloud artifacts docker images describe <ref> --format='value(image_summary.digest)'`` and pin it.
 
-## GCB-002 — Cloud Build uses the default service account
-**Severity:** HIGH · OWASP CICD-SEC-2 · ESF ESF-D-IDENTITY, ESF-D-LEAST-PRIV
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-002 — Cloud Build uses the default service account { #gcb-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-IDENTITY</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
+</div>
 
 The default Cloud Build service account historically held ``roles/cloudbuild.builds.builder`` plus project-level editor in many organisations. Even under the GCP April-2024 default-identity change, the default SA is still broader than what a single pipeline needs. Explicit ``serviceAccount:`` is required to pass.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Create a dedicated service account for the build, grant it only the roles the pipeline actually needs (``roles/artifactregistry.writer``, ``roles/storage.objectCreator`` for artifact upload, etc.), and set ``serviceAccount: projects/<PROJECT>/serviceAccounts/<NAME>@...``. Leaving it unset falls back to the default Cloud Build SA, which accumulates roles over a project's lifetime and is routinely granted ``roles/editor``.
 
-## GCB-003 — Secret Manager value referenced in step args
-**Severity:** HIGH · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-003 — Secret Manager value referenced in step args { #gcb-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
+</div>
 
 Detection patterns: literal ``projects/<n>/secrets/<name>/versions/...`` URIs, ``gcloud secrets versions access`` shell invocations, and ``$(gcloud secrets …)`` command substitutions in step args or entrypoint.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Map the secret under ``availableSecrets.secretManager[]`` with an ``env:`` alias, then reference it from each step via ``secretEnv: [ALIAS]``. Avoid inline ``gcloud secrets versions access`` in ``args`` — the resolved plaintext lands in build logs.
 
-## GCB-004 — dynamicSubstitutions on with user substitutions in step args
-**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-S-INPUT-VAL
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-004 — dynamicSubstitutions on with user substitutions in step args { #gcb-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-INPUT-VAL</span> <span class="pg-tag pg-tag--cwe">CWE-78</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
 
 The ``_``-prefix is Cloud Build's naming convention for user substitutions; they are editable via build trigger UI, ``gcloud builds submit --substitutions``, and the REST API. Built-in substitutions (``$PROJECT_ID``, ``$COMMIT_SHA``, ``$BUILD_ID``) are derived from the trigger event and are *not* treated as user-controlled by this rule.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Either disable ``options.dynamicSubstitutions`` (it defaults to false) or move user substitutions (``$_FOO``) out of step ``args`` — pass them through ``env:`` and reference them inside a shell script the builder runs. Dynamic substitution re-evaluates bash syntax after variable expansion, giving trigger-config editors a script-injection channel.
 
-## GCB-005 — Build timeout unset or excessive
-**Severity:** LOW · OWASP CICD-SEC-7 · ESF ESF-C-RESOURCE-LIMITS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## GCB-005 — Build timeout unset or excessive { #gcb-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-C-RESOURCE-LIMITS</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
+</div>
 
 Cloud Build's default 10-minute timeout applies silently when ``timeout:`` is absent. Accepted format is ``<N>s`` (seconds); ``<N>m``/``<N>h`` forms are a gcloud convenience and are treated as malformed by the API.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Declare an explicit ``timeout:`` at the top of ``cloudbuild.yaml`` bounded to the build's realistic worst case (e.g. ``1800s`` for most container builds). Explicit bounds shorten the window a compromised build can spend on a shared worker and flag regressions when a legitimate step slows down.
 
-## GCB-006 — Dangerous shell idiom (eval, sh -c variable, backtick exec)
-**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-D-INJECTION
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-006 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #gcb-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
+</div>
 
 Complements GCB-004 (dynamicSubstitutions + user substitution in args). GCB-006 fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the substitution source is currently trusted.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary. In Cloud Build these idioms typically appear in ``args: [-c, ...]`` entries under a bash entrypoint.
 
-## GCB-007 — availableSecrets references ``versions/latest``
-**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS, ESF-S-PIN-DEPS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-007 — availableSecrets references ``versions/latest`` { #gcb-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span>
+</div>
 
 ``versions/latest`` is documented as a rolling alias. A build run on Monday and a re-run on Tuesday can consume different secret bodies without any change to ``cloudbuild.yaml`` — breaking the reproducibility invariant that pinning protects.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Pin each ``availableSecrets.secretManager[].versionName`` to a specific version number (``.../versions/7``) rather than ``latest``. Rotate by updating the number when a new version is promoted, not by silently publishing a new version that the next build pulls.
 
-## GCB-008 — No vulnerability scanning step in Cloud Build pipeline
-**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-VULN-SCAN
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-008 — No vulnerability scanning step in Cloud Build pipeline { #gcb-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
 
 The detector matches tool names anywhere in the document — step images, ``args``, or ``entrypoint`` strings. Container Analysis API scanning configured at the project level counts as compensating control but is out of scope for this YAML-only check; if you rely on it, suppress this rule via ``--checks``.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Add a step that runs a vulnerability scanner — trivy, grype, snyk test, npm audit, pip-audit, osv-scanner, or govulncheck. In Cloud Build this typically looks like a step with ``name: aquasec/trivy`` or an ``entrypoint: bash`` step that invokes ``trivy image`` / ``grype <ref>`` on the built image.
 
-## GCB-009 — Artifacts not signed (no cosign / sigstore step)
-**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SIGN-ARTIFACTS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-009 — Artifacts not signed (no cosign / sigstore step) { #gcb-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
 
 Silent-pass when the pipeline does not appear to produce artifacts (no ``docker push`` / ``gcloud run deploy`` / ``kubectl apply`` / etc. in any step). The detector matches cosign, sigstore, slsa-framework, and notation.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Add a signing step before ``images:`` is resolved — for example, a step with ``name: gcr.io/projectsigstore/cosign`` that runs ``cosign sign --yes <registry>/<repo>@<digest>``. Pair with an attestation step (``cosign attest --predicate sbom.json --type cyclonedx``) so consumers can verify both the signature and the build provenance.
 
-## GCB-010 — Remote script piped to shell interpreter
-**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-010 — Remote script piped to shell interpreter { #gcb-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
 
 Detects ``curl | bash``, ``wget | sh``, ``bash -c "$(curl …)"``, inline ``python -c urllib.urlopen``, ``curl > x.sh && bash x.sh``, and PowerShell ``irm | iex`` idioms. Vendor-trusted hosts (rustup.rs, get.docker.com, sdk.cloud.google.com, …) are still flagged at HIGH but the hit carries a ``vendor_trusted`` marker so dashboards can stratify known-vendor installers from arbitrary attacker URLs.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository and invoke it from the checkout — removing the network fetch removes the attacker-controllable content entirely.
 
-## GCB-011 — TLS / certificate verification bypass
-**Severity:** HIGH · OWASP CICD-SEC-3 · ESF ESF-S-VERIFY-DEPS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-011 — TLS / certificate verification bypass { #gcb-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
+</div>
 
 Covers ``curl -k`` / ``wget --no-check-certificate``, ``git config http.sslVerify false``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``npm config set strict-ssl false``, ``PYTHONHTTPSVERIFY=0``, ``GOINSECURE=``, ``helm --insecure-skip-tls-verify``, ``kubectl --insecure-skip-tls-verify``, and ``ssh -o StrictHostKeyChecking=no``.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Fix the underlying certificate issue — install the correct CA bundle into the step image, or point the tool at a mirror that presents a valid chain. Disabling verification trades a build error for a silent MITM window.
 
-## GCB-012 — Credential-shaped literal in pipeline body
-**Severity:** CRITICAL · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GCB-012 — Credential-shaped literal in pipeline body { #gcb-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
+</div>
 
 Complements GCB-003 (inline ``gcloud secrets versions access``) and GCB-007 (``/versions/latest`` alias). This rule runs the shared credential-shape catalog against every string in the YAML — AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private key blocks, and any user-registered ``--secret-pattern`` regex. Known placeholders like ``EXAMPLE``/``CHANGEME`` are already filtered upstream so fixtures and docs don't false-match.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Rotate the exposed credential immediately. Move the value to ``availableSecrets.secretManager`` and reference it via ``secretEnv:`` so the plaintext never lands in the YAML or the build logs. For cloud access prefer workload-identity federation over long-lived keys.
 
-## GCB-013 — Package install bypasses registry integrity (git / path / tarball)
-**Severity:** MEDIUM · OWASP CICD-SEC-3 · ESF ESF-S-PIN-DEPS, ESF-S-VERIFY-DEPS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-013 — Package install bypasses registry integrity (git / path / tarball) { #gcb-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
 
 Complements GCB-012 (literal secrets) and GCB-010 (curl-pipe). Where those catch attacker content at fetch time, this rule catches installs that silently bypass the lockfile/registry integrity model — the build is technically reproducible but the source of truth is whatever the git ref / filesystem / tarball URL served most recently.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``, ``cargo install --git … --rev <sha>``). Publish private packages to Artifact Registry (or another internal registry) instead of installing from a filesystem path or tarball URL.
 
-## GCB-014 — Build logging disabled (options.logging: NONE)
-**Severity:** HIGH · OWASP CICD-SEC-10 · ESF ESF-O-AUDIT
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-014 — Build logging disabled (options.logging: NONE) { #gcb-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-O-AUDIT</span> <span class="pg-tag pg-tag--cwe">CWE-778</span>
+</div>
 
 ``options.logging`` defaults to ``CLOUD_LOGGING_ONLY`` when omitted, which passes. Only the explicit ``NONE`` value (case- insensitive) trips this rule. ``GCS_ONLY`` / ``LEGACY`` pass — they persist logs, just to a different destination.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Remove the ``logging: NONE`` override — or replace it with ``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY`` — so every step's stdout, stderr, and exit code is persisted. Loss of logs is a detection-and-response black hole; the storage cost is measured in cents.
 
-## GCB-015 — SBOM not produced (no CycloneDX / syft / Trivy-SBOM step)
-**Severity:** MEDIUM · OWASP CICD-SEC-9 · ESF ESF-D-SBOM
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-015 — SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) { #gcb-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
 
 Complements GCB-009 (signing) and GCB-008 (vuln scanning). Without an SBOM, downstream consumers cannot audit the exact dependency set shipped in a Cloud Build image, delaying vulnerability response when a transitive dep is disclosed. Pairs naturally with ``cosign attest --type cyclonedx`` in a follow-up step.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Add an SBOM generation step — ``syft <image> -o cyclonedx-json``, ``trivy image --format cyclonedx`` — and publish the resulting document alongside the image (typically via a cosign attestation so the SBOM travels with the artifact).
 
-## GCB-016 — Step dir field contains parent-directory escape (..)
-**Severity:** MEDIUM · OWASP CICD-SEC-7, CICD-SEC-4 · ESF ESF-D-LEAST-PRIV
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-016 — Step dir field contains parent-directory escape (..) { #gcb-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-22</span>
+</div>
 
 Cloud Build doesn't sandbox the ``dir:`` value beyond a join against ``/workspace``. ``dir: ../etc`` resolves to ``/etc`` inside the builder container, which is rarely the intent. The check fires on any literal ``..`` segment; single-dot ``./`` and absolute paths are fine.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Replace ``..`` traversals in ``dir:`` with absolute paths rooted under ``/workspace`` (e.g. ``dir: /workspace/sub``) or split the work across multiple steps that each set ``dir:`` to an exact subdirectory. The Cloud Build worker starts each step with the workspace mounted at ``/workspace``; a ``..`` escape from there reaches the builder image's root filesystem and any credentials the image carries.
 
-## GCB-017 — Image-producing build does not request SLSA provenance
-**Severity:** MEDIUM · OWASP CICD-SEC-3, CICD-SEC-10 · ESF ESF-S-PROVENANCE
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-017 — Image-producing build does not request SLSA provenance { #gcb-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
 
 SLSA Build Level 2 requires that the build platform produce signed provenance. Cloud Build's ``VERIFIED`` verify option is the documented way to opt in. The check is silent when the build does not produce an image (no top-level ``images:`` and no ``docker push`` / ``gcloud run deploy`` style steps); for those, signing and provenance aren't applicable.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Set ``options.requestedVerifyOption: VERIFIED`` on builds that publish container images. Cloud Build then emits a signed SLSA provenance attestation alongside the image, which downstream verifiers (Binary Authorization, cosign verify-attestation, gcloud artifacts docker images describe) can use to check that an image was built by the configured pipeline rather than smuggled in from elsewhere.
 
-## GCB-018 — Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager)
-**Severity:** MEDIUM · OWASP CICD-SEC-6 · ESF ESF-D-SECRETS
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GCB-018 — Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) { #gcb-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
 
 Cloud Build supports two secret-injection mechanisms. The older ``secrets:`` block carries KMS-encrypted ciphertext directly in the YAML; the cipher is decrypted at build time if the build's service account has ``cloudkms.cryptoKeyDecrypter`` on the key. The newer ``availableSecrets`` block references Secret Manager versions by URL, which is the documented modern approach. The legacy form still works, but rotating a value means re-encrypting and committing a new ciphertext.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Migrate from the top-level ``secrets:`` block (KMS-encrypted values stored inline in the YAML) to ``availableSecrets`` + Secret Manager. Replace each ``secrets[].secretEnv`` mapping with a ``versionName`` reference under ``availableSecrets.secretManager``. Secret Manager rotates without re-encrypting and re-committing the YAML, scopes access via IAM rather than the KMS key's IAM, and produces an explicit audit log entry on every read.
 
-## GCB-019 — Shell entrypoint inlines a user substitution into args
-**Severity:** HIGH · OWASP CICD-SEC-4 · ESF ESF-S-INPUT-VAL, ESF-D-INJECTION
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-019 — Shell entrypoint inlines a user substitution into args { #gcb-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-INPUT-VAL</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
 
 Distinct from GCB-004, which fires only when ``options.dynamicSubstitutions: true`` re-evaluates bash syntax after expansion. GCB-019 fires whenever a step uses a shell as its entrypoint AND a ``$_USER_VAR`` token lands inside ``args``: Cloud Build expands the substitution before the step runs, and the shell then interprets any metacharacters the substitution carried — straight command injection through trigger configuration.
+
+<div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values) and reference them inside a checked-in shell script rather than splicing them directly into ``args``. If the step truly needs to invoke shell logic inline, switch the entrypoint to the underlying tool (``docker``, ``gcloud``, ``gsutil``) and let the tool see the substitution as an argument, not as shell text.
+
+</div>
+
+</div>
 
 ---
 

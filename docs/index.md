@@ -15,11 +15,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for twelve providers — eleven file-based formats and
-live AWS via boto3 — graded against the OWASP Top 10 CI/CD Risks plus
-twelve compliance frameworks. Every finding ships with a control mapping
-and a written remediation; 87 of the 430+ checks also emit a one-shot
-patch you can apply with <code>--fix</code>.
+A read-only scanner for twelve providers and graded against twelve compliance frameworks. 
+87 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -165,28 +162,53 @@ to force one. Counts reflect the current rule catalog.
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// flow</div>
 <h2 class="pg-section__title">Inputs in. Graded report out.</h2>
-<p class="pg-section__lede">Hover any node for a quick description; click to jump to its reference page.</p>
+<p class="pg-section__lede">Hover any step for a quick description; click to jump to its reference page.</p>
 </div>
 
+<div class="pg-flowchart" markdown>
+
 ```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+    "fontSize": "13px",
+    "primaryColor": "#0e1f30",
+    "primaryTextColor": "#e7eef5",
+    "primaryBorderColor": "#1ba3a9",
+    "lineColor": "#5a7b91",
+    "secondaryColor": "#0e1f30",
+    "tertiaryColor": "#0a1320",
+    "tertiaryTextColor": "#e7eef5",
+    "tertiaryBorderColor": "#1ba3a9",
+    "edgeLabelBackground": "transparent"
+  },
+  "flowchart": {
+    "curve": "basis",
+    "padding": 16,
+    "nodeSpacing": 50,
+    "rankSpacing": 70,
+    "useMaxWidth": true
+  }
+}}%%
 flowchart LR
-    A[Repo or AWS account] -->|auto-detect| B[Provider]
-    B --> C[Rule engine<br/>430+ checks]
-    C --> D[Standards mapper<br/>OWASP · NIST · SLSA · …]
-    D --> E[Scorer<br/>A/B/C/D]
+    A([Input]) -->|auto-detect| B[Adapter]
+    B --> C[Rule engine]
+    C --> D[Compliance map]
+    D --> E[Scorer]
     E --> F1[Terminal]
     E --> F2[JSON]
     E --> F3[HTML report]
     E --> F4[SARIF 2.1.0]
-    E --> G{CI gate}
-    G -->|pass| H[Merge]
-    G -->|fail| I[Block + report]
+    E --> G{{CI gate}}
+    G -->|pass| H([Merge])
+    G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
-    click B "providers/" "Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "430+ rules emit findings with severity, location, fix"
-    click D "standards/" "Findings mapped to OWASP, NIST SSDF, SLSA, CIS, …"
-    click E "scoring_model/" "Severity-weighted 0–100 score with an A/B/C/D grade"
+    click B "providers/" "12 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "430+ checks emit findings with severity, location, fix"
+    click D "standards/" "13 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
+    click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"
     click F2 "output/#json" "Machine-parseable JSON for scripts"
     click F3 "output/#html" "HTML report with client-side filters"
@@ -195,12 +217,12 @@ flowchart LR
     click H "ci_gate/" "Severity below thresholds, exit 0"
     click I "ci_gate/" "Severity above threshold; non-zero exit + report (--fix patches the subset that has a fixer)"
 
-    classDef src      fill:#0b3954,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
-    classDef step     fill:#134e6f,stroke:#1ba3a9,stroke-width:1.5px,color:#e7eef5;
-    classDef out      fill:#087e8b,stroke:#6dd5ed,stroke-width:1.5px,color:#fff;
-    classDef gate     fill:#0b3954,stroke:#f4a261,stroke-width:2px,color:#f4a261;
-    classDef pass     fill:#2a9d8f,stroke:#2a9d8f,stroke-width:1.5px,color:#fff;
-    classDef fail     fill:#bf1363,stroke:#bf1363,stroke-width:1.5px,color:#fff;
+    classDef src      fill:#0a1320,stroke:#1ba3a9,stroke-width:1px,color:#e7eef5,rx:14,ry:14;
+    classDef step     fill:#0e1f30,stroke:#1ba3a9,stroke-width:1px,color:#e7eef5,rx:10,ry:10;
+    classDef out      fill:#1ba3a9,stroke:#33c4ca,stroke-width:1px,color:#050a12,rx:10,ry:10;
+    classDef gate     fill:#0a1320,stroke:#f4b942,stroke-width:1.5px,color:#f4b942;
+    classDef pass     fill:#2a9d8f,stroke:#2a9d8f,stroke-width:1px,color:#ffffff,rx:14,ry:14;
+    classDef fail     fill:#9d2755,stroke:#9d2755,stroke-width:1px,color:#ffffff,rx:14,ry:14;
 
     class A src;
     class B,C,D,E step;
@@ -208,7 +230,11 @@ flowchart LR
     class G gate;
     class H pass;
     class I fail;
+
+    linkStyle default stroke:#5a7b91,stroke-width:1.4px,stroke-dasharray:0,fill:none;
 ```
+
+</div>
 
 <div class="pg-outputs">
   <div class="pg-outputs__head">

@@ -33,7 +33,7 @@ from typing import Any
 try:
     import tomllib  # py3.11+
 except ImportError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[import-not-found]
+    import tomli as tomllib
 
 import yaml
 
