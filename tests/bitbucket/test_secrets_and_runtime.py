@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── BB-008 literal secrets (full text scan) ──────────────────────────
 
 

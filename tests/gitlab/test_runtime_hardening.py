@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── GL-008 literal secrets ──────────────────────────────────────────
 
 

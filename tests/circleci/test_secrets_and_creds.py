@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── CC-005 long-lived AWS keys ───────────────────────────────────────
 
 

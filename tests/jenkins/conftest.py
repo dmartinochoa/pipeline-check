@@ -22,7 +22,6 @@ from pipeline_check.core.checks.jenkins.rules._helpers import (
     strip_groovy_comments,
 )
 
-
 _LIBRARY_RE = re.compile(r"@Library\(\s*['\"]([^'\"]+)['\"]\s*\)")
 
 

@@ -9,8 +9,8 @@ from rich.table import Table
 
 from .chains import Chain
 from .checks.base import Confidence, Finding, Severity, severity_rank
-from .scorer import ScoreResult
 from .inventory import Component
+from .scorer import ScoreResult
 
 _CONFIDENCE_STYLE: dict[Confidence, str] = {
     Confidence.HIGH: "bold",

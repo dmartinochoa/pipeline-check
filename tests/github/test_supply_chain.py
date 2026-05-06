@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── GHA-006 signing ─────────────────────────────────────────────────
 
 

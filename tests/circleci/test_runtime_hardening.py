@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── CC-015 no_output_timeout ─────────────────────────────────────────
 
 
