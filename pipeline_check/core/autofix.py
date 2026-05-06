@@ -1409,3 +1409,218 @@ def _fix_gcb001_pin_todo(content: str, finding: Finding) -> str | None:
     for start, text in sorted(edits, reverse=True):
         out = out[:start] + text + out[start:]
     return out
+
+
+# ── Dockerfile comment-only TODO fixers ───────────────────────────────
+#
+# Dockerfile fixers stay comment-only: a transformative patch would
+# need to know the runtime user UID, the application port, the base
+# image's healthcheck command — none of which the scanner has.
+# Comment-only TODOs surface the gap in code review where the author
+# can supply the right value.
+
+_TODO_DF_PIN = (
+    "TODO(pipelineguard DF-001): pin base image by digest "
+    "(``FROM image@sha256:...``) — `docker pull image:tag && "
+    "docker images --digests` to get the digest"
+)
+
+_TODO_DF_USER = (
+    "TODO(pipelineguard DF-002): drop to a non-root user before the "
+    "final CMD (``RUN useradd --uid 1001 --create-home appuser`` "
+    "+ ``USER appuser``)"
+)
+
+_TODO_DF_HEALTHCHECK = (
+    "TODO(pipelineguard DF-007): add a HEALTHCHECK so the orchestrator "
+    "can detect a hung container (``HEALTHCHECK CMD curl -fsS "
+    "http://localhost:<port>/healthz || exit 1``)"
+)
+
+_TODO_DF_EXPOSE_SSH = (
+    "TODO(pipelineguard DF-013): drop EXPOSE 22 — containers should "
+    "not run sshd. Use ``docker exec`` / ``kubectl exec`` for shell "
+    "access instead"
+)
+
+_TODO_DF_PATH = (
+    "TODO(pipelineguard DF-017): drop the world-writable prefix "
+    "(/tmp, /var/tmp, /dev/shm, /run/lock) from PATH, or move it "
+    "to the tail so system bins shadow it"
+)
+
+
+_DF_FROM_RE = re.compile(
+    r"^(\s*)FROM\s+(?P<image>\S+)",
+    re.MULTILINE,
+)
+
+_DF_EXPOSE_22_RE = re.compile(
+    r"^(\s*)EXPOSE\s+(?:[^\n]*\b)?22\b",
+    re.MULTILINE,
+)
+
+_DF_USER_RE = re.compile(r"^\s*USER\s+\S", re.MULTILINE)
+_DF_HEALTHCHECK_RE = re.compile(r"^\s*HEALTHCHECK\b", re.MULTILINE)
+_DF_FINAL_CMD_RE = re.compile(
+    r"^(\s*)(?:CMD|ENTRYPOINT)\b", re.MULTILINE,
+)
+
+_DF_PATH_PREPEND_RE = re.compile(
+    r"^(\s*)ENV\s+PATH\s*=\s*(?P<value>[^\n]+)$",
+    re.MULTILINE,
+)
+_DF_PATH_WRITABLE_PREFIXES = ("/tmp", "/var/tmp", "/dev/shm", "/run/lock")
+
+
+def _insert_comment_above(content: str, edits: list[tuple[int, str]]) -> str:
+    """Apply [(start, text), ...] inserts in reverse so offsets stay valid."""
+    out = content
+    for start, text in sorted(edits, reverse=True):
+        out = out[:start] + text + out[start:]
+    return out
+
+
+@register("DF-001")
+def _fix_df001_pin_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above any FROM line that lacks a sha256 digest.
+
+    Multi-stage Dockerfiles can have several FROM lines; we annotate
+    each unpinned one. Stages already pinned by digest are left alone.
+    Idempotent via the marker check.
+    """
+    if _TODO_DF_PIN in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _DF_FROM_RE.finditer(content):
+        image = m.group("image")
+        if "@sha256:" in image:
+            continue
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_DF_PIN}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+@register("DF-002")
+def _fix_df002_user_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above the final CMD/ENTRYPOINT when no USER is set.
+
+    Idempotent: returns ``None`` if a USER directive already exists or
+    the marker is present. The TODO sits at the natural spot where a
+    ``USER appuser`` line would land (just before the runtime entry
+    point).
+    """
+    if _TODO_DF_USER in content:
+        return None
+    if _DF_USER_RE.search(content):
+        return None
+    matches = list(_DF_FINAL_CMD_RE.finditer(content))
+    if not matches:
+        return None
+    last = matches[-1]
+    indent = last.group(1)
+    return (
+        content[:last.start()]
+        + f"{indent}# {_TODO_DF_USER}\n"
+        + content[last.start():]
+    )
+
+
+@register("DF-007")
+def _fix_df007_healthcheck_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above the final CMD/ENTRYPOINT when no HEALTHCHECK."""
+    if _TODO_DF_HEALTHCHECK in content:
+        return None
+    if _DF_HEALTHCHECK_RE.search(content):
+        return None
+    matches = list(_DF_FINAL_CMD_RE.finditer(content))
+    if not matches:
+        return None
+    last = matches[-1]
+    indent = last.group(1)
+    return (
+        content[:last.start()]
+        + f"{indent}# {_TODO_DF_HEALTHCHECK}\n"
+        + content[last.start():]
+    )
+
+
+@register("DF-013")
+def _fix_df013_expose_ssh_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above any EXPOSE line publishing port 22."""
+    if _TODO_DF_EXPOSE_SSH in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _DF_EXPOSE_22_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_DF_EXPOSE_SSH}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+@register("DF-017")
+def _fix_df017_path_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above any ``ENV PATH=`` whose value prepends a
+    world-writable prefix ahead of ``$PATH``.
+
+    Comment-only because we can't safely rewrite the value: the
+    operator may genuinely intend the writable dir to be in PATH at
+    the tail. The TODO points at the correct shape.
+    """
+    if _TODO_DF_PATH in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _DF_PATH_PREPEND_RE.finditer(content):
+        value = m.group("value")
+        # Walk segments; flag if a writable prefix appears before
+        # ``$PATH`` / ``${PATH}``.
+        segs = [s.strip() for s in value.split(":")]
+        offending = False
+        for seg in segs:
+            if seg in ("$PATH", "${PATH}"):
+                break
+            if any(
+                seg == p or seg.startswith(p + "/")
+                for p in _DF_PATH_WRITABLE_PREFIXES
+            ):
+                offending = True
+                break
+        if not offending:
+            continue
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_DF_PATH}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+# ── Cloud Build comment-only TODO fixer (GCB-007) ────────────────────
+
+
+_TODO_GCB_LATEST = (
+    "TODO(pipelineguard GCB-007): pin secret to a specific Secret "
+    "Manager version (``versions/<N>``) — ``versions/latest`` "
+    "rotates silently and bypasses change review"
+)
+_GCB_VERSION_LATEST_RE = re.compile(
+    r"^(\s*-?\s*)versionName\s*:\s*[\"']?[^\"'\n]*versions/latest[\"']?\s*$",
+    re.MULTILINE,
+)
+
+
+@register("GCB-007")
+def _fix_gcb007_latest_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``versions/latest`` reference."""
+    if _TODO_GCB_LATEST in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _GCB_VERSION_LATEST_RE.finditer(content):
+        indent_raw = m.group(1)
+        indent_ws = indent_raw[: len(indent_raw) - len(indent_raw.lstrip())]
+        edits.append((m.start(), f"{indent_ws}# {_TODO_GCB_LATEST}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)

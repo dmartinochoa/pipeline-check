@@ -48,6 +48,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   top-level `timeout: '600s'` for `GCB-005`, drop `logging: NONE`
   for `GCB-014`, comment-only TODO above unpinned step images for
   `GCB-001`, plus shared TLS-bypass mitigation for `GCB-011`.
+- **Six more autofixers** for the previously-empty Dockerfile
+  catalog plus one Cloud Build addition, lifting the catalog from
+  81 to 87. Comment-only TODO patterns: `DF-001` (pin base image
+  by digest, multi-stage aware — only annotates unpinned FROM
+  lines), `DF-002` (drop to non-root user before final CMD/
+  ENTRYPOINT, skipped when a USER directive is already present),
+  `DF-007` (add HEALTHCHECK, skipped when one exists), `DF-013`
+  (drop EXPOSE 22), `DF-017` (drop world-writable prefix from PATH
+  — mirrors the rule's prefix-vs-tail logic so it skips harmless
+  `PATH=$PATH:/tmp` patterns), and `GCB-007` (pin Secret Manager
+  version to `versions/<N>` rather than `versions/latest`).
+  Dockerfile is no longer the only provider with zero fixers.
 - **One more attack chain — Kubernetes cluster takeover.** `AC-011`
   fires when `K8S-013` (hostPath volume) AND `K8S-020` (cluster-admin
   ClusterRoleBinding) both fail in the same manifest set. Together

@@ -958,12 +958,21 @@ body:has(.pg-home) {
    shadow so the button reads as a foreground element regardless of
    where it sits on the gradient. White text on teal gives ~4.7:1
    contrast (WCAG AA for large text), and a subtle text-shadow keeps
-   the legibility honest if the user resizes the page or zooms. */
+   the legibility honest if the user resizes the page or zooms.
+
+   ``!important`` on color/background/border because Material's own
+   ``.md-typeset .md-button--primary`` rule reaches the same
+   specificity (0,2,0) by way of the ``md-typeset`` page wrapper, and
+   the cascade resolution depends on stylesheet order. The hero CTA
+   is one of the most visible elements on the site — explicit beats
+   subtle here. */
 .pg-hero__cta .md-button--primary,
-.pg-cta .md-button--primary {
-  background: var(--pg-teal-400);
-  border: 1px solid var(--pg-teal-300);
-  color: #ffffff;
+.pg-cta .md-button--primary,
+.md-typeset .pg-hero__cta .md-button--primary,
+.md-typeset .pg-cta .md-button--primary {
+  background: var(--pg-teal-400) !important;
+  border: 1px solid var(--pg-teal-300) !important;
+  color: #ffffff !important;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.10) inset,
@@ -971,10 +980,12 @@ body:has(.pg-home) {
 }
 
 .pg-hero__cta .md-button--primary:hover,
-.pg-cta .md-button--primary:hover {
-  background: var(--pg-teal-300);
-  border-color: var(--pg-teal-300);
-  color: #ffffff;
+.pg-cta .md-button--primary:hover,
+.md-typeset .pg-hero__cta .md-button--primary:hover,
+.md-typeset .pg-cta .md-button--primary:hover {
+  background: var(--pg-teal-300) !important;
+  border-color: var(--pg-teal-300) !important;
+  color: #ffffff !important;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.40);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.14) inset,
