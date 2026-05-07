@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GitHub Actions reusable-workflow remote-ref resolver.**
+  `--resolve-remote` (default off) follows
+  ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` to the
+  called workflow body and runs the full GHA rule pack against it
+  with the caller's ``permissions:`` and ``secrets: inherit``
+  context. Fetcher uses ``raw.githubusercontent.com`` with optional
+  ``--gh-token`` (falls back to ``$GITHUB_TOKEN``); on-disk fallback
+  via ``--gha-search-path`` (repeatable) for monorepos with sibling
+  checkouts; per-ref cache under
+  ``~/.cache/pipeline-check/gha-resolver`` with ``--no-cache`` to
+  bypass; recursion depth capped at 3 (configurable via
+  ``--gha-resolve-depth``, hard ceiling 10) with cycle detection;
+  parallel fetches via a 4-worker pool. Only SHA-pinned refs are
+  fetched (tag refs would defeat ``GHA-025``); unpinned refs are
+  skipped with a warning. Findings on a resolved callee carry a
+  synthetic ``<caller> -> <owner>/<repo>/<path>@<ref>`` resource
+  string so reports attribute the issue to the caller's PR while
+  pointing at the upstream body. ``GHA-004`` no longer fires on a
+  callee whose caller declared a ``permissions:`` block; ``GHA-019``
+  annotates findings with a ``(callee inherits caller secrets via
+  secrets: inherit)`` note when the inherit flag is on. New shared
+  ``uses_parser`` module replaces the ad-hoc ``rsplit("@", 1)`` calls
+  in ``GHA-001`` and ``GHA-025``. No telemetry; resolution never
+  fires without explicit opt-in. When ``--resolve-remote`` is off
+  and remote refs are present, a one-line stderr warning lists how
+  many were skipped so users discover the flag.
 - **Three new providers — Buildkite, Tekton, Argo Workflows.**
   `--pipeline buildkite --buildkite-path .buildkite/pipeline.yml`
   scans Buildkite pipeline files (8 rules, BK-001..BK-008: plugin

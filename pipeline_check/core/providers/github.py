@@ -4,14 +4,26 @@ Producer workflow:
 
     pipeline_check --pipeline github --gha-path .github/workflows
 
-Only YAML parsing is required — no network calls, no GitHub API token.
+YAML parsing is the default. ``--resolve-remote`` opt-in fetches
+reusable workflow callees over HTTPS for full coverage; the scanner
+otherwise stays read-from-disk-only.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.github.base import GitHubContext
+from ..checks.github.resolver import (
+    CompositeFetcher,
+    DiskFetcher,
+    FileSystemCache,
+    HttpFetcher,
+    Resolver,
+    default_cache_dir,
+)
+from ..checks.github.uses_parser import parse_uses
 from ..checks.github.workflows import WorkflowChecks
 from ..inventory import Component
 from .base import BaseProvider
@@ -33,6 +45,71 @@ class GitHubProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
         return [WorkflowChecks]
+
+    def post_filter(  # type: ignore[override]
+        self,
+        context: GitHubContext,
+        resolve_remote: bool = False,
+        gh_token: str | None = None,
+        no_cache: bool = False,
+        gha_search_paths: list[str] | tuple[str, ...] = (),
+        gha_resolve_depth: int = 3,
+        **_: Any,
+    ) -> None:
+        """Optionally pull in remote reusable-workflow callees.
+
+        Off by default. When ``resolve_remote`` is true, walks every
+        loaded caller for ``jobs.<id>.uses: owner/repo/.../foo.yml@<sha>``
+        and appends the fetched bodies to ``context.workflows``.
+        Failures land in ``context.warnings`` rather than raising.
+
+        When ``resolve_remote`` is *false*, the method still inspects
+        the loaded workflows for unresolved remote refs and writes a
+        one-line nudge to ``context.warnings`` so users discover the
+        opt-in flag.
+        """
+        if not resolve_remote:
+            self._warn_unresolved(context)
+            return
+
+        fetchers: list[Any] = []
+        search_paths = [Path(p) for p in gha_search_paths]
+        if search_paths:
+            fetchers.append(DiskFetcher(search_paths))
+        fetchers.append(HttpFetcher(token=gh_token))
+        fetcher = (
+            CompositeFetcher(fetchers) if len(fetchers) > 1 else fetchers[0]
+        )
+        cache = FileSystemCache(
+            default_cache_dir(),
+            enabled=not no_cache,
+        )
+        resolver = Resolver(
+            fetcher=fetcher,
+            cache=cache,
+            max_depth=gha_resolve_depth,
+        )
+        resolver.resolve(context)
+
+    @staticmethod
+    def _warn_unresolved(context: GitHubContext) -> None:
+        """Surface a one-line stderr nudge if remote refs are skipped."""
+        skipped = 0
+        for wf in context.workflows:
+            jobs = wf.data.get("jobs")
+            if not isinstance(jobs, dict):
+                continue
+            for job in jobs.values():
+                if not isinstance(job, dict):
+                    continue
+                ref = parse_uses(job.get("uses"))
+                if ref is not None and ref.kind == "remote-workflow":
+                    skipped += 1
+        if skipped:
+            context.warnings.append(
+                f"[gha] {skipped} reusable workflow(s) reference remote "
+                f"refs; rerun with --resolve-remote to scan them."
+            )
 
     def inventory(self, context: GitHubContext) -> list[Component]:
         out: list[Component] = []

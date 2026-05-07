@@ -5,7 +5,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, workflow_triggers
+from ..base import Workflow, iter_jobs, iter_steps, workflow_triggers
 
 RULE = Rule(
     id="GHA-004",
@@ -98,12 +98,18 @@ def _perms_issues(
     return issues
 
 
-def check(path: str, doc: dict[str, Any]) -> Finding:
+def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding:
     triggers = workflow_triggers(doc)
     issues: list[str] = []
 
     # Check top-level permissions.
     top_perms = doc.get("permissions")
+    # Resolved callees inherit their caller's permissions block when
+    # they don't declare their own. Treat the inherited block as the
+    # effective top-level for the absence-check below — otherwise
+    # every legitimate reusable workflow gets flagged.
+    inherited = wf.inherited_permissions if wf is not None else None
+    effective_top = top_perms if top_perms is not None else inherited
     if top_perms is not None:
         issues.extend(_perms_issues(top_perms, "<workflow>", triggers))
 
@@ -115,7 +121,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             issues.extend(
                 _perms_issues(job_perms, job_id, triggers, job=job)
             )
-        elif top_perms is None:
+        elif effective_top is None:
             jobs_missing.append(job_id)
 
     if jobs_missing:

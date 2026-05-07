@@ -57,3 +57,21 @@ class BaseProvider(abc.ABC):
         built from — the Scanner's ``inventory()`` delegates here.
         """
         return []
+
+    def post_filter(self, context: Any, **kwargs: Any) -> None:
+        """Hook called after the diff filter, before any check runs.
+
+        Default no-op. The GitHub provider overrides this to expand
+        the loaded workflow set with reusable callees fetched by the
+        remote-ref resolver (only when ``--resolve-remote`` is set).
+        Doing the expansion here means callees added for an unchanged
+        caller don't get processed under ``--diff-base`` — the diff
+        filter has already pruned the caller, so its callees never
+        get queued.
+
+        Implementations should mutate *context* in place; they have
+        no return value. Failures should be appended to
+        ``context.warnings`` rather than raised — the rest of the
+        scan should still complete.
+        """
+        return None

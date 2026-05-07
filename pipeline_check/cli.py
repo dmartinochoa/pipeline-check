@@ -643,6 +643,67 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--resolve-remote/--no-resolve-remote",
+    "resolve_remote",
+    default=False,
+    show_default=True,
+    help=(
+        "Follow ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` "
+        "to the called workflow body and run the GHA rule pack against "
+        "it with the caller's permissions context. Default off — the "
+        "scanner stays read-from-disk-only by default. When off and a "
+        "remote ref is encountered, a one-line stderr warning lists "
+        "the count so users know what they're missing."
+    ),
+)
+@click.option(
+    "--gh-token",
+    "gh_token",
+    default=None,
+    metavar="TOKEN",
+    help=(
+        "GitHub token used by --resolve-remote when fetching from "
+        "raw.githubusercontent.com. Falls back to $GITHUB_TOKEN. "
+        "Only required for private callee repos."
+    ),
+)
+@click.option(
+    "--no-cache",
+    "no_cache",
+    is_flag=True,
+    default=False,
+    help=(
+        "Bypass the on-disk resolver cache "
+        "(~/.cache/pipeline-check/gha-resolver) for this scan. "
+        "Useful when a tag was force-pushed to a different SHA "
+        "and you want the new bytes."
+    ),
+)
+@click.option(
+    "--gha-search-path",
+    "gha_search_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "On-disk root searched before the network when --resolve-"
+        "remote is on. Repeat for multiple roots. Each is laid out "
+        "as ``<root>/<owner>/<repo>/<workflow-path>``. Lets monorepos "
+        "with sibling checkouts resolve fully offline."
+    ),
+)
+@click.option(
+    "--gha-resolve-depth",
+    "gha_resolve_depth",
+    type=int,
+    default=3,
+    show_default=True,
+    help=(
+        "Maximum depth the resolver follows transitive ``uses:`` "
+        "calls. Hard ceiling 10. Cycles are detected and stop "
+        "earlier."
+    ),
+)
+@click.option(
     "--gitlab-path",
     default=None,
     metavar="PATH",
@@ -1204,6 +1265,11 @@ def scan(
     explain_chain_id: str | None,
     fail_on_chain_ids: tuple[str, ...],
     fail_on_any_chain: bool,
+    resolve_remote: bool = False,
+    gh_token: str | None = None,
+    no_cache: bool = False,
+    gha_search_paths: tuple[str, ...] = (),
+    gha_resolve_depth: int = 3,
 ) -> None:
     """PipelineCheck — CI/CD Security Posture Scanner.
 
@@ -1644,6 +1710,11 @@ def scan(
         buildkite_path=buildkite_path,
         tekton_path=tekton_path,
         argo_path=argo_path,
+        resolve_remote=resolve_remote,
+        gh_token=gh_token,
+        no_cache=no_cache,
+        gha_search_paths=list(gha_search_paths),
+        gha_resolve_depth=gha_resolve_depth,
         dockerfile_path=dockerfile_path,
         k8s_path=k8s_path,
         helm_path=helm_path,

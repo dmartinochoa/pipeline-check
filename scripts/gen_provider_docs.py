@@ -52,8 +52,10 @@ SUPPORTED_PROVIDERS: dict[str, tuple[str, str, Path, str]] = {
         """\
 # GitHub Actions provider
 
-Parses workflow YAML files under a `.github/workflows` directory — no
-network calls, no GitHub API token, no installed Actions runner required.
+Parses workflow YAML files under a `.github/workflows` directory. No
+GitHub API token or installed Actions runner is required by default;
+the scanner stays read-from-disk-only unless `--resolve-remote` opts
+in to fetching reusable-workflow callees over HTTPS.
 
 ## Producer workflow
 
@@ -74,6 +76,51 @@ pipeline_check --pipeline github --gha-path .github/workflows/release.yml
 
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the AWS and Terraform providers.
+
+## Reusable workflow resolution
+
+`jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>` references
+a workflow body that runs with the *caller's* `GITHUB_TOKEN` and
+secrets. By default the scanner stops at the call site (it flags the
+ref via `GHA-025` when unpinned and emits a one-line nudge listing
+how many remote refs were skipped); `--resolve-remote` opts in to
+fetching the called body and running the full GHA rule pack against
+it with the caller's permissions context.
+
+```bash
+# Fetch via raw.githubusercontent.com (works for public repos).
+pipeline_check --pipeline github --resolve-remote
+
+# Private callees: pass a token, or set $GITHUB_TOKEN.
+pipeline_check --pipeline github --resolve-remote --gh-token "$GH_PAT"
+
+# Fully offline: search a sibling on-disk checkout instead.
+pipeline_check --pipeline github --resolve-remote \\
+    --gha-search-path ../shared-workflows
+```
+
+Resolution rules:
+
+- **Only SHA-pinned refs are fetched.** A tag-pinned ref (`@v1`,
+  `@main`) is skipped with a warning — resolution against a movable
+  upstream tag would defeat `GHA-025`'s value.
+- **Recursion** follows transitive `uses:` calls to a depth of 3
+  (configurable with `--gha-resolve-depth`; hard ceiling 10). Cycles
+  are detected.
+- **Cache.** Fetched bodies live under
+  `~/.cache/pipeline-check/gha-resolver/` for 7 days. Use `--no-cache`
+  to bypass.
+- **Failure mode.** Network errors, 404s, and malformed YAML never
+  abort the scan — they land in the context's warnings stream.
+- **Attribution.** Findings on a resolved callee carry a synthetic
+  `<caller-path> -> <owner>/<repo>/<path>@<ref>` resource string so
+  the report points at both the call site and the upstream body.
+- **Permissions inheritance.** A callee without its own
+  `permissions:` runs with the caller's; `GHA-004` doesn't fire on a
+  callee whose caller declared one.
+- **`secrets: inherit`.** When the call site passes
+  `secrets: inherit`, `GHA-019` annotates findings with the inherit
+  note so report readers see the full credential surface.
 """,
     ),
     "gitlab": (

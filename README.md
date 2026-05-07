@@ -44,7 +44,10 @@ picks the matching provider, and falls back to `aws` when nothing
 recognizable is found.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
-standard boto3 credential chain.
+standard boto3 credential chain. The GitHub Actions provider can
+*optionally* follow remote reusable-workflow refs over HTTPS via
+`--resolve-remote` (off by default; see [docs/providers/github.md](docs/providers/github.md)
+for the full opt-in surface).
 
 ---
 
