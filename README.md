@@ -49,6 +49,31 @@ standard boto3 credential chain. The GitHub Actions provider can
 `--resolve-remote` (off by default; see [docs/providers/github.md](docs/providers/github.md)
 for the full opt-in surface).
 
+### PR review comments
+
+Pipe findings into pull-request review comments on the changed lines
+via the bundled composite action:
+
+```yaml
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dmartinochoa/pipeline-check/.github/actions/pipeline-check-pr@v1
+        with:
+          severity-threshold: MEDIUM
+```
+
+Each finding lands as a review comment on its precise line (when the
+rule emits a `Location`); everything else goes into a single PR-level
+summary comment. See [.github/actions/pipeline-check-pr/README.md](.github/actions/pipeline-check-pr/README.md)
+for inputs, idempotency, and fork-PR fallback behavior.
+
 ---
 
 ## Supported providers
