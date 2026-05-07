@@ -54,6 +54,10 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Kubernetes</h3>
     <p>Parses manifest YAML (Deployment, Pod, Job, …). securityContext, hostPath, RBAC blast radius, Secret hygiene.</p>
   </a>
+  <a class="pg-doc-card" href="helm/">
+    <h3>Helm</h3>
+    <p>Renders charts via <code>helm template</code> and runs the K8S-* rule pack on the result. Catches the bulk of real workloads, which ship as charts.</p>
+  </a>
 </div>
 
 ## Adding a new provider

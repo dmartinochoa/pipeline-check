@@ -44,7 +44,7 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 12 providers, graded against 13 compliance frameworks. 
+A read-only scanner for 13 providers, graded against 13 compliance frameworks. 
 100 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
@@ -78,7 +78,7 @@ A read-only scanner for 12 providers, graded against 13 compliance frameworks.
 <section class="pg-stats">
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num">430+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">12</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">100</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -234,7 +234,7 @@ flowchart LR
     G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
-    click B "providers/" "12 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click B "providers/" "13 supported. Auto-detected from cwd; override with --pipeline NAME"
     click C "attack_chains/" "430+ checks emit findings with severity, location, fix"
     click D "standards/" "13 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"

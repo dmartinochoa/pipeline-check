@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**430+ checks** across **12 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**430+ checks** across **13 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -63,6 +63,7 @@ standard boto3 credential chain.
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result. Requires `helm` (Helm 3) on PATH. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -78,7 +79,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   430+ checks across 12 providers
+  Config files   |  Scanner  |   430+ checks across 13 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |

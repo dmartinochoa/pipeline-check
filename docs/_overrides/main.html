@@ -14,6 +14,21 @@
 {% block extrahead %}
   {{ super() }}
 
+  {# --- Fonts: variable-axis Mona Sans + JetBrains Mono ---
+       ``mkdocs.yml`` sets ``font: false`` to disable Material's
+       auto-injected static-weight Google Fonts link. We load both
+       faces from the css2 endpoint here instead, which exposes the
+       full wght axis (200..900) and serves the variable font in a
+       single request per family. ``preconnect`` warms the TLS
+       handshake to fonts.gstatic.com (Google's font CDN) before
+       the css request fires; ``crossorigin`` is required because
+       fonts are a CORS resource. ``display=swap`` shows the
+       fallback (Inter / system mono) immediately and swaps in the
+       variable face when it loads — better than the FOIT default. #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap">
+
   {# --- Open Graph (Facebook, Slack, LinkedIn, Discord) ---
        ``twitter:card = summary_large_image`` requires a 1200×630-ish
        banner; the default ``summary`` form takes the same favicon

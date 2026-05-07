@@ -1,6 +1,6 @@
 """Lock doc claims against the live code.
 
-Numerical claims in `README.md` and `docs/index.md` ("12 providers",
+Numerical claims in `README.md` and `docs/index.md` ("13 providers",
 "13 compliance standards", "68 autofixers", "8 attack chains",
 "370+ checks") are easy to lie about and easy to forget when adding
 a new provider, fixer, or standard. This test scans the doc set for
@@ -115,7 +115,7 @@ _AWSLIKE_TOTAL = 71 + 63
 # Claim parsers
 # ──────────────────────────────────────────────────────────────────
 
-# ``**12 providers**``, ``12 providers``, ``12 Providers``, etc.
+# ``**13 providers**``, ``13 providers``, ``13 Providers``, etc.
 # Case-insensitive so the stat-block label ("Providers") matches after
 # HTML normalization strips the surrounding tags.
 _PROVIDER_CLAIM = re.compile(
@@ -262,4 +262,4 @@ def test_provider_registry_count_lines_up_with_known_floor():
     """If a contributor accidentally drops a register() call from
     providers/__init__.py, the registry shrinks. This guards against
     a silent regression by fixing a known minimum."""
-    assert _count_providers() >= 12
+    assert _count_providers() >= 13
