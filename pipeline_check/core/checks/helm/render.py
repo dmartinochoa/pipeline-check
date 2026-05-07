@@ -77,7 +77,11 @@ def helm_version() -> str:
             [binary, "version", "--short"],
             capture_output=True,
             text=True,
-            timeout=10,
+            # Cold runs on Windows CI can spend most of this budget in
+            # Defender scanning helm.exe before the process even starts;
+            # 30s is a comfortable ceiling without making real failures
+            # feel hung.
+            timeout=30,
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
