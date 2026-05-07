@@ -13,6 +13,8 @@ of every dependent rule emitting its own copy.
 """
 from __future__ import annotations
 
+import boto3
+
 from ..base import Finding, Severity
 from ..rule import discover_rules
 from ._catalog import ResourceCatalog
@@ -127,7 +129,9 @@ _DEGRADED: dict[str, tuple[str, str, str]] = {
 class AWSRuleChecks(AWSBaseCheck):
     """Runs every rule under ``pipeline_check.core.checks.aws.rules``."""
 
-    def __init__(self, session, target: str | None = None) -> None:
+    def __init__(
+        self, session: boto3.Session, target: str | None = None,
+    ) -> None:
         super().__init__(session, target)
         self._rules = discover_rules("pipeline_check.core.checks.aws.rules")
 

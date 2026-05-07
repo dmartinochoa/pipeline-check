@@ -1993,12 +1993,11 @@ th.pg-sortable:focus-visible {
     border-radius: 2px;
   }
 
-  /* The site logo inside the drawer header — bump it up so the
-     shield mark reads as a brand element, not a thumbnail. */
-  .md-sidebar--primary .md-nav__button.md-logo img,
-  .md-sidebar--primary .md-nav__button.md-logo svg {
-    width: 1.7rem;
-    height: 1.7rem;
+  /* Hide the site logo inside the drawer — the wordmark alone is
+     unambiguous brand identification at this size, and the duplicate
+     mark crowded the title. The header still shows the logo. */
+  .md-sidebar--primary .md-nav__button.md-logo {
+    display: none;
   }
 
   /* Close button — match the rest of the chrome rather than

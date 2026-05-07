@@ -7,7 +7,7 @@ from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str
 
 
-def _service_role_key(value) -> str:
+def _service_role_key(value: object) -> str:
     """Return a stable key for a ServiceRole value.
 
     CFN accepts literal ARNs, ``{"Ref": "X"}``, ``{"Fn::GetAtt":

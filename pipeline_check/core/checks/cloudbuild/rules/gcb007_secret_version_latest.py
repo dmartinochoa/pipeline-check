@@ -22,6 +22,7 @@ refresh on a controlled cadence.)
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 from ...base import Finding, Severity
@@ -50,7 +51,7 @@ RULE = Rule(
 )
 
 
-def _iter_available_secrets(doc: dict[str, Any]):
+def _iter_available_secrets(doc: dict[str, Any]) -> Iterator[tuple[int, dict[str, Any]]]:
     avail = doc.get("availableSecrets")
     if not isinstance(avail, dict):
         return

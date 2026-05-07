@@ -96,6 +96,13 @@ disallow_subclassing_any = true
 # ``_first_map``, ``extract_pipe_ref``) the typed AWS / Terraform /
 # CloudFormation / Bitbucket rule code calls into.
 disallow_untyped_calls = true
+# ``disallow_untyped_defs`` requires every function to declare its
+# parameter and return types. Enabled after a 89 → 0 annotation pass
+# across the AWS / Terraform / CloudFormation phase modules, every
+# YAML-provider orchestrator, the Click callbacks, the YAML loader
+# helpers, and the iter-* generators in ``checks/blob.py`` /
+# ``checks/github/base.py``.
+disallow_untyped_defs = true
 # Silence "Library stubs not installed for X" until requirements-dev.txt
 # is regenerated to include types-PyYAML. The runtime behavior is fine;
 # this only affects mypy's static checks on yaml.* call sites.

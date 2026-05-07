@@ -12,8 +12,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`disallow_untyped_defs` enabled** — cleared the final 22
+  errors after the prior 67-function annotation pass: Click
+  callbacks (`_load_config_callback`, `_install_completion_callback`,
+  three `_complete_*` shell-completion helpers), drawer
+  `iter_jobs` / `iter_steps` / `walk_strings` generator return
+  types, AWS `ResourceCatalog._memo` (typed `loader: Callable[[],
+  Any]`) and `AWSRuleChecks.__init__`, the YAML strict loader's
+  `construct_mapping`, and the CFN `_target_key` /
+  `_service_role_key` value-key helpers. Eight of nine strict
+  mypy flags now on; only `disallow_any_generics` (~210 bare-
+  `dict` / `list` annotations) remains.
+
+### Changed
+
+- **Architecture doc diagram is now a proper Mermaid flowchart**
+  (`docs/architecture.md`) — the ASCII box-drawing version
+  rendered poorly inside a `<pre>` block on Material's slate
+  theme. Mermaid renders as crisp SVG, scales with the viewport,
+  and color-codes the four phases (CLI edge, internal pipeline,
+  Finding result, sink reporters) so the scan flow reads at a
+  glance. Mermaid was already enabled via the existing
+  `pymdownx.superfences` config; no extra dep.
+- **Mobile drawer logo dropped** (`docs/stylesheets/extra.css`).
+  The logo image inside `.md-sidebar--primary` was crowding the
+  Pipeline-Check wordmark at the top of the slide-in drawer; the
+  wordmark alone is unambiguous brand identification at the
+  drawer width and the header still shows the logo.
+
 - **Strict-mypy annotation pass** — annotated 67 of 89 functions
-  flagged by `disallow_untyped_defs`. Two-thirds of the count was
+  flagged by `disallow_untyped_defs` (the prior pass that this
+  flag-enable entry builds on). Two-thirds of the count was
   in terraform / cloudformation `phase3.py`, `phase4.py`,
   `services.py`, `extended.py`: ~25 helper functions of the shape
   `def _<service>(ctx) -> list[Finding]` got their `ctx` parameter
