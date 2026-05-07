@@ -78,7 +78,12 @@
   --light-detail-bg:  #f8f9fa;
 
   /* Type families ------------------------------------------- */
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Mona Sans is the brand body face — see ``mkdocs.yml`` font.text
+     for the rationale. The fallback chain keeps Inter as a graceful
+     degrade (it's everywhere via Material's prior caching) rather
+     than dropping straight to system-ui, which would shift to
+     widely-different metrics on every OS. */
+  --font-sans: "Mona Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Type scale ---------------------------------------------- */
@@ -963,7 +968,15 @@ body:has(.pg-home) {
 /* ----- Hero ------------------------------------------------- */
 .pg-hero {
   position: relative;
-  background: linear-gradient(180deg, var(--pg-navy-950) 0%, var(--pg-navy-900) 100%);
+  /* Layered backgrounds, top → bottom:
+     1. Inline SVG fractalNoise data-URL — ~3% opacity grain that
+        keeps the navy from reading as a flat digital surface. No
+        extra HTTP request; the SVG is base-encoded in the URL.
+     2. Linear navy gradient — the brand backdrop. */
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/></svg>"),
+    linear-gradient(180deg, var(--pg-navy-950) 0%, var(--pg-navy-900) 100%);
+  background-size: 200px 200px, auto;
   color: var(--pg-text-on-dark);
   /* Tighter top padding now that the goose mark fills the upper
      anchor of the hero — keeps the navy chrome and the hero from
@@ -1149,8 +1162,27 @@ img.pg-hero__mark {
 .pg-hero .md-typeset > div > p {
   margin: 0 0 0.4rem;
 }
+/* The hero H1 is a markdown ``# ...`` heading that picks up
+   ``.md-typeset h1`` styles by default — small inner-page size with
+   the teal-gradient underline. Both wrong here: the hero deserves a
+   real display moment, and the underline reads as docs-page chrome
+   in a section that's already its own brand surface. Override both. */
 .pg-hero .md-typeset > div > h1 {
-  margin-top: 0.6rem;
+  margin: 0.6rem 0 1.1rem;
+  font-size: clamp(3rem, 6.5vw, 5.5rem);
+  line-height: 0.98;
+  /* Mona Sans is variable on the wght axis (200-900); pick a number
+     between the conventional 700/800 stops so the display weight has
+     its own identity instead of inheriting "regular bold". */
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-wrap: balance;
+}
+/* Suppress the inner-page ::after teal-underline accent — hero
+   already announces "page start" through the wordmark + goose. */
+.pg-hero .md-typeset > div > h1::after {
+  display: none;
 }
 
 .pg-hero__wordmark {
@@ -1191,11 +1223,14 @@ img.pg-hero__mark {
 }
 
 .pg-hero__lede {
-  font-size: 1.05rem;
-  line-height: 1.6;
+  /* Bumped from 1.05rem to keep proportional with the bigger H1
+     above. Lede should read as supporting copy, not a footnote. */
+  font-size: clamp(1.05rem, 1.3vw, 1.18rem);
+  line-height: 1.55;
   color: var(--pg-muted-on-dark);
-  max-width: 34rem;
+  max-width: 36rem;
   margin: 0 0 2rem;
+  text-wrap: balance;
 }
 
 .pg-hero__cta {
@@ -2441,7 +2476,7 @@ th.pg-sortable:focus-visible {
    own declaration. The ``classDef``-set fill stays untouched. */
 .pg-flowchart .mermaid svg text,
 .pg-flowchart .mermaid svg foreignObject {
-  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 13px;
   letter-spacing: -0.005em;
 }
