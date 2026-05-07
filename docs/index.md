@@ -16,7 +16,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for twelve providers and graded against twelve compliance frameworks. 
-95 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+96 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -51,7 +51,7 @@ A read-only scanner for twelve providers and graded against twelve compliance fr
   <div class="pg-stat"><div class="pg-stat__num">430+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">12</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">95</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">96</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
