@@ -12,6 +12,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **One more Bitbucket rule.** `BB-029` flags step `image:` and
+  `definitions.services.<name>.image:` references that aren't
+  pinned by sha256 digest. `BB-001` and `BB-009` only walk
+  `pipe:` references inside `script:` lists; the actual runtime
+  container (the step `image:`) and the auxiliary service
+  containers were uncovered surfaces. Both ship code into the
+  build context — a compromised service image (postgres,
+  selenium-grid, …) can exfiltrate every secret the step
+  touches as easily as the step image itself. Reuses the cross-
+  provider `_primitives.image_pinning.classify` so the floating-
+  tag semantics line up with `GHA-001` / `GL-001` / `JF-009` /
+  `ADO-009` / `CC-003` / `K8S-001`. Handles the long-form
+  `image: { name, run-as-user }` block too. Severity HIGH,
+  OWASP CICD-SEC-3, NIST 800-53 SR-3 / SR-11 / SI-2. Bitbucket
+  rule catalog: 28 to 29.
+- **One more GitHub Actions rule.** `GHA-035` flags
+  `actions/github-script@*` steps whose `with.script` input
+  interpolates an attacker-controllable expression
+  (`${{ github.event.* }}`, `${{ inputs.* }}`,
+  `${{ github.head_ref }}`, `${{ github.ref_name }}`, …).
+  `GHA-003` covers the same threat for `run:` blocks where
+  shell expansion is the injection surface; `github-script` runs
+  the interpolated value as Node.js inside an authenticated
+  Octokit context, so backticks / quotes / `${...}` in a PR
+  title break out of the surrounding string and execute against
+  the workflow's `GITHUB_TOKEN`. The rule fires regardless of
+  how the action is pinned — pinning closes the supply-chain
+  leg but doesn't change the injection surface. Severity HIGH,
+  OWASP CICD-SEC-4, CWE-94. Recommendation pushes callers
+  toward the `env:` pattern (read via `process.env.X` instead of
+  inline expansion). GitHub rule catalog: 34 to 35.
 - **`disallow_untyped_defs` enabled** — cleared the final 22
   errors after the prior 67-function annotation pass: Click
   callbacks (`_load_config_callback`, `_install_completion_callback`,

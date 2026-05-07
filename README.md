@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml/badge.svg)](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dmartinochoa/pipeline-check?utm_source=oss&utm_medium=github&utm_campaign=dmartinochoa%2Fpipeline-check&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
@@ -54,9 +54,9 @@ standard boto3 credential chain.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 34 checks (`GHA-001`--`034`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 35 checks (`GHA-001`--`035`) |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 31 checks (`GL-001`--`031`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 28 checks (`BB-001`--`028`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 29 checks (`ADO-001`--`029`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
@@ -318,9 +318,9 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-034
+        ├── github/rules/      # GHA-001 .. GHA-035
         ├── gitlab/rules/      # GL-001 .. GL-031
-        ├── bitbucket/rules/   # BB-001 .. BB-028
+        ├── bitbucket/rules/   # BB-001 .. BB-029
         ├── azure/rules/       # ADO-001 .. ADO-029
         ├── jenkins/rules/     # JF-001 .. JF-031
         ├── circleci/rules/    # CC-001 .. CC-031
@@ -388,3 +388,5 @@ See [docs/providers/README.md](docs/providers/README.md) for the full contract.
 ## License
 
 MIT -- see [LICENSE](LICENSE).
+
+

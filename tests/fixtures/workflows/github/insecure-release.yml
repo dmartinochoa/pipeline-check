@@ -95,6 +95,14 @@ jobs:
           name: build-output
           run-id: ${{ github.event.workflow_run.id }}
       - run: ./build-output/install.sh
+      # GHA-035: ``actions/github-script`` interpolates an attacker-
+      # controllable PR title directly into the JS source — the same
+      # threat as GHA-003 but over the github-script surface.
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "${{ github.event.pull_request.title }}";
+            await github.rest.issues.createComment({ body: title });
 
   # GHA-016: curl piped to bash.
   # GHA-017: docker run --privileged.

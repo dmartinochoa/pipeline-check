@@ -145,3 +145,90 @@ class TestBB028OIDCTrust:
         """
         f = run_check(cfg, "BB-028")
         assert f.passed
+
+
+# ── BB-029 step + service image digest pinning ──────────────────────
+
+
+class TestBB029ImageDigestPinning:
+    SHA = "@sha256:" + "0" * 63 + "1"
+
+    def test_fails_on_unpinned_step_image(self):
+        cfg = """
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                image: node:20
+                script:
+                  - npm test
+        """
+        f = run_check(cfg, "BB-029")
+        assert not f.passed
+        assert "node:20" in f.description
+
+    def test_fails_on_unpinned_service_image(self):
+        cfg = f"""
+        definitions:
+          services:
+            postgres:
+              image: postgres:16
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                image: node{self.SHA}
+                services: [postgres]
+                script:
+                  - npm test
+        """
+        f = run_check(cfg, "BB-029")
+        assert not f.passed
+        assert "postgres" in f.description
+
+    def test_passes_when_both_step_and_service_pinned(self):
+        cfg = f"""
+        definitions:
+          services:
+            postgres:
+              image: postgres{self.SHA}
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                image: node{self.SHA}
+                services: [postgres]
+                script:
+                  - npm test
+        """
+        f = run_check(cfg, "BB-029")
+        assert f.passed
+
+    def test_passes_when_no_image_directive(self):
+        # Step inherits the runner default; nothing to pin in the YAML.
+        cfg = """
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                script:
+                  - echo hi
+        """
+        f = run_check(cfg, "BB-029")
+        assert f.passed
+
+    def test_handles_long_form_image_block(self):
+        # Bitbucket also accepts ``image: { name: <ref>, run-as-user: N }``.
+        cfg = """
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                image:
+                  name: node:20
+                  run-as-user: 1001
+                script:
+                  - npm test
+        """
+        f = run_check(cfg, "BB-029")
+        assert not f.passed

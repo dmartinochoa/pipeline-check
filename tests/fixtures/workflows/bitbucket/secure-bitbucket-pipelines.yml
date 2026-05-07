@@ -3,7 +3,9 @@ pipelines:
   default:
     - step:
         name: Build
-        image: node:20.11.1
+        # BB-029 safe: image pinned by sha256 digest, not just a
+        # semver tag (registry-side tag move can't swap the runtime).
+        image: node@sha256:0000000000000000000000000000000000000000000000000000000000000001
         max-time: 20
         script:
           - BRANCH="$BITBUCKET_BRANCH"

@@ -164,6 +164,7 @@ STANDARD = Standard(
         "GHA-028":  ["CICD-SEC-4"],
         "GHA-029":  ["CICD-SEC-3"],
         "GHA-034":  ["CICD-SEC-2", "CICD-SEC-6"],  # secrets: inherit
+        "GHA-035":  ["CICD-SEC-4"],   # github-script injection
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -223,6 +224,7 @@ STANDARD = Standard(
         "BB-025":   ["CICD-SEC-4"],
         "BB-026":   ["CICD-SEC-4"],
         "BB-027":   ["CICD-SEC-3"],
+        "BB-029":   ["CICD-SEC-3"],   # step+service image pinning
         # Azure DevOps Pipelines
         "ADO-001":  ["CICD-SEC-3"],
         "ADO-002":  ["CICD-SEC-4"],
