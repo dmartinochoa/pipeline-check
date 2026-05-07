@@ -200,7 +200,7 @@ to force one. Counts reflect the current rule catalog.
 %%{init: {
   "theme": "base",
   "themeVariables": {
-    "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+    "fontFamily": "Mona Sans, Inter, system-ui, -apple-system, sans-serif",
     "fontSize": "13px",
     "primaryColor": "#0e1f30",
     "primaryTextColor": "#e7eef5",

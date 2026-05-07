@@ -21,7 +21,15 @@ theme:
   # in the chrome. Favicon (browser tab icon) keeps the goose SVG.
   favicon: logo.svg
   font:
-    text: Inter
+    # Body face: Mona Sans (GitHub's open-source variable family).
+    # Picked over Inter — Inter is the canonical "AI-default" sans
+    # and Pipeline-Check has the brand specificity to support a more
+    # distinctive choice. Mona Sans is also narrative-aligned: a CI/CD
+    # security tool that scans GitHub Actions workflows wearing
+    # GitHub's own typeface reads as belonging to the ecosystem.
+    # Variable axis lets the design system reach 380 / 540 / 720 in
+    # the type scale instead of the conventional 400/600/700 jumps.
+    text: Mona Sans
     code: JetBrains Mono
   features:
     - navigation.instant
