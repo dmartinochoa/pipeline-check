@@ -12,6 +12,39 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **One more Azure DevOps rule.** `ADO-030` flags ``pool:`` /
+  ``pool.name:`` / ``pool.demands:`` values that interpolate
+  attacker-controllable input. Two surfaces: runtime SCM macros
+  (`$(Build.SourceBranchName)`, `$(System.PullRequest.SourceBranch)`,
+  …) and caller-controlled template parameters (`${{ parameters.X
+  }}` — supplied by whoever queued the run). Azure DevOps parity
+  for `GHA-036` / `GL-032`: a trigger or PR sender picks which
+  agent pool the job lands on, including any privileged
+  self-hosted pool the project exposes. Walks all three pool
+  shapes — string scalar, dict `{ name, vmImage, demands }`, and
+  the `demands` list / scalar form. ``vmImage`` is intentionally
+  excluded (Microsoft-hosted, not a privileged-runner targeting
+  surface). Pipeline variables defined in the workflow's own
+  ``variables:`` block are author-controlled and not flagged.
+  Severity HIGH, OWASP CICD-SEC-7, CWE-345. New
+  `POOL_TAINT_RE` in `azure/rules/_helpers.py` combines
+  `UNTRUSTED_VAR_RE`'s catalog with the literal
+  `${{ parameters.X }}` pattern. Azure rule catalog: 29 to 30.
+- **One more GitLab rule.** `GL-032` flags jobs whose `tags:`
+  list interpolates an attacker-controllable CI variable
+  (`$CI_COMMIT_REF_NAME`, `$CI_MERGE_REQUEST_TITLE`,
+  `${CI_COMMIT_MESSAGE}`, …). GitLab parity for `GHA-036`: a
+  pipeline trigger (or anyone whose PR title / branch name the
+  workflow consumes) can route the job onto any tagged runner
+  pool the instance exposes, including privileged self-managed
+  tags like `deploy-prod` or `signer`. Reuses the same
+  `UNTRUSTED_VAR_RE` catalog as `GL-002` so the predefined-
+  variable list stays in lockstep. Static custom variables
+  defined inside the pipeline file are intentionally not flagged
+  (author-controlled, not attacker-controlled). Severity HIGH,
+  OWASP CICD-SEC-7, CWE-345. Walks both ``tags:`` shapes
+  (list of strings and the rare scalar form). GitLab rule
+  catalog: 31 to 32.
 - **One more GitHub Actions rule.** `GHA-036` flags jobs whose
   `runs-on:` interpolates an attacker-controllable expression
   (`${{ inputs.* }}`, `${{ github.event.* }}`,

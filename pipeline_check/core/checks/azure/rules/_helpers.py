@@ -22,6 +22,25 @@ UNTRUSTED_VAR_RE = re.compile(
     r")\s*\)"
 )
 
+# Pool / agent-targeting taint regex used by ADO-030. Combines two
+# attacker-controllable surfaces: runtime SCM macros (the same set
+# UNTRUSTED_VAR_RE catches) and caller-controlled template
+# parameters (``${{ parameters.X }}`` — declared by the pipeline /
+# template but supplied by whoever triggered the run). Pipeline
+# variables defined in the workflow's own ``variables:`` block are
+# author-controlled and intentionally NOT included.
+POOL_TAINT_RE = re.compile(
+    r"\$\(\s*(?:"
+    r"Build\.SourceBranch(?:Name)?"
+    r"|Build\.SourceVersion(?:Message)?"
+    r"|Build\.RequestedFor(?:Email)?"
+    r"|Build\.DefinitionName"
+    r"|System\.PullRequest\.(?:SourceBranch|SourceRepositoryURI|SourceCommitId"
+    r"|PullRequestId|PullRequestNumber)"
+    r")\s*\)"
+    r"|\$\{\{\s*parameters\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}"
+)
+
 # Cache-key taint regex used by ADO-012.
 CACHE_TAINT_RE = re.compile(
     r"\$\(\s*(?:"

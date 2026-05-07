@@ -45,8 +45,11 @@ stages:
       - job: BuildApp
         container: py
         # ADO-013 — self-hosted pool with no `ephemeral` demand.
+        # ADO-030 — pool name is computed from a PR-controlled
+        # macro, so anyone whose branch / PR the pipeline reacts to
+        # picks which agent pool the build runs on.
         pool:
-          name: self-hosted-pool
+          name: $(Build.SourceBranchName)
         steps:
           - task: DotNetCoreCLI@2
             inputs:
