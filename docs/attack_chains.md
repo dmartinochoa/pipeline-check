@@ -406,5 +406,55 @@ Break either leg of the chain. (a) Replace the mutable ref (``@v2`` / ``@main``)
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-013 — Caller-Controlled Runner with Token Persistence { #ac-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1133</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A workflow's ``runs-on:`` is computed from an attacker-controllable expression (GHA-036) AND a step in the same workflow writes ``GITHUB_TOKEN`` to persistent storage (GHA-019). The caller (or PR sender) picks which runner the workflow lands on; the workflow then drops its short-lived token onto that runner's filesystem; whoever owns the picked runner harvests the token and acts as the workflow inside the repo.
+
+**References**
+
+- <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-7-Insecure-System-Configuration>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg of the chain. (a) Hard-code ``runs-on:`` or validate the input against an allowlist of known-good labels before the job runs, so the caller can't pick an attacker-controlled runner. (b) Stop writing ``GITHUB_TOKEN`` to disk — use it inline via ``${{ secrets.GITHUB_TOKEN }}`` in the step that needs it. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-014 — Caller-Controlled Runner with Token Persistence (GitLab) { #ac-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1133</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">gitlab</span>
+</div>
+
+A pipeline's ``tags:`` is computed from an attacker-controllable CI variable (GL-032) AND a script line in the same job writes ``CI_JOB_TOKEN`` (or another CI-managed credential) to persistent storage (GL-020). The pipeline trigger picks which tagged runner the job lands on; the job then drops its short-lived token onto that runner's filesystem; whoever owns the picked runner harvests the token and acts as the pipeline against the GitLab API.
+
+**References**
+
+- <https://docs.gitlab.com/ee/ci/runners/configure_runners.html#runner-security>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-7-Insecure-System-Configuration>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag list, or validate the value against an allowlist in a ``rules:`` guard before the job runs, so the trigger can't pick an attacker-controlled runner. (b) Stop writing ``CI_JOB_TOKEN`` (or other CI-managed credentials) to disk — use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

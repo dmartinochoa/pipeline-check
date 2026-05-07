@@ -168,7 +168,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 32)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 33)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
@@ -346,7 +346,7 @@ class TestKubernetesFixtures:
      AzureContext, AzurePipelineChecks,
      {f"ADO-{i:03d}" for i in range(1, 31)}),
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
-     {f"JF-{i:03d}" for i in range(1, 32)}),
+     {f"JF-{i:03d}" for i in range(1, 33)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",

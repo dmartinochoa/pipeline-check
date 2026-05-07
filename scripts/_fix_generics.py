@@ -41,9 +41,17 @@ def ensure_any_import(text: str) -> str:
     m = typing_re.search(text)
     if m:
         names = m.group(1)
-        if 'Any' in names.split(','):
+        # split-and-strip so ' Any' (post-comma whitespace) is matched
+        # against the literal 'Any'; deduplicate while preserving order
+        # so re-running the script doesn't grow ``Any, Any, Any...``.
+        names_list = [n.strip() for n in names.split(',') if n.strip()]
+        if 'Any' in names_list:
             return text
-        return typing_re.sub(f'from typing import Any, {names}', text, count=1)
+        unique_names = ['Any'] + [n for n in names_list if n != 'Any']
+        return typing_re.sub(
+            f'from typing import {", ".join(unique_names)}',
+            text, count=1,
+        )
     if 'from __future__ import annotations' in text:
         return text.replace(
             'from __future__ import annotations',

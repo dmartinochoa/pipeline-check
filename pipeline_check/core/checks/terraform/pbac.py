@@ -9,9 +9,14 @@ from .base import TerraformBaseCheck
 
 
 def _first(block_list: list[Any] | None) -> dict[str, Any]:
+    # Validate the head's type rather than relying on truthiness — a
+    # non-dict truthy value (string, number, list) would propagate out
+    # and break callers that expect a mapping. Mirrors
+    # ``extended._first``.
     if not block_list:
         return {}
-    return block_list[0] or {}
+    head = block_list[0]
+    return head if isinstance(head, dict) else {}
 
 
 class PBACChecks(TerraformBaseCheck):

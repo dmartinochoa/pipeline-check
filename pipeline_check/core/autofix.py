@@ -1954,3 +1954,171 @@ def _fix_gcb007_latest_todo(content: str, finding: Finding) -> str | None:
     if not edits:
         return None
     return _insert_comment_above(content, edits)
+
+
+# ── Runner-injection comment-only TODO fixers ────────────────────────
+#
+# Four parallel fixers for GHA-036 / GL-032 / ADO-030 / JF-032. Each
+# rule flags a runner-targeting field (``runs-on:`` / ``tags:`` /
+# ``pool:`` / ``agent { label }``) whose value interpolates an
+# attacker-controllable expression. The right replacement is a hard-
+# coded label or an allowlist guard — neither of which the autofixer
+# can synthesize, so the TODO marker points at the canonical shape.
+
+_TODO_GHA_036 = (
+    "TODO(pipelineguard GHA-036): hard-code ``runs-on:`` or validate "
+    "the input against an allowlist before the job runs. Inlining "
+    "${{ inputs.* }} / ${{ github.event.* }} lets a caller route the "
+    "job onto any self-hosted runner the org owns"
+)
+#: Matches a ``runs-on:`` line whose value contains an untrusted-
+#: context interpolation. Mirrors the inline-scalar form the rule
+#: catches most often. The dict / list shapes are rarer and fall
+#: through to ``return None`` rather than risk a misplaced TODO.
+_GHA_RUNS_ON_INJECTION_RE = re.compile(
+    r"^(\s*)runs-on\s*:\s*[^\n#]*"
+    r"\$\{\{\s*(?:"
+    r"inputs\.[A-Za-z_][A-Za-z0-9_]*"
+    r"|github\.(?:event\.[A-Za-z0-9_.]+|head_ref|ref_name|actor)"
+    r")\s*\}\}",
+    re.MULTILINE,
+)
+
+
+@register("GHA-036")
+def _fix_gha036_runs_on_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``runs-on:`` line that interpolates
+    untrusted context.
+
+    Comment-only because the right shape is either a hard-coded
+    label or a validated allowlist — both require operator input
+    the fixer can't infer.
+    """
+    if _TODO_GHA_036 in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _GHA_RUNS_ON_INJECTION_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_GHA_036}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+_TODO_GL_032 = (
+    "TODO(pipelineguard GL-032): hard-code ``tags:`` to a specific "
+    "runner-tag list, or validate the value against an allowlist in "
+    "a ``rules:`` guard. Inlining $CI_COMMIT_* / $CI_MERGE_REQUEST_* "
+    "lets a pipeline trigger pick which runner pool the job runs on"
+)
+#: Matches a ``tags:`` line whose right-hand side contains an
+#: untrusted CI variable reference. Catches both the inline-list
+#: form (``tags: [a, $CI_COMMIT_REF_NAME]``) and the inline-scalar
+#: form (``tags: $CI_COMMIT_BRANCH``). The block-list form (``tags:
+#: \n  - a\n  - $CI_*``) is matched by ``_GL_BLOCK_TAGS_RE`` below.
+_GL_TAGS_INJECTION_RE = re.compile(
+    r"^(\s*)tags\s*:\s*[^\n#]*"
+    r"\$\{?(?:CI_COMMIT_(?:MESSAGE|DESCRIPTION|TITLE|REF_NAME|BRANCH"
+    r"|TAG(?:_MESSAGE)?|AUTHOR)"
+    r"|CI_MERGE_REQUEST_(?:TITLE|DESCRIPTION|SOURCE_BRANCH_NAME)"
+    r"|CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_(?:NAME|SHA))\}?",
+    re.MULTILINE,
+)
+
+
+@register("GL-032")
+def _fix_gl032_tags_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``tags:`` line that interpolates
+    untrusted CI variables (inline list / scalar form)."""
+    if _TODO_GL_032 in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _GL_TAGS_INJECTION_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_GL_032}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+_TODO_ADO_030 = (
+    "TODO(pipelineguard ADO-030): hard-code ``pool:`` (or its "
+    "``name:`` / ``demands:`` sub-fields), or validate the value "
+    "against an allowlist via a ``condition:`` guard. Inlining "
+    "$(Build.*) / $(System.PullRequest.*) / ${{ parameters.X }} lets "
+    "a trigger pick which agent pool the job runs on"
+)
+#: Matches a ``pool:`` / ``name:`` / ``demands:`` line whose RHS
+#: contains a runtime SCM macro or a ``${{ parameters.X }}`` template
+#: parameter. Mirrors the rule's POOL_TAINT_RE coverage on the
+#: inline scalar / list-element shape.
+_ADO_POOL_INJECTION_RE = re.compile(
+    r"^(\s*-?\s*)(?:pool|name|demands)\s*:\s*[^\n#]*"
+    r"(?:"
+    r"\$\(\s*(?:Build\.SourceBranch(?:Name)?"
+    r"|Build\.SourceVersion(?:Message)?"
+    r"|Build\.RequestedFor(?:Email)?"
+    r"|Build\.DefinitionName"
+    r"|System\.PullRequest\.[A-Za-z]+)\s*\)"
+    r"|\$\{\{\s*parameters\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}"
+    r")",
+    re.MULTILINE,
+)
+
+
+@register("ADO-030")
+def _fix_ado030_pool_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``pool:`` / ``name:`` / ``demands:``
+    line that interpolates attacker-controllable input."""
+    if _TODO_ADO_030 in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _ADO_POOL_INJECTION_RE.finditer(content):
+        indent = m.group(1)
+        # Strip the leading ``-`` if present so the comment lines up
+        # with the YAML key column rather than the list-marker column.
+        indent_ws = indent.replace("-", " ")
+        edits.append((m.start(), f"{indent_ws}# {_TODO_ADO_030}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+_TODO_JF_032 = (
+    "TODO(pipelineguard JF-032): hard-code agent labels to a "
+    "specific pool name, or validate ${params.X} against an "
+    "allowlist via a Groovy ``if`` guard before the build starts. "
+    "Inlining ${env.BRANCH_NAME} / ${env.CHANGE_BRANCH} / "
+    "${params.X} lets the triggerer pick which agent the job runs on"
+)
+#: Matches a ``label`` directive inside a Groovy ``agent { ... }``
+#: block whose string value contains a Groovy interpolation of an
+#: untrusted env / params reference. Captures the indent of the
+#: enclosing line so the inserted comment lands at the right column.
+_JF_AGENT_LABEL_INJECTION_RE = re.compile(
+    r"^(\s*)(?:agent\s*\{[^\n}]*)?label\s+\"[^\"\n]*"
+    r"\$\{?\s*(?:env\.)?(?:BRANCH_NAME|GIT_BRANCH|TAG_NAME"
+    r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?"
+    r"|CHANGE_URL|CHANGE_TARGET"
+    r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
+    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
+    r"\s*\}?"
+    r"|^(\s*)(?:agent\s*\{[^\n}]*)?label\s+\"[^\"\n]*"
+    r"\$\{?\s*params\.[A-Za-z_][A-Za-z0-9_]*\s*\}?",
+    re.MULTILINE,
+)
+
+
+@register("JF-032")
+def _fix_jf032_label_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each Groovy ``label "..."`` line that
+    interpolates an untrusted Groovy reference."""
+    if _TODO_JF_032 in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _JF_AGENT_LABEL_INJECTION_RE.finditer(content):
+        indent = m.group(1) or m.group(2) or ""
+        edits.append((m.start(), f"{indent}// {_TODO_JF_032}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)

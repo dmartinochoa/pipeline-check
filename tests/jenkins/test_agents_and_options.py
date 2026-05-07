@@ -159,3 +159,126 @@ class TestJF014EphemeralAgent:
         """
         f = run_check(groovy, "JF-014")
         assert f.passed
+
+
+# ── JF-032 agent label injection ────────────────────────────────────
+
+
+class TestJF032AgentLabelInjection:
+    def test_fails_on_params_in_label(self):
+        # Build parameters are set by whoever queues the build —
+        # parity with GHA-036's reusable-workflow caller scenario.
+        groovy = """
+        pipeline {
+            parameters {
+                string(name: 'NODE_LABEL', defaultValue: 'linux-ephemeral')
+            }
+            agent { label "${params.NODE_LABEL}" }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert not f.passed
+        assert "params.NODE_LABEL" in f.description
+
+    def test_fails_on_branch_name_env_in_label(self):
+        # ${env.BRANCH_NAME} is the SCM branch the build is for —
+        # the pusher controls that string through branch naming.
+        groovy = """
+        pipeline {
+            agent { label "deploy-${env.BRANCH_NAME}-ephemeral" }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert not f.passed
+
+    def test_fails_on_change_branch_in_node_form(self):
+        # ``agent { node { label "..." } }`` is an alternate shape
+        # for the same targeting choice — must also be walked.
+        groovy = """
+        pipeline {
+            agent {
+                node {
+                    label "${env.CHANGE_BRANCH}-ephemeral"
+                }
+            }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert not f.passed
+
+    def test_fails_on_label_in_docker_form(self):
+        # ``agent { docker { label "..." image "..." } }`` lets the
+        # docker plugin pick which executor pulls the image — same
+        # injection surface.
+        groovy = """
+        pipeline {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-21@sha256:0000000000000000000000000000000000000000000000000000000000000000'
+                    label "${params.RUNNER}"
+                }
+            }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert not f.passed
+
+    def test_passes_on_static_label(self):
+        groovy = """
+        pipeline {
+            agent { label 'linux-ephemeral' }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert f.passed
+
+    def test_passes_on_author_controlled_env(self):
+        # ``${env.JOB_NAME}`` and ``${env.BUILD_NUMBER}`` come from
+        # Jenkins itself — author-controlled, not triggerer-
+        # controlled. Out of scope for this rule.
+        groovy = """
+        pipeline {
+            agent { label "build-${env.JOB_NAME}-${env.BUILD_NUMBER}-ephemeral" }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert f.passed
+
+    def test_passes_when_no_agent_label(self):
+        # ``agent any`` and ``agent none`` have no ``label "..."`` to
+        # interpolate — out of scope (JF-003 covers ``agent any``).
+        groovy = """
+        pipeline {
+            agent any
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert f.passed
+
+    def test_passes_when_label_interpolation_is_in_a_groovy_comment(self):
+        # The rule reads ``text_no_comments`` so a commented-out
+        # interpolation example doesn't trip it.
+        groovy = """
+        pipeline {
+            // agent { label "${params.RUNNER}" }
+            agent { label 'linux-ephemeral' }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages { stage('build') { steps { sh 'make' } } }
+        }
+        """
+        f = run_check(groovy, "JF-032")
+        assert f.passed

@@ -12,6 +12,74 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **One more attack chain — Caller-Controlled Runner with Token
+  Persistence (GitLab).** `AC-014` is the GitLab parity for
+  `AC-013`. Fires when both `GL-032` (``tags:`` interpolates an
+  attacker-controllable CI variable) and `GL-020`
+  (``CI_JOB_TOKEN`` / ``CI_DEPLOY_TOKEN`` /
+  ``CI_REGISTRY_PASSWORD`` / ``CI_DEPLOY_PASSWORD`` written to
+  persistent storage) trigger on the *same* ``.gitlab-ci.yml``.
+  Same threat model as ``AC-013``: pipeline trigger picks the
+  runner, pipeline drops a CI-managed token onto that runner's
+  filesystem, attacker-controlled runner harvests the token.
+  Severity CRITICAL, MITRE T1078 + T1552.001 + T1133. Recommendation
+  closes either leg (hard-code ``tags:`` or stop writing tokens
+  to disk). Chain catalog: 13 to 14.
+- **One more attack chain — Caller-Controlled Runner with Token
+  Persistence.** `AC-013` fires when both `GHA-036`
+  (``runs-on:`` interpolates an attacker-controllable expression)
+  and `GHA-019` (``GITHUB_TOKEN`` written to persistent storage)
+  trigger on the *same* workflow file. The combo is a one-step
+  credential delivery to an attacker-chosen runner: caller picks
+  the runner, workflow drops its short-lived token onto that
+  runner's filesystem, attacker reads the token and acts as the
+  workflow inside the repo. Distinct from `AC-010` (non-ephemeral
+  self-hosted + curl-pipe / token-persistence) — `AC-010` attacks
+  any caller of the workflow once persistence lands; `AC-013` lets
+  the *attacker* pick the runner directly. Severity CRITICAL,
+  MITRE T1078 + T1552.001 + T1133, kill-chain
+  initial-access -> credential-access -> exfiltration.
+  Recommendation closes either leg (hard-code ``runs-on:`` or stop
+  writing tokens to disk). Chain catalog: 12 to 13.
+- **Four more autofixers** lifting the catalog from 96 to 100.
+  Comment-only TODO fixers for the four runner-injection rules
+  added this cycle: `GHA-036` (above each ``runs-on:`` line that
+  inlines ``${{ inputs.* }}`` / ``${{ github.event.* }}``),
+  `GL-032` (above each ``tags:`` line that inlines
+  ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*``), `ADO-030`
+  (above each ``pool:`` / ``name:`` / ``demands:`` line that
+  inlines ``$(Build.*)`` / ``$(System.PullRequest.*)`` /
+  ``${{ parameters.X }}``), and `JF-032` (above each
+  ``label "..."`` line that inlines ``${env.BRANCH_NAME}`` /
+  ``${env.CHANGE_BRANCH}`` / ``${params.X}``). All four are
+  comment-only — the right replacement is either a hard-coded
+  label or an allowlist guard, neither of which the fixer can
+  synthesize, so the marker points at the canonical shape.
+  Idempotent (skip if the TODO is already present), no-op for
+  benign cases (static labels, ``${{ matrix.* }}``, ``vmImage:``
+  Microsoft-hosted, author-controlled ``${env.JOB_NAME}``). The
+  Jenkins fixer emits a ``//`` Groovy comment instead of a
+  ``#`` YAML comment so the marker parses in its native syntax.
+- **One more Jenkins rule.** `JF-032` flags
+  ``agent { label "..." }`` declarations whose label string
+  interpolates an attacker-controllable Groovy expression
+  (``${env.BRANCH_NAME}``, ``${env.CHANGE_BRANCH}``,
+  ``${env.TAG_NAME}``, ``${params.X}``, …). Jenkins parity for
+  ``GHA-036`` / ``GL-032`` / ``ADO-030``: whoever queues the
+  build (or pushes the branch / opens the PR) picks which
+  agent the job lands on, including any privileged label the
+  controller exposes. Walks all four agent shapes — direct
+  ``label``, the ``node { label … }`` form, and
+  ``docker { label … }`` / ``dockerfile { label … }`` — via
+  brace-balanced scan that handles nested DSL blocks correctly.
+  Reuses the comment-stripped ``text_no_comments`` from the
+  Jenkinsfile dataclass so a commented-out interpolation
+  doesn't trip the rule. New ``LABEL_TAINT_RE`` in
+  ``jenkins/rules/_helpers.py`` extends ``UNTRUSTED_ENV_RE``'s
+  catalog with ``${params.X}``. Author-controlled
+  ``${env.JOB_NAME}`` / ``${env.BUILD_NUMBER}`` are
+  intentionally not flagged. Severity HIGH, OWASP CICD-SEC-7,
+  CWE-345. Jenkins rule catalog: 31 to 32.
 - **One more Azure DevOps rule.** `ADO-030` flags ``pool:`` /
   ``pool.name:`` / ``pool.demands:`` values that interpolate
   attacker-controllable input. Two surfaces: runtime SCM macros

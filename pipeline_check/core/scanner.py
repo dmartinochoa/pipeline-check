@@ -333,7 +333,14 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     if not isinstance(planned, list):
         return
 
-    def _keep(res: dict[str, Any]) -> bool:
+    def _keep(res: Any) -> bool:
+        # Fail open on shape errors — a malformed plan with a non-dict
+        # resource entry shouldn't crash the diff filter. The
+        # surrounding helpers already chose "skip the filter, scan
+        # everything" over raising on bad shape; this preserves that
+        # contract at the per-item level too.
+        if not isinstance(res, dict):
+            return True
         addr = res.get("address", "")
         if not isinstance(addr, str):
             return True

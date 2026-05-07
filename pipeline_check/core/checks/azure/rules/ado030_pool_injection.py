@@ -93,6 +93,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 return
 
     _scan(doc.get("pool"), "<top>")
+    # Stage-level ``pool:`` applies to every job in the stage and is
+    # a separate declaration site from job-level. ``iter_jobs``
+    # flattens stages → jobs so it doesn't yield the stage dict
+    # itself; walk the stages list explicitly.
+    stages = doc.get("stages")
+    if isinstance(stages, list):
+        for i, stage in enumerate(stages):
+            if not isinstance(stage, dict):
+                continue
+            stage_loc = str(stage.get("stage") or f"stage{i}")
+            _scan(stage.get("pool"), stage_loc)
     for job_loc, job in iter_jobs(doc):
         _scan(job.get("pool"), job_loc)
     passed = not offenders

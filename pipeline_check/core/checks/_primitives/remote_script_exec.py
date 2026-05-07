@@ -146,15 +146,33 @@ def scan(text: str) -> list[RemoteExecFinding]:
     hits: list[RemoteExecFinding] = []
     seen_spans: set[tuple[int, int]] = set()
 
-    def _emit(kind: str, m: re.Match[str], interp_key: str = "interp") -> None:
+    def _emit(
+        kind: str,
+        m: re.Match[str],
+        interp_key: str = "interp",
+        *,
+        interp_override: str | None = None,
+        url: str | None = None,
+        host: str | None = None,
+    ) -> None:
+        # ``interp_override`` lets a caller bypass ``m.group(interp_key)``
+        # when the regex doesn't carry an ``interp`` group (the
+        # python-inline pattern). ``url`` / ``host`` let a caller hand
+        # in pre-computed values so ``_host_of`` isn't repeated.
         if m.span() in seen_spans:
             return
         seen_spans.add(m.span())
-        url = m.group("url")
-        host = _host_of(url)
+        if url is None:
+            url = m.group("url")
+        if host is None:
+            host = _host_of(url)
+        interpreter = (
+            interp_override if interp_override is not None
+            else m.group(interp_key).lower()
+        )
         hits.append(RemoteExecFinding(
             kind=kind,
-            interpreter=m.group(interp_key).lower(),
+            interpreter=interpreter,
             url=url,
             host=host,
             snippet=_trim(m.group(0)),
@@ -175,14 +193,19 @@ def scan(text: str) -> list[RemoteExecFinding]:
             continue
         _emit("curl-pipe", m)
     for m in _PYTHON_INLINE_RE.finditer(text):
-        hits.append(RemoteExecFinding(
-            kind="python-inline",
-            interpreter="python",
-            url=m.group("url"),
-            host=_host_of(m.group("url")),
-            snippet=_trim(m.group(0)),
-            vendor_trusted=_is_vendor(_host_of(m.group("url"))),
-        ))
+        # Cache url and host so _host_of runs once per match. The
+        # _PYTHON_INLINE_RE has no ``interp`` group (the regex
+        # anchors on ``python[23]?`` directly), so route through
+        # ``_emit`` with ``interp_override`` to get the same span
+        # dedup and vendor-trusted classification the other branches
+        # use.
+        url = m.group("url")
+        host = _host_of(url)
+        _emit(
+            "python-inline", m,
+            interp_override="python",
+            url=url, host=host,
+        )
     for m in _POWERSHELL_RE.finditer(text):
         _emit("powershell", m)
     return hits

@@ -261,6 +261,30 @@ def test_lambda_fanout_tolerates_unknown_grade(monkeypatch):
     assert result["worst_grade"] == "D"
 
 
+def test_lambda_fanout_tolerates_unknown_grade_multi_region(monkeypatch):
+    """Multi-region variant: every sub-scan returns the same unknown
+    grade. The aggregation loop must collapse each one to ``D`` and
+    not raise ValueError on the second-or-later iteration (which is
+    where ``_GRADE_ORDER.index(worst_grade)`` would have crashed if
+    ``worst_grade`` were itself the unknown value)."""
+    from pipeline_check import lambda_handler as lh
+
+    def fake_handler(event, ctx):
+        return {
+            "statusCode": 200, "grade": "F", "score": 0,
+            "total_findings": 0, "critical_failures": 0,
+            "report_s3_key": None, "report_s3_status": "unconfigured",
+        }
+    monkeypatch.setattr(lh, "handler", fake_handler)
+
+    result = lh._fan_out(
+        regions=["us-east-1", "eu-west-1"], providers=["aws"],
+    )
+    assert result["statusCode"] == 200
+    assert len(result["scans"]) == 2
+    assert result["worst_grade"] == "D"
+
+
 # ── HTML filter markup ───────────────────────────────────────────────────
 
 def test_html_report_includes_filter_bar_and_copy_ignore():

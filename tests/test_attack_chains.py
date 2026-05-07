@@ -99,6 +99,7 @@ class TestEngine:
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
             "AC-009", "AC-010", "AC-011", "AC-012",
+            "AC-013", "AC-014",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -435,6 +436,112 @@ class TestChainAC012:
         ])
         ac12 = next(c for c in out if c.chain_id == "AC-012")
         assert ac12.confidence is Confidence.MEDIUM
+
+
+class TestChainAC013:
+    """AC-013 — Caller-Controlled Runner with Token Persistence."""
+
+    WF = ".github/workflows/release.yml"
+
+    def test_fires_when_both_legs_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-036", self.WF), _f("GHA-019", self.WF),
+        ])
+        ac13 = [c for c in out if c.chain_id == "AC-013"]
+        assert len(ac13) == 1
+        assert ac13[0].severity is Severity.CRITICAL
+        assert ac13[0].resources == [self.WF]
+        assert "T1552.001" in ac13[0].mitre_attack
+        assert "T1078" in ac13[0].mitre_attack
+        assert ac13[0].triggering_check_ids == ["GHA-036", "GHA-019"]
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        # GHA-036 in workflow A and GHA-019 in workflow B aren't the
+        # same execution — picking a runner in one place doesn't get
+        # you the token persisted somewhere else.
+        out = chains_pkg.evaluate([
+            _f("GHA-036", ".github/workflows/a.yml"),
+            _f("GHA-019", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-013" for c in out)
+
+    def test_does_not_fire_when_only_targeting_leg_fails(self):
+        # Caller picks the runner but the workflow doesn't write
+        # tokens to disk — the targeting risk stands alone, not as
+        # the AC-013 chain.
+        out = chains_pkg.evaluate([_f("GHA-036", self.WF)])
+        assert not any(c.chain_id == "AC-013" for c in out)
+
+    def test_does_not_fire_when_only_persistence_leg_fails(self):
+        # Token written to disk but the runner is hard-coded — token
+        # persistence on a known runner is its own risk (GHA-019),
+        # not the routing-attack chain.
+        out = chains_pkg.evaluate([_f("GHA-019", self.WF)])
+        assert not any(c.chain_id == "AC-013" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        # Findings present but green — neither rule actually triggered.
+        out = chains_pkg.evaluate([
+            _f("GHA-036", self.WF, passed=True),
+            _f("GHA-019", self.WF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-013" for c in out)
+
+    def test_confidence_inherits_minimum(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-036", self.WF, confidence=Confidence.HIGH),
+            _f("GHA-019", self.WF, confidence=Confidence.LOW),
+        ])
+        ac13 = next(c for c in out if c.chain_id == "AC-013")
+        assert ac13.confidence is Confidence.LOW
+
+
+class TestChainAC014:
+    """AC-014 — Caller-Controlled Runner with Token Persistence (GitLab)."""
+
+    PIPELINE = ".gitlab-ci.yml"
+
+    def test_fires_when_both_legs_on_same_pipeline(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", self.PIPELINE), _f("GL-020", self.PIPELINE),
+        ])
+        ac14 = [c for c in out if c.chain_id == "AC-014"]
+        assert len(ac14) == 1
+        assert ac14[0].severity is Severity.CRITICAL
+        assert ac14[0].resources == [self.PIPELINE]
+        assert "T1552.001" in ac14[0].mitre_attack
+        assert "T1078" in ac14[0].mitre_attack
+        assert ac14[0].triggering_check_ids == ["GL-032", "GL-020"]
+
+    def test_does_not_fire_when_legs_on_different_pipelines(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", "a.gitlab-ci.yml"),
+            _f("GL-020", "b.gitlab-ci.yml"),
+        ])
+        assert not any(c.chain_id == "AC-014" for c in out)
+
+    def test_does_not_fire_when_only_targeting_leg_fails(self):
+        out = chains_pkg.evaluate([_f("GL-032", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-014" for c in out)
+
+    def test_does_not_fire_when_only_persistence_leg_fails(self):
+        out = chains_pkg.evaluate([_f("GL-020", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-014" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", self.PIPELINE, passed=True),
+            _f("GL-020", self.PIPELINE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-014" for c in out)
+
+    def test_confidence_inherits_minimum(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", self.PIPELINE, confidence=Confidence.HIGH),
+            _f("GL-020", self.PIPELINE, confidence=Confidence.MEDIUM),
+        ])
+        ac14 = next(c for c in out if c.chain_id == "AC-014")
+        assert ac14.confidence is Confidence.MEDIUM
 
 
 # ── Gate integration ─────────────────────────────────────────────────

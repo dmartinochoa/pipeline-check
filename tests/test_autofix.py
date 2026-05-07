@@ -1050,3 +1050,213 @@ class TestGCB007LatestVersionTODO:
         once = autofix.generate_fix(_finding("GCB-007"), cb)
         assert once is not None
         assert autofix.generate_fix(_finding("GCB-007"), once) is None
+
+
+# ── Runner-injection comment-only TODO fixers ────────────────────────
+
+
+class TestGHA036RunsOnInjectionTODO:
+    def test_inserts_todo_above_inputs_runner(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ${{ inputs.runner }}\n"
+            "    steps:\n"
+            "      - run: make\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-036"), wf)
+        assert after is not None
+        assert "TODO(pipelineguard GHA-036)" in after
+        # TODO lands above the runs-on line, not above the steps block.
+        assert after.index("TODO(pipelineguard GHA-036)") < after.index("runs-on:")
+
+    def test_inserts_todo_above_github_event_head_ref(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ${{ github.head_ref }}\n"
+            "    steps:\n"
+            "      - run: make\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-036"), wf)
+        assert after is not None
+        assert "TODO(pipelineguard GHA-036)" in after
+
+    def test_no_op_for_static_runs_on(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: make\n"
+        )
+        assert autofix.generate_fix(_finding("GHA-036"), wf) is None
+
+    def test_no_op_for_matrix_runs_on(self):
+        # ``${{ matrix.os }}`` is author-controlled; the rule
+        # excludes it and the autofix shouldn't insert a TODO either.
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            "        os: [ubuntu-latest, macos-latest]\n"
+            "    runs-on: ${{ matrix.os }}\n"
+            "    steps:\n"
+            "      - run: make\n"
+        )
+        assert autofix.generate_fix(_finding("GHA-036"), wf) is None
+
+    def test_idempotent(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ${{ inputs.runner }}\n"
+            "    steps:\n"
+            "      - run: make\n"
+        )
+        once = autofix.generate_fix(_finding("GHA-036"), wf)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GHA-036"), once) is None
+
+
+class TestGL032TagsInjectionTODO:
+    def test_inserts_todo_above_inline_list(self):
+        cfg = (
+            "build_job:\n"
+            "  image: alpine:3.19.1\n"
+            "  tags: [$CI_COMMIT_REF_NAME]\n"
+            "  script: [make]\n"
+        )
+        after = autofix.generate_fix(_finding("GL-032"), cfg)
+        assert after is not None
+        assert "TODO(pipelineguard GL-032)" in after
+
+    def test_inserts_todo_above_braced_var(self):
+        cfg = (
+            "build_job:\n"
+            "  image: alpine:3.19.1\n"
+            '  tags: ["${CI_COMMIT_MESSAGE}"]\n'
+            "  script: [make]\n"
+        )
+        after = autofix.generate_fix(_finding("GL-032"), cfg)
+        assert after is not None
+
+    def test_no_op_for_static_tags(self):
+        cfg = (
+            "build_job:\n"
+            "  image: alpine:3.19.1\n"
+            "  tags: [self-managed, ephemeral]\n"
+            "  script: [make]\n"
+        )
+        assert autofix.generate_fix(_finding("GL-032"), cfg) is None
+
+    def test_idempotent(self):
+        cfg = (
+            "build_job:\n"
+            "  tags: [$CI_COMMIT_REF_NAME]\n"
+            "  script: [make]\n"
+        )
+        once = autofix.generate_fix(_finding("GL-032"), cfg)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GL-032"), once) is None
+
+
+class TestADO030PoolInjectionTODO:
+    def test_inserts_todo_above_top_level_pool_macro(self):
+        cfg = (
+            "pool: $(Build.SourceBranchName)\n"
+            "jobs:\n"
+            "  - job: build\n"
+            "    steps:\n"
+            "      - script: make\n"
+        )
+        after = autofix.generate_fix(_finding("ADO-030"), cfg)
+        assert after is not None
+        assert "TODO(pipelineguard ADO-030)" in after
+
+    def test_inserts_todo_above_template_parameter(self):
+        cfg = (
+            "parameters:\n"
+            "  - name: poolName\n"
+            "    type: string\n"
+            "jobs:\n"
+            "  - job: build\n"
+            "    pool:\n"
+            "      name: ${{ parameters.poolName }}\n"
+            "    steps:\n"
+            "      - script: make\n"
+        )
+        after = autofix.generate_fix(_finding("ADO-030"), cfg)
+        assert after is not None
+        assert "TODO(pipelineguard ADO-030)" in after
+
+    def test_no_op_for_vmimage(self):
+        cfg = (
+            "jobs:\n"
+            "  - job: build\n"
+            "    pool:\n"
+            "      vmImage: ubuntu-latest\n"
+            "    steps:\n"
+            "      - script: make\n"
+        )
+        assert autofix.generate_fix(_finding("ADO-030"), cfg) is None
+
+    def test_idempotent(self):
+        cfg = (
+            "pool: $(Build.SourceBranchName)\n"
+            "jobs:\n"
+            "  - job: build\n"
+            "    steps:\n"
+            "      - script: make\n"
+        )
+        once = autofix.generate_fix(_finding("ADO-030"), cfg)
+        assert once is not None
+        assert autofix.generate_fix(_finding("ADO-030"), once) is None
+
+
+class TestJF032AgentLabelInjectionTODO:
+    def test_inserts_todo_above_env_branch_name_label(self):
+        groovy = (
+            "pipeline {\n"
+            '    agent { label "${env.BRANCH_NAME}" }\n'
+            "    stages { stage('build') { steps { sh 'make' } } }\n"
+            "}\n"
+        )
+        after = autofix.generate_fix(_finding("JF-032"), groovy)
+        assert after is not None
+        assert "TODO(pipelineguard JF-032)" in after
+        # Groovy comment uses //, not #
+        assert "// TODO(pipelineguard JF-032)" in after
+
+    def test_inserts_todo_above_params_label(self):
+        groovy = (
+            "pipeline {\n"
+            "    parameters { string(name: 'NODE_LABEL', defaultValue: 'a') }\n"
+            '    agent { label "${params.NODE_LABEL}" }\n'
+            "    stages { stage('build') { steps { sh 'make' } } }\n"
+            "}\n"
+        )
+        after = autofix.generate_fix(_finding("JF-032"), groovy)
+        assert after is not None
+        assert "TODO(pipelineguard JF-032)" in after
+
+    def test_no_op_for_static_label(self):
+        groovy = (
+            "pipeline {\n"
+            "    agent { label 'linux-ephemeral' }\n"
+            "    stages { stage('build') { steps { sh 'make' } } }\n"
+            "}\n"
+        )
+        assert autofix.generate_fix(_finding("JF-032"), groovy) is None
+
+    def test_idempotent(self):
+        groovy = (
+            "pipeline {\n"
+            '    agent { label "${env.BRANCH_NAME}" }\n'
+            "    stages { stage('build') { steps { sh 'make' } } }\n"
+            "}\n"
+        )
+        once = autofix.generate_fix(_finding("JF-032"), groovy)
+        assert once is not None
+        assert autofix.generate_fix(_finding("JF-032"), once) is None
