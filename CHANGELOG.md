@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [0.4.0] - 2026-05-07
+
 ### Added
 
 - **Line-precise findings.** New ``Location`` dataclass on
@@ -807,6 +809,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   mypy is now a required CI gate. Strict mode (`strict = true`)
   remains a follow-up PR (~400 strict-only errors across rule
   modules).
+- **CI lint-and-test resilience under newer mypy.** The unpinned
+  `pip install mypy` step started pulling a release that's stricter
+  on `Any | None` arguments and unused override-ignore comments.
+  `parse_uses` widened from `str` to `Any` (it already does its own
+  `isinstance(value, str)` check, and callers fish `uses` out of
+  YAML mappings whose static type is `Any | None`).
+  `pipeline_check.core.checks._yaml_lines` added to the existing
+  `disallow_subclassing_any = false` override block alongside the
+  other PyYAML SafeLoader subclasses; the now-redundant
+  `# type: ignore[override]` markers on `construct_mapping` /
+  `construct_sequence` and on `providers.github.post_filter` were
+  dropped. `line_of_item` / `col_of_item` narrow with
+  `isinstance(seq, LineList)` so the return type matches the
+  declared `int | None`. `frozenset()` initializer in
+  `github/resolver.py` got an explicit `frozenset[str]` annotation.
+- **Helm version-probe timeout raised from 10s to 30s.** Cold runs
+  on Windows CI runners spent most of the previous budget in
+  Defender scanning `helm.exe` before the process could start. 30s
+  is a comfortable ceiling without letting truly hung calls drag
+  CI out.
 
 ## [0.3.3] - 2026-05-06
 
