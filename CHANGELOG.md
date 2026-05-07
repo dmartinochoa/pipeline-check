@@ -193,9 +193,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   types, AWS `ResourceCatalog._memo` (typed `loader: Callable[[],
   Any]`) and `AWSRuleChecks.__init__`, the YAML strict loader's
   `construct_mapping`, and the CFN `_target_key` /
-  `_service_role_key` value-key helpers. Eight of nine strict
-  mypy flags now on; only `disallow_any_generics` (~210 bare-
-  `dict` / `list` annotations) remains.
+  `_service_role_key` value-key helpers. This was the eighth of
+  the nine `mypy --strict` flags; the ninth
+  (`disallow_any_generics`) closed out in a separate landing
+  documented above in this section.
 
 ### Changed
 

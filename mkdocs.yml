@@ -156,4 +156,5 @@ nav:
   - Contributing:
       - Architecture: architecture.md
       - Adding a rule: writing_a_rule.md
+      - Adding an attack chain: writing_a_chain.md
       - Adding a provider: writing_a_provider.md

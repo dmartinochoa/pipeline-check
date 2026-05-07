@@ -16,12 +16,13 @@ _ALL_AT_ONCE_CONFIGS = {
 }
 
 
-def _first(block_list: list[Any] | None) -> dict[str, Any]:
-    # Validate the head's type rather than relying on truthiness — a
-    # non-dict truthy value (string, number, list) would propagate out
-    # and break callers that expect a mapping. Mirrors
-    # ``extended._first``.
-    if not block_list:
+def _first(block_list: object) -> dict[str, Any]:
+    # Validate both container and head. ``block_list`` may surface as
+    # a non-list ``object`` (a ``values.get`` Any can be a dict, str,
+    # int, …); the head may be a non-dict truthy value. Mirrors
+    # ``extended._first`` so callers always see a mapping safe to
+    # ``.get()``.
+    if not isinstance(block_list, list) or not block_list:
         return {}
     head = block_list[0]
     return head if isinstance(head, dict) else {}

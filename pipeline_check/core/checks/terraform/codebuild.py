@@ -33,10 +33,16 @@ from .base import TerraformBaseCheck
 _MAX_SENSIBLE_TIMEOUT = 480
 
 
-def _first(block_list: list[Any] | None) -> dict[str, Any]:
-    if not block_list:
+def _first(block_list: object) -> dict[str, Any]:
+    # Validate both the container AND the head — Terraform plan values
+    # may surface a non-list ``object`` here (a ``values.get`` Any can
+    # be a dict, string, int, …) and the head may be a non-dict truthy
+    # value. Mirrors ``extended._first`` so callers always see a
+    # mapping safe to ``.get()``.
+    if not isinstance(block_list, list) or not block_list:
         return {}
-    return block_list[0] or {}
+    head = block_list[0]
+    return head if isinstance(head, dict) else {}
 
 
 class CodeBuildChecks(TerraformBaseCheck):
