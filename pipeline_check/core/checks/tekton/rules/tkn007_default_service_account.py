@@ -34,9 +34,9 @@ def _missing_or_default(spec: dict[str, Any]) -> bool:
     sa = spec.get("serviceAccountName")
     if sa is None:
         return True
-    if isinstance(sa, str) and sa.strip().lower() in {"", "default"}:
+    if not isinstance(sa, str):
         return True
-    return False
+    return sa.strip().lower() in {"", "default"}
 
 
 def check(ctx: TektonContext) -> Finding:

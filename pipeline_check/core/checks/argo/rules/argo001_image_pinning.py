@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import ArgoContext, iter_containers, iter_templates, template_name
 
@@ -35,17 +36,30 @@ _DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}\b")
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
             for container in iter_containers(tmpl):
                 image = container.get("image")
+                offending = False
                 if not isinstance(image, str) or not image.strip():
-                    continue
-                if not _DIGEST_RE.search(image):
+                    offenders.append(
+                        f"{doc.kind}/{doc.name} "
+                        f"{template_name(tmpl, idx)}: <missing image>"
+                    )
+                    offending = True
+                elif not _DIGEST_RE.search(image):
                     offenders.append(
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)}: {image}"
                     )
+                    offending = True
+                if offending:
+                    line = _line_of(container) if isinstance(container, dict) else None
+                    locations.append(Location(
+                        path=doc.path, start_line=line, end_line=line,
+                        doc_index=doc.doc_index,
+                    ))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -65,4 +79,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

@@ -213,8 +213,9 @@ Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop
 
 1. Create a new module at
    `pipeline_check/core/checks/tekton/rules/tknNNN_<name>.py`
-   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) ->
-   Finding` function. The orchestrator auto-discovers it.
+   exporting a top-level `RULE = Rule(...)` and a `check(ctx: TektonContext) -> Finding`
+   function. The orchestrator auto-discovers `RULE` and calls `check`
+   with the ``TektonContext``.
 2. Add a mapping for the new ID in
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
    other standard that applies).

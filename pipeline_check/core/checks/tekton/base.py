@@ -83,13 +83,14 @@ class TektonContext:
                 skipped += 1
                 continue
             try:
-                parsed = list(yaml.safe_load_all(text))
+                from .._yaml_lines import safe_load_all_with_lines
+                parsed_with_lines = list(safe_load_all_with_lines(text))
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
                 skipped += 1
                 continue
-            for idx, raw in enumerate(parsed):
+            for idx, (_doc_start_line, raw) in enumerate(parsed_with_lines):
                 d = _to_doc(str(f), idx, raw)
                 if d is not None:
                     docs.append(d)
@@ -194,9 +195,9 @@ def iter_step_commands(doc: TektonDoc) -> Iterator[tuple[str, list[str]]]:
         parts: list[str] = []
         cmd = step.get("command")
         if isinstance(cmd, list):
-            parts.extend(str(c) for c in cmd if isinstance(c, str))
+            parts.extend(c for c in cmd if isinstance(c, str))
         args = step.get("args")
         if isinstance(args, list):
-            parts.extend(str(a) for a in args if isinstance(a, str))
+            parts.extend(a for a in args if isinstance(a, str))
         if parts:
             yield step_name(step, idx), parts

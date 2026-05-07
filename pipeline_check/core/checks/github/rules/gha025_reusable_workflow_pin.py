@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
+from ..base import job_location
 from ..uses_parser import parse_uses
 
 RULE = Rule(
@@ -48,6 +49,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             recommendation="No action required.", passed=True,
         )
     unpinned: list[str] = []
+    locations: list[Location] = []
     for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
@@ -56,6 +58,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not ref.is_pinned_to_sha:
             unpinned.append(f"{job_id}: {ref.raw}")
+            locations.append(job_location(path, job))
     passed = not unpinned
     desc = (
         "Every reusable workflow reference is pinned to a commit SHA."
@@ -69,4 +72,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

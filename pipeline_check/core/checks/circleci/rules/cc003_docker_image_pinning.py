@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import get_docker_images
+from ..base import iter_docker_image_anchors
 from ._helpers import DIGEST_RE
 
 RULE = Rule(
@@ -31,15 +32,22 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    images = get_docker_images(doc)
-    if not images:
+    pairs = list(iter_docker_image_anchors(doc))
+    if not pairs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
             description="No Docker images declared in the config.",
             recommendation="No action required.", passed=True,
         )
-    unpinned = [img for img in images if not DIGEST_RE.search(img)]
+    unpinned: list[str] = []
+    locations: list[Location] = []
+    for img, anchor in pairs:
+        if DIGEST_RE.search(img):
+            continue
+        unpinned.append(img)
+        line = _line_of(anchor)
+        locations.append(Location(path=path, start_line=line, end_line=line))
     passed = not unpinned
     desc = (
         "Every Docker image is pinned by sha256 digest."
@@ -53,4 +61,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

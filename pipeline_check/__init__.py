@@ -24,7 +24,7 @@ from importlib.metadata import PackageNotFoundError, version
 try:
     __version__ = version("pipeline_check")
 except PackageNotFoundError:
-    __version__ = "0.2.0"
+    __version__ = "0.4.0"
 
 # ── Public API surface ─────────────────────────────────────────────
 #
@@ -40,6 +40,7 @@ from .core.checks.base import (
     Confidence,
     ControlRef,
     Finding,
+    Location,
     Severity,
     confidence_rank,
     severity_rank,
@@ -60,6 +61,7 @@ __all__ = [
     "ScanMetadata",
     # Findings + their building-block enums
     "Finding",
+    "Location",
     "Severity",
     "Confidence",
     "ControlRef",

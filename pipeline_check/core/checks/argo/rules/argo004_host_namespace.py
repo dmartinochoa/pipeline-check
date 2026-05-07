@@ -1,6 +1,8 @@
 """ARGO-004 — Volumes / podSpecPatch grant host-namespace access."""
 from __future__ import annotations
 
+import json
+import re
 from typing import Any
 
 from ...base import Finding, Severity
@@ -41,15 +43,38 @@ def _scan_volumes(spec: dict[str, Any]) -> list[str]:
     return out
 
 
+_HOST_NS_KEYS = ("hostNetwork", "hostPID", "hostIPC")
+_HOST_NS_RES = {
+    key: re.compile(rf'["\']?{key}["\']?\s*:\s*true\b', re.IGNORECASE)
+    for key in _HOST_NS_KEYS
+}
+_HOST_PATH_RE = re.compile(r'["\']?hostPath["\']?\s*:')
+
+
 def _scan_pod_spec_patch(spec: dict[str, Any]) -> list[str]:
     out: list[str] = []
     psp = spec.get("podSpecPatch")
     if not isinstance(psp, str):
         return out
-    for token in ("hostNetwork: true", "hostPID: true", "hostIPC: true"):
-        if token in psp:
-            out.append(f"podSpecPatch {token}")
-    if "hostPath:" in psp:
+    # podSpecPatch is often a JSON-merge-patch string. Try JSON first
+    # so quoted-key / compact variants are caught; fall back to regex
+    # for YAML or partial strings that don't parse.
+    parsed: Any = None
+    try:
+        parsed = json.loads(psp)
+    except (ValueError, TypeError):
+        parsed = None
+    if isinstance(parsed, dict):
+        for key in _HOST_NS_KEYS:
+            if parsed.get(key) is True:
+                out.append(f"podSpecPatch {key}: true")
+        if "hostPath" in parsed:
+            out.append("podSpecPatch hostPath")
+        return out
+    for key, regex in _HOST_NS_RES.items():
+        if regex.search(psp):
+            out.append(f"podSpecPatch {key}: true")
+    if _HOST_PATH_RE.search(psp):
         out.append("podSpecPatch hostPath")
     return out
 

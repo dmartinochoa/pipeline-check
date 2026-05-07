@@ -13,7 +13,7 @@ spec:
     parameters:
       # ARGO-006: literal AWS access key in workflow argument.
       - name: aws_access_key
-        value: "AKIAIOSFODNN7EXAMPLE"
+        value: "AKIAIOSFODNN7EXAMPLE"  # checkov:skip=CKV_SECRET_2 test fixture
       - name: ref
         value: "main"
   # ARGO-004: hostPath volume.
@@ -36,7 +36,7 @@ spec:
         # ARGO-006 (secondary): literal token-shaped env value.
         env:
           - name: GITHUB_TOKEN
-            value: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            value: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"  # checkov:skip=CKV_SECRET_2 test fixture
         command: [bash]
         # ARGO-005: input parameter inlined unquoted.
         # ARGO-008: curl-pipe-shell in script body.

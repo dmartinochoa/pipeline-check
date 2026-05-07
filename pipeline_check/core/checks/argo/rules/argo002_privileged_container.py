@@ -1,6 +1,7 @@
 """ARGO-002 — Template containers must not run privileged or as root."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
@@ -49,9 +50,12 @@ def _container_offenders(sc: Any) -> list[str]:
     return issues
 
 
+_PRIV_TRUE_RE = re.compile(r'["\']?privileged["\']?\s*:\s*true\b', re.IGNORECASE)
+
+
 def _pod_spec_patch_grants_priv(spec: dict[str, Any]) -> bool:
     psp = spec.get("podSpecPatch")
-    if isinstance(psp, str) and "privileged: true" in psp:
+    if isinstance(psp, str) and _PRIV_TRUE_RE.search(psp):
         return True
     return False
 

@@ -45,7 +45,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         # whose plugin is short-running) get a pass.
         if not step_commands(step):
             continue
-        if "timeout_in_minutes" not in step:
+        # ``timeout_in_minutes: null`` / ``0`` / negative / non-numeric
+        # are equivalent to "no timeout"; only a positive integer
+        # actually bounds the run.
+        timeout = step.get("timeout_in_minutes")
+        if (
+            "timeout_in_minutes" not in step
+            or not isinstance(timeout, int)
+            or isinstance(timeout, bool)
+            or timeout <= 0
+        ):
             offenders.append(step_label(step, idx))
     passed = not offenders
     desc = (

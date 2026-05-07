@@ -35,6 +35,7 @@ RULE = Rule(
 
 _UNSAFE_PARAM_RE = re.compile(
     r"(?<!['\"])\{\{(?:inputs|workflow|item)\.parameters?\.[A-Za-z0-9_-]+\}\}"
+    r"|(?<!['\"])\{\{item\.[A-Za-z0-9_-]+\}\}"
     r"|(?<!['\"])\{\{item\}\}"
 )
 

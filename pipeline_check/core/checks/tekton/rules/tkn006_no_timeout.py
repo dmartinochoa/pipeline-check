@@ -30,23 +30,49 @@ RULE = Rule(
 )
 
 
+def _is_meaningful_timeout(value: Any) -> bool:
+    """A timeout key is only "set" if its value is a non-empty literal.
+
+    YAML ``timeout: ""`` / ``timeout: null`` / ``timeouts: { pipeline: "" }``
+    parse as the key being present but the value being effectively
+    unset; the controller falls back to its default. Treat those as
+    "no timeout".
+    """
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip() != ""
+    return True
+
+
 def _has_run_timeout(spec: dict[str, Any]) -> bool:
-    if "timeout" in spec:
+    timeout = spec.get("timeout")
+    if _is_meaningful_timeout(timeout):
         return True
     timeouts = spec.get("timeouts")
-    if isinstance(timeouts, dict) and timeouts:
-        return True
+    if isinstance(timeouts, dict):
+        for v in timeouts.values():
+            if _is_meaningful_timeout(v):
+                return True
     return False
 
 
 def _pipeline_has_per_task_timeouts(spec: dict[str, Any]) -> bool:
+    """Return True only if every task carries a meaningful timeout.
+
+    A single timed task can't bound the whole pipeline run — the
+    untimed siblings still race to the controller default. The rule
+    fires unless every task is bounded.
+    """
     tasks = spec.get("tasks")
     if not isinstance(tasks, list) or not tasks:
         return False
     for t in tasks:
-        if isinstance(t, dict) and "timeout" in t:
-            return True
-    return False
+        if not isinstance(t, dict):
+            return False
+        if not _is_meaningful_timeout(t.get("timeout")):
+            return False
+    return True
 
 
 def check(ctx: TektonContext) -> Finding:

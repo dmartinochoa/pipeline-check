@@ -12,7 +12,7 @@ spec:
   params:
     - name: deploy-token
       type: string
-      default: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      default: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"  # checkov:skip=CKV_SECRET_2 test fixture
     - name: ref
       type: string
       default: "main"
@@ -32,7 +32,7 @@ spec:
       # TKN-005 (secondary): literal-secret env value.
       env:
         - name: AWS_ACCESS_KEY_ID
-          value: "AKIAIOSFODNN7EXAMPLE"
+          value: "AKIAIOSFODNN7EXAMPLE"  # checkov:skip=CKV_SECRET_2 test fixture
       # TKN-003 + TKN-008: $(params.ref) inlined unquoted, plus
       # curl-pipe-shell in the same script body.
       script: |

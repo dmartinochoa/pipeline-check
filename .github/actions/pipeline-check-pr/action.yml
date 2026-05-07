@@ -1,0 +1,101 @@
+name: 'pipeline-check (PR review)'
+description: >
+  Run pipeline-check on a PR and post review comments on the changed
+  lines. Falls back to a single PR-level summary comment when the
+  finding's line isn't part of the PR diff.
+author: 'Pipeline-Check'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  pipeline:
+    description: >
+      Provider to scan. Defaults to ``auto`` so the action picks the
+      right provider from the workspace contents (.github/workflows/,
+      .gitlab-ci.yml, etc.). Pass an explicit name to scope a scan.
+    required: false
+    default: 'auto'
+  path:
+    description: >
+      Workspace path to scan. Forwarded to the matching ``--<provider>-
+      path`` flag. Defaults to the repo root.
+    required: false
+    default: '.'
+  severity-threshold:
+    description: >
+      Minimum severity that produces review comments. One of CRITICAL,
+      HIGH, MEDIUM, LOW, INFO.
+    required: false
+    default: 'MEDIUM'
+  resolve-remote:
+    description: >
+      Pass ``--resolve-remote`` to the scanner so reusable workflow
+      callees are fetched and scanned with the caller's permissions
+      context. Off by default.
+    required: false
+    default: 'false'
+  comment-mode:
+    description: >
+      ``per-finding`` posts one review comment per finding location;
+      ``summary`` posts a single PR-level comment listing every
+      finding. Anything not part of the PR diff falls back to summary
+      regardless of mode.
+    required: false
+    default: 'per-finding'
+  gh-token:
+    description: >
+      Token used to post review comments. Defaults to the
+      runner-provided ``GITHUB_TOKEN`` (which needs ``permissions:
+      pull-requests: write`` on the calling workflow).
+    required: false
+    default: ${{ github.token }}
+  pipeline-check-version:
+    description: >
+      Version of pipeline-check to install. Defaults to the latest
+      release on PyPI.
+    required: false
+    default: ''
+
+outputs:
+  findings-count:
+    description: 'Total findings emitted by the scanner.'
+    value: ${{ steps.run.outputs.findings-count }}
+  failed-count:
+    description: 'Findings whose passed=false (matches --fail-on logic).'
+    value: ${{ steps.run.outputs.failed-count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install pipeline-check
+      shell: bash
+      env:
+        PIPELINE_CHECK_VERSION: ${{ inputs.pipeline-check-version }}
+      run: |
+        if [ -n "$PIPELINE_CHECK_VERSION" ]; then
+          pip install "pipeline-check==$PIPELINE_CHECK_VERSION"
+        else
+          pip install pipeline-check
+        fi
+
+    - name: Run pipeline-check
+      id: run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+        PIPELINE_CHECK_PIPELINE: ${{ inputs.pipeline }}
+        PIPELINE_CHECK_PATH: ${{ inputs.path }}
+        PIPELINE_CHECK_SEVERITY: ${{ inputs.severity-threshold }}
+        PIPELINE_CHECK_RESOLVE_REMOTE: ${{ inputs.resolve-remote }}
+        PIPELINE_CHECK_COMMENT_MODE: ${{ inputs.comment-mode }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        python "$GITHUB_ACTION_PATH/entrypoint.py"

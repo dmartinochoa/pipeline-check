@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_steps
 from ._helpers import VER_OK_RE, extract_pipe_ref
@@ -30,6 +31,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     for loc, step in iter_steps(doc):
         script = step.get("script")
         if not isinstance(script, list):
@@ -38,11 +40,15 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             ref = extract_pipe_ref(entry)
             if ref is None or "@sha256:" in ref:
                 continue
-            if ":" not in ref:
+            if ":" not in ref or not VER_OK_RE.search(ref):
                 unpinned.append(f"{loc}: {ref}")
-                continue
-            if not VER_OK_RE.search(ref):
-                unpinned.append(f"{loc}: {ref}")
+                # Anchor on the script entry when it's a dict (loader
+                # tracks lines on dicts/lists, not on bare strings).
+                anchor = entry if isinstance(entry, dict) else step
+                line = _line_of(anchor)
+                locations.append(
+                    Location(path=path, start_line=line, end_line=line)
+                )
     passed = not unpinned
     desc = (
         "All `pipe:` references are pinned to a specific version."
@@ -55,4 +61,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-32 checks · 11 have an autofix patch (``--fix``).
+32 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -62,7 +62,7 @@ expression.
 | [JF-029](#jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [JF-030](#jf-030) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-031](#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [JF-032](#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-032](#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ---
 
@@ -691,7 +691,7 @@ Pin git dependencies to a commit SHA. Publish private packages to an internal re
 ## JF-032 — Agent label interpolates attacker-controllable value { #jf-032 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
 JF-014 catches agent labels that aren't ephemeral; this rule catches the upstream targeting choice. When ``label`` inside an ``agent { ... }`` block is computed from a build parameter or an SCM-controlled environment variable, whoever queues the build (or pushes the branch / opens the PR) picks which agent the job lands on — including any privileged label the controller exposes. Two attacker surfaces are flagged: untrusted ``env.*`` refs (``BRANCH_NAME``, ``CHANGE_BRANCH``, ``TAG_NAME``, …) and ``params.X`` references (caller-controlled at trigger time). The rule walks all four ``agent { ... }`` shapes — direct ``label``, the ``node { label … }`` form, and ``docker { label … }`` / ``dockerfile { label … }`` — via brace-balanced scan so nested DSL blocks parse correctly.
@@ -712,8 +712,9 @@ Hard-code agent labels to a specific pool name. If label selection has to be par
 
 1. Create a new module at
    `pipeline_check/core/checks/jenkins/rules/jfNNN_<name>.py`
-   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) ->
-   Finding` function. The orchestrator auto-discovers it.
+   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) -> Finding`
+   function. The orchestrator auto-discovers `RULE` and calls `check`
+   with the parsed YAML document.
 2. Add a mapping for the new ID in
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
    other standard that applies).

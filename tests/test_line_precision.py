@@ -1,0 +1,73 @@
+"""Cross-provider line-precision contract.
+
+For each retrofitted rule, scan the omnibus insecure fixture and
+assert the rule emits at least one ``Location`` with a non-``None``
+``start_line``. This is the regression guard: if a future loader
+change drops line markers, every retrofitted rule trips here.
+
+Adding a new rule with line precision: append it to ``CASES`` below.
+The fixture file must already exist and trigger the rule.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from pipeline_check.core.scanner import Scanner
+
+FIXTURES = Path(__file__).parent / "fixtures" / "workflows"
+
+
+# (provider, scanner-kwarg, fixture-path, check_id)
+CASES: list[tuple[str, str, Path, str]] = [
+    ("buildkite", "buildkite_path",
+     FIXTURES / "buildkite" / "insecure-pipeline.yml", "BK-001"),
+    ("cloudbuild", "cloudbuild_path",
+     FIXTURES / "cloudbuild" / "insecure-cloudbuild.yaml", "GCB-001"),
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-001"),
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-025"),
+    ("gitlab", "gitlab_path",
+     FIXTURES / "gitlab" / "insecure.gitlab-ci.yml", "GL-001"),
+    ("bitbucket", "bitbucket_path",
+     FIXTURES / "bitbucket" / "insecure-bitbucket-pipelines.yml", "BB-001"),
+    ("azure", "azure_path",
+     FIXTURES / "azure" / "insecure-azure-pipelines.yml", "ADO-001"),
+    ("circleci", "circleci_path",
+     FIXTURES / "circleci" / "insecure-config.yml", "CC-003"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-001"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-001"),
+    ("tekton", "tekton_path",
+     FIXTURES / "tekton" / "insecure-tekton.yaml", "TKN-001"),
+    ("argo", "argo_path",
+     FIXTURES / "argo" / "insecure-argo.yaml", "ARGO-001"),
+]
+
+
+@pytest.mark.parametrize("provider,kw,fixture,check_id", CASES)
+def test_rule_emits_line_precise_location(
+    provider: str, kw: str, fixture: Path, check_id: str,
+) -> None:
+    scanner = Scanner(pipeline=provider, **{kw: str(fixture)})
+    findings = scanner.run()
+    matching = [f for f in findings if f.check_id == check_id and not f.passed]
+    assert matching, (
+        f"{check_id} did not fire on {fixture.name}; cannot assert "
+        f"line precision"
+    )
+    locations = matching[0].locations
+    assert locations, (
+        f"{check_id} fired but emitted no structured locations — the "
+        f"rule was retrofitted to set ``Finding.locations`` but isn't "
+        f"populating it. Check the loader and the rule body."
+    )
+    primary = locations[0]
+    assert primary.start_line is not None and primary.start_line > 0, (
+        f"{check_id} emitted a Location but ``start_line`` is missing "
+        f"or non-positive ({primary.start_line!r}). The line-aware "
+        f"loader probably isn't wired in for this provider."
+    )

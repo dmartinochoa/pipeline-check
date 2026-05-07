@@ -39,7 +39,16 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import (
+    line_of as _line_of,
+)
+from .._yaml_lines import (
+    line_of_item as _line_of_item,
+)
+from .._yaml_lines import (
+    safe_load_yaml_lines,
+)
+from ..base import BaseCheck, Location
 
 
 @dataclass(frozen=True)
@@ -71,19 +80,24 @@ class BuildkiteContext:
             files = [root]
         else:
             # Prefer ``.buildkite/pipeline.yml`` when scanning a repo
-            # root; fall back to any ``pipeline.yml`` / ``pipeline.yaml``
-            # in the tree so monorepos with one file per service still
-            # scan completely.
+            # root; also include any ``pipeline.yml`` / ``pipeline.yaml``
+            # elsewhere in the tree so monorepos with one file per
+            # service still scan completely. Preferred entries lead the
+            # list so the canonical pipeline appears first in reports.
             preferred = sorted(
                 p for p in root.rglob("*")
                 if p.is_file()
                 and p.parent.name == ".buildkite"
                 and p.name in {"pipeline.yml", "pipeline.yaml"}
             )
-            files = preferred or sorted(
+            preferred_set = set(preferred)
+            others = sorted(
                 p for p in root.rglob("*")
-                if p.is_file() and p.name in {"pipeline.yml", "pipeline.yaml"}
+                if p.is_file()
+                and p.name in {"pipeline.yml", "pipeline.yaml"}
+                and p not in preferred_set
             )
+            files = preferred + others
         pipelines: list[Pipeline] = []
         warnings: list[str] = []
         skipped = 0
@@ -95,7 +109,7 @@ class BuildkiteContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
@@ -187,6 +201,34 @@ def step_commands(step: dict[str, Any]) -> list[str]:
                 if isinstance(item, str):
                     out.append(item)
     return out
+
+
+def step_location(path: str, step: dict[str, Any]) -> Location:
+    """Build a :class:`Location` pointing at *step* in *path*.
+
+    Returns a path-only location when the loader didn't preserve line
+    info — keeps the call sites uniform whether or not lines are
+    available.
+    """
+    line = _line_of(step)
+    return Location(path=path, start_line=line, end_line=line)
+
+
+def plugin_location(
+    path: str, step: dict[str, Any], plugin_idx: int,
+) -> Location:
+    """Locate a plugin entry inside ``step['plugins']``.
+
+    Falls back to the step's line when the plugins list isn't
+    line-tagged (defensive for non-line-aware loaders, e.g. tests).
+    """
+    plugins = step.get("plugins")
+    line: int | None = None
+    if isinstance(plugins, list):
+        line = _line_of_item(plugins, plugin_idx)
+    if line is None:
+        line = _line_of(step)
+    return Location(path=path, start_line=line, end_line=line)
 
 
 def iter_plugins(step: dict[str, Any]) -> Iterator[tuple[str, Any]]:

@@ -22,7 +22,7 @@ _CONFIDENCE_STYLE: dict[Confidence, str] = {
 # Bump when the JSON payload shape changes in a way consumers need to
 # branch on (e.g. a new top-level key, a renamed field). Minor-revision
 # adds (appending an optional field) do NOT require a version bump.
-JSON_SCHEMA_VERSION = "1.0"
+JSON_SCHEMA_VERSION = "1.1"
 
 _SEVERITY_STYLE: dict[Severity, str] = {
     Severity.CRITICAL: "bold red",
@@ -146,12 +146,21 @@ def report_terminal(
         conf_cell = (
             f"[{conf_style}]{conf_label}[/{conf_style}]" if conf_style else conf_label
         )
+        # Surface the first precise location after the resource label
+        # so terminal users see ``path:line`` whenever the rule emits
+        # a structured Location. Multi-location findings list the
+        # primary line; remaining lines appear in the detail panel.
+        resource_cell = f.resource
+        if f.locations:
+            primary = f.locations[0]
+            if primary.start_line is not None:
+                resource_cell = f"{f.resource}:{primary.start_line}"
         table.add_row(
             status,
             f.check_id,
             f"[{sev_style}]{f.severity.value}[/{sev_style}]",
             conf_cell,
-            f.resource,
+            resource_cell,
             f.title,
         )
 
@@ -173,11 +182,24 @@ def report_terminal(
             controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
                 f"  [{c.standard_title}] {c.label()}" for c in f.controls
             )
+        # When the rule emitted >1 location, list each one in the
+        # panel so users see every offending line at a glance.
+        locations_text = ""
+        if len(f.locations) > 1:
+            lines_csv = ", ".join(
+                str(loc.start_line) for loc in f.locations
+                if loc.start_line is not None
+            )
+            if lines_csv:
+                locations_text = (
+                    f"\n[bold]Locations:[/bold] {f.locations[0].path}:"
+                    f"{lines_csv}"
+                )
         console.print(
             Panel(
                 f"{f.description}\n\n"
                 f"[bold]Recommendation:[/bold] {f.recommendation}"
-                f"{cwe_line}{controls_text}",
+                f"{cwe_line}{controls_text}{locations_text}",
                 title=(
                     f"[{style}]{f.check_id}[/{style}]  "
                     f"{f.title}  [dim]{f.resource}[/dim]"

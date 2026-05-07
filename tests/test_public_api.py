@@ -30,6 +30,7 @@ EXPECTED_PUBLIC_NAMES: frozenset[str] = frozenset({
     "ScanMetadata",
     # Findings + enums
     "Finding",
+    "Location",
     "Severity",
     "Confidence",
     "ControlRef",
