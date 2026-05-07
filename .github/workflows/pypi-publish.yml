@@ -56,17 +56,27 @@ jobs:
       - name: Generate SBOM (CycloneDX)
         # SBOM published alongside the wheel. cyclonedx-py walks the
         # post-install environment so the SBOM reflects the exact
-        # dep set a downstream consumer pulls in.
+        # dep set a downstream consumer pulls in. Output goes to
+        # ``sbom/`` not ``dist/`` so the publish step's
+        # ``twine check`` doesn't reject it as a non-distribution
+        # file (gh-action-pypi-publish only accepts wheels and
+        # sdists in the upload directory).
         run: |
           python -m pip install --upgrade cyclonedx-bom
           python -m pip install dist/*.whl
-          cyclonedx-py environment --output-file dist/sbom.cdx.json
-          ls dist/
+          mkdir -p sbom
+          cyclonedx-py environment --output-file sbom/sbom.cdx.json
+          ls sbom/
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: dist
           path: dist/
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: sbom
+          path: sbom/sbom.cdx.json
 
   publish:
     name: Publish to PyPI
