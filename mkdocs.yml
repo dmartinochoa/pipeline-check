@@ -105,14 +105,18 @@ hooks:
   - hooks/mkdocs_standards_stats.py
 
 nav:
+  # Order chosen by user-journey weight, not feature breadth:
+  #   Home              first — entry point
+  #   Usage             "how do I run it?"        — every new user goes here
+  #   Providers         "does it scan my stack?"  — adoption decision
+  #   Standards         "compliance fit"          — adoption decision
+  #   Configuration     operational tuning
+  #   Scoring & gate    CI gate integration
+  #   Output formats    operational reporting
+  #   Attack chains     advanced / niche feature
+  #   Contributing      last (developer audience)
   - Home: index.md
   - Usage: usage.md
-  - Output formats: output.md
-  - Scoring & gate:
-      - Scoring model: scoring_model.md
-      - CI gate: ci_gate.md
-  - Configuration: config.md
-  - Attack chains: attack_chains.md
   - Providers:
       - Overview: providers/README.md
       - AWS: providers/aws.md
@@ -127,10 +131,6 @@ nav:
       - Google Cloud Build: providers/cloudbuild.md
       - Dockerfile: providers/dockerfile.md
       - Kubernetes: providers/kubernetes.md
-  - Contributing:
-      - Architecture: architecture.md
-      - Adding a rule: writing_a_rule.md
-      - Adding a provider: writing_a_provider.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
@@ -146,3 +146,13 @@ nav:
       - OpenSSF Scorecard: standards/openssf_scorecard.md
       - S2C2F: standards/s2c2f.md
       - SOC 2: standards/soc2.md
+  - Configuration: config.md
+  - Scoring & gate:
+      - Scoring model: scoring_model.md
+      - CI gate: ci_gate.md
+  - Output formats: output.md
+  - Attack chains: attack_chains.md
+  - Contributing:
+      - Architecture: architecture.md
+      - Adding a rule: writing_a_rule.md
+      - Adding a provider: writing_a_provider.md

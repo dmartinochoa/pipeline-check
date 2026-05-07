@@ -6,9 +6,12 @@
 # substitution enabled, giving a trigger editor shell-injection reach.
 # GCB-014: ``options.logging: NONE`` disables the audit trail — a
 # compromised step leaves no record.
+# GCB-022: ``substitutionOption: ALLOW_LOOSE`` lets undefined ``$_VAR``
+# refs collapse to empty strings — typo-tolerant in the wrong way.
 options:
   logging: NONE
   dynamicSubstitutions: true
+  substitutionOption: ALLOW_LOOSE
 
 substitutions:
   _DEPLOY_TARGET: production

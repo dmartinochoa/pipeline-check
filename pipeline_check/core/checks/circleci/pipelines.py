@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import CircleCIBaseCheck
+from .base import CircleCIBaseCheck, CircleCIContext
 
 
 class CircleCIPipelineChecks(CircleCIBaseCheck):
@@ -23,7 +23,9 @@ class CircleCIPipelineChecks(CircleCIBaseCheck):
     ``pipeline_check.core.checks.circleci.rules`` on every loaded
     config document."""
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: CircleCIContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         self._rules = discover_rules("pipeline_check.core.checks.circleci.rules")
 

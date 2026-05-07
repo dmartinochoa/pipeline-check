@@ -92,6 +92,49 @@ gate:
   ignore_file: .pipelinecheckignore
 ```
 
+## Per-rule overrides
+
+The `overrides:` block demotes or promotes a rule's severity without
+disabling it. A rule that's intentionally noisy in your environment
+can be ratcheted to LOW so the gate stops blocking on it, while still
+appearing in reports for awareness. The opposite direction works
+too: promote a rule the team treats as a hard stop to CRITICAL so it
+trips the default gate.
+
+```yaml
+overrides:
+  GHA-016:
+    severity: low      # curl-pipe is noisy on our internal repos
+  K8S-024:
+    severity: critical # we treat missing health probes as a hard stop
+```
+
+```toml
+# pyproject.toml equivalent
+[tool.pipeline_check.overrides."GHA-016"]
+severity = "low"
+
+[tool.pipeline_check.overrides."K8S-024"]
+severity = "critical"
+```
+
+Rules
+-----
+
+- The check ID is matched case-insensitively (`gha-016` and `GHA-016`
+  both work).
+- `severity` is the only sub-key today; values are `critical`, `high`,
+  `medium`, `low`, or `info`.
+- Unknown check IDs are silently ignored — the override simply never
+  matches anything. Bad severities are dropped with a `[config]`
+  warning at load time.
+- Overrides are applied **after** centralised confidence demotion, so
+  the rule's confidence score is preserved even when its severity is
+  changed.
+- Suppression is still done through `--ignore-file` /
+  `.pipelinecheckignore`. Overrides change severity; they don't
+  suppress the finding.
+
 ## Environment variables
 
 Upper-snake-case of the option name, prefixed with `PIPELINE_CHECK_`.

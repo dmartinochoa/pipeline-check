@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 
 from ..base import Finding, Severity
-from .base import TerraformBaseCheck
+from .base import TerraformBaseCheck, TerraformContext
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED", "PULL_REQUEST_UPDATED", "PULL_REQUEST_REOPENED",
@@ -31,7 +31,7 @@ class Phase3Checks(TerraformBaseCheck):
         return findings
 
 
-def _ecr006(ctx) -> list[Finding]:
+def _ecr006(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("aws_ecr_pull_through_cache_rule"):
         upstream = r.values.get("upstream_registry_url", "") or ""
@@ -52,7 +52,7 @@ def _ecr006(ctx) -> list[Finding]:
     return out
 
 
-def _pbac003(ctx) -> list[Finding]:
+def _pbac003(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for sg in ctx.resources("aws_security_group"):
         for rule in sg.values.get("egress") or []:
@@ -76,7 +76,7 @@ def _pbac003(ctx) -> list[Finding]:
     return out
 
 
-def _pbac005_cp005_cp007(ctx) -> list[Finding]:
+def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("aws_codepipeline"):
         pipeline_role = p.values.get("role_arn", "")
@@ -167,7 +167,7 @@ def _pbac005_cp005_cp007(ctx) -> list[Finding]:
     return out
 
 
-def _eb001(ctx) -> list[Finding]:
+def _eb001(ctx: TerraformContext) -> list[Finding]:
     has_rule = False
     for r in ctx.resources("aws_cloudwatch_event_rule"):
         pattern = r.values.get("event_pattern")

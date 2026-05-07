@@ -44,6 +44,25 @@ jobs:
           fi
           echo "Building $PYPROJECT_VER from $WHEEL"
 
+      - name: Vulnerability scan with pip-audit
+        # Audits the project's resolved dependency tree against the
+        # PyPA vulnerability database. See the matching step in
+        # release.yml for the rationale on requirements.txt vs
+        # wheel-mode auditing.
+        run: |
+          python -m pip install --upgrade pip-audit
+          pip-audit --requirement requirements.txt --strict
+
+      - name: Generate SBOM (CycloneDX)
+        # SBOM published alongside the wheel. cyclonedx-py walks the
+        # post-install environment so the SBOM reflects the exact
+        # dep set a downstream consumer pulls in.
+        run: |
+          python -m pip install --upgrade cyclonedx-bom
+          python -m pip install dist/*.whl
+          cyclonedx-py environment --output-file dist/sbom.cdx.json
+          ls dist/
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: dist

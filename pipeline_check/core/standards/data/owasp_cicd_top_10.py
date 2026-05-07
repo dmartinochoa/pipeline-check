@@ -163,6 +163,7 @@ STANDARD = Standard(
         "GHA-027":  ["CICD-SEC-4"],
         "GHA-028":  ["CICD-SEC-4"],
         "GHA-029":  ["CICD-SEC-3"],
+        "GHA-034":  ["CICD-SEC-2", "CICD-SEC-6"],  # secrets: inherit
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -336,6 +337,7 @@ STANDARD = Standard(
         "GCB-019":  ["CICD-SEC-4"],   # shell entrypoint + user substitution
         "GCB-020":  ["CICD-SEC-2"],   # default Cloud Build SA email
         "GCB-021":  ["CICD-SEC-7"],   # no private worker pool
+        "GCB-022":  ["CICD-SEC-4"],   # substitutionOption ALLOW_LOOSE
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],

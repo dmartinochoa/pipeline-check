@@ -436,3 +436,76 @@ class TestGHA029PackageSourceIntegrity:
         """
         f = run_check(wf, "GHA-029")
         assert f.passed
+
+
+class TestGHA034ReusableSecretsInherit:
+    def test_fails_on_secrets_inherit(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            uses: octo/repo/.github/workflows/build.yml@v2
+            secrets: inherit
+        """
+        f = run_check(wf, "GHA-034")
+        assert not f.passed
+        assert "build" in f.description
+
+    def test_fails_case_insensitive(self):
+        # GitHub Actions accepts the lowercase form only, but we
+        # match case-insensitively to catch the obvious variation.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            uses: octo/repo/.github/workflows/build.yml@v2
+            secrets: INHERIT
+        """
+        f = run_check(wf, "GHA-034")
+        assert not f.passed
+
+    def test_passes_with_explicit_secrets_mapping(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            uses: octo/repo/.github/workflows/build.yml@v2
+            secrets:
+              NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        """
+        f = run_check(wf, "GHA-034")
+        assert f.passed
+
+    def test_passes_with_no_secrets_key(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            uses: octo/repo/.github/workflows/build.yml@v2
+        """
+        f = run_check(wf, "GHA-034")
+        assert f.passed
+
+    def test_passes_on_regular_job(self):
+        # Regular jobs (no ``uses:`` at the job level) are out of
+        # scope — this rule only applies to reusable-workflow calls.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo hi
+        """
+        f = run_check(wf, "GHA-034")
+        assert f.passed

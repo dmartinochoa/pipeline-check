@@ -1947,7 +1947,12 @@ th.pg-sortable:focus-visible {
      Material draws a top-aligned ``.md-nav__title`` carrying the
      site title + close button. We give it a teal accent under-
      line, a slightly larger wordmark, and tighter chrome so it
-     reads as a brand strip rather than a generic title bar. */
+     reads as a brand strip rather than a generic title bar.
+
+     Explicit ``display: flex`` + ``gap`` because the bumped 1.7rem
+     logo (rule below) was crowding the wordmark — Material's
+     default flex layout has no explicit gap, so a larger image
+     visually overlapped the title text. */
   .md-sidebar--primary .md-nav--primary > .md-nav__title {
     background: var(--md-default-bg-color);
     color: var(--md-default-fg-color);
@@ -1959,6 +1964,17 @@ th.pg-sortable:focus-visible {
     border-bottom: 1px solid var(--md-default-fg-color--lightest);
     box-shadow: 0 1px 0 0 color-mix(in oklab, var(--pg-teal-500) 35%, transparent);
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* The logo button is a flex item; lock its size so the wordmark
+     gets the remaining width without wrapping under the image. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__title .md-nav__button.md-logo {
+    flex: 0 0 auto;
+    padding: 0;
+    margin: 0;
   }
 
   /* Teal accent rail at the bottom of the drawer header — a

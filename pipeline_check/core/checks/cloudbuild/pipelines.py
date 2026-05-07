@@ -8,12 +8,14 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import CloudBuildBaseCheck
+from .base import CloudBuildBaseCheck, CloudBuildContext
 
 
 class CloudBuildPipelineChecks(CloudBuildBaseCheck):
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: CloudBuildContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         self._rules = discover_rules(
             "pipeline_check.core.checks.cloudbuild.rules"

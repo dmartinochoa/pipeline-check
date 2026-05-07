@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import JenkinsBaseCheck
+from .base import JenkinsBaseCheck, JenkinsContext
 
 
 class JenkinsfileChecks(JenkinsBaseCheck):
@@ -24,7 +24,9 @@ class JenkinsfileChecks(JenkinsBaseCheck):
     ``pipeline_check.core.checks.jenkins.rules`` on every loaded
     Jenkinsfile."""
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: JenkinsContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         # Discovery happens once per orchestrator. The rules registry
         # is a list of ``(Rule, check_fn)`` pairs in lexical module

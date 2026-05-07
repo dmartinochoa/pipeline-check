@@ -275,9 +275,23 @@ DEP_UPDATE_RE = _re.compile(
     r"|\bcomposer\s+update\b",
 )
 
-#: Tooling upgrades that are safe (pip/setuptools/wheel themselves).
+#: Tooling upgrades that are safe.
+#:
+#: Two categories:
+#:
+#:   * Build-system tools — ``pip``, ``setuptools``, ``wheel``,
+#:     ``virtualenv``, ``build``. These are used to produce / install
+#:     the artifact, not to ship inside it.
+#:   * Security-tooling installs — ``pip-audit``, ``cyclonedx-bom``,
+#:     ``cyclonedx-py``, ``safety``, ``bandit``, ``semgrep``. These
+#:     are CI scanners that lint or attest the artifact; the version
+#:     pin churn is irrelevant to the supply chain because their
+#:     output never lands in the wheel.
 _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
-    r"\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv)\b"
+    r"\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:"
+    r"pip|setuptools|wheel|virtualenv|build"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
+    r")\b"
 )
 
 

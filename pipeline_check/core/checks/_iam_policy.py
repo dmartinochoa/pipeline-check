@@ -25,18 +25,20 @@ SENSITIVE_ACTION_PREFIXES = (
 )
 
 
-def as_list(v) -> list:
+def as_list(v: object) -> list:
     if v is None:
         return []
     return v if isinstance(v, list) else [v]
 
 
-def parse_doc(raw) -> dict:
+def parse_doc(raw: object) -> dict:
     """Return a policy document as a dict. Accepts dict, JSON string, or junk."""
     if not raw:
         return {}
     if isinstance(raw, dict):
         return raw
+    if not isinstance(raw, (str, bytes, bytearray)):
+        return {}
     try:
         loaded = json.loads(raw)
     except (TypeError, json.JSONDecodeError):

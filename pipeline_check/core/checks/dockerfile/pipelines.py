@@ -8,12 +8,14 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import DockerfileBaseCheck
+from .base import DockerfileBaseCheck, DockerfileContext
 
 
 class DockerfileChecks(DockerfileBaseCheck):
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: DockerfileContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         self._rules = discover_rules(
             "pipeline_check.core.checks.dockerfile.rules"

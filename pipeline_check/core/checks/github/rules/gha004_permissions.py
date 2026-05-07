@@ -39,6 +39,38 @@ def _is_write_all(perms: Any) -> bool:
     return isinstance(perms, str) and perms.strip().lower() == "write-all"
 
 
+#: Action prefixes that legitimately consume ``id-token: write``. Each
+#: entry is matched as a substring against the step's ``uses:`` value
+#: so version pins and digest pins both match.
+_OIDC_ACTION_PREFIXES: tuple[str, ...] = (
+    "pypa/gh-action-pypi-publish",       # PyPI trusted publishing (PEP 740)
+    "google-github-actions/auth",        # GCP Workload Identity Federation
+    "azure/login",                       # Azure OIDC login
+    "hashicorp/vault-action",            # HashiCorp Vault JWT auth
+    "sigstore/cosign-installer",         # cosign keyless signing (uses OIDC)
+    "actions/attest-build-provenance",   # native build-provenance attestation
+    "actions/attest",                    # generic attestation action
+    "slsa-framework/slsa-",              # SLSA generators
+    "slsa-github-generator",             # SLSA generators (alt path)
+)
+
+
+def _is_oidc_step(step: dict[str, Any]) -> bool:
+    """True when the step is a known OIDC-consuming action.
+
+    AWS' ``configure-aws-credentials`` is recognized when paired with a
+    ``role-to-assume`` input (the OIDC mode flag); other OIDC actions
+    are matched on their action path alone since they always consume
+    the id-token when invoked.
+    """
+    uses = step.get("uses")
+    if not isinstance(uses, str):
+        return False
+    if "configure-aws-credentials" in uses and "role-to-assume" in (step.get("with") or {}):
+        return True
+    return any(prefix in uses for prefix in _OIDC_ACTION_PREFIXES)
+
+
 def _perms_issues(
     perms: Any, job_id: str, triggers: list[str],
     job: dict[str, Any] | None = None,
@@ -57,10 +89,7 @@ def _perms_issues(
         # id-token: write without a corresponding OIDC step
         if perms.get("id-token") == "write" and job is not None:
             has_oidc = any(
-                isinstance(s.get("uses"), str)
-                and "configure-aws-credentials" in s["uses"]
-                and "role-to-assume" in (s.get("with") or {})
-                for s in iter_steps(job)
+                _is_oidc_step(s) for s in iter_steps(job)
             )
             if not has_oidc:
                 issues.append(

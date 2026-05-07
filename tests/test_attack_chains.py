@@ -98,7 +98,7 @@ class TestEngine:
         assert rule_ids == {
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
-            "AC-009", "AC-010", "AC-011",
+            "AC-009", "AC-010", "AC-011", "AC-012",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -387,6 +387,54 @@ class TestChainAC011:
             _f("K8S-020", self.K8S_RESOURCE, passed=True),
         ])
         assert not any(c.chain_id == "AC-011" for c in out)
+
+
+class TestChainAC012:
+    """AC-012 — Reusable Workflow Secret Exfiltration."""
+
+    WF = ".github/workflows/release.yml"
+
+    def test_fires_when_both_legs_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF), _f("GHA-034", self.WF),
+        ])
+        ac12 = [c for c in out if c.chain_id == "AC-012"]
+        assert len(ac12) == 1
+        assert ac12[0].severity is Severity.CRITICAL
+        assert ac12[0].resources == [self.WF]
+        assert "T1552.001" in ac12[0].mitre_attack
+        assert ac12[0].triggering_check_ids == ["GHA-025", "GHA-034"]
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        # GHA-025 in one workflow + GHA-034 in another isn't the same
+        # call site; the secret surface differs per call.
+        out = chains_pkg.evaluate([
+            _f("GHA-025", ".github/workflows/a.yml"),
+            _f("GHA-034", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-012" for c in out)
+
+    def test_does_not_fire_when_only_pinning_leg_fails(self):
+        # An unpinned reusable-workflow ref without ``secrets: inherit``
+        # is risky (GHA-025 fires) but the call has explicit secrets,
+        # so the chain's exfiltration leg is missing.
+        out = chains_pkg.evaluate([_f("GHA-025", self.WF)])
+        assert not any(c.chain_id == "AC-012" for c in out)
+
+    def test_does_not_fire_when_only_inherit_leg_fails(self):
+        # ``secrets: inherit`` against a SHA-pinned callee is a
+        # least-privilege issue (GHA-034 fires) but a tag-move attack
+        # isn't possible — pin is immutable.
+        out = chains_pkg.evaluate([_f("GHA-034", self.WF)])
+        assert not any(c.chain_id == "AC-012" for c in out)
+
+    def test_confidence_inherits_minimum(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF, confidence=Confidence.HIGH),
+            _f("GHA-034", self.WF, confidence=Confidence.MEDIUM),
+        ])
+        ac12 = next(c for c in out if c.chain_id == "AC-012")
+        assert ac12.confidence is Confidence.MEDIUM
 
 
 # ── Gate integration ─────────────────────────────────────────────────

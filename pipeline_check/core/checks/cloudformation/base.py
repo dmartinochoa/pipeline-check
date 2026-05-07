@@ -20,7 +20,8 @@ keeps the rules free of YAML-format branching.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+import re
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -179,9 +180,9 @@ _INTRINSIC_TAGS = {
 }
 
 
-def _make_constructor(fn_key: str):
+def _make_constructor(fn_key: str) -> Callable[[yaml.Loader, yaml.Node], dict]:
     """Build a PyYAML constructor that maps a short-form tag to ``{fn_key: value}``."""
-    def _construct(loader: yaml.Loader, node: yaml.Node):
+    def _construct(loader: yaml.Loader, node: yaml.Node) -> dict:
         # ``!GetAtt MyThing.Arn`` arrives as a scalar; CFN documents it
         # as a list of [LogicalId, AttributeName]. Split on the first
         # ``.`` to match the JSON-form convention.
@@ -356,7 +357,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
 
     missing: list[str] = []
 
-    def _sub(match):
+    def _sub(match: re.Match[str]) -> str:
         name = match.group(1)
         if name in resolved_extras:
             return resolved_extras[name]

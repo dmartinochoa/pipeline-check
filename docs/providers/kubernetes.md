@@ -56,7 +56,7 @@ Four rules target non-workload kinds:
 
 ## What it covers
 
-30 checks · 9 have an autofix patch (``--fix``).
+30 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -87,9 +87,9 @@ Four rules target non-workload kinds:
 | [K8S-025](#k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [K8S-026](#k8s-026) | LoadBalancer Service has no loadBalancerSourceRanges | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [K8S-027](#k8s-027) | Ingress has no TLS configuration | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [K8S-028](#k8s-028) | Container declares hostPort | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [K8S-029](#k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [K8S-030](#k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [K8S-028](#k8s-028) | Container declares hostPort | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [K8S-029](#k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [K8S-030](#k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ---
 
@@ -645,7 +645,7 @@ Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entr
 ## K8S-028 — Container declares hostPort { #k8s-028 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
 </div>
 
 ``hostPort`` was the pre-Service way to publish a pod's port and survives in legacy manifests. Modern clusters use Services, which integrate with the kube-proxy, ingress controllers, and NetworkPolicies. ``hostPort`` is invisible to all of those — a port-scan from any other pod that knows the node IP reaches the workload directly. If a DaemonSet legitimately needs it (host-agent shape), suppress this rule with a brief ``.pipelinecheckignore`` rationale rather than leaving it open across the catalog.
@@ -665,7 +665,7 @@ Drop ``hostPort`` from container ports and use a Service (ClusterIP / NodePort /
 ## K8S-029 — RoleBinding grants permissions to the default ServiceAccount { #k8s-029 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
 Fires when a ``RoleBinding`` or ``ClusterRoleBinding`` lists ``kind: ServiceAccount, name: default`` among its subjects. ``kube-system``, ``kube-public``, and ``kube-node-lease`` are exempt because control-plane bootstrap manifests legitimately grant the default SA there.
@@ -685,7 +685,7 @@ Bind permissions to a dedicated ServiceAccount, not to ``default``. Every pod th
 ## K8S-030 — Workload schedules onto a control-plane node { #k8s-030 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
 Fires on a non-system workload whose ``spec.nodeSelector`` contains a control-plane role label, OR whose ``spec.tolerations`` carries an entry with a control-plane taint key. Either condition is sufficient to land the pod on the control plane (the toleration is what survives the node taint; the nodeSelector picks the node).

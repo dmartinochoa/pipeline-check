@@ -48,6 +48,8 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "output", "output_file",
     "standards", "severity_threshold",
     "secret_patterns",
+    # Per-rule severity overrides — see ``_parse_overrides``.
+    "overrides",
 })
 
 # Keys allowed under the "gate" sub-table.
@@ -92,6 +94,17 @@ def last_loaded_source() -> str | None:
     return _LAST_LOADED_SOURCE
 
 
+#: Per-rule overrides parsed from the last loaded config. Click's
+#: ``default_map`` only carries CLI option names, so this map is
+#: surfaced separately for the Scanner to consume.
+_LAST_OVERRIDES: dict[str, dict[str, str]] = {}
+
+
+def last_overrides() -> dict[str, dict[str, str]]:
+    """Return the ``overrides:`` map parsed by the last ``load_config`` call."""
+    return dict(_LAST_OVERRIDES)
+
+
 def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> dict[str, Any]:
     """Resolve configuration from file(s) + environment.
 
@@ -99,16 +112,26 @@ def load_config(explicit_path: str | None = None, cwd: Path | None = None) -> di
     ``"fail_on"``). This is the shape ``click.Context.default_map``
     expects, so the caller can hand it straight to the click entry
     point.
+
+    The ``overrides:`` block is pulled out of the returned map (it
+    isn't a CLI option) and is available via :func:`last_overrides`.
     """
     global _LAST_LOADED_SOURCE
     _LAST_UNKNOWN_KEYS.clear()
     _LAST_LOADED_SOURCE = None
+    _LAST_OVERRIDES.clear()
     cwd = cwd or Path.cwd()
     file_cfg = _load_from_file(explicit_path, cwd)
     env_cfg = _load_from_env()
 
     # Env overrides file.
     merged: dict[str, Any] = {**file_cfg, **env_cfg}
+    # Stash overrides for ``last_overrides()`` and drop from the click
+    # default_map (click would warn about an unknown ``--overrides``
+    # option otherwise).
+    overrides_value = merged.pop("overrides", None)
+    if isinstance(overrides_value, dict):
+        _LAST_OVERRIDES.update(overrides_value)
     return merged
 
 
@@ -206,11 +229,87 @@ def _coerce(key: str, value: Any) -> Any:
 
     - ``checks``, ``standards``, ``fail_on_checks`` always reach click as
       tuples (multiple=True) — accept a list in config and convert.
+    - ``overrides`` arrives as a nested mapping; normalize the keys to
+      upper-case and the severity values to upper-case strings so the
+      Scanner can convert to ``Severity`` without re-validating.
     - Everything else passes through as-is; click handles type conversion.
     """
     if key in ("checks", "standards", "fail_on_checks", "secret_patterns") and isinstance(value, list):
         return tuple(str(v) for v in value)
+    if key == "overrides":
+        return _parse_overrides(value)
     return value
+
+
+# Severity values accepted in an ``overrides:`` block. Lower-case copies
+# accommodate the YAML convention of unquoted lower-case strings; the
+# Scanner converts to ``Severity`` enum values once.
+_VALID_SEVERITIES: frozenset[str] = frozenset({
+    "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO",
+})
+
+
+def _parse_overrides(raw: Any) -> dict[str, dict[str, str]]:
+    """Normalize an ``overrides:`` block into ``{CHECK-ID: {severity: SEV}}``.
+
+    Accepted shape::
+
+        overrides:
+          GHA-016:
+            severity: low
+          K8S-024:
+            severity: critical
+
+    Unknown sub-keys, malformed values, and bad severities are dropped
+    with an ``[config]`` warning rather than raising — the rest of the
+    config should still load.
+    """
+    if not isinstance(raw, dict):
+        print(
+            f"[config] ignoring 'overrides': value must be a mapping, got "
+            f"{type(raw).__name__}",
+            file=sys.stderr,
+        )
+        return {}
+    out: dict[str, dict[str, str]] = {}
+    for check_id, body in raw.items():
+        if not isinstance(check_id, str) or not check_id.strip():
+            print(
+                f"[config] ignoring overrides entry: check_id must be a "
+                f"non-empty string, got {check_id!r}",
+                file=sys.stderr,
+            )
+            continue
+        if not isinstance(body, dict):
+            print(
+                f"[config] ignoring overrides entry for {check_id!r}: "
+                f"value must be a mapping, got {type(body).__name__}",
+                file=sys.stderr,
+            )
+            continue
+        normalized: dict[str, str] = {}
+        sev = body.get("severity")
+        if sev is not None:
+            sev_up = str(sev).upper().strip()
+            if sev_up in _VALID_SEVERITIES:
+                normalized["severity"] = sev_up
+            else:
+                print(
+                    f"[config] ignoring overrides[{check_id!r}].severity: "
+                    f"{sev!r} is not one of "
+                    f"{sorted(_VALID_SEVERITIES)}",
+                    file=sys.stderr,
+                )
+        unknown = set(body) - {"severity"}
+        for k in sorted(unknown):
+            print(
+                f"[config] ignoring overrides[{check_id!r}].{k}: unknown "
+                f"sub-key (only 'severity' is supported today)",
+                file=sys.stderr,
+            )
+        if normalized:
+            out[check_id.upper().strip()] = normalized
+    return out
 
 
 def _warn_unknown(source: str, key: str, reason: str = "unknown key") -> None:

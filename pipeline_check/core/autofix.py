@@ -1314,6 +1314,145 @@ def _fix_k8s020_cluster_admin(content: str, finding: Finding) -> str | None:
     return out
 
 
+# ── K8S-028 hostPort drop ────────────────────────────────────────────
+#
+# Matches ``hostPort: <positive int>`` and drops the whole line.
+# Distinct from the K8S_DROP_TRUE_KEYS family because the value here
+# is numeric, not the literal ``true``. ``hostPort: 0`` is the unset
+# sentinel and isn't matched (the rule itself ignores zero).
+
+_K8S_HOSTPORT_RE = re.compile(
+    r"^[ \t]*hostPort\s*:\s*[1-9]\d*\s*(?:#[^\n]*)?\n?",
+    re.MULTILINE,
+)
+
+
+@register("K8S-028")
+def _fix_k8s028_host_port(content: str, finding: Finding) -> str | None:
+    """Drop ``hostPort: <N>`` lines. The container's ``containerPort``
+    is unaffected — only the node-IP binding is removed. Operators who
+    genuinely need node-port semantics should re-add it as part of a
+    DaemonSet plus an explicit ``hostNetwork: true`` review."""
+    new = _K8S_HOSTPORT_RE.sub("", content)
+    if new == content:
+        return None
+    return new
+
+
+# ── K8S-029 default-SA binding TODO ──────────────────────────────────
+
+_TODO_K8S_DEFAULT_SA = (
+    "TODO(pipelineguard K8S-029): bind permissions to a dedicated "
+    "ServiceAccount, not 'default'. Every untargeted pod inherits "
+    "this SA's grants — create a named SA and reference it explicitly"
+)
+
+# Match the ``name: default`` line of a binding subject. Anchored on
+# ``name:`` because ``kind: ServiceAccount`` with ``name: default`` is
+# the canonical shape; comments above the name read naturally.
+_K8S_DEFAULT_SA_NAME_RE = re.compile(
+    r"^(\s*)name\s*:\s*[\"']?default[\"']?\s*$",
+    re.MULTILINE,
+)
+
+
+@register("K8S-029")
+def _fix_k8s029_default_sa(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``name: default`` line in a subjects
+    block.
+
+    Comment-only because the right shape is to (a) create a named SA,
+    (b) bind that SA explicitly, and (c) leave the default SA
+    unbound. The fixer can't synthesize the named SA's manifest.
+    """
+    if _TODO_K8S_DEFAULT_SA in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _K8S_DEFAULT_SA_NAME_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_K8S_DEFAULT_SA}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+# ── K8S-030 control-plane scheduling TODO ────────────────────────────
+
+_TODO_K8S_CTRL_PLANE = (
+    "TODO(pipelineguard K8S-030): drop control-plane "
+    "nodeSelector / tolerations from non-system workloads. App pods "
+    "belong on dedicated worker nodes, not on the API/etcd host"
+)
+
+_K8S_CTRL_PLANE_LABEL_RE = re.compile(
+    r"^(\s*)(?:node-role\.kubernetes\.io/(?:control-plane|master))\s*:",
+    re.MULTILINE,
+)
+_K8S_CTRL_PLANE_TOLERATION_KEY_RE = re.compile(
+    r"^(\s*-?\s*)key\s*:\s*[\"']?"
+    r"node-role\.kubernetes\.io/(?:control-plane|master)[\"']?\s*$",
+    re.MULTILINE,
+)
+
+
+@register("K8S-030")
+def _fix_k8s030_control_plane(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each control-plane targeting line.
+
+    Both ``nodeSelector`` keys and ``tolerations`` keys are flagged so
+    a single workload that targets both gets one TODO per line. Drop
+    is tempting but unsafe — the workload may have other valid
+    scheduling constraints below the offending line, and a structured
+    YAML rewrite is out of scope for a text patch.
+    """
+    if _TODO_K8S_CTRL_PLANE in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _K8S_CTRL_PLANE_LABEL_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_K8S_CTRL_PLANE}\n"))
+    for m in _K8S_CTRL_PLANE_TOLERATION_KEY_RE.finditer(content):
+        indent_raw = m.group(1)
+        indent_ws = indent_raw[: len(indent_raw) - len(indent_raw.lstrip())]
+        edits.append((m.start(), f"{indent_ws}# {_TODO_K8S_CTRL_PLANE}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+# ── GHA-034 reusable-workflow secrets: inherit TODO ──────────────────
+
+_TODO_GHA_INHERIT = (
+    "TODO(pipelineguard GHA-034): replace 'secrets: inherit' with an "
+    "explicit allowlist (secrets: { NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }) "
+    "so a compromised callee can't reach unrelated credentials"
+)
+
+_GHA_SECRETS_INHERIT_RE = re.compile(
+    r"^(\s*)secrets\s*:\s*[\"']?inherit[\"']?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+@register("GHA-034")
+def _fix_gha034_secrets_inherit(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each ``secrets: inherit`` line.
+
+    Comment-only because the right shape requires the operator to
+    name the secrets the callee actually needs, which the fixer
+    can't infer from the calling YAML alone.
+    """
+    if _TODO_GHA_INHERIT in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _GHA_SECRETS_INHERIT_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_GHA_INHERIT}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
 # ── Cloud Build fixers ───────────────────────────────────────────────
 
 
@@ -1359,6 +1498,69 @@ def _fix_gcb014_logging(content: str, finding: Finding) -> str | None:
     if new == content:
         return None
     return new
+
+
+# ── GCB-022 substitutionOption ALLOW_LOOSE drop ──────────────────────
+
+# Match an indented ``substitutionOption: ALLOW_LOOSE`` line under
+# ``options:`` and drop it. Cloud Build then falls back to the
+# ``MUST_MATCH`` default — the safer behavior. Inline comments are
+# consumed too so we don't leave a dangling ``# ...`` line.
+_GCB_SUBOPT_LOOSE_RE = re.compile(
+    r"^[ \t]*substitutionOption\s*:\s*[\"']?ALLOW_LOOSE[\"']?\s*"
+    r"(?:#[^\n]*)?\n?",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+@register("GCB-022")
+def _fix_gcb022_subopt_loose(content: str, finding: Finding) -> str | None:
+    """Drop ``substitutionOption: ALLOW_LOOSE``.
+
+    Cloud Build's default is ``MUST_MATCH``, which is what the rule's
+    recommendation calls for. Dropping the explicit opt-in restores
+    that default. The ``options:`` block is left in place even when
+    this was its only entry — surrounding edits often add other
+    options (logging, machine type, …) and an empty ``options: {}``
+    is harmless.
+    """
+    new = _GCB_SUBOPT_LOOSE_RE.sub("", content)
+    if new == content:
+        return None
+    return new
+
+
+# ── GCB-021 worker-pool TODO ─────────────────────────────────────────
+
+_TODO_GCB_POOL = (
+    "TODO(pipelineguard GCB-021): add a private worker pool — "
+    "pool: { name: 'projects/<PROJECT>/locations/<REGION>/workerPools/<NAME>' } "
+    "— so the build runs inside your VPC instead of Google's shared "
+    "default pool"
+)
+_GCB_OPTIONS_RE = re.compile(r"^(\s*)options\s*:\s*$", re.MULTILINE)
+
+
+@register("GCB-021")
+def _fix_gcb021_worker_pool(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above the ``options:`` block when no worker pool
+    is configured.
+
+    Idempotent on the marker. If ``options:`` doesn't exist, no-op
+    (the rule's recommendation already covers the from-scratch case;
+    inserting a top-level block from text is too easy to misindent).
+    """
+    if _TODO_GCB_POOL in content:
+        return None
+    m = _GCB_OPTIONS_RE.search(content)
+    if m is None:
+        return None
+    indent = m.group(1)
+    return (
+        content[:m.start()]
+        + f"{indent}# {_TODO_GCB_POOL}\n"
+        + content[m.start():]
+    )
 
 
 _TODO_GCB_PIN = (
@@ -1449,6 +1651,19 @@ _TODO_DF_PATH = (
     "to the tail so system bins shadow it"
 )
 
+_TODO_DF_COPY_CRED = (
+    "TODO(pipelineguard DF-019): replace this COPY/ADD with a "
+    "build-time mount (``RUN --mount=type=secret,id=<name>``) — the "
+    "file's contents are otherwise baked into the image layer and "
+    "recoverable by anyone who can pull the image"
+)
+
+_TODO_DF_ARG_CRED = (
+    "TODO(pipelineguard DF-020): drop this credential-named ARG and "
+    "use ``RUN --mount=type=secret,id=<name>`` instead. ``--build-arg`` "
+    "values land in ``docker history`` even when the ARG has no default"
+)
+
 
 _DF_FROM_RE = re.compile(
     r"^(\s*)FROM\s+(?P<image>\S+)",
@@ -1471,6 +1686,36 @@ _DF_PATH_PREPEND_RE = re.compile(
     re.MULTILINE,
 )
 _DF_PATH_WRITABLE_PREFIXES = ("/tmp", "/var/tmp", "/dev/shm", "/run/lock")
+
+# Match COPY/ADD lines whose source token looks like a credential file.
+# Uses a quick basename / path-tail / extension test so the fixer's
+# match shape mirrors the rule's; if the rule's catalog grows, only
+# the rule needs to update — the fixer keeps annotating whatever the
+# rule already flagged.
+_DF_COPY_CRED_RE = re.compile(
+    r"^(\s*)(?:COPY|ADD)\b[^\n]*?"
+    r"(?:"
+    r"\bid_(?:rsa|dsa|ecdsa|ed25519)\b"
+    r"|\.npmrc\b|\.pypirc\b|\.netrc\b|\.env\b"
+    r"|\.git-credentials\b|\bterraform\.tfvars\b|\bkubeconfig\b"
+    r"|\.aws/credentials\b|\.docker/config\.json\b|\.kube/config\b"
+    r"|\.ssh/id_(?:rsa|dsa|ecdsa|ed25519)\b"
+    r"|\.(?:pem|key|p12|pfx|jks)\b"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Match ARG lines whose name looks credential-shaped — same regex
+# the secret_shapes primitive uses (case-insensitive substring of
+# password/passwd/secret/token/apikey/api_key/private_key).
+_DF_ARG_CRED_RE = re.compile(
+    r"^(\s*)ARG\s+"
+    r"[A-Za-z0-9_]*"
+    r"(?:password|passwd|secret|token|apikey|api_key|private_key)"
+    r"[A-Za-z0-9_]*"
+    r"(?:\s*=[^\n]*)?$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _insert_comment_above(content: str, edits: list[tuple[int, str]]) -> str:
@@ -1592,6 +1837,46 @@ def _fix_df017_path_todo(content: str, finding: Finding) -> str | None:
             continue
         indent = m.group(1)
         edits.append((m.start(), f"{indent}# {_TODO_DF_PATH}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+@register("DF-019")
+def _fix_df019_copy_cred_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above any ``COPY``/``ADD`` whose source basename
+    matches a credential filename.
+
+    Comment-only because the fix is to *remove* the directive entirely
+    and switch to ``RUN --mount=type=secret``; the operator has to
+    supply the secret-id and the consumption pattern. The TODO points
+    at the right shape.
+    """
+    if _TODO_DF_COPY_CRED in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _DF_COPY_CRED_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_DF_COPY_CRED}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
+@register("DF-020")
+def _fix_df020_arg_cred_todo(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above any ``ARG`` whose name looks credential-shaped.
+
+    Comment-only for the same reason as DF-019: the right shape uses
+    ``RUN --mount=type=secret``, which requires the operator to wire
+    up the secret source on their build invocation.
+    """
+    if _TODO_DF_ARG_CRED in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _DF_ARG_CRED_RE.finditer(content):
+        indent = m.group(1)
+        edits.append((m.start(), f"{indent}# {_TODO_DF_ARG_CRED}\n"))
     if not edits:
         return None
     return _insert_comment_above(content, edits)

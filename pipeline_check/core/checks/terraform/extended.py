@@ -31,7 +31,7 @@ from .._iam_policy import (
 from .._malicious import find_malicious_patterns
 from .._primitives.container_image import classify as _classify_image
 from ..base import Finding, Severity
-from .base import TerraformBaseCheck
+from .base import TerraformBaseCheck, TerraformContext
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED",
@@ -40,10 +40,11 @@ _PR_EVENTS = {
 }
 
 
-def _first(block_list):
-    if not block_list:
+def _first(block_list: object) -> dict:
+    if not isinstance(block_list, list) or not block_list:
         return {}
-    return block_list[0] or {}
+    head = block_list[0]
+    return head if isinstance(head, dict) else {}
 
 
 class ExtendedChecks(TerraformBaseCheck):
@@ -63,7 +64,7 @@ class ExtendedChecks(TerraformBaseCheck):
 # CodeBuild
 # ---------------------------------------------------------------------------
 
-def _codebuild_checks(ctx) -> list[Finding]:
+def _codebuild_checks(ctx: TerraformContext) -> list[Finding]:
     projects = list(ctx.resources("aws_codebuild_project"))
     webhooks = {
         w.values.get("project_name", ""): w.values
@@ -228,7 +229,7 @@ def _cb010(webhook: dict, address: str) -> Finding:
 # CloudTrail
 # ---------------------------------------------------------------------------
 
-def _cloudtrail_checks(ctx) -> list[Finding]:
+def _cloudtrail_checks(ctx: TerraformContext) -> list[Finding]:
     trails = list(ctx.resources("aws_cloudtrail"))
     out: list[Finding] = []
     if not trails:
@@ -291,7 +292,7 @@ def _cloudtrail_checks(ctx) -> list[Finding]:
 # CloudWatch Logs
 # ---------------------------------------------------------------------------
 
-def _cw_logs_checks(ctx) -> list[Finding]:
+def _cw_logs_checks(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("aws_cloudwatch_log_group"):
         name = r.values.get("name", "") or ""
@@ -332,7 +333,7 @@ def _cw_logs_checks(ctx) -> list[Finding]:
 # Secrets Manager
 # ---------------------------------------------------------------------------
 
-def _secretsmanager_checks(ctx) -> list[Finding]:
+def _secretsmanager_checks(ctx: TerraformContext) -> list[Finding]:
     rotations = {
         r.values.get("secret_id", ""): r.values
         for r in ctx.resources("aws_secretsmanager_secret_rotation")
@@ -387,7 +388,7 @@ def _secretsmanager_checks(ctx) -> list[Finding]:
 # IAM — OIDC
 # ---------------------------------------------------------------------------
 
-def _iam_oidc_check(ctx) -> list[Finding]:
+def _iam_oidc_check(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for role in ctx.resources("aws_iam_role"):
         doc = _parse_policy(role.values.get("assume_role_policy"))
@@ -428,12 +429,13 @@ def _iam_oidc_check(ctx) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw):
+def _parse_policy(raw: object) -> dict:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     return {}

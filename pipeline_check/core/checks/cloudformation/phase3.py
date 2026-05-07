@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str
+from .base import CloudFormationBaseCheck, CloudFormationContext, as_str
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED", "PULL_REQUEST_UPDATED", "PULL_REQUEST_REOPENED",
@@ -32,7 +32,7 @@ class Phase3Checks(CloudFormationBaseCheck):
         return findings
 
 
-def _ecr006(ctx) -> list[Finding]:
+def _ecr006(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("AWS::ECR::PullThroughCacheRule"):
         upstream = as_str(r.properties.get("UpstreamRegistryUrl"))
@@ -53,7 +53,7 @@ def _ecr006(ctx) -> list[Finding]:
     return out
 
 
-def _pbac003(ctx) -> list[Finding]:
+def _pbac003(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for sg in ctx.resources("AWS::EC2::SecurityGroup"):
         for rule in sg.properties.get("SecurityGroupEgress") or []:
@@ -79,7 +79,7 @@ def _pbac003(ctx) -> list[Finding]:
     return out
 
 
-def _pbac005_cp005_cp007(ctx) -> list[Finding]:
+def _pbac005_cp005_cp007(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("AWS::CodePipeline::Pipeline"):
         pipeline_role = _canon(p.properties.get("RoleArn"))
@@ -194,7 +194,7 @@ def _pbac005_cp005_cp007(ctx) -> list[Finding]:
     return out
 
 
-def _eb001(ctx) -> list[Finding]:
+def _eb001(ctx: CloudFormationContext) -> list[Finding]:
     rules = list(ctx.resources("AWS::Events::Rule"))
     if not rules:
         return []
@@ -238,7 +238,7 @@ def _eb001(ctx) -> list[Finding]:
     )]
 
 
-def _canon(role_value) -> str:
+def _canon(role_value: object) -> str:
     """Canonicalise a RoleArn value so intrinsic refs compare equal."""
     if isinstance(role_value, str):
         return role_value

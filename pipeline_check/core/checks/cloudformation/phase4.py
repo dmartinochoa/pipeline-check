@@ -20,7 +20,13 @@ from __future__ import annotations
 
 from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str, is_intrinsic, resolve_literal
+from .base import (
+    CloudFormationBaseCheck,
+    CloudFormationContext,
+    as_str,
+    is_intrinsic,
+    resolve_literal,
+)
 
 # Resource types whose secret-carrying properties are covered by
 # existing rules (LMB-003, SSM-001, CB-001) or are the legitimate
@@ -63,7 +69,7 @@ class Phase4Checks(CloudFormationBaseCheck):
 # SIGN-001 — Lambda code-signing needs a matching signer profile
 # ---------------------------------------------------------------------------
 
-def _sign001(ctx) -> list[Finding]:
+def _sign001(ctx: CloudFormationContext) -> list[Finding]:
     signed_fns = [
         fn for fn in ctx.resources("AWS::Lambda::Function")
         if fn.properties.get("CodeSigningConfigArn")
@@ -105,7 +111,7 @@ def _sign001(ctx) -> list[Finding]:
 # EB-002 — AWS::Events::Rule target ARNs with wildcards
 # ---------------------------------------------------------------------------
 
-def _eb002(ctx) -> list[Finding]:
+def _eb002(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     params = ctx.parameter_defaults
     for rule in ctx.resources("AWS::Events::Rule"):
@@ -145,7 +151,7 @@ def _eb002(ctx) -> list[Finding]:
 # CW-001 — CloudWatch alarm on CodeBuild FailedBuilds
 # ---------------------------------------------------------------------------
 
-def _cw001(ctx) -> list[Finding]:
+def _cw001(ctx: CloudFormationContext) -> list[Finding]:
     projects = list(ctx.resources("AWS::CodeBuild::Project"))
     if not projects:
         return []
@@ -187,7 +193,7 @@ def _cw001(ctx) -> list[Finding]:
 # CF-001 — AWS::IAM::AccessKey as code
 # ---------------------------------------------------------------------------
 
-def _cf001_iam_access_key(ctx) -> list[Finding]:
+def _cf001_iam_access_key(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for k in ctx.resources("AWS::IAM::AccessKey"):
         user = as_str(k.properties.get("UserName")) or "<unknown user>"
@@ -217,7 +223,7 @@ def _cf001_iam_access_key(ctx) -> list[Finding]:
 # CF-002 — hard-coded secret shapes in resource properties
 # ---------------------------------------------------------------------------
 
-def _cf002_template_secrets(ctx) -> list[Finding]:
+def _cf002_template_secrets(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources():
         if r.type in _CF002_SKIP_TYPES or r.type not in _CF002_SCAN_TYPES:
@@ -247,13 +253,13 @@ def _cf002_template_secrets(ctx) -> list[Finding]:
     return out
 
 
-def _scan_values(node) -> list[tuple[str, str]]:
+def _scan_values(node: object) -> list[tuple[str, str]]:
     hits: list[tuple[str, str]] = []
     _walk(node, "", hits)
     return hits
 
 
-def _walk(node, path: str, hits: list[tuple[str, str]]) -> None:
+def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
     if isinstance(node, dict):
         # Treat unresolved intrinsics as opaque — they carry a Ref or
         # Fn::Sub expression, never a literal credential.
@@ -285,7 +291,7 @@ def _walk(node, path: str, hits: list[tuple[str, str]]) -> None:
 # CF-003 — CodeBuild VPC shares its VPC with a public subnet
 # ---------------------------------------------------------------------------
 
-def _cf003_codebuild_public_subnet(ctx) -> list[Finding]:
+def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:
     params = ctx.parameter_defaults
     public_by_vpc: dict[str, list[str]] = {}
     for sn in ctx.resources("AWS::EC2::Subnet"):
@@ -326,7 +332,7 @@ def _cf003_codebuild_public_subnet(ctx) -> list[Finding]:
     return out
 
 
-def _is_public(value) -> bool:
+def _is_public(value: object) -> bool:
     """True when MapPublicIpOnLaunch is provably truthy."""
     if value is True:
         return True

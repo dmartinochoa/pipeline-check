@@ -49,7 +49,9 @@ PROVENANCE_TOKENS = (
 # on lint/test-only workflows that don't produce anything to sign or scan.
 _ARTIFACT_TOKENS = (
     "docker push", "docker build",
-    "upload-artifact", "actions/upload-artifact",
+    # Anchored with ``@`` so ``actions/upload-pages-artifact@<ref>``
+    # (a docs/Pages site, not a software artifact) doesn't match.
+    "actions/upload-artifact@",
     "archiveartifacts",                         # Jenkins
     "store_artifacts", "persist_to_workspace",  # CircleCI
     "publish", "deploy", "release",
@@ -98,6 +100,13 @@ def has_provenance(doc: Any) -> bool:
     ``cosign sign`` signs the artifact but doesn't produce a
     provenance statement describing *how* the artifact was built.
     SLSA Build Level 3 requires the latter.
+
+    Note: PyPI trusted publishing's PEP 740 attestations are also
+    valid provenance, but the ``with: { attestations: true }`` opt-in
+    is a structural signal (YAML parses ``true`` as a bool, not a
+    string) — the per-rule check in
+    ``checks/github/rules/gha024_slsa_provenance.py`` covers that
+    case directly.
     """
     blob = blob_lower(doc)
     return any(tok in blob for tok in PROVENANCE_TOKENS)

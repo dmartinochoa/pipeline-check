@@ -12,15 +12,16 @@ import json
 from .._iam_policy import as_list, iter_allow, public_principal
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
-from .base import TerraformBaseCheck
+from .base import TerraformBaseCheck, TerraformContext
 
 
-def _parse_policy(raw):
+def _parse_policy(raw: object) -> dict:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     return {}
@@ -43,7 +44,7 @@ class ServiceChecks(TerraformBaseCheck):
 # CodeArtifact
 # ---------------------------------------------------------------------------
 
-def _codeartifact(ctx) -> list[Finding]:
+def _codeartifact(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for d in ctx.resources("aws_codeartifact_domain"):
         key = d.values.get("encryption_key", "") or ""
@@ -121,7 +122,7 @@ def _codeartifact(ctx) -> list[Finding]:
 # CodeCommit
 # ---------------------------------------------------------------------------
 
-def _codecommit(ctx) -> list[Finding]:
+def _codecommit(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     approvals = {
         a.values.get("repository_name", "")
@@ -194,7 +195,7 @@ def _codecommit(ctx) -> list[Finding]:
 # Lambda
 # ---------------------------------------------------------------------------
 
-def _lambda(ctx) -> list[Finding]:
+def _lambda(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     url_by_fn = {
         (u.values.get("function_name") or ""): u.values
@@ -271,7 +272,7 @@ def _lambda(ctx) -> list[Finding]:
     return out
 
 
-def _first_map(val):
+def _first_map(val: object) -> dict:
     if isinstance(val, list) and val:
         first = val[0]
         return first if isinstance(first, dict) else {}
@@ -282,7 +283,7 @@ def _first_map(val):
 # KMS
 # ---------------------------------------------------------------------------
 
-def _kms(ctx) -> list[Finding]:
+def _kms(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for key in ctx.resources("aws_kms_key"):
         spec = (key.values.get("customer_master_key_spec") or "SYMMETRIC_DEFAULT")
@@ -326,7 +327,7 @@ def _kms(ctx) -> list[Finding]:
 # SSM
 # ---------------------------------------------------------------------------
 
-def _ssm(ctx) -> list[Finding]:
+def _ssm(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("aws_ssm_parameter"):
         name = p.values.get("name", "") or ""
