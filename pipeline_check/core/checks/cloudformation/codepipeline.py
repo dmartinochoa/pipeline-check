@@ -1,6 +1,8 @@
 """CloudFormation CodePipeline checks — CP-001..004."""
 from __future__ import annotations
 
+from typing import Any
+
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str, is_intrinsic
 
@@ -21,7 +23,7 @@ class CodePipelineChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _cp001_approval_before_deploy(stages: list, name: str) -> Finding:
+def _cp001_approval_before_deploy(stages: list[Any], name: str) -> Finding:
     approval_seen = False
     deploy_without_approval = False
     for stage in stages:
@@ -55,9 +57,9 @@ def _cp001_approval_before_deploy(stages: list, name: str) -> Finding:
     )
 
 
-def _cp002_artifact_encryption(properties: dict, name: str) -> Finding:
+def _cp002_artifact_encryption(properties: dict[str, Any], name: str) -> Finding:
     # CFN supports both ArtifactStore (singular) and ArtifactStores (plural map).
-    stores: list[dict] = []
+    stores: list[dict[str, Any]] = []
     single = properties.get("ArtifactStore")
     if isinstance(single, dict) and not is_intrinsic(single):
         stores.append(single)
@@ -103,7 +105,7 @@ def _cp002_artifact_encryption(properties: dict, name: str) -> Finding:
     )
 
 
-def _cp003_source_polling(stages: list, name: str) -> Finding:
+def _cp003_source_polling(stages: list[Any], name: str) -> Finding:
     polling_actions: list[str] = []
     for stage in stages:
         if not isinstance(stage, dict):
@@ -143,7 +145,7 @@ def _cp003_source_polling(stages: list, name: str) -> Finding:
     )
 
 
-def _cp004_legacy_github(stages: list, name: str) -> Finding:
+def _cp004_legacy_github(stages: list[Any], name: str) -> Finding:
     offenders: list[str] = []
     for stage in stages:
         if not isinstance(stage, dict):

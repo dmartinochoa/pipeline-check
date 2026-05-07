@@ -46,7 +46,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 36)}
+    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 37)}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -336,7 +336,7 @@ class TestKubernetesFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 36)}),
+     {f"GHA-{i:03d}" for i in range(1, 37)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 32)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",

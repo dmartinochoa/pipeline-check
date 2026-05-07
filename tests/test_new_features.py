@@ -240,6 +240,27 @@ def test_lambda_fanout_aggregates_scans(monkeypatch):
     assert {s["region"] for s in result["scans"]} == {"us-east-1", "eu-west-1"}
 
 
+def test_lambda_fanout_tolerates_unknown_grade(monkeypatch):
+    """A sub-scan returning a grade outside {A,B,C,D} (e.g. an "F" from
+    a future scoring change, or any malformed string) must not crash
+    the fan-out aggregation with ValueError."""
+    from pipeline_check import lambda_handler as lh
+
+    def fake_handler(event, ctx):
+        return {
+            "statusCode": 200, "grade": "F", "score": 0,
+            "total_findings": 0, "critical_failures": 0,
+            "report_s3_key": None, "report_s3_status": "unconfigured",
+        }
+    monkeypatch.setattr(lh, "handler", fake_handler)
+
+    result = lh._fan_out(regions=["us-east-1"], providers=["aws"])
+    assert result["statusCode"] == 200
+    # Unknown grades collapse to "D" — the worst known grade — so the
+    # aggregate still surfaces the badness without crashing.
+    assert result["worst_grade"] == "D"
+
+
 # ── HTML filter markup ───────────────────────────────────────────────────
 
 def test_html_report_includes_filter_bar_and_copy_ignore():

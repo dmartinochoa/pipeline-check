@@ -8,6 +8,7 @@ PyYAML is installed; the report degrades gracefully without it.
 import html
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
@@ -428,7 +429,7 @@ _SCRIPT = r"""
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _load_rules() -> dict[str, dict]:
+def _load_rules() -> dict[str, dict[str, Any]]:
     """Load YAML rule definitions indexed by check_id. Returns {} if unavailable.
 
     Parse errors are logged to stderr rather than silently swallowed —
@@ -438,7 +439,7 @@ def _load_rules() -> dict[str, dict]:
     import sys
     if not _YAML_AVAILABLE or not _RULES_DIR.exists():
         return {}
-    rules: dict[str, dict] = {}
+    rules: dict[str, dict[str, Any]] = {}
     for yml_path in _RULES_DIR.glob("*.yml"):
         try:
             with yml_path.open(encoding="utf-8") as fh:
@@ -474,7 +475,7 @@ def _status_badge(passed: bool) -> str:
     )
 
 
-def _severity_summary_html(summary: dict) -> str:
+def _severity_summary_html(summary: dict[str, Any]) -> str:
     pills: list[str] = []
     for sev in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO):
         data = summary.get(sev.value, {"passed": 0, "failed": 0})
@@ -517,7 +518,7 @@ def _provider_for(check_id: str) -> str:
     return _PROVIDER_PREFIXES.get(prefix, "other")
 
 
-def _finding_row(finding: Finding, rule: dict) -> str:
+def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     row_cls = "row-fail" if not finding.passed else "row-pass"
 
     # Result (dynamic description from Finding)
@@ -570,7 +571,7 @@ def _finding_row(finding: Finding, rule: dict) -> str:
 
     # Compliance controls — one tag per ControlRef, grouped by standard.
     if finding.controls:
-        by_std: dict[str, list] = {}
+        by_std: dict[str, list[Any]] = {}
         for c in finding.controls:
             by_std.setdefault(c.standard_title, []).append(c)
         groups_html = ""

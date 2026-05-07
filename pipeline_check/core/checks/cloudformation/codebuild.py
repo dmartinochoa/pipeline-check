@@ -12,6 +12,8 @@ are a property of the Project resource in CFN, not a separate resource.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from .._patterns import (
     LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
 )
@@ -57,7 +59,7 @@ class CodeBuildChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _cb001_plaintext_secrets(properties: dict, address: str) -> Finding:
+def _cb001_plaintext_secrets(properties: dict[str, Any], address: str) -> Finding:
     env = properties.get("Environment") or {}
     if is_intrinsic(env):
         env = {}
@@ -103,7 +105,7 @@ def _cb001_plaintext_secrets(properties: dict, address: str) -> Finding:
     )
 
 
-def _cb002_privileged_mode(properties: dict, address: str) -> Finding:
+def _cb002_privileged_mode(properties: dict[str, Any], address: str) -> Finding:
     env = properties.get("Environment") or {}
     privileged = is_true(env.get("PrivilegedMode"))
     desc = (
@@ -125,7 +127,7 @@ def _cb002_privileged_mode(properties: dict, address: str) -> Finding:
     )
 
 
-def _cb003_logging_enabled(properties: dict, address: str) -> Finding:
+def _cb003_logging_enabled(properties: dict[str, Any], address: str) -> Finding:
     logs = properties.get("LogsConfig") or {}
     cw = logs.get("CloudWatchLogs") or {}
     s3 = logs.get("S3Logs") or {}
@@ -157,7 +159,7 @@ def _cb003_logging_enabled(properties: dict, address: str) -> Finding:
     )
 
 
-def _cb004_timeout(properties: dict, address: str) -> Finding:
+def _cb004_timeout(properties: dict[str, Any], address: str) -> Finding:
     timeout = properties.get("TimeoutInMinutes")
     # CFN accepts both an integer (``TimeoutInMinutes: 30``) and its
     # stringified form (``TimeoutInMinutes: "30"``) — the latter is
@@ -189,7 +191,7 @@ def _cb004_timeout(properties: dict, address: str) -> Finding:
     )
 
 
-def _cb005_image_version(properties: dict, address: str) -> Finding:
+def _cb005_image_version(properties: dict[str, Any], address: str) -> Finding:
     env = properties.get("Environment") or {}
     image = as_str(env.get("Image"))
     match = _MANAGED_IMAGE_RE.search(image)
@@ -220,7 +222,7 @@ def _cb005_image_version(properties: dict, address: str) -> Finding:
 
 
 def _cb006_source_auth(
-    properties: dict, source_creds: dict[str, str], address: str,
+    properties: dict[str, Any], source_creds: dict[str, str], address: str,
 ) -> Finding:
     source = properties.get("Source") or {}
     if is_intrinsic(source):
@@ -272,7 +274,7 @@ def _cb006_source_auth(
     )
 
 
-def _cb007_webhook_filter(properties: dict, address: str) -> Finding:
+def _cb007_webhook_filter(properties: dict[str, Any], address: str) -> Finding:
     triggers = properties.get("Triggers") or {}
     if is_intrinsic(triggers):
         triggers = {}

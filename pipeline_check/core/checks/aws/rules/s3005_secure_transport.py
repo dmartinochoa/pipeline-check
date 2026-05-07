@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from botocore.exceptions import ClientError
 
@@ -22,7 +23,7 @@ RULE = Rule(
 )
 
 
-def _policy_denies_insecure_transport(doc: dict) -> bool:
+def _policy_denies_insecure_transport(doc: dict[str, Any]) -> bool:
     for stmt in doc.get("Statement", []):
         if stmt.get("Effect") != "Deny":
             continue

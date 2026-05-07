@@ -17,6 +17,7 @@ so the bucket is identified by its logical id rather than name.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, CloudFormationResource, as_str
@@ -38,7 +39,7 @@ class S3Checks(CloudFormationBaseCheck):
                 bucket_by_name[lit] = b
             bucket_by_name[b.logical_id] = b
 
-        policies_by_bucket: dict[str, dict] = {}
+        policies_by_bucket: dict[str, dict[str, Any]] = {}
         for p in self.ctx.resources("AWS::S3::BucketPolicy"):
             target = p.properties.get("Bucket")
             key = _target_key(target)
@@ -92,7 +93,7 @@ def _target_key(value: object) -> str:
     return ""
 
 
-def _s3001_pab(props: dict, bucket: str) -> Finding:
+def _s3001_pab(props: dict[str, Any], bucket: str) -> Finding:
     pab = props.get("PublicAccessBlockConfiguration") or {}
     checks = {
         "BlockPublicAcls": bool(pab.get("BlockPublicAcls")),
@@ -118,7 +119,7 @@ def _s3001_pab(props: dict, bucket: str) -> Finding:
     )
 
 
-def _s3002_encryption(props: dict, bucket: str) -> Finding:
+def _s3002_encryption(props: dict[str, Any], bucket: str) -> Finding:
     enc = props.get("BucketEncryption") or {}
     rules = enc.get("ServerSideEncryptionConfiguration") or []
     encrypted = False
@@ -143,7 +144,7 @@ def _s3002_encryption(props: dict, bucket: str) -> Finding:
     )
 
 
-def _s3003_versioning(props: dict, bucket: str) -> Finding:
+def _s3003_versioning(props: dict[str, Any], bucket: str) -> Finding:
     vcfg = props.get("VersioningConfiguration") or {}
     status = as_str(vcfg.get("Status"))
     passed = status == "Enabled"
@@ -163,7 +164,7 @@ def _s3003_versioning(props: dict, bucket: str) -> Finding:
     )
 
 
-def _s3004_logging(props: dict, bucket: str) -> Finding:
+def _s3004_logging(props: dict[str, Any], bucket: str) -> Finding:
     logging = props.get("LoggingConfiguration") or {}
     target = logging.get("DestinationBucketName")
     enabled = bool(target)
@@ -183,7 +184,7 @@ def _s3004_logging(props: dict, bucket: str) -> Finding:
     )
 
 
-def _s3005_secure_transport(policy_props: dict, bucket: str) -> Finding:
+def _s3005_secure_transport(policy_props: dict[str, Any], bucket: str) -> Finding:
     policy_doc = policy_props.get("PolicyDocument") if policy_props else None
     if not policy_doc:
         return Finding(

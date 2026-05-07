@@ -146,7 +146,7 @@ def scan(text: str) -> list[RemoteExecFinding]:
     hits: list[RemoteExecFinding] = []
     seen_spans: set[tuple[int, int]] = set()
 
-    def _emit(kind: str, m: re.Match, interp_key: str = "interp") -> None:
+    def _emit(kind: str, m: re.Match[str], interp_key: str = "interp") -> None:
         if m.span() in seen_spans:
             return
         seen_spans.add(m.span())

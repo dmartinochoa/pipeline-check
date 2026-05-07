@@ -7,6 +7,8 @@ CP-004  Legacy ThirdParty/GitHub (OAuth) source action      HIGH      CICD-SEC-6
 """
 from __future__ import annotations
 
+from typing import Any
+
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
@@ -27,7 +29,7 @@ class CodePipelineChecks(TerraformBaseCheck):
         return findings
 
 
-def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:
+def _cp001_approval_before_deploy(stages: list[dict[str, Any]], name: str) -> Finding:
     approval_seen = False
     deploy_without_approval = False
     for stage in stages:
@@ -57,7 +59,7 @@ def _cp001_approval_before_deploy(stages: list[dict], name: str) -> Finding:
     )
 
 
-def _cp002_artifact_encryption(values: dict, name: str) -> Finding:
+def _cp002_artifact_encryption(values: dict[str, Any], name: str) -> Finding:
     stores = values.get("artifact_store", []) or []
     unencrypted = [
         s.get("location", "unknown")
@@ -82,7 +84,7 @@ def _cp002_artifact_encryption(values: dict, name: str) -> Finding:
     )
 
 
-def _cp003_source_polling(stages: list[dict], name: str) -> Finding:
+def _cp003_source_polling(stages: list[dict[str, Any]], name: str) -> Finding:
     polling = []
     for stage in stages:
         for action in stage.get("action", []) or []:
@@ -111,7 +113,7 @@ def _cp003_source_polling(stages: list[dict], name: str) -> Finding:
     )
 
 
-def _cp004_legacy_github(stages: list[dict], name: str) -> Finding:
+def _cp004_legacy_github(stages: list[dict[str, Any]], name: str) -> Finding:
     legacy = []
     for stage in stages:
         for action in stage.get("action", []) or []:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..._iam_policy import (
     is_oidc_trust_stmt,
@@ -35,7 +36,7 @@ RULE = Rule(
 )
 
 
-def _parse(doc: object) -> dict:
+def _parse(doc: object) -> dict[str, Any]:
     if isinstance(doc, dict):
         return doc
     if isinstance(doc, str):

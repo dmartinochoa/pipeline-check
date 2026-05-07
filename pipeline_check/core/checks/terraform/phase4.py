@@ -20,6 +20,8 @@ would flood reports with spurious findings.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
@@ -247,7 +249,7 @@ def _tf002_plan_secrets(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
-def _scan_values(values: dict) -> list[tuple[str, str]]:
+def _scan_values(values: dict[str, Any]) -> list[tuple[str, str]]:
     """Return [(dot.path, detector-name)] for secret-shaped string leaves."""
     hits: list[tuple[str, str]] = []
     _walk(values, "", hits)

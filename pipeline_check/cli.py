@@ -175,7 +175,7 @@ class _GroupedCommand(click.Command):
                 formatter.write_dl(rows)
 
 
-class _FuzzyChoice(click.Choice):
+class _FuzzyChoice(click.Choice[str]):
     """Click Choice that appends 'Did you mean: X?' on a bad value.
 
     Mirrors the suggestion style used by ``--explain`` for unknown check
@@ -216,7 +216,7 @@ class _FuzzyChoice(click.Choice):
 
 def _complete_check_ids(
     ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list:
+) -> list[Any]:
     """Tab-complete check IDs (GHA-001, GL-002, CB-001, etc.)."""
     from click.shell_completion import CompletionItem
     try:
@@ -232,7 +232,7 @@ def _complete_check_ids(
 
 def _complete_standards(
     ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list:
+) -> list[Any]:
     """Tab-complete standard names."""
     from click.shell_completion import CompletionItem
     try:
@@ -248,7 +248,7 @@ def _complete_standards(
 
 def _complete_man_topics(
     ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list:
+) -> list[Any]:
     """Tab-complete --man topic names."""
     from click.shell_completion import CompletionItem
     try:
@@ -1495,7 +1495,7 @@ def scan(
     # ``--inventory-only``, ``--inventory-type`` both imply ``--inventory``.
     want_inventory = inventory_flag or inventory_only or bool(inventory_types)
 
-    findings: list = []
+    findings: list[Any] = []
     if not inventory_only:
         try:
             findings = scanner.run(
@@ -1666,7 +1666,7 @@ def scan(
         sys.exit(1)
 
 
-def _emit_fix_patches(findings: list, *, to_stderr: bool = False) -> None:
+def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
     """Emit one unified-diff patch per failing finding that has a fixer.
 
     Patches go to stdout by default so a user can pipe straight into
@@ -1726,7 +1726,7 @@ def _emit_fix_patches(findings: list, *, to_stderr: bool = False) -> None:
         )
 
 
-def _apply_fix_patches(findings: list) -> None:
+def _apply_fix_patches(findings: list[Any]) -> None:
     """Apply autofixes in place; print an N-files-modified summary to stderr.
 
     Each fixer is idempotent, so it's safe to re-run after an apply —
@@ -1770,7 +1770,7 @@ def _apply_fix_patches(findings: list) -> None:
     click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
 
 
-def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list) -> None:
+def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> None:
     """Nudge the user when AWS was scanned but a CI config file exists.
 
     Fires only when the caller explicitly picked ``--pipeline aws`` (or

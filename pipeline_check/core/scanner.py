@@ -333,7 +333,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     if not isinstance(planned, list):
         return
 
-    def _keep(res: dict) -> bool:
+    def _keep(res: dict[str, Any]) -> bool:
         addr = res.get("address", "")
         if not isinstance(addr, str):
             return True

@@ -18,7 +18,7 @@ class ControlRef:
     control_id: str      # e.g. "CICD-SEC-5"
     control_title: str   # e.g. "Insufficient PBAC"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str]:
         return {
             "standard": self.standard,
             "standard_title": self.standard_title,

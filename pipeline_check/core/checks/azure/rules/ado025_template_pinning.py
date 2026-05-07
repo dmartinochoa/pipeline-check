@@ -56,7 +56,7 @@ def _find_template_aliases(node: Any, aliases: set[str]) -> None:
             _find_template_aliases(item, aliases)
 
 
-def _repo_is_pinned(repo: dict) -> bool:
+def _repo_is_pinned(repo: dict[str, Any]) -> bool:
     ref = repo.get("ref")
     if not isinstance(ref, str):
         return False
@@ -76,7 +76,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return _passed(path, "No repository resources declared.")
 
     # Build alias → repo-entry map.
-    repo_by_alias: dict[str, dict] = {}
+    repo_by_alias: dict[str, dict[str, Any]] = {}
     for entry in repos:
         if not isinstance(entry, dict):
             continue

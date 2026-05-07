@@ -180,9 +180,9 @@ _INTRINSIC_TAGS = {
 }
 
 
-def _make_constructor(fn_key: str) -> Callable[[yaml.Loader, yaml.Node], dict]:
+def _make_constructor(fn_key: str) -> Callable[[yaml.Loader, yaml.Node], dict[str, Any]]:
     """Build a PyYAML constructor that maps a short-form tag to ``{fn_key: value}``."""
-    def _construct(loader: yaml.Loader, node: yaml.Node) -> dict:
+    def _construct(loader: yaml.Loader, node: yaml.Node) -> dict[str, Any]:
         # ``!GetAtt MyThing.Arn`` arrives as a scalar; CFN documents it
         # as a list of [LogicalId, AttributeName]. Split on the first
         # ``.`` to match the JSON-form convention.

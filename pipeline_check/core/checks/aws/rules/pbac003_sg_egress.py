@@ -1,6 +1,8 @@
 """PBAC-003 — CodeBuild security group allows 0.0.0.0/0 all-port egress."""
 from __future__ import annotations
 
+from typing import Any
+
 from botocore.exceptions import ClientError
 
 from ...base import Finding, Severity
@@ -22,7 +24,7 @@ RULE = Rule(
 )
 
 
-def _open_egress(perms: list[dict]) -> bool:
+def _open_egress(perms: list[dict[str, Any]]) -> bool:
     for perm in perms:
         ranges = perm.get("IpRanges") or []
         proto = perm.get("IpProtocol")

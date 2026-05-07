@@ -1,6 +1,8 @@
 """CB-010 — CodeBuild webhook allows fork-PR builds without actor filtering."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -34,7 +36,7 @@ _PR_EVENTS = {
 }
 
 
-def _group_covers_pr(group: list[dict]) -> bool:
+def _group_covers_pr(group: list[dict[str, Any]]) -> bool:
     for filt in group:
         if filt.get("type") != "EVENT":
             continue
@@ -45,7 +47,7 @@ def _group_covers_pr(group: list[dict]) -> bool:
     return False
 
 
-def _group_has_actor_filter(group: list[dict]) -> bool:
+def _group_has_actor_filter(group: list[dict[str, Any]]) -> bool:
     return any(filt.get("type") == "ACTOR_ACCOUNT_ID" for filt in group)
 
 

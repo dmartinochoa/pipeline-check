@@ -13,6 +13,8 @@ CB-001 fails on **either** a secret-like variable name (PASSWORD, TOKEN, …)
 """
 from __future__ import annotations
 
+from typing import Any
+
 from .._patterns import (
     LATEST_STANDARD_VERSION as _LATEST_STANDARD_VERSION,
 )
@@ -31,7 +33,7 @@ from .base import TerraformBaseCheck
 _MAX_SENSIBLE_TIMEOUT = 480
 
 
-def _first(block_list: list | None) -> dict:
+def _first(block_list: list[Any] | None) -> dict[str, Any]:
     if not block_list:
         return {}
     return block_list[0] or {}
@@ -48,7 +50,7 @@ class CodeBuildChecks(TerraformBaseCheck):
             if server and auth:
                 source_creds[server] = auth
 
-        webhooks: dict[str, dict] = {}
+        webhooks: dict[str, dict[str, Any]] = {}
         for r in self.ctx.resources("aws_codebuild_webhook"):
             proj = r.values.get("project_name", "")
             if proj:
@@ -69,7 +71,7 @@ class CodeBuildChecks(TerraformBaseCheck):
         return findings
 
 
-def _cb001_plaintext_secrets(values: dict, address: str) -> Finding:
+def _cb001_plaintext_secrets(values: dict[str, Any], address: str) -> Finding:
     suspicious_names: list[str] = []
     suspicious_values: list[str] = []
     for env_block in values.get("environment", []) or []:
@@ -114,7 +116,7 @@ def _cb001_plaintext_secrets(values: dict, address: str) -> Finding:
     )
 
 
-def _cb002_privileged_mode(values: dict, address: str) -> Finding:
+def _cb002_privileged_mode(values: dict[str, Any], address: str) -> Finding:
     env = _first(values.get("environment"))
     privileged = bool(env.get("privileged_mode", False))
     desc = (
@@ -136,7 +138,7 @@ def _cb002_privileged_mode(values: dict, address: str) -> Finding:
     )
 
 
-def _cb003_logging_enabled(values: dict, address: str) -> Finding:
+def _cb003_logging_enabled(values: dict[str, Any], address: str) -> Finding:
     logs = _first(values.get("logs_config"))
     cw = _first(logs.get("cloudwatch_logs"))
     s3 = _first(logs.get("s3_logs"))
@@ -168,7 +170,7 @@ def _cb003_logging_enabled(values: dict, address: str) -> Finding:
     )
 
 
-def _cb004_timeout(values: dict, address: str) -> Finding:
+def _cb004_timeout(values: dict[str, Any], address: str) -> Finding:
     timeout = values.get("build_timeout")
     passed = timeout is not None and timeout < _MAX_SENSIBLE_TIMEOUT
     desc = (
@@ -187,7 +189,7 @@ def _cb004_timeout(values: dict, address: str) -> Finding:
     )
 
 
-def _cb005_image_version(values: dict, address: str) -> Finding:
+def _cb005_image_version(values: dict[str, Any], address: str) -> Finding:
     env = _first(values.get("environment"))
     image = env.get("image", "") or ""
     match = _MANAGED_IMAGE_RE.search(image)
@@ -221,7 +223,7 @@ _LONG_LIVED_TOKEN_AUTH = {"OAUTH", "PERSONAL_ACCESS_TOKEN", "BASIC_AUTH"}
 _EXTERNAL_SOURCE_TYPES = {"GITHUB", "GITHUB_ENTERPRISE", "BITBUCKET"}
 
 
-def _cb006_source_auth(values: dict, source_creds: dict[str, str], address: str) -> Finding:
+def _cb006_source_auth(values: dict[str, Any], source_creds: dict[str, str], address: str) -> Finding:
     source = _first(values.get("source"))
     src_type = source.get("type", "") or ""
     if src_type not in _EXTERNAL_SOURCE_TYPES:
@@ -277,7 +279,7 @@ def _cb006_source_auth(values: dict, source_creds: dict[str, str], address: str)
     )
 
 
-def _cb007_webhook_filter(webhook_values: dict | None, address: str) -> Finding:
+def _cb007_webhook_filter(webhook_values: dict[str, Any] | None, address: str) -> Finding:
     if webhook_values is None:
         return Finding(
             check_id="CB-007",

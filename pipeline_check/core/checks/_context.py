@@ -12,6 +12,7 @@ positive.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 # Key / attribute names that signal the surrounding string is an
 # example, not production data. Matched against the *nearest enclosing
@@ -168,7 +169,7 @@ _CONSTRAINING_CONDITION_KEYS: frozenset[str] = frozenset({
 })
 
 
-def statement_is_constrained(stmt: dict) -> bool:
+def statement_is_constrained(stmt: dict[str, Any]) -> bool:
     """Return True when *stmt* carries a condition that narrows scope.
 
     Case-insensitive match against the condition key names; IAM's key

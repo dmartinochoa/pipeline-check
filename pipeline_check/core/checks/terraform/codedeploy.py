@@ -4,6 +4,8 @@ Runs over ``aws_codedeploy_deployment_group`` resources.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
@@ -14,7 +16,7 @@ _ALL_AT_ONCE_CONFIGS = {
 }
 
 
-def _first(block_list: list | None) -> dict:
+def _first(block_list: list[Any] | None) -> dict[str, Any]:
     if not block_list:
         return {}
     return block_list[0] or {}
@@ -36,7 +38,7 @@ class CodeDeployChecks(TerraformBaseCheck):
         return findings
 
 
-def _cd001_auto_rollback(values: dict, resource: str) -> Finding:
+def _cd001_auto_rollback(values: dict[str, Any], resource: str) -> Finding:
     rollback = _first(values.get("auto_rollback_configuration"))
     enabled = bool(rollback.get("enabled", False))
     events = rollback.get("events", []) or []
@@ -63,7 +65,7 @@ def _cd001_auto_rollback(values: dict, resource: str) -> Finding:
     )
 
 
-def _cd002_all_at_once(values: dict, resource: str) -> Finding:
+def _cd002_all_at_once(values: dict[str, Any], resource: str) -> Finding:
     config_name = values.get("deployment_config_name", "") or ""
     is_all_at_once = config_name in _ALL_AT_ONCE_CONFIGS
     desc = (
@@ -86,7 +88,7 @@ def _cd002_all_at_once(values: dict, resource: str) -> Finding:
     )
 
 
-def _cd003_alarm_config(values: dict, resource: str) -> Finding:
+def _cd003_alarm_config(values: dict[str, Any], resource: str) -> Finding:
     alarm_cfg = _first(values.get("alarm_configuration"))
     enabled = bool(alarm_cfg.get("enabled", False))
     alarms = alarm_cfg.get("alarms", []) or []

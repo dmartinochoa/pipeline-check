@@ -4,6 +4,8 @@ Runs over ``AWS::CodeDeploy::DeploymentGroup`` resources.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str, is_true
 
@@ -30,7 +32,7 @@ class CodeDeployChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _cd001_auto_rollback(properties: dict, resource: str) -> Finding:
+def _cd001_auto_rollback(properties: dict[str, Any], resource: str) -> Finding:
     rollback = properties.get("AutoRollbackConfiguration") or {}
     enabled = is_true(rollback.get("Enabled"))
     events = rollback.get("Events") or []
@@ -54,7 +56,7 @@ def _cd001_auto_rollback(properties: dict, resource: str) -> Finding:
     )
 
 
-def _cd002_all_at_once(properties: dict, resource: str) -> Finding:
+def _cd002_all_at_once(properties: dict[str, Any], resource: str) -> Finding:
     config_name = as_str(properties.get("DeploymentConfigName"))
     is_all_at_once = config_name in _ALL_AT_ONCE_CONFIGS
     desc = (
@@ -74,7 +76,7 @@ def _cd002_all_at_once(properties: dict, resource: str) -> Finding:
     )
 
 
-def _cd003_alarm_config(properties: dict, resource: str) -> Finding:
+def _cd003_alarm_config(properties: dict[str, Any], resource: str) -> Finding:
     alarm_cfg = properties.get("AlarmConfiguration") or {}
     enabled = is_true(alarm_cfg.get("Enabled"))
     alarms = alarm_cfg.get("Alarms") or []

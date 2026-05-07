@@ -12,6 +12,47 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **One more GitHub Actions rule.** `GHA-036` flags jobs whose
+  `runs-on:` interpolates an attacker-controllable expression
+  (`${{ inputs.* }}`, `${{ github.event.* }}`,
+  `${{ github.head_ref }}`, …). A reusable workflow that declares
+  `runs-on: ${{ inputs.runner }}` lets a downstream caller route
+  the job onto any self-hosted label the org owns — including
+  privileged production-deploy fleets the workflow author never
+  intended to expose. The rule walks all three `runs-on` shapes
+  (string scalar, list of labels, and the long-form
+  `{ group, labels }` dict) and reuses `UNTRUSTED_CONTEXT_RE` so
+  the catalog stays in lockstep with `GHA-003` / `GHA-035`.
+  `${{ matrix.* }}` is intentionally not flagged — matrix values
+  are author-controlled, not caller-controlled. Severity HIGH,
+  OWASP CICD-SEC-7, CWE-345. GitHub rule catalog: 35 to 36.
+- **`disallow_any_generics` enabled** — cleared the final strict
+  mypy flag with a 226 → 0 annotation pass. Bare `dict` / `list`
+  return types and parameter annotations across the
+  CloudFormation / Terraform IAM / S3 / ECR / CodeBuild /
+  CodePipeline / CodeDeploy / pbac / extended / services modules
+  now spell `dict[str, Any]` / `list[dict[str, Any]]` (CFN and
+  Terraform planned-resource shapes are heterogeneous from
+  upstream parsers, so `Any` is the honest leaf type). The Click
+  `Choice` parameter became `Choice[str]`. The four AWS modules
+  already exempted under the boto3 mypy override now also disable
+  the `type-arg` error code so paginator wrappers don't have to
+  spell `cast()` at every site. Two `dict[Any, Any]` sites
+  (`_yaml_strict.DupKeyLoader.construct_mapping` and one PyYAML
+  1.1 `True`-key lookup in `providers/github._gha_metadata`) keep
+  the wider key type that PyYAML can produce in those corners.
+  All nine `mypy --strict` flags are now on, with no user-visible
+  change. The mechanical pass lives in
+  `scripts/_fix_generics.py` and is safe to re-run.
+- **Defensive fix for malformed grades in Lambda fan-out.**
+  `lambda_handler._fan_out` no longer crashes when a sub-scan
+  returns a grade outside `{A, B, C, D}` —  unknown grades
+  collapse to `D` (the worst known) so the aggregate still
+  surfaces the badness without raising `ValueError` from
+  `_GRADE_ORDER.index`. New `test_lambda_fanout_tolerates_unknown_grade`
+  pins the behavior. The error path that records a per-scan
+  failure already used `continue`, so this only matters for the
+  successful-but-malformed-result branch.
 - **One more Bitbucket rule.** `BB-029` flags step `image:` and
   `definitions.services.<name>.image:` references that aren't
   pinned by sha256 digest. `BB-001` and `BB-009` only walk

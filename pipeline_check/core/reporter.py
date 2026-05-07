@@ -1,6 +1,7 @@
 """Output formatters -- terminal (rich) and JSON."""
 
 import json
+from typing import Any
 
 from rich import box
 from rich.console import Console
@@ -211,7 +212,7 @@ def report_json(
     (possibly empty) when chain evaluation ran; omitted when the caller
     explicitly disabled chains via ``--no-chains``.
     """
-    payload: dict = {
+    payload: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
         "tool_version": tool_version or "0.0.0",
         "score": score_result,

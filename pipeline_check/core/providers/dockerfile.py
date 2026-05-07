@@ -44,7 +44,7 @@ class DockerfileProvider(BaseProvider):
         for df in context.dockerfiles:
             from_count = sum(1 for ins in df.instructions if ins.directive == "FROM")
             run_count = sum(1 for ins in df.instructions if ins.directive == "RUN")
-            metadata: dict = {
+            metadata: dict[str, Any] = {
                 "instruction_count": len(df.instructions),
                 "stages": from_count,
                 "run_steps": run_count,

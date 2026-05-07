@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from botocore.exceptions import ClientError
 
@@ -25,7 +26,7 @@ RULE = Rule(
 )
 
 
-def _has_wildcard(doc: dict) -> bool:
+def _has_wildcard(doc: dict[str, Any]) -> bool:
     for stmt in iter_allow(doc):
         actions = as_list(stmt.get("Action"))
         has_wild = any(

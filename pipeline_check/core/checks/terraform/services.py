@@ -8,6 +8,7 @@ actually on?" which is a runtime query — the Terraform analogue is
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from .._iam_policy import as_list, iter_allow, public_principal
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
@@ -15,7 +16,7 @@ from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
 
 
-def _parse_policy(raw: object) -> dict:
+def _parse_policy(raw: object) -> dict[str, Any]:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
@@ -272,7 +273,7 @@ def _lambda(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
-def _first_map(val: object) -> dict:
+def _first_map(val: object) -> dict[str, Any]:
     if isinstance(val, list) and val:
         first = val[0]
         return first if isinstance(first, dict) else {}

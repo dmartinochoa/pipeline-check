@@ -38,7 +38,7 @@ class JenkinsProvider(BaseProvider):
         import re
         out: list[Component] = []
         for jf in context.files:
-            metadata: dict = {}
+            metadata: dict[str, Any] = {}
             stages = [name for name, _body in jf.stages]
             if stages:
                 metadata["stages"] = stages

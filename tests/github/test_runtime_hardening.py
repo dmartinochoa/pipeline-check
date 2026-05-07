@@ -353,3 +353,165 @@ class TestGHA014DeployEnvironment:
         """
         f = run_check(wf, "GHA-014")
         assert f.passed
+
+
+# ── GHA-036 runs-on injection ───────────────────────────────────────
+
+
+class TestGHA036RunsOnInjection:
+    def test_fails_on_inputs_runner(self):
+        # Reusable workflow that lets the caller pick the runner is
+        # the canonical attack shape — caller can route the job onto
+        # any privileged self-hosted label the org owns.
+        wf = """
+        name: reusable
+        on:
+          workflow_call:
+            inputs:
+              runner:
+                type: string
+                required: true
+        jobs:
+          build:
+            runs-on: ${{ inputs.runner }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert not f.passed
+        assert "build" in f.description
+
+    def test_fails_on_workflow_dispatch_input(self):
+        wf = """
+        name: ondemand
+        on:
+          workflow_dispatch:
+            inputs:
+              target:
+                type: string
+        jobs:
+          deploy:
+            runs-on: ${{ inputs.target }}
+            steps:
+              - run: deploy.sh
+        """
+        f = run_check(wf, "GHA-036")
+        assert not f.passed
+
+    def test_fails_when_dict_form_labels_interpolated(self):
+        # Long-form runs-on: { group, labels: [...] } — labels are
+        # also a vector. Dict form is documented in GHA's runner
+        # group docs.
+        wf = """
+        name: ci
+        on:
+          workflow_call:
+            inputs:
+              label:
+                type: string
+        jobs:
+          build:
+            runs-on:
+              group: prod-pool
+              labels:
+                - self-hosted
+                - ${{ inputs.label }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert not f.passed
+
+    def test_fails_when_dict_form_group_interpolated(self):
+        wf = """
+        name: ci
+        on:
+          workflow_call:
+            inputs:
+              pool:
+                type: string
+        jobs:
+          build:
+            runs-on:
+              group: ${{ inputs.pool }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert not f.passed
+
+    def test_fails_on_pr_head_ref_via_pull_request_target(self):
+        # Less common but exploitable: a maintainer's runs-on tied
+        # to the PR head ref hands attacker-controlled branch names
+        # straight to the runner-selection step.
+        wf = """
+        name: ci
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ${{ github.head_ref }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert not f.passed
+
+    def test_passes_on_string_literal(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert f.passed
+
+    def test_passes_on_list_literal(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: [self-hosted, linux, x64, ephemeral]
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert f.passed
+
+    def test_passes_on_matrix_runner(self):
+        # ``matrix.*`` is author-controlled, not caller-controlled —
+        # the matrix values live in the same workflow file. The
+        # untrusted-context regex deliberately excludes ``matrix.*``.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            strategy:
+              matrix:
+                os: [ubuntu-latest, macos-latest]
+            runs-on: ${{ matrix.os }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert f.passed
+
+    def test_passes_on_dict_form_with_literal_labels(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on:
+              group: prod-pool
+              labels: [self-hosted, ephemeral]
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-036")
+        assert f.passed

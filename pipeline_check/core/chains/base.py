@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any
 
 from ..checks.base import Confidence, Finding, Severity
 
@@ -60,7 +61,7 @@ class Chain:
     references: list[str]
     recommendation: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "chain_id": self.chain_id,
             "title": self.title,
