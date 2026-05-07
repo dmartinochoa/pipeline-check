@@ -6,16 +6,18 @@ hide:
   - toc
 ---
 
-<section class="pg-hero">
+<section class="pg-hero" markdown>
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
+![Pipeline-Check](logo.svg){.pg-hero__mark loading=lazy}
+
 <span class="pg-hero__wordmark">pipeline-check · v{{ version }}</span>
 
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for twelve providers and graded against twelve compliance frameworks. 
+A read-only scanner for 12 providers, graded against 13 compliance frameworks. 
 96 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
@@ -250,7 +252,7 @@ flowchart LR
 </div>
 </section>
 
-<section class="pg-cta">
+<section class="pg-cta" markdown>
 <div class="pg-cta__inner" markdown>
 ## Ship pipelines you trust.
 <p>Install in under 30 seconds. Scan your first repo in under a minute.</p>

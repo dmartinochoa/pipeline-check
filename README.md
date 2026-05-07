@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/dmartinochoa/pipeline-check/master/docs/logo.png" alt="Pipeline-Check logo" width="120">
+<img src="https://raw.githubusercontent.com/dmartinochoa/pipeline-check/master/docs/logo.svg" alt="Pipeline-Check logo" width="160">
 
 # [Pipeline-Check](https://dmartinochoa.github.io/pipeline-check/)
 
@@ -10,9 +10,9 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
-Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
+Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **96 autofixers** -- plus **12 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**430+ checks** across **12 providers**, mapped to **13 compliance standards**, with **96 autofixers**, plus **12 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -40,7 +40,7 @@ pipeline_check --pipeline aws       # force the live-AWS scan
 Run `pipeline_check` with no flags in any supported repo — it inspects
 the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
 `Jenkinsfile`, `cloudbuild.yaml`, `template.yml`, …), picks the matching
-provider, and falls back to `aws` when nothing recognisable is found.
+provider, and falls back to `aws` when nothing recognizable is found.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
 standard boto3 credential chain.
@@ -108,7 +108,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 |---------|-------------|
 | **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 96 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
-| **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json` -- only gate on *new* findings. |
+| **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
 | **Suppressions** | `.pipelinecheckignore` (flat or YAML with `expires:` dates). |
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
@@ -263,7 +263,7 @@ See [docs/standards/](docs/standards/).
 | `--max-failures` | | Fail if > N effective findings |
 | `--fail-on-check` | | Fail if named check fails (repeat for multiple) |
 | `--baseline` | | Prior JSON report; existing findings don't gate |
-| `--baseline-from-git` | | `REF:PATH` -- resolve baseline via `git show` |
+| `--baseline-from-git` | | `REF:PATH`. Resolves baseline via `git show` |
 | `--ignore-file` | `.pipelinecheckignore` | Suppressions (flat or YAML with `expires:`) |
 | `--diff-base` | | Only scan files changed vs this git ref |
 | `--fix` | | Emit unified-diff patches to stdout |
@@ -387,6 +387,6 @@ See [docs/providers/README.md](docs/providers/README.md) for the full contract.
 
 ## License
 
-MIT -- see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 

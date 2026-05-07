@@ -76,7 +76,8 @@ def report_terminal(
     failed = sum(1 for f in findings if not f.passed)
     passed_count = total - failed
 
-    # Severity failure breakdown
+    # Severity failure breakdown — lower-case counts per the design system's
+    # grading copy: "2 critical · 4 high · 7 medium · 3 low".
     sev_parts: list[str] = []
     for sev in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW):
         data = summary.get(sev.value, {"passed": 0, "failed": 0})
@@ -84,21 +85,29 @@ def report_terminal(
         if n_fail == 0:
             continue
         style = _SEVERITY_STYLE[sev]
-        sev_parts.append(f"[{style}]{n_fail} {sev.value}[/{style}]")
+        sev_parts.append(f"[{style}]{n_fail} {sev.value.lower()}[/{style}]")
 
     # Score bar
     bar_color = _GRADE_COLOR.get(grade, "white")
     filled = score // 5
     bar = f"[{bar_color}]{'#' * filled}[/{bar_color}][dim]{'.' * (20 - filled)}[/dim]"
 
+    # Headline grading copy:
+    #     Score 47 / 100 · Grade D · 2 critical · 4 high · 7 medium · 3 low
+    sep = "[dim] · [/dim]"
+    headline_parts = [
+        f"[bold]Score {score} / 100[/bold]",
+        f"[{grade_style}]Grade {grade}[/{grade_style}]",
+    ]
+    headline_parts.extend(sev_parts)
+    headline = sep.join(headline_parts)
+
     header_lines = [
-        f"[{grade_style}]Grade {grade}[/{grade_style}]   "
-        f"{bar} {score}/100\n"
+        headline,
+        f"{bar}  "
         f"[red]{failed} failed[/red] / [green]{passed_count} passed[/green] "
         f"[dim]({total} checks)[/dim]",
     ]
-    if sev_parts:
-        header_lines.append("Failures: " + "  ".join(sev_parts))
 
     console.print(
         Panel(
