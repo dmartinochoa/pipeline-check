@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Helm chart provider.** `--pipeline helm --helm-path <chart>`
+  shells out to `helm template` (Helm 3) and runs the existing
+  30-rule K8s pack on the rendered manifests. No HELM-* rules of
+  its own — the value is coverage: most production K8s ships via
+  Helm, so today's K8S-* checks finally apply to the bulk of real
+  deployments rather than only to hand-written manifests in
+  `k8s/`. `--helm-values FILE` and `--helm-set KEY=VALUE` are
+  forwarded to helm's own flags and may be repeated. Auto-detects
+  `./Chart.yaml` and `./charts/`. The `# Source:
+  <chart>/templates/<file>.yaml` headers helm injects above each
+  rendered doc are parsed and stored on `Manifest.source_template`,
+  surfacing in inventory output and the public Python API. Helm 2
+  is rejected on probe (EOL since Nov 2020). Render failures land
+  in `ctx.warnings` and don't abort the scan; other charts in the
+  same run continue. Provider catalog goes from 12 to 13.
 - **One more attack chain — Caller-Controlled Runner with Token
   Persistence (GitLab).** `AC-014` is the GitLab parity for
   `AC-013`. Fires when both `GL-032` (``tags:`` interpolates an

@@ -58,12 +58,18 @@ class Manifest:
     name: str
     namespace: str
     data: dict[str, Any]
+    #: For manifests sourced from a Helm render, the chart-relative
+    #: template path (e.g. ``mychart/templates/deployment.yaml``) that
+    #: produced this doc. ``None`` for manifests loaded directly from
+    #: disk by the kubernetes provider.
+    source_template: str | None = None
 
     @property
     def display(self) -> str:
         """Stable human-readable identifier for findings."""
         ns = self.namespace or "(no-namespace)"
-        return f"{self.kind}/{self.name} in {ns} ({self.path}#{self.doc_index})"
+        loc = self.source_template or self.path
+        return f"{self.kind}/{self.name} in {ns} ({loc}#{self.doc_index})"
 
 
 class KubernetesContext:
@@ -116,8 +122,60 @@ class KubernetesContext:
         ctx.warnings = warnings
         return ctx
 
+    @classmethod
+    def from_yaml_stream(
+        cls,
+        text: str,
+        path_hint: str = "<rendered>",
+        source_templates: list[str | None] | None = None,
+    ) -> KubernetesContext:
+        """Parse already-rendered YAML text into a KubernetesContext.
 
-def _to_manifest(path: str, idx: int, doc: Any) -> Manifest | None:
+        Used by the Helm provider, which shells out to ``helm template``
+        and feeds the resulting multi-doc YAML stream through this same
+        rule pack.
+
+        Parameters
+        ----------
+        text:
+            Rendered YAML, possibly multi-doc.
+        path_hint:
+            Synthetic path stored on each ``Manifest.path``. Reporters
+            read ``path`` for grouping; the chart-relative source
+            template (when known) goes on ``source_template`` instead.
+        source_templates:
+            Optional per-doc list of chart-relative template paths
+            aligned with the order docs appear in *text*. ``None``
+            entries (and a missing list entirely) mean "unknown
+            source." The Helm renderer parses ``# Source:`` headers
+            to populate this.
+        """
+        ctx = cls([])
+        try:
+            docs = list(yaml.safe_load_all(text))
+        except yaml.YAMLError as exc:
+            first_line = str(exc).split("\n", 1)[0]
+            ctx.warnings = [f"{path_hint}: YAML parse error: {first_line}"]
+            return ctx
+        manifests: list[Manifest] = []
+        for idx, doc in enumerate(docs):
+            src_tpl: str | None = None
+            if source_templates is not None and idx < len(source_templates):
+                src_tpl = source_templates[idx]
+            m = _to_manifest(path_hint, idx, doc, source_template=src_tpl)
+            if m is not None:
+                manifests.append(m)
+        ctx.manifests = manifests
+        ctx.files_scanned = 1 if manifests else 0
+        return ctx
+
+
+def _to_manifest(
+    path: str,
+    idx: int,
+    doc: Any,
+    source_template: str | None = None,
+) -> Manifest | None:
     """Best-effort conversion of one parsed YAML doc to :class:`Manifest`.
 
     Returns None for documents that don't look like K8s API objects
@@ -145,6 +203,7 @@ def _to_manifest(path: str, idx: int, doc: Any) -> Manifest | None:
         name=name,
         namespace=namespace,
         data=doc,
+        source_template=source_template,
     )
 
 

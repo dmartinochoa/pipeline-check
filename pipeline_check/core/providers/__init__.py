@@ -22,6 +22,7 @@ from .cloudformation import CloudFormationProvider
 from .dockerfile import DockerfileProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
+from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
 from .terraform import TerraformProvider
@@ -59,3 +60,4 @@ register(CircleCIProvider())
 register(CloudBuildProvider())
 register(DockerfileProvider())
 register(KubernetesProvider())
+register(HelmProvider())

@@ -122,7 +122,8 @@ class _GroupedCommand(click.Command):
             "--tf-plan", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
-            "--dockerfile-path", "--k8s-path",
+            "--dockerfile-path", "--k8s-path", "--helm-path",
+            "--helm-values", "--helm-set",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -376,6 +377,11 @@ def _detect_pipeline_from_cwd() -> str | None:
     ):
         if os.path.isfile(_cfn):
             return "cloudformation"
+    # Helm is detected before kubernetes because a Chart.yaml at the
+    # repo root is an unambiguous signal, whereas k8s falls back to
+    # generic directory names that helm charts often use too.
+    if os.path.isfile("Chart.yaml"):
+        return "helm"
     # Kubernetes is detected last because its indicators are
     # generic directory names that other providers might use too.
     for _k8s in ("kubernetes", "k8s", "manifests"):
@@ -572,7 +578,7 @@ def _install_completion_callback(
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
-        "--k8s-path); "
+        "--k8s-path, --helm-path); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -710,6 +716,42 @@ def _install_completion_callback(
         "Path to a Kubernetes manifest (YAML) or a directory containing "
         "one (required when --pipeline kubernetes). Auto-detects "
         "./kubernetes/, ./k8s/, ./manifests/."
+    ),
+)
+@click.option(
+    "--helm-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Helm chart directory (one containing Chart.yaml), a "
+        "packaged .tgz chart, or a parent directory containing one or "
+        "more charts (required when --pipeline helm). Auto-detects "
+        "./Chart.yaml, ./charts/. Requires the 'helm' (Helm 3) binary "
+        "on PATH."
+    ),
+)
+@click.option(
+    "--helm-values",
+    "helm_values",
+    multiple=True,
+    metavar="FILE",
+    help=(
+        "Helm values file forwarded to ``helm template -f``. Repeat "
+        "for multiple files; later files override earlier ones, "
+        "matching helm's own precedence. Only meaningful with "
+        "--pipeline helm."
+    ),
+)
+@click.option(
+    "--helm-set",
+    "helm_set",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help=(
+        "Helm value override forwarded to ``helm template --set``. "
+        "Repeat for multiple overrides. Use the same syntax helm "
+        "expects (``image.tag=v1`` or ``replicas=3``). Only "
+        "meaningful with --pipeline helm."
     ),
 )
 @click.option(
@@ -1069,6 +1111,9 @@ def scan(
     cloudbuild_path: str | None,
     dockerfile_path: str | None,
     k8s_path: str | None,
+    helm_path: str | None,
+    helm_values: tuple[str, ...],
+    helm_set: tuple[str, ...],
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1436,6 +1481,24 @@ def scan(
             )
         if not os.path.exists(k8s_path):
             raise click.UsageError(f"--k8s-path not found: {k8s_path}")
+    elif pipeline_lc == "helm":
+        if not helm_path:
+            if os.path.isfile("Chart.yaml"):
+                helm_path = "."
+                click.echo("[auto] using --helm-path .", err=True)
+            elif os.path.isdir("charts"):
+                helm_path = "charts"
+                click.echo("[auto] using --helm-path charts", err=True)
+        if not helm_path:
+            raise click.UsageError(
+                "--helm-path PATH is required when --pipeline helm "
+                "(no Chart.yaml or charts/ directory found in cwd)."
+            )
+        if not os.path.exists(helm_path):
+            raise click.UsageError(f"--helm-path not found: {helm_path}")
+        for vf in helm_values:
+            if not os.path.isfile(vf):
+                raise click.UsageError(f"--helm-values not found: {vf}")
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1484,6 +1547,9 @@ def scan(
         cloudbuild_path=cloudbuild_path,
         dockerfile_path=dockerfile_path,
         k8s_path=k8s_path,
+        helm_path=helm_path,
+        helm_values=list(helm_values) or None,
+        helm_set=list(helm_set) or None,
     )
 
     if verbose:

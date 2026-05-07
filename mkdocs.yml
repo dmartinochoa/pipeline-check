@@ -1,5 +1,5 @@
 site_name: Pipeline-Check
-site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Dockerfile, and Kubernetes manifests against the OWASP Top 10 CI/CD Risks plus 12 other compliance frameworks.
+site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Dockerfile, Kubernetes manifests, and Helm charts against the OWASP Top 10 CI/CD Risks plus 12 other compliance frameworks.
 site_url: https://dmartinochoa.github.io/pipeline-check/
 repo_url: https://github.com/dmartinochoa/pipeline-check
 repo_name: dmartinochoa/pipeline-check
@@ -20,17 +20,17 @@ theme:
   # No topbar logo: the wordmark "Pipeline-Check" carries the brand
   # in the chrome. Favicon (browser tab icon) keeps the goose SVG.
   favicon: logo.svg
-  font:
-    # Body face: Mona Sans (GitHub's open-source variable family).
-    # Picked over Inter — Inter is the canonical "AI-default" sans
-    # and Pipeline-Check has the brand specificity to support a more
-    # distinctive choice. Mona Sans is also narrative-aligned: a CI/CD
-    # security tool that scans GitHub Actions workflows wearing
-    # GitHub's own typeface reads as belonging to the ecosystem.
-    # Variable axis lets the design system reach 380 / 540 / 720 in
-    # the type scale instead of the conventional 400/600/700 jumps.
-    text: Mona Sans
-    code: JetBrains Mono
+  # ``font: false`` disables Material's auto-injected Google Fonts
+  # link. The Material macro requests static weight stops only
+  # (300/400/700), which collapses the variable-axis advantages of
+  # Mona Sans and JetBrains Mono — ``font-weight: 720`` snaps to 700.
+  # We load both faces via the css2 variable URL in
+  # ``docs/_overrides/main.html`` instead, which exposes the full
+  # wght axis (200..900) so the design system can actually use the
+  # 540 / 620 / 720 stops it asks for. ``font-display: swap`` is
+  # baked into the css2 endpoint so text is visible immediately
+  # rather than blocking on font load.
+  font: false
   features:
     - navigation.instant
     - navigation.tracking
@@ -140,6 +140,7 @@ nav:
       - Google Cloud Build: providers/cloudbuild.md
       - Dockerfile: providers/dockerfile.md
       - Kubernetes: providers/kubernetes.md
+      - Helm: providers/helm.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
