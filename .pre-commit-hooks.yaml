@@ -87,3 +87,15 @@
   # doesn't trigger on unrelated YAML elsewhere in the repo.
   files: ^(k8s|manifests|deploy)/.*\.(yml|yaml)$
   pass_filenames: false
+
+- id: pipeline-check-helm
+  name: pipeline-check (Helm chart)
+  description: Render Helm chart with `helm template` and scan via the K8s rule pack.
+  entry: pipeline_check --pipeline helm --fail-on HIGH
+  language: python
+  # Trigger on any chart file change. ``Chart.yaml`` is the canonical
+  # marker; ``values*.yaml`` is wide enough to catch values overrides.
+  # ``templates/*.yaml`` covers in-chart template edits. Requires the
+  # ``helm`` (Helm 3) binary on PATH at hook invocation time.
+  files: (^|/)Chart\.yaml$|(^|/)values[^/]*\.(yml|yaml)$|(^|/)templates/.*\.(yml|yaml)$
+  pass_filenames: false

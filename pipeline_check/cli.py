@@ -127,7 +127,7 @@ class _GroupedCommand(click.Command):
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
-            "--secret-pattern",
+            "--secret-pattern", "--custom-rules",
         })),
         ("Output", frozenset({
             "--output", "--output-file", "--standard",
@@ -1019,6 +1019,19 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--custom-rules",
+    "custom_rules",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "YAML rule file (or directory of rule files) to load alongside "
+        "the built-in catalog. Repeat for multiple paths. Loaded rules "
+        "appear in findings, scoring, gating, --explain, and SARIF "
+        "exactly like built-ins. See docs/writing_a_custom_rule.md for "
+        "the rule-file shape and per-provider doc-tree reference."
+    ),
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
@@ -1139,6 +1152,7 @@ def scan(
     diff_base: str | None,
     baseline: str | None,
     ignore_file: str | None,
+    custom_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
     no_chains: bool,
@@ -1513,6 +1527,10 @@ def scan(
                 f"--secret-pattern {pat!r} is not a valid regex: {exc}"
             ) from exc
 
+    for crp in custom_rules:
+        if not os.path.exists(crp):
+            raise click.UsageError(f"--custom-rules not found: {crp}")
+
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
 
@@ -1535,6 +1553,7 @@ def scan(
         secret_patterns=secret_patterns or None,
         chains_enabled=not no_chains,
         overrides=cli_overrides or None,
+        custom_rules=list(custom_rules) or None,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,

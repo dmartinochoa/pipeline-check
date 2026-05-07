@@ -17,31 +17,78 @@
      aria-label="Pipeline-Check goose patrolling a CI/CD pipeline rail — pauses at the SCAN node and stamps a build DENIED">
   <style>
     /* Walk cycle: 14s loop with two pause beats so the goose feels
-       deliberate at TEST and SCAN rather than gliding past. The
-       numeric translate values are tied to the world coords (rail at
-       y=240, stage nodes at x∈{80, 280, 480, 680}). */
+       deliberate at TEST and SCAN rather than gliding past. World
+       coords: rail at y=240, stage nodes at x∈{80, 280, 480, 680}.
+
+       Per-keyframe ``animation-timing-function`` replaces a global
+       ease-in-out (which was easing every transition, including
+       pause→pause segments, and re-accelerating into each pause —
+       the source of the prior jank). Each travel segment now uses
+       its own curve: ease-out into a pause (decelerate to a stop),
+       linear across the pause itself (no motion to ease), ease-out
+       again on the next departure, ease-in on the final exit so
+       the goose accelerates off-screen rather than coasting out. */
     @keyframes patrol-walk {
-      0%   { transform: translate(60px, 240px); }
-      22%  { transform: translate(280px, 240px); }
-      32%  { transform: translate(280px, 240px); }
-      50%  { transform: translate(480px, 240px); }
-      72%  { transform: translate(480px, 240px); }
-      92%  { transform: translate(680px, 240px); }
+      0%   { transform: translate(60px, 240px);  animation-timing-function: ease-out; }
+      22%  { transform: translate(280px, 240px); animation-timing-function: linear;   }
+      32%  { transform: translate(280px, 240px); animation-timing-function: ease-out; }
+      50%  { transform: translate(480px, 240px); animation-timing-function: linear;   }
+      72%  { transform: translate(480px, 240px); animation-timing-function: ease-out; }
+      92%  { transform: translate(680px, 240px); animation-timing-function: ease-in;  }
       100% { transform: translate(740px, 240px); }
     }
+    /* Body bob locked to the patrol timeline (14s) instead of running
+       on its own 0.6s cycle. The goose only bobs while walking — it
+       holds still at TEST and SCAN, which is what was reading as
+       "janky" before (bird oscillating in place during a pause). */
     @keyframes patrol-bob {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-1.5px); }
+      /* BUILD → TEST: 0% – 22%, three steps */
+      0%   { transform: translateY(0); }
+      4%   { transform: translateY(-2.5px); }
+      9%   { transform: translateY(0); }
+      13%  { transform: translateY(-2.5px); }
+      18%  { transform: translateY(0); }
+      22%  { transform: translateY(0); }
+      /* TEST pause: 22% – 32% — body still */
+      32%  { transform: translateY(0); }
+      /* TEST → SCAN: 32% – 50%, two steps */
+      36%  { transform: translateY(-2.5px); }
+      41%  { transform: translateY(0); }
+      46%  { transform: translateY(-2.5px); }
+      50%  { transform: translateY(0); }
+      /* SCAN pause: 50% – 72% — body still while inspecting */
+      72%  { transform: translateY(0); }
+      /* SCAN → DEPLOY: 72% – 92%, two steps */
+      76%  { transform: translateY(-2.5px); }
+      82%  { transform: translateY(0); }
+      87%  { transform: translateY(-2.5px); }
+      92%  { transform: translateY(0); }
+      /* exit */
+      96%  { transform: translateY(-2.5px); }
+      100% { transform: translateY(0); }
     }
+    /* Scan ring — three rings overlap during the SCAN pause
+       (50% – 72%) so the inspection reads as a sustained radar
+       sweep instead of a single twitch. Each ring runs the same
+       keyframe; ``.r2`` and ``.r3`` shift forward in real time via
+       animation-delay so their pulses fall ~4% / ~8% later in the
+       patrol cycle. ``backwards`` fill keeps them invisible during
+       the delay window before their first cycle starts. */
     @keyframes patrol-scan-pulse {
-      0%, 50%   { opacity: 0; transform: scale(.6); }
-      55%, 68%  { opacity: 1; transform: scale(1); }
-      72%, 100% { opacity: 0; transform: scale(1.5); }
+      0%, 50%   { opacity: 0;  transform: scale(.4); }
+      54%       { opacity: .9; transform: scale(.7); }
+      60%       { opacity: .55; transform: scale(1.2); }
+      66%, 100% { opacity: 0;  transform: scale(1.6); }
     }
+    /* DENIED stamp — appears just after the third radar pulse
+       lands (~66%) and clears before the goose departs SCAN at
+       72%. Tightened from the prior 60% – 100% window, which let
+       the stamp linger after the goose had already walked off. */
     @keyframes patrol-denied-pop {
-      0%, 60%   { opacity: 0; transform: translateY(-3px) scale(.6); }
-      65%, 80%  { opacity: 1; transform: translateY(0) scale(1); }
-      85%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
+      0%, 64%   { opacity: 0; transform: translateY(-3px) scale(.6); }
+      68%       { opacity: 1; transform: translateY(0)    scale(1);  }
+      74%       { opacity: 1; transform: translateY(0)    scale(1);  }
+      78%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
     }
     @keyframes patrol-blink {
       0%, 92%, 100% { transform: scaleY(1); }
@@ -54,19 +101,21 @@
       100% { transform: translateX(800px); opacity: 0; }
     }
 
-    .goose-patrol { animation: patrol-walk 14s ease-in-out infinite; }
+    .goose-patrol { animation: patrol-walk 14s linear infinite; }
     .goose-bob {
-      animation: patrol-bob .6s ease-in-out infinite;
+      animation: patrol-bob 14s linear infinite;
       transform-origin: center;
       transform-box: fill-box;
     }
     .scan-ring {
-      animation: patrol-scan-pulse 14s ease-in-out infinite;
+      animation: patrol-scan-pulse 14s linear infinite both;
       transform-origin: center;
       transform-box: fill-box;
     }
+    .scan-ring.r2 { animation-delay: 0.56s; /* +4% offset on a 14s loop */ }
+    .scan-ring.r3 { animation-delay: 1.12s; /* +8% offset on a 14s loop */ }
     .denied-pop {
-      animation: patrol-denied-pop 14s ease-in-out infinite;
+      animation: patrol-denied-pop 14s linear infinite;
       transform-origin: center;
       transform-box: fill-box;
     }
@@ -108,15 +157,18 @@
   <g class="commit c2"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">9c2</text></g>
   <g class="commit c3"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">f81</text></g>
   <g class="commit c4"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">d04</text></g>
-  <g class="denied-pop" transform="translate(480, 188)">
-    <rect x="-30" y="-12" width="60" height="22" rx="3" fill="#04101a" stroke="#dc3545" stroke-width="1.4"/>
-    <text x="0" y="3" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" letter-spacing=".18em" fill="#dc3545">DENIED</text>
+  <g transform="translate(480, 188)">
+    <g class="denied-pop">
+      <rect x="-30" y="-12" width="60" height="22" rx="3" fill="#04101a" stroke="#dc3545" stroke-width="1.4"/>
+      <text x="0" y="3" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" letter-spacing=".18em" fill="#dc3545">DENIED</text>
+    </g>
   </g>
   <g class="goose-patrol">
     <g class="goose-bob">
-      <g class="scan-ring" transform="translate(60, -60)">
-        <circle r="22" fill="none" stroke="#1ba3a9" stroke-width="1.4" opacity=".7"/>
-        <circle r="14" fill="none" stroke="#1ba3a9" stroke-width="1" opacity=".4"/>
+      <g transform="translate(60, -60)">
+        <circle class="scan-ring"    r="20" fill="none" stroke="#1ba3a9" stroke-width="1.4"/>
+        <circle class="scan-ring r2" r="20" fill="none" stroke="#1ba3a9" stroke-width="1.2"/>
+        <circle class="scan-ring r3" r="20" fill="none" stroke="#1ba3a9" stroke-width="1"/>
       </g>
       <g transform="translate(-36, -58)">
         <path d="M22 50 Q14 50 14 38 Q14 24 30 22 Q48 20 52 36 Q54 50 44 52 Q32 54 22 50 Z" fill="#f0f2f5" stroke="#f0f2f5" stroke-width="1" stroke-linejoin="round"/>

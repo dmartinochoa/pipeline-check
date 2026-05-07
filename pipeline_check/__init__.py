@@ -44,6 +44,11 @@ from .core.checks.base import (
     confidence_rank,
     severity_rank,
 )
+from .core.checks.custom.loader import (
+    CustomRuleError,
+    LoadedCustomRules,
+    load_custom_rules,
+)
 from .core.providers import available as available_providers
 from .core.scanner import ScanMetadata, Scanner
 from .core.scorer import ScoreResult, score
@@ -71,6 +76,10 @@ __all__ = [
     # Registry queries
     "available_providers",
     "available_standards",
+    # Custom rule DSL
+    "load_custom_rules",
+    "LoadedCustomRules",
+    "CustomRuleError",
     # Package metadata
     "__version__",
 ]

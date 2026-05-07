@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Custom rule DSL.** `--custom-rules PATH` (repeatable, also a
+  `custom_rules:` config key) loads YAML-defined rules that plug
+  into the same orchestrator as the built-in catalog. Loaded rules
+  appear in findings, scoring, gating, SARIF, and `--explain`
+  exactly like built-ins. Rule shape: `id` / `title` / `severity` /
+  `provider` / `description` / `recommendation` / `for_each` /
+  `assert`. Predicates compose via `eq` / `ne` / `regex` /
+  `not_regex` / `in` / `not_in` / `exists` / `missing` / `gt` /
+  `lt` / `gte` / `lte` / `len_*` leaves, plus `all_of` / `any_of` /
+  `not` boolean glue. `for_each` is a small jsonpath subset (`$`,
+  `.field`, `['key']`, `[N]`, `[*]`, `.*`) — rules describe the
+  correct state and the engine surfaces violations as offenders.
+  Description templates use `{{ name }}` placeholders that resolve
+  against the iterated node first, falling back to ambient context
+  (`kind`, `namespace`, `path`). Supported providers: `github`,
+  `gitlab`, `bitbucket`, `azure`, `circleci`, `cloudbuild`,
+  `kubernetes`. Helm rules ride on top of the K8s synthesized view
+  (`$.workloads[*].containers[*]`), so a rule written once applies
+  to both manifest and chart-rendered scans. ID format
+  `^[A-Z][A-Z0-9]{1,9}-\d{3}$` enforced; collisions with built-in
+  check IDs are rejected at load time. Authoring guide at
+  `docs/writing_a_custom_rule.md` covers the per-provider doc shape
+  and the predicate vocabulary.
 - **Helm chart provider.** `--pipeline helm --helm-path <chart>`
   shells out to `helm template` (Helm 3) and runs the existing
   30-rule K8s pack on the rendered manifests. No HELM-* rules of

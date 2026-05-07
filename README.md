@@ -39,8 +39,9 @@ pipeline_check --pipeline aws       # force the live-AWS scan
 
 Run `pipeline_check` with no flags in any supported repo — it inspects
 the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
-`Jenkinsfile`, `cloudbuild.yaml`, `template.yml`, …), picks the matching
-provider, and falls back to `aws` when nothing recognizable is found.
+`Jenkinsfile`, `cloudbuild.yaml`, `Chart.yaml`, `template.yml`, …),
+picks the matching provider, and falls back to `aws` when nothing
+recognizable is found.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
 standard boto3 credential chain.
@@ -70,8 +71,10 @@ leaks, deploy approval gates, artifact signing, SBOM generation, Docker
 security, package integrity, timeout enforcement, vulnerability scanning, TLS
 verification, and more. The Kubernetes provider focuses on workload posture
 (image digest pinning, securityContext, hostPath / host-namespace exposure,
-RBAC blast radius, Secret hygiene). See [docs/providers/](docs/providers/)
-for the full per-check reference.
+RBAC blast radius, Secret hygiene). The Helm provider renders charts via
+`helm template` and runs the Kubernetes rule pack on the result, so today's
+K8S-* rules apply to chart-deployed workloads without duplication. See
+[docs/providers/](docs/providers/) for the full per-check reference.
 
 ---
 
@@ -115,6 +118,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
+| **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
 
 ---
@@ -256,7 +260,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `dockerfile`, `kubernetes`, `helm` |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
@@ -272,6 +276,7 @@ See [docs/standards/](docs/standards/).
 | `--checks` / `-c` | all | Check ID(s) or globs (`GHA-*`, `*-008`) |
 | `--severity-threshold` | `INFO` | Minimum severity to display |
 | `--secret-pattern` | | Extra regex for credential scanning (repeat) |
+| `--custom-rules` | | YAML rule file or directory of rule files; loaded alongside the built-in catalog (repeatable) |
 | `--standard` | all | Standard(s) to annotate findings with |
 | `--standard-report` | | Print control-to-check matrix and exit |
 | `--inventory` | | Emit scanned-component inventory alongside findings |
@@ -287,8 +292,11 @@ See [docs/standards/](docs/standards/).
 | `--version` | | Print version |
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
-`--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`) are
-auto-detected from the working directory when omitted.
+`--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`,
+`--cloudbuild-path`, `--dockerfile-path`, `--k8s-path`, `--helm-path`) are
+auto-detected from the working directory when omitted. The Helm provider also
+takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
+forwarded to `helm template`.
 
 Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
 to the current directory, pre-filling the `pipeline:` key based on what it
@@ -327,7 +335,9 @@ pipeline_check/
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-022
         ├── dockerfile/rules/  # DF-001 .. DF-020
-        └── kubernetes/rules/  # K8S-001 .. K8S-030
+        ├── kubernetes/rules/  # K8S-001 .. K8S-030
+        ├── helm/              # Renders charts; reuses the K8s rule pack
+        └── custom/            # YAML rule loader + predicate engine
 ```
 
 Adding a new check is a one-file change. Adding a new provider is three files.
@@ -358,7 +368,8 @@ print(f"score={result['score']} grade={result['grade']}")
 Public surface: `Scanner`, `Finding`, `Severity`, `Confidence`,
 `ControlRef`, `score`, `ScoreResult`, `Chain`, `ChainRule`,
 `evaluate_chains`, `list_chain_rules`, `available_providers()`,
-`available_standards()`, `__version__`. Anything reached through
+`available_standards()`, `load_custom_rules()`, `LoadedCustomRules`,
+`CustomRuleError`, `__version__`. Anything reached through
 `pipeline_check.core.*` is internal and may move between releases.
 
 ---

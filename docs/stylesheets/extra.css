@@ -999,9 +999,9 @@ body:has(.pg-home) {
     linear-gradient(180deg, var(--pg-navy-950) 0%, var(--pg-navy-900) 100%);
   background-size: 200px 200px, auto;
   color: var(--pg-text-on-dark);
-  /* Tighter top padding now that the goose mark fills the upper
-     anchor of the hero — keeps the navy chrome and the hero from
-     reading as one continuous void of empty navy. */
+  /* Tighter top padding so the shield mark + wordmark + H1 read
+     as one anchored stack — keeps the navy chrome and the hero
+     from reading as one continuous void of empty navy. */
   padding: clamp(2rem, 4.5vw, 3.25rem) 1.5rem clamp(4.5rem, 9vw, 8rem);
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -1070,63 +1070,64 @@ body:has(.pg-home) {
   }
 }
 
-/* Hero brand mark — the gate-goose. Sits above the wordmark on
-   its own row. The SVG bakes in white so the goose body reads
-   the same on the navy chrome, in the favicon, and standalone. */
+/* Hero brand mark — outlined shield with a teal checkmark. Sits
+   above the wordmark on its own row. Sized as a refined brand
+   anchor (not a billboard): the H1 carries the visual weight,
+   the shield just announces "Pipeline-Check, the secure gate".
+   The SVG itself is constrained to the wrapper so an unsized
+   inline ``<svg viewBox=...>`` can't blow past the slot. */
 .pg-hero__mark,
 img.pg-hero__mark {
-  display: block;
-  width: auto;
-  height: clamp(96px, 11vw, 132px);
-  margin: 0 0 1.1rem;
+  position: relative;
+  display: inline-block;
+  width: clamp(58px, 6vw, 76px);
+  height: clamp(58px, 6vw, 76px);
+  margin: 0 0 1.25rem;
+  isolation: isolate;
 }
-
-/* ── Animated hero mark ───────────────────────────────────────────
-   Same physical slot as the static ``.pg-hero__mark`` (height
-   clamp 96-132px) — just the goose with the in-place animations
-   from ``brand-logo-animation.html`` (body bob + eye blink). The
-   patrol scene's surrounding context (rail, BUILD/TEST/SCAN/
-   DEPLOY nodes, commits, DENIED stamp) lives only in the design-
-   system preview; on the landing page the LOGO is the goose. */
-.pg-hero__mark--animated {
+.pg-hero__mark svg {
+  position: relative;
   display: block;
-  height: clamp(96px, 11vw, 132px);
-  margin: 0 0 1.1rem;
-  background: transparent;
-}
-.pg-hero__mark--animated svg {
-  display: block;
+  width: 100%;
   height: 100%;
-  width: auto;
+  z-index: 1;
+}
+/* Soft teal halo behind the shield — gives the mark a perceived
+   light source consistent with the hero's radial glow without
+   adding another DOM node. */
+.pg-hero__mark::after {
+  content: "";
+  position: absolute;
+  inset: -38%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--pg-teal-500) 35%, transparent) 0%,
+    transparent 70%
+  );
+  z-index: 0;
+  pointer-events: none;
 }
 
-@keyframes pg-hero__bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-1.5px); }
-}
-@keyframes pg-hero__blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  94%, 96%      { transform: scaleY(.1); }
-}
-
-.pg-hero__mark--animated .goose-bob {
-  animation: pg-hero__bob .6s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.pg-hero__mark--animated .eye-blink {
-  animation: pg-hero__blink 5s linear infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-
-/* Vestibular-safety: pause both motions for users who prefer
-   reduced motion. The mark still reads as a goose, just still. */
-@media (prefers-reduced-motion: reduce) {
-  .pg-hero__mark--animated .goose-bob,
-  .pg-hero__mark--animated .eye-blink {
-    animation: none;
+/* One-shot entrance: shield stroke draws in, then the checkmark
+   stamps in on top. Triggers on page load only — no idle motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .pg-hero__mark svg path:nth-of-type(1) {
+    stroke-dasharray: 180;
+    stroke-dashoffset: 180;
+    animation: pg-shield-trace 0.9s var(--ease-out) 0.1s forwards;
   }
+  .pg-hero__mark svg path:nth-of-type(2) {
+    stroke-dasharray: 36;
+    stroke-dashoffset: 36;
+    animation: pg-shield-check 0.45s var(--ease-out) 0.85s forwards;
+  }
+}
+
+@keyframes pg-shield-trace {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes pg-shield-check {
+  to { stroke-dashoffset: 0; }
 }
 
 /* ── Goose patrol — full animation section ───────────────────────
@@ -1615,14 +1616,24 @@ img.pg-hero__mark {
 }
 
 /* ----- Feature grid (hairline cards, no lift) -------------- */
+/* Six features: lock the desktop grid to 3 columns so the layout
+   reads as a clean 3×2 block rather than the asymmetric 5+1 the
+   prior auto-fit produced at common widescreen breakpoints. */
 .pg-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--md-default-fg-color--lightest);
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: var(--pg-radius-card);
   overflow: hidden;
+}
+
+@media (max-width: 960px) {
+  .pg-features { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .pg-features { grid-template-columns: 1fr; }
 }
 
 .pg-feature {
@@ -1687,10 +1698,13 @@ img.pg-hero__mark {
 }
 .pg-feature a.pg-feature__link:hover::after { transform: translateX(2px); }
 
-/* ----- Provider grid (compact, mono labels) ---------------- */
+/* ----- Provider grid (compact, mono labels) ----------------
+   Min width 180px keeps the longest provider names — CloudFormation,
+   GitHub Actions, Azure DevOps — on a single line so card heights
+   stay uniform across the row. */
 .pg-providers {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.6rem;
 }
 
