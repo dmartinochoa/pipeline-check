@@ -107,13 +107,14 @@ class KubernetesContext:
                 skipped += 1
                 continue
             try:
-                docs = list(yaml.safe_load_all(text))
+                from .._yaml_lines import safe_load_all_with_lines
+                docs_with_lines = list(safe_load_all_with_lines(text))
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
                 skipped += 1
                 continue
-            for idx, doc in enumerate(docs):
+            for idx, (_doc_start_line, doc) in enumerate(docs_with_lines):
                 m = _to_manifest(str(f), idx, doc)
                 if m is not None:
                     manifests.append(m)

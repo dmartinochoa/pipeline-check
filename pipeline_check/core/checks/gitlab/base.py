@@ -13,7 +13,8 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import safe_load_yaml_lines
+from ..base import BaseCheck
 
 # Top-level keys that are *not* jobs. Anything else at the root is a job.
 # https://docs.gitlab.com/ee/ci/yaml/
@@ -73,7 +74,7 @@ class GitLabContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")

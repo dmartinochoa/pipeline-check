@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs
 from ._helpers import DIGEST_RE, VERSION_TAG_RE, image_ref
@@ -30,24 +31,28 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
 
-    def _inspect(ref: str, where: str) -> None:
+    def _inspect(ref: str, where: str, anchor: Any) -> None:
         if DIGEST_RE.search(ref):
             return
+        line = _line_of(anchor)
         if ":" not in ref.rsplit("/", 1)[-1]:
             unpinned.append(f"{where}: {ref} (no tag)")
+            locations.append(Location(path=path, start_line=line, end_line=line))
             return
         tag = ref.rsplit(":", 1)[1]
         if tag == "latest" or not VERSION_TAG_RE.search(ref):
             unpinned.append(f"{where}: {ref}")
+            locations.append(Location(path=path, start_line=line, end_line=line))
 
     top = image_ref(doc.get("image"))
     if top:
-        _inspect(top, "<top-level>")
+        _inspect(top, "<top-level>", doc)
     for name, job in iter_jobs(doc):
         ref = image_ref(job.get("image"))
         if ref:
-            _inspect(ref, name)
+            _inspect(ref, name, job)
 
     passed = not unpinned
     desc = (
@@ -62,4 +67,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

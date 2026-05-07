@@ -40,6 +40,7 @@ from .core.checks.base import (
     Confidence,
     ControlRef,
     Finding,
+    Location,
     Severity,
     confidence_rank,
     severity_rank,
@@ -60,6 +61,7 @@ __all__ = [
     "ScanMetadata",
     # Findings + their building-block enums
     "Finding",
+    "Location",
     "Severity",
     "Confidence",
     "ControlRef",

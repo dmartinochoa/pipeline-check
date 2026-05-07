@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from ..._primitives.image_pinning import PinKind, classify
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
@@ -38,6 +39,7 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
             image = c.get("image")
@@ -50,6 +52,11 @@ def check(ctx: KubernetesContext) -> Finding:
                 f"{m.kind}/{m.name} {kind}={container_name(c)}: "
                 f"{image} ({pin.value})"
             )
+            line = _line_of(c) if isinstance(c, dict) else None
+            locations.append(Location(
+                path=m.path, start_line=line, end_line=line,
+                doc_index=m.doc_index,
+            ))
     passed = not unpinned
     desc = (
         "Every workload container image is pinned by sha256 digest."
@@ -63,4 +70,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

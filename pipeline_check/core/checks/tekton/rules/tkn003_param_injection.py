@@ -36,6 +36,13 @@ _UNSAFE_PARAM_RE = re.compile(
     r"(?<!\")\$\(params\.[A-Za-z0-9_-]+\)"
     r"|(?<!\")\$\(workspaces\.[A-Za-z0-9_-]+\.path\)"
 )
+# ``eval`` (and other shell-eval contexts) re-parses its argument as
+# shell, so even quoted ``"$(params.X)"`` is unsafe inside eval. Match
+# eval invocations regardless of quoting around the substitution.
+_EVAL_PARAM_RE = re.compile(
+    r"\beval\b[^\n]*?\$\(params\.[A-Za-z0-9_-]+\)"
+    r"|\beval\b[^\n]*?\$\(workspaces\.[A-Za-z0-9_-]+\.path\)"
+)
 
 
 def check(ctx: TektonContext) -> Finding:
@@ -46,11 +53,11 @@ def check(ctx: TektonContext) -> Finding:
             continue
         examined += 1
         for sname, script in iter_step_scripts(doc):
-            for m in _UNSAFE_PARAM_RE.finditer(script):
+            m = _UNSAFE_PARAM_RE.search(script) or _EVAL_PARAM_RE.search(script)
+            if m is not None:
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: {m.group(0)}"
                 )
-                break
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

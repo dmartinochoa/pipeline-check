@@ -13,7 +13,9 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import line_of as _line_of
+from .._yaml_lines import safe_load_yaml_lines
+from ..base import BaseCheck, Location
 
 
 @dataclass(frozen=True)
@@ -95,7 +97,7 @@ class GitHubContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
@@ -136,6 +138,22 @@ def iter_steps(job: dict[str, Any]) -> Iterator[dict[str, Any]]:
         for step in steps:
             if isinstance(step, dict):
                 yield step
+
+
+def step_location(path: str, step: dict[str, Any]) -> Location:
+    """Build a :class:`Location` for *step* in *path*.
+
+    Falls back to a path-only location when the loader didn't preserve
+    line markers (defensive for non-line-aware test loaders).
+    """
+    line = _line_of(step)
+    return Location(path=path, start_line=line, end_line=line)
+
+
+def job_location(path: str, job: dict[str, Any]) -> Location:
+    """Build a :class:`Location` for *job* in *path*."""
+    line = _line_of(job)
+    return Location(path=path, start_line=line, end_line=line)
 
 
 def effective_permissions(

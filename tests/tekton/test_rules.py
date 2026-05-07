@@ -270,6 +270,40 @@ class TestTKN006Timeout:
         f = run_check(cfg, "TKN-006")
         assert not f.passed
 
+    def test_taskrun_passes_with_timeout(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: TaskRun
+        metadata:
+          name: tr
+        spec:
+          taskRef:
+            name: t
+          serviceAccountName: ci-runner
+          timeout: "30m"
+        """
+        f = run_check(cfg, "TKN-006")
+        assert f.passed
+
+    def test_pipeline_fails_when_mixed_task_timeouts(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Pipeline
+        metadata:
+          name: p
+        spec:
+          tasks:
+            - name: build
+              timeout: "10m"
+              taskRef:
+                name: build-task
+            - name: deploy
+              taskRef:
+                name: deploy-task
+        """
+        f = run_check(cfg, "TKN-006")
+        assert not f.passed
+
 
 # ── TKN-007 default service account ────────────────────────────────────
 

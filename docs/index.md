@@ -265,11 +265,6 @@ flowchart LR
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// the patrol</div>
 <h2 class="pg-section__title">Every commit walks the same rail.</h2>
-<p class="pg-section__lede">
-Build, test, scan, deploy. The goose stops at SCAN, inspects what's
-arriving, and stamps DENIED on anything that fails the rules — before
-it ships. That's the whole product in one frame.
-</p>
 </div>
 
 <div class="pg-patrol">

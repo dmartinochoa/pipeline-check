@@ -41,5 +41,6 @@ spec:
           set -e
           echo "Building $REF"
           curl -fsSLO https://example.com/install.sh
+          curl -fsSLO https://example.com/install.sh.sha256
           sha256sum -c install.sh.sha256
           bash install.sh

@@ -23,7 +23,8 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import safe_load_yaml_lines
+from ..base import BaseCheck
 
 
 @dataclass(frozen=True)
@@ -76,7 +77,7 @@ class AzureContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")

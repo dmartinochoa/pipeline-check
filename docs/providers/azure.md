@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-30 checks · 10 have an autofix patch (``--fix``).
+30 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -63,7 +63,7 @@ The walker handles every layout ADO supports:
 | [ADO-027](#ado-027) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-028](#ado-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ADO-029](#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ---
 
@@ -652,7 +652,7 @@ Every job that consumes an Azure service connection (via ``AzureCLI@``, ``AzureP
 ## ADO-030 — pool interpolates attacker-controllable value { #ado-030 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
 ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the upstream targeting choice. When ``pool:`` (or its ``name`` / ``demands`` sub-fields) is computed from an attacker-controllable expression, whoever triggers the pipeline picks where the job runs — including any agent pool the project exposes (``deploy-prod``, ``signer``, ``hsm`` …). Two attacker surfaces are flagged: runtime SCM macros (``$(Build.SourceBranchName)``, ``$(System.PullRequest.SourceBranch)``, …) and caller-controlled template parameters (``${{ parameters.X }}`` — the value comes from whoever queued the run). The rule walks all three pool shapes — string scalar, dict ``{ name, vmImage, demands }``, and the ``demands`` list form.
@@ -673,8 +673,9 @@ Hard-code ``pool:`` to a specific agent pool name (or ``vmImage:`` for Microsoft
 
 1. Create a new module at
    `pipeline_check/core/checks/azure/rules/adoNNN_<name>.py`
-   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) ->
-   Finding` function. The orchestrator auto-discovers it.
+   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) -> Finding`
+   function. The orchestrator auto-discovers `RULE` and calls `check`
+   with the parsed YAML document.
 2. Add a mapping for the new ID in
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
    other standard that applies).

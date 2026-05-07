@@ -1,7 +1,7 @@
 """Per-check end-to-end tests using realistic snippets.
 
-For every workflow-provider check (60 total: 12 GHA + 12 GL + 10 BB +
-13 ADO + 13 JF) this module exercises:
+For every workflow-provider rule with a ``CheckCase`` entry this
+module exercises:
 
   1. an UNSAFE snippet sourced from real-world anti-patterns, and
      asserts the targeted check fires AND carries the expected OWASP
@@ -37,6 +37,13 @@ Adding a check
 
 The provider context loader is selected automatically from the
 check ID prefix.
+
+The ``test_every_workflow_check_has_a_case`` meta-test pulls the
+expected ID set from the live rule registry, so a new rule that
+ships without a ``CheckCase`` trips the test. ``KNOWN_UNCOVERED``
+is the deliberately visible backlog — every entry there is a rule
+with unit tests under ``tests/<provider>/`` but no real-example
+snippet pair yet. Trim it as snippets are backfilled.
 """
 from __future__ import annotations
 
@@ -344,23 +351,65 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
     )
 
 
+# Rules that have unit-tests under ``tests/<provider>/`` but don't yet
+# have a real-example snippet pair under ``tests/fixtures/per_check/``.
+# Each entry here is a deliberate decision to defer the snippet — when
+# you backfill, drop the entry. Adding a *new* rule without either a
+# ``CheckCase`` or a ``KNOWN_UNCOVERED`` entry trips
+# ``test_every_workflow_check_has_a_case``, which is the point.
+KNOWN_UNCOVERED: frozenset[str] = frozenset({
+    # GitHub Actions — GHA-028..036
+    *(f"GHA-{i:03d}" for i in range(28, 37)),
+    # GitLab CI — GL-026..032
+    *(f"GL-{i:03d}" for i in range(26, 33)),
+    # Bitbucket — BB-026..029
+    *(f"BB-{i:03d}" for i in range(26, 30)),
+    # Azure DevOps — ADO-027..030
+    *(f"ADO-{i:03d}" for i in range(27, 31)),
+    # Jenkins — JF-030..032
+    *(f"JF-{i:03d}" for i in range(30, 33)),
+    # CircleCI — only CC-024..026 currently have CASES.
+    *(f"CC-{i:03d}" for i in range(1, 24)),
+    *(f"CC-{i:03d}" for i in range(27, 32)),
+})
+
+
 def test_every_workflow_check_has_a_case():
     """Lock in that this catalog stays in sync with the registered
-    workflow checks. If a new check ships without an entry here, this
-    test fails — forcing the author to write a real-example case."""
-    expected_ids = (
-        {f"GHA-{i:03d}" for i in range(1, 24)}
-        | {f"GL-{i:03d}" for i in range(1, 24)}
-        | {f"BB-{i:03d}" for i in range(1, 24)}
-        | {f"ADO-{i:03d}" for i in range(1, 24)}
-        | {f"JF-{i:03d}" for i in range(1, 24)}
-    )
+    workflow checks. If a new check ships without an entry here OR a
+    KNOWN_UNCOVERED listing, this test fails — forcing the author to
+    either write the real-example case or make the deferral explicit.
+
+    Expected IDs are derived from the live rule registry so new rules
+    auto-bump the requirement.
+    """
+    from pipeline_check.core.checks.rule import discover_rules
+
+    expected_ids: set[str] = set()
+    for _, _, sub, _ in _PROVIDER_BY_PREFIX.values():
+        for rule, _ in discover_rules(f"pipeline_check.core.checks.{sub}.rules"):
+            expected_ids.add(rule.id)
+
     covered = {c.check_id for c in CASES}
-    missing = expected_ids - covered
+    missing = expected_ids - covered - KNOWN_UNCOVERED
     assert not missing, (
         f"per-check catalog is missing entries for: {sorted(missing)}. "
-        f"Add a CheckCase + snippet pair for each so future regressions "
-        f"are caught."
+        f"Add a CheckCase + snippet pair, or — only when the rule "
+        f"genuinely can't get a real-example snippet — add the ID to "
+        f"KNOWN_UNCOVERED above."
+    )
+
+    stale_uncovered = KNOWN_UNCOVERED - expected_ids
+    assert not stale_uncovered, (
+        f"KNOWN_UNCOVERED references rules that no longer exist in the "
+        f"registry: {sorted(stale_uncovered)}. Drop them from the set."
+    )
+
+    duplicate_uncovered = KNOWN_UNCOVERED & covered
+    assert not duplicate_uncovered, (
+        f"these rules are both in CASES and KNOWN_UNCOVERED: "
+        f"{sorted(duplicate_uncovered)}. Drop them from KNOWN_UNCOVERED "
+        f"now that a real-example case exists."
     )
 
 

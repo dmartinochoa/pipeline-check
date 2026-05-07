@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import TASK_PIN_RE
@@ -32,6 +33,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     for job_loc, job in iter_jobs(doc):
         for step_loc, step in iter_steps(job):
             ref = step.get("task")
@@ -39,6 +41,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 continue
             if not TASK_PIN_RE.search(ref):
                 unpinned.append(f"{job_loc}.{step_loc}: {ref}")
+                line = _line_of(step) if isinstance(step, dict) else None
+                locations.append(
+                    Location(path=path, start_line=line, end_line=line)
+                )
     passed = not unpinned
     desc = (
         "Every `task:` reference is pinned to a specific version."
@@ -53,4 +59,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

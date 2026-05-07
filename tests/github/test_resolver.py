@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import textwrap
 
-import pytest
-
 from pipeline_check.core.checks.github.base import GitHubContext, Workflow
 from pipeline_check.core.checks.github.resolver import (
     DiskFetcher,

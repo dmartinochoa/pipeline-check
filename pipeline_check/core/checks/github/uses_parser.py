@@ -24,7 +24,6 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 # A workflow reference always ends in ``.yml`` or ``.yaml`` and lives

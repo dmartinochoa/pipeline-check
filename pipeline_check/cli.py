@@ -414,14 +414,19 @@ def _all_check_ids() -> list[str]:
     if _CHECK_IDS_CACHE is not None:
         return _CHECK_IDS_CACHE
     ids: list[str] = []
-    # CI providers — each has a rules/ package with RULE.id
-    for pkg in (
-        "pipeline_check.core.checks.github.rules",
-        "pipeline_check.core.checks.gitlab.rules",
-        "pipeline_check.core.checks.bitbucket.rules",
-        "pipeline_check.core.checks.azure.rules",
-        "pipeline_check.core.checks.jenkins.rules",
-    ):
+    # Rule-based providers — each has a rules/ package with RULE.id.
+    # Derive the package list from the filesystem so adding a new
+    # provider under ``pipeline_check/core/checks/<name>/rules/``
+    # automatically surfaces in ``--list-checks`` / ``--explain`` /
+    # autocomplete. Class-based AWS / Terraform IDs are scanned by
+    # the regex pass below; ``set`` deduplication catches any overlap.
+    from pathlib import Path
+    checks_root = Path(__file__).parent / "core" / "checks"
+    rule_pkgs = sorted(
+        f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
+        for p in checks_root.glob("*/rules/__init__.py")
+    )
+    for pkg in rule_pkgs:
         try:
             from .core.checks.rule import discover_rules
             for rule, _ in discover_rules(pkg):

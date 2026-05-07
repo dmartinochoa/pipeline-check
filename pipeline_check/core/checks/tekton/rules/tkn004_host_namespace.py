@@ -92,7 +92,7 @@ def check(ctx: TektonContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="tekton",
-            description="No Task / Pipeline documents to check.",
+            description="No Task / ClusterTask / Pipeline documents to check.",
             recommendation="No action required.", passed=True,
         )
     passed = not offenders

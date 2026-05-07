@@ -19,8 +19,8 @@ Usage
     python scripts/gen_provider_docs.py           # write every supported provider
     python scripts/gen_provider_docs.py github    # write just one provider
 
-All five workflow providers (github, gitlab, bitbucket, azure,
-jenkins) are supported.
+The supported provider list is enumerated by ``SUPPORTED_PROVIDERS``
+below; pass ``--help`` to a fresh checkout to see the current set.
 """
 from __future__ import annotations
 
@@ -548,8 +548,9 @@ _FOOTER_TEMPLATE = """\
 
 1. Create a new module at
    `pipeline_check/core/checks/{pkg}/rules/{prefix_lc}NNN_<name>.py`
-   exporting a top-level `RULE = Rule(...)` and a `check(path, doc) ->
-   Finding` function. The orchestrator auto-discovers it.
+   exporting a top-level `RULE = Rule(...)` and a `{signature}`
+   function. The orchestrator auto-discovers `RULE` and calls `check`
+   with the {arg_kind}.
 2. Add a mapping for the new ID in
    `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
    other standard that applies).
@@ -565,6 +566,12 @@ _FOOTER_TEMPLATE = """\
 """
 
 
+# Per-provider check signature strings. Tekton and Argo (and other
+# context-based providers) hand the rule a typed context; the older
+# workflow providers still take ``(path, doc)``.
+_DEFAULT_SIGNATURE = "check(path, doc) -> Finding"
+_DEFAULT_ARG_KIND = "parsed YAML document"
+
 _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "github":    {"prefix": "GHA", "prefix_lc": "gha", "pkg": "github"},
     "gitlab":    {"prefix": "GL",  "prefix_lc": "gl",  "pkg": "gitlab"},
@@ -574,8 +581,16 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
     "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
     "buildkite": {"prefix": "BK",  "prefix_lc": "bk",  "pkg": "buildkite"},
-    "tekton":    {"prefix": "TKN", "prefix_lc": "tkn", "pkg": "tekton"},
-    "argo":      {"prefix": "ARGO", "prefix_lc": "argo", "pkg": "argo"},
+    "tekton":    {
+        "prefix": "TKN", "prefix_lc": "tkn", "pkg": "tekton",
+        "signature": "check(ctx: TektonContext) -> Finding",
+        "arg_kind": "``TektonContext``",
+    },
+    "argo":      {
+        "prefix": "ARGO", "prefix_lc": "argo", "pkg": "argo",
+        "signature": "check(ctx: ArgoContext) -> Finding",
+        "arg_kind": "``ArgoContext``",
+    },
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
 }
@@ -615,7 +630,9 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     for rule, _ in pairs:
         lines.append(_render_rule(rule))
 
-    footer_cfg = _FOOTER_CONFIG.get(slug, {"prefix": "", "prefix_lc": "", "pkg": slug})
+    footer_cfg = dict(_FOOTER_CONFIG.get(slug, {"prefix": "", "prefix_lc": "", "pkg": slug}))
+    footer_cfg.setdefault("signature", _DEFAULT_SIGNATURE)
+    footer_cfg.setdefault("arg_kind", _DEFAULT_ARG_KIND)
     lines.append(_FOOTER_TEMPLATE.format(title=title, slug=slug, **footer_cfg))
     return "".join(lines)
 

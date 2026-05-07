@@ -293,19 +293,6 @@ def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
 
 def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]:
     level, _ = _LEVEL_MAP.get(f.severity, ("warning", "5.0"))
-    physical_location: dict[str, Any] = {
-        "artifactLocation": {"uri": _artifact_uri(f.resource)},
-    }
-    # Best-effort line number: for file-based findings we try to grep
-    # the resource content for a signature line per check_id. This
-    # makes GitHub PR annotations land on the offending line instead
-    # of the file header. When we can't determine a line (AWS/Terraform
-    # or unreadable file) we omit the region entirely — GitHub handles
-    # a missing region fine, a wrong one looks like a bug.
-    start_line = _best_effort_line(f)
-    if start_line is not None:
-        physical_location["region"] = {"startLine": start_line}
-
     logical_location: dict[str, Any] = {"name": f.resource, "kind": "resource"}
     # AWS resources: surface an ARN/region property so programmatic
     # SARIF consumers can pivot to the console.
@@ -324,6 +311,45 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
         properties["arn"] = arn
         properties["region"] = _region_from_arn(arn) or ""
 
+    # Prefer the rule-supplied structured locations when present.
+    # ``Finding.locations`` is the canonical source: each entry maps
+    # to one SARIF ``locations[]`` entry with a real ``region``. When
+    # absent (AWS / Terraform / CFN, or rules not yet retrofitted),
+    # fall back to the legacy single-location + ``_best_effort_line``
+    # path so we don't regress those providers.
+    locations: list[dict[str, Any]] = []
+    if f.locations:
+        for loc in f.locations:
+            phys: dict[str, Any] = {
+                "artifactLocation": {"uri": _artifact_uri(loc.path)},
+            }
+            region: dict[str, Any] = {}
+            if loc.start_line is not None:
+                region["startLine"] = loc.start_line
+            if loc.end_line is not None and loc.end_line != loc.start_line:
+                region["endLine"] = loc.end_line
+            if loc.start_column is not None:
+                region["startColumn"] = loc.start_column
+            if loc.end_column is not None:
+                region["endColumn"] = loc.end_column
+            if region:
+                phys["region"] = region
+            locations.append({
+                "physicalLocation": phys,
+                "logicalLocations": [logical_location],
+            })
+    else:
+        physical_location: dict[str, Any] = {
+            "artifactLocation": {"uri": _artifact_uri(f.resource)},
+        }
+        start_line = _best_effort_line(f)
+        if start_line is not None:
+            physical_location["region"] = {"startLine": start_line}
+        locations.append({
+            "physicalLocation": physical_location,
+            "logicalLocations": [logical_location],
+        })
+
     result: dict[str, Any] = {
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
@@ -334,12 +360,7 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
         # de-ranked so noisy rules don't drown out the signal.
         "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "message": {"text": f.description},
-        "locations": [
-            {
-                "physicalLocation": physical_location,
-                "logicalLocations": [logical_location],
-            }
-        ],
+        "locations": locations,
         "properties": properties,
     }
     return result

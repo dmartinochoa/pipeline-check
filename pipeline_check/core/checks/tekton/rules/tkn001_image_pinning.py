@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import TektonContext, step_name, task_steps
 
@@ -29,11 +30,12 @@ RULE = Rule(
     ),
 )
 
-_DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}\b")
+_DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -47,6 +49,11 @@ def check(ctx: TektonContext) -> Finding:
                 offenders.append(
                     f"{doc.kind}/{doc.name} {step_name(step, idx)}: {image}"
                 )
+                line = _line_of(step) if isinstance(step, dict) else None
+                locations.append(Location(
+                    path=doc.path, start_line=line, end_line=line,
+                    doc_index=doc.doc_index,
+                ))
     passed = not offenders
     if examined == 0:
         return Finding(
@@ -66,4 +73,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

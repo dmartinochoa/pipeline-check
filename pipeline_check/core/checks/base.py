@@ -31,6 +31,7 @@ __all__ = [
     "Confidence",
     "confidence_rank",
     "Finding",
+    "Location",
     "BaseCheck",
     # re-exported from blob
     "walk_strings",
@@ -121,6 +122,47 @@ def confidence_rank(c: "Confidence") -> int:
     return _CONFIDENCE_RANK[c]
 
 
+@dataclass(frozen=True)
+class Location:
+    """Where a finding lands inside a source file.
+
+    Lines and columns are 1-based to match SARIF, every common editor,
+    and every other security tool's output. ``end_line`` defaults to
+    the same value as ``start_line`` for single-line findings; ranges
+    that span multiple lines set both. ``doc_index`` distinguishes
+    documents inside a multi-doc YAML stream (Kubernetes / Tekton /
+    Argo) — index 0 means the first ``---``-separated body.
+
+    A finding can carry zero, one, or many locations. Zero locations
+    means line precision wasn't available (e.g. AWS live-API scans
+    have no source file); reporters fall back to ``Finding.resource``.
+    Many locations is the canonical aggregate-rule shape: a single
+    ``Finding`` describing N offenders spread across the file, one
+    ``Location`` per offender.
+    """
+
+    path: str
+    start_line: int | None = None
+    end_line: int | None = None
+    start_column: int | None = None
+    end_column: int | None = None
+    doc_index: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"path": self.path}
+        if self.start_line is not None:
+            out["start_line"] = self.start_line
+        if self.end_line is not None:
+            out["end_line"] = self.end_line
+        if self.start_column is not None:
+            out["start_column"] = self.start_column
+        if self.end_column is not None:
+            out["end_column"] = self.end_column
+        if self.doc_index is not None:
+            out["doc_index"] = self.doc_index
+        return out
+
+
 @dataclass
 class Finding:
     check_id: str
@@ -153,9 +195,16 @@ class Finding:
     #: finding control (e.g. CB-005 emitting HIGH for "two+ versions
     #: behind" even though the rule's blanket default is MEDIUM).
     confidence_locked: bool = False
+    #: Structured source locations the finding refers to. Optional;
+    #: ``[]`` means the rule didn't compute precise lines and reporters
+    #: should fall back to ``resource``. Populated by rules that have
+    #: line-aware loaders available (workflow YAML providers,
+    #: Dockerfile, K8s/Helm/Tekton/Argo). AWS / Terraform / CloudFormation
+    #: stay at ``[]`` because their inputs aren't line-anchored source.
+    locations: list[Location] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "check_id": self.check_id,
             "title": self.title,
             "severity": self.severity.value,
@@ -167,6 +216,9 @@ class Finding:
             "controls": [c.to_dict() for c in self.controls],
             "cwe": self.cwe,
         }
+        if self.locations:
+            out["locations"] = [loc.to_dict() for loc in self.locations]
+        return out
 
 
 class BaseCheck(abc.ABC):

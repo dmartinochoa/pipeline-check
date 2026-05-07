@@ -12,6 +12,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precise findings.** New ``Location`` dataclass on
+  ``pipeline_check.Finding.locations`` carries ``path``,
+  ``start_line`` / ``end_line``, ``start_column`` / ``end_column``,
+  and ``doc_index`` (for multi-doc YAML). Backed by a new
+  ``safe_load_yaml_lines`` loader that wraps PyYAML's
+  ``construct_mapping`` / ``construct_sequence`` to attach source
+  marks to every parsed dict and list. Multi-doc support via
+  ``safe_load_all_with_lines`` for the K8s / Tekton / Argo / Helm
+  providers. Loaders switched on every YAML provider; rule retrofits
+  shipped for ``BK-001``, ``GCB-001``, ``GHA-001``, ``GHA-025``,
+  ``GL-001``, ``BB-001``, ``ADO-001``, ``CC-003``, ``DF-001``,
+  ``K8S-001``, ``TKN-001``, ``ARGO-001``. Reporters surface lines:
+  terminal table renders ``path:line``, JSON adds ``locations``
+  array (schema bumped to ``1.1``), SARIF emits structured
+  ``result.locations`` with ``region.startLine`` /
+  ``region.startColumn`` instead of the legacy
+  ``_best_effort_line`` regex hack (kept as fallback for AWS / TF /
+  CFN findings that have no source line). Cross-provider regression
+  guard at ``tests/test_line_precision.py``.
+- **PR-comment GitHub Action.** New composite action at
+  ``.github/actions/pipeline-check-pr/`` runs the scanner on a
+  pull request and posts review comments on the changed lines via
+  ``GITHUB_TOKEN``. Maps each finding's ``Location.start_line`` to
+  the matching PR diff hunk; findings whose line isn't part of the
+  diff (or rules that don't emit structured locations) batch into
+  a single PR-level summary comment. Idempotent: each comment
+  carries a hidden marker so re-runs ``PATCH`` instead of
+  duplicating, and obsolete bot comments get deleted when their
+  finding disappears. Falls back to ``$GITHUB_STEP_SUMMARY`` when
+  the runner token can't post (fork PRs with read-only token, rate
+  limits, transient 5xx). Inputs:
+  ``pipeline`` / ``path`` / ``severity-threshold`` /
+  ``resolve-remote`` / ``comment-mode`` (per-finding | summary) /
+  ``gh-token``. Composite (not Docker) for fast cold-start. No
+  telemetry; only network calls are to the GitHub API of the
+  hosting repo plus (with ``resolve-remote: true``) the GHA
+  reusable-workflow resolver.
 - **GitHub Actions reusable-workflow remote-ref resolver.**
   `--resolve-remote` (default off) follows
   ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` to the

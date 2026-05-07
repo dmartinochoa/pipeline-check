@@ -6,7 +6,12 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_command_steps, iter_plugins, step_label
+from ..base import (
+    iter_command_steps,
+    iter_plugins,
+    plugin_location,
+    step_label,
+)
 
 RULE = Rule(
     id="BK-001",
@@ -55,11 +60,14 @@ def _is_pinned(ref: str) -> bool:
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
+    from ...base import Location
     unpinned: list[str] = []
+    locations: list[Location] = []
     for idx, step in iter_command_steps(doc):
-        for ref, _cfg in iter_plugins(step):
+        for plugin_idx, (ref, _cfg) in enumerate(iter_plugins(step)):
             if not _is_pinned(ref):
                 unpinned.append(f"{step_label(step, idx)}: {ref}")
+                locations.append(plugin_location(path, step, plugin_idx))
     passed = not unpinned
     desc = (
         "Every plugin reference is pinned to an exact tag or SHA."
@@ -73,4 +81,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

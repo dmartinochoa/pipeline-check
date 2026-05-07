@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps
+from ..base import iter_jobs, iter_steps, step_location
 from ..uses_parser import parse_uses
 
 RULE = Rule(
@@ -32,6 +32,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     for _, job in iter_jobs(doc):
         for step in iter_steps(job):
             ref = parse_uses(step.get("uses"))
@@ -39,6 +40,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 continue
             if not ref.is_pinned_to_sha:
                 unpinned.append(ref.raw)
+                locations.append(step_location(path, step))
     passed = not unpinned
     desc = (
         "Every `uses:` reference is pinned to a 40-char commit SHA."
@@ -54,4 +56,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

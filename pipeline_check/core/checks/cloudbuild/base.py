@@ -41,7 +41,9 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import line_of as _line_of
+from .._yaml_lines import safe_load_yaml_lines
+from ..base import BaseCheck, Location
 
 # Top-level keys Cloud Build recognises. Everything else is either a
 # user substitution override (via ``substitutions:``) or out-of-spec.
@@ -100,7 +102,7 @@ class CloudBuildContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
@@ -148,6 +150,16 @@ def step_name(step: dict[str, Any], fallback_idx: int) -> str:
     if isinstance(sid, str) and sid.strip():
         return sid.strip()
     return f"steps[{fallback_idx}]"
+
+
+def step_location(path: str, step: dict[str, Any]) -> Location:
+    """Build a :class:`Location` pointing at *step* in *path*.
+
+    Returns a path-only ``Location`` when the loader didn't preserve
+    line markers (defensive for non-line-aware test loaders).
+    """
+    line = _line_of(step)
+    return Location(path=path, start_line=line, end_line=line)
 
 
 def step_strings(step: dict[str, Any]) -> list[str]:

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._primitives.image_pinning import PinKind, classify
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, from_refs
 
@@ -33,11 +33,15 @@ RULE = Rule(
 
 def check(df: Dockerfile) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     for line_no, ref in from_refs(df):
         kind = classify(ref)
         if kind is PinKind.DIGEST:
             continue
         unpinned.append(f"L{line_no}: {ref} ({kind.value})")
+        locations.append(Location(
+            path=df.path, start_line=line_no, end_line=line_no,
+        ))
     passed = not unpinned
     desc = (
         "Every ``FROM`` reference is pinned by sha256 digest."
@@ -50,4 +54,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

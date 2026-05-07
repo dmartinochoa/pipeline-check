@@ -36,7 +36,8 @@ from typing import Any
 
 import yaml
 
-from ..base import BaseCheck, safe_load_yaml
+from .._yaml_lines import safe_load_yaml_lines
+from ..base import BaseCheck
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,7 @@ class CircleCIContext:
                 skipped += 1
                 continue
             try:
-                data = safe_load_yaml(text)
+                data = safe_load_yaml_lines(text)
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
@@ -164,13 +165,26 @@ def iter_workflow_jobs(doc: dict[str, Any]) -> Iterator[tuple[str, str, dict[str
 
 def get_docker_images(doc: dict[str, Any]) -> list[str]:
     """Return every docker image referenced in jobs and executors."""
-    images: list[str] = []
+    return [img for img, _ in iter_docker_image_anchors(doc)]
+
+
+def iter_docker_image_anchors(
+    doc: dict[str, Any],
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield ``(image_string, source_dict)`` for every docker image.
+
+    ``source_dict`` is the ``{image: ...}`` entry that produced the
+    string — line-aware loaders attach the source-line marker to it,
+    so callers can build a :class:`Location` via
+    ``_line_of(source_dict)``. Falls back to the parent ``docker``
+    block when the entry isn't a dict (defensive).
+    """
     for _, job in iter_jobs(doc):
         docker = job.get("docker")
         if isinstance(docker, list):
             for entry in docker:
                 if isinstance(entry, dict) and isinstance(entry.get("image"), str):
-                    images.append(entry["image"])
+                    yield entry["image"], entry
     executors = doc.get("executors") or {}
     if isinstance(executors, dict):
         for _, exc in executors.items():
@@ -180,5 +194,4 @@ def get_docker_images(doc: dict[str, Any]) -> list[str]:
             if isinstance(docker, list):
                 for entry in docker:
                     if isinstance(entry, dict) and isinstance(entry.get("image"), str):
-                        images.append(entry["image"])
-    return images
+                        yield entry["image"], entry

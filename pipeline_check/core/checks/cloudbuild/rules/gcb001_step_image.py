@@ -16,9 +16,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.container_image import classify
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_name
+from ..base import iter_steps, step_location, step_name
 
 RULE = Rule(
     id="GCB-001",
@@ -46,6 +46,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
+    locations: list[Location] = []
     any_step = False
     for idx, step in iter_steps(doc):
         any_step = True
@@ -56,6 +57,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if info.pinned:
             continue
         unpinned.append(f"{step_name(step, idx)}={image}")
+        locations.append(step_location(path, step))
     if not any_step:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -75,4 +77,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

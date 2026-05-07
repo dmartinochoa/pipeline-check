@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
-from typing import Any
 
 from ..base import Finding
 from ..rule import Rule, discover_rules

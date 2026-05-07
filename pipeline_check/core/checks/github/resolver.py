@@ -55,7 +55,6 @@ from ..base import safe_load_yaml
 from .base import GitHubContext, Workflow
 from .uses_parser import UsesRef, parse_uses
 
-
 _DEFAULT_TTL_SECONDS = 7 * 24 * 3600
 _DEFAULT_MAX_DEPTH = 3
 _HARD_DEPTH_CEILING = 10
@@ -367,7 +366,7 @@ class Resolver:
         caller_permissions = wf.data.get("permissions")
         if caller_permissions is None:
             caller_permissions = wf.inherited_permissions
-        for job_id, job in jobs.items():
+        for _job_id, job in jobs.items():
             if not isinstance(job, dict):
                 continue
             ref = parse_uses(job.get("uses"))

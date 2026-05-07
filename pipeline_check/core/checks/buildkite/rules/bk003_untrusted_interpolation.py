@@ -52,9 +52,11 @@ _TAINTED_VARS = (
 
 # Match ``$VAR`` or ``${VAR}`` (but not ``\$VAR`` or ``"$VAR"`` when
 # already quoted — Buildkite pipeline.yml is parsed before the shell,
-# so the YAML value is what gets handed to the agent).
+# so the YAML value is what gets handed to the agent). The trailing
+# negative lookahead prevents matching tainted names that are merely
+# a prefix of a longer identifier (e.g. ``$BUILDKITE_BRANCH_FOO``).
 _INTERP_RE = re.compile(
-    r"(?<!\\)\$\{?(" + "|".join(_TAINTED_VARS) + r")\}?"
+    r"(?<!\\)\$\{?(" + "|".join(_TAINTED_VARS) + r")\}?(?![A-Za-z0-9_])"
 )
 
 
@@ -63,14 +65,13 @@ def _command_unsafe(cmd: str) -> list[str]:
     hits: list[str] = []
     for m in _INTERP_RE.finditer(cmd):
         var = m.group(1)
-        # Quoted single-token use ("$VAR" or '$VAR') with the closing
-        # quote on the same token is the safe form. Approximate by
-        # checking for surrounding double-quotes within 2 chars.
+        # Quoted single-token use ("$VAR" or '$VAR') with matching
+        # quotes around the interpolation is the safe form.
         start = m.start()
         end = m.end()
         before = cmd[max(0, start - 1):start]
         after = cmd[end:end + 1]
-        if before == '"' and after.startswith('"'):
+        if before in ('"', "'") and after.startswith(before):
             continue
         hits.append(var)
     return hits

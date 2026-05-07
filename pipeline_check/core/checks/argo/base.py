@@ -84,13 +84,14 @@ class ArgoContext:
                 skipped += 1
                 continue
             try:
-                parsed = list(yaml.safe_load_all(text))
+                from .._yaml_lines import safe_load_all_with_lines
+                parsed_with_lines = list(safe_load_all_with_lines(text))
             except yaml.YAMLError as exc:
                 first_line = str(exc).split("\n", 1)[0]
                 warnings.append(f"{f}: YAML parse error: {first_line}")
                 skipped += 1
                 continue
-            for idx, raw in enumerate(parsed):
+            for idx, (_doc_start_line, raw) in enumerate(parsed_with_lines):
                 d = _to_doc(str(f), idx, raw)
                 if d is not None:
                     docs.append(d)
