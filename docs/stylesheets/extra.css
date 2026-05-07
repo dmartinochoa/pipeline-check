@@ -744,17 +744,14 @@ body {
 .md-header__button:hover { color: var(--pg-teal-400); }
 [data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
 
-/* Brand logo — Material's default (~1.2rem) reads as a tiny favicon
-   next to the site title; bump it to ~1.9rem so the shield mark is
-   legible without making the header chrome taller. */
-.md-header__button.md-logo {
-  padding: 0.2rem;
-  margin-right: 0.2rem;
-}
-.md-header__button.md-logo img,
-.md-header__button.md-logo svg {
-  height: 1.9rem;
-  width: auto;
+/* Topbar logo intentionally suppressed. The wordmark
+   "Pipeline-Check" already carries the brand in the chrome, and
+   the goose mascot is reserved for the favicon, hero, and README.
+   Hiding both the header and sidebar logo slots so Material's
+   default-icon fallback never shows when ``logo:`` is unset. */
+.md-header__button.md-logo,
+.md-nav__button.md-logo {
+  display: none;
 }
 
 /* Tabs row: tighter, more editorial */
