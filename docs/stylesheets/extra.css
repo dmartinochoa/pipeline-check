@@ -1047,6 +1047,182 @@ img.pg-hero__mark {
   margin: 0 0 1.1rem;
 }
 
+/* ── Animated hero mark ───────────────────────────────────────────
+   Same physical slot as the static ``.pg-hero__mark`` (height
+   clamp 96-132px) — just the goose with the in-place animations
+   from ``brand-logo-animation.html`` (body bob + eye blink). The
+   patrol scene's surrounding context (rail, BUILD/TEST/SCAN/
+   DEPLOY nodes, commits, DENIED stamp) lives only in the design-
+   system preview; on the landing page the LOGO is the goose. */
+.pg-hero__mark--animated {
+  display: block;
+  height: clamp(96px, 11vw, 132px);
+  margin: 0 0 1.1rem;
+  background: transparent;
+}
+.pg-hero__mark--animated svg {
+  display: block;
+  height: 100%;
+  width: auto;
+}
+
+@keyframes pg-hero__bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
+}
+@keyframes pg-hero__blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 96%      { transform: scaleY(.1); }
+}
+
+.pg-hero__mark--animated .goose-bob {
+  animation: pg-hero__bob .6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.pg-hero__mark--animated .eye-blink {
+  animation: pg-hero__blink 5s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* Vestibular-safety: pause both motions for users who prefer
+   reduced motion. The mark still reads as a goose, just still. */
+@media (prefers-reduced-motion: reduce) {
+  .pg-hero__mark--animated .goose-bob,
+  .pg-hero__mark--animated .eye-blink {
+    animation: none;
+  }
+}
+
+/* ── Goose patrol — full animation section ───────────────────────
+   Hosts the 16:7 patrol scene from
+   ``.claude/design_system/preview/brand-logo-animation.html`` in
+   its own dedicated section near the bottom of the landing page.
+
+   Unlike the hero mark (which rides on the hero's existing
+   gradient), this card carries its own navy + grid chrome — the
+   ``.pg-section`` background is the page default, so the patrol
+   needs the chrome the design-system preview wraps it in. World
+   coords stay 800×350; we constrain by max-width and aspect-ratio
+   so the scene scales gracefully on narrow viewports. */
+.pg-patrol {
+  position: relative;
+  max-width: 64rem;
+  margin: 0 auto;
+  aspect-ratio: 16 / 7;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(27, 163, 169, .08), transparent 60%),
+    #04101a;
+}
+.pg-patrol::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, .04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, .04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 60%, #000 50%, transparent 90%);
+          mask-image: radial-gradient(ellipse at 50% 60%, #000 50%, transparent 90%);
+  pointer-events: none;
+}
+.pg-patrol svg.pg-patrol__world {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+
+/* Walk cycle: 14s loop with two pause beats so the goose feels
+   deliberate at TEST and SCAN rather than gliding past. The
+   numeric translate values are tied to the world coords (rail at
+   y=240, stage nodes at x∈{80, 280, 480, 680}). */
+@keyframes pg-patrol__walk {
+  0%   { transform: translate(60px, 240px); }
+  22%  { transform: translate(280px, 240px); }
+  32%  { transform: translate(280px, 240px); }
+  50%  { transform: translate(480px, 240px); }
+  72%  { transform: translate(480px, 240px); }
+  92%  { transform: translate(680px, 240px); }
+  100% { transform: translate(740px, 240px); }
+}
+@keyframes pg-patrol__bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
+}
+@keyframes pg-patrol__scan-pulse {
+  0%, 50%   { opacity: 0; transform: scale(.6); }
+  55%, 68%  { opacity: 1; transform: scale(1); }
+  72%, 100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes pg-patrol__denied-pop {
+  0%, 60%   { opacity: 0; transform: translateY(-3px) scale(.6); }
+  65%, 80%  { opacity: 1; transform: translateY(0) scale(1); }
+  85%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
+}
+@keyframes pg-patrol__blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 96%      { transform: scaleY(.1); }
+}
+@keyframes pg-patrol__commit-flow {
+  0%   { transform: translateX(-40px); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(800px); opacity: 0; }
+}
+
+.pg-patrol .goose-patrol {
+  animation: pg-patrol__walk 14s ease-in-out infinite;
+}
+.pg-patrol .goose-bob {
+  animation: pg-patrol__bob .6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.pg-patrol .scan-ring {
+  animation: pg-patrol__scan-pulse 14s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.pg-patrol .denied-pop {
+  animation: pg-patrol__denied-pop 14s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.pg-patrol .eye-blink {
+  animation: pg-patrol__blink 5s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.pg-patrol .commit {
+  animation: pg-patrol__commit-flow 4.6s linear infinite;
+}
+.pg-patrol .commit.c2 { animation-delay: 1.2s; }
+.pg-patrol .commit.c3 { animation-delay: 2.6s; }
+.pg-patrol .commit.c4 { animation-delay: 3.6s; }
+
+/* Vestibular-safety: continuous patrol motion + blinking eye are
+   both common reduced-motion triggers. Pause every layer; freeze
+   the goose at TEST so the scene still reads as a goose-on-rail. */
+@media (prefers-reduced-motion: reduce) {
+  .pg-patrol .goose-patrol,
+  .pg-patrol .goose-bob,
+  .pg-patrol .scan-ring,
+  .pg-patrol .denied-pop,
+  .pg-patrol .eye-blink,
+  .pg-patrol .commit {
+    animation: none;
+  }
+  .pg-patrol .goose-patrol {
+    transform: translate(280px, 240px);
+  }
+  .pg-patrol .denied-pop,
+  .pg-patrol .scan-ring {
+    opacity: 0;
+  }
+}
+
 /* Markdown wraps the goose image (and the wordmark span) in
    <p>; the brand stack reads as a single editorial block, not
    three separate paragraphs. Apply the reset to every <p> inside
