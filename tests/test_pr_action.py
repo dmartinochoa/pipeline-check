@@ -16,13 +16,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-
 
 _REPO = Path(__file__).resolve().parent.parent
 _ENTRYPOINT_PATH = (
@@ -228,7 +226,7 @@ def test_existing_marker_is_patched_not_duplicated(monkeypatch, env):
     path = ".github/workflows/release.yml"
     line = 11
     digest = hashlib.sha1(
-        f"{path}:{line}:{check_id}".encode("utf-8"),
+        f"{path}:{line}:{check_id}".encode(),
     ).hexdigest()[:16]
     marker = f"{check_id}:{digest}"
 

@@ -39,6 +39,7 @@ def _cicd_trust(service="codebuild.amazonaws.com"):
 
 _SHARED_ROLE = "arn:aws:iam::123456789:role/shared-build-role"
 _SECURE_VPC = {"vpcId": "vpc-abc123", "subnets": ["subnet-1"], "securityGroupIds": ["sg-1"]}
+_VPC_DEFAULT: object = object()
 
 
 def _make_codebuild_client(
@@ -48,10 +49,12 @@ def _make_codebuild_client(
     logging_enabled=True,
     timeout=60,
     image="aws/codebuild/standard:7.0",
-    vpc_config=_SECURE_VPC,
+    vpc_config: dict | None | object = _VPC_DEFAULT,
     service_role="arn:aws:iam::123456789:role/my-build-role",
     extra_projects=None,
 ):
+    if vpc_config is _VPC_DEFAULT:
+        vpc_config = dict(_SECURE_VPC)
     client = MagicMock()
     env_vars = (
         [{"name": "DB_PASSWORD", "type": "PLAINTEXT", "value": "s3cr3t"}]

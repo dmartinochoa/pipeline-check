@@ -30,7 +30,6 @@ import subprocess
 import sys
 from typing import Any
 
-
 # ── Configuration from env ───────────────────────────────────────────
 
 
@@ -96,7 +95,7 @@ def _run_scanner() -> dict[str, Any]:
         )
     except FileNotFoundError as exc:
         _fail(f"pipeline_check not on PATH: {exc}")
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     if not result.stdout.strip():
         _fail(
             f"pipeline_check produced no JSON output. "
@@ -107,7 +106,7 @@ def _run_scanner() -> dict[str, Any]:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
         _fail(f"pipeline_check output wasn't JSON: {exc}")
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 # ── PR diff plumbing ─────────────────────────────────────────────────
@@ -162,7 +161,7 @@ def _touched_lines(repo: str, pr_number: str) -> set[tuple[str, int]]:
 def _marker_id(check_id: str, path: str, line: int) -> str:
     """Stable marker identifying one bot comment."""
     digest = hashlib.sha1(
-        f"{path}:{line}:{check_id}".encode("utf-8"),
+        f"{path}:{line}:{check_id}".encode(),
     ).hexdigest()[:16]
     return f"{check_id}:{digest}"
 

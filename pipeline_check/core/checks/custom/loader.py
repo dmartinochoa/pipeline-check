@@ -370,9 +370,9 @@ def _build_finding(
         desc = f"{rule.title} — no offenders."
     else:
         head = ", ".join(offenders[:5])
-        ellipsis = "…" if len(offenders) > 5 else ""
+        suffix = "…" if len(offenders) > 5 else ""
         desc = (
-            f"{len(offenders)} offender(s): {head}{ellipsis}."
+            f"{len(offenders)} offender(s): {head}{suffix}."
             if offenders else
             rule.title
         )
