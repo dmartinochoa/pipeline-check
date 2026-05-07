@@ -325,6 +325,120 @@ Four rules target non-workload kinds:
 - **K8S-022** — `Service` exposing port 22 (SSH).
 """,
     ),
+    "buildkite": (
+        "Buildkite",
+        "pipeline_check.core.checks.buildkite.rules",
+        _REPO_ROOT / "docs" / "providers" / "buildkite.md",
+        """\
+# Buildkite provider
+
+Parses `.buildkite/pipeline.yml` (or any user-named pipeline file) on
+disk — no Buildkite API token, no agent install required. Each
+document must declare a top-level `steps:` list; files without it are
+skipped by the loader.
+
+## Producer workflow
+
+```bash
+# --buildkite-path is auto-detected when .buildkite/pipeline.yml
+# exists at cwd.
+pipeline_check --pipeline buildkite
+
+# …or pass it explicitly.
+pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Buildkite-specific checks
+
+- **BK-001** — plugin refs must be pinned to an exact tag
+  (`docker-compose#v4.13.0`) or a 40-char SHA. Branch refs (`#main`)
+  and bare names float and let a compromised plugin release execute
+  in the pipeline.
+- **BK-007** — every step that looks like a deploy (label / command
+  matches `deploy`, `kubectl apply`, `terraform apply`, `helm
+  upgrade`, …) must be preceded by a `block:` or `input:` step in
+  the same pipeline file. Buildkite waits for a human to click
+  *Unblock* before the gated steps run.
+""",
+    ),
+    "tekton": (
+        "Tekton",
+        "pipeline_check.core.checks.tekton.rules",
+        _REPO_ROOT / "docs" / "providers" / "tekton.md",
+        """\
+# Tekton provider
+
+Parses Tekton API documents (`apiVersion: tekton.dev/*`) from `.yaml`
+/ `.yml` files on disk — text-only static analysis, no `tkn` binary,
+no cluster access. Recognized kinds: `Task`, `ClusterTask`,
+`Pipeline`, `TaskRun`, `PipelineRun`. Documents that don't carry a
+`tekton.dev/*` apiVersion are silently skipped, so a directory mixing
+Tekton with plain Kubernetes manifests is safe to point at.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline tekton --tekton-path tekton/
+
+# A single multi-document file works too.
+pipeline_check --pipeline tekton --tekton-path tekton/build-task.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Tekton-specific checks
+
+- **TKN-003** — Tekton substitutes `$(params.X)` *before* the shell
+  parses the script, so any unquoted use is a command-injection
+  primitive. The safe pattern is to receive the parameter through
+  `env:` and reference the env var quoted (`"$NAME"`).
+- **TKN-007** — `TaskRun` / `PipelineRun` must set
+  `serviceAccountName` to a least-privilege ServiceAccount. The
+  default SA inherits whatever cluster-admin or wildcard role
+  someone later binds to it.
+""",
+    ),
+    "argo": (
+        "Argo Workflows",
+        "pipeline_check.core.checks.argo.rules",
+        _REPO_ROOT / "docs" / "providers" / "argo.md",
+        """\
+# Argo Workflows provider
+
+Parses Argo API documents (`apiVersion: argoproj.io/*`) from `.yaml`
+/ `.yml` files on disk — text-only static analysis, no `argo` binary,
+no cluster access. Recognized kinds: `Workflow`, `WorkflowTemplate`,
+`ClusterWorkflowTemplate`, `CronWorkflow`. Documents that don't
+carry an `argoproj.io/*` apiVersion are silently skipped.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline argo --argo-path workflows/
+
+# A single workflow file works too.
+pipeline_check --pipeline argo --argo-path workflows/release.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Argo-specific checks
+
+- **ARGO-005** — `{{inputs.parameters.X}}` substitution happens
+  before the shell parses the script, so any unquoted use in
+  `script.source` / `container.args` is a command-injection
+  primitive. Pass the parameter via `env:` and reference quoted.
+- **ARGO-003** — `Workflow` / `CronWorkflow` must set
+  `serviceAccountName`. Workflows that fall back to the namespace's
+  `default` SA inherit whatever role someone later binds to
+  `default`.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -412,6 +526,9 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
     "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
+    "buildkite": {"prefix": "BK",  "prefix_lc": "bk",  "pkg": "buildkite"},
+    "tekton":    {"prefix": "TKN", "prefix_lc": "tkn", "pkg": "tekton"},
+    "argo":      {"prefix": "ARGO", "prefix_lc": "argo", "pkg": "argo"},
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
 }

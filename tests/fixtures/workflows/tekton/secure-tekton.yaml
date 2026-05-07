@@ -1,0 +1,50 @@
+# Tekton manifest that satisfies every TKN-* check.
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-and-deploy
+  namespace: ci
+spec:
+  params:
+    - name: ref
+      type: string
+      default: "main"
+  workspaces:
+    - name: src
+  steps:
+    - name: build
+      # TKN-001: digest-pinned image.
+      image: alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b
+      # TKN-002: hardened securityContext.
+      securityContext:
+        privileged: false
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+      env:
+        - name: DEPLOY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: deploy-secrets
+              key: token
+        # TKN-003 / TKN-008: param received via env, referenced quoted.
+        - name: REF
+          value: $(params.ref)
+      script: |
+        set -e
+        echo "Building $REF"
+        curl -fsSLO https://example.com/install.sh
+        sha256sum -c install.sh.sha256
+        bash install.sh
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: build-and-deploy-run
+  namespace: ci
+spec:
+  serviceAccountName: ci-build-runner
+  timeouts:
+    pipeline: "1h"
+  pipelineRef:
+    name: build-and-deploy-pipeline

@@ -1,0 +1,52 @@
+# Tekton manifest exhibiting every TKN-* failure mode. Combines a
+# Task that triggers the Task-only rules with a PipelineRun that
+# triggers the Run-only rules.
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-and-deploy
+  namespace: ci
+spec:
+  # TKN-005: literal token-shaped secret in a param default.
+  params:
+    - name: deploy-token
+      type: string
+      default: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    - name: ref
+      type: string
+      default: "main"
+  # TKN-004: hostPath volume.
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+  steps:
+    - name: build
+      # TKN-001: tag-only image, no @sha256 digest.
+      image: alpine:3.18
+      # TKN-002: privileged step running as root.
+      securityContext:
+        privileged: true
+        runAsNonRoot: false
+      # TKN-005 (secondary): literal-secret env value.
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: "AKIAIOSFODNN7EXAMPLE"
+      # TKN-003 + TKN-008: $(params.ref) inlined unquoted, plus
+      # curl-pipe-shell in the same script body.
+      script: |
+        set -e
+        echo Building $(params.ref)
+        curl https://example.com/install.sh | sh
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: build-and-deploy-run
+  namespace: ci
+spec:
+  # TKN-006: no timeout / timeouts block.
+  # TKN-007: no serviceAccountName (defaults to "default").
+  pipelineRef:
+    name: build-and-deploy-pipeline

@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Three new providers — Buildkite, Tekton, Argo Workflows.**
+  `--pipeline buildkite --buildkite-path .buildkite/pipeline.yml`
+  scans Buildkite pipeline files (8 rules, BK-001..BK-008: plugin
+  pinning, literal secrets in env, untrusted variable interpolation,
+  curl-pipe-shell, ``docker --privileged``, missing
+  ``timeout_in_minutes``, deploy step without a preceding ``block:``
+  gate, TLS bypass). `--pipeline tekton --tekton-path PATH` scans
+  Tekton CRDs filtered to ``apiVersion: tekton.dev/*`` (8 rules,
+  TKN-001..TKN-008: step image digest pinning, privileged step,
+  ``$(params.X)`` injection in step ``script:``, hostPath /
+  host-namespace, literal secrets in env / param defaults, missing
+  PipelineRun / TaskRun timeout, default ServiceAccount,
+  curl-pipe-shell). `--pipeline argo --argo-path PATH` scans Argo
+  Workflows CRDs filtered to ``apiVersion: argoproj.io/*`` (8 rules,
+  ARGO-001..ARGO-008: template image digest pinning, privileged
+  container, default ServiceAccount, hostPath / podSpecPatch
+  host-namespace, ``{{inputs.parameters.X}}`` injection, literal
+  secrets in env / parameter defaults, missing
+  ``activeDeadlineSeconds``, curl-pipe-shell). Auto-detection picks
+  Buildkite up on ``./.buildkite/pipeline.yml``. All three providers
+  generate per-rule docs via ``scripts/gen_provider_docs.py``.
+  Provider catalog: 13 to 16.
 - **Custom rule DSL.** `--custom-rules PATH` (repeatable, also a
   `custom_rules:` config key) loads YAML-defined rules that plug
   into the same orchestrator as the built-in catalog. Loaded rules

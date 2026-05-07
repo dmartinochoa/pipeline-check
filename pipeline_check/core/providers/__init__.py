@@ -12,10 +12,12 @@ without any changes to Scanner or the CLI.
 """
 from __future__ import annotations
 
+from .argo import ArgoProvider
 from .aws import AWSProvider
 from .azure import AzureProvider
 from .base import BaseProvider
 from .bitbucket import BitbucketProvider
+from .buildkite import BuildkiteProvider
 from .circleci import CircleCIProvider
 from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
@@ -25,6 +27,7 @@ from .gitlab import GitLabProvider
 from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
+from .tekton import TektonProvider
 from .terraform import TerraformProvider
 
 _REGISTRY: dict[str, BaseProvider] = {}
@@ -58,6 +61,9 @@ register(AzureProvider())
 register(JenkinsProvider())
 register(CircleCIProvider())
 register(CloudBuildProvider())
+register(BuildkiteProvider())
+register(TektonProvider())
+register(ArgoProvider())
 register(DockerfileProvider())
 register(KubernetesProvider())
 register(HelmProvider())
