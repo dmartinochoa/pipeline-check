@@ -75,9 +75,11 @@ runs:
 
     - name: Install pipeline-check
       shell: bash
+      env:
+        PIPELINE_CHECK_VERSION: ${{ inputs.pipeline-check-version }}
       run: |
-        if [ -n "${{ inputs.pipeline-check-version }}" ]; then
-          pip install "pipeline-check==${{ inputs.pipeline-check-version }}"
+        if [ -n "$PIPELINE_CHECK_VERSION" ]; then
+          pip install "pipeline-check==$PIPELINE_CHECK_VERSION"
         else
           pip install pipeline-check
         fi
