@@ -128,3 +128,67 @@ class TestDF011PackageCache:
         text = _FROM + "RUN apk add --no-cache curl\n"
         f = run_check(text, "DF-011")
         assert f.passed
+
+
+# ── DF-019 COPY/ADD source looks like a credential file ─────────────
+
+
+class TestDF019CopyCredentialFile:
+    def test_fails_on_copy_id_rsa(self):
+        text = _FROM + "COPY id_rsa /root/.ssh/id_rsa\n"
+        f = run_check(text, "DF-019")
+        assert not f.passed
+        assert "id_rsa" in f.description
+
+    def test_fails_on_copy_npmrc_with_chown_flag(self):
+        text = _FROM + "COPY --chown=node:node .npmrc /home/node/.npmrc\n"
+        f = run_check(text, "DF-019")
+        assert not f.passed
+
+    def test_fails_on_aws_credentials_path_tail(self):
+        text = _FROM + "COPY .aws/credentials /root/.aws/credentials\n"
+        f = run_check(text, "DF-019")
+        assert not f.passed
+
+    def test_fails_on_pem_extension(self):
+        text = _FROM + "ADD tls.pem /etc/ssl/tls.pem\n"
+        f = run_check(text, "DF-019")
+        assert not f.passed
+
+    def test_passes_on_application_directory(self):
+        text = _FROM + "COPY app/ /srv/app/\n"
+        f = run_check(text, "DF-019")
+        assert f.passed
+
+    def test_passes_on_env_example_template(self):
+        # ``.env.example`` deliberately doesn't end in ``.env``; it's the
+        # canonical placeholder filename.
+        text = _FROM + "COPY .env.example /opt/.env.example\n"
+        f = run_check(text, "DF-019")
+        assert f.passed
+
+
+# ── DF-020 ARG declares a credential-named build argument ───────────
+
+
+class TestDF020ArgCredentialName:
+    def test_fails_on_arg_with_token_name(self):
+        text = _FROM + "ARG NPM_TOKEN\nRUN npm install\n"
+        f = run_check(text, "DF-020")
+        assert not f.passed
+        assert "NPM_TOKEN" in f.description
+
+    def test_fails_on_arg_with_password_name_and_default(self):
+        text = _FROM + "ARG DB_PASSWORD=changeme\n"
+        f = run_check(text, "DF-020")
+        assert not f.passed
+
+    def test_fails_on_arg_with_secret_in_name(self):
+        text = _FROM + "ARG APP_SECRET\n"
+        f = run_check(text, "DF-020")
+        assert not f.passed
+
+    def test_passes_on_arg_with_neutral_name(self):
+        text = _FROM + "ARG VERSION=1.0\nARG BUILD_DATE\n"
+        f = run_check(text, "DF-020")
+        assert f.passed

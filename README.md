@@ -174,6 +174,26 @@ pipeline_check --pipeline github --fail-on HIGH \
 
 Exit codes: `0` = pass, `1` = gate failed, `2` = scanner error, `3` = config error.
 
+### Pre-commit
+
+`pipeline_check` ships hook definitions for the [pre-commit](https://pre-commit.com)
+framework. Each hook is scoped to one provider so a Dockerfile change
+doesn't run the GitHub Actions scanner. Enable just the hooks for the
+providers your repo ships through:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/dmartinochoa/pipeline-check
+    rev: v0.3.3   # pin to a release tag
+    hooks:
+      - id: pipeline-check-github
+      - id: pipeline-check-dockerfile
+```
+
+All hooks default to `--fail-on HIGH`. Override with `args:` for a softer
+gate (e.g. `args: [--fail-on, CRITICAL]`).
+
 ---
 
 ## Configuration

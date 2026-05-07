@@ -10,6 +10,10 @@ options:
   # GCB-017 safe: ask Cloud Build to emit a signed SLSA provenance
   # attestation alongside the published image.
   requestedVerifyOption: VERIFIED
+  # GCB-021 safe: build runs on a private worker pool inside the VPC,
+  # not the shared Google-managed default pool.
+  pool:
+    name: projects/example-project/locations/us-central1/workerPools/private-builds
 
 substitutions:
   _DEPLOY_TARGET: production

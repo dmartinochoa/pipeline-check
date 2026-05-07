@@ -171,6 +171,9 @@ STANDARD = Standard(
         "GCB-016":  ["CM-6", "AC-6"],                    # dir path escape
         "GCB-017":  ["SR-4", "SI-7", "CM-2"],            # no SLSA provenance
         "GCB-018":  ["IA-5", "CM-2"],                    # legacy KMS secrets block
+        "GCB-019":  ["CM-6", "SA-11"],                   # shell entrypoint + user substitution
+        "GCB-020":  ["AC-3", "AC-6"],                    # default Cloud Build SA email
+        "GCB-021":  ["SC-7"],                            # no private worker pool
         # Kubernetes — runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
@@ -200,6 +203,10 @@ STANDARD = Standard(
         "K8S-024":  ["AU-2", "SI-2"],                    # missing health probes
         "K8S-025":  ["AC-6", "CM-7"],                    # system-* priority class
         "K8S-026":  ["SC-7", "AC-3"],                    # LB without source ranges
+        "K8S-027":  ["SC-8", "SC-13"],                   # Ingress without TLS
+        "K8S-028":  ["SC-7", "CM-7"],                    # container hostPort
+        "K8S-029":  ["AC-3", "AC-6"],                    # default-SA binding
+        "K8S-030":  ["AC-6", "SC-7", "CM-7"],            # control-plane scheduling
         # Dockerfile — image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
@@ -218,6 +225,10 @@ STANDARD = Standard(
         "DF-014":   ["CM-6", "AC-6"],                    # WORKDIR system path
         "DF-015":   ["AC-6", "CM-6"],                    # chmod 777
         "DF-016":   ["SR-4", "CM-8"],                    # OCI provenance labels
+        "DF-017":   ["AC-6", "CM-6"],                    # ENV PATH writable prefix
+        "DF-018":   ["AC-6", "CM-6"],                    # RUN chown system path
+        "DF-019":   ["IA-5", "SC-28"],                   # COPY/ADD credential-shaped file
+        "DF-020":   ["IA-5", "AU-2"],                    # ARG credential-shaped name
         # Additional AWS services not previously mapped.
         "KMS-001":  ["SC-12", "SC-13"],                  # CMK rotation disabled
         "KMS-002":  ["AC-3", "AC-6"],                    # CMK policy wildcard

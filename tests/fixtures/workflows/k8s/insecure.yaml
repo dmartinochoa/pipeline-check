@@ -181,3 +181,48 @@ spec:
                 name: insecure-public-lb
                 port:
                   number: 80
+---
+# RoleBinding granting permissions to the namespace's default
+# ServiceAccount — exercises K8S-029. Every untargeted pod in the
+# namespace inherits these grants.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insecure-default-sa-edit
+  namespace: insecure-apps
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: insecure-apps
+roleRef:
+  kind: Role
+  name: editor
+  apiGroup: rbac.authorization.k8s.io
+---
+# Deployment that schedules onto the control-plane node — exercises
+# K8S-030 (toleration + nodeSelector both target the control plane).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-control-plane-app
+  namespace: insecure-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-control-plane-app
+  template:
+    metadata:
+      labels:
+        app: insecure-control-plane-app
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: app
+          image: busybox@sha256:0000000000000000000000000000000000000000000000000000000000000003
+          command: ["sleep", "infinity"]

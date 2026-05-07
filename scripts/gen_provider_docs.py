@@ -32,7 +32,15 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
+from pipeline_check.core.autofix import _FIXERS
 from pipeline_check.core.checks.rule import Rule, discover_rules
+
+#: Set of check_ids that have a registered autofix patch. Read once
+#: at module import; the rule-section renderer flips a "🔧 autofix"
+#: badge on for rules in this set so users skimming a provider page
+#: can see at a glance which findings ``pipeline_check --fix`` will
+#: patch automatically vs which need manual remediation.
+_AUTOFIXABLE: frozenset[str] = frozenset(_FIXERS.keys())
 
 # ``provider_slug -> (display_title, rules_package_fqn, docs_output_path,
 #                     per-provider header markdown)``
@@ -418,15 +426,24 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     # Each check ID links to the per-rule section further down via a
     # pinned attr-list anchor (``{ #gha-001 }``) on the rendered H2.
     # The severity column emits a color-coded chip so the table
-    # doubles as a click-through priority list.
+    # doubles as a click-through priority list. The ``Fix`` column
+    # marks rules with a registered autofix patch — useful for
+    # filtering with the sortable-table JS layered over markdown
+    # tables ("show me all the things ``--fix`` will patch").
+    fix_count = sum(1 for r, _ in pairs if r.id in _AUTOFIXABLE)
     lines.append("## What it covers\n\n")
-    lines.append("| Check | Title | Severity |\n")
-    lines.append("|-------|-------|----------|\n")
+    lines.append(
+        f"{len(pairs)} checks · {fix_count} have an autofix patch "
+        f"(``--fix``).\n\n"
+    )
+    lines.append("| Check | Title | Severity | Fix |\n")
+    lines.append("|-------|-------|----------|-----|\n")
     for rule, _ in pairs:
         anchor = _rule_anchor(rule.id)
         sev_chip = _severity_chip(rule.severity.value)
+        fix_cell = _autofix_chip(rule.id)
         lines.append(
-            f"| [{rule.id}](#{anchor}) | {rule.title} | {sev_chip} |\n"
+            f"| [{rule.id}](#{anchor}) | {rule.title} | {sev_chip} | {fix_cell} |\n"
         )
     lines.append("\n---\n\n")
 
@@ -456,6 +473,19 @@ def _severity_chip(severity: str) -> str:
     so the color is theme-aware (different on light vs slate)."""
     sev_lc = severity.lower()
     return f'<span class="pg-sev pg-sev--{sev_lc}">{severity}</span>'
+
+
+def _autofix_chip(rule_id: str) -> str:
+    """A tiny "🔧 fix" badge for rules with a registered autofix.
+
+    Renders as an empty cell when the rule has no fixer — keeps the
+    table tidy without spelling out "no". Sortable-tables JS treats
+    empty cells as "comes after populated", so sorting by Fix puts
+    autofixable rules first.
+    """
+    if rule_id in _AUTOFIXABLE:
+        return '<span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span>'
+    return ""
 
 
 def _render_rule(rule: Rule) -> str:
@@ -491,8 +521,13 @@ def _render_rule(rule: Rule) -> str:
     parts.append(f'<div class="pg-rule pg-rule--{sev_lc}" markdown>\n\n')
     parts.append(f"## {rule.id} — {rule.title} {{ #{anchor} }}\n\n")
 
-    # ── Tag chip row: severity + OWASP + ESF + CWE ──
+    # ── Tag chip row: severity + autofix indicator + OWASP + ESF + CWE ──
     chips: list[str] = [_severity_chip(sev)]
+    if rule.id in _AUTOFIXABLE:
+        chips.append(
+            '<span class="pg-fix pg-fix--rule" '
+            'title="`--fix` will patch this rule">🔧 autofix</span>'
+        )
     for tag in rule.owasp:
         chips.append(f'<span class="pg-tag pg-tag--owasp">{tag}</span>')
     for tag in rule.esf:
