@@ -34,8 +34,8 @@ def github_rules():
 
 
 def test_every_github_rule_has_metadata_and_check(github_rules):
-    assert len(github_rules) == 34, (
-        f"expected 34 GHA rules, got {len(github_rules)}. The "
+    assert len(github_rules) == 35, (
+        f"expected 35 GHA rules, got {len(github_rules)}. The "
         f"orchestrator iterates this registry directly, so a missing "
         f"entry silently drops a check from every scan."
     )
@@ -133,5 +133,5 @@ def test_orchestrator_runs_every_rule_once(tmp_path):
     findings = WorkflowChecks(ctx).run()
     ids = [f.check_id for f in findings]
     assert ids == sorted(ids)
-    assert len(ids) == 34
-    assert len(set(ids)) == 34
+    assert len(ids) == 35
+    assert len(set(ids)) == 35

@@ -157,7 +157,7 @@ class TestAutoDetect:
         assert "[auto] using --bitbucket-path bitbucket-pipelines.yml" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"BB-{i:03d}" for i in range(1, 29)}
+        assert emitted == {f"BB-{i:03d}" for i in range(1, 30)}
 
 
     def test_github_path_autodetected(self, runner, tmp_path, monkeypatch):
@@ -172,7 +172,7 @@ class TestAutoDetect:
         assert "[auto] using --gha-path" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GHA-{i:03d}" for i in range(1, 35)}
+        assert emitted == {f"GHA-{i:03d}" for i in range(1, 36)}
 
     def test_gitlab_missing_file_raises_usage_error(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)  # no .gitlab-ci.yml present

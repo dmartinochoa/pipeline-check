@@ -6,13 +6,13 @@
 
 [![CI](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml/badge.svg)](https://github.com/dmartinochoa/pipeline-check/actions/workflows/python-app.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dmartinochoa/pipeline-check?utm_source=oss&utm_medium=github&utm_campaign=dmartinochoa%2Fpipeline-check&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **95 autofixers** -- plus **12 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **96 autofixers** -- plus **12 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -54,15 +54,15 @@ standard boto3 credential chain.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 33 checks (`GHA-001`--`033`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 35 checks (`GHA-001`--`035`) |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 31 checks (`GL-001`--`031`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 28 checks (`BB-001`--`028`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 29 checks (`ADO-001`--`029`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 18 checks (`GCB-001`--`018`) |
-| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 16 checks (`DF-001`--`016`) |
-| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 26 checks (`K8S-001`--`026`) |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
+| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -106,7 +106,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 95 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 96 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json` -- only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -306,7 +306,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 95 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 96 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -318,15 +318,15 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-033
+        ├── github/rules/      # GHA-001 .. GHA-035
         ├── gitlab/rules/      # GL-001 .. GL-031
-        ├── bitbucket/rules/   # BB-001 .. BB-028
+        ├── bitbucket/rules/   # BB-001 .. BB-029
         ├── azure/rules/       # ADO-001 .. ADO-029
         ├── jenkins/rules/     # JF-001 .. JF-031
         ├── circleci/rules/    # CC-001 .. CC-031
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-018
-        ├── dockerfile/rules/  # DF-001 .. DF-016
-        └── kubernetes/rules/  # K8S-001 .. K8S-026
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-022
+        ├── dockerfile/rules/  # DF-001 .. DF-020
+        └── kubernetes/rules/  # K8S-001 .. K8S-030
 ```
 
 Adding a new check is a one-file change. Adding a new provider is three files.
@@ -388,3 +388,5 @@ See [docs/providers/README.md](docs/providers/README.md) for the full contract.
 ## License
 
 MIT -- see [LICENSE](LICENSE).
+
+

@@ -2,36 +2,38 @@
 
 A short tour of how a scan flows through the codebase.
 
-```
-                ┌─────────────────────────────────────────────┐
-                │  pipeline_check --pipeline <name> ...        │
-                └──────────────────────┬──────────────────────┘
-                                       ▼
-        ┌────────────┐   build_   ┌────────────┐
-        │  Provider  │──context──▶│  Context   │
-        │  registry  │            │ (per-prov) │
-        └────────────┘            └─────┬──────┘
-                                        ▼
-                          ┌─────────────────────────┐
-                          │  Orchestrator           │
-                          │  (one per check class)  │
-                          └────────────┬────────────┘
-                                       ▼
-                            discover_rules("...rules")
-                                       │
-                                       ▼
-                          ┌─────────────────────────┐
-                          │  Rule modules           │
-                          │  RULE  +  check(...)    │
-                          └────────────┬────────────┘
-                                       ▼
-                              ┌──────────────┐
-                              │   Finding    │
-                              └──────┬───────┘
-                                     ▼
-            ┌────────┬────────┬───────────┬────────────┐
-            │ Scorer │  Gate  │  Reporter │   SARIF    │
-            └────────┴────────┴───────────┴────────────┘
+```mermaid
+flowchart TD
+    cli["<b>CLI</b><br/>pipeline_check --pipeline &lt;name&gt; ..."]
+    registry["<b>Provider registry</b><br/>core/providers/__init__.py"]
+    context["<b>Provider context</b><br/>parsed YAML / boto3 clients / parsed Dockerfiles"]
+    orchestrator["<b>Orchestrator</b><br/>one BaseCheck subclass per provider"]
+    discover["<b>discover_rules</b><br/>imports every module under rules/"]
+    rules["<b>Rule modules</b><br/>RULE metadata + check(...) callable"]
+    finding[("<b>Finding</b><br/>list[Finding]")]
+    scorer["<b>Scorer</b><br/>weighted A/B/C/D"]
+    gate["<b>Gate</b><br/>severity / grade / baseline"]
+    reporter["<b>Reporters</b><br/>terminal · JSON · SARIF · HTML · MD · JUnit"]
+
+    cli --> registry
+    registry -- "build_context(...)" --> context
+    context --> orchestrator
+    orchestrator -- "imports at __init__" --> discover
+    discover --> rules
+    rules -- "one per check" --> finding
+    finding --> scorer
+    finding --> gate
+    finding --> reporter
+
+    classDef edge fill:#0d1f33,stroke:#2dd4bf,color:#e6edf3,stroke-width:1.5px;
+    classDef inner fill:#102236,stroke:#5eead4,color:#e6edf3,stroke-width:1.5px;
+    classDef result fill:#0f2233,stroke:#fbbf24,color:#e6edf3,stroke-width:1.5px;
+    classDef sink fill:#0d1f33,stroke:#a78bfa,color:#e6edf3,stroke-width:1.5px;
+
+    class cli edge
+    class registry,context,orchestrator,discover,rules inner
+    class finding result
+    class scorer,gate,reporter sink
 ```
 
 ## Layers

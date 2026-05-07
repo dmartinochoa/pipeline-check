@@ -14,6 +14,7 @@ service rather than every rule emitting its own copy.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from typing import Any
 
 import boto3
@@ -52,7 +53,7 @@ class ResourceCatalog:
     # Cache primitive
     # ------------------------------------------------------------------
 
-    def _memo(self, key: str, loader) -> Any:
+    def _memo(self, key: str, loader: Callable[[], Any]) -> Any:
         if key in self._cache:
             return self._cache[key]
         try:
@@ -570,5 +571,5 @@ class _ClientHost(AWSBaseCheck):
     def __init__(self, session: boto3.Session) -> None:
         super().__init__(session, target=None)
 
-    def run(self):  # pragma: no cover - never invoked
+    def run(self) -> list:  # pragma: no cover - never invoked
         return []

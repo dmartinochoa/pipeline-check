@@ -509,3 +509,137 @@ class TestGHA034ReusableSecretsInherit:
         """
         f = run_check(wf, "GHA-034")
         assert f.passed
+
+
+class TestGHA035GitHubScriptInjection:
+    def test_fails_on_pr_title_in_script(self):
+        wf = """
+        name: ci
+        on: pull_request_target
+        permissions: { contents: read }
+        jobs:
+          comment:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+                with:
+                  script: |
+                    console.log("PR: ${{ github.event.pull_request.title }}");
+        """
+        f = run_check(wf, "GHA-035")
+        assert not f.passed
+        assert "comment[0]" in f.description
+
+    def test_fails_on_head_ref_interpolation(self):
+        wf = """
+        name: ci
+        on: pull_request_target
+        permissions: { contents: read }
+        jobs:
+          act:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+                with:
+                  script: |
+                    await github.rest.git.createRef({ ref: "${{ github.head_ref }}" });
+        """
+        f = run_check(wf, "GHA-035")
+        assert not f.passed
+
+    def test_passes_with_env_var_pattern(self):
+        # The recommended shape: pass via env, read via process.env.X.
+        wf = """
+        name: ci
+        on: pull_request_target
+        permissions: { contents: read }
+        jobs:
+          comment:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+                env:
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+                with:
+                  script: |
+                    console.log("PR:", process.env.PR_TITLE);
+        """
+        f = run_check(wf, "GHA-035")
+        assert f.passed
+
+    def test_passes_for_trusted_step_outputs(self):
+        # ``steps.<id>.outputs.<name>`` is curated as trusted — the
+        # rule's regex only flags untrusted-context fields.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          act:
+            runs-on: ubuntu-latest
+            steps:
+              - id: build
+                run: echo "id=abc" >> $GITHUB_OUTPUT
+              - uses: actions/github-script@v7
+                with:
+                  script: |
+                    console.log("${{ steps.build.outputs.id }}");
+        """
+        f = run_check(wf, "GHA-035")
+        assert f.passed
+
+    def test_passes_when_no_with_script(self):
+        # ``actions/github-script`` invoked without ``with.script:``
+        # has no JS body to inject into.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          act:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+        """
+        f = run_check(wf, "GHA-035")
+        assert f.passed
+
+    def test_passes_for_non_github_script_action(self):
+        # An unrelated action whose ``with.script`` happens to carry
+        # an untrusted reference is out of scope — only
+        # ``actions/github-script`` runs the value as JS.
+        wf = """
+        name: ci
+        on: pull_request_target
+        permissions: { contents: read }
+        jobs:
+          act:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: my-org/some-other-action@v1
+                with:
+                  script: ${{ github.event.pull_request.title }}
+        """
+        f = run_check(wf, "GHA-035")
+        assert f.passed
+
+    def test_fails_when_pinned_to_sha(self):
+        # Pinning closes GHA-001 / GHA-025 but doesn't change the
+        # injection surface — the script still runs the interpolated
+        # value as JS.
+        sha = "0" * 40
+        wf = f"""
+        name: ci
+        on: pull_request_target
+        permissions: {{ contents: read }}
+        jobs:
+          act:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@{sha}
+                with:
+                  script: |
+                    console.log("${{{{ github.event.head_commit.message }}}}");
+        """
+        f = run_check(wf, "GHA-035")
+        assert not f.passed

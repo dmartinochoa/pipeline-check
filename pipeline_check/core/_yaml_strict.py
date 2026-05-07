@@ -17,7 +17,7 @@ import yaml
 class DupKeyLoader(yaml.SafeLoader):
     """SafeLoader that rejects duplicate mapping keys."""
 
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node: Any, deep: bool = False) -> dict:
         mapping: dict[Any, Any] = {}
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)

@@ -700,6 +700,67 @@ class TestDF017PathTODO:
         assert autofix.generate_fix(_finding("DF-017"), df) is None
 
 
+class TestK8S001ImagePinTODO:
+    def test_inserts_todo_above_unpinned_image(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: web\n"
+            "      image: nginx:latest\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-001"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-001)" in after
+        # Comment sits above the offending image: line, not the name: line.
+        lines = after.splitlines()
+        todo_idx = next(i for i, ln in enumerate(lines) if "TODO" in ln)
+        assert "image:" in lines[todo_idx + 1]
+
+    def test_skips_digest_pinned_image(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: api\n"
+            "      image: api@sha256:" + "a" * 64 + "\n"
+        )
+        assert autofix.generate_fix(_finding("K8S-001"), manifest) is None
+
+    def test_only_unpinned_get_todo_in_mixed_set(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: web\n"
+            "      image: nginx:latest\n"
+            "    - name: api\n"
+            "      image: api@sha256:" + "a" * 64 + "\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-001"), manifest)
+        assert after is not None
+        # Exactly one TODO should appear (for the nginx:latest line).
+        assert after.count("TODO(pipelineguard K8S-001)") == 1
+
+    def test_handles_quoted_image_value(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: web\n"
+            '      image: "nginx:1.25.4"\n'
+        )
+        after = autofix.generate_fix(_finding("K8S-001"), manifest)
+        assert after is not None
+
+    def test_idempotent(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: web\n"
+            "      image: nginx:latest\n"
+        )
+        once = autofix.generate_fix(_finding("K8S-001"), manifest)
+        assert once is not None
+        assert autofix.generate_fix(_finding("K8S-001"), once) is None
+
+
 class TestK8S028HostPortDrop:
     def test_drops_host_port_line(self):
         manifest = (

@@ -1314,6 +1314,51 @@ def _fix_k8s020_cluster_admin(content: str, finding: Finding) -> str | None:
     return out
 
 
+# ── K8S-001 image-pinning TODO ───────────────────────────────────────
+#
+# Comment-only fixer: pinning to a real digest needs an out-of-band
+# registry lookup (``crane digest <ref>``) the scanner can't make.
+# The TODO sits above each unpinned ``image:`` line.
+
+_TODO_K8S_IMAGE_PIN = (
+    "TODO(pipelineguard K8S-001): pin to a sha256 digest "
+    "(``image: repo@sha256:<digest>``) — resolve via "
+    "``crane digest <ref>`` or ``docker buildx imagetools inspect``"
+)
+
+# Match ``image: <ref>`` lines whose value lacks ``@sha256:``. Allows
+# quoted values and inline comments. The container-spec convention
+# is that ``image:`` keys only appear inside container entries —
+# Kubernetes API objects don't reuse the key for anything else — so
+# a plain key match is safe enough without anchoring to ``- name:``.
+_K8S_IMAGE_RE = re.compile(
+    r"^(?P<indent>\s*)image\s*:\s*[\"']?(?P<ref>[^\s\"'#]+)[\"']?\s*(?:#[^\n]*)?$",
+    re.MULTILINE,
+)
+
+
+@register("K8S-001")
+def _fix_k8s001_image_pin(content: str, finding: Finding) -> str | None:
+    """Insert a TODO above each container ``image:`` line that lacks
+    a sha256 digest.
+
+    Idempotent via the marker. Lines whose value already contains
+    ``@sha256:`` are skipped — they're already pinned.
+    """
+    if _TODO_K8S_IMAGE_PIN in content:
+        return None
+    edits: list[tuple[int, str]] = []
+    for m in _K8S_IMAGE_RE.finditer(content):
+        ref = m.group("ref")
+        if "@sha256:" in ref:
+            continue
+        indent = m.group("indent")
+        edits.append((m.start(), f"{indent}# {_TODO_K8S_IMAGE_PIN}\n"))
+    if not edits:
+        return None
+    return _insert_comment_above(content, edits)
+
+
 # ── K8S-028 hostPort drop ────────────────────────────────────────────
 #
 # Matches ``hostPort: <positive int>`` and drops the whole line.

@@ -46,6 +46,7 @@ missing canonical file raises a ``UsageError``.
 import os
 import re
 import sys
+from typing import Any
 
 import click
 
@@ -149,7 +150,9 @@ class _GroupedCommand(click.Command):
         })),
     )
 
-    def format_options(self, ctx, formatter):
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter,
+    ) -> None:
         bucketed: dict[str, list[tuple[str, str]]] = {}
         section_order = [name for name, _ in self._SECTIONS] + ["Other"]
         for param in self.get_params(ctx):
@@ -180,7 +183,12 @@ class _FuzzyChoice(click.Choice):
     base class via ``case_sensitive=False``.
     """
 
-    def convert(self, value, param, ctx):
+    def convert(
+        self,
+        value: Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> Any:
         try:
             return super().convert(value, param, ctx)
         except click.exceptions.BadParameter:
@@ -206,7 +214,9 @@ class _FuzzyChoice(click.Choice):
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def _complete_check_ids(ctx, param, incomplete):
+def _complete_check_ids(
+    ctx: click.Context, param: click.Parameter, incomplete: str,
+) -> list:
     """Tab-complete check IDs (GHA-001, GL-002, CB-001, etc.)."""
     from click.shell_completion import CompletionItem
     try:
@@ -220,7 +230,9 @@ def _complete_check_ids(ctx, param, incomplete):
     ]
 
 
-def _complete_standards(ctx, param, incomplete):
+def _complete_standards(
+    ctx: click.Context, param: click.Parameter, incomplete: str,
+) -> list:
     """Tab-complete standard names."""
     from click.shell_completion import CompletionItem
     try:
@@ -234,7 +246,9 @@ def _complete_standards(ctx, param, incomplete):
     ]
 
 
-def _complete_man_topics(ctx, param, incomplete):
+def _complete_man_topics(
+    ctx: click.Context, param: click.Parameter, incomplete: str,
+) -> list:
     """Tab-complete --man topic names."""
     from click.shell_completion import CompletionItem
     try:
@@ -436,7 +450,9 @@ _SEVERITY_CHOICES = [
 _PIPELINE_CHOICES = ["auto", *_providers.available()]
 
 
-def _load_config_callback(ctx: click.Context, _param, value):
+def _load_config_callback(
+    ctx: click.Context, _param: click.Parameter, value: str | None,
+) -> str | None:
     """Eager callback — populates ``ctx.default_map`` so every other flag's
     default is pre-filled from the config file + environment.
 
@@ -452,7 +468,9 @@ def _load_config_callback(ctx: click.Context, _param, value):
     return value
 
 
-def _install_completion_callback(ctx, _param, value):
+def _install_completion_callback(
+    ctx: click.Context, _param: click.Parameter, value: str | None,
+) -> None:
     """Print instructions or install completion for the given shell."""
     if not value:
         return
@@ -1648,7 +1666,7 @@ def scan(
         sys.exit(1)
 
 
-def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
+def _emit_fix_patches(findings: list, *, to_stderr: bool = False) -> None:
     """Emit one unified-diff patch per failing finding that has a fixer.
 
     Patches go to stdout by default so a user can pipe straight into
@@ -1708,7 +1726,7 @@ def _emit_fix_patches(findings, *, to_stderr: bool = False) -> None:
         )
 
 
-def _apply_fix_patches(findings) -> None:
+def _apply_fix_patches(findings: list) -> None:
     """Apply autofixes in place; print an N-files-modified summary to stderr.
 
     Each fixer is idempotent, so it's safe to re-run after an apply —
@@ -1775,7 +1793,7 @@ def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list) -> None:
     )
 
 
-def _emit_scan_summary(meta) -> None:
+def _emit_scan_summary(meta: Any) -> None:
     """Render the scan summary line and any parse warnings to stderr."""
     from .core.scanner import ScanMetadata
     if not isinstance(meta, ScanMetadata):
@@ -1793,7 +1811,7 @@ def _emit_scan_summary(meta) -> None:
     )
 
 
-def _emit_gate_summary(gate) -> None:
+def _emit_gate_summary(gate: Any) -> None:
     """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
     n_effective = len(gate.effective)
     n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])

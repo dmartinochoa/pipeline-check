@@ -15,10 +15,11 @@ freed ``id()``.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 
-def walk_strings(node: Any):
+def walk_strings(node: Any) -> Iterator[str]:
     """Yield every string scalar under a dict/list tree (iterative).
 
     Uses an explicit stack instead of recursion to reduce function-call

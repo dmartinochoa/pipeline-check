@@ -6,6 +6,7 @@ subclass :class:`GitHubBaseCheck` and iterate ``self.ctx.workflows``.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -83,7 +84,7 @@ class GitHubBaseCheck(BaseCheck):
         self.ctx: GitHubContext = ctx
 
 
-def iter_jobs(workflow: dict[str, Any]):
+def iter_jobs(workflow: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield ``(job_id, job_dict)`` for every job in a workflow."""
     jobs = workflow.get("jobs") or {}
     if isinstance(jobs, dict):
@@ -92,7 +93,7 @@ def iter_jobs(workflow: dict[str, Any]):
                 yield job_id, job
 
 
-def iter_steps(job: dict[str, Any]):
+def iter_steps(job: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Yield every step dict from a job."""
     steps = job.get("steps") or []
     if isinstance(steps, list):
