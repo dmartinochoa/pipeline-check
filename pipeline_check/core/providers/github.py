@@ -46,7 +46,7 @@ class GitHubProvider(BaseProvider):
     def check_classes(self) -> list[type[BaseCheck]]:
         return [WorkflowChecks]
 
-    def post_filter(  # type: ignore[override]
+    def post_filter(
         self,
         context: GitHubContext,
         resolve_remote: bool = False,

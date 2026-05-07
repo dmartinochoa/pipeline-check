@@ -517,7 +517,7 @@ def _secrets_visible_to_callee(
         # Caller passes everything it has visibility into. We can
         # only enumerate what's syntactically visible; org-level
         # secrets aren't in the file.
-        names = frozenset()
+        names: frozenset[str] = frozenset()
         # If the caller itself inherits, the chain is "everything".
         if caller_wf.inherits_secrets:
             return caller_wf.inherited_secret_names, True

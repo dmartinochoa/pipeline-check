@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -61,11 +61,12 @@ class UsesRef:
         return bool(self.ref) and bool(_SHA_RE.match(self.ref))
 
 
-def parse_uses(value: str) -> UsesRef | None:
+def parse_uses(value: Any) -> UsesRef | None:
     """Parse a ``uses:`` value into a :class:`UsesRef`, or ``None``.
 
-    Returns ``None`` for empty / non-string-shaped input. Doesn't
-    raise.
+    Accepts ``Any`` because callers fish ``uses`` out of YAML mappings
+    where the value's static type is ``Any | None``. Non-string input
+    returns ``None``. Doesn't raise.
     """
     if not isinstance(value, str):
         return None

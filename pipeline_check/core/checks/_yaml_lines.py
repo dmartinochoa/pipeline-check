@@ -87,7 +87,7 @@ class LineList(list):  # type: ignore[type-arg]
 class _LineLoader(yaml.SafeLoader):
     """SafeLoader that preserves node start_mark on parsed containers."""
 
-    def construct_mapping(  # type: ignore[override]
+    def construct_mapping(
         self, node: yaml.MappingNode, deep: bool = False,
     ) -> LineDict:
         # PyYAML's default returns a plain dict; we want our subclass
@@ -117,7 +117,7 @@ class _LineLoader(yaml.SafeLoader):
         mapping._col = node.start_mark.column + 1
         return mapping
 
-    def construct_sequence(  # type: ignore[override]
+    def construct_sequence(
         self, node: yaml.SequenceNode, deep: bool = False,
     ) -> LineList:
         if not isinstance(node, yaml.SequenceNode):
@@ -201,18 +201,16 @@ def col_of(obj: Any) -> int | None:
 
 def line_of_item(seq: Any, idx: int) -> int | None:
     """Return the 1-based source line of ``seq[idx]``, or ``None``."""
-    item_lines = getattr(seq, "_item_lines", None)
-    if item_lines is None:
+    if not isinstance(seq, LineList):
         return None
-    if 0 <= idx < len(item_lines):
-        return item_lines[idx]
+    if 0 <= idx < len(seq._item_lines):
+        return seq._item_lines[idx]
     return None
 
 
 def col_of_item(seq: Any, idx: int) -> int | None:
-    item_cols = getattr(seq, "_item_cols", None)
-    if item_cols is None:
+    if not isinstance(seq, LineList):
         return None
-    if 0 <= idx < len(item_cols):
-        return item_cols[idx]
+    if 0 <= idx < len(seq._item_cols):
+        return seq._item_cols[idx]
     return None

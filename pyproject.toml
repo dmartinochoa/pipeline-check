@@ -117,14 +117,16 @@ disallow_any_generics = true
 disable_error_code = ["import-untyped"]
 
 # pyyaml ships without type stubs in our hash-locked lockfile, so
-# ``yaml.SafeLoader`` resolves to ``Any``. The two project-side
-# subclasses (the strict-key DupKeyLoader and the CFN intrinsic-tag
-# loader) inherit by design — re-enable subclassing for those modules
-# until ``types-PyYAML`` lands in ``requirements-dev.txt``.
+# ``yaml.SafeLoader`` resolves to ``Any``. The three project-side
+# subclasses (the strict-key DupKeyLoader, the CFN intrinsic-tag
+# loader, and the line-aware loader) inherit by design — re-enable
+# subclassing for those modules until ``types-PyYAML`` lands in
+# ``requirements-dev.txt``.
 [[tool.mypy.overrides]]
 module = [
     "pipeline_check.core._yaml_strict",
     "pipeline_check.core.checks.cloudformation.base",
+    "pipeline_check.core.checks._yaml_lines",
 ]
 disallow_subclassing_any = false
 
