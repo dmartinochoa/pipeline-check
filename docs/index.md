@@ -153,13 +153,16 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">71 checks</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">aws-parity</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">~63 checks</span></a>
-  <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">35 checks</span></a>
-  <a class="pg-provider" href="providers/gitlab/"><span class="pg-provider__name">GitLab CI</span><span class="pg-provider__count">31 checks</span></a>
+  <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">36 checks</span></a>
+  <a class="pg-provider" href="providers/gitlab/"><span class="pg-provider__name">GitLab CI</span><span class="pg-provider__count">32 checks</span></a>
   <a class="pg-provider" href="providers/bitbucket/"><span class="pg-provider__name">Bitbucket</span><span class="pg-provider__count">29 checks</span></a>
-  <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">29 checks</span></a>
-  <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">31 checks</span></a>
+  <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">30 checks</span></a>
+  <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">32 checks</span></a>
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">31 checks</span></a>
   <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">22 checks</span></a>
+  <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">8 checks</span></a>
+  <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">8 checks</span></a>
+  <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">8 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">30 checks</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 30 K8S-* rules</span></a>
@@ -213,7 +216,7 @@ flowchart LR
     G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
-    click B "providers/" "13 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click B "providers/" "16 supported. Auto-detected from cwd; override with --pipeline NAME"
     click C "attack_chains/" "450+ checks emit findings with severity, location, fix"
     click D "standards/" "13 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"

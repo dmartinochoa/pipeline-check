@@ -58,11 +58,11 @@ for the full opt-in surface).
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 35 checks (`GHA-001`--`035`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 31 checks (`GL-001`--`031`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 36 checks (`GHA-001`--`036`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 32 checks (`GL-001`--`032`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 29 checks (`ADO-001`--`029`) |
-| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
+| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 8 checks (`BK-001`--`008`) |
@@ -333,11 +333,11 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-035
-        ├── gitlab/rules/      # GL-001 .. GL-031
+        ├── github/rules/      # GHA-001 .. GHA-036
+        ├── gitlab/rules/      # GL-001 .. GL-032
         ├── bitbucket/rules/   # BB-001 .. BB-029
-        ├── azure/rules/       # ADO-001 .. ADO-029
-        ├── jenkins/rules/     # JF-001 .. JF-031
+        ├── azure/rules/       # ADO-001 .. ADO-030
+        ├── jenkins/rules/     # JF-001 .. JF-032
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-022
         ├── dockerfile/rules/  # DF-001 .. DF-020
