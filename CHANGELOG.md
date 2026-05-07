@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Programmatic Python API.** `pipeline_check/__init__.py` now
+  re-exports a small, stable surface so library callers can embed
+  the scanner without `subprocess` + JSON parsing:
+  `Scanner`, `ScanMetadata`, `Finding`, `Severity`, `Confidence`,
+  `ControlRef`, `severity_rank`, `confidence_rank`, `score`,
+  `ScoreResult`, `Chain`, `ChainRule`, `evaluate_chains`,
+  `list_chain_rules`, `available_providers`,
+  `available_standards`, `__version__`. `tests/test_public_api.py`
+  locks the surface against accidental removal — adding a name is
+  routine, removing one breaks the test (and is a semver-breaking
+  change). README gained a "Python API" section with the canonical
+  example.
+- **Per-rule severity overrides in config.** New `overrides:` block in
+  `.pipeline-check.yml` (and `[tool.pipeline_check.overrides.<id>]`
+  in `pyproject.toml`) lets an org demote or promote a rule's
+  severity without disabling it — the common SecOps ask "don't
+  drop the rule, just downgrade it to LOW so the gate passes." The
+  override flows through `core.config._parse_overrides` (with
+  per-key validation and stderr warnings on bad severities or
+  unknown sub-keys), gets stashed via `core.config.last_overrides()`
+  out of click's `default_map`, and is applied by the Scanner after
+  confidence resolution. Suppression remains the job of
+  `--ignore-file` / `.pipelinecheckignore`; overrides change
+  severity, not visibility. Documented under
+  `docs/config.md#per-rule-overrides`.
 - **Architecture and contributor docs.** Three new pages under
   `docs/`: `architecture.md` walks the scan flow (provider →
   context → orchestrator → rules → finding → scorer / gate /

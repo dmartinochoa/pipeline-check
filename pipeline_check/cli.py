@@ -1441,6 +1441,9 @@ def scan(
         if _cfg_src:
             click.echo(f"[config] loaded {_cfg_src}", err=True)
 
+    from .core.config import last_overrides as _config_overrides
+    cli_overrides = _config_overrides()
+
     _debug(f"provider: {pipeline_lc}")
 
     scanner = Scanner(
@@ -1450,6 +1453,7 @@ def scan(
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
         chains_enabled=not no_chains,
+        overrides=cli_overrides or None,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,

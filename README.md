@@ -334,6 +334,34 @@ See [docs/providers/](docs/providers/) for the full pattern.
 
 ---
 
+## Python API
+
+Embed pipeline-check in your own tooling without `subprocess` + JSON
+parsing. The top-level surface is small and stable across minor
+releases:
+
+```python
+from pipeline_check import Scanner, Severity, score
+
+scanner = Scanner(pipeline="github", gha_path=".github/workflows")
+findings = scanner.run()
+
+critical = [
+    f for f in findings
+    if not f.passed and f.severity is Severity.CRITICAL
+]
+result = score(findings)
+print(f"score={result['score']} grade={result['grade']}")
+```
+
+Public surface: `Scanner`, `Finding`, `Severity`, `Confidence`,
+`ControlRef`, `score`, `ScoreResult`, `Chain`, `ChainRule`,
+`evaluate_chains`, `list_chain_rules`, `available_providers()`,
+`available_standards()`, `__version__`. Anything reached through
+`pipeline_check.core.*` is internal and may move between releases.
+
+---
+
 ## Lambda deployment
 
 Pipeline-Check can run as an AWS Lambda for scheduled scans.

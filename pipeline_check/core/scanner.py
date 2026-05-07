@@ -19,7 +19,7 @@ from . import standards as _standards
 from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
-from .checks.base import Finding, clear_blob_cache
+from .checks.base import Finding, Severity, clear_blob_cache
 from .inventory import Component
 
 
@@ -59,11 +59,21 @@ class Scanner:
         diff_base: str | None = None,
         secret_patterns: list[str] | tuple[str, ...] | None = None,
         chains_enabled: bool = True,
+        overrides: dict[str, dict[str, str]] | None = None,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
         self._log = log
         self._chains_enabled = chains_enabled
+        # Per-rule severity overrides applied after confidence resolution.
+        # The value mapping currently only carries ``"severity"`` (other
+        # knobs may follow). Keys are upper-cased here so programmatic
+        # callers don't have to match the casing convention; the config
+        # loader already normalizes before reaching us.
+        self._overrides: dict[str, dict[str, str]] = {
+            (k.upper() if isinstance(k, str) else k): v
+            for k, v in (overrides or {}).items()
+        }
         #: Attack-chains detected by the most recent ``run()``. Populated
         #: as a side effect — chains derive from findings 1:1 with the
         #: run, so consumers always want both together. Empty list when
@@ -204,6 +214,25 @@ class Scanner:
             # specific findings they want to preserve.
             if not f.confidence_locked:
                 f.confidence = confidence_for(f.check_id)
+            # Apply user-configured per-rule overrides last so they
+            # win over both the rule-default severity and any rule-set
+            # confidence. Unknown check IDs are silently ignored — the
+            # config loader already warned on the typo. ``getattr``
+            # guards against callers that bypass ``__init__`` (older
+            # AWS test fixtures construct the Scanner via ``__new__``
+            # plus manual attribute setting).
+            overrides = getattr(self, "_overrides", None) or {}
+            override = overrides.get(f.check_id.upper())
+            if override:
+                sev_str = override.get("severity")
+                if sev_str:
+                    try:
+                        f.severity = Severity(sev_str.upper())
+                    except ValueError:
+                        # Defensive — config loader filters bad values
+                        # already, but a programmatic caller could
+                        # pass anything.
+                        pass
 
         # Attack-chain correlation runs after confidence is finalised so
         # ``min_confidence(triggers)`` reflects the post-demotion value.
