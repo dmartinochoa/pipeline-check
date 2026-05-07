@@ -12,6 +12,62 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Architecture and contributor docs.** Three new pages under
+  `docs/`: `architecture.md` walks the scan flow (provider →
+  context → orchestrator → rules → finding → scorer / gate /
+  reporters); `writing_a_rule.md` documents the `RULE` + `check`
+  module contract for adding a check to an existing provider;
+  `writing_a_provider.md` covers adding a whole new provider end
+  to end (context, orchestrator, registration, fixtures, doc
+  generation, README claims). Wired into the docs nav under a new
+  "Contributing" section.
+- **Pre-commit hook integration.** `.pre-commit-hooks.yaml` ships
+  one hook per provider (`pipeline-check-github`,
+  `pipeline-check-dockerfile`, etc.) with a tight `files:` regex
+  scoped to each provider's canonical paths, so a Dockerfile change
+  doesn't run the GitHub Actions scanner. All hooks default to
+  `--fail-on HIGH`. Users opt in via `.pre-commit-config.yaml` —
+  see the new "Pre-commit" section in `README.md`.
+- **Two more Cloud Build rules.** `GCB-020` flags an explicit
+  `serviceAccount:` whose value still resolves to the project default
+  Cloud Build SA email (`<project-number>@cloudbuild.gserviceaccount.com`,
+  bare or wrapped in the `projects/<id>/serviceAccounts/...` URI).
+  Complements `GCB-002` (which fires on the unset case); together
+  they catch the "build inherits the default SA's broad roles"
+  pattern whether the user forgot to set it or set it to the wrong
+  value. `GCB-021` flags builds that don't bind to a private worker
+  pool (`options.pool.name` or the legacy `options.workerPool`) —
+  the prerequisite for VPC perimeter, egress filtering, and source-
+  IP allowlists on internal endpoints. Cloud Build rule catalog:
+  19 to 21.
+- **Two more Kubernetes rules.** `K8S-029` flags `RoleBinding` and
+  `ClusterRoleBinding` subjects that target a namespace's `default`
+  ServiceAccount: every pod that omits `serviceAccountName` runs as
+  that SA, so a binding to it grants the same verbs to every
+  untargeted pod in the namespace (existing and future). `K8S-030`
+  flags non-system workloads whose `nodeSelector` or `tolerations`
+  target a control-plane node role label
+  (`node-role.kubernetes.io/control-plane`, or the legacy `master`
+  spelling); a pod scheduled there shares the kernel with the API
+  server, etcd, and kubelet credentials. `kube-system` is exempt for
+  both. Kubernetes rule catalog: 28 to 30.
+- **Two more Dockerfile rules.** `DF-019` flags `COPY` / `ADD`
+  whose source basename is a well-known credential file (`id_rsa`,
+  `.npmrc`, `.netrc`, `.env`, `terraform.tfvars`, `kubeconfig`),
+  whose path tail matches a canonical credential location
+  (`.aws/credentials`, `.docker/config.json`, `.kube/config`,
+  `.ssh/id_*`), or whose extension suggests private-key material
+  (`.pem`, `.key`, `.p12`, `.pfx`, `.jks`). `DF-020` flags `ARG`
+  declarations whose name matches the shared `secret_shapes`
+  regex (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*API_KEY*`); `--build-arg`
+  values land in `docker history` even when no default is set.
+  Together they push build-time secrets toward
+  `RUN --mount=type=secret`. Dockerfile rule catalog: 18 to 20.
+- **Standards mapping backfill.** OWASP Top 10 CI/CD and NIST 800-53
+  control mappings for `GCB-019`, `K8S-027`, `K8S-028`, `DF-017`,
+  `DF-018` (which had been added to the rule registry but not the
+  standards data files), plus mappings for the new `K8S-029`,
+  `K8S-030`, `DF-019`, `DF-020`.
 - GitHub issue templates under `.github/ISSUE_TEMPLATE/`: bug report,
   feature request, and a dedicated false-positive form that requires
   `check_id` plus a minimal repro YAML.

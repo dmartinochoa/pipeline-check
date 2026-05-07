@@ -14,6 +14,10 @@ ENV API_KEY=EXAMPLE-FAKE-KEY-DO-NOT-USE
 ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 ARG DATABASE_PASSWORD=EXAMPLE-FAKE-PASSWORD
 
+# DF-020: ARG declares a credential-named build arg without a default.
+# BuildKit records ``--build-arg NPM_TOKEN=...`` in image history.
+ARG NPM_TOKEN
+
 # DF-014: WORKDIR set to a system / kernel filesystem path. Subsequent
 # COPY / RUN writes resolve against /etc, putting writes into admin-
 # only configuration directories.
@@ -31,6 +35,10 @@ ADD https://example.com/internal/helper.tar.gz /opt/
 # DF-009: ADD used where COPY would suffice (local file, no URL or
 # tarball auto-extract use case).
 ADD ./config.json /opt/config.json
+
+# DF-019: COPY of a credential-shaped source path. Anything baked into
+# a layer is recoverable by anyone who can pull the image.
+COPY id_rsa /root/.ssh/id_rsa
 
 # DF-004: RUN curl-piped to bash without checksum verification.
 # DF-005: RUN uses dangerous shell-eval idiom (eval on a variable).

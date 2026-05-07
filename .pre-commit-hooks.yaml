@@ -1,0 +1,89 @@
+# Pre-commit hook definitions for pipeline-check.
+#
+# Each hook scopes its trigger to one provider's canonical file pattern,
+# so a Dockerfile change doesn't run the GitHub Actions scanner. Users
+# enable just the hooks for the providers their repo ships through.
+#
+# All hooks pass ``--fail-on HIGH`` so the commit is blocked on HIGH or
+# CRITICAL findings only — pre-commit isn't the right surface to gate
+# every MEDIUM. Use ``args:`` in your ``.pre-commit-config.yaml`` to
+# override (e.g. ``--fail-on CRITICAL`` for a softer gate).
+#
+# ``pass_filenames: false`` is set everywhere because pipeline-check
+# operates on a fixed canonical path (``.github/workflows/``,
+# ``cloudbuild.yaml``, …) rather than an explicit file list — the
+# scanner already knows where to look once ``--pipeline`` is given.
+
+- id: pipeline-check-github
+  name: pipeline-check (GitHub Actions)
+  description: Scan .github/workflows/ for CI/CD security risks.
+  entry: pipeline_check --pipeline github --fail-on HIGH
+  language: python
+  files: ^\.github/workflows/.*\.(yml|yaml)$
+  pass_filenames: false
+
+- id: pipeline-check-gitlab
+  name: pipeline-check (GitLab CI)
+  description: Scan .gitlab-ci.yml for CI/CD security risks.
+  entry: pipeline_check --pipeline gitlab --fail-on HIGH
+  language: python
+  files: ^\.gitlab-ci\.yml$
+  pass_filenames: false
+
+- id: pipeline-check-bitbucket
+  name: pipeline-check (Bitbucket Pipelines)
+  description: Scan bitbucket-pipelines.yml for CI/CD security risks.
+  entry: pipeline_check --pipeline bitbucket --fail-on HIGH
+  language: python
+  files: ^bitbucket-pipelines\.yml$
+  pass_filenames: false
+
+- id: pipeline-check-azure
+  name: pipeline-check (Azure DevOps)
+  description: Scan azure-pipelines.yml for CI/CD security risks.
+  entry: pipeline_check --pipeline azure --fail-on HIGH
+  language: python
+  files: ^azure-pipelines\.yml$
+  pass_filenames: false
+
+- id: pipeline-check-jenkins
+  name: pipeline-check (Jenkins)
+  description: Scan Jenkinsfile for CI/CD security risks.
+  entry: pipeline_check --pipeline jenkins --fail-on HIGH
+  language: python
+  files: ^(.*/)?Jenkinsfile(\..+)?$
+  pass_filenames: false
+
+- id: pipeline-check-circleci
+  name: pipeline-check (CircleCI)
+  description: Scan .circleci/config.yml for CI/CD security risks.
+  entry: pipeline_check --pipeline circleci --fail-on HIGH
+  language: python
+  files: ^\.circleci/config\.yml$
+  pass_filenames: false
+
+- id: pipeline-check-cloudbuild
+  name: pipeline-check (Google Cloud Build)
+  description: Scan cloudbuild.yaml for CI/CD security risks.
+  entry: pipeline_check --pipeline cloudbuild --fail-on HIGH
+  language: python
+  files: ^cloudbuild\.(yml|yaml)$
+  pass_filenames: false
+
+- id: pipeline-check-dockerfile
+  name: pipeline-check (Dockerfile)
+  description: Scan Dockerfile / Containerfile for image-build risks.
+  entry: pipeline_check --pipeline dockerfile --fail-on HIGH
+  language: python
+  files: (^|/)((Container|Docker)file([.-].+)?|.+\.Dockerfile)$
+  pass_filenames: false
+
+- id: pipeline-check-kubernetes
+  name: pipeline-check (Kubernetes manifests)
+  description: Scan Kubernetes manifests for runtime risks.
+  entry: pipeline_check --pipeline kubernetes --fail-on HIGH
+  language: python
+  # Restrict to ``k8s/`` / ``manifests/`` / ``deploy/`` trees so the hook
+  # doesn't trigger on unrelated YAML elsewhere in the repo.
+  files: ^(k8s|manifests|deploy)/.*\.(yml|yaml)$
+  pass_filenames: false

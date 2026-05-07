@@ -127,6 +127,10 @@ nav:
       - Google Cloud Build: providers/cloudbuild.md
       - Dockerfile: providers/dockerfile.md
       - Kubernetes: providers/kubernetes.md
+  - Contributing:
+      - Architecture: architecture.md
+      - Adding a rule: writing_a_rule.md
+      - Adding a provider: writing_a_provider.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

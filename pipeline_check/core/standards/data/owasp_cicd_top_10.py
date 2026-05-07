@@ -333,6 +333,9 @@ STANDARD = Standard(
         "GCB-016":  ["CICD-SEC-7"],   # dir path escape
         "GCB-017":  ["CICD-SEC-9", "CICD-SEC-10"],  # no SLSA provenance
         "GCB-018":  ["CICD-SEC-6"],   # legacy KMS secrets block
+        "GCB-019":  ["CICD-SEC-4"],   # shell entrypoint + user substitution
+        "GCB-020":  ["CICD-SEC-2"],   # default Cloud Build SA email
+        "GCB-021":  ["CICD-SEC-7"],   # no private worker pool
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],
@@ -360,6 +363,10 @@ STANDARD = Standard(
         "K8S-024":  ["CICD-SEC-10"],  # missing health probes
         "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5"],  # system-* priority class
         "K8S-026":  ["CICD-SEC-7"],   # LB without source ranges
+        "K8S-027":  ["CICD-SEC-7"],   # Ingress without TLS
+        "K8S-028":  ["CICD-SEC-7"],   # container hostPort
+        "K8S-029":  ["CICD-SEC-2", "CICD-SEC-5"],  # default-SA binding
+        "K8S-030":  ["CICD-SEC-7"],   # control-plane scheduling
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
@@ -377,5 +384,9 @@ STANDARD = Standard(
         "DF-014":   ["CICD-SEC-7"],   # WORKDIR system path
         "DF-015":   ["CICD-SEC-7"],   # chmod 777 / world-writable
         "DF-016":   ["CICD-SEC-9"],   # missing OCI provenance labels
+        "DF-017":   ["CICD-SEC-7"],   # ENV PATH prepends a writable dir
+        "DF-018":   ["CICD-SEC-7"],   # RUN chown rewrites a system path
+        "DF-019":   ["CICD-SEC-6"],   # COPY/ADD credential-shaped file
+        "DF-020":   ["CICD-SEC-6"],   # ARG credential-shaped name
     },
 )
