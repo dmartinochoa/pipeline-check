@@ -5,6 +5,7 @@ from typing import Any
 
 from ...base import Finding, Severity, has_provenance, produces_artifacts
 from ...rule import Rule
+from ..base import iter_jobs, iter_steps
 
 RULE = Rule(
     id="GHA-024",
@@ -34,6 +35,28 @@ RULE = Rule(
 )
 
 
+def _has_pypi_pep740_attestations(doc: dict[str, Any]) -> bool:
+    """True when ``pypa/gh-action-pypi-publish`` runs with ``attestations: true``.
+
+    PyPI trusted publishing emits PEP 740 in-toto attestations
+    (effectively SLSA provenance) when the publish step opts in via
+    ``with: { attestations: true }``. The blob-token catalog can't
+    detect this because YAML parses ``true`` as a bool, so the
+    structural shape is checked here instead.
+    """
+    for _, job in iter_jobs(doc):
+        for step in iter_steps(job):
+            uses = step.get("uses")
+            if not isinstance(uses, str):
+                continue
+            if "pypa/gh-action-pypi-publish" not in uses:
+                continue
+            with_block = step.get("with")
+            if isinstance(with_block, dict) and with_block.get("attestations") is True:
+                return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     # Only apply to artifact-producing workflows — lint/test-only
     # workflows have nothing to attest.
@@ -44,7 +67,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             description="Workflow does not produce deployable artifacts.",
             recommendation="No action required.", passed=True,
         )
-    passed = has_provenance(doc)
+    passed = has_provenance(doc) or _has_pypi_pep740_attestations(doc)
     desc = (
         "SLSA provenance attestation step detected."
         if passed else

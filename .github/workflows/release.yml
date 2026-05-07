@@ -63,6 +63,27 @@ jobs:
             exit 1
           fi
 
+      - name: Vulnerability scan with pip-audit
+        # Audits the project's resolved dependency tree against the
+        # PyPA vulnerability database. Runs against the requirements
+        # lockfile (hash-locked, so a transitive bump shows up as a
+        # diff in CI) rather than the wheel — pip-audit's wheel mode
+        # only inspects direct deps in the metadata.
+        run: |
+          python -m pip install --upgrade pip-audit
+          pip-audit --requirement requirements.txt --strict
+
+      - name: Generate SBOM (CycloneDX)
+        # Emits an SBOM alongside the wheel. cyclonedx-py reads the
+        # current Python environment after we install the wheel, so
+        # the SBOM reflects the exact dep set a downstream consumer
+        # will pull in on ``pip install pipeline-check==<tag>``.
+        run: |
+          python -m pip install --upgrade cyclonedx-bom
+          python -m pip install dist/*.whl
+          cyclonedx-py environment --output-file dist/sbom.cdx.json
+          ls dist/
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
@@ -98,6 +119,10 @@ jobs:
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
           repository-url: https://test.pypi.org/legacy/
+          # PEP 740 in-toto attestations published alongside the
+          # artifact. The PyPI ``id-token: write`` permission above
+          # supplies the OIDC token the action uses to sign.
+          attestations: true
 
   # ---------------------------------------------------------------------------
   # Publish to real PyPI — gated on the ``production`` GitHub
@@ -124,3 +149,6 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        with:
+          # PEP 740 in-toto attestations — same as the TestPyPI step.
+          attestations: true

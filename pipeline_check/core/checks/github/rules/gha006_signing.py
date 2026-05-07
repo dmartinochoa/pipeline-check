@@ -5,6 +5,7 @@ from typing import Any
 
 from ...base import Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
+from ..base import iter_jobs, iter_steps
 
 RULE = Rule(
     id="GHA-006",
@@ -29,8 +30,29 @@ RULE = Rule(
 )
 
 
+def _has_pypi_pep740_attestations(doc: dict[str, Any]) -> bool:
+    """True when ``pypa/gh-action-pypi-publish`` runs with ``attestations: true``.
+
+    PEP 740 attestations are sigstore-backed signatures published
+    alongside the artifact. Detection mirrors the structural shape
+    used by GHA-024 — the boolean ``true`` value can't be matched via
+    blob tokens because YAML parses it as a Python bool.
+    """
+    for _, job in iter_jobs(doc):
+        for step in iter_steps(job):
+            uses = step.get("uses")
+            if not isinstance(uses, str):
+                continue
+            if "pypa/gh-action-pypi-publish" not in uses:
+                continue
+            with_block = step.get("with")
+            if isinstance(with_block, dict) and with_block.get("attestations") is True:
+                return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    passed = has_signing(doc)
+    passed = has_signing(doc) or _has_pypi_pep740_attestations(doc)
     if not passed and not produces_artifacts(doc):
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Dogfood self-scan cleanup.** Resolved twelve MEDIUM
+  code-scanning alerts on this repo's own workflows
+  (`release.yml`, `pypi-publish.yml`, `python-app.yml`,
+  `docs.yml`, `localstack-test.yml`). The fix mix breaks down as:
+  *(a)* engine improvements that closed real false-positive gaps
+  — `GHA-004` now recognizes PyPI trusted publishing and other
+  OIDC actions (Google WIF, Azure OIDC, Vault JWT, cosign keyless,
+  attest-build-provenance, SLSA generators) as legitimate
+  `id-token: write` consumers; `GHA-006` and `GHA-024` recognize
+  PEP 740 attestations from `pypa/gh-action-pypi-publish` with
+  `attestations: true`; `GHA-022`'s build-tool exemption grew to
+  cover `build`, `pip-audit`, `cyclonedx-bom`, `cyclonedx-py`,
+  `safety`, `bandit`, `semgrep`, `ruff`, `mypy` (CI scanners /
+  build-system frontends, none of which ship inside the wheel);
+  `_ARTIFACT_TOKENS` anchored `actions/upload-artifact@` so
+  `actions/upload-pages-artifact@` no longer triggers the
+  artifact-producer gate. *(b)* Real workflow hardening:
+  `release.yml` and `pypi-publish.yml` now run `pip-audit`
+  against the locked dep tree, generate a CycloneDX SBOM
+  alongside the wheel, and pass `attestations: true` to the PyPI
+  publish action so PEP 740 attestations are emitted. *(c)* A
+  new `.pipelinecheckignore` documents the suppressions for the
+  five remaining MEDIUMs that are legitimately not applicable
+  (Pages site builds, LocalStack test placeholder credentials,
+  test-report uploads, lint-tool inline installs).
 - **Programmatic Python API.** `pipeline_check/__init__.py` now
   re-exports a small, stable surface so library callers can embed
   the scanner without `subprocess` + JSON parsing:
