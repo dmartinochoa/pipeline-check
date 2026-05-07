@@ -10,12 +10,14 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import KubernetesBaseCheck
+from .base import KubernetesBaseCheck, KubernetesContext
 
 
 class KubernetesManifestChecks(KubernetesBaseCheck):
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: KubernetesContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         self._rules = discover_rules(
             "pipeline_check.core.checks.kubernetes.rules"

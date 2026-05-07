@@ -46,7 +46,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 34)}
+    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 35)}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -232,7 +232,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 22)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 23)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never
@@ -336,7 +336,7 @@ class TestKubernetesFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 34)}),
+     {f"GHA-{i:03d}" for i in range(1, 35)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 32)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
@@ -351,7 +351,7 @@ class TestKubernetesFixtures:
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
-     {f"GCB-{i:03d}" for i in range(1, 22)}),
+     {f"GCB-{i:03d}" for i in range(1, 23)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
      {f"DF-{i:03d}" for i in range(1, 21)}),

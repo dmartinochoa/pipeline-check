@@ -12,6 +12,104 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Strict-mypy annotation pass** — annotated 67 of 89 functions
+  flagged by `disallow_untyped_defs`. Two-thirds of the count was
+  in terraform / cloudformation `phase3.py`, `phase4.py`,
+  `services.py`, `extended.py`: ~25 helper functions of the shape
+  `def _<service>(ctx) -> list[Finding]` got their `ctx` parameter
+  annotated to the matching `TerraformContext` /
+  `CloudFormationContext`. The seven YAML-provider orchestrators
+  (`github/workflows.py`, `gitlab/pipelines.py`,
+  `bitbucket/pipelines.py`, `azure/pipelines.py`,
+  `circleci/pipelines.py`, `jenkins/jenkinsfile.py`,
+  `cloudbuild/pipelines.py`, `dockerfile/pipelines.py`,
+  `kubernetes/manifests.py`) `__init__` methods got
+  `ctx: <Provider>Context, target: str | None = None`. Five
+  primitive helpers (`as_list`, `parse_doc`, `_walk`,
+  `_scan_values`, `_make_constructor`) got matching annotations
+  with structural narrowing where needed (e.g. `parse_doc` now
+  refuses non-string non-bytes input before calling `json.loads`,
+  so the `dict` return type is honest). Remaining 22 errors live
+  in `cli.py` callback shapes and a few smaller helpers; the
+  `disallow_untyped_defs` flag flips on once those are cleared.
+- **Two more strict mypy flags** (`disallow_subclassing_any` and
+  `disallow_untyped_calls`). Five helpers got return annotations so
+  the typed callers stop silently inheriting `Any`: `_parse`
+  (`aws/rules/iam008_oidc_audience.py`), `_parse_policy`
+  (terraform/services, terraform/extended, cloudformation/services,
+  cloudformation/extended — same shape four places), `_first` and
+  `_first_map` (terraform), `extract_pipe_ref`
+  (`bitbucket/rules/_helpers.py`). Each helper now narrows
+  `json.loads()` results structurally before returning so the
+  `dict` return type holds even on malformed input. Two
+  `yaml.SafeLoader` subclasses (`DupKeyLoader`, `_CfnSafeLoader`)
+  are scoped through a per-module override since pyyaml ships
+  without type stubs in our hash-locked lockfile.
+  Strict-flag count: 6 of 9 (was 4 in v0.4.0); the remaining
+  three (`disallow_any_generics`, `disallow_untyped_defs`,
+  `warn_return_any` global) need ~300 mechanical annotations
+  across the AWS / Terraform / CloudFormation rule packs.
+- **One more Cloud Build rule.** `GCB-022` flags
+  `options.substitutionOption: ALLOW_LOOSE`. Cloud Build's default
+  is `MUST_MATCH` — undefined `$_VAR` references fail the build at
+  parse time. The `ALLOW_LOOSE` opt-in collapses them to empty
+  strings, papering over typos (`$_REGON`) and silently masking
+  unset variables. Combined with `dynamicSubstitutions: true`
+  (`GCB-004`) it widens the command-injection surface. Severity
+  LOW (footgun rather than direct exploit). Ships with a
+  drop-line autofixer that removes the explicit opt-in so the
+  default takes over. Cloud Build rule catalog: 21 to 22; fixer
+  catalog: 94 to 95.
+- **Five more autofixers** lifting the catalog 89 to 94. *(a)*
+  Drop-line for `K8S-028` (`hostPort: <N>`) — the host-IP binding
+  is removed; the container's `containerPort` is unaffected.
+  *(b)* Comment-only TODO for `K8S-029` (default-SA binding) above
+  every `name: default` line in a subjects block. *(c)* Comment-
+  only TODO for `K8S-030` (control-plane scheduling) above each
+  `node-role.kubernetes.io/control-plane` (or legacy `master`)
+  `nodeSelector` key OR `tolerations` `key:` line. *(d)* Comment-
+  only TODO for `GHA-034` (`secrets: inherit`) pointing at the
+  explicit-mapping shape. *(e)* Comment-only TODO for `GCB-021`
+  (no private worker pool) above the `options:` block, suggesting
+  the `pool.name` shape. None of the comment-only fixes mutate
+  semantics — they leave a reviewable marker pointing at the
+  right shape, since the right fix usually requires the operator
+  to supply context the scanner can't synthesize (a named SA's
+  manifest, a worker-pool resource path, an explicit secrets
+  allowlist).
+- **One more attack chain — Reusable Workflow Secret
+  Exfiltration.** `AC-012` fires when both `GHA-025` (reusable
+  workflow not pinned to commit SHA) and `GHA-034`
+  (`secrets: inherit`) trigger on the *same* workflow file. The
+  combo is a one-step credential exfiltration channel: the owner
+  of the upstream repo can repoint the mutable tag to malicious
+  code, and the next caller-side run hands every caller secret to
+  that code under cover of normal reusable-workflow plumbing.
+  Distinct from `AC-001` (fork-PR creds via `pull_request_target`)
+  and `AC-009` (multi-finding repo poisoning). Severity CRITICAL,
+  MITRE T1195.002 + T1552.001 + T1078. Chain catalog: 11 to 12.
+- **Two more autofixers** — `DF-019` (`COPY` / `ADD` of a
+  credential-shaped file) and `DF-020` (`ARG` declares a
+  credential-named build argument) gain comment-only `TODO`
+  patterns. Both rules need the operator to switch to
+  `RUN --mount=type=secret`, which requires a build-time
+  secret-id the autofixer can't synthesize, so the fix is a
+  pointer comment rather than a transformative rewrite. The
+  matchers mirror the rule's regexes (basename / path-tail /
+  extension for DF-019; the shared `secret_shapes` regex for
+  DF-020) so any rule-side update flows through automatically.
+  Catalog grew 87 to 89.
+- **One more GitHub Actions rule.** `GHA-034` flags reusable
+  workflow calls that pass `secrets: inherit` instead of an
+  explicit secret allowlist. Inheritance gives the called workflow
+  every caller-defined secret — including ones it has no business
+  reading — so a compromised or buggy reusable workflow can
+  exfiltrate credentials the caller never intended to share.
+  Distinct from `GHA-025`'s pin check: the inheritance problem
+  exists even when the call is SHA-pinned, because the surface a
+  compromised callee sees is determined by `secrets:`, not by the
+  pin. Severity MEDIUM, OWASP CICD-SEC-2 + CICD-SEC-6.
+  GitHub rule catalog: 33 to 34.
 - **Dogfood self-scan cleanup.** Resolved twelve MEDIUM
   code-scanning alerts on this repo's own workflows
   (`release.yml`, `pypi-publish.yml`, `python-app.yml`,

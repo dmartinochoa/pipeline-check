@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
-from .base import TerraformBaseCheck
+from .base import TerraformBaseCheck, TerraformContext
 
 # Resource attributes scanned by LMB-003 / SSM-001 / CB-001 already — skip
 # here so operators don't see the same plaintext twice under two IDs.
@@ -70,7 +70,7 @@ class Phase4Checks(TerraformBaseCheck):
 # SIGN-001 — aws_signer_signing_profile exists when Lambda code-signing is wired
 # ---------------------------------------------------------------------------
 
-def _sign001(ctx) -> list[Finding]:
+def _sign001(ctx: TerraformContext) -> list[Finding]:
     fns_with_signing = [
         fn for fn in ctx.resources("aws_lambda_function")
         if fn.values.get("code_signing_config_arn")
@@ -115,7 +115,7 @@ def _sign001(ctx) -> list[Finding]:
 # EB-002 — aws_cloudwatch_event_target.arn with wildcard
 # ---------------------------------------------------------------------------
 
-def _eb002(ctx) -> list[Finding]:
+def _eb002(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for t in ctx.resources("aws_cloudwatch_event_target"):
         arn = t.values.get("arn", "") or ""
@@ -142,7 +142,7 @@ def _eb002(ctx) -> list[Finding]:
 # CW-001 — CloudWatch alarm on CodeBuild FailedBuilds
 # ---------------------------------------------------------------------------
 
-def _cw001(ctx) -> list[Finding]:
+def _cw001(ctx: TerraformContext) -> list[Finding]:
     projects = list(ctx.resources("aws_codebuild_project"))
     # Gate: only emit when the plan manages CodeBuild. A plan that
     # doesn't touch CodeBuild shouldn't trip an observability rule.
@@ -186,7 +186,7 @@ def _cw001(ctx) -> list[Finding]:
 # TF-001 — aws_iam_access_key as code
 # ---------------------------------------------------------------------------
 
-def _tf001_iam_access_key(ctx) -> list[Finding]:
+def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for k in ctx.resources("aws_iam_access_key"):
         user = k.values.get("user", "") or "<unknown user>"
@@ -216,7 +216,7 @@ def _tf001_iam_access_key(ctx) -> list[Finding]:
 # TF-002 — hard-coded secret shapes in resource attributes
 # ---------------------------------------------------------------------------
 
-def _tf002_plan_secrets(ctx) -> list[Finding]:
+def _tf002_plan_secrets(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources():
         if r.type in _TF002_SKIP_TYPES:
@@ -254,7 +254,7 @@ def _scan_values(values: dict) -> list[tuple[str, str]]:
     return hits
 
 
-def _walk(node, path: str, hits: list[tuple[str, str]]) -> None:
+def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
     if isinstance(node, dict):
         for k, v in node.items():
             subpath = f"{path}.{k}" if path else str(k)
@@ -285,7 +285,7 @@ def _walk(node, path: str, hits: list[tuple[str, str]]) -> None:
 # TF-003 — CodeBuild VPC shares its VPC with a public subnet
 # ---------------------------------------------------------------------------
 
-def _tf003_codebuild_public_subnet(ctx) -> list[Finding]:
+def _tf003_codebuild_public_subnet(ctx: TerraformContext) -> list[Finding]:
     # Build {vpc_id: [addresses of public subnets]} for subnets whose
     # vpc_id is resolvable.
     public_by_vpc: dict[str, list[str]] = {}

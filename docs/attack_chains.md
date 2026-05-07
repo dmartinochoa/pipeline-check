@@ -381,5 +381,30 @@ Replace hostPath volumes with a CSI driver scoped to the specific subtree the wo
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-012 — Reusable Workflow Secret Exfiltration { #ac-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A workflow calls a reusable workflow whose ``uses:`` ref is mutable (tag / branch) AND passes ``secrets: inherit``. The owner of the upstream repo can repoint the tag to malicious code; the next caller-side run hands every caller secret to that code under cover of normal reusable-workflow plumbing.
+
+**References**
+
+- <https://docs.github.com/en/actions/sharing-automations/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3-Dependency-Chain-Abuse>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg of the chain. (a) Replace the mutable ref (``@v2`` / ``@main``) with a 40-char commit SHA so an upstream tag move can't repoint to attacker code. (b) Replace ``secrets: inherit`` with an explicit allowlist (``secrets: { NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }``) so a compromised callee can't reach unrelated credentials. Doing (a) closes the supply-chain leg; (b) limits blast radius even if (a) is somehow bypassed.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

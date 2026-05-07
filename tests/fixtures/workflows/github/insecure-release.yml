@@ -68,8 +68,11 @@ jobs:
       - run: echo "deploying to prod"
 
   # GHA-025: reusable-workflow ``uses:`` pinned to a floating tag.
+  # GHA-034: ``secrets: inherit`` passes every caller secret to the
+  # called workflow with no explicit allowlist.
   call-shared:
     uses: myorg/shared/.github/workflows/release.yml@v1
+    secrets: inherit
 
   # GHA-026: container job runs with host-network + privileged docker,
   # mounting the host Docker socket — breaks runner isolation.

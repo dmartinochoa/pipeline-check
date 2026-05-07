@@ -35,12 +35,13 @@ RULE = Rule(
 )
 
 
-def _parse(doc):
+def _parse(doc: object) -> dict:
     if isinstance(doc, dict):
         return doc
     if isinstance(doc, str):
         try:
-            return json.loads(doc)
+            parsed = json.loads(doc)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     return {}

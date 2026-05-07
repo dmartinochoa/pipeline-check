@@ -104,6 +104,7 @@ STANDARD = Standard(
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
         "GHA-005":  ["IA-5"],                            # long-lived AWS keys
+        "GHA-034":  ["AC-6", "IA-5"],                    # secrets: inherit
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
@@ -174,6 +175,7 @@ STANDARD = Standard(
         "GCB-019":  ["CM-6", "SA-11"],                   # shell entrypoint + user substitution
         "GCB-020":  ["AC-3", "AC-6"],                    # default Cloud Build SA email
         "GCB-021":  ["SC-7"],                            # no private worker pool
+        "GCB-022":  ["CM-6", "SA-11"],                   # substitutionOption ALLOW_LOOSE
         # Kubernetes — runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).

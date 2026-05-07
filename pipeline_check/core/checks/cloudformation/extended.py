@@ -19,7 +19,13 @@ from .._iam_policy import (
 from .._malicious import find_malicious_patterns
 from .._primitives.container_image import classify as _classify_image
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str, is_intrinsic, is_true
+from .base import (
+    CloudFormationBaseCheck,
+    CloudFormationContext,
+    as_str,
+    is_intrinsic,
+    is_true,
+)
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED",
@@ -40,7 +46,7 @@ class ExtendedChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _codebuild(ctx) -> list[Finding]:
+def _codebuild(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("AWS::CodeBuild::Project"):
         props = r.properties
@@ -182,7 +188,7 @@ def _codebuild(ctx) -> list[Finding]:
     return out
 
 
-def _cloudtrail(ctx) -> list[Finding]:
+def _cloudtrail(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     trails = list(ctx.resources("AWS::CloudTrail::Trail"))
     if not trails:
@@ -243,7 +249,7 @@ def _cloudtrail(ctx) -> list[Finding]:
     return out
 
 
-def _cw_logs(ctx) -> list[Finding]:
+def _cw_logs(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("AWS::Logs::LogGroup"):
         name = as_str(r.properties.get("LogGroupName"))
@@ -280,7 +286,7 @@ def _cw_logs(ctx) -> list[Finding]:
     return out
 
 
-def _secrets(ctx) -> list[Finding]:
+def _secrets(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     # SM-001 — rotations referenced by SecretId or by !Ref LogicalId.
     rotation_targets: set[str] = set()
@@ -330,7 +336,7 @@ def _secrets(ctx) -> list[Finding]:
     return out
 
 
-def _iam_oidc(ctx) -> list[Finding]:
+def _iam_oidc(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for role in ctx.resources("AWS::IAM::Role"):
         doc = role.properties.get("AssumeRolePolicyDocument")
@@ -372,12 +378,13 @@ def _iam_oidc(ctx) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw):
+def _parse_policy(raw: object) -> dict:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     return {}

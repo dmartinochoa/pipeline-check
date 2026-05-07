@@ -700,6 +700,266 @@ class TestDF017PathTODO:
         assert autofix.generate_fix(_finding("DF-017"), df) is None
 
 
+class TestK8S028HostPortDrop:
+    def test_drops_host_port_line(self):
+        manifest = (
+            "spec:\n"
+            "  containers:\n"
+            "    - name: app\n"
+            "      image: nginx@sha256:" + "a" * 64 + "\n"
+            "      ports:\n"
+            "        - containerPort: 8080\n"
+            "          hostPort: 8080\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-028"), manifest)
+        assert after is not None
+        assert "hostPort:" not in after
+        assert "containerPort: 8080" in after
+
+    def test_drops_inline_comment_too(self):
+        manifest = "    hostPort: 9000  # node-port binding\n"
+        after = autofix.generate_fix(_finding("K8S-028"), manifest)
+        assert after is not None
+        assert "hostPort" not in after
+
+    def test_skips_zero_sentinel(self):
+        # ``hostPort: 0`` is the unset sentinel; the rule already
+        # treats it as passing, and the fixer mirrors that.
+        manifest = "    hostPort: 0\n"
+        assert autofix.generate_fix(_finding("K8S-028"), manifest) is None
+
+    def test_idempotent(self):
+        manifest = "    hostPort: 8080\n"
+        once = autofix.generate_fix(_finding("K8S-028"), manifest)
+        assert once is not None
+        assert autofix.generate_fix(_finding("K8S-028"), once) is None
+
+
+class TestK8S029DefaultSATODO:
+    def test_inserts_todo_above_default_subject(self):
+        manifest = (
+            "subjects:\n"
+            "  - kind: ServiceAccount\n"
+            "    name: default\n"
+            "    namespace: apps\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-029"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-029)" in after
+
+    def test_no_op_for_named_sa(self):
+        manifest = (
+            "subjects:\n"
+            "  - kind: ServiceAccount\n"
+            "    name: app-sa\n"
+            "    namespace: apps\n"
+        )
+        assert autofix.generate_fix(_finding("K8S-029"), manifest) is None
+
+    def test_idempotent(self):
+        manifest = (
+            "subjects:\n"
+            "  - kind: ServiceAccount\n"
+            "    name: default\n"
+        )
+        once = autofix.generate_fix(_finding("K8S-029"), manifest)
+        assert once is not None
+        assert autofix.generate_fix(_finding("K8S-029"), once) is None
+
+
+class TestK8S030ControlPlaneTODO:
+    def test_inserts_todo_above_node_selector(self):
+        manifest = (
+            "      nodeSelector:\n"
+            "        node-role.kubernetes.io/control-plane: ''\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-030"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-030)" in after
+
+    def test_inserts_todo_above_master_toleration(self):
+        manifest = (
+            "      tolerations:\n"
+            "        - key: node-role.kubernetes.io/master\n"
+            "          operator: Exists\n"
+        )
+        after = autofix.generate_fix(_finding("K8S-030"), manifest)
+        assert after is not None
+        assert "TODO(pipelineguard K8S-030)" in after
+
+    def test_no_op_for_unrelated_node_selector(self):
+        manifest = (
+            "      nodeSelector:\n"
+            "        kubernetes.io/os: linux\n"
+        )
+        assert autofix.generate_fix(_finding("K8S-030"), manifest) is None
+
+    def test_idempotent(self):
+        manifest = (
+            "      tolerations:\n"
+            "        - key: node-role.kubernetes.io/control-plane\n"
+            "          operator: Exists\n"
+        )
+        once = autofix.generate_fix(_finding("K8S-030"), manifest)
+        assert once is not None
+        assert autofix.generate_fix(_finding("K8S-030"), once) is None
+
+
+class TestGHA034SecretsInheritTODO:
+    def test_inserts_todo_above_secrets_inherit(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    uses: octo/repo/.github/workflows/build.yml@v2\n"
+            "    secrets: inherit\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-034"), wf)
+        assert after is not None
+        assert "TODO(pipelineguard GHA-034)" in after
+
+    def test_no_op_for_explicit_secrets_mapping(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    uses: octo/repo/.github/workflows/build.yml@v2\n"
+            "    secrets:\n"
+            "      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}\n"
+        )
+        assert autofix.generate_fix(_finding("GHA-034"), wf) is None
+
+    def test_idempotent(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    uses: octo/repo/.github/workflows/build.yml@v2\n"
+            "    secrets: inherit\n"
+        )
+        once = autofix.generate_fix(_finding("GHA-034"), wf)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GHA-034"), once) is None
+
+
+class TestGCB022SubstitutionOptionLooseDrop:
+    def test_drops_allow_loose_line(self):
+        cb = (
+            "options:\n"
+            "  logging: CLOUD_LOGGING_ONLY\n"
+            "  substitutionOption: ALLOW_LOOSE\n"
+            "steps: []\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-022"), cb)
+        assert after is not None
+        assert "ALLOW_LOOSE" not in after
+        assert "logging: CLOUD_LOGGING_ONLY" in after
+
+    def test_drops_inline_comment_too(self):
+        cb = "  substitutionOption: ALLOW_LOOSE  # tolerate undefined\n"
+        after = autofix.generate_fix(_finding("GCB-022"), cb)
+        assert after is not None
+        assert "substitutionOption" not in after
+
+    def test_no_op_for_must_match(self):
+        cb = "options:\n  substitutionOption: MUST_MATCH\n"
+        assert autofix.generate_fix(_finding("GCB-022"), cb) is None
+
+    def test_idempotent(self):
+        cb = "options:\n  substitutionOption: ALLOW_LOOSE\n"
+        once = autofix.generate_fix(_finding("GCB-022"), cb)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GCB-022"), once) is None
+
+
+class TestGCB021WorkerPoolTODO:
+    def test_inserts_todo_above_options(self):
+        cb = (
+            "options:\n"
+            "  logging: CLOUD_LOGGING_ONLY\n"
+            "steps:\n"
+            "  - name: gcr.io/foo\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-021"), cb)
+        assert after is not None
+        assert "TODO(pipelineguard GCB-021)" in after
+        # The TODO sits ABOVE options:, not inside it.
+        before_options = after.split("options:")[0]
+        assert "TODO(pipelineguard GCB-021)" in before_options
+
+    def test_no_op_when_no_options_block(self):
+        # Without an ``options:`` anchor the fixer leaves the file
+        # alone — inserting a top-level block from text is too easy
+        # to misindent.
+        cb = "steps:\n  - name: gcr.io/foo\n"
+        assert autofix.generate_fix(_finding("GCB-021"), cb) is None
+
+    def test_idempotent(self):
+        cb = "options:\n  logging: CLOUD_LOGGING_ONLY\nsteps: []\n"
+        once = autofix.generate_fix(_finding("GCB-021"), cb)
+        assert once is not None
+        assert autofix.generate_fix(_finding("GCB-021"), once) is None
+
+
+class TestDF019CopyCredFileTODO:
+    def test_inserts_todo_above_id_rsa_copy(self):
+        df = "FROM alpine:3.19\nCOPY id_rsa /root/.ssh/id_rsa\n"
+        after = autofix.generate_fix(_finding("DF-019"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-019)" in after
+        assert df.splitlines()[1] in after
+
+    def test_inserts_todo_above_npmrc_copy(self):
+        df = "FROM node:20\nCOPY --chown=node:node .npmrc /home/node/.npmrc\n"
+        after = autofix.generate_fix(_finding("DF-019"), df)
+        assert after is not None
+
+    def test_inserts_todo_above_aws_credentials(self):
+        df = "FROM alpine:3.19\nCOPY .aws/credentials /root/.aws/credentials\n"
+        after = autofix.generate_fix(_finding("DF-019"), df)
+        assert after is not None
+
+    def test_inserts_todo_above_pem_file(self):
+        df = "FROM alpine:3.19\nADD tls.pem /etc/ssl/tls.pem\n"
+        after = autofix.generate_fix(_finding("DF-019"), df)
+        assert after is not None
+
+    def test_no_op_for_regular_copy(self):
+        df = "FROM alpine:3.19\nCOPY app/ /srv/app/\n"
+        assert autofix.generate_fix(_finding("DF-019"), df) is None
+
+    def test_idempotent(self):
+        df = "FROM alpine:3.19\nCOPY id_rsa /root/.ssh/id_rsa\n"
+        once = autofix.generate_fix(_finding("DF-019"), df)
+        assert once is not None
+        assert autofix.generate_fix(_finding("DF-019"), once) is None
+
+
+class TestDF020ArgCredNameTODO:
+    def test_inserts_todo_above_npm_token_arg(self):
+        df = "FROM node:20\nARG NPM_TOKEN\nRUN npm install\n"
+        after = autofix.generate_fix(_finding("DF-020"), df)
+        assert after is not None
+        assert "TODO(pipelineguard DF-020)" in after
+
+    def test_inserts_todo_above_password_arg_with_default(self):
+        df = "FROM postgres:16\nARG DB_PASSWORD=changeme\n"
+        after = autofix.generate_fix(_finding("DF-020"), df)
+        assert after is not None
+
+    def test_inserts_todo_above_secret_arg(self):
+        df = "FROM alpine:3.19\nARG APP_SECRET\n"
+        after = autofix.generate_fix(_finding("DF-020"), df)
+        assert after is not None
+
+    def test_no_op_for_neutral_arg_name(self):
+        df = "FROM alpine:3.19\nARG VERSION=1.0\nARG BUILD_DATE\n"
+        assert autofix.generate_fix(_finding("DF-020"), df) is None
+
+    def test_idempotent(self):
+        df = "FROM node:20\nARG NPM_TOKEN\n"
+        once = autofix.generate_fix(_finding("DF-020"), df)
+        assert once is not None
+        assert autofix.generate_fix(_finding("DF-020"), once) is None
+
+
 # ── Cloud Build comment-only TODO fixer (GCB-007) ────────────────────
 
 

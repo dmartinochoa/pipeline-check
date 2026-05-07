@@ -17,7 +17,13 @@ import re
 from .._iam_policy import as_list, iter_allow, public_principal
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str, is_intrinsic, is_true
+from .base import (
+    CloudFormationBaseCheck,
+    CloudFormationContext,
+    as_str,
+    is_intrinsic,
+    is_true,
+)
 
 
 class ServiceChecks(CloudFormationBaseCheck):
@@ -36,7 +42,7 @@ class ServiceChecks(CloudFormationBaseCheck):
 # CodeArtifact
 # ---------------------------------------------------------------------------
 
-def _codeartifact(ctx) -> list[Finding]:
+def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for d in ctx.resources("AWS::CodeArtifact::Domain"):
         key = d.properties.get("EncryptionKey")
@@ -125,7 +131,7 @@ def _codeartifact(ctx) -> list[Finding]:
 _ARN_ACCOUNT_RE = re.compile(r"^arn:aws:[^:]+:[^:]*:(\d{12}):")
 
 
-def _codecommit(ctx) -> list[Finding]:
+def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("AWS::CodeCommit::Repository"):
         key = r.properties.get("KmsKeyId")
@@ -180,7 +186,7 @@ def _codecommit(ctx) -> list[Finding]:
 # Lambda
 # ---------------------------------------------------------------------------
 
-def _lambda(ctx) -> list[Finding]:
+def _lambda(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     url_by_fn_logical: dict[str, dict] = {}
     url_by_fn_name: dict[str, dict] = {}
@@ -283,7 +289,7 @@ def _lambda(ctx) -> list[Finding]:
 # KMS
 # ---------------------------------------------------------------------------
 
-def _kms(ctx) -> list[Finding]:
+def _kms(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for key in ctx.resources("AWS::KMS::Key"):
         spec = as_str(key.properties.get("KeySpec")) or "SYMMETRIC_DEFAULT"
@@ -328,7 +334,7 @@ def _kms(ctx) -> list[Finding]:
 # SSM
 # ---------------------------------------------------------------------------
 
-def _ssm(ctx) -> list[Finding]:
+def _ssm(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("AWS::SSM::Parameter"):
         name = as_str(p.properties.get("Name"))
@@ -371,12 +377,13 @@ def _ssm(ctx) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw):
+def _parse_policy(raw: object) -> dict:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     return {}

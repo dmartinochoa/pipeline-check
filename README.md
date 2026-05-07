@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A--D so you can gate merges on the result.
 
-**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **87 autofixers** -- plus **11 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
+**430+ checks** across **12 providers** -- mapped to **13 compliance standards** -- with **95 autofixers** -- plus **12 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -106,7 +106,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 87 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 95 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json` -- only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -306,7 +306,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 87 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 95 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0

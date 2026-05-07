@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import AzureBaseCheck
+from .base import AzureBaseCheck, AzureContext
 
 
 class AzurePipelineChecks(AzureBaseCheck):
@@ -23,7 +23,9 @@ class AzurePipelineChecks(AzureBaseCheck):
     ``pipeline_check.core.checks.azure.rules`` on every loaded
     pipeline document."""
 
-    def __init__(self, ctx, target=None) -> None:
+    def __init__(
+        self, ctx: AzureContext, target: str | None = None,
+    ) -> None:
         super().__init__(ctx, target)
         # Discovery happens once per orchestrator. The rules registry
         # is a list of ``(Rule, check_fn)`` pairs in lexical module

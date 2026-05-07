@@ -21,7 +21,7 @@ UNTRUSTED_VAR_RE = re.compile(
 PIPE_REF_RE = re.compile(r"\s*pipe:\s*(\S+)")
 
 
-def extract_pipe_ref(entry):
+def extract_pipe_ref(entry: object) -> str | None:
     """Return the pipe reference from a script entry (dict or string form)."""
     if isinstance(entry, dict) and "pipe" in entry:
         v = entry["pipe"]
