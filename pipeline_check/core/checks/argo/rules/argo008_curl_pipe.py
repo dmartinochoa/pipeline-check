@@ -1,6 +1,8 @@
 """ARGO-008 — ``curl ... | sh`` and TLS bypass in script sources."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import CURL_PIPE_RE, TLS_BYPASS_RE, Finding, Severity
 from ...rule import Rule
 from ..base import ArgoContext, iter_containers, iter_templates, template_name
@@ -28,7 +30,7 @@ RULE = Rule(
 )
 
 
-def _container_text(container: dict) -> str:
+def _container_text(container: dict[str, Any]) -> str:
     parts: list[str] = []
     src = container.get("source")
     if isinstance(src, str):
