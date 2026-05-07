@@ -48,7 +48,7 @@ class CircleCIProvider(BaseProvider):
             workflows = sorted((data.get("workflows") or {}).keys()) if isinstance(data.get("workflows"), dict) else []
             # ``version`` appears as a keyword under ``workflows`` for CircleCI 2.1+
             workflows = [w for w in workflows if w != "version"]
-            metadata: dict = {}
+            metadata: dict[str, Any] = {}
             if jobs:
                 metadata["jobs"] = jobs
             if workflows:

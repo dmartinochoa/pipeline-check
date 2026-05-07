@@ -20,6 +20,7 @@ and the ``managed_policy_arns`` attribute on the role.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 from .._iam_policy import (
     ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
@@ -46,7 +47,7 @@ from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformResource
 
 
-def _role_is_cicd(values: dict) -> bool:
+def _role_is_cicd(values: dict[str, Any]) -> bool:
     doc = _parse(values.get("assume_role_policy"))
     for stmt in doc.get("Statement", []):
         principal = stmt.get("Principal", {}) or {}
@@ -76,7 +77,7 @@ class IAMChecks(TerraformBaseCheck):
             if role and arn:
                 attachments.setdefault(role, []).append(arn)
 
-        inline_separate: dict[str, list[tuple[str, dict]]] = {}
+        inline_separate: dict[str, list[tuple[str, dict[str, Any]]]] = {}
         for r in self.ctx.resources("aws_iam_role_policy"):
             role = r.values.get("role", "")
             if not role:
@@ -88,8 +89,8 @@ class IAMChecks(TerraformBaseCheck):
         # Customer-managed policies, indexed both by ARN and by name
         # (Terraform lets attachments reference either — "arn" attribute is
         # always present, but we keep name as a fallback).
-        customer_policies_by_arn: dict[str, dict] = {}
-        customer_policies_by_name: dict[str, dict] = {}
+        customer_policies_by_arn: dict[str, dict[str, Any]] = {}
+        customer_policies_by_name: dict[str, dict[str, Any]] = {}
         for r in self.ctx.resources("aws_iam_policy"):
             doc = _parse(r.values.get("policy"))
             arn = r.values.get("arn")
@@ -106,7 +107,7 @@ class IAMChecks(TerraformBaseCheck):
             managed_arns.extend(attachments.get(role_name, []))
 
             # Collect every policy document visible for this role.
-            policy_docs: list[tuple[str, dict]] = []
+            policy_docs: list[tuple[str, dict[str, Any]]] = []
             policy_docs.extend(inline_separate.get(role_name, []))
             for block in (r.values.get("inline_policy") or []):
                 policy_docs.append(
@@ -148,7 +149,7 @@ def _iam001_admin_access(arns: Iterable[str], role_name: str) -> Finding:
     )
 
 
-def _iam002_wildcard_action(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam002_wildcard_action(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     wildcard_policies = [name for name, doc in policy_docs if _has_wildcard_action(doc)]
     passed = not wildcard_policies
     desc = (
@@ -171,7 +172,7 @@ def _iam002_wildcard_action(policy_docs: list[tuple[str, dict]], role_name: str)
     )
 
 
-def _iam003_permission_boundary(values: dict, role_name: str) -> Finding:
+def _iam003_permission_boundary(values: dict[str, Any], role_name: str) -> Finding:
     boundary = values.get("permissions_boundary") or ""
     passed = bool(boundary)
     desc = (
@@ -192,7 +193,7 @@ def _iam003_permission_boundary(values: dict, role_name: str) -> Finding:
     )
 
 
-def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     offenders = [name for name, doc in policy_docs if _statements_with_passrole_wildcard(doc)]
     passed = not offenders
     desc = (
@@ -218,7 +219,7 @@ def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict]], role_name: st
     )
 
 
-def _iam005_external_trust(values: dict, role_name: str) -> Finding:
+def _iam005_external_trust(values: dict[str, Any], role_name: str) -> Finding:
     doc = _parse(values.get("assume_role_policy"))
     bad_statements: list[str] = []
 
@@ -262,7 +263,7 @@ def _iam005_external_trust(values: dict, role_name: str) -> Finding:
     )
 
 
-def _iam006_wildcard_resource(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam006_wildcard_resource(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     hits: dict[str, list[str]] = {}
     for name, doc in policy_docs:
         sensitive = _sensitive_wildcard_resource(doc)

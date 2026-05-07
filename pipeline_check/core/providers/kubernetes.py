@@ -43,7 +43,7 @@ class KubernetesProvider(BaseProvider):
     def inventory(self, context: KubernetesContext) -> list[Component]:
         out: list[Component] = []
         for m in context.manifests:
-            metadata: dict = {
+            metadata: dict[str, Any] = {
                 "api_version": m.api_version,
                 "kind": m.kind,
                 "namespace": m.namespace or "(no-namespace)",

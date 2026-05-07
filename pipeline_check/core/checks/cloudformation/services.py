@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Any
 
 from .._iam_policy import as_list, iter_allow, public_principal
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
@@ -188,8 +189,8 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
 
 def _lambda(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
-    url_by_fn_logical: dict[str, dict] = {}
-    url_by_fn_name: dict[str, dict] = {}
+    url_by_fn_logical: dict[str, dict[str, Any]] = {}
+    url_by_fn_name: dict[str, dict[str, Any]] = {}
     for u in ctx.resources("AWS::Lambda::Url"):
         target = u.properties.get("TargetFunctionArn")
         if isinstance(target, str):
@@ -377,7 +378,7 @@ def _ssm(ctx: CloudFormationContext) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw: object) -> dict:
+def _parse_policy(raw: object) -> dict[str, Any]:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):

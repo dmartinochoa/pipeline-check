@@ -227,3 +227,113 @@ class TestGL031OIDCTrust:
         """
         f = run_check(cfg, "GL-031")
         assert f.passed
+
+
+# ── GL-032 tags injection ───────────────────────────────────────────
+
+
+class TestGL032TagsInjection:
+    def test_fails_on_commit_ref_name_in_tags(self):
+        # ``$CI_COMMIT_REF_NAME`` is the branch / tag the pusher
+        # picked — letting it pick the runner is a self-managed
+        # foothold attack identical to GHA-036's reusable-workflow
+        # caller scenario.
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: [$CI_COMMIT_REF_NAME]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert not f.passed
+        assert "build_job" in f.description
+
+    def test_fails_on_braced_commit_message(self):
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: ["${CI_COMMIT_MESSAGE}", "self-managed"]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert not f.passed
+
+    def test_fails_on_merge_request_title(self):
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: ["$CI_MERGE_REQUEST_TITLE"]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert not f.passed
+
+    def test_fails_on_string_tag_form(self):
+        # ``tags:`` accepts a single string scalar in addition to the
+        # canonical list form. Same threat surface.
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: $CI_COMMIT_BRANCH
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert not f.passed
+
+    def test_passes_on_static_tag_list(self):
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: [self-managed, ephemeral, deploy-prod]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert f.passed
+
+    def test_passes_on_custom_static_variable(self):
+        # ``$DEPLOY_FLEET`` is author-controlled — defined in the
+        # workflow's own ``variables:`` block, not from SCM event
+        # metadata. The rule only matches the curated catalog of
+        # untrusted predefined CI variables.
+        cfg = """
+        stages: [build]
+        variables:
+          DEPLOY_FLEET: prod-fleet
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          tags: [$DEPLOY_FLEET]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert f.passed
+
+    def test_passes_when_no_tags_set(self):
+        # No ``tags:`` means the GitLab default runner pool — out of
+        # scope for this rule (GL-014 covers that).
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-032")
+        assert f.passed

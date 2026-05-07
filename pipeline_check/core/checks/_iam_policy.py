@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable
+from typing import Any
 
 CICD_SERVICE_PRINCIPALS = {
     "codebuild.amazonaws.com",
@@ -25,13 +26,13 @@ SENSITIVE_ACTION_PREFIXES = (
 )
 
 
-def as_list(v: object) -> list:
+def as_list(v: object) -> list[Any]:
     if v is None:
         return []
     return v if isinstance(v, list) else [v]
 
 
-def parse_doc(raw: object) -> dict:
+def parse_doc(raw: object) -> dict[str, Any]:
     """Return a policy document as a dict. Accepts dict, JSON string, or junk."""
     if not raw:
         return {}
@@ -46,7 +47,7 @@ def parse_doc(raw: object) -> dict:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def iter_allow(doc: dict) -> Iterable[dict]:
+def iter_allow(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
     # Statement can legally be a single dict or a list; be tolerant of None
     # and of malformed entries that aren't dicts at all.
     stmts = doc.get("Statement") or []
@@ -59,7 +60,7 @@ def iter_allow(doc: dict) -> Iterable[dict]:
             yield stmt
 
 
-def has_wildcard_action(doc: dict, ignore_constrained: bool = False) -> bool:
+def has_wildcard_action(doc: dict[str, Any], ignore_constrained: bool = False) -> bool:
     """Return True when any ``Allow`` statement has ``Action: "*"``.
 
     When *ignore_constrained* is True, statements that carry a
@@ -78,7 +79,7 @@ def has_wildcard_action(doc: dict, ignore_constrained: bool = False) -> bool:
     return False
 
 
-def passrole_wildcard(doc: dict, ignore_constrained: bool = False) -> bool:
+def passrole_wildcard(doc: dict[str, Any], ignore_constrained: bool = False) -> bool:
     from ._context import statement_is_constrained
     for stmt in iter_allow(doc):
         actions = as_list(stmt.get("Action"))
@@ -108,7 +109,7 @@ OIDC_FEDERATION_HOSTS = (
 )
 
 
-def is_oidc_trust_stmt(stmt: dict) -> str | None:
+def is_oidc_trust_stmt(stmt: dict[str, Any]) -> str | None:
     """Return the matched OIDC host if *stmt* is a Federated/OIDC trust.
 
     Only Allow statements with a ``Principal.Federated`` whose value
@@ -130,7 +131,7 @@ def is_oidc_trust_stmt(stmt: dict) -> str | None:
     return None
 
 
-def oidc_audience_pinned(stmt: dict) -> bool:
+def oidc_audience_pinned(stmt: dict[str, Any]) -> bool:
     """Return True when *stmt* pins an audience condition (``...:aud``)."""
     conditions = stmt.get("Condition", {}) or {}
     for inner in conditions.values():
@@ -142,7 +143,7 @@ def oidc_audience_pinned(stmt: dict) -> bool:
     return False
 
 
-def oidc_subject_pinned(stmt: dict) -> bool:
+def oidc_subject_pinned(stmt: dict[str, Any]) -> bool:
     """Return True when *stmt* pins a subject condition (``...:sub``)
     **and** the value is not an unrestricted wildcard."""
     conditions = stmt.get("Condition", {}) or {}
@@ -164,7 +165,7 @@ def oidc_subject_pinned(stmt: dict) -> bool:
     return False
 
 
-def public_principal(stmt: dict) -> bool:
+def public_principal(stmt: dict[str, Any]) -> bool:
     """Return True when *stmt* grants access to an anonymous / wildcard principal."""
     if stmt.get("Effect") != "Allow":
         return False
@@ -178,7 +179,7 @@ def public_principal(stmt: dict) -> bool:
     return False
 
 
-def sensitive_wildcard(doc: dict) -> list[str]:
+def sensitive_wildcard(doc: dict[str, Any]) -> list[str]:
     """Actions paired with Resource:"*" that fall under a sensitive prefix.
 
     IAM-002 handles Action:"*" directly, so it is filtered out here to avoid

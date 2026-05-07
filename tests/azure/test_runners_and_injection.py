@@ -155,3 +155,141 @@ class TestADO027ShellEval:
         """
         f = run_check(cfg, "ADO-027")
         assert f.passed
+
+
+# ── ADO-030 pool injection ──────────────────────────────────────────
+
+
+class TestADO030PoolInjection:
+    def test_fails_on_template_parameter_at_top_level(self):
+        # Caller-controlled template parameter routes the WHOLE
+        # pipeline onto whatever pool the caller picks — most direct
+        # parity with the GHA-036 reusable-workflow attack.
+        cfg = """
+        parameters:
+          - name: poolName
+            type: string
+            default: ubuntu-latest
+        pool: ${{ parameters.poolName }}
+        jobs:
+          - job: build
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert not f.passed
+        assert "<top>" in f.description
+
+    def test_fails_on_template_parameter_in_dict_form_name(self):
+        cfg = """
+        parameters:
+          - name: poolName
+            type: string
+        jobs:
+          - job: build
+            pool:
+              name: ${{ parameters.poolName }}
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert not f.passed
+
+    def test_fails_on_runtime_macro_in_demands(self):
+        # ``demands:`` is a label-style targeting filter. Letting a
+        # PR-controlled macro into the demand picks which agent the
+        # job lands on (the agent that satisfies the crafted demand).
+        cfg = """
+        jobs:
+          - job: build
+            pool:
+              name: prod-pool
+              demands:
+                - $(Build.SourceBranchName) -equals release
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert not f.passed
+
+    def test_fails_on_pull_request_source_branch(self):
+        cfg = """
+        jobs:
+          - job: build
+            pool: $(System.PullRequest.SourceBranch)
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert not f.passed
+
+    def test_fails_when_demands_is_string_form(self):
+        # ``demands:`` accepts a single string scalar in addition to
+        # the canonical list form. Same threat surface.
+        cfg = """
+        jobs:
+          - job: build
+            pool:
+              name: prod-pool
+              demands: "$(Build.SourceBranchName)"
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert not f.passed
+
+    def test_passes_on_static_pool_string(self):
+        cfg = """
+        pool: ubuntu-latest
+        jobs:
+          - job: build
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert f.passed
+
+    def test_passes_on_vmimage(self):
+        # Microsoft-hosted vmImage is not a privileged-runner
+        # targeting surface — the rule deliberately skips it.
+        cfg = """
+        jobs:
+          - job: build
+            pool:
+              vmImage: ubuntu-latest
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert f.passed
+
+    def test_passes_on_static_demands(self):
+        cfg = """
+        jobs:
+          - job: build
+            pool:
+              name: prod-pool
+              demands:
+                - ephemeral -equals true
+                - agent.os -equals Linux
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert f.passed
+
+    def test_passes_on_pipeline_variable(self):
+        # ``$(POOL_NAME)`` defined by the author in ``variables:`` is
+        # not in the curated untrusted-macro catalog. Static custom
+        # variables remain author-controlled.
+        cfg = """
+        variables:
+          POOL_NAME: prod-pool
+        jobs:
+          - job: build
+            pool: $(POOL_NAME)
+            steps:
+              - script: make
+        """
+        f = run_check(cfg, "ADO-030")
+        assert f.passed

@@ -65,12 +65,10 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
-# Strict-mode flags we can enable without touching the rule packs.
-# Full ``strict = true`` adds ``disallow_any_generics`` /
-# ``disallow_untyped_defs`` etc. that would require ~300 mechanical
-# annotations across the AWS / Terraform / CloudFormation rule
-# modules — that's its own focused PR. The flags below are the
-# subset that catches real bugs without that yak-shave:
+# All nine strict-mode flags from ``mypy --strict`` are enabled. The
+# block below documents which flag did what work; everything beneath
+# the bullet list is the per-flag rationale carried over from the
+# incremental landings.
 #   - ``no_implicit_optional`` is the modern default.
 #   - ``warn_redundant_casts`` flags ``cast()`` calls that already
 #     match the inferred type.
@@ -103,6 +101,16 @@ disallow_untyped_calls = true
 # helpers, and the iter-* generators in ``checks/blob.py`` /
 # ``checks/github/base.py``.
 disallow_untyped_defs = true
+# ``disallow_any_generics`` requires every generic to declare its
+# type parameters — bare ``dict`` / ``list`` / ``Iterable`` /
+# ``click.Choice`` are rejected. Enabled after a 226 → 0 annotation
+# pass; most call sites resolved to ``dict[str, Any]`` (CFN /
+# Terraform resource blocks are heterogeneously typed by upstream
+# parsers) and the Click ``Choice`` parameter became ``Choice[str]``.
+# The four AWS modules already in the boto3 override block also
+# disable ``type-arg`` since ``boto3``'s untyped paginator output
+# would otherwise require ``cast()`` at every wrapper site.
+disallow_any_generics = true
 # Silence "Library stubs not installed for X" until requirements-dev.txt
 # is regenerated to include types-PyYAML. The runtime behavior is fine;
 # this only affects mypy's static checks on yaml.* call sites.
@@ -126,6 +134,11 @@ disallow_subclassing_any = false
 # ``warn_return_any`` even though the runtime shape is correct. The
 # proper fix is to add ``cast()`` at every site or pull in
 # ``boto3-stubs`` for typing. Both are out of scope for now.
+#
+# ``type-arg`` is in the disable list for the same reason: spelling
+# every paginator wrapper as ``list[dict[str, Any]]`` adds noise
+# without precision while the underlying objects remain ``Any``. The
+# rest of the codebase still enforces ``disallow_any_generics``.
 [[tool.mypy.overrides]]
 module = [
     "pipeline_check.core.checks.aws._catalog",
@@ -133,4 +146,4 @@ module = [
     "pipeline_check.core.checks.aws.base",
     "pipeline_check.core.providers.aws",
 ]
-disable_error_code = ["no-any-return", "call-overload", "var-annotated", "union-attr", "arg-type"]
+disable_error_code = ["no-any-return", "call-overload", "var-annotated", "union-attr", "arg-type", "type-arg"]

@@ -154,7 +154,7 @@ class Finding:
     #: behind" even though the rule's blanket default is MEDIUM).
     confidence_locked: bool = False
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "check_id": self.check_id,
             "title": self.title,

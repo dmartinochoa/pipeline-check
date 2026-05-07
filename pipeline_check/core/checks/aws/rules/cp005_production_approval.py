@@ -1,6 +1,8 @@
 """CP-005 — CodePipeline production deploy stage missing manual approval."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -23,7 +25,7 @@ RULE = Rule(
 _PROD_TOKENS = ("prod", "production", "live")
 
 
-def _stage_is_production(stage: dict) -> bool:
+def _stage_is_production(stage: dict[str, Any]) -> bool:
     name = (stage.get("name") or "").lower()
     if any(tok in name for tok in _PROD_TOKENS):
         return True
@@ -34,7 +36,7 @@ def _stage_is_production(stage: dict) -> bool:
     return False
 
 
-def _has_approval(stage: dict) -> bool:
+def _has_approval(stage: dict[str, Any]) -> bool:
     for action in stage.get("actions", []) or []:
         at = action.get("actionTypeId") or {}
         if at.get("category") == "Approval" and at.get("provider") == "Manual":

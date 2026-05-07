@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str
@@ -50,7 +51,7 @@ class PBACChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _pbac001_vpc_config(properties: dict, name: str) -> Finding:
+def _pbac001_vpc_config(properties: dict[str, Any], name: str) -> Finding:
     vpc = properties.get("VpcConfig") or {}
     has_vpc = bool(
         vpc.get("VpcId")
@@ -78,7 +79,7 @@ def _pbac001_vpc_config(properties: dict, name: str) -> Finding:
 
 
 def _pbac002_shared_role(
-    properties: dict, name: str, role_map: dict[str, list[str]],
+    properties: dict[str, Any], name: str, role_map: dict[str, list[str]],
 ) -> Finding:
     key = _service_role_key(properties.get("ServiceRole"))
     sharing = role_map.get(key, []) if key else []

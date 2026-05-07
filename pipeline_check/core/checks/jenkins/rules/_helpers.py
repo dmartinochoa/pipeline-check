@@ -58,6 +58,28 @@ UNTRUSTED_ENV_RE = re.compile(
     r"\s*\}?"
 )
 
+# ── JF-032: agent label / node targeting taint ───────────────────────
+#: Matches Groovy ``${...}`` interpolations whose body resolves to an
+#: attacker-controllable value: any ``env.*`` reference from the
+#: existing UNTRUSTED_ENV_RE catalog, OR ``params.X`` (build
+#: parameters set by whoever queued the run — Jenkins's analogue to
+#: GHA ``inputs.X`` / ADO ``parameters.X``). Used by JF-032 to flag
+#: ``agent { label "..." }`` strings whose body lets the triggerer
+#: pick which agent label / pool the build runs on. Static label
+#: strings, plain ``${env.JOB_NAME}`` (author-controlled), and
+#: ``${env.WORKSPACE}`` are NOT in the catalog.
+LABEL_TAINT_RE = re.compile(
+    r"\$\{?\s*(?:env\.)?"
+    r"(?:BRANCH_NAME|GIT_BRANCH|TAG_NAME"
+    r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?"
+    r"|CHANGE_URL|CHANGE_TARGET"
+    r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
+    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
+    r"\s*\}?"
+    r"|\$\{?\s*params\.[A-Za-z_][A-Za-z0-9_]*\s*\}?"
+)
+
+
 SHELL_STEP_RE = re.compile(
     r"(?:sh|bat|powershell|pwsh)\s*\(?\s*"
     r"(?:\"\"\"(?P<triple_d>.*?)\"\"\""

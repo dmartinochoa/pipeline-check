@@ -48,8 +48,8 @@ class GitHubProvider(BaseProvider):
         return out
 
 
-def _gha_metadata(data: dict) -> dict:
-    meta: dict = {}
+def _gha_metadata(data: dict[str, Any]) -> dict[str, Any]:
+    meta: dict[str, Any] = {}
     jobs = data.get("jobs")
     if isinstance(jobs, dict):
         meta["jobs"] = sorted(jobs.keys())
@@ -82,7 +82,11 @@ def _gha_metadata(data: dict) -> dict:
     # boolean coercion), so probe both.
     on = data.get("on")
     if on is None:
-        on = data.get(True)
+        # PyYAML 1.1 parses bare ``on:`` as the Python ``True`` key.
+        # The dict is typed ``dict[str, Any]``, so widen via cast for
+        # this one lookup. ``cast`` widens at type-check time only.
+        from typing import cast
+        on = cast("dict[Any, Any]", data).get(True)
     if isinstance(on, dict):
         meta["triggers"] = sorted(on.keys())
     elif isinstance(on, list):

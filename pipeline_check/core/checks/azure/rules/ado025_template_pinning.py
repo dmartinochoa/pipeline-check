@@ -56,14 +56,19 @@ def _find_template_aliases(node: Any, aliases: set[str]) -> None:
             _find_template_aliases(item, aliases)
 
 
-def _repo_is_pinned(repo: dict) -> bool:
+def _repo_is_pinned(repo: dict[str, Any]) -> bool:
     ref = repo.get("ref")
     if not isinstance(ref, str):
         return False
-    # Accept ``refs/tags/<sha>`` or a bare 40-char SHA.
-    bare = ref.removeprefix("refs/tags/").removeprefix("refs/heads/")
-    # Pinned when the ref is a 40-char SHA; refs/heads/* or refs/tags/v1
-    # (a floating tag) aren't pinned enough.
+    # Branches are always mutable — even a branch named after a SHA
+    # (``refs/heads/<40-hex>``) is just a movable pointer. Reject the
+    # whole namespace before the SHA check so the alias shape can't
+    # masquerade as an immutable pin.
+    if ref.startswith("refs/heads/"):
+        return False
+    # Accept ``refs/tags/<sha>`` or a bare 40-char SHA. ``refs/tags/v1``
+    # (a floating tag) won't survive the _SHA_RE check below.
+    bare = ref.removeprefix("refs/tags/")
     return bool(_SHA_RE.match(bare))
 
 
@@ -76,7 +81,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return _passed(path, "No repository resources declared.")
 
     # Build alias → repo-entry map.
-    repo_by_alias: dict[str, dict] = {}
+    repo_by_alias: dict[str, dict[str, Any]] = {}
     for entry in repos:
         if not isinstance(entry, dict):
             continue

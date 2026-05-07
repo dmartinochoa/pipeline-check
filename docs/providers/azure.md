@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-29 checks · 10 have an autofix patch (``--fix``).
+30 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -63,6 +63,7 @@ The walker handles every layout ADO supports:
 | [ADO-027](#ado-027) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-028](#ado-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ADO-029](#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -641,6 +642,26 @@ Pairs with IAM-008 (the AWS-side OIDC rule) — Azure's equivalent trust path ru
 **Recommended action**
 
 Every job that consumes an Azure service connection (via ``AzureCLI@``, ``AzurePowerShell@``, ``AzureKeyVault@``, ``AzureWebApp@``, etc.) must either be a ``deployment:`` job bound to an ``environment:`` (which carries approval checks and audit) or carry a ``condition:`` that pins ``Build.SourceBranch`` to a protected ref. Without one of those gates, any branch push drives the federated assume-role on Azure AD.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-030 — pool interpolates attacker-controllable value { #ado-030 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the upstream targeting choice. When ``pool:`` (or its ``name`` / ``demands`` sub-fields) is computed from an attacker-controllable expression, whoever triggers the pipeline picks where the job runs — including any agent pool the project exposes (``deploy-prod``, ``signer``, ``hsm`` …). Two attacker surfaces are flagged: runtime SCM macros (``$(Build.SourceBranchName)``, ``$(System.PullRequest.SourceBranch)``, …) and caller-controlled template parameters (``${{ parameters.X }}`` — the value comes from whoever queued the run). The rule walks all three pool shapes — string scalar, dict ``{ name, vmImage, demands }``, and the ``demands`` list form.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Hard-code ``pool:`` to a specific agent pool name (or ``vmImage:`` for Microsoft-hosted). If pool selection has to be parameterised, validate the candidate against an explicit allowlist before the job runs (e.g. a ``condition:`` guard against a vetted set), and never inline ``$(Build.*)`` / ``$(System.PullRequest.*)`` / ``${{ parameters.X }}`` values as the pool name or as a demand.
 
 </div>
 

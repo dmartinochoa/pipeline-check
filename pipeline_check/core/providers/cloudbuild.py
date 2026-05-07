@@ -46,7 +46,7 @@ class CloudBuildProvider(BaseProvider):
             steps = data.get("steps") or []
             step_count = len(steps) if isinstance(steps, list) else 0
             sa = data.get("serviceAccount")
-            metadata: dict = {"step_count": step_count}
+            metadata: dict[str, Any] = {"step_count": step_count}
             if isinstance(sa, str) and sa.strip():
                 metadata["service_account"] = sa
             options = data.get("options") or {}

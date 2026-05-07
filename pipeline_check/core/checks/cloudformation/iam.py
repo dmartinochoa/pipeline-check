@@ -14,6 +14,7 @@ CFN differences from Terraform:
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 from .._iam_policy import (
     ADMIN_POLICY_ARN as _ADMIN_POLICY_ARN,
@@ -37,7 +38,7 @@ from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, CloudFormationResource, as_str
 
 
-def _role_is_cicd(properties: dict) -> bool:
+def _role_is_cicd(properties: dict[str, Any]) -> bool:
     doc = properties.get("AssumeRolePolicyDocument")
     if not isinstance(doc, dict):
         return False
@@ -68,7 +69,7 @@ class IAMChecks(CloudFormationBaseCheck):
 
         # Index managed policies by logical id so ManagedPolicyArns values
         # of the form {"Ref": "MyManagedPolicy"} can be dereferenced.
-        managed_by_logical_id: dict[str, dict] = {}
+        managed_by_logical_id: dict[str, dict[str, Any]] = {}
         for r in self.ctx.resources("AWS::IAM::ManagedPolicy"):
             doc = r.properties.get("PolicyDocument")
             if isinstance(doc, dict):
@@ -79,7 +80,7 @@ class IAMChecks(CloudFormationBaseCheck):
             role_name = as_str(r.properties.get("RoleName")) or r.logical_id
             arns = list(r.properties.get("ManagedPolicyArns") or [])
 
-            policy_docs: list[tuple[str, dict]] = []
+            policy_docs: list[tuple[str, dict[str, Any]]] = []
             # Inline policies on the Role.
             for inline in (r.properties.get("Policies") or []):
                 if not isinstance(inline, dict):
@@ -108,7 +109,7 @@ class IAMChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _iam001_admin_access(arns: Iterable, role_name: str) -> Finding:
+def _iam001_admin_access(arns: Iterable[Any], role_name: str) -> Finding:
     # ARNs may be literal strings or intrinsic dicts; only literal
     # strings match ADMIN_POLICY_ARN exactly.
     has_admin = any(
@@ -130,7 +131,7 @@ def _iam001_admin_access(arns: Iterable, role_name: str) -> Finding:
     )
 
 
-def _iam002_wildcard_action(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam002_wildcard_action(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     offenders = [name for name, doc in policy_docs if _has_wildcard_action(doc)]
     passed = not offenders
     desc = (
@@ -149,7 +150,7 @@ def _iam002_wildcard_action(policy_docs: list[tuple[str, dict]], role_name: str)
     )
 
 
-def _iam003_permission_boundary(properties: dict, role_name: str) -> Finding:
+def _iam003_permission_boundary(properties: dict[str, Any], role_name: str) -> Finding:
     boundary = properties.get("PermissionsBoundary")
     passed = bool(boundary)
     desc = (
@@ -168,7 +169,7 @@ def _iam003_permission_boundary(properties: dict, role_name: str) -> Finding:
     )
 
 
-def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     offenders = [name for name, doc in policy_docs if _statements_with_passrole_wildcard(doc)]
     passed = not offenders
     desc = (
@@ -191,7 +192,7 @@ def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict]], role_name: st
     )
 
 
-def _iam005_external_trust(properties: dict, role_name: str) -> Finding:
+def _iam005_external_trust(properties: dict[str, Any], role_name: str) -> Finding:
     doc = properties.get("AssumeRolePolicyDocument") or {}
     if not isinstance(doc, dict):
         doc = {}
@@ -231,7 +232,7 @@ def _iam005_external_trust(properties: dict, role_name: str) -> Finding:
     )
 
 
-def _iam006_wildcard_resource(policy_docs: list[tuple[str, dict]], role_name: str) -> Finding:
+def _iam006_wildcard_resource(policy_docs: list[tuple[str, dict[str, Any]]], role_name: str) -> Finding:
     hits: dict[str, list[str]] = {}
     for name, doc in policy_docs:
         sensitive = _sensitive_wildcard_resource(doc)

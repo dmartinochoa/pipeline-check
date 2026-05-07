@@ -236,6 +236,11 @@ def _fan_out(regions: list[str], providers: list[str]) -> dict[str, Any]:
             result["provider"] = provider
             scans.append(result)
             grade = result.get("grade", "D")
+            # Unknown grades collapse to "D" so a malformed sub-scan
+            # result can't crash the fan-out with a ValueError. The
+            # error is still recorded in the per-scan dict above.
+            if grade not in _GRADE_ORDER:
+                grade = "D"
             if _GRADE_ORDER.index(grade) > _GRADE_ORDER.index(worst_grade):
                 worst_grade = grade
             total_criticals += int(result.get("critical_failures", 0))

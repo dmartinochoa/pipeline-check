@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-31 checks · 11 have an autofix patch (``--fix``).
+32 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -51,6 +51,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-029](#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-030](#gl-030) | trigger: include: pulls child pipeline without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-031](#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-032](#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -669,6 +670,26 @@ Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audienc
 **Recommended action**
 
 For every job that declares an ``id_tokens:`` block, pin a non-wildcard ``aud:`` (a literal string the consumer trusts) AND bind the job to a protected ``environment:``. Audience pinning prevents token replay against unintended consumers; the environment binding gates which refs can drive the assume-role on the consumer side.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-032 — tags: interpolates untrusted CI variable { #gl-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+GL-014 catches self-managed runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``tags:`` is computed from an attacker-controllable CI variable, the operator (or anyone who can craft a PR title / branch name / commit message that the workflow consumes) picks where the job runs — including any privileged tag the instance exposes (``deploy-prod``, ``signer``, ``hsm`` …). The rule reuses the same untrusted-context catalog as GL-002 (``CI_COMMIT_MESSAGE``, ``CI_COMMIT_REF_NAME``, ``CI_MERGE_REQUEST_TITLE`` and friends) so the two rules stay in lockstep.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Hard-code ``tags:`` to a specific runner tag list. If runner selection has to be parameterised, validate the candidate value against an explicit allowlist in a job ``rules:`` block before the job runs, and never accept a ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` field as a tag value directly.
 
 </div>
 

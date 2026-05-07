@@ -9,12 +9,13 @@ S3-005  Bucket policy missing aws:SecureTransport   MEDIUM    CICD-SEC-9
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
 
-def _first(block_list: list | None) -> dict:
+def _first(block_list: list[Any] | None) -> dict[str, Any]:
     if not block_list:
         return {}
     return block_list[0] or {}
@@ -51,8 +52,8 @@ class S3Checks(TerraformBaseCheck):
                     buckets.add(loc)
         return buckets
 
-    def _index_by_bucket(self, resource_type: str) -> dict[str, dict]:
-        out: dict[str, dict] = {}
+    def _index_by_bucket(self, resource_type: str) -> dict[str, dict[str, Any]]:
+        out: dict[str, dict[str, Any]] = {}
         for r in self.ctx.resources(resource_type):
             bucket = r.values.get("bucket")
             if bucket:
@@ -60,7 +61,7 @@ class S3Checks(TerraformBaseCheck):
         return out
 
 
-def _s3001_pab(values: dict | None, bucket: str) -> Finding:
+def _s3001_pab(values: dict[str, Any] | None, bucket: str) -> Finding:
     if not values:
         fully_blocked = False
         missing = ["BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"]
@@ -89,7 +90,7 @@ def _s3001_pab(values: dict | None, bucket: str) -> Finding:
     )
 
 
-def _s3002_encryption(values: dict | None, bucket: str) -> Finding:
+def _s3002_encryption(values: dict[str, Any] | None, bucket: str) -> Finding:
     encrypted = False
     algo = "unknown"
     if values:
@@ -114,7 +115,7 @@ def _s3002_encryption(values: dict | None, bucket: str) -> Finding:
     )
 
 
-def _s3003_versioning(values: dict | None, bucket: str) -> Finding:
+def _s3003_versioning(values: dict[str, Any] | None, bucket: str) -> Finding:
     status = ""
     if values:
         vcfg = _first(values.get("versioning_configuration"))
@@ -136,7 +137,7 @@ def _s3003_versioning(values: dict | None, bucket: str) -> Finding:
     )
 
 
-def _s3004_logging(values: dict | None, bucket: str) -> Finding:
+def _s3004_logging(values: dict[str, Any] | None, bucket: str) -> Finding:
     target = (values or {}).get("target_bucket")
     enabled = bool(target)
     desc = (
@@ -155,7 +156,7 @@ def _s3004_logging(values: dict | None, bucket: str) -> Finding:
     )
 
 
-def _s3005_secure_transport(values: dict | None, bucket: str) -> Finding:
+def _s3005_secure_transport(values: dict[str, Any] | None, bucket: str) -> Finding:
     policy_text = (values or {}).get("policy") or ""
     if not policy_text:
         return Finding(

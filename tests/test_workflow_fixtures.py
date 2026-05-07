@@ -46,7 +46,7 @@ def _finding_map(findings):
 
 
 class TestGitHubFixtures:
-    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 36)}
+    EXPECTED_IDS = {f"GHA-{i:03d}" for i in range(1, 37)}
 
     def _scan(self, filename: str):
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
@@ -78,7 +78,7 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 32)}
+    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 33)}
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -142,7 +142,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 30)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 31)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
@@ -168,7 +168,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 32)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 33)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
@@ -336,17 +336,17 @@ class TestKubernetesFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 36)}),
+     {f"GHA-{i:03d}" for i in range(1, 37)}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 32)}),
+     {f"GL-{i:03d}" for i in range(1, 33)}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 30)}),
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
-     {f"ADO-{i:03d}" for i in range(1, 30)}),
+     {f"ADO-{i:03d}" for i in range(1, 31)}),
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
-     {f"JF-{i:03d}" for i in range(1, 32)}),
+     {f"JF-{i:03d}" for i in range(1, 33)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",

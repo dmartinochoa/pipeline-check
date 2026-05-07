@@ -39,8 +39,8 @@ from .base import BaseProvider
 # security- or audit-relevant are surfaced — full attribute dumps would
 # bloat the inventory and leak the same details the findings already
 # cover. Every field is optional; missing values are simply omitted.
-def _tf_metadata(resource_type: str, values: dict) -> dict:
-    meta: dict = {}
+def _tf_metadata(resource_type: str, values: dict[str, Any]) -> dict[str, Any]:
+    meta: dict[str, Any] = {}
     # Tags are common across aws_* — pick them up everywhere.
     tags = values.get("tags")
     if isinstance(tags, dict) and tags:

@@ -8,6 +8,7 @@ and is covered — where possible — in services.py.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from .._iam_policy import (
     is_oidc_trust_stmt,
@@ -378,7 +379,7 @@ def _iam_oidc(ctx: CloudFormationContext) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw: object) -> dict:
+def _parse_policy(raw: object) -> dict[str, Any]:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):

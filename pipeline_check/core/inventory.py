@@ -49,7 +49,7 @@ class Component:
     #: (``tags``, ``encrypted``, ``stages``) rather than deeply nested.
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "provider": self.provider,
             "type": self.type,

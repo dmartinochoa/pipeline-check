@@ -9,12 +9,13 @@ ECR-005  Repository encrypted with AES256 not KMS CMK  MEDIUM    CICD-SEC-9
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
 
-def _first(block_list: list | None) -> dict:
+def _first(block_list: list[Any] | None) -> dict[str, Any]:
     if not block_list:
         return {}
     return block_list[0] or {}
@@ -46,7 +47,7 @@ class ECRChecks(TerraformBaseCheck):
         return findings
 
 
-def _ecr001_scan_on_push(values: dict, name: str) -> Finding:
+def _ecr001_scan_on_push(values: dict[str, Any], name: str) -> Finding:
     scan_cfg = _first(values.get("image_scanning_configuration"))
     enabled = bool(scan_cfg.get("scan_on_push", False))
     desc = (
@@ -65,7 +66,7 @@ def _ecr001_scan_on_push(values: dict, name: str) -> Finding:
     )
 
 
-def _ecr002_tag_mutability(values: dict, name: str) -> Finding:
+def _ecr002_tag_mutability(values: dict[str, Any], name: str) -> Finding:
     mutability = values.get("image_tag_mutability") or "MUTABLE"
     passed = mutability == "IMMUTABLE"
     desc = (
@@ -158,7 +159,7 @@ def _ecr004_lifecycle_policy(has_policy: bool, name: str) -> Finding:
     )
 
 
-def _ecr005_kms_encryption(values: dict, name: str) -> Finding:
+def _ecr005_kms_encryption(values: dict[str, Any], name: str) -> Finding:
     enc = _first(values.get("encryption_configuration"))
     enc_type = (enc.get("encryption_type") or "AES256")
     kms_key = enc.get("kms_key")

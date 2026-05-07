@@ -10,7 +10,34 @@ hide:
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-![Pipeline-Check](logo.svg){.pg-hero__mark loading=lazy}
+<div class="pg-hero__mark pg-hero__mark--animated" role="img" aria-label="Pipeline-Check — white goose holding a magnifying glass">
+  <svg viewBox="0 0 100 64" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <g class="goose-bob">
+      <path d="M22 50 Q14 50 14 38 Q14 24 30 22 Q48 20 52 36 Q54 50 44 52 Q32 54 22 50 Z" fill="#f0f2f5" stroke="#f0f2f5" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M26 38 Q34 32 44 36 Q42 42 34 44 Q28 44 26 38 Z" fill="#04101a" opacity=".55"/>
+      <path d="M48 28 Q52 18 60 14 Q66 12 68 8" stroke="#f0f2f5" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+      <circle cx="70" cy="9" r="6.2" fill="#f0f2f5"/>
+      <circle cx="67" cy="11" r="1.6" fill="#1ba3a9" opacity=".4"/>
+      <g class="eye-blink">
+        <circle cx="72" cy="8" r="1.1" fill="#04101a"/>
+        <circle cx="72.4" cy="7.6" r="0.35" fill="#f0f2f5"/>
+      </g>
+      <path d="M75.5 8 L83 7 L83 10 L75.5 10.5 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+      <path d="M76 9.4 L82.4 9" stroke="#04101a" stroke-width=".5" opacity=".5"/>
+      <g transform="translate(86, 10)">
+        <line x1="0" y1="0" x2="-4" y2="-3" stroke="#1ba3a9" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="6" cy="3" r="6" fill="rgba(27,163,169,.12)" stroke="#1ba3a9" stroke-width="1.4"/>
+        <line x1="3" y1="1.5" x2="6" y2="1.5" stroke="#f0f2f5" stroke-width=".7" stroke-linecap="round" opacity=".7"/>
+      </g>
+      <g>
+        <line x1="30" y1="52" x2="30" y2="57" stroke="#f0f2f5" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M25 58 L35 58 L30 55 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+        <line x1="42" y1="52" x2="42" y2="57" stroke="#f0f2f5" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M37 58 L47 58 L42 55 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+      </g>
+    </g>
+  </svg>
+</div>
 
 <span class="pg-hero__wordmark">pipeline-check · v{{ version }}</span>
 
@@ -18,7 +45,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 12 providers, graded against 13 compliance frameworks. 
-96 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+100 of the 430+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -53,7 +80,7 @@ A read-only scanner for 12 providers, graded against 13 compliance frameworks.
   <div class="pg-stat"><div class="pg-stat__num">430+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">12</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">96</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">100</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
@@ -249,6 +276,74 @@ flowchart LR
     <li><a class="pg-output" href="output/#html"><strong>HTML report</strong><span>Client-side filters, shareable</span></a></li>
     <li><a class="pg-output" href="output/#sarif"><strong>SARIF 2.1.0</strong><span>GitHub code scanning, Defender</span></a></li>
   </ul>
+</div>
+</section>
+
+<section class="pg-section" markdown>
+<div class="pg-section__head" markdown>
+<div class="pg-section__eyebrow">// the patrol</div>
+<h2 class="pg-section__title">Every commit walks the same rail.</h2>
+<p class="pg-section__lede">
+Build, test, scan, deploy. The goose stops at SCAN, inspects what's
+arriving, and stamps DENIED on anything that fails the rules — before
+it ships. That's the whole product in one frame.
+</p>
+</div>
+
+<div class="pg-patrol" role="img" aria-label="Pipeline-Check goose patrolling a CI/CD pipeline rail — pauses at the SCAN node and stamps a build DENIED">
+  <svg class="pg-patrol__world" viewBox="0 0 800 350" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <line x1="40" y1="240" x2="760" y2="240" stroke="#f0f2f5" stroke-width="1.4" opacity=".25"/>
+    <g>
+      <circle cx="80" cy="240" r="5" fill="#f0f2f5" opacity=".55"/>
+      <text x="80" y="262" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#7c8a99" letter-spacing=".1em">BUILD</text>
+      <circle cx="280" cy="240" r="5" fill="#f0f2f5" opacity=".55"/>
+      <text x="280" y="262" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#7c8a99" letter-spacing=".1em">TEST</text>
+      <circle cx="480" cy="240" r="6" fill="#1ba3a9"/>
+      <text x="480" y="262" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1ba3a9" letter-spacing=".1em">SCAN</text>
+      <circle cx="680" cy="240" r="5" fill="#f0f2f5" opacity=".55"/>
+      <text x="680" y="262" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#7c8a99" letter-spacing=".1em">DEPLOY</text>
+    </g>
+    <g class="commit"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">a3f</text></g>
+    <g class="commit c2"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">9c2</text></g>
+    <g class="commit c3"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">f81</text></g>
+    <g class="commit c4"><rect x="-20" y="232" width="14" height="14" rx="2" fill="#0e2333" stroke="#1ba3a9" stroke-width="1"/><text x="-13" y="242" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#1ba3a9">d04</text></g>
+    <g class="denied-pop" transform="translate(480, 188)">
+      <rect x="-30" y="-12" width="60" height="22" rx="3" fill="#04101a" stroke="#dc3545" stroke-width="1.4"/>
+      <text x="0" y="3" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" letter-spacing=".18em" fill="#dc3545">DENIED</text>
+    </g>
+    <g class="goose-patrol">
+      <g class="goose-bob">
+        <g class="scan-ring" transform="translate(60, -60)">
+          <circle r="22" fill="none" stroke="#1ba3a9" stroke-width="1.4" opacity=".7"/>
+          <circle r="14" fill="none" stroke="#1ba3a9" stroke-width="1" opacity=".4"/>
+        </g>
+        <g transform="translate(-36, -58)">
+          <path d="M22 50 Q14 50 14 38 Q14 24 30 22 Q48 20 52 36 Q54 50 44 52 Q32 54 22 50 Z" fill="#f0f2f5" stroke="#f0f2f5" stroke-width="1" stroke-linejoin="round"/>
+          <path d="M26 38 Q34 32 44 36 Q42 42 34 44 Q28 44 26 38 Z" fill="#04101a" opacity=".55"/>
+          <path d="M48 28 Q52 18 60 14 Q66 12 68 8" stroke="#f0f2f5" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+          <circle cx="70" cy="9" r="6.2" fill="#f0f2f5"/>
+          <circle cx="67" cy="11" r="1.6" fill="#1ba3a9" opacity=".4"/>
+          <g class="eye-blink">
+            <circle cx="72" cy="8" r="1.1" fill="#04101a"/>
+            <circle cx="72.4" cy="7.6" r="0.35" fill="#f0f2f5"/>
+          </g>
+          <path d="M75.5 8 L83 7 L83 10 L75.5 10.5 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+          <path d="M76 9.4 L82.4 9" stroke="#04101a" stroke-width=".5" opacity=".5"/>
+          <g transform="translate(86, 10)">
+            <line x1="0" y1="0" x2="-4" y2="-3" stroke="#1ba3a9" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="6" cy="3" r="6" fill="rgba(27,163,169,.12)" stroke="#1ba3a9" stroke-width="1.4"/>
+            <line x1="3" y1="1.5" x2="6" y2="1.5" stroke="#f0f2f5" stroke-width=".7" stroke-linecap="round" opacity=".7"/>
+          </g>
+          <g>
+            <line x1="30" y1="52" x2="30" y2="57" stroke="#f0f2f5" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M25 58 L35 58 L30 55 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+            <line x1="42" y1="52" x2="42" y2="57" stroke="#f0f2f5" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M37 58 L47 58 L42 55 Z" fill="#1ba3a9" stroke="#1ba3a9" stroke-width=".6" stroke-linejoin="round"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </svg>
 </div>
 </section>
 

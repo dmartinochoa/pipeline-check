@@ -67,7 +67,9 @@ spec:
 
         stage('Deploy to production') {
             // JF-014 — agent label without ephemeral marker.
-            agent { label 'build-pool' }
+            // JF-032 — label interpolates ${env.BRANCH_NAME}, so the
+            // pusher picks which build pool the deploy lands on.
+            agent { label "build-pool-${env.BRANCH_NAME}" }
             steps {
                 withCredentials([string(credentialsId: 'aws-prod-key',
                                         variable: 'AWS_ACCESS_KEY_ID')]) {

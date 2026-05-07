@@ -7,6 +7,7 @@ there are no separate CFN resources for them.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import CloudFormationBaseCheck, as_str, is_true
@@ -26,7 +27,7 @@ class ECRChecks(CloudFormationBaseCheck):
         return findings
 
 
-def _ecr001_scan_on_push(properties: dict, name: str) -> Finding:
+def _ecr001_scan_on_push(properties: dict[str, Any], name: str) -> Finding:
     scan_cfg = properties.get("ImageScanningConfiguration") or {}
     enabled = is_true(scan_cfg.get("ScanOnPush"))
     desc = (
@@ -45,7 +46,7 @@ def _ecr001_scan_on_push(properties: dict, name: str) -> Finding:
     )
 
 
-def _ecr002_tag_mutability(properties: dict, name: str) -> Finding:
+def _ecr002_tag_mutability(properties: dict[str, Any], name: str) -> Finding:
     mutability = as_str(properties.get("ImageTagMutability")) or "MUTABLE"
     passed = mutability == "IMMUTABLE"
     desc = "Image tags are immutable." if passed else "Image tag mutability is MUTABLE."
@@ -60,7 +61,7 @@ def _ecr002_tag_mutability(properties: dict, name: str) -> Finding:
     )
 
 
-def _ecr003_public_policy(properties: dict, name: str) -> Finding:
+def _ecr003_public_policy(properties: dict[str, Any], name: str) -> Finding:
     policy_text = properties.get("RepositoryPolicyText")
     if not policy_text:
         return Finding(
@@ -120,7 +121,7 @@ def _ecr003_public_policy(properties: dict, name: str) -> Finding:
     )
 
 
-def _ecr004_lifecycle_policy(properties: dict, name: str) -> Finding:
+def _ecr004_lifecycle_policy(properties: dict[str, Any], name: str) -> Finding:
     lifecycle = properties.get("LifecyclePolicy") or {}
     has_policy = bool(lifecycle.get("LifecyclePolicyText"))
     desc = (
@@ -139,7 +140,7 @@ def _ecr004_lifecycle_policy(properties: dict, name: str) -> Finding:
     )
 
 
-def _ecr005_kms_encryption(properties: dict, name: str) -> Finding:
+def _ecr005_kms_encryption(properties: dict[str, Any], name: str) -> Finding:
     enc = properties.get("EncryptionConfiguration") or {}
     enc_type = as_str(enc.get("EncryptionType")) or "AES256"
     kms_key = enc.get("KmsKey")

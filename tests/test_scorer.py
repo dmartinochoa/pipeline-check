@@ -87,4 +87,7 @@ class TestScore:
     def test_score_clamped_to_zero(self):
         findings = [_finding(Severity.CRITICAL, False) for _ in range(20)]
         result = score(findings)
-        assert result["score"] >= 0
+        # 20 critical failures drive raw to 0 - 100 = -100; the clamp
+        # is what brings it to 0. A `>= 0` assertion here would also
+        # accept any non-negative number, hiding clamp regressions.
+        assert result["score"] == 0

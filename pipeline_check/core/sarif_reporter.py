@@ -30,6 +30,7 @@ Key shape notes:
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from .chains import Chain
 from .checks.base import Confidence, Finding, Severity
@@ -157,9 +158,9 @@ def report_sarif(
     return json.dumps(payload, indent=2)
 
 
-def _build_chain_rules(chains: list[Chain]) -> list[dict]:
+def _build_chain_rules(chains: list[Chain]) -> list[dict[str, Any]]:
     """Emit one SARIF rule per distinct chain_id."""
-    seen: dict[str, dict] = {}
+    seen: dict[str, dict[str, Any]] = {}
     for c in chains:
         if c.chain_id in seen:
             continue
@@ -195,7 +196,7 @@ def _build_chain_rules(chains: list[Chain]) -> list[dict]:
     return list(seen.values())
 
 
-def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict:
+def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict[str, Any]:
     """Encode an attack-chain instance as a SARIF result.
 
     Locations cover every resource the chain spans (workflow files,
@@ -206,7 +207,7 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict:
     level, _ = _LEVEL_MAP.get(chain.severity, ("error", "8.0"))
     locations = []
     for res in chain.resources or [""]:
-        loc: dict = {
+        loc: dict[str, Any] = {
             "physicalLocation": {
                 "artifactLocation": {"uri": _artifact_uri(res or "unknown")}
             },
@@ -241,7 +242,7 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict:
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def _build_rules(findings: list[Finding]) -> list[dict]:
+def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
     """Build one rule per distinct check_id.
 
     Severity + help text are taken from the first occurrence. Later
@@ -249,7 +250,7 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
     their per-resource description, which lives on the result, not the
     rule.
     """
-    seen: dict[str, dict] = {}
+    seen: dict[str, dict[str, Any]] = {}
     for f in findings:
         if f.check_id in seen:
             continue
@@ -263,7 +264,7 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
         # consumers without losing fidelity.
         ordered = _ordered_tags({c.standard for c in f.controls})
         tags = ["security", *ordered][:_MAX_RULE_TAGS]
-        rule_props: dict = {
+        rule_props: dict[str, Any] = {
             "security-severity": score,
             "tags": tags,
         }
@@ -290,9 +291,9 @@ def _build_rules(findings: list[Finding]) -> list[dict]:
     return list(seen.values())
 
 
-def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
+def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]:
     level, _ = _LEVEL_MAP.get(f.severity, ("warning", "5.0"))
-    physical_location: dict = {
+    physical_location: dict[str, Any] = {
         "artifactLocation": {"uri": _artifact_uri(f.resource)},
     }
     # Best-effort line number: for file-based findings we try to grep
@@ -305,14 +306,14 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
     if start_line is not None:
         physical_location["region"] = {"startLine": start_line}
 
-    logical_location: dict = {"name": f.resource, "kind": "resource"}
+    logical_location: dict[str, Any] = {"name": f.resource, "kind": "resource"}
     # AWS resources: surface an ARN/region property so programmatic
     # SARIF consumers can pivot to the console.
     arn = _aws_arn(f.resource)
     if arn:
         logical_location["fullyQualifiedName"] = arn
 
-    properties: dict = {
+    properties: dict[str, Any] = {
         "severity": f.severity.value,
         "confidence": f.confidence.value,
         "controls": [c.to_dict() for c in f.controls],
@@ -323,7 +324,7 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict:
         properties["arn"] = arn
         properties["region"] = _region_from_arn(arn) or ""
 
-    result: dict = {
+    result: dict[str, Any] = {
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,

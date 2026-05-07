@@ -66,7 +66,7 @@ class CloudFormationProvider(BaseProvider):
     def inventory(self, context: CloudFormationContext) -> list[Component]:
         out: list[Component] = []
         for r in context.resources():
-            metadata: dict = {}
+            metadata: dict[str, Any] = {}
             # Lifecycle attributes — protection on stack delete/replace,
             # and conditional-resource gates.
             for key in ("DeletionPolicy", "UpdateReplacePolicy", "Condition"):
@@ -92,7 +92,7 @@ class CloudFormationProvider(BaseProvider):
         return out
 
 
-def _cfn_metadata(resource_type: str, props: dict) -> dict:
+def _cfn_metadata(resource_type: str, props: dict[str, Any]) -> dict[str, Any]:
     """Per-CFN-type security/audit-relevant metadata extractor.
 
     Only fields that characterize security posture without running the
@@ -100,7 +100,7 @@ def _cfn_metadata(resource_type: str, props: dict) -> dict:
     pass through as-is — consumers that understand CFN can resolve
     them; those that don't can flag the entry for manual review.
     """
-    meta: dict = {}
+    meta: dict[str, Any] = {}
     if resource_type == "AWS::CodeBuild::Project":
         env = props.get("Environment") or {}
         meta["image"] = env.get("Image")

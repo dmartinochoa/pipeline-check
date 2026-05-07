@@ -1,6 +1,8 @@
 """CP-002 — CodePipeline artifact store uses default S3 SSE, not a CMK."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -23,7 +25,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for pipeline in catalog.codepipeline_pipelines():
         name = pipeline.get("name", "<unnamed>")
-        stores: list[dict] = []
+        stores: list[dict[str, Any]] = []
         if "artifactStore" in pipeline:
             stores.append(pipeline["artifactStore"])
         stores.extend((pipeline.get("artifactStores") or {}).values())

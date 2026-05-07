@@ -12,6 +12,148 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **One more attack chain — Caller-Controlled Runner with Token
+  Persistence (GitLab).** `AC-014` is the GitLab parity for
+  `AC-013`. Fires when both `GL-032` (``tags:`` interpolates an
+  attacker-controllable CI variable) and `GL-020`
+  (``CI_JOB_TOKEN`` / ``CI_DEPLOY_TOKEN`` /
+  ``CI_REGISTRY_PASSWORD`` / ``CI_DEPLOY_PASSWORD`` written to
+  persistent storage) trigger on the *same* ``.gitlab-ci.yml``.
+  Same threat model as ``AC-013``: pipeline trigger picks the
+  runner, pipeline drops a CI-managed token onto that runner's
+  filesystem, attacker-controlled runner harvests the token.
+  Severity CRITICAL, MITRE T1078 + T1552.001 + T1133. Recommendation
+  closes either leg (hard-code ``tags:`` or stop writing tokens
+  to disk). Chain catalog: 13 to 14.
+- **One more attack chain — Caller-Controlled Runner with Token
+  Persistence.** `AC-013` fires when both `GHA-036`
+  (``runs-on:`` interpolates an attacker-controllable expression)
+  and `GHA-019` (``GITHUB_TOKEN`` written to persistent storage)
+  trigger on the *same* workflow file. The combo is a one-step
+  credential delivery to an attacker-chosen runner: caller picks
+  the runner, workflow drops its short-lived token onto that
+  runner's filesystem, attacker reads the token and acts as the
+  workflow inside the repo. Distinct from `AC-010` (non-ephemeral
+  self-hosted + curl-pipe / token-persistence) — `AC-010` attacks
+  any caller of the workflow once persistence lands; `AC-013` lets
+  the *attacker* pick the runner directly. Severity CRITICAL,
+  MITRE T1078 + T1552.001 + T1133, kill-chain
+  initial-access -> credential-access -> exfiltration.
+  Recommendation closes either leg (hard-code ``runs-on:`` or stop
+  writing tokens to disk). Chain catalog: 12 to 13.
+- **Four more autofixers** lifting the catalog from 96 to 100.
+  Comment-only TODO fixers for the four runner-injection rules
+  added this cycle: `GHA-036` (above each ``runs-on:`` line that
+  inlines ``${{ inputs.* }}`` / ``${{ github.event.* }}``),
+  `GL-032` (above each ``tags:`` line that inlines
+  ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*``), `ADO-030`
+  (above each ``pool:`` / ``name:`` / ``demands:`` line that
+  inlines ``$(Build.*)`` / ``$(System.PullRequest.*)`` /
+  ``${{ parameters.X }}``), and `JF-032` (above each
+  ``label "..."`` line that inlines ``${env.BRANCH_NAME}`` /
+  ``${env.CHANGE_BRANCH}`` / ``${params.X}``). All four are
+  comment-only — the right replacement is either a hard-coded
+  label or an allowlist guard, neither of which the fixer can
+  synthesize, so the marker points at the canonical shape.
+  Idempotent (skip if the TODO is already present), no-op for
+  benign cases (static labels, ``${{ matrix.* }}``, ``vmImage:``
+  Microsoft-hosted, author-controlled ``${env.JOB_NAME}``). The
+  Jenkins fixer emits a ``//`` Groovy comment instead of a
+  ``#`` YAML comment so the marker parses in its native syntax.
+- **One more Jenkins rule.** `JF-032` flags
+  ``agent { label "..." }`` declarations whose label string
+  interpolates an attacker-controllable Groovy expression
+  (``${env.BRANCH_NAME}``, ``${env.CHANGE_BRANCH}``,
+  ``${env.TAG_NAME}``, ``${params.X}``, …). Jenkins parity for
+  ``GHA-036`` / ``GL-032`` / ``ADO-030``: whoever queues the
+  build (or pushes the branch / opens the PR) picks which
+  agent the job lands on, including any privileged label the
+  controller exposes. Walks all four agent shapes — direct
+  ``label``, the ``node { label … }`` form, and
+  ``docker { label … }`` / ``dockerfile { label … }`` — via
+  brace-balanced scan that handles nested DSL blocks correctly.
+  Reuses the comment-stripped ``text_no_comments`` from the
+  Jenkinsfile dataclass so a commented-out interpolation
+  doesn't trip the rule. New ``LABEL_TAINT_RE`` in
+  ``jenkins/rules/_helpers.py`` extends ``UNTRUSTED_ENV_RE``'s
+  catalog with ``${params.X}``. Author-controlled
+  ``${env.JOB_NAME}`` / ``${env.BUILD_NUMBER}`` are
+  intentionally not flagged. Severity HIGH, OWASP CICD-SEC-7,
+  CWE-345. Jenkins rule catalog: 31 to 32.
+- **One more Azure DevOps rule.** `ADO-030` flags ``pool:`` /
+  ``pool.name:`` / ``pool.demands:`` values that interpolate
+  attacker-controllable input. Two surfaces: runtime SCM macros
+  (`$(Build.SourceBranchName)`, `$(System.PullRequest.SourceBranch)`,
+  …) and caller-controlled template parameters (`${{ parameters.X
+  }}` — supplied by whoever queued the run). Azure DevOps parity
+  for `GHA-036` / `GL-032`: a trigger or PR sender picks which
+  agent pool the job lands on, including any privileged
+  self-hosted pool the project exposes. Walks all three pool
+  shapes — string scalar, dict `{ name, vmImage, demands }`, and
+  the `demands` list / scalar form. ``vmImage`` is intentionally
+  excluded (Microsoft-hosted, not a privileged-runner targeting
+  surface). Pipeline variables defined in the workflow's own
+  ``variables:`` block are author-controlled and not flagged.
+  Severity HIGH, OWASP CICD-SEC-7, CWE-345. New
+  `POOL_TAINT_RE` in `azure/rules/_helpers.py` combines
+  `UNTRUSTED_VAR_RE`'s catalog with the literal
+  `${{ parameters.X }}` pattern. Azure rule catalog: 29 to 30.
+- **One more GitLab rule.** `GL-032` flags jobs whose `tags:`
+  list interpolates an attacker-controllable CI variable
+  (`$CI_COMMIT_REF_NAME`, `$CI_MERGE_REQUEST_TITLE`,
+  `${CI_COMMIT_MESSAGE}`, …). GitLab parity for `GHA-036`: a
+  pipeline trigger (or anyone whose PR title / branch name the
+  workflow consumes) can route the job onto any tagged runner
+  pool the instance exposes, including privileged self-managed
+  tags like `deploy-prod` or `signer`. Reuses the same
+  `UNTRUSTED_VAR_RE` catalog as `GL-002` so the predefined-
+  variable list stays in lockstep. Static custom variables
+  defined inside the pipeline file are intentionally not flagged
+  (author-controlled, not attacker-controlled). Severity HIGH,
+  OWASP CICD-SEC-7, CWE-345. Walks both ``tags:`` shapes
+  (list of strings and the rare scalar form). GitLab rule
+  catalog: 31 to 32.
+- **One more GitHub Actions rule.** `GHA-036` flags jobs whose
+  `runs-on:` interpolates an attacker-controllable expression
+  (`${{ inputs.* }}`, `${{ github.event.* }}`,
+  `${{ github.head_ref }}`, …). A reusable workflow that declares
+  `runs-on: ${{ inputs.runner }}` lets a downstream caller route
+  the job onto any self-hosted label the org owns — including
+  privileged production-deploy fleets the workflow author never
+  intended to expose. The rule walks all three `runs-on` shapes
+  (string scalar, list of labels, and the long-form
+  `{ group, labels }` dict) and reuses `UNTRUSTED_CONTEXT_RE` so
+  the catalog stays in lockstep with `GHA-003` / `GHA-035`.
+  `${{ matrix.* }}` is intentionally not flagged — matrix values
+  are author-controlled, not caller-controlled. Severity HIGH,
+  OWASP CICD-SEC-7, CWE-345. GitHub rule catalog: 35 to 36.
+- **`disallow_any_generics` enabled** — cleared the final strict
+  mypy flag with a 226 → 0 annotation pass. Bare `dict` / `list`
+  return types and parameter annotations across the
+  CloudFormation / Terraform IAM / S3 / ECR / CodeBuild /
+  CodePipeline / CodeDeploy / pbac / extended / services modules
+  now spell `dict[str, Any]` / `list[dict[str, Any]]` (CFN and
+  Terraform planned-resource shapes are heterogeneous from
+  upstream parsers, so `Any` is the honest leaf type). The Click
+  `Choice` parameter became `Choice[str]`. The four AWS modules
+  already exempted under the boto3 mypy override now also disable
+  the `type-arg` error code so paginator wrappers don't have to
+  spell `cast()` at every site. Two `dict[Any, Any]` sites
+  (`_yaml_strict.DupKeyLoader.construct_mapping` and one PyYAML
+  1.1 `True`-key lookup in `providers/github._gha_metadata`) keep
+  the wider key type that PyYAML can produce in those corners.
+  All nine `mypy --strict` flags are now on, with no user-visible
+  change. The mechanical pass lives in
+  `scripts/_fix_generics.py` and is safe to re-run.
+- **Defensive fix for malformed grades in Lambda fan-out.**
+  `lambda_handler._fan_out` no longer crashes when a sub-scan
+  returns a grade outside `{A, B, C, D}` —  unknown grades
+  collapse to `D` (the worst known) so the aggregate still
+  surfaces the badness without raising `ValueError` from
+  `_GRADE_ORDER.index`. New `test_lambda_fanout_tolerates_unknown_grade`
+  pins the behavior. The error path that records a per-scan
+  failure already used `continue`, so this only matters for the
+  successful-but-malformed-result branch.
 - **One more Bitbucket rule.** `BB-029` flags step `image:` and
   `definitions.services.<name>.image:` references that aren't
   pinned by sha256 digest. `BB-001` and `BB-009` only walk

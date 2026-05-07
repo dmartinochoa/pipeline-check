@@ -17,6 +17,12 @@ on:
   workflow_run:
     workflows: ['Build']
     types: [completed]
+  # GHA-036: caller picks the runner via workflow_dispatch input.
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: string
+        required: true
 
 jobs:
   build:
@@ -61,8 +67,12 @@ jobs:
         run: npm run deploy
 
   # GHA-014: deploy-named job without environment: binding.
+  # GHA-036: ``runs-on`` interpolates an attacker-controllable
+  # ``workflow_dispatch`` input — the caller picks which runner
+  # label (potentially a privileged self-hosted fleet) the deploy
+  # lands on.
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     needs: build
     steps:
       - run: echo "deploying to prod"

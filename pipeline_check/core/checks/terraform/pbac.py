@@ -2,15 +2,21 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
 
-def _first(block_list: list | None) -> dict:
+def _first(block_list: list[Any] | None) -> dict[str, Any]:
+    # Validate the head's type rather than relying on truthiness — a
+    # non-dict truthy value (string, number, list) would propagate out
+    # and break callers that expect a mapping. Mirrors
+    # ``extended._first``.
     if not block_list:
         return {}
-    return block_list[0] or {}
+    head = block_list[0]
+    return head if isinstance(head, dict) else {}
 
 
 class PBACChecks(TerraformBaseCheck):
@@ -36,7 +42,7 @@ class PBACChecks(TerraformBaseCheck):
         return findings
 
 
-def _pbac001_vpc_config(values: dict, name: str) -> Finding:
+def _pbac001_vpc_config(values: dict[str, Any], name: str) -> Finding:
     vpc = _first(values.get("vpc_config"))
     has_vpc = bool(
         vpc.get("vpc_id")
@@ -65,7 +71,7 @@ def _pbac001_vpc_config(values: dict, name: str) -> Finding:
     )
 
 
-def _pbac002_shared_role(values: dict, name: str, role_map: dict[str, list[str]]) -> Finding:
+def _pbac002_shared_role(values: dict[str, Any], name: str, role_map: dict[str, list[str]]) -> Finding:
     role = values.get("service_role", "")
     sharing = role_map.get(role, []) if role else []
     passed = len(sharing) <= 1

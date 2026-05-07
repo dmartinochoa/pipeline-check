@@ -20,6 +20,7 @@ IAM-008  OIDC-federated role missing audience/subject pin       HIGH    CICD-SEC
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from .._iam_policy import (
     is_oidc_trust_stmt,
@@ -40,7 +41,7 @@ _PR_EVENTS = {
 }
 
 
-def _first(block_list: object) -> dict:
+def _first(block_list: object) -> dict[str, Any]:
     if not isinstance(block_list, list) or not block_list:
         return {}
     head = block_list[0]
@@ -82,7 +83,7 @@ def _codebuild_checks(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
-def _cb011(values: dict, address: str) -> Finding:
+def _cb011(values: dict[str, Any], address: str) -> Finding:
     """CB-011 — inline buildspec has indicators of malicious activity."""
     source = _first(values.get("source"))
     buildspec = (source.get("buildspec") or "").strip()
@@ -137,7 +138,7 @@ def _cb011(values: dict, address: str) -> Finding:
     )
 
 
-def _cb008(values: dict, address: str) -> Finding:
+def _cb008(values: dict[str, Any], address: str) -> Finding:
     source = _first(values.get("source"))
     buildspec = (source.get("buildspec") or "").strip()
     inline = (
@@ -167,7 +168,7 @@ def _cb008(values: dict, address: str) -> Finding:
     )
 
 
-def _cb009(values: dict, address: str) -> Finding:
+def _cb009(values: dict[str, Any], address: str) -> Finding:
     env = _first(values.get("environment"))
     info = _classify_image(env.get("image"))
     if info.pinned:
@@ -187,7 +188,7 @@ def _cb009(values: dict, address: str) -> Finding:
     )
 
 
-def _cb010(webhook: dict, address: str) -> Finding:
+def _cb010(webhook: dict[str, Any], address: str) -> Finding:
     groups = webhook.get("filter_group") or []
     offenders: list[int] = []
     for idx, group in enumerate(groups):
@@ -429,7 +430,7 @@ def _iam_oidc_check(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
-def _parse_policy(raw: object) -> dict:
+def _parse_policy(raw: object) -> dict[str, Any]:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
