@@ -37,6 +37,9 @@ PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
     "jenkins":    ("pipeline_check.core.checks.jenkins.rules",    100),
     "circleci":   ("pipeline_check.core.checks.circleci.rules",   100),
     "cloudbuild": ("pipeline_check.core.checks.cloudbuild.rules", 100),
+    "buildkite":  ("pipeline_check.core.checks.buildkite.rules",  100),
+    "tekton":     ("pipeline_check.core.checks.tekton.rules",     100),
+    "argo":       ("pipeline_check.core.checks.argo.rules",       100),
     "dockerfile": ("pipeline_check.core.checks.dockerfile.rules", 100),
     "kubernetes": ("pipeline_check.core.checks.kubernetes.rules", 100),
 }

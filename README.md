@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**430+ checks** across **13 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**450+ checks** across **16 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -62,6 +62,9 @@ standard boto3 credential chain.
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 8 checks (`BK-001`--`008`) |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 8 checks (`TKN-001`--`008`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result. Requires `helm` (Helm 3) on PATH. |
@@ -82,7 +85,7 @@ K8S-* rules apply to chart-deployed workloads without duplication. See
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   430+ checks across 13 providers
+  Config files   |  Scanner  |   450+ checks across 16 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |

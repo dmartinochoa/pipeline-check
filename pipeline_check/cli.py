@@ -123,6 +123,7 @@ class _GroupedCommand(click.Command):
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
+            "--buildkite-path", "--tekton-path", "--argo-path",
             "--helm-values", "--helm-set",
         })),
         ("Filtering", frozenset({
@@ -281,6 +282,9 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         "azure": ["pipeline_check.core.checks.azure.rules"],
         "jenkins": ["pipeline_check.core.checks.jenkins.rules"],
         "circleci": ["pipeline_check.core.checks.circleci.rules"],
+        "buildkite": ["pipeline_check.core.checks.buildkite.rules"],
+        "tekton": ["pipeline_check.core.checks.tekton.rules"],
+        "argo": ["pipeline_check.core.checks.argo.rules"],
         "aws": ["pipeline_check.core.checks.aws.rules"],
     }
     from .core.checks.rule import discover_rules
@@ -368,6 +372,11 @@ def _detect_pipeline_from_cwd() -> str | None:
         return "bitbucket"
     if os.path.isfile("cloudbuild.yaml") or os.path.isfile("cloudbuild.yml"):
         return "cloudbuild"
+    if (
+        os.path.isfile(".buildkite/pipeline.yml")
+        or os.path.isfile(".buildkite/pipeline.yaml")
+    ):
+        return "buildkite"
     if os.path.isfile("Dockerfile") or os.path.isfile("Containerfile"):
         return "dockerfile"
     for _cfn in (
@@ -578,7 +587,8 @@ def _install_completion_callback(
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
-        "--k8s-path, --helm-path); "
+        "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
+        "--argo-path); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -716,6 +726,37 @@ def _install_completion_callback(
         "Path to a Kubernetes manifest (YAML) or a directory containing "
         "one (required when --pipeline kubernetes). Auto-detects "
         "./kubernetes/, ./k8s/, ./manifests/."
+    ),
+)
+@click.option(
+    "--buildkite-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Buildkite pipeline.yml file or a directory "
+        "containing one (required when --pipeline buildkite). "
+        "Auto-detects ./.buildkite/pipeline.yml."
+    ),
+)
+@click.option(
+    "--tekton-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Tekton YAML file or a directory containing one "
+        "(required when --pipeline tekton). Documents are filtered "
+        "to ``apiVersion: tekton.dev/*`` so a directory mixing "
+        "Tekton and plain Kubernetes manifests is safe to point at."
+    ),
+)
+@click.option(
+    "--argo-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an Argo Workflow YAML file or a directory "
+        "containing one (required when --pipeline argo). Documents "
+        "are filtered to ``apiVersion: argoproj.io/*``."
     ),
 )
 @click.option(
@@ -1122,6 +1163,9 @@ def scan(
     circleci_path: str | None,
     cfn_template: str | None,
     cloudbuild_path: str | None,
+    buildkite_path: str | None,
+    tekton_path: str | None,
+    argo_path: str | None,
     dockerfile_path: str | None,
     k8s_path: str | None,
     helm_path: str | None,
@@ -1461,6 +1505,39 @@ def scan(
             )
         if not os.path.exists(cloudbuild_path):
             raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
+    elif pipeline_lc == "buildkite":
+        if not buildkite_path:
+            for _candidate in (
+                ".buildkite/pipeline.yml", ".buildkite/pipeline.yaml",
+            ):
+                if os.path.isfile(_candidate):
+                    buildkite_path = _candidate
+                    click.echo(
+                        f"[auto] using --buildkite-path {buildkite_path}",
+                        err=True,
+                    )
+                    break
+        if not buildkite_path:
+            raise click.UsageError(
+                "--buildkite-path PATH is required when --pipeline buildkite "
+                "(no .buildkite/pipeline.yml found in the current directory)."
+            )
+        if not os.path.exists(buildkite_path):
+            raise click.UsageError(f"--buildkite-path not found: {buildkite_path}")
+    elif pipeline_lc == "tekton":
+        if not tekton_path:
+            raise click.UsageError(
+                "--tekton-path PATH is required when --pipeline tekton."
+            )
+        if not os.path.exists(tekton_path):
+            raise click.UsageError(f"--tekton-path not found: {tekton_path}")
+    elif pipeline_lc == "argo":
+        if not argo_path:
+            raise click.UsageError(
+                "--argo-path PATH is required when --pipeline argo."
+            )
+        if not os.path.exists(argo_path):
+            raise click.UsageError(f"--argo-path not found: {argo_path}")
     elif pipeline_lc == "dockerfile":
         if not dockerfile_path:
             for _candidate in ("Dockerfile", "Containerfile"):
@@ -1564,6 +1641,9 @@ def scan(
         circleci_path=circleci_path,
         cfn_template=cfn_template,
         cloudbuild_path=cloudbuild_path,
+        buildkite_path=buildkite_path,
+        tekton_path=tekton_path,
+        argo_path=argo_path,
         dockerfile_path=dockerfile_path,
         k8s_path=k8s_path,
         helm_path=helm_path,

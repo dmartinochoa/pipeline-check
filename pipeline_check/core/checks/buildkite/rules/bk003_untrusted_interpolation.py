@@ -1,0 +1,106 @@
+"""BK-003 — Attacker-controllable env vars interpolated into commands."""
+from __future__ import annotations
+
+import re
+from typing import Any
+
+from ...base import Finding, Severity
+from ...rule import Rule
+from ..base import iter_command_steps, step_commands, step_label
+
+RULE = Rule(
+    id="BK-003",
+    title="Untrusted Buildkite variable interpolated in command",
+    severity=Severity.HIGH,
+    owasp=("CICD-SEC-4",),
+    esf=("ESF-D-CODE-INTEGRITY",),
+    cwe=("CWE-78",),
+    recommendation=(
+        "Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, "
+        "``$BUILDKITE_MESSAGE``, ``$BUILDKITE_PULL_REQUEST_*``, or "
+        "``$BUILDKITE_BUILD_AUTHOR*`` directly into shell commands. "
+        "These come from the pull request / branch and are "
+        "attacker-controllable. Quote them and assign to a local "
+        "variable first (``branch=\"$BUILDKITE_BRANCH\"; ./script "
+        "--branch \"$branch\"``), or pass them as arguments to a "
+        "script you own."
+    ),
+    docs_note=(
+        "Buildkite passes branch / tag / message metadata as "
+        "environment variables. Putting them inside ``$(...)`` or "
+        "shelling out with the value unquoted is a classic command-"
+        "injection vector. The detection fires on the unquoted "
+        "interpolation form and on use inside ``eval`` / ``$(...)``."
+    ),
+)
+
+# Buildkite-managed variables that are attacker-controllable through a
+# pull request, branch name, commit message, or author identity.
+_TAINTED_VARS = (
+    "BUILDKITE_BRANCH",
+    "BUILDKITE_TAG",
+    "BUILDKITE_MESSAGE",
+    "BUILDKITE_BUILD_MESSAGE",
+    "BUILDKITE_PULL_REQUEST",
+    "BUILDKITE_PULL_REQUEST_BASE_BRANCH",
+    "BUILDKITE_PULL_REQUEST_DEFAULT_BRANCH",
+    "BUILDKITE_PULL_REQUEST_REPO",
+    "BUILDKITE_BUILD_AUTHOR",
+    "BUILDKITE_BUILD_AUTHOR_EMAIL",
+    "BUILDKITE_COMMIT",
+)
+
+# Match ``$VAR`` or ``${VAR}`` (but not ``\$VAR`` or ``"$VAR"`` when
+# already quoted — Buildkite pipeline.yml is parsed before the shell,
+# so the YAML value is what gets handed to the agent).
+_INTERP_RE = re.compile(
+    r"(?<!\\)\$\{?(" + "|".join(_TAINTED_VARS) + r")\}?"
+)
+
+
+def _command_unsafe(cmd: str) -> list[str]:
+    """Return tainted variable names interpolated unsafely in *cmd*."""
+    hits: list[str] = []
+    for m in _INTERP_RE.finditer(cmd):
+        var = m.group(1)
+        # Quoted single-token use ("$VAR" or '$VAR') with the closing
+        # quote on the same token is the safe form. Approximate by
+        # checking for surrounding double-quotes within 2 chars.
+        start = m.start()
+        end = m.end()
+        before = cmd[max(0, start - 1):start]
+        after = cmd[end:end + 1]
+        if before == '"' and after.startswith('"'):
+            continue
+        hits.append(var)
+    return hits
+
+
+def check(path: str, doc: dict[str, Any]) -> Finding:
+    offenders: list[str] = []
+    for idx, step in iter_command_steps(doc):
+        for cmd in step_commands(step):
+            hits = _command_unsafe(cmd)
+            if hits:
+                # Deduplicate per-step so a 50-line script that uses
+                # $BUILDKITE_BRANCH 8 times reads as one offender.
+                uniq = sorted(set(hits))
+                offenders.append(
+                    f"{step_label(step, idx)}: {', '.join(uniq[:3])}"
+                )
+                break
+    passed = not offenders
+    desc = (
+        "No tainted Buildkite variables interpolated unsafely."
+        if passed else
+        f"{len(offenders)} step(s) interpolate attacker-controllable "
+        f"Buildkite variables in commands: {'; '.join(offenders[:5])}"
+        f"{'…' if len(offenders) > 5 else ''}. Branch / tag / message "
+        f"come from the PR; use them only inside double-quoted "
+        f"single-token expansions or pass them as script arguments."
+    )
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=path, description=desc,
+        recommendation=RULE.recommendation, passed=passed,
+    )

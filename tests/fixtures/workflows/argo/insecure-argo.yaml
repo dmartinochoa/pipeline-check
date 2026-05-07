@@ -1,0 +1,46 @@
+# Argo Workflow exhibiting every ARGO-* failure mode.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-and-deploy
+  namespace: argo
+spec:
+  entrypoint: main
+  # ARGO-003: no serviceAccountName (defaults to "default").
+  # ARGO-007: no activeDeadlineSeconds.
+  arguments:
+    parameters:
+      # ARGO-006: literal AWS access key in workflow argument.
+      - name: aws_access_key
+        value: "AKIAIOSFODNN7EXAMPLE"
+      - name: ref
+        value: "main"
+  # ARGO-004: hostPath volume.
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: ref
+      script:
+        # ARGO-001: tag-only image, no @sha256 digest.
+        image: alpine:3.18
+        # ARGO-002: privileged container.
+        securityContext:
+          privileged: true
+          runAsNonRoot: false
+        # ARGO-006 (secondary): literal token-shaped env value.
+        env:
+          - name: GITHUB_TOKEN
+            value: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        command: [bash]
+        # ARGO-005: input parameter inlined unquoted.
+        # ARGO-008: curl-pipe-shell in script body.
+        source: |
+          set -e
+          echo Building {{inputs.parameters.ref}}
+          curl https://example.com/install.sh | bash

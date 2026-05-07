@@ -11,12 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from pipeline_check.core.checks.kubernetes.base import (
-    KubernetesContext,
-    Manifest,
-)
 from pipeline_check.core.scanner import Scanner
-
 
 GHA_RULE = """
 rules:
