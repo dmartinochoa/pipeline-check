@@ -2526,6 +2526,42 @@ th.pg-sortable:focus-visible {
   font-style: italic;
 }
 
+/* ── Autofix indicator chip ─────────────────────────────────
+   Marks rules that ``pipeline_check --fix`` can patch. Same
+   pill geometry as ``.pg-tag`` but with a teal accent — the
+   eye reads "this is an action you can take", not just
+   metadata. Used both as ``.pg-fix`` in summary tables and
+   as ``.pg-fix.pg-fix--rule`` in the per-rule chip row. */
+.pg-fix {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 88%,
+    var(--pg-teal-500));
+  color: var(--pg-teal-500);
+  border: 1px solid color-mix(in oklab,
+    var(--pg-teal-500) 30%,
+    var(--md-default-fg-color--lightest) 70%);
+  vertical-align: middle;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+[data-md-color-scheme="slate"] .pg-fix {
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 75%,
+    var(--pg-teal-500));
+  color: var(--pg-teal-300);
+}
+
+/* Per-rule chip row already wraps inside ``.pg-rule__tags`` —
+   no extra spacing rule needed; the row's flex gap covers it. */
+
 /* ── Per-rule card ─────────────────────────────────────────── */
 
 .pg-rule {
