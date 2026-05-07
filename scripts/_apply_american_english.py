@@ -65,7 +65,7 @@ PAIRS = [
     ("prioritising", "prioritizing"),
     ("programme", "program"),
     ("recognise", "recognize"), ("recognised", "recognized"),
-    ("recognising", "recognizing"),
+    ("recognising", "recognizing"), ("recognisable", "recognizable"),
     ("rumour", "rumor"),
     ("serialise", "serialize"), ("serialised", "serialized"),
     ("signalled", "signaled"), ("signalling", "signaling"),

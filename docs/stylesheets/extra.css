@@ -43,6 +43,123 @@
   --pg-space-section: clamp(4rem, 7vw, 6rem);
   --pg-radius-card:   14px;
   --pg-radius-pill:   999px;
+
+  /* ============================================================
+     DESIGN SYSTEM TOKENS (additive)
+     Mirrors .claude/design_system/colors_and_type.css so the
+     site, the HTML report, and the portable Skill share a
+     single token vocabulary. New work should reach for these
+     names; the --pg-* entries above are kept for back-compat
+     with existing selectors and will retire as call sites move
+     over.
+     ============================================================ */
+
+  /* Severity scale (HTML reporter palette) ------------------ */
+  --sev-critical: #dc3545;
+  --sev-high:     #fd7e14;
+  --sev-medium:   #d4930a;
+  --sev-low:      #0d6efd;
+  --sev-info:     #6c757d;
+
+  /* Grade scale (scorer / report) --------------------------- */
+  --grade-a: #198754;
+  --grade-b: #0d9488;
+  --grade-c: #d4930a;
+  --grade-d: #dc3545;
+
+  /* Light-mode tokens (HTML report only — docs site is slate-only) */
+  --light-bg:         #f0f2f5;
+  --light-card:       #ffffff;
+  --light-header-bg:  #1a1a2e;
+  --light-border:     #dee2e6;
+  --light-text:       #212529;
+  --light-muted:      #6c757d;
+  --light-row-hover:  #f8f9fa;
+  --light-detail-bg:  #f8f9fa;
+
+  /* Type families ------------------------------------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale ---------------------------------------------- */
+  --fs-display: clamp(2.4rem, 4.6vw, 3.6rem);
+  --fs-h1:      clamp(1.85rem, 3vw, 2.3rem);
+  --fs-h2-pg:   clamp(1.8rem, 3.2vw, 2.4rem);
+  --fs-h2:      clamp(1.35rem, 2.2vw, 1.6rem);
+  --fs-h3:      1.05rem;
+  --fs-h4:      0.92rem;
+  --fs-body:    0.86rem;
+  --fs-lede:    1.05rem;
+  --fs-small:   0.78rem;
+  --fs-tiny:    0.72rem;
+  --fs-eyebrow: 0.72rem;
+  --fs-mono-sm: 0.74rem;
+  --fs-mono-md: 0.84rem;
+
+  /* Type weights -------------------------------------------- */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-h:        650;
+  --fw-bold:     700;
+
+  /* Tracking (negative on display, positive on mono caps) --- */
+  --ls-display:   -0.035em;
+  --ls-h1:        -0.03em;
+  --ls-h2:        -0.02em;
+  --ls-h3:        -0.015em;
+  --ls-body:       0;
+  --ls-eyebrow:    0.18em;
+  --ls-tab:        0.04em;
+  --ls-uppercase:  0.12em;
+
+  /* Line-height -------------------------------------------- */
+  --lh-display: 1.05;
+  --lh-heading: 1.15;
+  --lh-body:    1.7;
+  --lh-prose:   1.6;
+
+  /* Radii (un-prefixed scale; --pg-radius-card kept for back-compat) */
+  --radius-card:   14px;
+  --radius-md:     12px;
+  --radius-sm:     10px;
+  --radius-xs:     8px;
+  --radius-tiny:   4px;
+  --radius-pill:   999px;
+
+  /* Spacing (un-prefixed; --pg-space-section kept for back-compat) */
+  --space-section: clamp(4rem, 7vw, 6rem);
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Elevation ---------------------------------------------- */
+  --shadow-card:  0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 12px 28px -16px color-mix(in oklab, var(--pg-teal-500) 50%, transparent);
+  --shadow-lift:  0 24px 48px -16px color-mix(in oklab, var(--pg-navy-900) 35%, transparent);
+  --shadow-deep:  0 30px 60px -25px rgba(0, 0, 0, 0.6);
+
+  /* Motion ------------------------------------------------- */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur-fast: 0.15s;
+  --dur-mid:  0.18s;
+  --dur-slow: 0.32s;
+
+  /* Semantic mapping --------------------------------------- */
+  --color-bg-app:       var(--md-default-bg-color);
+  --color-fg-1:         var(--md-default-fg-color);
+  --color-fg-2:         var(--md-default-fg-color--light);
+  --color-fg-3:         var(--md-default-fg-color--lighter);
+  --color-border:       var(--md-default-fg-color--lightest);
+  --color-accent:       var(--pg-teal-500);
+  --color-accent-hover: var(--pg-teal-400);
+  --color-link:         var(--pg-teal-400);
 }
 
 [data-md-color-scheme="slate"] {
@@ -595,28 +712,32 @@ body {
    Home page: header bleeds into the navy hero — same dark navy
    so the bar and hero gradient read as one continuous surface.
    ------------------------------------------------------------ */
+/* Per .claude/design_system/IMPLEMENTATION.md: navy-950 chrome with a
+   1px navy-700 border-bottom on every page. The home page used to
+   carry a special override; that's no longer needed because every
+   page now wears the same navy bar. */
 .md-header,
 .md-tabs {
-  background: var(--md-default-bg-color);
-  color: var(--md-default-fg-color);
+  background: var(--pg-navy-950);
+  color: var(--pg-text-on-dark);
   box-shadow: none;
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  border-bottom: 1px solid var(--pg-navy-700);
 }
 
 .md-header[data-md-state="shadow"] {
-  box-shadow: 0 2px 12px color-mix(in oklab, var(--md-default-fg-color) 14%, transparent);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .md-header__title {
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--md-default-fg-color);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--pg-text-on-dark);
 }
 
 .md-header__button {
-  color: var(--md-default-fg-color);
+  color: var(--pg-text-on-dark);
 }
-.md-header__button:hover { color: var(--pg-teal-500); }
+.md-header__button:hover { color: var(--pg-teal-400); }
 [data-md-color-scheme="slate"] .md-header__button:hover { color: var(--pg-teal-400); }
 
 /* Brand logo — Material's default (~1.2rem) reads as a tiny favicon
@@ -843,7 +964,10 @@ body:has(.pg-home) {
   position: relative;
   background: linear-gradient(180deg, var(--pg-navy-950) 0%, var(--pg-navy-900) 100%);
   color: var(--pg-text-on-dark);
-  padding: clamp(4rem, 8vw, 7rem) 1.5rem clamp(4.5rem, 9vw, 8rem);
+  /* Tighter top padding now that the goose mark fills the upper
+     anchor of the hero — keeps the navy chrome and the hero from
+     reading as one continuous void of empty navy. */
+  padding: clamp(2rem, 4.5vw, 3.25rem) 1.5rem clamp(4.5rem, 9vw, 8rem);
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   isolation: isolate;
@@ -911,6 +1035,28 @@ body:has(.pg-home) {
   }
 }
 
+/* Hero brand mark — the gate-goose. Sits above the wordmark on
+   its own row. The SVG bakes in white so the goose body reads
+   the same on the navy chrome, in the favicon, and standalone. */
+.pg-hero__mark,
+img.pg-hero__mark {
+  display: block;
+  width: auto;
+  height: clamp(96px, 11vw, 132px);
+  margin: 0 0 1.1rem;
+}
+
+/* Markdown wraps the goose image (and the wordmark span) in <p>;
+   collapse the wrapping margins so the brand stack reads tight,
+   not as separate paragraphs. */
+.pg-hero .md-typeset p:has(> .pg-hero__mark),
+.pg-hero .md-typeset p:has(> .pg-hero__wordmark) {
+  margin: 0;
+}
+.pg-hero .md-typeset > div > p:first-child {
+  margin-top: 0;
+}
+
 .pg-hero__wordmark {
   display: inline-flex;
   align-items: center;
@@ -964,60 +1110,53 @@ body:has(.pg-home) {
 }
 
 /* Buttons sitting on a dark navy band (hero + closing CTA share the
-   same chrome). Both the top hero and bottom CTA are dark surfaces,
-   so they get the same teal-primary / ghost-secondary treatment. */
+   same chrome). Treatment matches the design system spec at
+   .claude/design_system/IMPLEMENTATION.md: solid teal-500 fill with
+   navy-950 text on the primary; transparent + slate hairline on the
+   ghost; no glassmorphism, no inset highlights, no drop shadows on
+   the button itself. Hover shifts the background one step lighter
+   and tints the ghost's border teal — no transform. */
 .pg-hero__cta .md-button,
 .pg-cta .md-button {
-  border-radius: 8px;
-  padding: 0.65rem 1.15rem;
-  font-weight: 600;
-  font-size: 0.92rem;
-  letter-spacing: 0.005em;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  border-radius: var(--radius-xs);
+  padding: 0.625rem 1rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  transition: background 0.18s var(--ease-out),
+              border-color 0.18s var(--ease-out),
+              color 0.18s var(--ease-out);
 }
 
-/* Primary CTA. The hero has a teal radial-gradient glow at ~75% 10%
-   (and a fainter one at ~20% 80%) that uses the same family hue as
-   the button. To stay visually distinct against the brightest part
-   of that glow we (a) use the lighter teal-400 for the fill, (b) add
-   a hairline border one step lighter still, and (c) drop a soft
-   shadow so the button reads as a foreground element regardless of
-   where it sits on the gradient. White text on teal gives ~4.7:1
-   contrast (WCAG AA for large text), and a subtle text-shadow keeps
-   the legibility honest if the user resizes the page or zooms.
-
-   ``!important`` on color/background/border because Material's own
-   ``.md-typeset .md-button--primary`` rule reaches the same
-   specificity (0,2,0) by way of the ``md-typeset`` page wrapper, and
-   the cascade resolution depends on stylesheet order. The hero CTA
-   is one of the most visible elements on the site — explicit beats
-   subtle here. */
+/* Primary: solid teal-500 with dark navy text. ``!important`` because
+   Material's own ``.md-typeset .md-button--primary`` rule reaches
+   specificity (0,2,0) via the page wrapper; explicit wins over
+   stylesheet-order luck. */
 .pg-hero__cta .md-button--primary,
 .pg-cta .md-button--primary,
 .md-typeset .pg-hero__cta .md-button--primary,
 .md-typeset .pg-cta .md-button--primary {
-  background: var(--pg-teal-400) !important;
-  border: 1px solid var(--pg-teal-300) !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.10) inset,
-    0 6px 18px rgba(0, 0, 0, 0.35);
+  background: var(--pg-teal-500) !important;
+  border: 1px solid var(--pg-teal-500) !important;
+  color: var(--pg-navy-950) !important;
+  text-shadow: none;
+  box-shadow: none;
 }
 
 .pg-hero__cta .md-button--primary:hover,
 .pg-cta .md-button--primary:hover,
 .md-typeset .pg-hero__cta .md-button--primary:hover,
 .md-typeset .pg-cta .md-button--primary:hover {
-  background: var(--pg-teal-300) !important;
-  border-color: var(--pg-teal-300) !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.40);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.14) inset,
-    0 8px 22px rgba(0, 0, 0, 0.40);
+  background: var(--pg-teal-400) !important;
+  border-color: var(--pg-teal-400) !important;
+  color: var(--pg-navy-950) !important;
+  text-shadow: none;
+  box-shadow: none;
 }
 
+/* Ghost: transparent fill, slate hairline. Hover tints the border
+   teal-500 and washes the surface with an 8% teal color-mix. */
 .pg-hero__cta .md-button:not(.md-button--primary),
 .pg-cta .md-button:not(.md-button--primary) {
   color: var(--pg-text-on-dark);
@@ -1027,8 +1166,8 @@ body:has(.pg-home) {
 
 .pg-hero__cta .md-button:not(.md-button--primary):hover,
 .pg-cta .md-button:not(.md-button--primary):hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.32);
+  background: color-mix(in oklab, var(--pg-teal-500) 8%, transparent);
+  border-color: var(--pg-teal-500);
   color: #fff;
 }
 
@@ -1104,8 +1243,13 @@ body:has(.pg-home) {
   padding: 1.1rem 1.15rem 1.25rem;
   line-height: 1.65;
   color: #d6e3ee;
-  white-space: pre;
-  overflow-x: auto;
+  /* Wrap long lines instead of forcing a horizontal scrollbar.
+     pre-wrap preserves the leading whitespace that aligns the
+     scan output, while still letting verbose lines break to
+     the next row when the right column is narrow. */
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .pg-terminal .prompt    { color: var(--pg-teal-400); }

@@ -350,7 +350,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
 def _detect_pipeline_from_cwd() -> str | None:
     """Return the best-guess pipeline name based on files present at cwd.
 
-    First match wins. Returns None when nothing recognisable is found;
+    First match wins. Returns None when nothing recognizable is found;
     the caller then falls back to ``aws`` (preserves prior default).
     """
     if os.path.isdir(".github/workflows"):

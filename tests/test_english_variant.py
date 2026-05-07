@@ -104,6 +104,7 @@ PAIRS: list[tuple[str, str]] = [
     ("recognise", "recognize"),
     ("recognised", "recognized"),
     ("recognising", "recognizing"),
+    ("recognisable", "recognizable"),
     ("rumour", "rumor"),
     ("serialise", "serialize"),
     ("serialised", "serialized"),

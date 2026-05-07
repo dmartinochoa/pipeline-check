@@ -18,7 +18,7 @@ theme:
   # during the build, so the templates aren't published as pages).
   custom_dir: docs/_overrides
   logo: logo.png
-  favicon: logo.png
+  favicon: logo.svg
   font:
     text: Inter
     code: JetBrains Mono
