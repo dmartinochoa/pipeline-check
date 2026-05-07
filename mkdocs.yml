@@ -167,3 +167,4 @@ nav:
       - Adding a rule: writing_a_rule.md
       - Adding an attack chain: writing_a_chain.md
       - Adding a provider: writing_a_provider.md
+      - Writing a custom rule: writing_a_custom_rule.md

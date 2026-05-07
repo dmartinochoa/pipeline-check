@@ -20,6 +20,8 @@ from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
 from .checks.base import Finding, Severity, clear_blob_cache
+from .checks.custom.loader import LoadedCustomRules, load_custom_rules
+from .checks.custom.runner import make_custom_rules_check
 from .inventory import Component
 
 
@@ -60,6 +62,7 @@ class Scanner:
         secret_patterns: list[str] | tuple[str, ...] | None = None,
         chains_enabled: bool = True,
         overrides: dict[str, dict[str, str]] | None = None,
+        custom_rules: list[str] | tuple[str, ...] | None = None,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
@@ -87,7 +90,19 @@ class Scanner:
             )
         self.pipeline = pipeline.lower()
         self._provider = provider
-        self._check_classes = provider.check_classes
+        # Custom rules load before the built-in check-class list is
+        # frozen so the per-provider runner can be appended in one
+        # place. Loading defers ID-collision checks to the loader,
+        # which uses the union of every built-in registry.
+        self._custom_rules: LoadedCustomRules = self._load_custom_rules(
+            custom_rules,
+        )
+        check_classes = list(provider.check_classes)
+        if self._custom_rules.by_provider.get(self.pipeline):
+            check_classes.append(
+                make_custom_rules_check(self.pipeline, self._custom_rules),
+            )
+        self._check_classes = check_classes
         # Reset the global secret-pattern registry at the start of
         # every Scanner construction so patterns registered for a
         # prior scan (common in long-lived Lambda containers) don't
@@ -108,6 +123,50 @@ class Scanner:
             files_skipped=getattr(self._context, "files_skipped", 0),
             warnings=list(getattr(self._context, "warnings", [])),
         )
+
+    @staticmethod
+    def _load_custom_rules(
+        paths: list[str] | tuple[str, ...] | None,
+    ) -> LoadedCustomRules:
+        """Load custom rules and reject IDs that collide with built-ins.
+
+        Built-in IDs come from the union of every provider's rule
+        registry. We deliberately don't filter by the active pipeline
+        — a custom rule with id ``GHA-001`` is rejected even when the
+        current scan is ``--pipeline kubernetes``, because the same
+        rule file should round-trip across providers without surprise.
+        """
+        if not paths:
+            return LoadedCustomRules()
+        builtin_ids: set[str] = set()
+        # Built-in YAML providers expose their IDs through the same
+        # ``discover_rules`` helper the orchestrators use. We import
+        # lazily to avoid pulling in every rule module when no custom
+        # rules were configured.
+        from .checks.rule import discover_rules
+        builtin_packages = (
+            "pipeline_check.core.checks.github.rules",
+            "pipeline_check.core.checks.gitlab.rules",
+            "pipeline_check.core.checks.bitbucket.rules",
+            "pipeline_check.core.checks.azure.rules",
+            "pipeline_check.core.checks.jenkins.rules",
+            "pipeline_check.core.checks.circleci.rules",
+            "pipeline_check.core.checks.cloudbuild.rules",
+            "pipeline_check.core.checks.kubernetes.rules",
+            "pipeline_check.core.checks.dockerfile.rules",
+        )
+        for pkg in builtin_packages:
+            try:
+                for rule, _ in discover_rules(pkg):
+                    builtin_ids.add(rule.id)
+            except (ImportError, AttributeError):
+                # A misconfigured package shouldn't block custom-rule
+                # loading. Worst case: a built-in ID isn't in the
+                # collision set and a clashing custom rule loads;
+                # the collision will still surface as duplicate
+                # findings at scan time.
+                continue
+        return load_custom_rules(paths, builtin_ids=builtin_ids)
 
     def inventory(
         self,

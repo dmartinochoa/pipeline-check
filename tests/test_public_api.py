@@ -46,6 +46,10 @@ EXPECTED_PUBLIC_NAMES: frozenset[str] = frozenset({
     # Registry queries
     "available_providers",
     "available_standards",
+    # Custom rule DSL
+    "load_custom_rules",
+    "LoadedCustomRules",
+    "CustomRuleError",
     # Metadata
     "__version__",
 })
