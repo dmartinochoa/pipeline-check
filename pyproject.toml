@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pipeline-check"
-version = "0.4.0"
+version = "0.4.1"
 description = "CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Google Cloud Build, Dockerfile, Kubernetes manifests, and Helm charts against OWASP Top 10 CI/CD Risks"
 readme = "README.md"
 license = "MIT"

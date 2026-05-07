@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [0.4.1] - 2026-05-08
+
+### Fixed
+
+- **`release.yml` SBOM path.** The CycloneDX step wrote
+  `dist/sbom.cdx.json` next to the wheel and sdist, then
+  `actions/upload-artifact` bundled the whole `dist/` tree as the
+  ``dist`` artifact the publish jobs consume. ``gh-action-pypi-publish``
+  runs ``twine check`` over the downloaded directory and rejects
+  anything that isn't a wheel or sdist, so v0.4.0's TestPyPI publish
+  failed with ``InvalidDistribution: Unknown distribution format:
+  'sbom.cdx.json'``. The SBOM now goes to ``sbom/sbom.cdx.json`` and
+  is uploaded as a separate ``sbom`` artifact; ``dist/`` stays
+  publishable. v0.4.0 was never uploaded to PyPI, so this is the
+  first publishable tag of the 0.4 line.
+
 ## [0.4.0] - 2026-05-07
 
 ### Added
