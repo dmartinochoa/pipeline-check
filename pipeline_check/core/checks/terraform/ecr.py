@@ -15,10 +15,13 @@ from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
 
-def _first(block_list: list[Any] | None) -> dict[str, Any]:
-    if not block_list:
+def _first(block_list: object) -> dict[str, Any]:
+    # Validate both container and head — see ``extended._first`` for
+    # the canonical shape. Callers (`.get()`) always receive a dict.
+    if not isinstance(block_list, list) or not block_list:
         return {}
-    return block_list[0] or {}
+    head = block_list[0]
+    return head if isinstance(head, dict) else {}
 
 
 class ECRChecks(TerraformBaseCheck):

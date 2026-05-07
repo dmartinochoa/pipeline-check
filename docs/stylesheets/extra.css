@@ -1129,98 +1129,16 @@ img.pg-hero__mark {
           mask-image: radial-gradient(ellipse at 50% 60%, #000 50%, transparent 90%);
   pointer-events: none;
 }
-.pg-patrol svg.pg-patrol__world {
+/* The goose patrol is loaded as a standalone SVG via ``<img>`` so
+   the file is portable (works in any embed context, not just inline
+   here). All animation lives inside ``docs/patrol.svg`` so the file
+   stays self-contained. This selector just sizes the img to fill
+   the wrapper card; nothing else from the page reaches inside the
+   img-loaded SVG document. */
+.pg-patrol .pg-patrol__embed {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-}
-
-/* Walk cycle: 14s loop with two pause beats so the goose feels
-   deliberate at TEST and SCAN rather than gliding past. The
-   numeric translate values are tied to the world coords (rail at
-   y=240, stage nodes at x∈{80, 280, 480, 680}). */
-@keyframes pg-patrol__walk {
-  0%   { transform: translate(60px, 240px); }
-  22%  { transform: translate(280px, 240px); }
-  32%  { transform: translate(280px, 240px); }
-  50%  { transform: translate(480px, 240px); }
-  72%  { transform: translate(480px, 240px); }
-  92%  { transform: translate(680px, 240px); }
-  100% { transform: translate(740px, 240px); }
-}
-@keyframes pg-patrol__bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-1.5px); }
-}
-@keyframes pg-patrol__scan-pulse {
-  0%, 50%   { opacity: 0; transform: scale(.6); }
-  55%, 68%  { opacity: 1; transform: scale(1); }
-  72%, 100% { opacity: 0; transform: scale(1.5); }
-}
-@keyframes pg-patrol__denied-pop {
-  0%, 60%   { opacity: 0; transform: translateY(-3px) scale(.6); }
-  65%, 80%  { opacity: 1; transform: translateY(0) scale(1); }
-  85%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
-}
-@keyframes pg-patrol__blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  94%, 96%      { transform: scaleY(.1); }
-}
-@keyframes pg-patrol__commit-flow {
-  0%   { transform: translateX(-40px); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { transform: translateX(800px); opacity: 0; }
-}
-
-.pg-patrol .goose-patrol {
-  animation: pg-patrol__walk 14s ease-in-out infinite;
-}
-.pg-patrol .goose-bob {
-  animation: pg-patrol__bob .6s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.pg-patrol .scan-ring {
-  animation: pg-patrol__scan-pulse 14s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.pg-patrol .denied-pop {
-  animation: pg-patrol__denied-pop 14s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.pg-patrol .eye-blink {
-  animation: pg-patrol__blink 5s linear infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.pg-patrol .commit {
-  animation: pg-patrol__commit-flow 4.6s linear infinite;
-}
-.pg-patrol .commit.c2 { animation-delay: 1.2s; }
-.pg-patrol .commit.c3 { animation-delay: 2.6s; }
-.pg-patrol .commit.c4 { animation-delay: 3.6s; }
-
-/* Vestibular-safety: continuous patrol motion + blinking eye are
-   both common reduced-motion triggers. Pause every layer; freeze
-   the goose at TEST so the scene still reads as a goose-on-rail. */
-@media (prefers-reduced-motion: reduce) {
-  .pg-patrol .goose-patrol,
-  .pg-patrol .goose-bob,
-  .pg-patrol .scan-ring,
-  .pg-patrol .denied-pop,
-  .pg-patrol .eye-blink,
-  .pg-patrol .commit {
-    animation: none;
-  }
-  .pg-patrol .goose-patrol {
-    transform: translate(280px, 240px);
-  }
-  .pg-patrol .denied-pop,
-  .pg-patrol .scan-ring {
-    opacity: 0;
-  }
+  display: block;
 }
 
 /* Markdown wraps the goose image (and the wordmark span) in
