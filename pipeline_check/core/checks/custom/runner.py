@@ -24,7 +24,6 @@ from .loader import (
     make_yaml_provider_check,
 )
 
-
 # Providers whose rules iterate per-document (one Finding per
 # (rule, document) pair). The context exposes a list of objects each
 # with ``.path`` and ``.data``.

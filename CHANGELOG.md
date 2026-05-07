@@ -12,6 +12,54 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GitHub Actions reusable-workflow remote-ref resolver.**
+  `--resolve-remote` (default off) follows
+  ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` to the
+  called workflow body and runs the full GHA rule pack against it
+  with the caller's ``permissions:`` and ``secrets: inherit``
+  context. Fetcher uses ``raw.githubusercontent.com`` with optional
+  ``--gh-token`` (falls back to ``$GITHUB_TOKEN``); on-disk fallback
+  via ``--gha-search-path`` (repeatable) for monorepos with sibling
+  checkouts; per-ref cache under
+  ``~/.cache/pipeline-check/gha-resolver`` with ``--no-cache`` to
+  bypass; recursion depth capped at 3 (configurable via
+  ``--gha-resolve-depth``, hard ceiling 10) with cycle detection;
+  parallel fetches via a 4-worker pool. Only SHA-pinned refs are
+  fetched (tag refs would defeat ``GHA-025``); unpinned refs are
+  skipped with a warning. Findings on a resolved callee carry a
+  synthetic ``<caller> -> <owner>/<repo>/<path>@<ref>`` resource
+  string so reports attribute the issue to the caller's PR while
+  pointing at the upstream body. ``GHA-004`` no longer fires on a
+  callee whose caller declared a ``permissions:`` block; ``GHA-019``
+  annotates findings with a ``(callee inherits caller secrets via
+  secrets: inherit)`` note when the inherit flag is on. New shared
+  ``uses_parser`` module replaces the ad-hoc ``rsplit("@", 1)`` calls
+  in ``GHA-001`` and ``GHA-025``. No telemetry; resolution never
+  fires without explicit opt-in. When ``--resolve-remote`` is off
+  and remote refs are present, a one-line stderr warning lists how
+  many were skipped so users discover the flag.
+- **Three new providers — Buildkite, Tekton, Argo Workflows.**
+  `--pipeline buildkite --buildkite-path .buildkite/pipeline.yml`
+  scans Buildkite pipeline files (8 rules, BK-001..BK-008: plugin
+  pinning, literal secrets in env, untrusted variable interpolation,
+  curl-pipe-shell, ``docker --privileged``, missing
+  ``timeout_in_minutes``, deploy step without a preceding ``block:``
+  gate, TLS bypass). `--pipeline tekton --tekton-path PATH` scans
+  Tekton CRDs filtered to ``apiVersion: tekton.dev/*`` (8 rules,
+  TKN-001..TKN-008: step image digest pinning, privileged step,
+  ``$(params.X)`` injection in step ``script:``, hostPath /
+  host-namespace, literal secrets in env / param defaults, missing
+  PipelineRun / TaskRun timeout, default ServiceAccount,
+  curl-pipe-shell). `--pipeline argo --argo-path PATH` scans Argo
+  Workflows CRDs filtered to ``apiVersion: argoproj.io/*`` (8 rules,
+  ARGO-001..ARGO-008: template image digest pinning, privileged
+  container, default ServiceAccount, hostPath / podSpecPatch
+  host-namespace, ``{{inputs.parameters.X}}`` injection, literal
+  secrets in env / parameter defaults, missing
+  ``activeDeadlineSeconds``, curl-pipe-shell). Auto-detection picks
+  Buildkite up on ``./.buildkite/pipeline.yml``. All three providers
+  generate per-rule docs via ``scripts/gen_provider_docs.py``.
+  Provider catalog: 13 to 16.
 - **Custom rule DSL.** `--custom-rules PATH` (repeatable, also a
   `custom_rules:` config key) loads YAML-defined rules that plug
   into the same orchestrator as the built-in catalog. Loaded rules

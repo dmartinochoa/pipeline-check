@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**430+ checks** across **13 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**450+ checks** across **16 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -44,7 +44,10 @@ picks the matching provider, and falls back to `aws` when nothing
 recognizable is found.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
-standard boto3 credential chain.
+standard boto3 credential chain. The GitHub Actions provider can
+*optionally* follow remote reusable-workflow refs over HTTPS via
+`--resolve-remote` (off by default; see [docs/providers/github.md](docs/providers/github.md)
+for the full opt-in surface).
 
 ---
 
@@ -55,13 +58,16 @@ standard boto3 credential chain.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 35 checks (`GHA-001`--`035`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 31 checks (`GL-001`--`031`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 36 checks (`GHA-001`--`036`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 32 checks (`GL-001`--`032`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 29 checks (`ADO-001`--`029`) |
-| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 31 checks (`JF-001`--`031`) |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
+| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 8 checks (`BK-001`--`008`) |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 8 checks (`TKN-001`--`008`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result. Requires `helm` (Helm 3) on PATH. |
@@ -82,7 +88,7 @@ K8S-* rules apply to chart-deployed workloads without duplication. See
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   430+ checks across 13 providers
+  Config files   |  Scanner  |   450+ checks across 16 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -327,11 +333,11 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-035
-        ├── gitlab/rules/      # GL-001 .. GL-031
+        ├── github/rules/      # GHA-001 .. GHA-036
+        ├── gitlab/rules/      # GL-001 .. GL-032
         ├── bitbucket/rules/   # BB-001 .. BB-029
-        ├── azure/rules/       # ADO-001 .. ADO-029
-        ├── jenkins/rules/     # JF-001 .. JF-031
+        ├── azure/rules/       # ADO-001 .. ADO-030
+        ├── jenkins/rules/     # JF-001 .. JF-032
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-022
         ├── dockerfile/rules/  # DF-001 .. DF-020

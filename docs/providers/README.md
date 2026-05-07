@@ -46,6 +46,18 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Google Cloud Build</h3>
     <p>Parses <code>cloudbuild.yaml</code>. Substitution injection, secret retrieval, signing posture.</p>
   </a>
+  <a class="pg-doc-card" href="buildkite/">
+    <h3>Buildkite</h3>
+    <p>Parses <code>.buildkite/pipeline.yml</code>. Plugin pinning, agent-tag injection, command-step posture, TLS bypass.</p>
+  </a>
+  <a class="pg-doc-card" href="tekton/">
+    <h3>Tekton</h3>
+    <p>Parses <code>Task</code>, <code>Pipeline</code>, and <code>*Run</code> CRDs. Step image pinning, parameter injection, workspace hygiene.</p>
+  </a>
+  <a class="pg-doc-card" href="argo/">
+    <h3>Argo Workflows</h3>
+    <p>Parses <code>Workflow</code> and <code>WorkflowTemplate</code> CRDs. Image pinning, parameter injection, container template posture.</p>
+  </a>
   <a class="pg-doc-card" href="dockerfile/">
     <h3>Dockerfile</h3>
     <p>Parses <code>Dockerfile</code> / <code>Containerfile</code>. Image pinning, USER hygiene, secret-in-env, RUN posture.</p>

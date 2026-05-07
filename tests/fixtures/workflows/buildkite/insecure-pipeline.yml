@@ -1,0 +1,42 @@
+# Buildkite pipeline exhibiting every BK-* failure mode. Modeled on a
+# fast-moving startup pipeline that grew without security review.
+
+# BK-002: literal AWS access key + token-shaped values inline in env.
+env:
+  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  GITHUB_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  DEPLOY_API_KEY: "supersecret-prod-key-please-rotate-me"
+
+agents:
+  queue: default
+
+steps:
+  - label: ":docker: Build image"
+    # BK-001: plugin pinned to a branch (#main), not a version tag.
+    plugins:
+      - docker-compose#main:
+          run: app
+      # BK-001 (secondary): bare reference, no @ pin at all.
+      - docker-login
+    # BK-003: branch name interpolated unquoted into a shell command.
+    # BK-005: docker --privileged in the integration command.
+    command: |
+      echo Building branch $BUILDKITE_BRANCH
+      docker run --privileged build/integration:latest npm test
+
+  - label: ":package: Install"
+    # BK-004: remote install script piped into bash.
+    # BK-008: curl --insecure disables TLS verification.
+    command: |
+      curl https://example.com/install.sh | bash
+      curl --insecure https://internal/registry/info
+
+  # BK-006: no timeout_in_minutes anywhere in this step.
+  - label: ":hammer: Long build"
+    command: make integration-test
+
+  # BK-007: deploy step with no preceding block / input gate.
+  - label: ":rocket: Deploy production"
+    command: |
+      kubectl apply -f deploy/prod
+      aws ecs update-service --cluster prod --service web

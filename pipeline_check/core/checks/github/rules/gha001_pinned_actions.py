@@ -6,7 +6,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
-from ._helpers import SHA_RE
+from ..uses_parser import parse_uses
 
 RULE = Rule(
     id="GHA-001",
@@ -34,15 +34,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
     for _, job in iter_jobs(doc):
         for step in iter_steps(job):
-            uses = step.get("uses")
-            if not isinstance(uses, str) or "@" not in uses:
+            ref = parse_uses(step.get("uses"))
+            if ref is None or ref.kind != "remote-action":
                 continue
-            # Docker image refs and local path refs are out of scope.
-            if uses.startswith(("docker://", "./", "/")):
-                continue
-            ref = uses.rsplit("@", 1)[1]
-            if not SHA_RE.match(ref):
-                unpinned.append(uses)
+            if not ref.is_pinned_to_sha:
+                unpinned.append(ref.raw)
     passed = not unpinned
     desc = (
         "Every `uses:` reference is pinned to a 40-char commit SHA."

@@ -10,7 +10,6 @@ from pipeline_check.core.checks.custom.evaluator import (
     compile_template,
 )
 
-
 # ── Leaf operators ─────────────────────────────────────────────────
 
 

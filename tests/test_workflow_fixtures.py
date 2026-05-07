@@ -13,10 +13,14 @@ from pathlib import Path
 
 import pytest
 
+from pipeline_check.core.checks.argo.base import ArgoContext
+from pipeline_check.core.checks.argo.pipelines import ArgoChecks
 from pipeline_check.core.checks.azure.base import AzureContext
 from pipeline_check.core.checks.azure.pipelines import AzurePipelineChecks
 from pipeline_check.core.checks.bitbucket.base import BitbucketContext
 from pipeline_check.core.checks.bitbucket.pipelines import BitbucketPipelineChecks
+from pipeline_check.core.checks.buildkite.base import BuildkiteContext
+from pipeline_check.core.checks.buildkite.pipelines import BuildkitePipelineChecks
 from pipeline_check.core.checks.circleci.base import CircleCIContext
 from pipeline_check.core.checks.circleci.pipelines import CircleCIPipelineChecks
 from pipeline_check.core.checks.cloudbuild.base import CloudBuildContext
@@ -31,6 +35,8 @@ from pipeline_check.core.checks.jenkins.base import JenkinsContext
 from pipeline_check.core.checks.jenkins.jenkinsfile import JenkinsfileChecks
 from pipeline_check.core.checks.kubernetes.base import KubernetesContext
 from pipeline_check.core.checks.kubernetes.manifests import KubernetesManifestChecks
+from pipeline_check.core.checks.tekton.base import TektonContext
+from pipeline_check.core.checks.tekton.pipelines import TektonChecks
 
 FIXTURES = Path(__file__).parent / "fixtures" / "workflows"
 
@@ -266,6 +272,38 @@ class TestCloudBuildFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Buildkite
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestBuildkiteFixtures:
+    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 9)}
+
+    def _scan(self, filename: str):
+        ctx = BuildkiteContext.from_path(FIXTURES / "buildkite" / filename)
+        assert ctx.pipelines, f"fixture {filename} produced no parsed pipelines"
+        return _finding_map(BuildkitePipelineChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure-pipeline.yml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every BK check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure-pipeline.yml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every BK check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Dockerfile / Containerfile
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -330,6 +368,70 @@ class TestKubernetesFixtures:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Tekton
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestTektonFixtures:
+    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 9)}
+
+    def _scan(self, filename: str):
+        ctx = TektonContext.from_path(FIXTURES / "tekton" / filename)
+        assert ctx.docs, f"fixture {filename} produced no parsed docs"
+        return _finding_map(TektonChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure-tekton.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every TKN check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure-tekton.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every TKN check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# Argo Workflows
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestArgoFixtures:
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 9)}
+
+    def _scan(self, filename: str):
+        ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)
+        assert ctx.docs, f"fixture {filename} produced no parsed docs"
+        return _finding_map(ArgoChecks(ctx).run())
+
+    def test_insecure_fails_every_check(self):
+        results = self._scan("insecure-argo.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        failed = {cid for cid, passed in results.items() if not passed}
+        assert failed == self.EXPECTED_IDS, (
+            f"expected every ARGO check to fail on the insecure fixture, "
+            f"but these passed unexpectedly: {self.EXPECTED_IDS - failed}"
+        )
+
+    def test_secure_passes_every_check(self):
+        results = self._scan("secure-argo.yaml")
+        assert self.EXPECTED_IDS.issubset(results.keys())
+        passed = {cid for cid, ok in results.items() if ok}
+        assert passed == self.EXPECTED_IDS, (
+            f"expected every ARGO check to pass on the secure fixture, "
+            f"but these failed: {self.EXPECTED_IDS - passed}"
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Cross-provider sanity — findings carry control refs from enabled standards
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -349,6 +451,15 @@ class TestKubernetesFixtures:
      {f"JF-{i:03d}" for i in range(1, 33)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
      {f"CC-{i:03d}" for i in range(1, 32)}),
+    ("buildkite", "buildkite/insecure-pipeline.yml",
+     BuildkiteContext, BuildkitePipelineChecks,
+     {f"BK-{i:03d}" for i in range(1, 9)}),
+    ("tekton", "tekton/insecure-tekton.yaml",
+     TektonContext, TektonChecks,
+     {f"TKN-{i:03d}" for i in range(1, 9)}),
+    ("argo", "argo/insecure-argo.yaml",
+     ArgoContext, ArgoChecks,
+     {f"ARGO-{i:03d}" for i in range(1, 9)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
      {f"GCB-{i:03d}" for i in range(1, 23)}),

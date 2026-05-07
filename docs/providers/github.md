@@ -1,7 +1,9 @@
 # GitHub Actions provider
 
-Parses workflow YAML files under a `.github/workflows` directory — no
-network calls, no GitHub API token, no installed Actions runner required.
+Parses workflow YAML files under a `.github/workflows` directory. No
+GitHub API token or installed Actions runner is required by default;
+the scanner stays read-from-disk-only unless `--resolve-remote` opts
+in to fetching reusable-workflow callees over HTTPS.
 
 ## Producer workflow
 
@@ -23,9 +25,54 @@ pipeline_check --pipeline github --gha-path .github/workflows/release.yml
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the AWS and Terraform providers.
 
+## Reusable workflow resolution
+
+`jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>` references
+a workflow body that runs with the *caller's* `GITHUB_TOKEN` and
+secrets. By default the scanner stops at the call site (it flags the
+ref via `GHA-025` when unpinned and emits a one-line nudge listing
+how many remote refs were skipped); `--resolve-remote` opts in to
+fetching the called body and running the full GHA rule pack against
+it with the caller's permissions context.
+
+```bash
+# Fetch via raw.githubusercontent.com (works for public repos).
+pipeline_check --pipeline github --resolve-remote
+
+# Private callees: pass a token, or set $GITHUB_TOKEN.
+pipeline_check --pipeline github --resolve-remote --gh-token "$GH_PAT"
+
+# Fully offline: search a sibling on-disk checkout instead.
+pipeline_check --pipeline github --resolve-remote \
+    --gha-search-path ../shared-workflows
+```
+
+Resolution rules:
+
+- **Only SHA-pinned refs are fetched.** A tag-pinned ref (`@v1`,
+  `@main`) is skipped with a warning — resolution against a movable
+  upstream tag would defeat `GHA-025`'s value.
+- **Recursion** follows transitive `uses:` calls to a depth of 3
+  (configurable with `--gha-resolve-depth`; hard ceiling 10). Cycles
+  are detected.
+- **Cache.** Fetched bodies live under
+  `~/.cache/pipeline-check/gha-resolver/` for 7 days. Use `--no-cache`
+  to bypass.
+- **Failure mode.** Network errors, 404s, and malformed YAML never
+  abort the scan — they land in the context's warnings stream.
+- **Attribution.** Findings on a resolved callee carry a synthetic
+  `<caller-path> -> <owner>/<repo>/<path>@<ref>` resource string so
+  the report points at both the call site and the upstream body.
+- **Permissions inheritance.** A callee without its own
+  `permissions:` runs with the caller's; `GHA-004` doesn't fire on a
+  callee whose caller declared one.
+- **`secrets: inherit`.** When the call site passes
+  `secrets: inherit`, `GHA-019` annotates findings with the inherit
+  note so report readers see the full credential surface.
+
 ## What it covers
 
-36 checks · 16 have an autofix patch (``--fix``).
+36 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -64,7 +111,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [GHA-033](#gha-033) | Secret value echoed / printed in a run: block | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-034](#gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-035](#gha-035) | github-script step interpolates untrusted context | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [GHA-036](#gha-036) | runs-on interpolates untrusted context | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-036](#gha-036) | runs-on interpolates untrusted context | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ---
 
@@ -773,7 +820,7 @@ Pass attacker-controllable values through ``env:`` and read them inside the scri
 ## GHA-036 — runs-on interpolates untrusted context { #gha-036 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
 GHA-012 catches self-hosted runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``runs-on`` is computed from an untrusted expression, the caller picks where the workflow runs — including any self-hosted label the org owns. A reusable workflow that declares ``runs-on: ${{ inputs.runner }}`` lets a downstream caller route the job onto the production-deploy fleet (or any other privileged label) and execute arbitrary code with the privileges that fleet inherits. The same surface exists via ``workflow_dispatch`` inputs and any ``${{ github.event.* }}`` field that an attacker can populate. The rule walks all three ``runs-on`` shapes — string scalar, list of labels, and the long-form ``{ group, labels }`` dict — and matches the same untrusted-context regex GHA-003 / GHA-035 use.

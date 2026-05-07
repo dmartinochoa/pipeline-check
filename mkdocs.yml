@@ -138,6 +138,9 @@ nav:
       - Jenkins: providers/jenkins.md
       - CircleCI: providers/circleci.md
       - Google Cloud Build: providers/cloudbuild.md
+      - Buildkite: providers/buildkite.md
+      - Tekton: providers/tekton.md
+      - Argo Workflows: providers/argo.md
       - Dockerfile: providers/dockerfile.md
       - Kubernetes: providers/kubernetes.md
       - Helm: providers/helm.md

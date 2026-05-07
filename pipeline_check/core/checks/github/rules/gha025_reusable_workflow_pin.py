@@ -12,7 +12,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ._helpers import SHA_RE
+from ..uses_parser import parse_uses
 
 RULE = Rule(
     id="GHA-025",
@@ -51,16 +51,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
-        uses = job.get("uses")
-        if not isinstance(uses, str) or "@" not in uses:
+        ref = parse_uses(job.get("uses"))
+        if ref is None or ref.kind != "remote-workflow":
             continue
-        # Local refs (``./.github/workflows/foo.yml``) inherit the
-        # caller's commit — no upstream pinning to verify.
-        if uses.startswith(("./", "/")):
-            continue
-        ref = uses.rsplit("@", 1)[1]
-        if not SHA_RE.match(ref):
-            unpinned.append(f"{job_id}: {uses}")
+        if not ref.is_pinned_to_sha:
+            unpinned.append(f"{job_id}: {ref.raw}")
     passed = not unpinned
     desc = (
         "Every reusable workflow reference is pinned to a commit SHA."

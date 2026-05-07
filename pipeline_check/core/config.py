@@ -45,6 +45,10 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "tf_plan", "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
     "circleci_path", "jenkinsfile_path", "cfn_template",
     "cloudbuild_path", "dockerfile_path", "k8s_path",
+    "buildkite_path", "tekton_path", "argo_path",
+    # GHA reusable-workflow remote-ref resolver.
+    "resolve_remote", "gh_token", "no_cache",
+    "gha_search_path", "gha_resolve_depth",
     "output", "output_file",
     "standards", "severity_threshold",
     "secret_patterns",

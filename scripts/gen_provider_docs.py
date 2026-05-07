@@ -52,8 +52,10 @@ SUPPORTED_PROVIDERS: dict[str, tuple[str, str, Path, str]] = {
         """\
 # GitHub Actions provider
 
-Parses workflow YAML files under a `.github/workflows` directory — no
-network calls, no GitHub API token, no installed Actions runner required.
+Parses workflow YAML files under a `.github/workflows` directory. No
+GitHub API token or installed Actions runner is required by default;
+the scanner stays read-from-disk-only unless `--resolve-remote` opts
+in to fetching reusable-workflow callees over HTTPS.
 
 ## Producer workflow
 
@@ -74,6 +76,51 @@ pipeline_check --pipeline github --gha-path .github/workflows/release.yml
 
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the AWS and Terraform providers.
+
+## Reusable workflow resolution
+
+`jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>` references
+a workflow body that runs with the *caller's* `GITHUB_TOKEN` and
+secrets. By default the scanner stops at the call site (it flags the
+ref via `GHA-025` when unpinned and emits a one-line nudge listing
+how many remote refs were skipped); `--resolve-remote` opts in to
+fetching the called body and running the full GHA rule pack against
+it with the caller's permissions context.
+
+```bash
+# Fetch via raw.githubusercontent.com (works for public repos).
+pipeline_check --pipeline github --resolve-remote
+
+# Private callees: pass a token, or set $GITHUB_TOKEN.
+pipeline_check --pipeline github --resolve-remote --gh-token "$GH_PAT"
+
+# Fully offline: search a sibling on-disk checkout instead.
+pipeline_check --pipeline github --resolve-remote \\
+    --gha-search-path ../shared-workflows
+```
+
+Resolution rules:
+
+- **Only SHA-pinned refs are fetched.** A tag-pinned ref (`@v1`,
+  `@main`) is skipped with a warning — resolution against a movable
+  upstream tag would defeat `GHA-025`'s value.
+- **Recursion** follows transitive `uses:` calls to a depth of 3
+  (configurable with `--gha-resolve-depth`; hard ceiling 10). Cycles
+  are detected.
+- **Cache.** Fetched bodies live under
+  `~/.cache/pipeline-check/gha-resolver/` for 7 days. Use `--no-cache`
+  to bypass.
+- **Failure mode.** Network errors, 404s, and malformed YAML never
+  abort the scan — they land in the context's warnings stream.
+- **Attribution.** Findings on a resolved callee carry a synthetic
+  `<caller-path> -> <owner>/<repo>/<path>@<ref>` resource string so
+  the report points at both the call site and the upstream body.
+- **Permissions inheritance.** A callee without its own
+  `permissions:` runs with the caller's; `GHA-004` doesn't fire on a
+  callee whose caller declared one.
+- **`secrets: inherit`.** When the call site passes
+  `secrets: inherit`, `GHA-019` annotates findings with the inherit
+  note so report readers see the full credential surface.
 """,
     ),
     "gitlab": (
@@ -325,6 +372,120 @@ Four rules target non-workload kinds:
 - **K8S-022** — `Service` exposing port 22 (SSH).
 """,
     ),
+    "buildkite": (
+        "Buildkite",
+        "pipeline_check.core.checks.buildkite.rules",
+        _REPO_ROOT / "docs" / "providers" / "buildkite.md",
+        """\
+# Buildkite provider
+
+Parses `.buildkite/pipeline.yml` (or any user-named pipeline file) on
+disk — no Buildkite API token, no agent install required. Each
+document must declare a top-level `steps:` list; files without it are
+skipped by the loader.
+
+## Producer workflow
+
+```bash
+# --buildkite-path is auto-detected when .buildkite/pipeline.yml
+# exists at cwd.
+pipeline_check --pipeline buildkite
+
+# …or pass it explicitly.
+pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Buildkite-specific checks
+
+- **BK-001** — plugin refs must be pinned to an exact tag
+  (`docker-compose#v4.13.0`) or a 40-char SHA. Branch refs (`#main`)
+  and bare names float and let a compromised plugin release execute
+  in the pipeline.
+- **BK-007** — every step that looks like a deploy (label / command
+  matches `deploy`, `kubectl apply`, `terraform apply`, `helm
+  upgrade`, …) must be preceded by a `block:` or `input:` step in
+  the same pipeline file. Buildkite waits for a human to click
+  *Unblock* before the gated steps run.
+""",
+    ),
+    "tekton": (
+        "Tekton",
+        "pipeline_check.core.checks.tekton.rules",
+        _REPO_ROOT / "docs" / "providers" / "tekton.md",
+        """\
+# Tekton provider
+
+Parses Tekton API documents (`apiVersion: tekton.dev/*`) from `.yaml`
+/ `.yml` files on disk — text-only static analysis, no `tkn` binary,
+no cluster access. Recognized kinds: `Task`, `ClusterTask`,
+`Pipeline`, `TaskRun`, `PipelineRun`. Documents that don't carry a
+`tekton.dev/*` apiVersion are silently skipped, so a directory mixing
+Tekton with plain Kubernetes manifests is safe to point at.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline tekton --tekton-path tekton/
+
+# A single multi-document file works too.
+pipeline_check --pipeline tekton --tekton-path tekton/build-task.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Tekton-specific checks
+
+- **TKN-003** — Tekton substitutes `$(params.X)` *before* the shell
+  parses the script, so any unquoted use is a command-injection
+  primitive. The safe pattern is to receive the parameter through
+  `env:` and reference the env var quoted (`"$NAME"`).
+- **TKN-007** — `TaskRun` / `PipelineRun` must set
+  `serviceAccountName` to a least-privilege ServiceAccount. The
+  default SA inherits whatever cluster-admin or wildcard role
+  someone later binds to it.
+""",
+    ),
+    "argo": (
+        "Argo Workflows",
+        "pipeline_check.core.checks.argo.rules",
+        _REPO_ROOT / "docs" / "providers" / "argo.md",
+        """\
+# Argo Workflows provider
+
+Parses Argo API documents (`apiVersion: argoproj.io/*`) from `.yaml`
+/ `.yml` files on disk — text-only static analysis, no `argo` binary,
+no cluster access. Recognized kinds: `Workflow`, `WorkflowTemplate`,
+`ClusterWorkflowTemplate`, `CronWorkflow`. Documents that don't
+carry an `argoproj.io/*` apiVersion are silently skipped.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline argo --argo-path workflows/
+
+# A single workflow file works too.
+pipeline_check --pipeline argo --argo-path workflows/release.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Argo-specific checks
+
+- **ARGO-005** — `{{inputs.parameters.X}}` substitution happens
+  before the shell parses the script, so any unquoted use in
+  `script.source` / `container.args` is a command-injection
+  primitive. Pass the parameter via `env:` and reference quoted.
+- **ARGO-003** — `Workflow` / `CronWorkflow` must set
+  `serviceAccountName`. Workflows that fall back to the namespace's
+  `default` SA inherit whatever role someone later binds to
+  `default`.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -412,6 +573,9 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     "jenkins":   {"prefix": "JF",  "prefix_lc": "jf",  "pkg": "jenkins"},
     "circleci":  {"prefix": "CC",  "prefix_lc": "cc",  "pkg": "circleci"},
     "cloudbuild": {"prefix": "GCB", "prefix_lc": "gcb", "pkg": "cloudbuild"},
+    "buildkite": {"prefix": "BK",  "prefix_lc": "bk",  "pkg": "buildkite"},
+    "tekton":    {"prefix": "TKN", "prefix_lc": "tkn", "pkg": "tekton"},
+    "argo":      {"prefix": "ARGO", "prefix_lc": "argo", "pkg": "argo"},
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
 }

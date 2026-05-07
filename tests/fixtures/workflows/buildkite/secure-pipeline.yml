@@ -1,0 +1,43 @@
+# Buildkite pipeline that satisfies every BK-* check.
+
+env:
+  # Real values come from agent secrets hooks at runtime; the
+  # interpolation form keeps pipeline.yml committable.
+  AWS_REGION: us-east-1
+
+agents:
+  queue: default
+
+steps:
+  - label: ":docker: Build image"
+    timeout_in_minutes: 30
+    # BK-001: plugin pinned to an exact semver tag.
+    plugins:
+      - docker-compose#v4.13.0:
+          run: app
+    # BK-003: branch name passed quoted, single-token. BK-005: no
+    # --privileged. BK-008: no TLS bypass flags.
+    command: |
+      branch="$BUILDKITE_BRANCH"
+      ./scripts/build.sh --branch "$branch"
+
+  - label: ":package: Install tooling"
+    timeout_in_minutes: 10
+    # BK-004: download, verify, then execute (no curl|sh).
+    command: |
+      curl -fsSLO https://example.com/install.sh
+      sha256sum -c install.sh.sha256
+      bash install.sh
+
+  - label: ":hammer: Integration tests"
+    timeout_in_minutes: 60
+    command: make integration-test
+
+  # BK-007: manual block before the deploy step.
+  - block: "Deploy to production?"
+
+  - label: ":rocket: Deploy production"
+    timeout_in_minutes: 20
+    command: |
+      kubectl apply -f deploy/prod
+      aws ecs update-service --cluster prod --service web

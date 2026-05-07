@@ -117,6 +117,20 @@ class Scanner:
         if diff_base:
             _filter_context_by_diff(self._context, diff_base, self.pipeline)
 
+        # ``post_filter`` runs after the diff filter so resolver-driven
+        # provider extensions (GHA reusable workflow resolution) don't
+        # waste fetches on callers that the diff filter already pruned.
+        try:
+            provider.post_filter(self._context, **provider_kwargs)
+        except Exception as exc:
+            # Defensive: a misbehaving provider hook must not crash the
+            # whole scan. Surface it as a context warning instead.
+            warnings_list = getattr(self._context, "warnings", None)
+            if isinstance(warnings_list, list):
+                warnings_list.append(
+                    f"[{self.pipeline}] post_filter hook raised: {exc}"
+                )
+
         self.metadata = ScanMetadata(
             provider=self.pipeline,
             files_scanned=getattr(self._context, "files_scanned", 0),

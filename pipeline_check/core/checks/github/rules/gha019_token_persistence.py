@@ -6,7 +6,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps
+from ..base import Workflow, iter_jobs, iter_steps
 
 _TOKEN_PERSIST_RE = re.compile(
     r"GITHUB_TOKEN.*(?:>>?\s|tee\s)"
@@ -39,7 +39,7 @@ RULE = Rule(
 )
 
 
-def check(path: str, doc: dict[str, Any]) -> Finding:
+def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding:
     offenders: list[str] = []
     for job_id, job in iter_jobs(doc):
         for step in iter_steps(job):
@@ -50,12 +50,22 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 name = step.get("name") or step.get("id") or "unnamed"
                 offenders.append(f"{job_id}.{name}")
     passed = not offenders
+    # When this workflow is a resolved callee invoked with
+    # ``secrets: inherit``, the persistence vector is strictly
+    # broader: every caller secret crosses the boundary, so a
+    # ``echo $SECRET >> file`` pattern leaks the caller's universe.
+    # Annotate the description so report readers see the chain.
+    inherit_note = ""
+    if wf is not None and wf.inherits_secrets:
+        inherit_note = (
+            " (callee inherits caller secrets via ``secrets: inherit``)"
+        )
     desc = (
         "No GITHUB_TOKEN persistence patterns detected in this workflow."
         if passed else
         f"GITHUB_TOKEN written to persistent storage in: "
         f"{', '.join(offenders[:5])}"
-        f"{'...' if len(offenders) > 5 else ''}."
+        f"{'...' if len(offenders) > 5 else ''}." + inherit_note
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

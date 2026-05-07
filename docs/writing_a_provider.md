@@ -180,7 +180,7 @@ under the Providers section.
 
 ## Step 8 — README + index claims
 
-`README.md` and `docs/index.md` carry numerical claims (`12
+`README.md` and `docs/index.md` carry numerical claims (`16
 providers`, `13 standards`). `tests/test_doc_claims.py` derives the
 expected values from the registries, so adding a new provider
 auto-bumps the expected count — the test fails until the doc

@@ -1,0 +1,45 @@
+# Argo Workflow that satisfies every ARGO-* check.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-and-deploy
+  namespace: argo
+spec:
+  entrypoint: main
+  serviceAccountName: argo-workflow-runner
+  activeDeadlineSeconds: 3600
+  arguments:
+    parameters:
+      - name: ref
+        value: "main"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: ref
+      script:
+        # ARGO-001: digest-pinned image.
+        image: alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b
+        # ARGO-002: hardened securityContext.
+        securityContext:
+          privileged: false
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+        env:
+          # Parameter received via env, then quoted in the script body.
+          - name: REF
+            value: "{{inputs.parameters.ref}}"
+          - name: TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: deploy-secrets
+                key: token
+        command: [bash]
+        # ARGO-005 / ARGO-008: parameter referenced quoted, no curl-pipe.
+        source: |
+          set -e
+          echo "Building $REF"
+          curl -fsSLO https://example.com/install.sh
+          sha256sum -c install.sh.sha256
+          bash install.sh

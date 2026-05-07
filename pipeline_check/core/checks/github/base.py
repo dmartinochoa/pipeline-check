@@ -18,10 +18,46 @@ from ..base import BaseCheck, safe_load_yaml
 
 @dataclass(frozen=True)
 class Workflow:
-    """A parsed GitHub Actions workflow document."""
+    """A parsed GitHub Actions workflow document.
+
+    The default-empty fields below populate when the document was
+    pulled in by the remote-ref resolver. ``caller_path`` points at
+    the on-disk caller; ``source_ref`` carries the
+    ``owner/repo/path.yml@ref`` that produced this body. Rules that
+    care about the call context read these.
+
+    ``inherited_permissions`` and ``inherited_secret_names`` capture
+    what the caller was willing to share with the callee. They mirror
+    runtime semantics: a reusable workflow without its own
+    ``permissions:`` block runs with the caller's; ``secrets: inherit``
+    on the call site exposes every caller-visible secret.
+    """
 
     path: str   # relative path, used as the finding's resource handle
     data: dict[str, Any]
+    #: For workflows pulled in by the resolver, the canonical
+    #: ``owner/repo/path.yml@ref`` that produced this body. ``None``
+    #: for workflows loaded directly from disk.
+    source_ref: str | None = None
+    #: For resolved callees, the path of the caller workflow that
+    #: triggered the resolution. Lets rules attribute findings back
+    #: to the file under review rather than to a remote URL.
+    caller_path: str | None = None
+    #: Permissions block the caller declared. Either ``read-all`` /
+    #: ``write-all`` (string) or a token-keyed dict. ``None`` means
+    #: "caller didn't declare; runtime defaults apply."
+    inherited_permissions: dict[str, Any] | str | None = None
+    #: Secrets visible to this workflow because the caller passed
+    #: ``secrets: inherit``. The set is the explicit names declared on
+    #: the call site or in the caller's ``env``; an empty frozenset
+    #: combined with ``inherits_secrets=True`` means "unknown universe
+    #: of secrets" (org-level secrets aren't in the YAML).
+    inherited_secret_names: frozenset[str] = frozenset()
+    #: Whether the caller passed ``secrets: inherit`` (vs. an explicit
+    #: secret-by-secret map). Distinct from
+    #: ``inherited_secret_names`` being empty: an explicit empty map
+    #: means no secrets crossed the boundary.
+    inherits_secrets: bool = False
 
 
 class GitHubContext:
@@ -100,6 +136,23 @@ def iter_steps(job: dict[str, Any]) -> Iterator[dict[str, Any]]:
         for step in steps:
             if isinstance(step, dict):
                 yield step
+
+
+def effective_permissions(
+    workflow: dict[str, Any],
+    inherited: dict[str, Any] | str | None = None,
+) -> dict[str, Any] | str | None:
+    """Return the permissions block that *runtime* sees for this workflow.
+
+    A workflow's own ``permissions:`` always wins; only when it's
+    absent does the caller's block apply (this matches GitHub's
+    runtime semantics for reusable workflows). For top-level scans
+    this is just the workflow's own ``permissions:``.
+    """
+    own = workflow.get("permissions")
+    if own is not None:
+        return own  # type: ignore[no-any-return]
+    return inherited
 
 
 def workflow_triggers(workflow: dict[str, Any]) -> list[str]:
