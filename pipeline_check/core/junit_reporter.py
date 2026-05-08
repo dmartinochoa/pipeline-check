@@ -97,10 +97,13 @@ def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
             name = _xml_attr(f.title)
             classname = _xml_attr(f.check_id)
             resource = _xml_attr(f.resource or "")
+            # ``time="0"`` is required by JUnit 4 / surefire schemas
+            # even when the runner doesn't measure per-finding time.
+            # Some CI ingestors reject testcase elements without it.
             if f.passed:
                 out.append(
                     f'    <testcase name={name} classname={classname} '
-                    f'file={resource} />'
+                    f'file={resource} time="0" />'
                 )
             else:
                 body = _xml_escape(_failure_body(f))
@@ -110,7 +113,7 @@ def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
                 typ = _xml_attr(f.severity.value)
                 out.append(
                     f'    <testcase name={name} classname={classname} '
-                    f'file={resource}>'
+                    f'file={resource} time="0">'
                 )
                 out.append(
                     f'      <failure message={msg} type={typ}>{body}</failure>'

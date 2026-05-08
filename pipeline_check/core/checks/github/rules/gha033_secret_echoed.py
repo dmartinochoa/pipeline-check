@@ -75,6 +75,14 @@ def _scan_for_printed_secret(run: str, secret_env_names: set[str]) -> bool:
     redirect terminates the printed argument list. The print regex
     only inspects the head of each pipeline-segment.
     """
+    # Compile each name's reference pattern once per call rather than
+    # once per (segment × name) pair. A run: block with 200 segments
+    # and 5 secret env vars is the difference between 5 compiles and
+    # 1000.
+    name_refs = [
+        re.compile(rf"\${{{name}}}|\$\b{re.escape(name)}\b")
+        for name in secret_env_names
+    ]
     for raw_line in run.splitlines():
         # Collapse line continuations / leading whitespace; segment on
         # ``;`` and ``&&`` / ``||`` so a line like ``cmd && echo $X`` is
@@ -91,8 +99,7 @@ def _scan_for_printed_secret(run: str, secret_env_names: set[str]) -> bool:
                 return True
             # Indirect: env var that resolves to a secret. Match
             # ``$NAME`` / ``${NAME}`` / ``"$NAME"`` etc.
-            for name in secret_env_names:
-                ref = re.compile(rf"\${{{name}}}|\$\b{re.escape(name)}\b")
+            for ref in name_refs:
                 if ref.search(seg):
                     return True
     return False

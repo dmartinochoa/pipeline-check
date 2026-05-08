@@ -36,9 +36,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   trigger every new rule (and ``images:`` array removed so
   GCB-024 fires); secure-cloudbuild.yaml gains a ``tags:``
   declaration so GCB-025 passes.
-
-### Added
-
 - **Four new HELM-native rules (`HELM-007`..`HELM-010`).** Round
   out the chart-supply-chain pack with chart-listing hygiene and
   freshness signals. ``HELM-007`` fires when ``Chart.yaml``'s
@@ -265,6 +262,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   catalog: 0 native to 3 native.
 
 ### Fixed
+
+- **Reporter output gaps caught by a release-readiness audit.**
+  JUnit ``<testcase>`` elements now carry the ``time="0"``
+  attribute that JUnit-4 / Surefire schemas require — some CI
+  ingestors (Jenkins JUnit plugin, surefire-report) reject
+  testcase elements without it. The Markdown reporter's row-
+  escape helper now backslash-escapes backticks alongside pipes
+  / newlines / backslashes; a finding whose title carries a
+  backtick (``Missing `var.tf` check``) no longer corrupts the
+  table by opening an unbalanced inline-code span. CHANGELOG's
+  ``[Unreleased]`` section had two ``### Added`` sub-headings
+  (Keep-a-Changelog requires one per type); merged.
+- **GHA resolver hardened against path-traversal + DoS.**
+  ``DiskFetcher`` (``--gha-search-path`` consumer) now validates
+  each ``owner`` / ``repo`` / ``path`` component for ``..``
+  segments and confirms the resolved candidate is a descendant
+  of the configured search root before reading. ``HttpFetcher``
+  (``--resolve-remote`` consumer) now caps response bodies at
+  10 MiB, so a malicious / misrouted remote can't balloon scanner
+  memory with an attacker-controlled response stream. Both
+  fetchers are still opt-in via ``--resolve-remote`` /
+  ``--gha-search-path``; the hardening makes the opt-in safer.
+- **Hot-path regex compilation removed from per-step inner
+  loops.** ``has_unsafe_reference`` (used by every CI provider's
+  script-injection rule) now caches compiled patterns through
+  ``functools.lru_cache``. ``GHA-033``'s
+  ``_scan_for_printed_secret`` compiles each secret-env-var's
+  reference pattern once per call rather than once per
+  ``(segment × name)`` pair. Measurable on 500-job workflows
+  where each step's run-block was triggering thousands of
+  redundant ``re.compile`` calls.
+- **Dropped unused ``flake8`` dev dependency.**
+  ``requirements-dev.in`` declared ``flake8>=7.0`` but nothing
+  imports or invokes it — ruff replaced it months ago. Removed
+  flake8 + its transitive deps (mccabe, pycodestyle, pyflakes)
+  from ``requirements-dev.txt``. Saves ~7 MB of installed
+  dev environment.
 
 - **`--explain` now resolves IDs from every rule pack.** The
   registry in ``pipeline_check.core.explain`` was only walking seven

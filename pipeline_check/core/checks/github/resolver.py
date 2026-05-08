@@ -60,6 +60,13 @@ _DEFAULT_MAX_DEPTH = 3
 _HARD_DEPTH_CEILING = 10
 _DEFAULT_TIMEOUT = 10.0
 
+#: Hard cap on response body size for the HTTP fetcher. A real
+#: GitHub workflow file is at most a few hundred KB; a maliciously
+#: large response (or a misrouted server) shouldn't be allowed to
+#: balloon scanner memory. 10 MiB is generous for a single workflow
+#: while bounding the worst case.
+_MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+
 
 # ── Fetcher protocol + implementations ────────────────────────────────
 
@@ -89,11 +96,33 @@ class DiskFetcher:
     def fetch(
         self, owner: str, repo: str, ref: str, path: str,
     ) -> bytes | None:
+        # Defense against path-traversal in attacker-controlled
+        # workflow ``uses:`` refs. A malicious workflow could call
+        # ``uses: ../../etc/passwd@<sha>`` which the parser would
+        # split into owner / repo / path components carrying ``..``.
+        # We validate each component and confirm the resolved
+        # candidate stays inside the configured search root before
+        # reading.
+        for component in (owner, repo, path):
+            if ".." in Path(component).parts:
+                return None
         for root in self.search_paths:
+            try:
+                root_resolved = root.resolve()
+            except OSError:
+                continue
             candidate = root / owner / repo / path
-            if candidate.is_file():
+            try:
+                candidate_resolved = candidate.resolve()
+            except OSError:
+                continue
+            if root_resolved not in candidate_resolved.parents \
+                    and candidate_resolved != root_resolved:
+                # Symlink or component combination escaped the root.
+                continue
+            if candidate_resolved.is_file():
                 try:
-                    return candidate.read_bytes()
+                    return candidate_resolved.read_bytes()
                 except OSError:
                     continue
         return None
@@ -129,7 +158,15 @@ class HttpFetcher:
         req.add_header("User-Agent", "pipeline-check-resolver")
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
-                return resp.read()  # type: ignore[no-any-return]
+                # Cap reads at ``_MAX_RESPONSE_BYTES + 1``; any extra
+                # byte indicates the body is over the cap, in which
+                # case we treat the fetch as a failure rather than
+                # streaming a multi-GB attacker-controlled response
+                # into memory.
+                body: bytes = resp.read(_MAX_RESPONSE_BYTES + 1)
+                if len(body) > _MAX_RESPONSE_BYTES:
+                    return None
+                return body
         except urllib.error.HTTPError:
             return None
         except (urllib.error.URLError, TimeoutError, OSError):
