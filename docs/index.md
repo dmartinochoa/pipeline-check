@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 16 providers, graded against 13 compliance frameworks. 
-100 of the 500+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+103 of the 500+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -164,8 +164,8 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">8 checks</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">8 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
-  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">30 checks</span></a>
-  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 30 K8S-* rules</span></a>
+  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">35 checks</span></a>
+  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 35 K8S-* rules + 10 HELM-*</span></a>
 </div>
 </section>
 

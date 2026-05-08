@@ -27,6 +27,14 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-009`](#ac-009) | Supply Chain Repo Poisoning | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-002`](providers/github.md#gha-002) + [`GHA-008`](providers/github.md#gha-008) |
 | [`AC-010`](#ac-010) | Self-Hosted Runner Environment Exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-012`](providers/github.md#gha-012) + ([`GHA-016`](providers/github.md#gha-016) or [`GHA-019`](providers/github.md#gha-019)) |
 | [`AC-011`](#ac-011) | Kubernetes Cluster Takeover via hostPath + cluster-admin | <span class="pg-sev pg-sev--critical">CRITICAL</span> | kubernetes | [`K8S-013`](providers/kubernetes.md#k8s-013) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
+| [`AC-012`](#ac-012) | Reusable Workflow Secret Exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-025`](providers/github.md#gha-025) + [`GHA-034`](providers/github.md#gha-034) |
+| [`AC-013`](#ac-013) | Caller-Controlled Runner with Token Persistence | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-036`](providers/github.md#gha-036) + [`GHA-019`](providers/github.md#gha-019) |
+| [`AC-014`](#ac-014) | Caller-Controlled Runner with Token Persistence (GitLab) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | gitlab | [`GL-032`](providers/gitlab.md#gl-032) + [`GL-020`](providers/gitlab.md#gl-020) |
+| [`AC-015`](#ac-015) | Helm chart-supply-chain takeover via legacy + unlocked + plaintext | <span class="pg-sev pg-sev--critical">CRITICAL</span> | helm | [`HELM-001`](providers/helm.md#helm-001) + [`HELM-002`](providers/helm.md#helm-002) + [`HELM-003`](providers/helm.md#helm-003) |
+| [`AC-016`](#ac-016) | OIDC role drift: ungated GitHub trust meets wildcard AWS authority | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`IAM-002`](providers/aws.md) |
+| [`AC-017`](#ac-017) | Build cache poisoning that lands on a mutable ECR tag | <span class="pg-sev pg-sev--high">HIGH</span> | github / aws | [`GHA-011`](providers/github.md#gha-011) + [`ECR-002`](providers/aws.md) |
+| [`AC-018`](#ac-018) | Unpinned action lands on deploy job with no environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-014`](providers/github.md#gha-014) |
+| [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
