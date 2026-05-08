@@ -211,6 +211,18 @@ STANDARD = Standard(
         "K8S-028":  ["SC-7", "CM-7"],                    # container hostPort
         "K8S-029":  ["AC-3", "AC-6"],                    # default-SA binding
         "K8S-030":  ["AC-6", "SC-7", "CM-7"],            # control-plane scheduling
+        # Helm chart-supply-chain. The same SR family that covers
+        # image pinning (K8S-001 / DF-001) covers chart pinning;
+        # SC-8 (transmission integrity) covers HELM-003's plaintext
+        # repo URL. SR-3 — supply chain controls. SR-11 — component
+        # authenticity (the Chart.lock digest is the authenticity
+        # signal). SI-2 — flaw remediation hooks on the schema lock.
+        "HELM-001": ["SR-3", "CM-2"],                    # legacy v1 schema
+        "HELM-002": ["SR-3", "SR-11", "SI-7"],           # Chart.lock digest
+        "HELM-003": ["SR-3", "SC-8", "SC-13"],           # non-HTTPS dep repo
+        "HELM-004": ["SR-3", "SR-11", "SI-2"],           # version not exact-pinned
+        "HELM-005": ["SR-3", "SR-4"],                    # maintainers chain-of-custody
+        "HELM-006": ["CM-2", "CM-6"],                    # kubeVersion compat range
         # Dockerfile — image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned

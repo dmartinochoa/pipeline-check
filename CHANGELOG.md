@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **OWASP-coverage backfill across every rule pack.** 36 rules
+  shipped with a populated ``Rule.owasp`` tuple but no entry in
+  ``pipeline_check/core/standards/data/owasp_cicd_top_10.py`` —
+  every Argo / Buildkite / Tekton rule, plus several late-added
+  GitHub / GitLab / Bitbucket / Azure / Jenkins / CircleCI rules.
+  ``resolve_for_check()`` returned no controls for these IDs even
+  though the rule "knew" the right CICD-SEC tags. All 36 are now
+  in the data file. A second pass caught and merged 13 rules whose
+  data-file mapping was a strict subset of the rule's declared
+  tags (e.g. ``DF-016`` ``CICD-SEC-3+9+10`` instead of just
+  ``CICD-SEC-9``). Two new regression tests in
+  ``tests/test_standards.py`` walk every rule on disk and assert
+  (a) the ID is in the OWASP data file, (b) every tag the rule
+  declares is also in the data file. A future contributor adding a
+  rule without backfilling either trips at CI time.
+- **HELM rules densified to NIST 800-190 + NIST 800-53 mappings.**
+  The original HELM-001..006 release shipped with OWASP coverage
+  only. Added applicable NIST 800-190 controls (4.1.5 untrusted
+  images, 4.2.1 insecure registry connections — the chart-distribution
+  analogs) and NIST 800-53 controls (SR-3 supply chain, SR-11
+  component authenticity, SI-7 software integrity, SC-8 transmission
+  integrity, CM-2 baseline configuration). Each HELM rule now has
+  2–3 standards covering it instead of one, matching the K8S-001 /
+  DF-001 mapping density.
 - **AC-015 attack chain — Helm chart-supply-chain takeover.**
   Fires when the same scan turns up failing HELM-001 (legacy
   ``apiVersion: v1``), HELM-002 (missing ``Chart.lock`` digests),

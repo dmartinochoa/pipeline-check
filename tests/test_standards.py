@@ -234,3 +234,91 @@ class TestControlRef:
                        control_id="c", control_title="t")
         with pytest.raises(dataclasses.FrozenInstanceError):
             r.standard = "y"  # type: ignore[misc]
+
+
+# ── Cross-pack OWASP coverage ────────────────────────────────────────
+#
+# Every rule in a ``rules/`` package declares its OWASP control(s)
+# in the ``Rule.owasp`` tuple. The authoritative mapping lives in
+# ``owasp_cicd_top_10.py`` and is what reporters / SARIF / explain
+# read at runtime. Pre-2026-05 there was a 36-rule gap between the
+# two: rules declared an OWASP tag in their metadata but the data
+# file hadn't been backfilled, so ``resolve_for_check`` returned
+# nothing.
+#
+# These tests lock the gap closed: every rule must (a) be present
+# in the OWASP mapping, and (b) carry every control its
+# ``Rule.owasp`` declared. A new rule that lands without a backfill
+# trips both.
+
+
+def _all_rule_packs() -> list[str]:
+    """Walk the filesystem to enumerate every ``rules/`` package."""
+    from pathlib import Path
+
+    import pipeline_check.core.checks as checks_pkg
+
+    checks_root = Path(checks_pkg.__file__).parent
+    out: list[str] = []
+    for child in sorted(checks_root.iterdir()):
+        if not child.is_dir() or child.name.startswith("_"):
+            continue
+        rules_dir = child / "rules"
+        if not rules_dir.is_dir():
+            continue
+        if any(
+            f.suffix == ".py" and f.name not in {"__init__.py"}
+            and not f.name.startswith("_")
+            for f in rules_dir.iterdir()
+        ):
+            out.append(f"pipeline_check.core.checks.{child.name}.rules")
+    return out
+
+
+class TestEveryRuleHasOwaspMapping:
+
+    def test_every_discovered_rule_appears_in_owasp_data_file(self):
+        from pipeline_check.core.checks.rule import discover_rules
+        owasp = standards.get("owasp_cicd_top_10").mappings
+        missing: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if rule.id not in owasp:
+                    missing.append(f"{rule.id} ({pack})")
+        assert not missing, (
+            f"{len(missing)} rules with no OWASP mapping in "
+            f"owasp_cicd_top_10.py: {missing[:8]}"
+            f"{'…' if len(missing) > 8 else ''}. Add the entries to "
+            f"the data file's ``mappings`` dict."
+        )
+
+    def test_owasp_data_matches_each_rules_declared_tags(self):
+        """``Rule.owasp`` must agree with the data file.
+
+        The rule module's ``owasp=("CICD-SEC-X",)`` tuple is the
+        author's declaration of which OWASP controls evidence the
+        finding. The data-file mapping is what the runtime reads.
+        Drift between the two means the reporter / SARIF / explain
+        render the wrong control set even though the rule "knows"
+        the right one.
+        """
+        from pipeline_check.core.checks.rule import discover_rules
+        owasp = standards.get("owasp_cicd_top_10").mappings
+        drift: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if not rule.owasp:
+                    continue
+                declared = set(rule.owasp)
+                mapped = set(owasp.get(rule.id, []))
+                missing = declared - mapped
+                if missing:
+                    drift.append(
+                        f"{rule.id}: Rule.owasp declares {sorted(declared)} "
+                        f"but data file has {sorted(mapped)} (missing: {sorted(missing)})"
+                    )
+        assert not drift, (
+            f"{len(drift)} rules whose declared OWASP tags don't all "
+            f"appear in the data file:\n  " + "\n  ".join(drift[:10])
+            + ("\n  …" if len(drift) > 10 else "")
+        )
