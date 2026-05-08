@@ -1,7 +1,7 @@
 """DF-007 — image declares no ``HEALTHCHECK``."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, has_directive, iter_instructions
 
@@ -34,11 +34,15 @@ def check(df: Dockerfile) -> Finding:
     # since intermediate stages don't ship. If any HEALTHCHECK exists
     # *after* the last FROM, treat the image as healthchecked.
     saw_final_from = False
+    final_from_line: int | None = None
     final_has_hc = False
+    healthcheck_none_line: int | None = None
     for ins in df.instructions:
         if ins.directive == "FROM":
             saw_final_from = True
             final_has_hc = False
+            healthcheck_none_line = None
+            final_from_line = ins.line_no
             continue
         if saw_final_from and ins.directive == "HEALTHCHECK":
             # Skip ``HEALTHCHECK NONE`` — that's an explicit opt-out
@@ -46,6 +50,8 @@ def check(df: Dockerfile) -> Finding:
             # base image's healthcheck too).
             if ins.args.strip().upper() != "NONE":
                 final_has_hc = True
+            else:
+                healthcheck_none_line = ins.line_no
     # If the dockerfile has no FROM at all, the rule isn't applicable.
     if not has_directive(df, "FROM") and not any(
         ins.directive == "FROM" for ins in iter_instructions(df, directive="FROM")
@@ -63,8 +69,19 @@ def check(df: Dockerfile) -> Finding:
         "Final stage has no ``HEALTHCHECK`` (or sets ``HEALTHCHECK NONE``). "
         "Orchestrators can't detect a stuck container without one."
     )
+    locations: list[Location] = []
+    if not passed:
+        # Prefer anchoring on an explicit ``HEALTHCHECK NONE`` line
+        # (the offending line). Otherwise anchor on the final FROM —
+        # that's where a missing HEALTHCHECK should be added.
+        anchor_line = healthcheck_none_line or final_from_line
+        if anchor_line is not None:
+            locations.append(Location(
+                path=df.path, start_line=anchor_line, end_line=anchor_line,
+            ))
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

@@ -4,9 +4,10 @@ from __future__ import annotations
 import re as _re
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps
+from ..base import iter_jobs, iter_steps, step_location
 
 RULE = Rule(
     id="GHA-005",
@@ -55,10 +56,20 @@ def _env_has_static_key(env: Any) -> bool:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     static_keys = False
     oidc_role = False
+    locations: list[Location] = []
+
+    def _flag_static(anchor: Any) -> None:
+        """Mark static-key found and record a Location at *anchor*."""
+        nonlocal static_keys
+        static_keys = True
+        if isinstance(anchor, dict):
+            line = _line_of(anchor)
+            locations.append(Location(path=path, start_line=line, end_line=line))
+
     for _, job in iter_jobs(doc):
         # Check job-level env for non-secrets AWS key assignments.
         if _env_has_static_key(job.get("env")):
-            static_keys = True
+            _flag_static(job.get("env"))
         for step in iter_steps(job):
             uses = step.get("uses") or ""
             if isinstance(uses, str) and uses.startswith(
@@ -69,6 +80,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     oidc_role = True
                 if "aws-access-key-id" in w or "aws-secret-access-key" in w:
                     static_keys = True
+                    locations.append(step_location(path, step))
             env = step.get("env") or {}
             if isinstance(env, dict):
                 for value in env.values():
@@ -76,14 +88,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                         "AWS_ACCESS_KEY_ID" in value
                         or "AWS_SECRET_ACCESS_KEY" in value
                     ):
-                        static_keys = True
+                        _flag_static(env)
+                        break
             # Detect `aws configure set aws_access_key_id ...` in run blocks.
             run = step.get("run")
             if isinstance(run, str) and _AWS_CONFIGURE_RE.search(run):
                 static_keys = True
+                locations.append(step_location(path, step))
             # Check step-level env for non-secrets AWS key assignments.
             if _env_has_static_key(step.get("env")):
-                static_keys = True
+                _flag_static(step.get("env"))
     doc_env = doc.get("env") or {}
     if isinstance(doc_env, dict):
         for value in doc_env.values():
@@ -91,9 +105,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 "AWS_ACCESS_KEY_ID" in value
                 or "AWS_SECRET_ACCESS_KEY" in value
             ):
-                static_keys = True
+                _flag_static(doc_env)
+                break
     if _env_has_static_key(doc_env):
-        static_keys = True
+        _flag_static(doc_env)
     if not static_keys and not oidc_role:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -118,4 +133,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations if not passed else [],
     )

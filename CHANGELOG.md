@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precision retrofit, fifth batch — five more rules.**
+  ``GHA-005`` (AWS long-lived credentials in env / step inputs)
+  emits a Location at the offending step, env block, or
+  ``aws configure set`` ``run:`` line — multiple Locations when
+  several legs trip together. ``JF-009`` (Jenkins agent docker
+  image not digest-pinned) re-scans the Jenkinsfile text via
+  ``finditer`` to recover line offsets the bare ``findall``
+  discards. ``DF-007`` (no HEALTHCHECK in final stage) anchors
+  on the final ``FROM`` when no HEALTHCHECK is declared, or on
+  the offending ``HEALTHCHECK NONE`` line when explicitly opted
+  out. ``DF-013`` (EXPOSE on a remote-access port) emits one
+  Location per offending EXPOSE. ``CC-009`` (deploy job
+  without manual approval gate) anchors on the workflow's
+  ``jobs[i]`` entry — that's where the ``requires:`` line goes.
+  33/363 to 38/363 line-precise. Five new entries in
+  ``tests/test_line_precision.py``.
 - **`--explain CHECK_ID` now lists attack chains the rule
   triggers.** New ``[Triggers attack chains]`` section in the
   explain output cross-references the rule layer with the chain

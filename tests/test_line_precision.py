@@ -98,6 +98,18 @@ CASES: list[tuple[str, str, Path, str]] = [
      FIXTURES / "circleci" / "insecure-config.yml", "CC-002"),
     ("bitbucket", "bitbucket_path",
      FIXTURES / "bitbucket" / "insecure-bitbucket-pipelines.yml", "BB-002"),
+    # Round-20 batch — AWS long-lived creds, Jenkins image pin,
+    # Dockerfile HEALTHCHECK / EXPOSE-22, CircleCI deploy approval.
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-005"),
+    ("jenkins", "jenkinsfile_path",
+     FIXTURES / "jenkins" / "Jenkinsfile.insecure", "JF-009"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-007"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-013"),
+    ("circleci", "circleci_path",
+     FIXTURES / "circleci" / "insecure-config.yml", "CC-009"),
 ]
 
 
