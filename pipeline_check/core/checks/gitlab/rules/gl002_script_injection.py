@@ -8,7 +8,8 @@ from ..._primitives.tainted_variables import (
     has_direct_taint,
     has_unsafe_reference,
 )
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 from ._helpers import UNTRUSTED_VAR_RE
@@ -58,21 +59,30 @@ def _gl_ref_pattern(name: str) -> str:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     # Pipeline-level tainted variables — inherited by all jobs.
     global_tainted = _tainted_vars(doc.get("variables"))
     for name, job in iter_jobs(doc):
         scripts = job_scripts(job)
+        hit = False
         # 1. Direct interpolation of untrusted predefined vars.
         if has_direct_taint(scripts, UNTRUSTED_VAR_RE):
             offenders.append(name)
-            continue
-        # 2. Indirect: tainted variable set in variables: block then
-        #    referenced unquoted in a script line.
-        job_tainted = global_tainted | _tainted_vars(job.get("variables"))
-        if job_tainted and has_unsafe_reference(
-            scripts, job_tainted, ref_pattern=_gl_ref_pattern
-        ):
-            offenders.append(name)
+            hit = True
+        else:
+            # 2. Indirect: tainted variable set in variables: block then
+            #    referenced unquoted in a script line.
+            job_tainted = global_tainted | _tainted_vars(job.get("variables"))
+            if job_tainted and has_unsafe_reference(
+                scripts, job_tainted, ref_pattern=_gl_ref_pattern
+            ):
+                offenders.append(name)
+                hit = True
+        if hit:
+            line = _line_of(job)
+            locations.append(Location(
+                path=path, start_line=line, end_line=line,
+            ))
     passed = not offenders
     desc = (
         "No script interpolates attacker-controllable commit/MR metadata."
@@ -86,4 +96,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

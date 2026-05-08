@@ -7,9 +7,9 @@ from ..._primitives.tainted_variables import (
     has_direct_taint,
     has_unsafe_reference,
 )
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps
+from ..base import iter_jobs, iter_steps, step_location
 from ._helpers import UNTRUSTED_CONTEXT_RE
 
 RULE = Rule(
@@ -56,6 +56,7 @@ def _gha_ref_pattern(name: str) -> str:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     # Workflow-level tainted env vars — inherited by all jobs.
     wf_tainted = _tainted_env_vars(doc.get("env"))
     for job_id, job in iter_jobs(doc):
@@ -71,11 +72,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             # 1. Direct interpolation of untrusted context expressions.
             if has_direct_taint(lines, UNTRUSTED_CONTEXT_RE):
                 offenders.append(f"{job_id}[{idx}]")
+                locations.append(step_location(path, step))
             # 2. Indirect: tainted env var referenced in run block.
             elif step_tainted and has_unsafe_reference(
                 lines, step_tainted, ref_pattern=_gha_ref_pattern
             ):
                 offenders.append(f"{job_id}[{idx}]")
+                locations.append(step_location(path, step))
     passed = not offenders
     desc = (
         "No `run:` block interpolates attacker-controllable context fields."
@@ -89,4 +92,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

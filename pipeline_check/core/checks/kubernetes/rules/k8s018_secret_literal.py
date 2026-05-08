@@ -6,7 +6,8 @@ import binascii
 from typing import Any
 
 from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import KubernetesContext
 
@@ -57,6 +58,7 @@ def _value_text(value: Any, *, base64_encoded: bool) -> str:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind != "Secret":
             continue
@@ -64,20 +66,33 @@ def check(ctx: KubernetesContext) -> Finding:
             payload = m.data.get(field)
             if not isinstance(payload, dict):
                 continue
+            payload_line = _line_of(payload)
             for k, v in payload.items():
                 if not isinstance(k, str):
                     continue
                 view = _value_text(v, base64_encoded=base64_encoded)
+                hit = False
                 if AWS_KEY_RE.search(view):
                     offenders.append(
                         f"Secret/{m.name}.{field}.{k} (AKIA-shaped value)"
                     )
-                    continue
-                if SECRETISH_KEY_RE.search(k) and isinstance(v, str) and v.strip():
+                    hit = True
+                elif SECRETISH_KEY_RE.search(k) and isinstance(v, str) and v.strip():
                     offenders.append(
                         f"Secret/{m.name}.{field}.{k} "
                         f"(literal credential-shaped name)"
                     )
+                    hit = True
+                if hit:
+                    # Best-available anchor: the ``stringData:`` /
+                    # ``data:`` block (per-key marks aren't tracked
+                    # by the loader for nested mapping keys, but the
+                    # block line still puts the reader on the right
+                    # screen).
+                    locations.append(Location(
+                        path=m.path, start_line=payload_line,
+                        end_line=payload_line, doc_index=m.doc_index,
+                    ))
     passed = not offenders
     desc = (
         "No Secret manifest carries a credential-shaped literal."
@@ -91,4 +106,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

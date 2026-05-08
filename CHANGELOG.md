@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precision retrofit for eleven high-fire rules.** v0.4.0
+  introduced ``Finding.locations`` with structured ``start_line`` /
+  ``end_line``, but only 12 rules were retrofitted in that release.
+  Two batches landed in this cycle, bringing the total to 23. First
+  batch: ``K8S-005`` (privileged container — anchors on the
+  ``securityContext`` block), ``K8S-013`` (hostPath volume — anchors
+  on the ``hostPath:`` mapping), ``DF-002`` (no USER — anchors on
+  the final stage's ``FROM`` line, or the explicit ``USER root``
+  directive when present), ``DF-004`` (curl-pipe in RUN — anchors
+  on the offending RUN line), and ``GHA-002`` (pull_request_target
+  + PR head checkout — anchors on the offending step). Second batch:
+  ``K8S-018`` (Secret with literal credential-shaped data — anchors
+  on the ``stringData`` / ``data`` block), ``K8S-020`` (cluster-admin
+  binding — anchors on the ``roleRef`` block), ``DF-006`` (ENV/ARG
+  carrying a credential-shaped literal — one Location per offending
+  directive), ``GHA-003`` (script injection via untrusted context —
+  step-level), ``GL-002`` (script injection via untrusted CI vars —
+  job-level), and ``JF-001`` (unpinned ``@Library`` reference —
+  re-scans Jenkinsfile text via ``finditer`` to recover line offsets
+  the bare-string ``Jenkinsfile.library_refs`` field discards).
+  Reporters / SARIF / PR-comment action all switch to the precise
+  ``path:line`` automatically; the regex best-effort fallback no
+  longer kicks in for these IDs. Eleven new entries in
+  ``tests/test_line_precision.py`` lock the precision against
+  future loader regressions.
 - **Supply-chain framework backfill across new rule packs.** Argo /
   Buildkite / Tekton / Helm rules previously had only OWASP
   CICD-Top-10 coverage; the four supply-chain frameworks (SLSA

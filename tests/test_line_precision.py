@@ -45,6 +45,32 @@ CASES: list[tuple[str, str, Path, str]] = [
      FIXTURES / "tekton" / "insecure-tekton.yaml", "TKN-001"),
     ("argo", "argo_path",
      FIXTURES / "argo" / "insecure-argo.yaml", "ARGO-001"),
+    # Round-7 retrofits — high-fire rules whose offending line was
+    # previously inferred via the regex best-effort fallback.
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-005"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-013"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-002"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-004"),
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-002"),
+    # Round-8 batch — secret literals, RBAC binding, ENV credentials,
+    # script injection (GitLab + GHA), Jenkins library pinning.
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-018"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-020"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-006"),
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-003"),
+    ("gitlab", "gitlab_path",
+     FIXTURES / "gitlab" / "insecure.gitlab-ci.yml", "GL-002"),
+    ("jenkins", "jenkinsfile_path",
+     FIXTURES / "jenkins" / "Jenkinsfile.insecure", "JF-001"),
 ]
 
 

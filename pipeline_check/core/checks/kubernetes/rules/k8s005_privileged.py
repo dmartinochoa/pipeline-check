@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
@@ -44,12 +45,23 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
-            if _sec_ctx(c).get("privileged") is True:
+            sc = _sec_ctx(c)
+            if sc.get("privileged") is True:
                 offenders.append(
                     f"{m.kind}/{m.name} {kind}={container_name(c)}"
                 )
+                # Anchor the line on the securityContext block itself
+                # so the user lands on the offending field, not the
+                # container's name. Falls back to the container line
+                # when securityContext is inlined / missing line marks.
+                line = _line_of(sc) or _line_of(c)
+                locations.append(Location(
+                    path=m.path, start_line=line, end_line=line,
+                    doc_index=m.doc_index,
+                ))
     passed = not offenders
     desc = (
         "No container runs with ``privileged: true``."
@@ -63,4 +75,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )
