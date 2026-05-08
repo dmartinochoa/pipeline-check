@@ -34,6 +34,18 @@ from pipeline_check.core.checks.helm.rules.helm005_maintainers_missing import (
 from pipeline_check.core.checks.helm.rules.helm006_kubeversion_missing import (
     check as check_helm006,
 )
+from pipeline_check.core.checks.helm.rules.helm007_description_missing import (
+    check as check_helm007,
+)
+from pipeline_check.core.checks.helm.rules.helm008_chart_lock_stale import (
+    check as check_helm008,
+)
+from pipeline_check.core.checks.helm.rules.helm009_home_sources_https import (
+    check as check_helm009,
+)
+from pipeline_check.core.checks.helm.rules.helm010_appversion_missing import (
+    check as check_helm010,
+)
 
 
 def _ctx_with_charts(*charts: Chart) -> HelmContext:
@@ -49,6 +61,11 @@ def _chart(
     chart_lock: dict[str, Any] | None = None,
     maintainers: list[dict[str, Any]] | None = None,
     kube_version: str | None = None,
+    description: str | None = None,
+    home: str | None = None,
+    sources: list[str] | None = None,
+    app_version: str | None = None,
+    chart_type: str | None = None,
 ) -> Chart:
     """Build a Chart record without touching the disk."""
     cy: dict[str, Any] = {"name": name, "apiVersion": api_version}
@@ -58,6 +75,16 @@ def _chart(
         cy["maintainers"] = maintainers
     if kube_version is not None:
         cy["kubeVersion"] = kube_version
+    if description is not None:
+        cy["description"] = description
+    if home is not None:
+        cy["home"] = home
+    if sources is not None:
+        cy["sources"] = sources
+    if app_version is not None:
+        cy["appVersion"] = app_version
+    if chart_type is not None:
+        cy["type"] = chart_type
     return Chart(
         path=f"/fake/{name}",
         chart_yaml_path=f"/fake/{name}/Chart.yaml",
@@ -339,19 +366,175 @@ class TestHELM006:
 
 
 # ──────────────────────────────────────────────────────────────────
+# HELM-007 — chart description empty
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM007:
+
+    def test_description_set_passes(self):
+        ctx = _ctx_with_charts(_chart(description="Postgres 14 cluster"))
+        assert check_helm007(ctx).passed
+
+    def test_description_missing_fails(self):
+        ctx = _ctx_with_charts(_chart())
+        f = check_helm007(ctx)
+        assert not f.passed
+        assert "demo" in f.description
+
+    def test_description_blank_fails(self):
+        ctx = _ctx_with_charts(_chart(description="   "))
+        assert not check_helm007(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
+# HELM-008 — Chart.lock stale > 90 days
+# ──────────────────────────────────────────────────────────────────
+
+
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+
+class TestHELM008:
+
+    NOW = datetime(2026, 5, 8, tzinfo=timezone.utc)
+
+    def _lock(self, generated: str | None) -> dict[str, Any]:
+        return {"generated": generated} if generated is not None else {}
+
+    def test_recent_lock_passes(self):
+        # Lock generated 30 days ago — within the 90-day window.
+        ts = (self.NOW - timedelta(days=30)).isoformat()
+        ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
+        assert check_helm008(ctx, _now=self.NOW).passed
+
+    def test_stale_lock_fails(self):
+        ts = (self.NOW - timedelta(days=120)).isoformat()
+        ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
+        f = check_helm008(ctx, _now=self.NOW)
+        assert not f.passed
+        assert "120 days ago" in f.description
+
+    def test_no_lock_skipped(self):
+        # No Chart.lock at all -> HELM-002's territory, not this rule's.
+        ctx = _ctx_with_charts(_chart())
+        assert check_helm008(ctx, _now=self.NOW).passed
+
+    def test_helm_lock_with_z_suffix(self):
+        # Helm sometimes writes ``2024-01-02T15:04:05.000Z`` — the
+        # parser must accept the ``Z`` form on Python 3.10 too.
+        ts = (self.NOW - timedelta(days=120)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
+        assert not check_helm008(ctx, _now=self.NOW).passed
+
+    def test_unparseable_generated_silently_passes(self):
+        # Garbage timestamp -> can't decide, don't false-positive.
+        ctx = _ctx_with_charts(_chart(chart_lock=self._lock("garbage")))
+        assert check_helm008(ctx, _now=self.NOW).passed
+
+    def test_missing_generated_field_silently_passes(self):
+        ctx = _ctx_with_charts(_chart(chart_lock={"dependencies": []}))
+        assert check_helm008(ctx, _now=self.NOW).passed
+
+    def test_exactly_at_threshold_passes(self):
+        # 90 days exactly is within the threshold (>, not >=).
+        ts = (self.NOW - timedelta(days=90)).isoformat()
+        ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
+        assert check_helm008(ctx, _now=self.NOW).passed
+
+
+# ──────────────────────────────────────────────────────────────────
+# HELM-009 — chart home / sources non-HTTPS
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM009:
+
+    @pytest.mark.parametrize("url", [
+        "https://example.com",
+        "https://example.com/charts",
+        "git+ssh://github.com/foo/bar",
+        "",  # empty -> nothing to flag
+    ])
+    def test_safe_home_passes(self, url):
+        ctx = _ctx_with_charts(_chart(home=url))
+        assert check_helm009(ctx).passed, url
+
+    @pytest.mark.parametrize("url", [
+        "http://example.com",
+        "ftp://example.com",
+        "git://example.com",
+    ])
+    def test_unsafe_home_fails(self, url):
+        ctx = _ctx_with_charts(_chart(home=url))
+        f = check_helm009(ctx)
+        assert not f.passed, url
+        assert url in f.description
+
+    def test_unsafe_sources_entry_fails(self):
+        ctx = _ctx_with_charts(_chart(
+            home="https://safe.example.com",
+            sources=["https://safe.example.com/repo", "http://insecure.example.com/mirror"],
+        ))
+        f = check_helm009(ctx)
+        assert not f.passed
+        assert "http://insecure.example.com/mirror" in f.description
+
+    def test_no_urls_passes(self):
+        ctx = _ctx_with_charts(_chart())
+        assert check_helm009(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
+# HELM-010 — chart appVersion empty
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM010:
+
+    def test_appversion_set_passes(self):
+        ctx = _ctx_with_charts(_chart(app_version="17.2"))
+        assert check_helm010(ctx).passed
+
+    def test_appversion_missing_fails(self):
+        ctx = _ctx_with_charts(_chart())
+        assert not check_helm010(ctx).passed
+
+    def test_appversion_blank_fails(self):
+        ctx = _ctx_with_charts(_chart(app_version="   "))
+        assert not check_helm010(ctx).passed
+
+    def test_library_chart_skipped(self):
+        ctx = _ctx_with_charts(_chart(chart_type="library"))
+        assert check_helm010(ctx).passed
+
+    def test_numeric_appversion_accepted(self):
+        # YAML may parse 1.0 as a float; accept that as populated.
+        chart = Chart(
+            path="/fake/x",
+            chart_yaml_path="/fake/x/Chart.yaml",
+            chart_yaml={"name": "x", "apiVersion": "v2", "appVersion": 1.0},
+        )
+        ctx = _ctx_with_charts(chart)
+        assert check_helm010(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
 # Orchestrator smoke
 # ──────────────────────────────────────────────────────────────────
 
 
 class TestHelmChartChecksOrchestrator:
 
-    def test_runs_all_six_rules(self):
+    def test_runs_all_ten_rules(self):
         ctx = _ctx_with_charts(_chart())
         findings = HelmChartChecks(ctx).run()
         ids = sorted(f.check_id for f in findings)
         assert ids == [
             "HELM-001", "HELM-002", "HELM-003",
             "HELM-004", "HELM-005", "HELM-006",
+            "HELM-007", "HELM-008", "HELM-009",
+            "HELM-010",
         ]
 
     def test_attaches_cwe_metadata(self):

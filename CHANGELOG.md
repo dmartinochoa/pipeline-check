@@ -12,6 +12,58 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Four new HELM-native rules (`HELM-007`..`HELM-010`).** Round
+  out the chart-supply-chain pack with chart-listing hygiene and
+  freshness signals. ``HELM-007`` fires when ``Chart.yaml``'s
+  ``description:`` field is missing or blank — chart registries
+  display this as the listing summary, and an anonymous chart in
+  a shared registry is the same trust gap as a missing
+  ``maintainers`` entry (LOW). ``HELM-008`` fires when
+  ``Chart.lock``'s ``generated:`` timestamp is more than 90 days
+  old — pinned-but-unrefreshed locks mean CVE fixes and
+  deprecation notices from the last quarter haven't been
+  considered (MEDIUM; threshold matches the CIS / NIST 90-day
+  rotation cadence). ``HELM-009`` fires when ``home:`` /
+  ``sources:`` URLs use a non-HTTPS scheme — plaintext landing
+  pages are man-in-the-middleable for anyone evaluating the
+  chart's provenance from a public registry; mirrors HELM-003's
+  stance for dependency repos (LOW). ``HELM-010`` fires when
+  ``appVersion`` is empty on an application chart — without it,
+  CVE tracking against the upstream application has no anchor;
+  library charts (``type: library``) are exempted (LOW). Provider
+  catalog: 6 to 10 helm-native rules. 24 new tests in
+  ``tests/helm/test_helm_chart_rules.py``; HELM-008's clock
+  comparator accepts an injected ``_now`` so tests don't depend
+  on wall-clock time. Standards mappings (OWASP, NIST 800-53)
+  added; README + helm.md provider doc updated.
+- **Five new K8s posture rules (`K8S-031`..`K8S-035`).** Closes
+  common posture gaps not yet covered by the original 30 rules.
+  ``K8S-031`` PSA ``warn`` label missing — companion to K8S-023's
+  ``enforce`` check; without ``warn`` an enforcement upgrade
+  lands as a surprise (LOW). ``K8S-032`` namespace lacks a
+  default-deny ``NetworkPolicy`` (cross-doc correlation: walks
+  Namespace + workload + NetworkPolicy across the manifest set;
+  fires when a namespace has workloads but no
+  ``podSelector: {}`` policy) (MEDIUM). ``K8S-033`` namespace
+  lacks ``ResourceQuota`` / ``LimitRange`` (cross-doc; quota caps
+  the aggregate, limit-range caps the per-pod baseline) (MEDIUM).
+  ``K8S-034`` ServiceAccount with ``automountServiceAccountToken``
+  not explicitly ``false`` — pod-level K8S-012 covers the
+  consumer side; this rule covers the SA side (MEDIUM).
+  ``K8S-035`` container with explicit ``runAsUser: 0`` — pairs
+  with K8S-007's ``runAsNonRoot: false`` so neither shape slips
+  through alone (HIGH). Provider catalog: 30 to 35 K8s rules.
+  Also bumps the headline check count claim ``450+`` to ``500+``
+  in README + docs/index.md, and the Helm provider's "K8S-* rule
+  pack" reference from 30 to 35 (since helm renders into K8s
+  manifests). 31 new tests in
+  ``tests/kubernetes/test_k8s031_035_posture_gaps.py`` cover
+  per-rule positive / negative cases plus orchestrator wiring;
+  ``tests/test_workflow_fixtures.py`` and
+  ``tests/test_rule_framework.py`` updated to reflect the new
+  count, and ``tests/fixtures/workflows/k8s/insecure.yaml`` /
+  ``secure.yaml`` extended with examples that exercise / pass the
+  new rules.
 - **Line-precision retrofit, third batch — five more rules.**
   ``GHA-017`` (docker run with insecure flags) — restructured the
   blob-scan to also walk steps and rescan each step's ``run:``

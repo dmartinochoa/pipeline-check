@@ -383,6 +383,11 @@ STANDARD = Standard(
         "K8S-028":  ["CICD-SEC-7"],   # container hostPort
         "K8S-029":  ["CICD-SEC-2", "CICD-SEC-5"],  # default-SA binding
         "K8S-030":  ["CICD-SEC-7"],   # control-plane scheduling
+        "K8S-031":  ["CICD-SEC-7"],   # PSA warn label missing
+        "K8S-032":  ["CICD-SEC-7"],   # NetworkPolicy default-deny missing
+        "K8S-033":  ["CICD-SEC-7"],   # ResourceQuota / LimitRange missing
+        "K8S-034":  ["CICD-SEC-2"],   # ServiceAccount automount default
+        "K8S-035":  ["CICD-SEC-7"],   # container runAsUser: 0
         # Helm chart-supply-chain
         "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
         "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests
@@ -390,6 +395,10 @@ STANDARD = Standard(
         "HELM-004": ["CICD-SEC-3"],   # dep version not exact-pinned
         "HELM-005": ["CICD-SEC-3"],   # maintainers chain-of-custody
         "HELM-006": ["CICD-SEC-3"],   # kubeVersion compat range
+        "HELM-007": ["CICD-SEC-3"],   # description empty
+        "HELM-008": ["CICD-SEC-3"],   # Chart.lock stale > 90 days
+        "HELM-009": ["CICD-SEC-3"],   # home / sources non-HTTPS
+        "HELM-010": ["CICD-SEC-3"],   # appVersion empty
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER

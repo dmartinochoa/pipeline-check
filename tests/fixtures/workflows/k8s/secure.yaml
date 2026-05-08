@@ -161,6 +161,54 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
+    # K8S-031 safe: warn label one tier up so an enforce upgrade
+    # is predictable rather than a surprise.
+    pod-security.kubernetes.io/warn: restricted
+---
+# K8S-032 safe: default-deny NetworkPolicy for ``secure-apps``.
+# podSelector: {} matches every pod; no ingress / egress rules
+# means the only flows that work come from explicit allow policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: secure-apps
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# K8S-033 safe: ResourceQuota caps the namespace's aggregate
+# CPU / memory / pod consumption.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: secure-apps-quota
+  namespace: secure-apps
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    pods: "50"
+---
+# K8S-033 safe: LimitRange enforces per-pod request / limit
+# defaults so workloads without explicit ``resources:`` get
+# scheduled under realistic accounting.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: secure-apps-limits
+  namespace: secure-apps
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
 ---
 # LoadBalancer Service — K8S-026 safe: source ranges restrict
 # inbound traffic to a known office CIDR + a peered VPC.

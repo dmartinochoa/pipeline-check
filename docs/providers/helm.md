@@ -1,7 +1,7 @@
 # Helm chart provider
 
 Renders Helm charts via `helm template` and runs the [Kubernetes
-provider's](kubernetes.md) 30-rule pack against the resulting
+provider's](kubernetes.md) 35-rule pack against the resulting
 manifests, plus a small chart-supply-chain rule pack
 (`HELM-001`--`003`) that reads `Chart.yaml` and `Chart.lock`
 straight off disk. The K8s pass scores rendered workloads
@@ -73,7 +73,7 @@ scanning.
 
 ### Rendered-manifest rules (30)
 
-The same 30 K8S-* rules listed on the [Kubernetes provider
+The same 35 K8S-* rules listed on the [Kubernetes provider
 page](kubernetes.md). Every one of them — `securityContext`,
 `hostPath`, RBAC blast radius, Secret hygiene, control-plane
 scheduling — applies to rendered chart output identically. The
@@ -81,9 +81,9 @@ rules see the manifest output of `helm template`, so values-driven
 toggles and conditional templates are scored as they would actually
 deploy.
 
-### Chart-supply-chain rules (6)
+### Chart-supply-chain rules (10)
 
-Six rules score the chart's own packaging metadata, read straight
+Ten rules score the chart's own packaging metadata, read straight
 off `Chart.yaml` / `Chart.lock` rather than the rendered output:
 
 - **HELM-001 — Legacy `apiVersion: v1`** (MEDIUM). v1 is Helm 2's
@@ -132,6 +132,26 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
   RBAC verbs, alpha features). Charts shipped without the field will
   install against any cluster, including ones whose removed APIs the
   chart still emits.
+- **HELM-007 — Chart description empty** (LOW). The `description:`
+  field is what Helm registries display in chart listings.
+  Without it, the chart shows up as a bare name with no hint at
+  what it deploys — discovery and trust both suffer.
+- **HELM-008 — `Chart.lock` generated > 90 days ago** (MEDIUM).
+  Stale `Chart.lock` means `helm dependency update` hasn't been
+  run in a while; CVE fixes and deprecation notices from the last
+  quarter haven't been considered. The 90-day threshold is the
+  same cadence CIS / NIST use for credential rotation.
+- **HELM-009 — Chart `home` / `sources` non-HTTPS** (LOW). The
+  chart's landing-page and source-repository URLs displayed by
+  registries should be HTTPS. Plaintext URLs let an on-path
+  attacker rewrite the page (or 301 to a typo-squat) for anyone
+  evaluating the chart's provenance.
+- **HELM-010 — Chart `appVersion` empty** (LOW). `appVersion` is
+  the version of the application packaged in the chart, distinct
+  from `version:` (which is the chart's own version). Without it,
+  CVE tracking against the upstream application has no anchor —
+  `helm list` shows `-` in the AppVersion column. Library charts
+  (`type: library`) are exempted.
 
 These rules ride on the same `Chart` records the provider parses
 once at scan start, so they don't pay the helm-render cost a second

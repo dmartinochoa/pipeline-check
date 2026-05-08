@@ -211,6 +211,11 @@ STANDARD = Standard(
         "K8S-028":  ["SC-7", "CM-7"],                    # container hostPort
         "K8S-029":  ["AC-3", "AC-6"],                    # default-SA binding
         "K8S-030":  ["AC-6", "SC-7", "CM-7"],            # control-plane scheduling
+        "K8S-031":  ["CM-6", "AC-6"],                    # PSA warn missing
+        "K8S-032":  ["SC-7", "AC-3"],                    # NetworkPolicy default-deny missing
+        "K8S-033":  ["CM-6", "SI-2"],                    # ResourceQuota / LimitRange missing
+        "K8S-034":  ["AC-6", "AC-2"],                    # ServiceAccount automount default
+        "K8S-035":  ["AC-6", "CM-6"],                    # runAsUser: 0
         # Helm chart-supply-chain. The same SR family that covers
         # image pinning (K8S-001 / DF-001) covers chart pinning;
         # SC-8 (transmission integrity) covers HELM-003's plaintext
@@ -223,6 +228,10 @@ STANDARD = Standard(
         "HELM-004": ["SR-3", "SR-11", "SI-2"],           # version not exact-pinned
         "HELM-005": ["SR-3", "SR-4"],                    # maintainers chain-of-custody
         "HELM-006": ["CM-2", "CM-6"],                    # kubeVersion compat range
+        "HELM-007": ["SR-3"],                            # description (chain-of-custody)
+        "HELM-008": ["SR-3", "SI-2"],                    # Chart.lock stale (flaw remediation cadence)
+        "HELM-009": ["SR-3", "SC-8"],                    # home / sources non-HTTPS
+        "HELM-010": ["CM-2"],                            # appVersion (config baseline)
         # Buildkite — pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned

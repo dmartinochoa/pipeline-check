@@ -226,3 +226,36 @@ spec:
         - name: app
           image: busybox@sha256:0000000000000000000000000000000000000000000000000000000000000003
           command: ["sleep", "infinity"]
+---
+# ServiceAccount with the default automount setting (absent) —
+# exercises K8S-034. The same namespace's pods inherit the SA's
+# token unless they override per-pod.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: insecure-sa
+  namespace: insecure-apps
+---
+# Deployment whose containers explicitly run as uid 0 — exercises
+# K8S-035. K8S-007 catches the runAsNonRoot: false shape; this
+# deployment uses the explicit numeric form.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-uid-zero
+  namespace: insecure-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-uid-zero
+  template:
+    metadata:
+      labels:
+        app: insecure-uid-zero
+    spec:
+      containers:
+        - name: app
+          image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000004
+          securityContext:
+            runAsUser: 0
