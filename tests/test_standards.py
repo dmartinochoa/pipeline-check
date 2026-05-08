@@ -368,18 +368,23 @@ class TestPerFrameworkCoverageFloor:
     # trip. Bump the floor in the same PR that lifts the actual
     # number — that's the ratchet.
     FLOORS: dict[str, int] = {
-        "owasp_cicd_top_10":  100,
-        "nist_csf_2":          60,
-        "esf_supply_chain":    60,
-        "openssf_scorecard":   58,
-        "nist_800_53":         55,
-        "nist_800_190":        45,
-        "slsa":                42,
-        "soc2":                40,
-        "cis_supply_chain":    28,
-        "s2c2f":               25,
-        "nist_ssdf":           18,
-        "pci_dss_v4":          18,
+        "owasp_cicd_top_10":   100,
+        "nist_csf_2":           60,
+        "esf_supply_chain":     60,
+        "openssf_scorecard":    58,
+        "nist_800_53":          55,
+        "nist_800_190":         45,
+        "slsa":                 42,
+        "soc2":                 40,
+        "cis_supply_chain":     28,
+        "s2c2f":                25,
+        "nist_ssdf":            18,
+        "pci_dss_v4":           18,
+        # cis_aws_foundations is intentionally narrow: only AWS-pack
+        # rules can map to it, and not all of them have a CIS
+        # Foundations analog. The floor caps catalog-wide coverage
+        # at the AWS-pack share, not the full 363 rules.
+        "cis_aws_foundations":  10,
     }
 
     def test_floors_hold(self):

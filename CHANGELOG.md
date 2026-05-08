@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CIS AWS Foundations Benchmark backfill across the AWS rule
+  pack.** AWS-pack CIS coverage was 22/71 (31%); the rest of the
+  AWS rules fit cleanly into the existing CIS controls
+  (encryption-at-rest extensions to ``3.7``, CMK rotation
+  ``3.8``, over-broad principals ``1.16``, credential rotation
+  ``1.14``) and were never wired up. Added 18 new mappings —
+  CodeArtifact / CodeCommit / CodePipeline / ECR / Lambda / SSM /
+  Secrets Manager / IAM trust-policy gaps. AWS-pack CIS coverage
+  now 40/71 (56%); catalog-wide CIS Foundations coverage 6% to
+  11%. Service-specific CI/CD rules (build timeouts, lifecycle
+  policies, signer profiles) are intentionally left unmapped to
+  preserve the standard's "subset covering CI/CD-relevant
+  controls" framing — CIS Foundations doesn't enumerate them, and
+  forcing them in would mis-cite the benchmark. Added
+  ``cis_aws_foundations`` to ``TestPerFrameworkCoverageFloor``
+  with a 10% floor, so a future drop trips at CI time.
 - **Two cross-provider attack chains (`AC-016` / `AC-017`).**
   ``AC-016`` "OIDC role drift" fires when ``GHA-030`` (job uses
   OIDC ``id-token: write`` without an ``environment:`` gate) and

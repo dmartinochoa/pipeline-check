@@ -69,5 +69,46 @@ STANDARD = Standard(
         # ECR scanning complements Security Hub posture
         "ECR-001": ["4.16"],
         "ECR-007": ["4.16"],
+        # ── Encryption-at-rest extensions ──
+        # CIS 3.7 scopes "logs encrypted at rest with CMK" to
+        # CloudTrail's S3 destination. The same control applies by
+        # analogy to every CI/CD storage surface that holds artifact
+        # / source / config / secret material — pipeline-check
+        # extends 3.7 to CodeArtifact domains, CodeCommit repos,
+        # CodePipeline artifact stores, ECR repos, Lambda env vars,
+        # and SSM SecureStrings. CIS doesn't enumerate these
+        # services individually but the "use a CMK, not the
+        # AWS-owned default" expectation is the same.
+        "CA-001":  ["3.7"],   # CodeArtifact domain CMK
+        "CCM-002": ["3.7"],   # CodeCommit repo CMK
+        "CP-002":  ["3.7"],   # Pipeline artifact-store CMK
+        "ECR-005": ["3.7"],   # ECR repository CMK
+        "LMB-003": ["3.7"],   # Lambda env plaintext secrets
+        "SSM-001": ["3.7"],   # SSM SecureString (vs plain String)
+        "SSM-002": ["3.7", "3.8"],   # SSM uses CMK + rotation
+        # ── Over-broad principals / admin privileges (1.16) ──
+        # CIS 1.16 is canonically "no IAM policy attaches '*:*'
+        # admin to a user". The principle generalises to any
+        # resource policy that grants more than the consumer needs:
+        # CodeArtifact domain / repo policies, ECR repo policies,
+        # Lambda resource policies, Secrets Manager resource
+        # policies. Trust-policy gaps that let an external
+        # principal assume the role without an ExternalId or
+        # OIDC-claim guard are the same shape from the trust side.
+        "CA-003":  ["1.16"],  # CodeArtifact domain policy public
+        "CA-004":  ["1.16"],  # codeartifact:* + Resource '*'
+        "ECR-003": ["1.16"],  # ECR repo policy public
+        "IAM-005": ["1.16"],  # trust policy missing ExternalId
+        "IAM-008": ["1.16"],  # OIDC trust missing audience/sub
+        "LMB-002": ["1.16"],  # Lambda function URL AuthType=NONE
+        "LMB-004": ["1.16"],  # Lambda resource policy wildcard
+        "PBAC-002": ["1.16"], # CodeBuild service role shared
+        "PBAC-005": ["1.16"], # Pipeline stage role reuse
+        "SM-002":  ["1.16"],  # Secrets Manager resource policy public
+        # ── Credential rotation (1.14) ──
+        # CIS 1.14 requires IAM access keys rotated every 90 days.
+        # Secrets Manager rotation extends the same expectation to
+        # the secret material the pipeline issues to applications.
+        "SM-001":  ["1.14"],  # Secrets Manager no rotation
     },
 )
