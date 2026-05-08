@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Two cross-provider attack chains (`AC-020` / `AC-021`).**
+  ``AC-020`` "Tekton hostPath build workload meets cluster-admin
+  RBAC" fires when ``TKN-004`` (Tekton Task mounts hostPath /
+  shares host namespaces) and ``K8S-020`` (cluster-admin
+  ClusterRoleBinding) both trip in the same scan. The Tekton-
+  layer mirror of AC-011: a TaskRun the build pipeline kicks off
+  has both node-level filesystem access and cluster-wide API
+  authority, so a compromised Task spec turns into static-pod
+  backdoor + cluster-wide credential harvest. Severity CRITICAL.
+  MITRE T1611 + T1098.003 + T1078. ``AC-021`` "Argo default-SA
+  workflow lands on a default-SA RoleBinding" fires when
+  ``ARGO-003`` (workflow uses the default ServiceAccount) and
+  ``K8S-029`` (RoleBinding grants verbs to the default SA) both
+  trip. ARGO-003 alone is a hygiene gap; K8S-029 alone is a
+  hygiene gap; together the combination turns "use a custom SA"
+  into a concrete privilege-escalation primitive — anyone who
+  can submit a Workflow runs code under whatever verbs the
+  RoleBinding grants. Severity HIGH. MITRE T1078 + T1098.003.
+  Catalog: 19 chains to 21. 12 new tests in
+  ``tests/test_attack_chains.py`` covering both legs failing,
+  each leg alone, both passing, kill-chain phase, MITRE codes,
+  resource dedup, and confidence inheritance;
+  ``docs/attack_chains.md`` registered-chains table extended
+  + catalog cards regenerated; README headline 19 to 21 chains.
 - **`--explain` v2: `[Related rules]` and `[Autofixable]` sections.**
   Finishes the cross-reference triangle that round 19 started. The
   ``[Triggers attack chains]`` section already cross-referenced

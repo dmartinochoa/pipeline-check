@@ -100,7 +100,8 @@ class TestEngine:
             "AC-005", "AC-006", "AC-007", "AC-008",
             "AC-009", "AC-010", "AC-011", "AC-012",
             "AC-013", "AC-014", "AC-015", "AC-016",
-            "AC-017", "AC-018", "AC-019",
+            "AC-017", "AC-018", "AC-019", "AC-020",
+            "AC-021",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -810,6 +811,106 @@ class TestChainAC019:
             _f("IAM-004", self.ROLE, confidence=Confidence.LOW),
         ])
         chain = next(c for c in out if c.chain_id == "AC-019")
+        assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC020:
+    """AC-020 — Tekton hostPath build workload meets cluster-admin RBAC."""
+
+    TASK = "tekton/build-task.yaml"
+    BINDING = "kubernetes/manifests"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK),
+            _f("K8S-020", self.BINDING),
+        ])
+        ac20 = [c for c in out if c.chain_id == "AC-020"]
+        assert len(ac20) == 1
+        assert ac20[0].severity is Severity.CRITICAL
+        assert "T1611" in ac20[0].mitre_attack
+        assert "T1098.003" in ac20[0].mitre_attack
+
+    def test_does_not_fire_without_tkn004(self):
+        out = chains_pkg.evaluate([_f("K8S-020", self.BINDING)])
+        assert not any(c.chain_id == "AC-020" for c in out)
+
+    def test_does_not_fire_without_k8s020(self):
+        out = chains_pkg.evaluate([_f("TKN-004", self.TASK)])
+        assert not any(c.chain_id == "AC-020" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK, passed=True),
+            _f("K8S-020", self.BINDING, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-020" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK),
+            _f("K8S-020", self.BINDING),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-020")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "lateral-movement" in chain.kill_chain_phase
+
+    def test_resources_dedupe_across_files(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK),
+            _f("K8S-020", self.BINDING),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-020")
+        assert set(chain.resources) == {self.TASK, self.BINDING}
+
+
+class TestChainAC021:
+    """AC-021 — Argo default-SA workflow lands on a default-SA RoleBinding."""
+
+    WF = "argo/build-workflow.yaml"
+    BINDING = "kubernetes/manifests"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF),
+            _f("K8S-029", self.BINDING),
+        ])
+        ac21 = [c for c in out if c.chain_id == "AC-021"]
+        assert len(ac21) == 1
+        assert ac21[0].severity is Severity.HIGH
+        assert "T1078" in ac21[0].mitre_attack
+        assert "T1098.003" in ac21[0].mitre_attack
+
+    def test_does_not_fire_without_argo003(self):
+        out = chains_pkg.evaluate([_f("K8S-029", self.BINDING)])
+        assert not any(c.chain_id == "AC-021" for c in out)
+
+    def test_does_not_fire_without_k8s029(self):
+        out = chains_pkg.evaluate([_f("ARGO-003", self.WF)])
+        assert not any(c.chain_id == "AC-021" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, passed=True),
+            _f("K8S-029", self.BINDING, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-021" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF),
+            _f("K8S-029", self.BINDING),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-021")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, confidence=Confidence.HIGH),
+            _f("K8S-029", self.BINDING, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-021")
         assert chain.confidence is Confidence.LOW
 
 

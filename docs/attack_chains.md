@@ -35,6 +35,8 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-017`](#ac-017) | Build cache poisoning that lands on a mutable ECR tag | <span class="pg-sev pg-sev--high">HIGH</span> | github / aws | [`GHA-011`](providers/github.md#gha-011) + [`ECR-002`](providers/aws.md) |
 | [`AC-018`](#ac-018) | Unpinned action lands on deploy job with no environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-014`](providers/github.md#gha-014) |
 | [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
+| [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | `TKN-004` + [`K8S-020`](providers/kubernetes.md#k8s-020) |
+| [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | `ARGO-003` + [`K8S-029`](providers/kubernetes.md#k8s-029) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
@@ -589,6 +591,58 @@ A Lambda function holds a credential-shaped literal in its env vars (LMB-003) AN
 **Recommended action**
 
 Close either leg. On the Lambda side: move every env-var credential into Secrets Manager or SSM SecureString and fetch it at function init; the env vars then carry only the secret's ARN, not the value. On the IAM side: scope ``iam:PassRole`` with ``Resource: <specific-role-ARNs>`` and add an ``iam:PassedToService`` condition. The credential leak is its own compliance failure; the PassRole wildcard is its own; the chain stops being a chain when either is fixed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-020 — Tekton hostPath build workload meets cluster-admin RBAC { #ac-020 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">tekton</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
+</div>
+
+A Tekton Task mounts a hostPath volume or shares host namespaces (TKN-004) AND the cluster carries a ClusterRoleBinding granting cluster-admin (K8S-020). Anyone who can land code in a TaskRun has both an escape to the host filesystem and the API privileges needed to pivot the entire cluster — read every Secret, deploy privileged workloads across all nodes, impersonate any service account.
+
+**References**
+
+- <https://tekton.dev/docs/pipelines/tasks/#configuring-volumes>
+- <https://kubernetes.io/docs/concepts/security/rbac-good-practices/>
+- <https://tekton.dev/docs/pipelines/auth/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the Task's ``hostPath`` volume with a Workspace (``workspaces`` declaration + per-TaskRun ``persistentVolumeClaim`` / ``emptyDir`` binding) — Tekton's native shape for sharing files between steps without exposing the node filesystem. Audit cluster ``ClusterRoleBindings``: cluster-admin should be reserved for a narrow human-operator group with break-glass access, never bound to a ServiceAccount or a broad Group. Even with hostPath in place, removing the cluster-admin grant breaks the API-pivot leg of this chain.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### AC-021 — Argo default-SA workflow lands on a default-SA RoleBinding { #ac-021 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">argo</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
+</div>
+
+An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a RoleBinding grants permissions to that default SA (K8S-029). Anyone who can submit a Workflow into the namespace runs code under whatever verbs the binding grants — turning ARGO-003 from a hygiene gap into a concrete privilege-escalation primitive.
+
+**References**
+
+- <https://kubernetes.io/docs/concepts/security/rbac-good-practices/#default-service-account>
+- <https://argo-workflows.readthedocs.io/en/latest/service-accounts/>
+- <https://kubernetes.io/docs/reference/access-authn-authz/rbac/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the Argo side: set ``spec.serviceAccountName: <workflow-runner>`` on every Workflow / WorkflowTemplate and bind that SA to a least-privilege Role. On the Kubernetes side: never grant verbs to ``default`` — every RoleBinding's ``subjects`` should name a workflow-specific SA. The fix on either side breaks the chain. Best is both: explicit per-workflow SAs across every namespace, plus deny rules / OPA policies that block any RoleBinding subject named ``default`` at admission time.
 
 </div>
 
