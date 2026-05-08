@@ -25,6 +25,15 @@ from pipeline_check.core.checks.helm.rules.helm002_chart_lock_digests import (
 from pipeline_check.core.checks.helm.rules.helm003_dependency_repo_https import (
     check as check_helm003,
 )
+from pipeline_check.core.checks.helm.rules.helm004_dependency_version_pinning import (
+    check as check_helm004,
+)
+from pipeline_check.core.checks.helm.rules.helm005_maintainers_missing import (
+    check as check_helm005,
+)
+from pipeline_check.core.checks.helm.rules.helm006_kubeversion_missing import (
+    check as check_helm006,
+)
 
 
 def _ctx_with_charts(*charts: Chart) -> HelmContext:
@@ -38,11 +47,17 @@ def _chart(
     api_version: str = "v2",
     dependencies: list[dict[str, Any]] | None = None,
     chart_lock: dict[str, Any] | None = None,
+    maintainers: list[dict[str, Any]] | None = None,
+    kube_version: str | None = None,
 ) -> Chart:
     """Build a Chart record without touching the disk."""
     cy: dict[str, Any] = {"name": name, "apiVersion": api_version}
     if dependencies is not None:
         cy["dependencies"] = dependencies
+    if maintainers is not None:
+        cy["maintainers"] = maintainers
+    if kube_version is not None:
+        cy["kubeVersion"] = kube_version
     return Chart(
         path=f"/fake/{name}",
         chart_yaml_path=f"/fake/{name}/Chart.yaml",
@@ -209,17 +224,135 @@ class TestHELM003:
 
 
 # ──────────────────────────────────────────────────────────────────
+# HELM-004
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM004:
+
+    @pytest.mark.parametrize("ver", [
+        "1.2.3",
+        "v1.2.3",
+        "0.0.1",
+        "1.2.3-rc1",
+        "1.2.3-alpha.1",
+        "1.2.3+build.5",
+    ])
+    def test_exact_pin_passes(self, ver):
+        deps = [{"name": "redis", "version": ver}]
+        ctx = _ctx_with_charts(_chart(dependencies=deps))
+        assert check_helm004(ctx).passed, ver
+
+    @pytest.mark.parametrize("ver", [
+        "^1.2.3",
+        "~1.2",
+        ">=1.2.3",
+        ">=1.2 <2",
+        "1.x",
+        "*",
+        "1.2.3 || 1.2.4",
+    ])
+    def test_range_or_wildcard_fails(self, ver):
+        deps = [{"name": "redis", "version": ver}]
+        ctx = _ctx_with_charts(_chart(dependencies=deps))
+        f = check_helm004(ctx)
+        assert not f.passed, ver
+        assert ver in f.description
+
+    def test_v1_chart_skipped(self):
+        deps = [{"name": "redis", "version": "^17.0.0"}]
+        ctx = _ctx_with_charts(_chart(api_version="v1", dependencies=deps))
+        assert check_helm004(ctx).passed
+
+    def test_chart_with_no_deps_passes(self):
+        ctx = _ctx_with_charts(_chart(dependencies=[]))
+        assert check_helm004(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
+# HELM-005
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM005:
+
+    def test_maintainer_with_email_passes(self):
+        ctx = _ctx_with_charts(_chart(
+            maintainers=[{"name": "Maintainer One", "email": "m@example.com"}],
+        ))
+        assert check_helm005(ctx).passed
+
+    def test_maintainer_with_url_passes(self):
+        ctx = _ctx_with_charts(_chart(
+            maintainers=[{"name": "M", "url": "https://example.com/m"}],
+        ))
+        assert check_helm005(ctx).passed
+
+    def test_missing_block_fails(self):
+        ctx = _ctx_with_charts(_chart())
+        f = check_helm005(ctx)
+        assert not f.passed
+        assert "demo" in f.description
+
+    def test_empty_block_fails(self):
+        ctx = _ctx_with_charts(_chart(maintainers=[]))
+        assert not check_helm005(ctx).passed
+
+    def test_blank_name_fails(self):
+        ctx = _ctx_with_charts(_chart(
+            maintainers=[{"name": "", "email": "m@example.com"}],
+        ))
+        assert not check_helm005(ctx).passed
+
+    def test_name_without_contact_fails(self):
+        ctx = _ctx_with_charts(_chart(
+            maintainers=[{"name": "M"}],
+        ))
+        assert not check_helm005(ctx).passed
+
+    def test_first_unusable_then_usable_passes(self):
+        ctx = _ctx_with_charts(_chart(maintainers=[
+            {"name": ""},
+            {"name": "M", "email": "m@example.com"},
+        ]))
+        assert check_helm005(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
+# HELM-006
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestHELM006:
+
+    def test_kubeversion_set_passes(self):
+        ctx = _ctx_with_charts(_chart(kube_version=">= 1.25.0 < 1.32.0"))
+        assert check_helm006(ctx).passed
+
+    def test_missing_kubeversion_fails(self):
+        ctx = _ctx_with_charts(_chart())
+        assert not check_helm006(ctx).passed
+
+    def test_blank_kubeversion_fails(self):
+        ctx = _ctx_with_charts(_chart(kube_version="   "))
+        assert not check_helm006(ctx).passed
+
+
+# ──────────────────────────────────────────────────────────────────
 # Orchestrator smoke
 # ──────────────────────────────────────────────────────────────────
 
 
 class TestHelmChartChecksOrchestrator:
 
-    def test_runs_all_three_rules(self):
+    def test_runs_all_six_rules(self):
         ctx = _ctx_with_charts(_chart())
         findings = HelmChartChecks(ctx).run()
         ids = sorted(f.check_id for f in findings)
-        assert ids == ["HELM-001", "HELM-002", "HELM-003"]
+        assert ids == [
+            "HELM-001", "HELM-002", "HELM-003",
+            "HELM-004", "HELM-005", "HELM-006",
+        ]
 
     def test_attaches_cwe_metadata(self):
         ctx = _ctx_with_charts(_chart())

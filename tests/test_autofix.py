@@ -1260,3 +1260,104 @@ class TestJF032AgentLabelInjectionTODO:
         once = autofix.generate_fix(_finding("JF-032"), groovy)
         assert once is not None
         assert autofix.generate_fix(_finding("JF-032"), once) is None
+
+
+# ── HELM-001 / HELM-002 / HELM-003 comment-only TODO fixers ───────────
+
+
+class TestHelm001ApiVersionTODO:
+    def test_inserts_todo_above_apiversion_v1(self):
+        chart = "apiVersion: v1\nname: legacy\nversion: 0.1.0\n"
+        after = autofix.generate_fix(_finding("HELM-001"), chart)
+        assert after is not None
+        assert "TODO(pipelineguard HELM-001)" in after
+        idx_todo = after.index("TODO(pipelineguard HELM-001)")
+        idx_api = after.index("apiVersion: v1")
+        assert idx_todo < idx_api
+
+    def test_no_op_on_v2(self):
+        chart = "apiVersion: v2\nname: modern\nversion: 0.1.0\n"
+        assert autofix.generate_fix(_finding("HELM-001"), chart) is None
+
+    def test_idempotent(self):
+        chart = "apiVersion: v1\nname: legacy\nversion: 0.1.0\n"
+        once = autofix.generate_fix(_finding("HELM-001"), chart)
+        assert once is not None
+        twice = autofix.generate_fix(_finding("HELM-001"), once)
+        assert twice is None
+
+
+class TestHelm002DependenciesLockTODO:
+    def test_inserts_todo_above_dependencies_key(self):
+        chart = (
+            "apiVersion: v2\nname: demo\nversion: 0.1.0\n"
+            "dependencies:\n"
+            "  - name: redis\n"
+            "    version: 17.0.0\n"
+            "    repository: https://charts.example.com\n"
+        )
+        after = autofix.generate_fix(_finding("HELM-002"), chart)
+        assert after is not None
+        assert "TODO(pipelineguard HELM-002)" in after
+        idx_todo = after.index("TODO(pipelineguard HELM-002)")
+        idx_deps = after.index("dependencies:")
+        assert idx_todo < idx_deps
+
+    def test_no_op_when_no_dependencies_block(self):
+        chart = "apiVersion: v2\nname: demo\nversion: 0.1.0\n"
+        assert autofix.generate_fix(_finding("HELM-002"), chart) is None
+
+    def test_idempotent(self):
+        chart = (
+            "apiVersion: v2\nname: demo\nversion: 0.1.0\n"
+            "dependencies:\n  - name: redis\n    version: 17.0.0\n"
+        )
+        once = autofix.generate_fix(_finding("HELM-002"), chart)
+        assert once is not None
+        assert autofix.generate_fix(_finding("HELM-002"), once) is None
+
+
+class TestHelm003PlaintextRepoTODO:
+    def test_inserts_todo_above_http_repository(self):
+        chart = (
+            "apiVersion: v2\nname: demo\nversion: 0.1.0\n"
+            "dependencies:\n"
+            "  - name: redis\n"
+            "    version: 17.0.0\n"
+            "    repository: http://chartmuseum.example.com\n"
+        )
+        after = autofix.generate_fix(_finding("HELM-003"), chart)
+        assert after is not None
+        assert "TODO(pipelineguard HELM-003)" in after
+        idx_todo = after.index("TODO(pipelineguard HELM-003)")
+        idx_repo = after.index("http://chartmuseum")
+        assert idx_todo < idx_repo
+
+    def test_no_op_on_https_repository(self):
+        chart = (
+            "apiVersion: v2\nname: demo\n"
+            "dependencies:\n  - name: redis\n"
+            "    repository: https://safe.example.com\n"
+        )
+        assert autofix.generate_fix(_finding("HELM-003"), chart) is None
+
+    def test_matches_git_and_ftp_schemes(self):
+        for scheme in ("git", "ftp", "rsync"):
+            chart = (
+                "apiVersion: v2\nname: demo\n"
+                "dependencies:\n  - name: redis\n"
+                f"    repository: {scheme}://internal/charts\n"
+            )
+            after = autofix.generate_fix(_finding("HELM-003"), chart)
+            assert after is not None, scheme
+            assert "TODO(pipelineguard HELM-003)" in after
+
+    def test_idempotent(self):
+        chart = (
+            "apiVersion: v2\nname: demo\n"
+            "dependencies:\n  - name: redis\n"
+            "    repository: http://insecure.example.com\n"
+        )
+        once = autofix.generate_fix(_finding("HELM-003"), chart)
+        assert once is not None
+        assert autofix.generate_fix(_finding("HELM-003"), once) is None

@@ -58,7 +58,7 @@ A read-only scanner for 16 providers, graded against 13 compliance frameworks.
   <div class="pg-stat"><div class="pg-stat__num">450+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">16</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">100</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">103</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 

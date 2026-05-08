@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**450+ checks** across **16 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**450+ checks** across **16 providers**, mapped to **13 compliance standards**, with **103 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -95,7 +95,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
-| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result, plus 3 chart-supply-chain rules (`HELM-001`--`003`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result, plus 6 chart-supply-chain rules (`HELM-001`--`006`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -103,11 +103,12 @@ security, package integrity, timeout enforcement, vulnerability scanning, TLS
 verification, and more. The Kubernetes provider focuses on workload posture
 (image digest pinning, securityContext, hostPath / host-namespace exposure,
 RBAC blast radius, Secret hygiene). The Helm provider renders charts via
-`helm template` and runs the Kubernetes rule pack on the result, plus three
-chart-supply-chain rules (`HELM-001`--`003`: legacy `apiVersion: v1`,
-missing `Chart.lock` digests, non-HTTPS dependency repositories) read
-straight off the on-disk chart files. See [docs/providers/](docs/providers/)
-for the full per-check reference.
+`helm template` and runs the Kubernetes rule pack on the result, plus six
+chart-supply-chain rules (`HELM-001`--`006`: legacy `apiVersion: v1`,
+missing `Chart.lock` digests, non-HTTPS dependency repositories,
+non-pinned dependency versions, missing maintainers, missing
+`kubeVersion` range) read straight off the on-disk chart files. See
+[docs/providers/](docs/providers/) for the full per-check reference.
 
 ---
 
@@ -143,7 +144,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 100 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 103 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -348,7 +349,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 100 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 103 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0

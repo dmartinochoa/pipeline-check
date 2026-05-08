@@ -375,6 +375,9 @@ STANDARD = Standard(
         "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
         "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests
         "HELM-003": ["CICD-SEC-3"],   # non-HTTPS dep repository
+        "HELM-004": ["CICD-SEC-3"],   # dep version not exact-pinned
+        "HELM-005": ["CICD-SEC-3"],   # maintainers chain-of-custody
+        "HELM-006": ["CICD-SEC-3"],   # kubeVersion compat range
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER

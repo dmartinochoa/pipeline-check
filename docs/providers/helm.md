@@ -81,9 +81,9 @@ rules see the manifest output of `helm template`, so values-driven
 toggles and conditional templates are scored as they would actually
 deploy.
 
-### Chart-supply-chain rules (3)
+### Chart-supply-chain rules (6)
 
-Three rules score the chart's own packaging metadata, read straight
+Six rules score the chart's own packaging metadata, read straight
 off `Chart.yaml` / `Chart.lock` rather than the rendered output:
 
 - **HELM-001 — Legacy `apiVersion: v1`** (MEDIUM). v1 is Helm 2's
@@ -91,7 +91,8 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
   `Chart.lock` and inlined dependencies, so HELM-002 can't get
   traction until the chart is bumped to `v2`. Fix by editing
   `Chart.yaml` and re-running `helm dependency update` to
-  regenerate the lock against the new shape.
+  regenerate the lock against the new shape. `--fix` drops a
+  comment-only TODO above the offending line.
 - **HELM-002 — Missing or incomplete `Chart.lock`** (HIGH). A
   `v2` chart that declares `dependencies:` but ships no
   `Chart.lock`, ships a lock missing entries the manifest declares,
@@ -99,7 +100,8 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
   `helm dependency build` free to pull a different tarball under
   the same version. Fix by re-running `helm dependency update`
   after every change to `dependencies:` and committing the
-  regenerated lock.
+  regenerated lock. `--fix` drops a comment-only TODO above the
+  `dependencies:` key.
 - **HELM-003 — Non-HTTPS dependency repository** (HIGH). Walks
   `dependencies[].repository` and rejects `http://`, `git://`,
   `ftp://`, and other plaintext schemes. Accepted shapes are
@@ -108,12 +110,34 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
   and `@alias` (a local `helm repo add`-registered name). Plaintext
   fetch lets any on-path attacker swap the dependency tarball
   before HELM-002's digest catches it on the *next* update.
+  `--fix` drops a comment-only TODO above each offending repository
+  line.
+- **HELM-004 — Dependency version is a range, not a pin** (MEDIUM).
+  `dependencies[].version` accepts the full SemVer range syntax
+  (`^1.2.3`, `~1.2`, `>=1.2 <2`, `*`, `1.x`). Range constraints
+  let `helm dependency update` move every consumer to a different
+  version on the next refresh, even with a stable lock. Exact pins
+  (`17.0.0`, `v1.2.3`, optionally with pre-release / build
+  metadata) eliminate that drift.
+- **HELM-005 — Maintainers field empty or missing chain-of-custody**
+  (LOW). `maintainers:` is the chart's chain-of-custody record. An
+  entry needs a non-empty `name` plus either `email` or `url` to be
+  considered usable. A chart published without it is anonymous to
+  downstream consumers — fine for a personal scratch chart, not for
+  one shipped through a CI pipeline.
+- **HELM-006 — `kubeVersion` compatibility range absent** (LOW).
+  Helm refuses `helm install` when the cluster's reported version
+  falls outside the chart's declared `kubeVersion` SemVer range,
+  catching silent-breakage surprises (removed apiVersions, renamed
+  RBAC verbs, alpha features). Charts shipped without the field will
+  install against any cluster, including ones whose removed APIs the
+  chart still emits.
 
 These rules ride on the same `Chart` records the provider parses
 once at scan start, so they don't pay the helm-render cost a second
 time. They run regardless of whether the rendered manifests scored
 clean — a chart can have a perfect `securityContext` posture and
-still ship a v1 schema or an unlocked dependency.
+still ship a v1 schema, an unlocked dependency, or no maintainers.
 
 ## What it can't see
 

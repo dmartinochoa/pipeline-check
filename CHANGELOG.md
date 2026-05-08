@@ -12,6 +12,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Helm chart-supply-chain rules expanded to six (`HELM-004` /
+  `HELM-005` / `HELM-006`).** Builds on the HELM-001/002/003 trio
+  that just landed. `HELM-004` flags `dependencies[].version`
+  values that aren't exact SemVer pins (ranges, wildcards,
+  `||`-alternations) — those let `helm dependency update` move
+  consumers to a new dep on the next refresh even when the lock
+  looked stable (MEDIUM). `HELM-005` flags charts whose
+  `maintainers:` field is missing, empty, or carries entries
+  without a usable `name + email|url` chain-of-custody record
+  (LOW). `HELM-006` flags charts that ship no `kubeVersion`
+  compatibility range — the only static guard against rendering
+  against a cluster whose API surface dropped something the chart
+  still uses (LOW). Provider catalog: 3 native to 6 native.
+- **Three new comment-only autofixers (`HELM-001` / `HELM-002` /
+  `HELM-003`).** Each drops a ``# TODO(pipelineguard HELM-NNN):``
+  marker above the offending Chart.yaml line so the change is
+  visible in review. Same comment-only shape used for the K8s and
+  Dockerfile rules where text-rewriting can't safely synthesize
+  the structural fix (`helm dependency update` needs to fetch and
+  hash; an `http://` flip needs the maintainer to confirm the dep
+  is published over HTTPS first). Autofixer count: 100 to 103.
 - **Helm-native rules (`HELM-001` / `HELM-002` / `HELM-003`).** The
   Helm provider now scores the chart's own packaging metadata
   alongside the rendered K8s manifests. `HELM-001` flags the legacy
