@@ -456,5 +456,31 @@ Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag 
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-015 — Helm chart-supply-chain takeover via legacy + unlocked + plaintext { #ac-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1557</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> persistence</span> <span class="pg-tag pg-tag--owasp">helm</span>
+</div>
+
+A Helm chart simultaneously declares the legacy v1 schema (HELM-001), ships dependencies without ``Chart.lock`` digest verification (HELM-002), and lists at least one dependency on a non-HTTPS repository (HELM-003). An attacker on the path to ``helm dependency build`` substitutes the dependency tarball; nothing in the chart's metadata can detect or reject the swap, so the substituted code runs in every cluster the chart deploys to.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+- <https://helm.sh/docs/topics/charts/#chart-dependencies>
+- <https://helm.sh/docs/helm/helm_dependency_build/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism is available. Re-run ``helm dependency update`` to populate per-dependency ``sha256:`` digests in the lock and commit it alongside ``Chart.yaml``. Switch each ``dependencies[].repository`` to ``https://``, ``oci://``, or a ``file://`` sibling — Helm 3.8+ pulls OCI-hosted charts over HTTPS by default and is the recommended distribution shape. Removing any *one* of these three legs breaks this chain (the lock catches a swap on the next update; HTTPS catches it before the tarball lands; v2 makes the lock possible in the first place).
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

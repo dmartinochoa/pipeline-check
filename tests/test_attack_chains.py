@@ -99,7 +99,7 @@ class TestEngine:
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
             "AC-009", "AC-010", "AC-011", "AC-012",
-            "AC-013", "AC-014",
+            "AC-013", "AC-014", "AC-015",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -542,6 +542,85 @@ class TestChainAC014:
         ])
         ac14 = next(c for c in out if c.chain_id == "AC-014")
         assert ac14.confidence is Confidence.MEDIUM
+
+
+class TestChainAC015:
+    """AC-015 — Helm chart-supply-chain takeover."""
+
+    HELM_RESOURCE = "helm/charts"
+
+    def test_fires_when_all_three_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        ac15 = [c for c in out if c.chain_id == "AC-015"]
+        assert len(ac15) == 1
+        chain = ac15[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"HELM-001", "HELM-002", "HELM-003"}
+        # MITRE technique IDs surface for downstream MITRE ATT&CK
+        # mappings; T1195.002 is the load-bearing one for the supply-
+        # chain story this chain narrates.
+        assert "T1195.002" in chain.mitre_attack
+        assert "T1557" in chain.mitre_attack  # adversary-in-the-middle leg
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-015")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_helm001(self):
+        # v2 chart with unlocked + plaintext deps still loses, but
+        # the chain is specifically about the schema-lock-out leg.
+        out = chains_pkg.evaluate([
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_without_helm002(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_without_helm003(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        # Findings present but green — none of the rules actually
+        # tripped. The chain should stay quiet rather than light up
+        # on the ID alone.
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE, passed=True),
+            _f("HELM-002", self.HELM_RESOURCE, passed=True),
+            _f("HELM-003", self.HELM_RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_confidence_picks_lowest_leg(self):
+        # min_confidence: a HIGH leg + a HIGH leg + a LOW leg yields
+        # LOW, since the chain is only as confident as its shakiest
+        # finding.
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE, confidence=Confidence.HIGH),
+            _f("HELM-002", self.HELM_RESOURCE, confidence=Confidence.HIGH),
+            _f("HELM-003", self.HELM_RESOURCE, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-015")
+        assert chain.confidence is Confidence.LOW
 
 
 # ── Gate integration ─────────────────────────────────────────────────

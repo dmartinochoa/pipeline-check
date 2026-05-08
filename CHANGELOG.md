@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-015 attack chain — Helm chart-supply-chain takeover.**
+  Fires when the same scan turns up failing HELM-001 (legacy
+  ``apiVersion: v1``), HELM-002 (missing ``Chart.lock`` digests),
+  *and* HELM-003 (non-HTTPS dependency repository). Each leg is a
+  HIGH or MEDIUM finding on its own; the combination removes every
+  layer of supply-chain defense at once — no schema lock, no digest
+  verification, no TLS — and lets an on-path attacker substitute a
+  dependency tarball during ``helm dependency build`` without any
+  rendered-manifest signal that the swap occurred. Mirrors AC-009
+  (GHA repo poisoning) and AC-011 (K8s cluster takeover) in shape;
+  MITRE ATT&CK mapping picks up T1195.002 (supply chain compromise)
+  and T1557 (adversary-in-the-middle). Catalog: 14 chains to 15.
 - **Helm chart-supply-chain rules expanded to six (`HELM-004` /
   `HELM-005` / `HELM-006`).** Builds on the HELM-001/002/003 trio
   that just landed. `HELM-004` flags `dependencies[].version`
