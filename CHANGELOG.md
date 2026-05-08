@@ -12,6 +12,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PCI DSS v4 + S2C2F mapping backfill across BK / TKN / ARGO.**
+  Rounds 22-24 added 15 new rules (BK-009..013, TKN-009..013,
+  ARGO-009..013) but only mapped them across 7 of the 13
+  standards. PCI DSS v4 had **zero** entries for the entire
+  Buildkite, Tekton, and Argo packs — every rule fell through
+  to "unmapped" in ``--standard-report pci_dss_v4``. S2C2F was
+  similarly missing the three packs' supply-chain rules. This
+  round backfills both.
+  PCI DSS v4 picks up 39 new mappings: BK / TKN / ARGO 1..13
+  each, slotted into the same Req-6 / Req-7 / Req-8 / Req-10
+  controls the older CI providers already use (e.g.,
+  artifact-signing rules → 6.5.1 + 10.3.2; vuln-scan rules →
+  6.3.1 + 6.3.3; sidecar / SA-token rules → 6.4.1 / 7.2.5).
+  Catalog-wide coverage: 18% to 29%; floor bumped 18 -> 27.
+  S2C2F picks up 21 new mappings concentrated in the practices
+  the new rules actually evidence: REB-2 (signing), REB-3
+  (SBOM), REB-4 (signed-SBOM / provenance), SCA-1 (vuln scan),
+  ING-1 (untrusted source / TLS bypass), UPD-1 (pinning), ENF-1
+  (deploy gates). Catalog-wide coverage: 25% to 31%; floor
+  bumped 25 -> 29.
 - **Two cross-provider attack chains (`AC-020` / `AC-021`).**
   ``AC-020`` "Tekton hostPath build workload meets cluster-admin
   RBAC" fires when ``TKN-004`` (Tekton Task mounts hostPath /

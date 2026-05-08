@@ -377,9 +377,9 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                 42,
         "soc2":                 40,
         "cis_supply_chain":     28,
-        "s2c2f":                25,
+        "s2c2f":                29,
         "nist_ssdf":            18,
-        "pci_dss_v4":           18,
+        "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack
         # rules can map to it, and not all of them have a CIS
         # Foundations analog. The floor caps catalog-wide coverage

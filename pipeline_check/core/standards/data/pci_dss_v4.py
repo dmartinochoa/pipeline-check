@@ -121,5 +121,48 @@ STANDARD = Standard(
         "CC-021":   ["6.3.3"],                           # no lockfile
         "CC-022":   ["6.3.3"],                           # no dependency updates
         "CC-023":   ["6.5.1"],                           # TLS verification bypass
+        # Buildkite — pipeline-config posture maps to the same Req-6 /
+        # Req-7 / Req-8 / Req-10 families as the other CI providers.
+        "BK-001":   ["6.3.3"],                           # plugin not pinned
+        "BK-002":   ["8.2.1", "6.5.1"],                  # literal secret
+        "BK-003":   ["6.5.1"],                           # untrusted interpolation
+        "BK-004":   ["6.3.3"],                           # curl | bash
+        "BK-005":   ["6.4.1", "6.5.1"],                  # docker --privileged
+        "BK-006":   ["6.4.1"],                           # no timeout
+        "BK-007":   ["6.4.3"],                           # deploy step not gated
+        "BK-008":   ["6.5.1"],                           # TLS verification bypass
+        "BK-009":   ["6.5.1", "10.3.2"],                 # artifacts not signed
+        "BK-010":   ["6.5.1"],                           # no SBOM
+        "BK-011":   ["6.5.1", "10.3.2"],                 # SLSA provenance
+        "BK-012":   ["6.3.1", "6.3.3"],                  # no vuln scanning
+        "BK-013":   ["6.4.3"],                           # deploy w/o branches filter
+        # Tekton — Kubernetes-native pipeline kinds.
+        "TKN-001":  ["6.3.3"],                           # step image not digest-pinned
+        "TKN-002":  ["6.4.1", "6.5.1"],                  # step privileged
+        "TKN-003":  ["6.5.1"],                           # param injection
+        "TKN-004":  ["6.4.1"],                           # hostPath / host namespaces
+        "TKN-005":  ["8.2.1", "6.5.1"],                  # literal secrets
+        "TKN-006":  ["6.4.1"],                           # no timeout
+        "TKN-007":  ["7.2.5", "8.2.2"],                  # default ServiceAccount
+        "TKN-008":  ["6.3.3"],                           # remote install / TLS
+        "TKN-009":  ["6.5.1", "10.3.2"],                 # artifacts not signed
+        "TKN-010":  ["6.5.1"],                           # no SBOM
+        "TKN-011":  ["6.5.1", "10.3.2"],                 # SLSA provenance
+        "TKN-012":  ["6.3.1", "6.3.3"],                  # no vuln scanning
+        "TKN-013":  ["6.4.1", "6.5.1"],                  # sidecar privileged
+        # Argo Workflows.
+        "ARGO-001": ["6.3.3"],                           # template image not pinned
+        "ARGO-002": ["6.4.1", "6.5.1"],                  # template privileged / root
+        "ARGO-003": ["7.2.5", "8.2.2"],                  # default ServiceAccount
+        "ARGO-004": ["6.4.1"],                           # hostPath / host namespaces
+        "ARGO-005": ["6.5.1"],                           # param injection
+        "ARGO-006": ["8.2.1", "6.5.1"],                  # literal secrets
+        "ARGO-007": ["6.4.1"],                           # no activeDeadlineSeconds
+        "ARGO-008": ["6.3.3"],                           # remote install / TLS
+        "ARGO-009": ["6.5.1", "10.3.2"],                 # artifacts not signed
+        "ARGO-010": ["6.5.1"],                           # no SBOM
+        "ARGO-011": ["6.5.1", "10.3.2"],                 # SLSA provenance
+        "ARGO-012": ["6.3.1", "6.3.3"],                  # no vuln scanning
+        "ARGO-013": ["7.2.5"],                           # SA token automount
     },
 )
