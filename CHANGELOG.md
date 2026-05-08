@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Five new Buildkite rules (`BK-009`..`BK-013`).** Closes the
+  obvious posture gaps in the Buildkite pack — it shipped at 8
+  rules while every other CI provider averaged 30+. ``BK-009``
+  fires when a pipeline produces deployable artifacts but invokes
+  no signing tool (cosign / sigstore / slsa-framework / notation),
+  reusing the shared signing-token catalog (MEDIUM). ``BK-010``
+  fires when an artifact-producing pipeline has no SBOM step
+  (syft / cyclonedx / cdxgen / spdx-tools / sbom-tool), so post-
+  incident CVE triage has nothing to match against (MEDIUM).
+  ``BK-011`` fires when an artifact-producing pipeline emits no
+  SLSA provenance attestation (``slsa-framework`` / ``cosign
+  attest`` / ``in-toto`` / ``attest-build-provenance``), the SLSA
+  L3 non-falsifiability requirement (MEDIUM). ``BK-012`` fires
+  when no vuln scanner runs in the pipeline (trivy / grype /
+  snyk / npm-audit / pip-audit / dependency-check / semgrep)
+  (MEDIUM). ``BK-013`` fires when a deploy step has no
+  ``branches:`` filter (or only a wildcard ``"*"``); a feature-
+  branch PR could otherwise promote to prod by mistake. The
+  pipeline-level ``branches:`` default counts (MEDIUM). Provider
+  catalog: 8 to 13 buildkite rules. 16 new tests in
+  ``tests/buildkite/test_rules.py``; OWASP / NIST 800-53 / SLSA /
+  OpenSSF Scorecard / ESF / CIS supply chain mappings added;
+  README + ``docs/index.md`` provider listings + buildkite.md
+  provider doc regenerated; ``insecure-pipeline.yml`` /
+  ``secure-pipeline.yml`` fixtures extended to exercise / pass
+  every new rule.
 - **Line-precision retrofit, sixth batch — five more rules.**
   ``ADO-002`` (Azure DevOps script injection via attacker-
   controllable context) anchors on the offending step, deduped

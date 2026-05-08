@@ -189,6 +189,10 @@ STANDARD = Standard(
         "BK-006":   ["Build.L3.Ephemeral"],                        # no timeout
         "BK-007":   ["Build.L3.NonFalsifiable"],                   # deploy not gated
         "BK-008":   ["Build.L3.Isolated"],                         # TLS bypass
+        "BK-009":   ["Build.L2.Signed"],                           # artifact signing
+        "BK-010":   ["Build.L1.Provenance"],                       # SBOM
+        "BK-011":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["Build.L3.NonFalsifiable"],                   # step image not digest-pinned
         "TKN-002":  ["Build.L3.Isolated"],                         # step privileged / root

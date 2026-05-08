@@ -145,6 +145,10 @@ STANDARD = Standard(
         "BK-006":   ["2.2.2"],                     # no timeout
         "BK-007":   ["2.3.8", "5.1.4"],            # deploy not gated
         "BK-008":   ["3.1.3"],                     # TLS bypass
+        "BK-009":   ["4.1.1"],                     # artifact signing
+        "BK-010":   ["4.4.1"],                     # SBOM
+        "BK-011":   ["4.1.1", "4.4.1"],            # SLSA provenance
+        "BK-012":   ["1.4.1", "3.1.3"],            # vuln scanning
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["1.4.1", "3.1.3"],            # step image not digest-pinned
         "TKN-002":  ["2.1.3"],                     # step privileged

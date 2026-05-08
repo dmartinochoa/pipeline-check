@@ -90,7 +90,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 8 checks (`BK-001`--`008`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 13 checks (`BK-001`--`013`) |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 8 checks (`TKN-001`--`008`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |

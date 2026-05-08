@@ -246,6 +246,11 @@ STANDARD = Standard(
         "BK-006":   ["AU-2", "SI-2"],                    # no timeout
         "BK-007":   ["AC-3", "SA-10"],                   # deploy not gated
         "BK-008":   ["SC-8", "SC-13"],                   # TLS bypass
+        "BK-009":   ["SI-7", "SR-4"],                    # artifacts not signed
+        "BK-010":   ["SR-4", "CM-8"],                    # no SBOM
+        "BK-011":   ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "BK-012":   ["RA-5", "SI-2"],                    # no vuln scanning
+        "BK-013":   ["AC-3"],                            # deploy without branch filter
         # Tekton — Kubernetes-native pipeline kinds.
         "TKN-001":  ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
         "TKN-002":  ["AC-6", "CM-7"],                    # step privileged

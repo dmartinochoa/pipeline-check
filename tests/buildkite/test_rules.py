@@ -271,3 +271,203 @@ class TestBK008TlsBypass:
         """
         f = run_check(cfg, "BK-008")
         assert f.passed
+
+
+# ── BK-009 signing ─────────────────────────────────────────────────────
+
+
+class TestBK009Signing:
+    def test_passes_with_cosign_step(self):
+        cfg = """
+        steps:
+          - command: |
+              docker build -t app:${BUILDKITE_COMMIT} .
+              cosign sign --yes app:${BUILDKITE_COMMIT}
+        """
+        f = run_check(cfg, "BK-009")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_signing(self):
+        cfg = """
+        steps:
+          - command: docker build -t app:${BUILDKITE_COMMIT} .
+        """
+        f = run_check(cfg, "BK-009")
+        assert not f.passed
+
+    def test_passes_when_no_artifacts_produced(self):
+        cfg = """
+        steps:
+          - command: pytest tests/
+        """
+        f = run_check(cfg, "BK-009")
+        assert f.passed
+
+
+# ── BK-010 SBOM ────────────────────────────────────────────────────────
+
+
+class TestBK010SBOM:
+    def test_passes_with_syft_step(self):
+        cfg = """
+        steps:
+          - command: |
+              docker build -t app:${BUILDKITE_COMMIT} .
+              syft app:${BUILDKITE_COMMIT} -o cyclonedx-json > sbom.json
+        """
+        f = run_check(cfg, "BK-010")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_sbom(self):
+        cfg = """
+        steps:
+          - command: docker build -t app:${BUILDKITE_COMMIT} .
+        """
+        f = run_check(cfg, "BK-010")
+        assert not f.passed
+
+    def test_passes_when_no_artifacts_produced(self):
+        cfg = """
+        steps:
+          - command: pytest tests/
+        """
+        f = run_check(cfg, "BK-010")
+        assert f.passed
+
+
+# ── BK-011 SLSA provenance ─────────────────────────────────────────────
+
+
+class TestBK011SLSAProvenance:
+    def test_passes_with_cosign_attest(self):
+        cfg = """
+        steps:
+          - command: |
+              docker build -t app:${BUILDKITE_COMMIT} .
+              cosign attest --predicate provenance.json --type slsaprovenance app:${BUILDKITE_COMMIT}
+        """
+        f = run_check(cfg, "BK-011")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_provenance(self):
+        cfg = """
+        steps:
+          - command: docker build -t app:${BUILDKITE_COMMIT} .
+        """
+        f = run_check(cfg, "BK-011")
+        assert not f.passed
+
+    def test_passes_when_no_artifacts_produced(self):
+        cfg = """
+        steps:
+          - command: pytest tests/
+        """
+        f = run_check(cfg, "BK-011")
+        assert f.passed
+
+
+# ── BK-012 vuln scanning ───────────────────────────────────────────────
+
+
+class TestBK012VulnScanning:
+    def test_passes_with_trivy_step(self):
+        cfg = """
+        steps:
+          - command: |
+              trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+        """
+        f = run_check(cfg, "BK-012")
+        assert f.passed
+
+    def test_passes_with_grype_step(self):
+        cfg = """
+        steps:
+          - command: grype dir:.
+        """
+        f = run_check(cfg, "BK-012")
+        assert f.passed
+
+    def test_passes_with_npm_audit(self):
+        cfg = """
+        steps:
+          - command: npm audit --audit-level=high
+        """
+        f = run_check(cfg, "BK-012")
+        assert f.passed
+
+    def test_fails_when_no_scanner_invoked(self):
+        cfg = """
+        steps:
+          - command: |
+              docker build -t app .
+              cosign sign app
+        """
+        f = run_check(cfg, "BK-012")
+        assert not f.passed
+
+
+# ── BK-013 deploy branches: filter ─────────────────────────────────────
+
+
+class TestBK013DeployBranchFilter:
+    def test_passes_with_branches_on_deploy_step(self):
+        cfg = """
+        steps:
+          - command: build
+          - block: "Deploy?"
+          - label: deploy
+            branches: "main release/*"
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-013")
+        assert f.passed
+
+    def test_passes_with_pipeline_level_branches_default(self):
+        # Pipeline-level branches: applies to every step.
+        cfg = """
+        branches: "main"
+        steps:
+          - command: build
+          - label: deploy
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-013")
+        assert f.passed
+
+    def test_fails_when_deploy_step_has_no_branches(self):
+        cfg = """
+        steps:
+          - command: build
+          - label: deploy production
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-013")
+        assert not f.passed
+
+    def test_fails_when_branches_is_wildcard_only(self):
+        cfg = """
+        steps:
+          - label: deploy
+            branches: "*"
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-013")
+        assert not f.passed
+
+    def test_passes_when_branches_list_with_real_entries(self):
+        cfg = """
+        steps:
+          - label: deploy
+            branches: ["main", "release/*"]
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-013")
+        assert f.passed
+
+    def test_passes_when_no_deploy_step_present(self):
+        cfg = """
+        steps:
+          - command: pytest tests/
+        """
+        f = run_check(cfg, "BK-013")
+        assert f.passed

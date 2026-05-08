@@ -271,6 +271,10 @@ STANDARD = Standard(
         "BK-005":   ["Dangerous-Workflow"],                            # Docker privileged
         "BK-007":   ["Code-Review"],                                   # deploy not gated
         "BK-008":   ["Pinned-Dependencies"],                           # TLS bypass
+        "BK-009":   ["Signed-Releases"],                               # artifact signing
+        "BK-010":   ["SBOM"],                                          # SBOM
+        "BK-011":   ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "BK-012":   ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Tekton ───────────────────────────────────────────────────
         "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned
         "TKN-002":  ["Dangerous-Workflow"],                            # step privileged

@@ -433,6 +433,11 @@ STANDARD = Standard(
         "BK-006":   ["CICD-SEC-9"],   # missing timeout_in_minutes
         "BK-007":   ["CICD-SEC-2", "CICD-SEC-7"],  # deploy step not gated
         "BK-008":   ["CICD-SEC-3"],   # TLS verification disabled
+        "BK-009":   ["CICD-SEC-9"],   # artifacts not signed
+        "BK-010":   ["CICD-SEC-9"],   # SBOM not generated
+        "BK-011":   ["CICD-SEC-9"],   # SLSA provenance not produced
+        "BK-012":   ["CICD-SEC-9"],   # no vulnerability scanning
+        "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
         # Tekton
         "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
         "TKN-002":  ["CICD-SEC-5"],   # step runs privileged / as root
