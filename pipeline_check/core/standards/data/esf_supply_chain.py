@@ -309,6 +309,11 @@ STANDARD = Standard(
         "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds
         "ARGO-007": ["ESF-D-BUILD-TIMEOUT"],                       # no activeDeadlineSeconds
         "ARGO-008": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
+        "ARGO-009": ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "ARGO-010": ["ESF-D-SBOM"],                                # SBOM
+        "ARGO-011": ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "ARGO-012": ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "ARGO-013": ["ESF-D-LEAST-PRIV"],                          # SA token automount
         # ── Helm chart-supply-chain ───────────────────────────────
         # Helm chart deps are exactly the Supplier-side controls'
         # use case: third-party charts pulled from registries.

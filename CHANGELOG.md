@@ -12,6 +12,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Five new Argo Workflows rules (`ARGO-009`..`ARGO-013`).**
+  Closes the third (and last) thin-pack pattern — Argo shipped at
+  8 rules while every other CI provider averaged 30+. The four
+  artifact-control rules reuse the shared signing / SBOM /
+  provenance / vuln-scan primitives so detection is consistent
+  with the BK / TKN packs that landed in the previous two
+  rounds. ``ARGO-009`` fires when an artifact-producing Workflow
+  invokes no signing tool (cosign / sigstore / slsa-framework /
+  notation) (MEDIUM). ``ARGO-010`` fires when an artifact-
+  producing Workflow has no SBOM step (syft / cyclonedx /
+  cdxgen / spdx-tools) (MEDIUM). ``ARGO-011`` fires when an
+  artifact-producing Workflow emits no SLSA provenance
+  attestation (``slsa-framework`` / ``cosign attest`` / ``in-
+  toto`` / ``witness run``) (MEDIUM). ``ARGO-012`` fires when no
+  vulnerability scanner runs across any Argo document (trivy /
+  grype / snyk / npm-audit / pip-audit / osv-scanner / semgrep /
+  checkov / tfsec) (MEDIUM). ``ARGO-013`` is the companion to
+  ARGO-003 (default ServiceAccount): an explicit
+  ``automountServiceAccountToken: false`` (workflow- or
+  template-level) is required to remove the SA token from every
+  step's pod. Templates that genuinely need K8s API access can
+  opt in per-template; the rule fires only when neither spec
+  nor template makes the choice explicit, leaving the cluster-
+  default automount behavior in effect (MEDIUM). Provider
+  catalog: 8 to 13 argo rules. 16 new per-rule tests in
+  ``tests/argo/test_rules.py``; OWASP / NIST 800-53 / NIST 800-
+  190 / SLSA / OpenSSF Scorecard / ESF / CIS supply chain
+  mappings added; README + ``docs/index.md`` provider listings
+  + argo.md regenerated; insecure / secure fixtures extended to
+  exercise / pass every new rule.
 - **Five new Tekton rules (`TKN-009`..`TKN-013`).** Closes the
   obvious posture gaps in the Tekton pack — it shipped at 8 rules
   while every CI provider averaged 30+. ``TKN-009`` fires when a

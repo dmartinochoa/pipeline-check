@@ -295,6 +295,10 @@ STANDARD = Standard(
         "ARGO-005": ["Dangerous-Workflow"],                            # parameter injection
         "ARGO-006": ["Token-Permissions"],                             # leaked creds
         "ARGO-008": ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
+        "ARGO-009": ["Signed-Releases"],                               # artifact signing
+        "ARGO-010": ["SBOM"],                                          # SBOM
+        "ARGO-011": ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "ARGO-012": ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Helm chart-supply-chain ──────────────────────────────────
         # Chart deps ARE pinned dependencies in the Scorecard sense —
         # an unlocked Chart.lock is a Pinned-Dependencies failure.

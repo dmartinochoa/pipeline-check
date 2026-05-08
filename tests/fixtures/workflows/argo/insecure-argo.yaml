@@ -9,6 +9,8 @@ spec:
   entrypoint: main
   # ARGO-003: no serviceAccountName (defaults to "default").
   # ARGO-007: no activeDeadlineSeconds.
+  # ARGO-013: no automountServiceAccountToken: false (workflow- or
+  # template-level), so the SA token gets mounted in every step.
   arguments:
     parameters:
       # ARGO-006: literal AWS access key in workflow argument.
@@ -40,7 +42,12 @@ spec:
         command: [bash]
         # ARGO-005: input parameter inlined unquoted.
         # ARGO-008: curl-pipe-shell in script body.
+        # ARGO-009 / ARGO-010 / ARGO-011 / ARGO-012: this template
+        # builds and pushes a container image without any signing,
+        # SBOM, SLSA provenance, or vuln-scan step.
         source: |
           set -e
           echo Building {{inputs.parameters.ref}}
           curl https://example.com/install.sh | bash
+          docker build -t internal/app:latest .
+          docker push internal/app:latest

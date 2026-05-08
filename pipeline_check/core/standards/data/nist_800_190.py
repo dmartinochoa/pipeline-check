@@ -267,5 +267,12 @@ STANDARD = Standard(
         "TKN-004":  ["4.4.4"],
         "TKN-005":  ["4.1.4"],
         "TKN-013":  ["4.1.2", "4.4.4"],
+        # Argo Workflows — same K8s-native runtime concerns. Supply-
+        # chain rules (ARGO-009..012) are out of 800-190's scope.
+        "ARGO-001": ["4.1.5"],
+        "ARGO-002": ["4.1.2", "4.4.4"],
+        "ARGO-004": ["4.4.4"],
+        "ARGO-006": ["4.1.4"],
+        "ARGO-013": ["4.1.2"],
     },
 )

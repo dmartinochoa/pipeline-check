@@ -46,7 +46,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "kubernetes": 35,
     "buildkite":  13,
     "tekton":     13,
-    "argo":       8,
+    "argo":       13,
     "dockerfile": 20,
 }
 

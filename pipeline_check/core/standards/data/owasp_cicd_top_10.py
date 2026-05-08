@@ -461,5 +461,10 @@ STANDARD = Standard(
         "ARGO-006": ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
         "ARGO-007": ["CICD-SEC-9"],   # missing activeDeadlineSeconds
         "ARGO-008": ["CICD-SEC-3"],   # remote install / TLS bypass
+        "ARGO-009": ["CICD-SEC-9"],   # artifacts not signed
+        "ARGO-010": ["CICD-SEC-9"],   # SBOM not generated
+        "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
+        "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
+        "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
     },
 )

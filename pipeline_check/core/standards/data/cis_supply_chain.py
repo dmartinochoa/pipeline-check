@@ -171,6 +171,10 @@ STANDARD = Standard(
         "ARGO-006": ["2.3.4"],                     # leaked creds
         "ARGO-007": ["2.2.2"],                     # no activeDeadlineSeconds
         "ARGO-008": ["1.4.1", "3.1.5"],            # remote install / TLS
+        "ARGO-009": ["4.1.1"],                     # artifact signing
+        "ARGO-010": ["4.4.1"],                     # SBOM
+        "ARGO-011": ["4.1.1", "4.4.1"],            # SLSA provenance
+        "ARGO-012": ["1.4.1", "3.1.3"],            # vuln scanning
         # ── Helm chart-supply-chain ───────────────────────────────
         # Chart packaging metadata sits at the artifact / build-deps
         # boundary. HELM-002's missing-digest is the exact "signed

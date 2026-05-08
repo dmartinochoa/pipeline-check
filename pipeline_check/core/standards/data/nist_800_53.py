@@ -274,6 +274,11 @@ STANDARD = Standard(
         "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
         "ARGO-007": ["AU-2", "SI-2"],                    # no activeDeadlineSeconds
         "ARGO-008": ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
+        "ARGO-009": ["SI-7", "SR-4"],                    # artifacts not signed
+        "ARGO-010": ["SR-4", "CM-8"],                    # no SBOM
+        "ARGO-011": ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "ARGO-012": ["RA-5", "SI-2"],                    # no vuln scanning
+        "ARGO-013": ["AC-6", "IA-5"],                    # SA token automount
         # Dockerfile — image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned

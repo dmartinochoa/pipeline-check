@@ -215,6 +215,10 @@ STANDARD = Standard(
         "ARGO-006": ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
         "ARGO-007": ["Build.L3.Ephemeral"],                        # no activeDeadlineSeconds
         "ARGO-008": ["Build.L3.Isolated"],                         # remote install / TLS bypass
+        "ARGO-009": ["Build.L2.Signed"],                           # artifact signing
+        "ARGO-010": ["Build.L1.Provenance"],                       # SBOM
+        "ARGO-011": ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary — Chart.lock and Chart.yaml are the chart's

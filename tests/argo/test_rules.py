@@ -364,3 +364,303 @@ class TestARGO008CurlPipe:
         """
         f = run_check(cfg, "ARGO-008")
         assert f.passed
+
+
+# ── ARGO-009 signing ───────────────────────────────────────────────────
+
+
+class TestARGO009Signing:
+    def test_passes_with_cosign_step(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  cosign sign --yes app
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-009")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_signing(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-009")
+        assert not f.passed
+
+    def test_passes_when_no_artifacts_produced(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: lint
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: pytest tests/
+        """
+        f = run_check(cfg, "ARGO-009")
+        assert f.passed
+
+
+# ── ARGO-010 SBOM ──────────────────────────────────────────────────────
+
+
+class TestARGO010SBOM:
+    def test_passes_with_syft_step(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  syft app -o cyclonedx-json > sbom.json
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-010")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_sbom(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-010")
+        assert not f.passed
+
+
+# ── ARGO-011 SLSA provenance ───────────────────────────────────────────
+
+
+class TestARGO011SLSAProvenance:
+    def test_passes_with_cosign_attest(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  cosign attest --predicate provenance.json --type slsaprovenance app
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-011")
+        assert f.passed
+
+    def test_fails_when_artifact_built_without_provenance(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  docker push app
+        """
+        f = run_check(cfg, "ARGO-011")
+        assert not f.passed
+
+
+# ── ARGO-012 vuln scanning ─────────────────────────────────────────────
+
+
+class TestARGO012VulnScanning:
+    def test_passes_with_trivy_step(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: scan
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: aquasec/trivy:latest
+                command: [sh]
+                source: trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+        """
+        f = run_check(cfg, "ARGO-012")
+        assert f.passed
+
+    def test_passes_with_grype_step(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: scan
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: anchore/grype:latest
+                command: [sh]
+                source: grype dir:.
+        """
+        f = run_check(cfg, "ARGO-012")
+        assert f.passed
+
+    def test_fails_when_no_scanner_invoked(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  docker build -t app .
+                  cosign sign app
+        """
+        f = run_check(cfg, "ARGO-012")
+        assert not f.passed
+
+
+# ── ARGO-013 SA token automount ────────────────────────────────────────
+
+
+class TestARGO013AutomountToken:
+    def test_passes_with_spec_level_opt_out(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          automountServiceAccountToken: false
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-013")
+        assert f.passed
+
+    def test_passes_with_template_level_opt_out(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              automountServiceAccountToken: false
+              script:
+                image: alpine:3
+                command: [bash]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-013")
+        assert f.passed
+
+    def test_passes_when_template_explicitly_opts_in(self):
+        # Explicit opt-in is the legitimate K8s-API-using case;
+        # don't fail on it. The user took an explicit decision.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: gitops
+        spec:
+          entrypoint: main
+          automountServiceAccountToken: false
+          templates:
+            - name: main
+              automountServiceAccountToken: true
+              script:
+                image: bitnami/kubectl:latest
+                command: [sh]
+                source: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "ARGO-013")
+        assert f.passed
+
+    def test_fails_when_neither_spec_nor_template_opts_out(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-013")
+        assert not f.passed
