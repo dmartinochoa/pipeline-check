@@ -223,6 +223,34 @@ STANDARD = Standard(
         "HELM-004": ["SR-3", "SR-11", "SI-2"],           # version not exact-pinned
         "HELM-005": ["SR-3", "SR-4"],                    # maintainers chain-of-custody
         "HELM-006": ["CM-2", "CM-6"],                    # kubeVersion compat range
+        # Buildkite — pipeline-config posture maps to the same SR /
+        # CM / IA families as the other CI providers' rules.
+        "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
+        "BK-002":   ["IA-5", "SC-28"],                   # secret in env
+        "BK-003":   ["CM-6", "SA-11"],                   # untrusted variable injection
+        "BK-004":   ["SR-3", "SR-11", "SI-7"],           # curl | bash
+        "BK-005":   ["AC-6", "CM-7"],                    # Docker privileged
+        "BK-006":   ["AU-2", "SI-2"],                    # no timeout
+        "BK-007":   ["AC-3", "SA-10"],                   # deploy not gated
+        "BK-008":   ["SC-8", "SC-13"],                   # TLS bypass
+        # Tekton — Kubernetes-native pipeline kinds.
+        "TKN-001":  ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
+        "TKN-002":  ["AC-6", "CM-7"],                    # step privileged
+        "TKN-003":  ["CM-6", "SA-11"],                   # param injection
+        "TKN-004":  ["SC-7", "AC-6", "SI-7"],            # hostPath / host namespaces
+        "TKN-005":  ["IA-5", "SC-28"],                   # leaked creds
+        "TKN-006":  ["AU-2", "SI-2"],                    # no timeout
+        "TKN-007":  ["AC-2", "AC-6"],                    # default ServiceAccount
+        "TKN-008":  ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
+        # Argo Workflows
+        "ARGO-001": ["SR-3", "SR-11", "SI-2"],           # template image not pinned
+        "ARGO-002": ["AC-6", "CM-7"],                    # template privileged
+        "ARGO-003": ["AC-2", "AC-6"],                    # default SA
+        "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
+        "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
+        "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
+        "ARGO-007": ["AU-2", "SI-2"],                    # no activeDeadlineSeconds
+        "ARGO-008": ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
         # Dockerfile — image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned

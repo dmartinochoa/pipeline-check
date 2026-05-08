@@ -322,3 +322,68 @@ class TestEveryRuleHasOwaspMapping:
             f"appear in the data file:\n  " + "\n  ".join(drift[:10])
             + ("\n  …" if len(drift) > 10 else "")
         )
+
+
+class TestPerFrameworkCoverageFloor:
+    """Lock the per-framework coverage % above documented floors.
+
+    Each backfill round ratchets these upward; a future contributor
+    that adds a rule pack and forgets to map it across the
+    supply-chain frameworks (SLSA / OpenSSF / CIS / ESF / NIST) will
+    drop the percentage on at least one and trip the assertion. The
+    floors are a couple percent below current state to absorb a
+    single-rule addition without a CI break.
+    """
+
+    # (standard_name, minimum coverage percent of the rule-pack catalog).
+    # Set just below current state so a single rule lands without
+    # tripping; a coordinated pack add or framework regression does
+    # trip. Bump the floor in the same PR that lifts the actual
+    # number — that's the ratchet.
+    FLOORS: dict[str, int] = {
+        "owasp_cicd_top_10":  100,
+        "nist_csf_2":          60,
+        "esf_supply_chain":    60,
+        "openssf_scorecard":   58,
+        "nist_800_53":         55,
+        "nist_800_190":        45,
+        "slsa":                42,
+        "soc2":                40,
+        "cis_supply_chain":    28,
+        "s2c2f":               25,
+        "nist_ssdf":           18,
+        "pci_dss_v4":          18,
+    }
+
+    def test_floors_hold(self):
+        from pipeline_check.core.checks.rule import discover_rules
+
+        rule_ids: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                rule_ids.append(rule.id)
+        total = len(rule_ids)
+
+        per_std: dict[str, int] = {name: 0 for name in self.FLOORS}
+        for rid in rule_ids:
+            stds = {x.standard for x in standards.resolve_for_check(rid)}
+            for s in stds:
+                if s in per_std:
+                    per_std[s] += 1
+
+        below: list[str] = []
+        for std, floor in self.FLOORS.items():
+            pct = 100 * per_std[std] // max(1, total)
+            if pct < floor:
+                below.append(
+                    f"{std}: {per_std[std]}/{total} = {pct}% "
+                    f"(floor {floor}%)"
+                )
+        assert not below, (
+            "Standards coverage dropped below floor:\n  "
+            + "\n  ".join(below)
+            + "\n\nEither backfill the affected mappings or, if the "
+            "drop is intentional (e.g. a new rule pack landed and "
+            "the matching framework mappings are deferred to a "
+            "follow-up), lower the floor in this test deliberately."
+        )

@@ -263,5 +263,38 @@ STANDARD = Standard(
         "JF-026":   ["Code-Review"],                                   # build job unchecked
         "CC-009":   ["Code-Review"],
         "CB-008":   ["Code-Review"],
+        # ── Buildkite ────────────────────────────────────────────────
+        "BK-001":   ["Pinned-Dependencies"],                           # plugin not pinned
+        "BK-002":   ["Token-Permissions"],                             # leaked creds in env
+        "BK-003":   ["Dangerous-Workflow"],                            # untrusted variable injection
+        "BK-004":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # curl | bash
+        "BK-005":   ["Dangerous-Workflow"],                            # Docker privileged
+        "BK-007":   ["Code-Review"],                                   # deploy not gated
+        "BK-008":   ["Pinned-Dependencies"],                           # TLS bypass
+        # ── Tekton ───────────────────────────────────────────────────
+        "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "TKN-002":  ["Dangerous-Workflow"],                            # step privileged
+        "TKN-003":  ["Dangerous-Workflow"],                            # param injection
+        "TKN-004":  ["Dangerous-Workflow"],                            # hostPath / namespaces
+        "TKN-005":  ["Token-Permissions"],                             # leaked creds
+        "TKN-007":  ["Token-Permissions"],                             # default SA
+        "TKN-008":  ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
+        # ── Argo Workflows ───────────────────────────────────────────
+        "ARGO-001": ["Pinned-Dependencies"],                           # template image not pinned
+        "ARGO-002": ["Dangerous-Workflow"],                            # template privileged
+        "ARGO-003": ["Token-Permissions"],                             # default SA
+        "ARGO-004": ["Dangerous-Workflow"],                            # hostPath / namespaces
+        "ARGO-005": ["Dangerous-Workflow"],                            # parameter injection
+        "ARGO-006": ["Token-Permissions"],                             # leaked creds
+        "ARGO-008": ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
+        # ── Helm chart-supply-chain ──────────────────────────────────
+        # Chart deps ARE pinned dependencies in the Scorecard sense —
+        # an unlocked Chart.lock is a Pinned-Dependencies failure.
+        # HELM-005 (maintainers) and HELM-006 (kubeVersion) sit
+        # outside Scorecard's check set; left unmapped on purpose.
+        "HELM-001": ["Pinned-Dependencies"],                           # legacy v1 (no in-tree lock)
+        "HELM-002": ["Pinned-Dependencies"],                           # missing Chart.lock digests
+        "HELM-003": ["Pinned-Dependencies"],                           # non-HTTPS dep repo
+        "HELM-004": ["Pinned-Dependencies"],                           # version range
     },
 )

@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Supply-chain framework backfill across new rule packs.** Argo /
+  Buildkite / Tekton / Helm rules previously had only OWASP
+  CICD-Top-10 coverage; the four supply-chain frameworks (SLSA
+  Build track, OpenSSF Scorecard, CIS Software Supply Chain Guide,
+  NSA/CISA ESF) now carry the same per-rule mappings the older CI
+  packs already had. NIST 800-53 also picked up the 24 non-Helm
+  rules (Helm got 800-53 in the previous round). Net effect on
+  catalog-wide coverage: ESF 55% to 63%, OpenSSF 54% to 61%, NIST
+  800-53 51% to 58%, SLSA 36% to 44%, CIS supply chain 22% to 30%.
+  A new ``TestPerFrameworkCoverageFloor`` test asserts each
+  framework's coverage stays at or above the documented floor;
+  future rule packs that ship without the matching framework
+  mappings trip it at CI time.
 - **OWASP-coverage backfill across every rule pack.** 36 rules
   shipped with a populated ``Rule.owasp`` tuple but no entry in
   ``pipeline_check/core/standards/data/owasp_cicd_top_10.py`` —
