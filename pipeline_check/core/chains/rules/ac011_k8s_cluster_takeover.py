@@ -56,6 +56,7 @@ RULE = ChainRule(
         "the API-pivot leg of this chain."
     ),
     providers=("kubernetes",),
+    triggering_check_ids=("K8S-013", "K8S-020"),
 )
 
 

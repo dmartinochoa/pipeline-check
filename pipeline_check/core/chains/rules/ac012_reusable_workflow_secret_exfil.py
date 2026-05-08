@@ -55,6 +55,7 @@ RULE = ChainRule(
         "is somehow bypassed."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-025", "GHA-034"),
 )
 
 

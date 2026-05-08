@@ -47,6 +47,7 @@ RULE = ChainRule(
         "``persist-credentials: false`` on every checkout."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-012", "GHA-016", "GHA-019"),
 )
 
 

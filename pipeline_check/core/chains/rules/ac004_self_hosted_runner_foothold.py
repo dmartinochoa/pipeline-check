@@ -37,6 +37,7 @@ RULE = ChainRule(
         "land on GitHub-hosted runners exclusively."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-002", "GHA-012"),
 )
 
 

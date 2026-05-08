@@ -66,6 +66,7 @@ RULE = ChainRule(
         "no longer outlives the step that consumes it."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-036", "GHA-019"),
 )
 
 

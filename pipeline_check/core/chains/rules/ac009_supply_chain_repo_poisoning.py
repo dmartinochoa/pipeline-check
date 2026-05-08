@@ -47,6 +47,7 @@ RULE = ChainRule(
         "indirection."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-001", "GHA-002", "GHA-008"),
 )
 
 

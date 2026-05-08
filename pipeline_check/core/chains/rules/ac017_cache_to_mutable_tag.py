@@ -64,6 +64,7 @@ RULE = ChainRule(
         "digest-pinned consumers."
     ),
     providers=("github", "aws"),
+    triggering_check_ids=("GHA-011", "ECR-002"),
 )
 
 

@@ -68,6 +68,7 @@ RULE = ChainRule(
         "the role's trust policy that names the specific repo/ref."
     ),
     providers=("github", "aws"),
+    triggering_check_ids=("GHA-030", "IAM-002"),
 )
 
 

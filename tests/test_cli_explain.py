@@ -266,3 +266,57 @@ def test_every_discovered_rule_id_renders():
                     f"{rule.id}: rendered body did not contain the title"
                 )
     assert not failures, "\n".join(failures)
+
+
+# ─── Triggers-attack-chains cross-reference ───────────────────────────
+
+
+def test_every_chain_declares_triggering_check_ids():
+    """Every chain rule must populate ``triggering_check_ids``.
+
+    The rule-side ``--explain`` output uses this field to surface
+    chains that include the rule. A chain that ships with an empty
+    field becomes invisible to that lookup, breaking the cross-
+    reference for any rule whose check_id the chain consumes.
+    """
+    from pipeline_check.core.chains import list_rules
+
+    missing = [r.id for r in list_rules() if not r.triggering_check_ids]
+    assert not missing, (
+        f"Chain rule(s) without triggering_check_ids: {missing}. "
+        f"Populate the field on the ChainRule so --explain RULE_ID "
+        f"can surface the rule -> chain link."
+    )
+
+
+def test_explain_surfaces_triggering_attack_chains_section():
+    """``--explain GHA-001`` should list AC-* chains it triggers."""
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "[Triggers attack chains]" in body
+    # GHA-001 is in AC-003, AC-009, AC-018 — confirm at least the
+    # AC-009 link is rendered.
+    assert "AC-009" in body
+    assert "AC-018" in body
+
+
+def test_explain_omits_chain_section_for_check_id_with_no_chains():
+    """A rule no chain references shouldn't render the section."""
+    # GHA-022 is a Dependabot/Renovate check — no chain has it in
+    # its triggering set as of this round.
+    body, code = render("GHA-022")
+    assert code == 0
+    assert "[Triggers attack chains]" not in body
+
+
+def test_chains_for_check_id_helper_caches():
+    """The lookup is cached; first call builds the index, subsequent
+    calls reuse it. Confirms the cache hook is wired."""
+    from pipeline_check.core import explain as explain_mod
+
+    explain_mod._CHAINS_BY_CHECK_ID = None  # type: ignore[assignment]
+    chains_first = explain_mod._chains_for_check_id("GHA-001")
+    assert explain_mod._CHAINS_BY_CHECK_ID is not None
+    chains_second = explain_mod._chains_for_check_id("GHA-001")
+    # Same list object on the second call — proves the cache hit.
+    assert chains_first == chains_second

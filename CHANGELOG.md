@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`--explain CHECK_ID` now lists attack chains the rule
+  triggers.** New ``[Triggers attack chains]`` section in the
+  explain output cross-references the rule layer with the chain
+  layer: when a rule's check_id appears in any
+  ``ChainRule.triggering_check_ids`` tuple, the explain body lists
+  the chain ID, title, and severity, with a hint to
+  ``--explain AC-NNN`` for the full kill-chain narrative. Powered
+  by a new ``triggering_check_ids: tuple[str, ...]`` field on
+  ``ChainRule`` (defaulting to empty for backward compat) that
+  every existing chain rule populates with its trigger set; the
+  field replaces the implicit "look at what ``match()``
+  hard-codes" coupling between the metadata and the matcher.
+  ``test_every_chain_declares_triggering_check_ids`` regression-
+  tests every chain has the field set, so a future chain that
+  ships without it trips at CI time. ``--explain GHA-001`` now
+  shows ``AC-003 / AC-009 / AC-018`` under the new section, and
+  every other rule that participates in a chain gets the same
+  treatment automatically.
 - **Two cross-provider attack chains (`AC-018` / `AC-019`).**
   ``AC-018`` "Unpinned action lands on deploy job with no
   environment gate" fires when ``GHA-001`` (action pinned by tag /

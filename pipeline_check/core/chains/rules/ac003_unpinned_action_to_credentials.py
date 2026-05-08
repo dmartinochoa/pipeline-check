@@ -37,6 +37,7 @@ RULE = ChainRule(
         "to steal."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-001", "GHA-005"),
 )
 
 

@@ -67,6 +67,7 @@ RULE = ChainRule(
         "token no longer outlives the step that consumes it."
     ),
     providers=("gitlab",),
+    triggering_check_ids=("GL-032", "GL-020"),
 )
 
 

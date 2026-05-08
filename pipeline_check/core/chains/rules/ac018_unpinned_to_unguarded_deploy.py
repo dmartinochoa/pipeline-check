@@ -59,6 +59,7 @@ RULE = ChainRule(
         "the gated environment."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-001", "GHA-014"),
 )
 
 

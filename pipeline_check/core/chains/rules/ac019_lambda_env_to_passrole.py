@@ -68,6 +68,7 @@ RULE = ChainRule(
         "chain when either is fixed."
     ),
     providers=("aws",),
+    triggering_check_ids=("LMB-003", "IAM-004"),
 )
 
 

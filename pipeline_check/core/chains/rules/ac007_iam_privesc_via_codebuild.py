@@ -37,6 +37,7 @@ RULE = ChainRule(
         "the build genuinely requires Docker-in-Docker."
     ),
     providers=("aws", "terraform", "cloudformation"),
+    triggering_check_ids=("CB-002", "IAM-002", "IAM-004"),
 )
 
 

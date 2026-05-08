@@ -79,6 +79,7 @@ RULE = ChainRule(
         "v2 makes the lock possible in the first place)."
     ),
     providers=("helm",),
+    triggering_check_ids=("HELM-001", "HELM-002", "HELM-003"),
 )
 
 
