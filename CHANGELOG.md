@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NIST CSF 2.0 + SOC 2 mappings for the K8s + Helm packs.** Both
+  standards previously had **zero** entries for the entire
+  Kubernetes (40 rules) and Helm (10 rules) packs, so
+  ``--standard-report nist_csf_2`` and ``--standard-report soc2``
+  rendered every K8s or Helm finding as "unmapped". Round 28 closed
+  this for PCI DSS v4 + S2C2F across the BK / TKN / ARGO packs;
+  this round closes it for the K8s and Helm packs across the two
+  remaining standards that already covered the rest of the catalog.
+  CSF 2.0 picks up 50 new mappings: every K8S-001..040 rule
+  routed across PR.PS (platform security), PR.AA (access), PR.IR
+  (network), PR.DS (data integrity), DE.CM (continuous
+  monitoring), and GV.SC (supply chain) plus all 10 HELM-* rules
+  on the GV.SC supply-chain function. Catalog-wide coverage:
+  59% to 72%; floor bumped 59 -> 70. SOC 2 picks up 38 new
+  mappings concentrated in CC6 (logical access — RBAC, SA tokens,
+  credentials), CC6.6 (network boundary), CC6.7 (data in transit),
+  CC6.8 (malicious software prevention — privileged containers,
+  hostPath escapes, runtime hardening), CC7.1 / CC7.2 (config
+  drift / monitoring), and CC8.1 (change management — image
+  pinning, chart pinning, attestation). Catalog-wide coverage:
+  39% to 51%; floor bumped 39 -> 49. The standards-mapping picture
+  for the catalog's 14 frameworks is now consistent across every
+  rule pack — no more "drag-down by zero coverage" floor wobble
+  when a pack expands.
 - **Five new K8s posture rules (`K8S-036`..`K8S-040`).** Extends the
   Kubernetes pack with one cross-doc supply-chain check, two
   secrets / network gaps, and two runtime-isolation checks.

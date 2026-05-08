@@ -369,13 +369,13 @@ class TestPerFrameworkCoverageFloor:
     # number — that's the ratchet.
     FLOORS: dict[str, int] = {
         "owasp_cicd_top_10":   100,
-        "nist_csf_2":           59,
+        "nist_csf_2":           70,
         "esf_supply_chain":     60,
         "openssf_scorecard":    58,
         "nist_800_53":          55,
         "nist_800_190":         45,
         "slsa":                 42,
-        "soc2":                 39,
+        "soc2":                 49,
         "cis_supply_chain":     28,
         "s2c2f":                29,
         "nist_ssdf":            18,

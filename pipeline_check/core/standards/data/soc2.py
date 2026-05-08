@@ -232,5 +232,59 @@ STANDARD = Standard(
         "JF-028":   ["CC8.1"],
         "CC-024":   ["CC8.1"],
         "GCB-009":  ["CC8.1"],
+
+        # ── Kubernetes — runtime / network / RBAC / change posture ──
+        # CC6.1 covers RBAC and SA-token surfaces; CC6.6 covers
+        # network boundary; CC6.7 covers data-in-transit; CC6.8
+        # covers malicious-software prevention (image-pinning, hostPath
+        # escapes, runtime hardening); CC7.1/CC7.2 cover monitoring
+        # and configuration-drift detection; CC8.1 covers change-
+        # management (image pin = explicit change record).
+        "K8S-001":  ["CC8.1"],            # image not pinned to digest
+        "K8S-002":  ["CC6.6"],            # hostNetwork
+        "K8S-003":  ["CC6.8"],            # hostPID
+        "K8S-004":  ["CC6.8"],            # hostIPC
+        "K8S-005":  ["CC6.8"],            # privileged container
+        "K8S-006":  ["CC6.8"],            # allowPrivilegeEscalation
+        "K8S-007":  ["CC6.8"],            # runAsNonRoot
+        "K8S-008":  ["CC6.8"],            # readOnlyRootFilesystem
+        "K8S-009":  ["CC6.8"],            # capabilities
+        "K8S-010":  ["CC6.8"],            # seccompProfile
+        "K8S-011":  ["CC6.1"],            # default ServiceAccount
+        "K8S-012":  ["CC6.1"],            # automountServiceAccountToken
+        "K8S-013":  ["CC6.8"],            # hostPath volume
+        "K8S-014":  ["CC6.8"],            # sensitive hostPath
+        "K8S-017":  ["CC6.1"],            # env credential
+        "K8S-018":  ["CC6.1"],            # Secret data credential
+        "K8S-019":  ["CC6.1"],            # default namespace
+        "K8S-020":  ["CC6.1"],            # cluster-admin RoleBinding
+        "K8S-021":  ["CC6.1"],            # wildcard verbs
+        "K8S-022":  ["CC6.6"],            # SSH service exposed
+        "K8S-023":  ["CC7.1"],            # PSA enforce missing
+        "K8S-024":  ["CC7.2"],            # readiness/liveness probes
+        "K8S-026":  ["CC6.6"],            # LB without source ranges
+        "K8S-027":  ["CC6.7"],            # Ingress without TLS
+        "K8S-028":  ["CC6.6"],            # host port
+        "K8S-029":  ["CC6.1"],            # default-SA RoleBinding
+        "K8S-031":  ["CC7.1"],            # PSA warn label missing
+        "K8S-032":  ["CC6.6"],            # NetworkPolicy default-deny
+        "K8S-033":  ["CC7.2"],            # ResourceQuota / LimitRange
+        "K8S-034":  ["CC6.1"],            # SA automount default
+        "K8S-035":  ["CC6.8"],            # runAsUser: 0
+        "K8S-036":  ["CC8.1"],            # SA imagePullSecret missing
+        "K8S-037":  ["CC6.1"],            # ConfigMap credential
+        "K8S-038":  ["CC6.6"],            # NetworkPolicy allow-all
+        "K8S-039":  ["CC6.8"],            # shareProcessNamespace
+        "K8S-040":  ["CC6.8"],            # procMount: Unmasked
+
+        # ── Helm — chart-supply-chain hygiene maps to CC8.1 ─────────
+        # (changes flow through chart upgrades) plus CC6.7 for non-
+        # HTTPS dep repos.
+        "HELM-001": ["CC8.1"],            # legacy v1 schema
+        "HELM-002": ["CC8.1"],            # Chart.lock missing digests
+        "HELM-003": ["CC6.7", "CC8.1"],   # non-HTTPS dep repo
+        "HELM-004": ["CC8.1"],            # dep version not exact-pinned
+        "HELM-008": ["CC8.1"],            # Chart.lock stale
+        "HELM-009": ["CC6.7"],            # non-HTTPS sources
     },
 )

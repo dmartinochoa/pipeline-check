@@ -323,5 +323,62 @@ STANDARD = Standard(
         "EB-002":   ["DE.CM-06"],
         "CW-001":   ["DE.CM-09"],
         "CB-007":   ["DE.CM-06"],
+
+        # ── Kubernetes — workload runtime + RBAC + network +
+        # configuration management. The pack maps cleanly across
+        # PR.PS (platform security), PR.AA (access), PR.IR (network),
+        # PR.DS (data integrity), and DE.CM (runtime monitoring).
+        "K8S-001":  ["GV.SC-05", "PR.PS-02"],   # image not pinned to digest
+        "K8S-002":  ["PR.PS-01"],               # hostNetwork
+        "K8S-003":  ["PR.PS-01"],               # hostPID
+        "K8S-004":  ["PR.PS-01"],               # hostIPC
+        "K8S-005":  ["PR.PS-01", "PR.PS-05"],   # privileged container
+        "K8S-006":  ["PR.PS-01"],               # allowPrivilegeEscalation
+        "K8S-007":  ["PR.PS-01"],               # runAsNonRoot
+        "K8S-008":  ["PR.PS-01"],               # readOnlyRootFilesystem
+        "K8S-009":  ["PR.PS-01"],               # capabilities
+        "K8S-010":  ["PR.PS-01"],               # seccompProfile
+        "K8S-011":  ["PR.AA-05"],               # default ServiceAccount
+        "K8S-012":  ["PR.AA-01"],               # automountServiceAccountToken
+        "K8S-013":  ["PR.PS-01"],               # hostPath volume
+        "K8S-014":  ["PR.PS-01"],               # sensitive hostPath
+        "K8S-015":  ["PR.IR-03"],               # memory limit
+        "K8S-016":  ["PR.IR-03"],               # cpu limit
+        "K8S-017":  ["PR.AA-01", "PR.DS-01"],   # env credential
+        "K8S-018":  ["PR.AA-01", "PR.DS-01"],   # Secret data credential
+        "K8S-019":  ["PR.PS-01"],               # default namespace
+        "K8S-020":  ["PR.AA-05"],               # cluster-admin RoleBinding
+        "K8S-021":  ["PR.AA-05"],               # wildcard verbs
+        "K8S-022":  ["PR.IR-01"],               # SSH service exposed
+        "K8S-023":  ["PR.PS-01"],               # PSA enforce missing
+        "K8S-024":  ["DE.CM-09"],               # readiness/liveness probes
+        "K8S-025":  ["PR.PS-01"],               # system priority class
+        "K8S-026":  ["PR.IR-01"],               # LB without source ranges
+        "K8S-027":  ["PR.DS-02"],               # Ingress without TLS
+        "K8S-028":  ["PR.IR-01"],               # host port
+        "K8S-029":  ["PR.AA-05"],               # default-SA RoleBinding
+        "K8S-030":  ["PR.PS-01"],               # control-plane scheduling
+        "K8S-031":  ["PR.PS-01"],               # PSA warn label missing
+        "K8S-032":  ["PR.IR-01"],               # NetworkPolicy default-deny
+        "K8S-033":  ["PR.IR-03"],               # ResourceQuota / LimitRange
+        "K8S-034":  ["PR.AA-01"],               # SA automount default
+        "K8S-035":  ["PR.PS-01"],               # runAsUser: 0
+        "K8S-036":  ["GV.SC-05"],               # SA imagePullSecret missing
+        "K8S-037":  ["PR.AA-01", "PR.DS-01"],   # ConfigMap credential
+        "K8S-038":  ["PR.IR-01"],               # NetworkPolicy allow-all
+        "K8S-039":  ["PR.PS-01"],               # shareProcessNamespace
+        "K8S-040":  ["PR.PS-01"],               # procMount: Unmasked
+
+        # ── Helm — chart-supply-chain hygiene maps to GV.SC. ────────
+        "HELM-001": ["GV.SC-05"],   # legacy v1 schema
+        "HELM-002": ["GV.SC-05", "GV.SC-07"],   # Chart.lock missing digests
+        "HELM-003": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS dep repo
+        "HELM-004": ["GV.SC-05"],   # dep version not exact-pinned
+        "HELM-005": ["GV.SC-04"],   # maintainers chain-of-custody
+        "HELM-006": ["GV.SC-07"],   # kubeVersion compat range
+        "HELM-007": ["GV.SC-04"],   # description empty (chart identity)
+        "HELM-008": ["GV.SC-07"],   # Chart.lock stale
+        "HELM-009": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS sources
+        "HELM-010": ["GV.SC-04"],   # appVersion empty
     },
 )
