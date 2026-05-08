@@ -220,6 +220,11 @@ STANDARD = Standard(
         "K8S-033":  ["CM-6", "SI-2"],                    # ResourceQuota / LimitRange missing
         "K8S-034":  ["AC-6", "AC-2"],                    # ServiceAccount automount default
         "K8S-035":  ["AC-6", "CM-6"],                    # runAsUser: 0
+        "K8S-036":  ["SR-3", "SR-11", "SI-7"],           # SA imagePullSecret missing
+        "K8S-037":  ["IA-5", "SC-28"],                   # ConfigMap credential literal
+        "K8S-038":  ["SC-7", "AC-3"],                    # NetworkPolicy allow-all
+        "K8S-039":  ["AC-6", "CM-6"],                    # shareProcessNamespace
+        "K8S-040":  ["AC-6", "CM-6"],                    # procMount: Unmasked
         # Helm chart-supply-chain. The same SR family that covers
         # image pinning (K8S-001 / DF-001) covers chart pinning;
         # SC-8 (transmission integrity) covers HELM-003's plaintext

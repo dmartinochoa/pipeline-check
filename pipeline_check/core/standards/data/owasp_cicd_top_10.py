@@ -392,6 +392,11 @@ STANDARD = Standard(
         "K8S-033":  ["CICD-SEC-7"],   # ResourceQuota / LimitRange missing
         "K8S-034":  ["CICD-SEC-2"],   # ServiceAccount automount default
         "K8S-035":  ["CICD-SEC-7"],   # container runAsUser: 0
+        "K8S-036":  ["CICD-SEC-3"],   # SA imagePullSecret missing
+        "K8S-037":  ["CICD-SEC-6"],   # ConfigMap credential literal
+        "K8S-038":  ["CICD-SEC-7"],   # NetworkPolicy allow-all
+        "K8S-039":  ["CICD-SEC-7"],   # shareProcessNamespace: true
+        "K8S-040":  ["CICD-SEC-7"],   # procMount: Unmasked
         # Helm chart-supply-chain
         "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
         "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests

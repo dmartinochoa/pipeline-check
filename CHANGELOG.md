@@ -12,6 +12,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Five new K8s posture rules (`K8S-036`..`K8S-040`).** Extends the
+  Kubernetes pack with one cross-doc supply-chain check, two
+  secrets / network gaps, and two runtime-isolation checks.
+  ``K8S-036`` (cross-doc) walks every ``ServiceAccount``'s
+  ``imagePullSecrets`` and confirms each named ``Secret`` exists
+  in the same namespace within the manifest set; a dangling
+  reference doesn't fail apply but causes silent fallback to
+  anonymous registry pulls (MEDIUM). ``K8S-037`` is the ConfigMap
+  companion to K8S-018 — walks ``data`` / ``binaryData`` for AKIA-
+  shaped values and credential-shaped key names. ConfigMaps have
+  much broader RBAC scope than Secrets, so credentials leaked
+  this way reach a wider audience (HIGH). ``K8S-038`` is the
+  inverse of K8S-032 — fires when a NetworkPolicy carries an
+  ingress / egress rule with an empty ``from: []`` / ``to: []``
+  (or missing field), which is K8s shorthand for "match every
+  peer". The false-sense-of-security failure mode is worse than
+  no policy (MEDIUM). ``K8S-039`` flags pods that set
+  ``spec.shareProcessNamespace: true`` — collapses PID isolation
+  between containers and lets a compromised sidecar enumerate
+  every primary container's processes / env vars (MEDIUM).
+  ``K8S-040`` flags containers with ``securityContext.procMount:
+  Unmasked`` — undoes the kernel-info masking under ``/proc``
+  that the default ``Default`` procMount applies, exposing
+  ``/proc/kcore`` / ``/proc/keys`` / writable ``/proc/sys`` (HIGH).
+  Provider catalog: 35 to 40 K8s rules. 25 new tests in
+  ``tests/kubernetes/test_k8s036_040_posture_gaps.py`` covering
+  per-rule positive / negative cases, cross-namespace SA-pullsecret
+  isolation (K8S-036), binaryData base64 decode (K8S-037),
+  init-container coverage (K8S-040), and Deployment-template
+  walks (K8S-039); OWASP / NIST 800-53 / NIST 800-190 mappings
+  added; README + ``docs/index.md`` provider listings + Helm
+  K8S-* count + kubernetes.md provider doc regenerated;
+  ``insecure.yaml`` / ``secure.yaml`` fixtures extended to
+  exercise / pass every new rule. ``nist_csf_2`` floor 60 -> 59
+  and ``soc2`` floor 40 -> 39 to absorb the denominator widening
+  from the new rules — neither standard has any K8s mappings to
+  draw from.
 - **PCI DSS v4 + S2C2F mapping backfill across BK / TKN / ARGO.**
   Rounds 22-24 added 15 new rules (BK-009..013, TKN-009..013,
   ARGO-009..013) but only mapped them across 7 of the 13

@@ -258,6 +258,10 @@ STANDARD = Standard(
         "K8S-017":  ["4.1.4"],
         "K8S-018":  ["4.1.4"],
         "K8S-022":  ["4.4.4"],
+        "K8S-036":  ["4.1.5"],                           # SA imagePullSecret missing
+        "K8S-037":  ["4.1.4"],                           # ConfigMap credential literal
+        "K8S-039":  ["4.1.2", "4.4.4"],                  # shareProcessNamespace
+        "K8S-040":  ["4.1.2", "4.4.4"],                  # procMount: Unmasked
         # Tekton — Tekton runs as Kubernetes-native pipeline kinds, so
         # the same runtime-hardening controls apply. Supply-chain
         # rules (TKN-009..012 signing/SBOM/provenance/vuln-scan) live

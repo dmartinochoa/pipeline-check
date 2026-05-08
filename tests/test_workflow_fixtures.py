@@ -341,7 +341,7 @@ class TestDockerfileFixtures:
 
 
 class TestKubernetesFixtures:
-    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 36)}
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 41)}
 
     def _scan(self, filename: str):
         ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
@@ -468,7 +468,7 @@ class TestArgoFixtures:
      {f"DF-{i:03d}" for i in range(1, 21)}),
     ("kubernetes", "k8s/insecure.yaml",
      KubernetesContext, KubernetesManifestChecks,
-     {f"K8S-{i:03d}" for i in range(1, 36)}),
+     {f"K8S-{i:03d}" for i in range(1, 41)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected
