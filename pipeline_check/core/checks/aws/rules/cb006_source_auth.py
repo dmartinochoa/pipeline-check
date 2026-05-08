@@ -27,6 +27,14 @@ RULE = Rule(
         "source credentials of type OAUTH, PERSONAL_ACCESS_TOKEN, or "
         "BASIC_AUTH via delete_source_credentials."
     ),
+    docs_note=(
+        "OAUTH / PERSONAL_ACCESS_TOKEN / BASIC_AUTH source credentials "
+        "are stored long-lived on the account and used by every "
+        "CodeBuild project that points at the SCM provider. Rotating "
+        "the upstream PAT requires manual re-credentialing here too. "
+        "CodeConnections (CodeStar) is the AWS-managed alternative "
+        "with token refresh and revocation."
+    ),
 )
 
 

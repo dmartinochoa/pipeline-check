@@ -15,6 +15,14 @@ RULE = Rule(
         "Add a Manual approval action to a stage that precedes every Deploy "
         "stage that targets a production or sensitive environment."
     ),
+    docs_note=(
+        "A pipeline that goes Source -> Build -> Deploy with no "
+        "Approval action means every commit on the source branch "
+        "ships, with no human ack between code-merged and "
+        "code-running-in-prod. The Manual approval action is the "
+        "intentional pause point — combine with CP-005 for "
+        "production-tagged stages specifically."
+    ),
 )
 
 

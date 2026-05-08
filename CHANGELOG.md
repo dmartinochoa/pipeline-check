@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`docs_note` backfill across the AWS rule pack.** 58 of 363
+  rules — every AWS-pack rule across CA / CB / CCM / CD / CP / CT
+  / CW / CWL / EB / ECR / IAM / KMS / LMB / PBAC / S3 / SIGN / SM /
+  SSM — shipped with empty ``docs_note``, a migration artifact
+  from the class-based-to-rule-based refactor. ``--explain
+  IAM-001`` (and every other AWS ID) rendered the header +
+  standards mappings + recommendation but no [What it checks]
+  body, leaving operators without the threat-model framing other
+  packs always provided. Each is now backfilled with 2-4 sentences
+  explaining the underlying threat model — distinct from the
+  recommendation's how-to-fix. A new
+  ``TestEveryRuleHasDocsNote`` regression test in
+  ``tests/test_standards.py`` walks every rule across every pack
+  and asserts a non-empty ``docs_note`` field, so a future rule
+  that lands without one trips at CI time.
 - **Line-precision retrofit for eleven high-fire rules.** v0.4.0
   introduced ``Finding.locations`` with structured ``start_line`` /
   ``end_line``, but only 12 rules were retrofitted in that release.

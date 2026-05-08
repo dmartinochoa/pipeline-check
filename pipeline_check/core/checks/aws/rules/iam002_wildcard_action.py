@@ -13,6 +13,13 @@ RULE = Rule(
     owasp=("CICD-SEC-2",),
     cwe=("CWE-269",),
     recommendation="Replace wildcard actions with specific IAM actions.",
+    docs_note=(
+        "``Action: '*'`` (or service-prefix wildcards like "
+        "``s3:*``) on an attached policy is functionally equivalent "
+        "to AdministratorAccess for that resource. The wildcard "
+        "absorbs every new IAM action AWS adds, so the role's "
+        "authority grows without any local change."
+    ),
 )
 
 

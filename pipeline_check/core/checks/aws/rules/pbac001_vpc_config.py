@@ -17,6 +17,15 @@ RULE = Rule(
         "VPC endpoints to control outbound internet access and restrict "
         "build nodes to only the network resources they require."
     ),
+    docs_note=(
+        "A CodeBuild project with no VPC configuration runs in "
+        "AWS-managed network space — egress to the public internet "
+        "is unrestricted, every package registry / CDN / arbitrary "
+        "endpoint is reachable. Inside a VPC, security-group + "
+        "VPC-endpoint policies become the egress gate, which is the "
+        "only practical way to limit a compromised build's "
+        "exfiltration paths."
+    ),
 )
 
 

@@ -15,6 +15,13 @@ RULE = Rule(
     recommendation=(
         "Replace AdministratorAccess with least-privilege policies."
     ),
+    docs_note=(
+        "A CI/CD service role with ``AdministratorAccess`` attached "
+        "turns any pipeline compromise into account compromise. The "
+        "classic anti-pattern: the role started narrow, the "
+        "pipeline grew, someone attached AdministratorAccess to "
+        "unblock a deploy, and it never came off."
+    ),
 )
 
 

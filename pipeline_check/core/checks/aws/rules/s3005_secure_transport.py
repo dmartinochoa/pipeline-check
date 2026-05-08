@@ -20,6 +20,14 @@ RULE = Rule(
         "Add a Deny statement for s3:* with Bool "
         "aws:SecureTransport=false."
     ),
+    docs_note=(
+        "S3 endpoints accept HTTP and HTTPS by default. Without an "
+        "explicit Deny on ``aws:SecureTransport=false``, a "
+        "plaintext request — typically from a misconfigured client "
+        "or a SDK with a stale endpoint — is honored if signed. "
+        "The bucket policy Deny is the only enforcement; no "
+        "account-level switch covers it."
+    ),
 )
 
 

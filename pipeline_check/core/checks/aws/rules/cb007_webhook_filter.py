@@ -15,6 +15,14 @@ RULE = Rule(
         "Define filter groups restricting triggers to specific branches, "
         "actors, and event types."
     ),
+    docs_note=(
+        "A CodeBuild webhook with no filter groups fires on every "
+        "push and every PR from any actor — including fork PRs from "
+        "outside the org. Anyone able to open a PR triggers the "
+        "build with whatever IAM authority the project's role "
+        "carries. Filter groups (branch + actor + event type) are "
+        "the gate."
+    ),
 )
 
 

@@ -18,6 +18,14 @@ RULE = Rule(
         "``lambda:InvokeFunctionUrl`` through IAM. ``NONE`` exposes the "
         "function to the public internet without authentication."
     ),
+    docs_note=(
+        "A Lambda function URL with ``AuthType=NONE`` is a public "
+        "HTTPS endpoint. Anyone who knows the URL can invoke. This "
+        "is sometimes deliberate (a webhook receiver) but the "
+        "deliberate version typically signs / validates inside the "
+        "function — the rule fires regardless because the IAM-side "
+        "control isn't there."
+    ),
 )
 
 

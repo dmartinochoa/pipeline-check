@@ -17,6 +17,14 @@ RULE = Rule(
         "Enable default bucket encryption using at minimum AES256 (SSE-S3). "
         "For stronger key control, use SSE-KMS with a customer-managed key."
     ),
+    docs_note=(
+        "Default bucket encryption applies SSE-S3 (AES256) to every "
+        "PutObject. As of January 2023, AWS enables this on all new "
+        "buckets automatically — but existing buckets created before "
+        "then can still be unencrypted unless explicitly configured. "
+        "Without it, individual objects can be uploaded without "
+        "encryption (the client gets to choose)."
+    ),
 )
 
 

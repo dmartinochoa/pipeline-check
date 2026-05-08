@@ -20,6 +20,13 @@ RULE = Rule(
         "webhook. Without it, pipeline failures during an incident "
         "(a compromise triggering rollback, for example) go unnoticed."
     ),
+    docs_note=(
+        "Pipeline failure events are emitted to EventBridge "
+        "automatically; the missing piece is a rule that pipes them "
+        "to somewhere a human reads (SNS, Slack, PagerDuty). "
+        "Without it, failures only surface via the CodePipeline "
+        "console — which no one watches."
+    ),
 )
 
 

@@ -16,6 +16,15 @@ RULE = Rule(
         "rule or CodeCommit trigger to start the pipeline on change. This "
         "reduces latency, API usage, and improves auditability."
     ),
+    docs_note=(
+        "``PollForSourceChanges=true`` polls the source repo every "
+        "minute or two. Beyond the API-quota and latency cost, "
+        "polling produces a less-useful CloudTrail story than "
+        "event-driven triggers — you see the poll calls, not the "
+        "specific commit that started the pipeline. EventBridge / "
+        "CodeCommit triggers tie each pipeline start to the "
+        "originating event."
+    ),
 )
 
 

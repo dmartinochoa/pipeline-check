@@ -16,6 +16,13 @@ RULE = Rule(
         "Consider also enabling Amazon Inspector continuous scanning for "
         "ongoing CVE detection against images already in the registry."
     ),
+    docs_note=(
+        "scan-on-push runs a CVE check against the image's OS "
+        "package layers at the moment it lands in ECR. Without it, "
+        "an image with a known CVE deploys silently. The ECR basic "
+        "scanner is free; ECR-007 covers the Inspector v2 enhanced "
+        "scanner that adds language-ecosystem CVEs (npm, pip, gem)."
+    ),
 )
 
 

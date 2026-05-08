@@ -20,6 +20,14 @@ RULE = Rule(
         "LMB-001 remediation isn't possible and release artifacts can't "
         "be signed at build time."
     ),
+    docs_note=(
+        "AWS Signer profiles are the upstream of LMB-001's "
+        "code-signing config. Without a profile defined, no "
+        "function in the account can enforce code-signing — "
+        "LMB-001's recommendation has nothing to point at. The "
+        "profile is the foundation; the per-function code-signing "
+        "config attaches it."
+    ),
 )
 
 

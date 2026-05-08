@@ -19,6 +19,14 @@ RULE = Rule(
         "wildcard-principal policy allows any AWS account to call "
         "``GetSecretValue`` on the secret."
     ),
+    docs_note=(
+        "A wildcard-principal Allow on a Secrets Manager resource "
+        "policy means any principal in any AWS account can call "
+        "``GetSecretValue`` (subject to conditions, if any). Always "
+        "combine with at least ``aws:SourceAccount`` or "
+        "``aws:PrincipalOrgID`` — the lift-and-shift cross-account "
+        "secret-access pattern needs scoping."
+    ),
 )
 
 

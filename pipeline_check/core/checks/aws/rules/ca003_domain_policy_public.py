@@ -22,6 +22,15 @@ RULE = Rule(
         "``aws:PrincipalOrgID`` condition so only accounts in your org can "
         "consume packages from the domain."
     ),
+    docs_note=(
+        "A wildcard-principal Allow on a CodeArtifact domain lets any "
+        "AWS account reach the domain's permissions surface. The "
+        "exact damage depends on the action set, but at minimum it "
+        "lets external accounts read package names and versions, "
+        "which is enough for typosquat-against-private-package "
+        "attacks. ``aws:PrincipalOrgID`` is the org-level rescue "
+        "without enumerating accounts."
+    ),
 )
 
 

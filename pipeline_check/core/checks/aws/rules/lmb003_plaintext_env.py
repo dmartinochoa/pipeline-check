@@ -18,6 +18,14 @@ RULE = Rule(
         "to anyone with ``lambda:GetFunctionConfiguration`` and persist in "
         "CloudTrail events, which keeps the secret in audit logs."
     ),
+    docs_note=(
+        "Lambda env vars are world-readable to any principal with "
+        "``lambda:GetFunctionConfiguration`` — much wider than the "
+        "principal that can invoke the function. They also persist "
+        "in CloudFormation drift, change-sets, and CloudTrail "
+        "events. A secret in a Lambda env var is essentially "
+        "exposed to anyone with read access to the account."
+    ),
 )
 
 

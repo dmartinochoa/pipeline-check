@@ -20,6 +20,13 @@ RULE = Rule(
         "tagged stages where the blast radius of an unreviewed deploy "
         "is largest."
     ),
+    docs_note=(
+        "The complement to CP-001: this rule fires only on stages "
+        "whose name contains ``prod`` / ``production`` / ``live``. "
+        "Even teams that intentionally skip approvals for dev / "
+        "staging deploys usually want a human in the loop for a "
+        "production-tagged target."
+    ),
 )
 
 _PROD_TOKENS = ("prod", "production", "live")

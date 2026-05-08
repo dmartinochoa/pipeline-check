@@ -16,6 +16,14 @@ RULE = Rule(
         "The default is 'Never Expire', which both racks up storage cost "
         "and keeps logs indefinitely past any compliance window."
     ),
+    docs_note=(
+        "CloudWatch Logs created by CodeBuild default to "
+        "``Never Expire`` retention. Build logs frequently echo "
+        "secrets accidentally (a `set -x` script, an `env` dump in "
+        "an error trace), so unbounded retention extends the "
+        "exposure window for every secret a build has ever leaked. "
+        "A short-but-finite retention also caps cost."
+    ),
 )
 
 

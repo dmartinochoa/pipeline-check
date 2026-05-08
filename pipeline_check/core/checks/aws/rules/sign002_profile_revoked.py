@@ -19,6 +19,14 @@ RULE = Rule(
         "revoked or canceled profile invalidates every signature it "
         "produced — lambdas relying on it will fail verification."
     ),
+    docs_note=(
+        "A revoked or canceled Signer profile invalidates every "
+        "signature it ever produced. Lambda functions configured "
+        "to enforce code-signing fail to deploy until the profile "
+        "is replaced (or, if ``UntrustedArtifactOnDeployment = "
+        "Warn``, deploy with a CloudWatch warning the operator "
+        "rarely reads)."
+    ),
 )
 
 

@@ -20,6 +20,16 @@ RULE = Rule(
         "``public:npmjs``/``public:pypi``. Unscoped public upstreams expose "
         "builds to dependency-confusion and typosquatting attacks."
     ),
+    docs_note=(
+        "An external connection to ``public:npmjs`` / ``public:pypi`` "
+        "/ ``public:nuget`` / ``public:maven-central`` fetches packages "
+        "from the public registry on first resolution. A typo-squat "
+        "(``request`` vs ``requests``) or a compromised upstream lands "
+        "in the cache the first time anyone names it; every subsequent "
+        "build pulls the cached substitute. The pull-through cache "
+        "with an allow-list is the same risk shape solved by an "
+        "explicit allowlist."
+    ),
 )
 
 _PUBLIC_PREFIXES = ("public:",)

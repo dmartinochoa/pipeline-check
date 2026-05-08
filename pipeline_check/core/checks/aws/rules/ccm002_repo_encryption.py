@@ -18,6 +18,13 @@ RULE = Rule(
         "a customer-managed KMS key. CodeCommit encryption is set at "
         "creation and cannot be changed afterwards."
     ),
+    docs_note=(
+        "Same shape as CA-001 / ECR-005 / S3 default encryption: the "
+        "AWS-owned default key keeps the key policy under AWS, "
+        "removing your ability to scope or audit Decrypt operations. "
+        "Source code in the repo deserves the same key-policy + "
+        "CloudTrail story you'd apply to artifacts in S3."
+    ),
 )
 
 

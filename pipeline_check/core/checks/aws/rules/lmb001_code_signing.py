@@ -20,6 +20,14 @@ RULE = Rule(
         "Without one, the Lambda runtime will execute any code that a "
         "principal with lambda:UpdateFunctionCode uploads."
     ),
+    docs_note=(
+        "Lambda code-signing config + a Signer profile (SIGN-001) "
+        "validates that an uploaded zip was signed by a known "
+        "profile before it's allowed to run. Without one, anyone "
+        "who reaches ``lambda:UpdateFunctionCode`` — a CI/CD role "
+        "compromise, a misattached IAM policy — can replace the "
+        "function's code with no chain-of-custody check."
+    ),
 )
 
 

@@ -17,6 +17,14 @@ RULE = Rule(
         "object so tampering by an attacker who also has S3 write access "
         "can be detected after the fact."
     ),
+    docs_note=(
+        "CloudTrail logs are S3 objects. Without log-file "
+        "validation, an attacker with ``s3:PutObject`` on the trail "
+        "bucket can edit log files to remove evidence of their "
+        "activity, and there's no digest to compare against. With "
+        "validation on, every hour of logs is summarized in a "
+        "signed digest file under ``CloudTrail-Digest/``."
+    ),
 )
 
 

@@ -18,6 +18,14 @@ RULE = Rule(
         "of one action (e.g. a build) gains the permissions the deploy "
         "stage also needs."
     ),
+    docs_note=(
+        "When stage actions don't set their own ``roleArn``, they "
+        "fall back to the pipeline-level role, which is the union "
+        "of every stage's needs. A compromise of any one stage "
+        "(typically the build, which runs untrusted code) gains "
+        "the deploy stage's authority — including production deploy "
+        "credentials. Per-action roles cap the radius."
+    ),
 )
 
 

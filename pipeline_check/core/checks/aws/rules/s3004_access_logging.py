@@ -18,6 +18,13 @@ RULE = Rule(
         "direct logs to a separate, centralised logging bucket with "
         "restricted write access."
     ),
+    docs_note=(
+        "S3 server access logging records every API operation "
+        "against the bucket — who, when, what object, what method. "
+        "CloudTrail data events overlap but cost more; access logs "
+        "are the cheap baseline. Without them, an exfiltration via "
+        "``GetObject`` doesn't leave a trail you can investigate."
+    ),
 )
 
 

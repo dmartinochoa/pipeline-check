@@ -23,6 +23,14 @@ RULE = Rule(
         "package-group ARNs. Wildcard action + wildcard resource is the "
         "classic over-broad grant that lets a consumer also publish."
     ),
+    docs_note=(
+        "``codeartifact:*`` on ``Resource: '*'`` collapses the entire "
+        "repository's authority into one grant: the holder can read, "
+        "write, delete, dispose, and re-publish every package. Even "
+        "for a service principal that nominally only consumes "
+        "packages, the grant lets a compromise of that consumer "
+        "rewrite every dependency the team relies on."
+    ),
 )
 
 

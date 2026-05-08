@@ -19,6 +19,14 @@ RULE = Rule(
         "Remove wildcard principals from the repository policy. Grant access "
         "only to specific AWS account IDs or IAM principals that require it."
     ),
+    docs_note=(
+        "A wildcard-principal repo policy means anyone on the "
+        "internet can pull images. Sometimes intentional (a "
+        "publicly-distributed base image), but should be a "
+        "deliberate exposure — typically via the ECR Public registry "
+        "rather than a private repo with a public policy. The "
+        "default for build-output images should never be public."
+    ),
 )
 
 

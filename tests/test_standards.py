@@ -275,6 +275,33 @@ def _all_rule_packs() -> list[str]:
     return out
 
 
+class TestEveryRuleHasDocsNote:
+    """Every rule must populate ``Rule.docs_note`` so ``--explain``
+    has a body to render in the [What it checks] section.
+
+    Pre-2026-05 history: the AWS rule pack shipped 58 rules with an
+    empty ``docs_note`` field — a migration artifact from the
+    class-based-to-rule-based refactor. ``pipeline_check --explain
+    IAM-001`` rendered the header + recommendation but no
+    threat-model body, leaving operators without the "why this
+    check matters" framing other packs always had."""
+
+    def test_every_rule_has_non_empty_docs_note(self):
+        from pipeline_check.core.checks.rule import discover_rules
+
+        missing: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if not rule.docs_note or not rule.docs_note.strip():
+                    missing.append(f"{rule.id} ({pack})")
+        assert not missing, (
+            f"{len(missing)} rules without ``docs_note``: "
+            f"{missing[:10]}{'…' if len(missing) > 10 else ''}. "
+            f"Add a 1-3 sentence docs_note explaining the threat "
+            f"model — distinct from the recommendation's how-to-fix."
+        )
+
+
 class TestEveryRuleHasOwaspMapping:
 
     def test_every_discovered_rule_appears_in_owasp_data_file(self):
