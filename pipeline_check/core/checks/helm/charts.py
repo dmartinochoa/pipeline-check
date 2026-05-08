@@ -1,0 +1,237 @@
+"""Per-chart metadata loaded straight from disk (not via ``helm template``).
+
+The render pipeline at :mod:`pipeline_check.core.checks.helm.render` runs
+``helm template`` and feeds the resulting Kubernetes YAML into the
+existing K8s rule pack. That is the right shape for "do my workloads
+follow K8s posture rules" but it discards the chart's own supply-chain
+surface — ``Chart.yaml`` (apiVersion, dependencies, repositories) and
+``Chart.lock`` (per-dependency digests) never appear in the rendered
+output. Helm-native rules need the raw chart files.
+
+This module reads ``Chart.yaml`` and ``Chart.lock`` from each chart
+directory and attaches them to the :class:`HelmContext` as
+:class:`Chart` records, alongside the rendered manifests. ``.tgz``
+charts are unpacked transparently by Helm at render time, but for the
+purposes of HELM-* rules we read their ``Chart.yaml`` straight from
+the archive — same metadata, no shell-out required.
+
+The parser is deliberately lenient: a chart whose ``Chart.yaml`` won't
+parse lands in ``ctx.warnings`` and is skipped, so a single broken
+chart in a multi-chart parent dir doesn't sink the whole scan.
+"""
+from __future__ import annotations
+
+import io
+import tarfile
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+@dataclass(frozen=True)
+class Chart:
+    """One Helm chart's on-disk metadata.
+
+    ``chart_yaml`` is the parsed ``Chart.yaml`` (always present —
+    a chart without one wouldn't have been picked up in the first
+    place). ``chart_lock`` is the parsed ``Chart.lock`` if present,
+    or ``None`` for charts that don't declare dependencies (and so
+    don't need a lock file). ``path`` is the on-disk location of the
+    chart directory or ``.tgz``; ``chart_yaml_path`` is the specific
+    ``Chart.yaml`` file used for the parse, which reporters can quote
+    in finding locations.
+    """
+
+    path: str
+    chart_yaml_path: str
+    chart_yaml: dict[str, Any]
+    chart_lock_path: str | None = None
+    chart_lock: dict[str, Any] | None = None
+    #: Free-form per-chart warnings captured during parse (e.g. a
+    #: ``Chart.lock`` that exists but won't parse). Surfaced through
+    #: the scanner's warning channel without aborting the scan.
+    parse_warnings: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def name(self) -> str:
+        n = self.chart_yaml.get("name")
+        return n if isinstance(n, str) and n.strip() else Path(self.path).name
+
+    @property
+    def api_version(self) -> str | None:
+        v = self.chart_yaml.get("apiVersion")
+        return v if isinstance(v, str) else None
+
+    @property
+    def dependencies(self) -> list[dict[str, Any]]:
+        """Parsed ``dependencies:`` list, or empty.
+
+        Helm 3 charts (``apiVersion: v2``) declare deps in
+        ``Chart.yaml`` directly. Helm 2 charts (``apiVersion: v1``)
+        used a sibling ``requirements.yaml``. We only read v2 deps
+        here — HELM-001 catches the v1 shape outright, so its
+        dependencies are intentionally not walked.
+        """
+        deps = self.chart_yaml.get("dependencies")
+        if not isinstance(deps, list):
+            return []
+        return [d for d in deps if isinstance(d, dict)]
+
+
+def parse_chart(path: str | Path) -> Chart | None:
+    """Read ``Chart.yaml`` (+ optional ``Chart.lock``) at *path*.
+
+    *path* is either a directory containing ``Chart.yaml`` or a
+    packaged ``.tgz``. Returns ``None`` (not a raise) for inputs
+    without a parseable ``Chart.yaml`` — caller decides whether to
+    warn or silently skip.
+    """
+    p = Path(path)
+    if p.is_file() and p.suffix.lower() == ".tgz":
+        return _parse_tgz(p)
+    if p.is_dir():
+        return _parse_dir(p)
+    return None
+
+
+def _parse_dir(chart_dir: Path) -> Chart | None:
+    chart_yaml_path = chart_dir / "Chart.yaml"
+    if not chart_yaml_path.is_file():
+        return None
+    warnings: list[str] = []
+    chart_yaml = _read_yaml(chart_yaml_path, warnings)
+    if chart_yaml is None:
+        return None
+
+    lock_path = chart_dir / "Chart.lock"
+    chart_lock: dict[str, Any] | None = None
+    chart_lock_path: str | None = None
+    if lock_path.is_file():
+        parsed = _read_yaml(lock_path, warnings)
+        if parsed is not None:
+            chart_lock = parsed
+            chart_lock_path = str(lock_path)
+
+    return Chart(
+        path=str(chart_dir),
+        chart_yaml_path=str(chart_yaml_path),
+        chart_yaml=chart_yaml,
+        chart_lock_path=chart_lock_path,
+        chart_lock=chart_lock,
+        parse_warnings=tuple(warnings),
+    )
+
+
+def _parse_tgz(tgz_path: Path) -> Chart | None:
+    """Read ``Chart.yaml`` / ``Chart.lock`` from a packaged chart.
+
+    ``helm package`` lays the archive out as
+    ``<chart-name>/Chart.yaml`` etc. — exactly one top-level directory.
+    We read only those two files; subchart archives nested under
+    ``<chart-name>/charts/`` are intentionally not walked here (their
+    metadata follows them when the parent is rendered, and HELM-*
+    rules score the parent chart's posture, not bundled subcharts).
+    """
+    warnings: list[str] = []
+    try:
+        with tarfile.open(tgz_path, mode="r:gz") as tar:
+            chart_yaml_member = _find_top_level(tar, "Chart.yaml")
+            if chart_yaml_member is None:
+                return None
+            chart_yaml = _yaml_from_tar(tar, chart_yaml_member, warnings)
+            if chart_yaml is None:
+                return None
+            lock_member = _find_top_level(tar, "Chart.lock")
+            chart_lock: dict[str, Any] | None = None
+            chart_lock_path: str | None = None
+            if lock_member is not None:
+                parsed = _yaml_from_tar(tar, lock_member, warnings)
+                if parsed is not None:
+                    chart_lock = parsed
+                    chart_lock_path = (
+                        f"{tgz_path}!{lock_member.name}"
+                    )
+    except (tarfile.TarError, OSError) as exc:
+        warnings.append(f"{tgz_path}: tar read error: {exc}")
+        return None
+
+    return Chart(
+        path=str(tgz_path),
+        chart_yaml_path=f"{tgz_path}!{chart_yaml_member.name}",
+        chart_yaml=chart_yaml,
+        chart_lock_path=chart_lock_path,
+        chart_lock=chart_lock,
+        parse_warnings=tuple(warnings),
+    )
+
+
+def _find_top_level(
+    tar: tarfile.TarFile, leaf: str,
+) -> tarfile.TarInfo | None:
+    """Return ``<top-dir>/<leaf>`` from the archive, if present.
+
+    A packaged chart's archive has exactly one top-level directory.
+    We don't enforce that — just return the first match for
+    ``*/<leaf>`` whose path has exactly two components.
+    """
+    for member in tar.getmembers():
+        if not member.isfile():
+            continue
+        parts = member.name.split("/")
+        if len(parts) == 2 and parts[1] == leaf:
+            return member
+    return None
+
+
+def _yaml_from_tar(
+    tar: tarfile.TarFile,
+    member: tarfile.TarInfo,
+    warnings: list[str],
+) -> dict[str, Any] | None:
+    try:
+        fobj = tar.extractfile(member)
+        if fobj is None:
+            return None
+        raw = fobj.read()
+    except (KeyError, OSError) as exc:
+        warnings.append(f"{member.name}: read error: {exc}")
+        return None
+    return _parse_yaml_text(member.name, raw, warnings)
+
+
+def _read_yaml(
+    path: Path, warnings: list[str],
+) -> dict[str, Any] | None:
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        warnings.append(f"{path}: read error: {exc}")
+        return None
+    return _parse_yaml_text(str(path), raw, warnings)
+
+
+def _parse_yaml_text(
+    label: str, raw: bytes | str, warnings: list[str],
+) -> dict[str, Any] | None:
+    text = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else raw
+    try:
+        doc = yaml.safe_load(io.StringIO(text))
+    except yaml.YAMLError as exc:
+        first = str(exc).split("\n", 1)[0]
+        warnings.append(f"{label}: YAML parse error: {first}")
+        return None
+    if doc is None:
+        # Empty Chart.lock or Chart.yaml — treat as parseable-but-empty.
+        return {}
+    if not isinstance(doc, dict):
+        warnings.append(
+            f"{label}: expected a YAML mapping at the top level, "
+            f"got {type(doc).__name__}"
+        )
+        return None
+    return doc
+
+
+__all__ = ["Chart", "parse_chart"]

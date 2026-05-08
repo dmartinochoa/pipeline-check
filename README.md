@@ -95,7 +95,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
-| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result. Requires `helm` (Helm 3) on PATH. |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result, plus 3 chart-supply-chain rules (`HELM-001`--`003`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -103,9 +103,11 @@ security, package integrity, timeout enforcement, vulnerability scanning, TLS
 verification, and more. The Kubernetes provider focuses on workload posture
 (image digest pinning, securityContext, hostPath / host-namespace exposure,
 RBAC blast radius, Secret hygiene). The Helm provider renders charts via
-`helm template` and runs the Kubernetes rule pack on the result, so today's
-K8S-* rules apply to chart-deployed workloads without duplication. See
-[docs/providers/](docs/providers/) for the full per-check reference.
+`helm template` and runs the Kubernetes rule pack on the result, plus three
+chart-supply-chain rules (`HELM-001`--`003`: legacy `apiVersion: v1`,
+missing `Chart.lock` digests, non-HTTPS dependency repositories) read
+straight off the on-disk chart files. See [docs/providers/](docs/providers/)
+for the full per-check reference.
 
 ---
 

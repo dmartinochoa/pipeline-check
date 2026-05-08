@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Helm-native rules (`HELM-001` / `HELM-002` / `HELM-003`).** The
+  Helm provider now scores the chart's own packaging metadata
+  alongside the rendered K8s manifests. `HELM-001` flags the legacy
+  `apiVersion: v1` chart format (MEDIUM); `HELM-002` flags a `v2`
+  chart that declares `dependencies:` but ships no `Chart.lock`,
+  ships a lock missing entries, or ships entries without a
+  `sha256:` digest (HIGH); `HELM-003` flags
+  `dependencies[].repository` values on non-HTTPS schemes (HIGH;
+  `https://`, `oci://`, `file://`, and local `@alias` repos pass).
+  Implementation: a new ``parse_chart()`` reads ``Chart.yaml`` /
+  ``Chart.lock`` from each chart directory (or ``.tgz``) and
+  attaches a ``Chart`` record per chart to ``HelmContext.charts``;
+  a new ``HelmChartChecks`` orchestrator runs the rules against
+  that view. The K8s rule pack still iterates ``ctx.manifests``
+  unchanged, so the two passes coexist without overlap. Provider
+  catalog: 0 native to 3 native.
+
 ### Fixed
 
 - **Helm e2e test now skips on a flaky probe instead of failing.**

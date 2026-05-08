@@ -51,6 +51,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.jenkins.rules",
     "pipeline_check.core.checks.circleci.rules",
     "pipeline_check.core.checks.aws.rules",
+    "pipeline_check.core.checks.helm.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.

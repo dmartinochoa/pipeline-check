@@ -371,6 +371,10 @@ STANDARD = Standard(
         "K8S-028":  ["CICD-SEC-7"],   # container hostPort
         "K8S-029":  ["CICD-SEC-2", "CICD-SEC-5"],  # default-SA binding
         "K8S-030":  ["CICD-SEC-7"],   # control-plane scheduling
+        # Helm chart-supply-chain
+        "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
+        "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests
+        "HELM-003": ["CICD-SEC-3"],   # non-HTTPS dep repository
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER

@@ -2,18 +2,20 @@
 
 Renders Helm charts via `helm template` and runs the [Kubernetes
 provider's](kubernetes.md) 30-rule pack against the resulting
-manifests. The value is coverage: most production Kubernetes ships
-through Helm, so a chart-aware front-end means today's K8S-* rules
-finally see the bulk of real workloads instead of the hand-written
-manifests that happen to land in `k8s/`.
+manifests, plus a small chart-supply-chain rule pack
+(`HELM-001`--`003`) that reads `Chart.yaml` and `Chart.lock`
+straight off disk. The K8s pass scores rendered workloads
+(securityContext, hostPath, RBAC, …); the HELM pass scores the
+chart's own posture (legacy schema, lockfile drift, plaintext
+dependency repos).
 
-The provider is intentionally thin. There are no HELM-* rules of
-its own (yet); the K8s rule pack does all the scoring. Findings are
-identical in shape to a kubernetes-provider scan, with one
-addition: the source-template path (e.g.
-`mychart/templates/deployment.yaml`) is preserved on each manifest
-so a "privileged container" finding points at the actual template
-file, not the rendered output.
+Most production Kubernetes ships through Helm, so a chart-aware
+front-end means today's K8S-* rules finally see the bulk of real
+workloads instead of the hand-written manifests that happen to land
+in `k8s/`. Findings from the K8s pass carry the source-template path
+(e.g. `mychart/templates/deployment.yaml`) so a "privileged
+container" finding points at the actual template file, not the
+rendered output.
 
 ## Requirements
 
@@ -69,15 +71,49 @@ scanning.
 
 ## What it covers
 
+### Rendered-manifest rules (30)
+
 The same 30 K8S-* rules listed on the [Kubernetes provider
 page](kubernetes.md). Every one of them — `securityContext`,
 `hostPath`, RBAC blast radius, Secret hygiene, control-plane
-scheduling — applies to rendered chart output identically.
+scheduling — applies to rendered chart output identically. The
+rules see the manifest output of `helm template`, so values-driven
+toggles and conditional templates are scored as they would actually
+deploy.
 
-There are no Helm-native rules in this release. Chart-supply-chain
-checks (chart `apiVersion: v1` legacy format, missing `Chart.lock`
-digests, non-HTTPS dependency repos) are scoped for a follow-up
-release.
+### Chart-supply-chain rules (3)
+
+Three rules score the chart's own packaging metadata, read straight
+off `Chart.yaml` / `Chart.lock` rather than the rendered output:
+
+- **HELM-001 — Legacy `apiVersion: v1`** (MEDIUM). v1 is Helm 2's
+  chart format. Helm 3 still renders it but the shape predates
+  `Chart.lock` and inlined dependencies, so HELM-002 can't get
+  traction until the chart is bumped to `v2`. Fix by editing
+  `Chart.yaml` and re-running `helm dependency update` to
+  regenerate the lock against the new shape.
+- **HELM-002 — Missing or incomplete `Chart.lock`** (HIGH). A
+  `v2` chart that declares `dependencies:` but ships no
+  `Chart.lock`, ships a lock missing entries the manifest declares,
+  or ships entries without a `sha256:` digest. Each of those leaves
+  `helm dependency build` free to pull a different tarball under
+  the same version. Fix by re-running `helm dependency update`
+  after every change to `dependencies:` and committing the
+  regenerated lock.
+- **HELM-003 — Non-HTTPS dependency repository** (HIGH). Walks
+  `dependencies[].repository` and rejects `http://`, `git://`,
+  `ftp://`, and other plaintext schemes. Accepted shapes are
+  `https://` (chart-museum / OSS chart repos), `oci://` (registry-
+  hosted charts pulled over TLS), `file://` (in-repo dependency),
+  and `@alias` (a local `helm repo add`-registered name). Plaintext
+  fetch lets any on-path attacker swap the dependency tarball
+  before HELM-002's digest catches it on the *next* update.
+
+These rules ride on the same `Chart` records the provider parses
+once at scan start, so they don't pay the helm-render cost a second
+time. They run regardless of whether the rendered manifests scored
+clean — a chart can have a perfect `securityContext` posture and
+still ship a v1 schema or an unlocked dependency.
 
 ## What it can't see
 
