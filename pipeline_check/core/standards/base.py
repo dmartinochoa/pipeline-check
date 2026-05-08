@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ControlRef:
     """A reference to a single control within a named standard.
 
@@ -31,7 +31,7 @@ class ControlRef:
         return f"{self.control_id}: {self.control_title}"
 
 
-@dataclass
+@dataclass(slots=True)
 class Standard:
     """A compliance standard plus its mapping to this scanner's check IDs."""
 

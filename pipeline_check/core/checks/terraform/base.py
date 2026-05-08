@@ -22,7 +22,7 @@ from typing import Any
 from ..base import BaseCheck
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TerraformResource:
     """A single resource extracted from a Terraform plan JSON document."""
 

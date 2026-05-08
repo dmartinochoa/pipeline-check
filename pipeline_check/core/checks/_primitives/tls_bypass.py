@@ -92,7 +92,7 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
 # ── Public API ───────────────────────────────────────────────────
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TlsBypassFinding:
     """A single TLS / host-key verification bypass hit."""
 

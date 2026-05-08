@@ -25,7 +25,7 @@ _TOPLEVEL_KEYWORDS: set[str] = {
 }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pipeline:
     """A parsed GitLab CI document."""
 

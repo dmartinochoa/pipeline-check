@@ -18,7 +18,7 @@ from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck, Location
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Workflow:
     """A parsed GitHub Actions workflow document.
 

@@ -66,7 +66,7 @@ class CustomRuleError(ValueError):
     """Raised when a custom-rule file fails validation."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CompiledCustomRule:
     """A loaded custom rule, ready to plug into a provider orchestrator."""
 
@@ -77,7 +77,7 @@ class CompiledCustomRule:
     source: str
 
 
-@dataclass
+@dataclass(slots=True)
 class LoadedCustomRules:
     """Aggregated load result, grouped by provider."""
 

@@ -93,7 +93,7 @@ _CMDSUB_BARE_VAR_RE = re.compile(
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ShellEvalFinding:
     """A single risky-idiom hit with enough context to show in a finding."""
 

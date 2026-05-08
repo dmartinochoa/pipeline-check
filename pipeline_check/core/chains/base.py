@@ -8,7 +8,7 @@ from typing import Any
 from ..checks.base import Confidence, Finding, Severity
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ChainRule:
     """Static metadata for an attack-chain detector.
 
@@ -37,7 +37,7 @@ class ChainRule:
     providers: tuple[str, ...] = ()
 
 
-@dataclass
+@dataclass(slots=True)
 class Chain:
     """An attack-chain instance — a concrete correlation of findings.
 

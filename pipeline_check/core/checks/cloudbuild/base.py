@@ -54,7 +54,7 @@ _TOPLEVEL_KEYWORDS: set[str] = {
 }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pipeline:
     """A parsed Cloud Build YAML document."""
 

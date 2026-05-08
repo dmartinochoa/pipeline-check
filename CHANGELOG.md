@@ -261,6 +261,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   unchanged, so the two passes coexist without overlap. Provider
   catalog: 0 native to 3 native.
 
+### Changed
+
+- **Every ``@dataclass`` now uses ``slots=True``.** All 45
+  dataclass declarations under ``pipeline_check/`` were converted
+  in one sweep — high-fan-out hot types (``Finding``, ``Location``,
+  ``Manifest``, ``Chain``, ``Component``, ``Instruction``,
+  ``Chart``, ``UsesRef``, ``ControlRef``) and the lower-volume
+  context / config types (``DockerfileContext``, ``HelmContext``'s
+  inputs, ``ScanMetadata``, gate ``GateOutcome``, etc.). ``slots``
+  removes the per-instance ``__dict__`` allocation and replaces
+  attribute lookup with a fixed offset descriptor, which matters
+  on a real scan where ``Finding`` is instantiated 10k+ times. No
+  behavior change; ``frozen=True`` is preserved where it was set;
+  ``field(default_factory=...)`` defaults still work; the public
+  ``Finding`` / ``Location`` / ``Chain`` / ``ControlRef`` API
+  surface (constructors, ``to_dict``, attribute reads) is
+  unchanged. Verified by running the full 3791-test suite plus
+  strict mypy across all 573 source files; no regressions.
+
 ### Fixed
 
 - **Reporter output gaps caught by a release-readiness audit.**

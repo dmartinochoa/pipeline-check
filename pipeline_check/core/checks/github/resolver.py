@@ -279,7 +279,7 @@ def default_cache_dir() -> Path:
 # ── Resolver ─────────────────────────────────────────────────────────
 
 
-@dataclass
+@dataclass(slots=True)
 class _Pending:
     """Internal queue item: a ref to fetch, with its provenance."""
 
@@ -291,7 +291,7 @@ class _Pending:
     depth: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ResolverStats:
     """Counts surfaced through the context's warnings stream."""
 

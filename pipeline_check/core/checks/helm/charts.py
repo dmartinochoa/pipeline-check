@@ -30,7 +30,7 @@ from typing import Any
 import yaml
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Chart:
     """One Helm chart's on-disk metadata.
 

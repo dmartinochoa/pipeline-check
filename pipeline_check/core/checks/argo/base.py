@@ -31,7 +31,7 @@ ARGO_KINDS: frozenset[str] = frozenset({
 })
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ArgoDoc:
     """One parsed Argo Workflows API document."""
 
