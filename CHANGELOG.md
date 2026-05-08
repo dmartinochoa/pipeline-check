@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Two cross-provider attack chains (`AC-018` / `AC-019`).**
+  ``AC-018`` "Unpinned action lands on deploy job with no
+  environment gate" fires when ``GHA-001`` (action pinned by tag /
+  branch rather than commit SHA) and ``GHA-014`` (deploy job
+  missing ``environment:`` binding) co-occur on the same workflow
+  — the supply-chain leg lets a compromised upstream maintainer
+  re-tag a malicious release, and the deploy-stage leg ships it
+  to production without a required-reviewer pause. Severity
+  CRITICAL. MITRE T1195.002 + T1098.003 + T1556. Mirrors the
+  AC-009 ``group_by_resource`` shape so the chain only triggers
+  when both legs land on the *same* workflow file. ``AC-019``
+  "Lambda env-secret meets a CI/CD role with PassRole *" fires
+  when ``LMB-003`` (Lambda env carrying a credential-shaped
+  literal) and ``IAM-004`` (CI/CD role with ``iam:PassRole`` on
+  ``Resource: '*'``) both trip in the same scan. The first leg is
+  a credential leak readable to anyone with
+  ``lambda:GetFunctionConfiguration`` (a much wider audience than
+  the principal that can invoke the function); the second turns
+  the leaked credential into a role-hop primitive against any IAM
+  role in the account. Severity CRITICAL. MITRE T1552.001 +
+  T1098.003 + T1078.004. Catalog: 17 chains to 19. 12 new tests
+  in ``tests/test_attack_chains.py``; ``docs/attack_chains.md``
+  regenerated; README headline 17 to 19 chains.
 - **Line-precision retrofit, fourth batch — five more rules.**
   ``GHA-013`` (issue_comment trigger without author guard) — anchors
   on the workflow's ``on:`` block. ``K8S-026`` (LoadBalancer Service

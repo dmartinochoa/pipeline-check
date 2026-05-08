@@ -534,5 +534,57 @@ Close either leg to break the chain. On the GitHub side: the cache key must be d
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-018 — Unpinned action lands on deploy job with no environment gate { #ac-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A workflow uses a third-party action pinned by tag rather than commit SHA (GHA-001) AND its deploy job has no ``environment:`` binding (GHA-014). A compromise of the upstream action maintainer's account — or a malicious release re-tagged under the existing version — runs in the deploy job's context without a required-reviewer gate, shipping attacker-controlled code to production on the next workflow trigger.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/managing-environments-for-deployment>
+- <https://www.stepsecurity.io/blog/popular-github-action-tj-actions-changed-files-is-compromised>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every third-party action to a 40-char commit SHA (``actions/checkout@<sha> # v4.1.0``) and put deploy jobs behind a GitHub Environment that requires reviewer approval and restricts deployment branches. Either fix alone breaks the chain — the SHA pin removes the supply-chain leg, the environment gate removes the unattended-deploy leg. Best is both, plus a deployment-branch restriction so only ``main`` / ``release/*`` can reach the gated environment.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-019 — Lambda env-secret meets a CI/CD role with PassRole * { #ac-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">credential-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A Lambda function holds a credential-shaped literal in its env vars (LMB-003) AND a CI/CD service role in the same account grants ``iam:PassRole`` with ``Resource: '*'`` (IAM-004). The first leak gives any read-account principal the credential; the second turns that credential into a role-hop primitive against any IAM role in the account.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+- <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>
+- <https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-encryption>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg. On the Lambda side: move every env-var credential into Secrets Manager or SSM SecureString and fetch it at function init; the env vars then carry only the secret's ARN, not the value. On the IAM side: scope ``iam:PassRole`` with ``Resource: <specific-role-ARNs>`` and add an ``iam:PassedToService`` condition. The credential leak is its own compliance failure; the PassRole wildcard is its own; the chain stops being a chain when either is fixed.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->
