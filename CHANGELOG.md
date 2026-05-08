@@ -31,6 +31,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **`--explain` now resolves IDs from every rule pack.** The
+  registry in ``pipeline_check.core.explain`` was only walking seven
+  rule packages (github / gitlab / bitbucket / azure / jenkins /
+  circleci / aws), so ``pipeline_check --explain K8S-001`` (and
+  every Dockerfile, Cloud Build, Buildkite, Tekton, Argo ID) wrote
+  ``Unknown check ID`` even though the rule modules ship full
+  metadata. Added the missing six packs to ``_RULE_PACKAGES`` and a
+  pair of regression tests in ``tests/test_cli_explain.py``: one
+  walks the filesystem to enumerate every ``rules/`` directory and
+  asserts each is registered, the other walks every discovered rule
+  and asserts ``render(rule.id)`` exits 0 with the title in the body.
+  A future contributor adding a new rule pack without updating
+  ``_RULE_PACKAGES`` trips both at CI time.
+
 - **Helm e2e test now skips on a flaky probe instead of failing.**
   GitHub-hosted Windows runners ship a chocolatey-shimmed
   ``helm.exe`` whose ``helm version --short`` invocation

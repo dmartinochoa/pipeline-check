@@ -42,7 +42,11 @@ class _CheckMeta:
     docstring: str = ""
 
 
-# Rule-based packages: ``Rule`` metadata fully populated.
+# Rule-based packages: ``Rule`` metadata fully populated. Every
+# provider whose checks live under ``<provider>/rules/`` belongs
+# here — the regression test in ``tests/test_cli_explain.py``
+# asserts that every discovered rule across these packs renders
+# successfully, so a missing entry is caught at CI time.
 _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.github.rules",
     "pipeline_check.core.checks.gitlab.rules",
@@ -51,6 +55,12 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.jenkins.rules",
     "pipeline_check.core.checks.circleci.rules",
     "pipeline_check.core.checks.aws.rules",
+    "pipeline_check.core.checks.cloudbuild.rules",
+    "pipeline_check.core.checks.buildkite.rules",
+    "pipeline_check.core.checks.tekton.rules",
+    "pipeline_check.core.checks.argo.rules",
+    "pipeline_check.core.checks.dockerfile.rules",
+    "pipeline_check.core.checks.kubernetes.rules",
     "pipeline_check.core.checks.helm.rules",
 )
 
