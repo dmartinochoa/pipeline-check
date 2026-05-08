@@ -158,6 +158,10 @@ STANDARD = Standard(
         "TKN-006":  ["2.2.2"],                     # no timeout
         "TKN-007":  ["2.4.3"],                     # default SA
         "TKN-008":  ["1.4.1", "3.1.5"],            # remote install / TLS
+        "TKN-009":  ["4.1.1"],                     # artifact signing
+        "TKN-010":  ["4.4.1"],                     # SBOM
+        "TKN-011":  ["4.1.1", "4.4.1"],            # SLSA provenance
+        "TKN-012":  ["1.4.1", "3.1.3"],            # vuln scanning
         # ── Argo Workflows ────────────────────────────────────────
         "ARGO-001": ["1.4.1", "3.1.3"],            # template image not pinned
         "ARGO-002": ["2.1.3"],                     # template privileged

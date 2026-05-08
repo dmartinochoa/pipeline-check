@@ -447,6 +447,11 @@ STANDARD = Standard(
         "TKN-006":  ["CICD-SEC-9"],   # no explicit timeout
         "TKN-007":  ["CICD-SEC-2"],   # default ServiceAccount
         "TKN-008":  ["CICD-SEC-3"],   # remote install / TLS bypass
+        "TKN-009":  ["CICD-SEC-9"],   # artifacts not signed
+        "TKN-010":  ["CICD-SEC-9"],   # SBOM not generated
+        "TKN-011":  ["CICD-SEC-9"],   # SLSA provenance not produced
+        "TKN-012":  ["CICD-SEC-9"],   # no vulnerability scanning
+        "TKN-013":  ["CICD-SEC-5"],   # sidecar privileged / root
         # Argo Workflows
         "ARGO-001": ["CICD-SEC-3"],   # template image not digest-pinned
         "ARGO-002": ["CICD-SEC-5"],   # template privileged / root

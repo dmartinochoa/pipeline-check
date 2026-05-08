@@ -258,5 +258,14 @@ STANDARD = Standard(
         "K8S-017":  ["4.1.4"],
         "K8S-018":  ["4.1.4"],
         "K8S-022":  ["4.4.4"],
+        # Tekton — Tekton runs as Kubernetes-native pipeline kinds, so
+        # the same runtime-hardening controls apply. Supply-chain
+        # rules (TKN-009..012 signing/SBOM/provenance/vuln-scan) live
+        # outside 800-190's scope and aren't mapped here.
+        "TKN-001":  ["4.1.5"],
+        "TKN-002":  ["4.1.2", "4.4.4"],
+        "TKN-004":  ["4.4.4"],
+        "TKN-005":  ["4.1.4"],
+        "TKN-013":  ["4.1.2", "4.4.4"],
     },
 )

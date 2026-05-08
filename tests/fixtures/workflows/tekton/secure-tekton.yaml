@@ -30,12 +30,21 @@ spec:
         # TKN-003 / TKN-008: param received via env, referenced quoted.
         - name: REF
           value: $(params.ref)
+      # TKN-009 / TKN-010 / TKN-011 / TKN-012: this Task builds an
+      # image, then signs it, generates an SBOM, attests provenance,
+      # and scans for vulnerabilities before pushing.
       script: |
         set -e
         echo "Building $REF"
         curl -fsSLO https://example.com/install.sh
         sha256sum -c install.sh.sha256
         bash install.sh
+        docker build -t internal/app:$REF .
+        trivy image --severity HIGH,CRITICAL --exit-code 1 internal/app:$REF
+        syft internal/app:$REF -o cyclonedx-json > sbom.json
+        cosign sign --yes internal/app:$REF
+        cosign attest --predicate provenance.json --type slsaprovenance internal/app:$REF
+        docker push internal/app:$REF
 ---
 apiVersion: tekton.dev/v1
 kind: PipelineRun

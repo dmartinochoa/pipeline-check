@@ -260,6 +260,11 @@ STANDARD = Standard(
         "TKN-006":  ["AU-2", "SI-2"],                    # no timeout
         "TKN-007":  ["AC-2", "AC-6"],                    # default ServiceAccount
         "TKN-008":  ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
+        "TKN-009":  ["SI-7", "SR-4"],                    # artifacts not signed
+        "TKN-010":  ["SR-4", "CM-8"],                    # no SBOM
+        "TKN-011":  ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "TKN-012":  ["RA-5", "SI-2"],                    # no vuln scanning
+        "TKN-013":  ["AC-6", "CM-7"],                    # sidecar privileged
         # Argo Workflows
         "ARGO-001": ["SR-3", "SR-11", "SI-2"],           # template image not pinned
         "ARGO-002": ["AC-6", "CM-7"],                    # template privileged

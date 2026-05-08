@@ -295,6 +295,11 @@ STANDARD = Standard(
         "TKN-006":  ["ESF-D-BUILD-TIMEOUT"],                       # no timeout
         "TKN-007":  ["ESF-C-LEAST-PRIV"],                          # default SA
         "TKN-008":  ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
+        "TKN-009":  ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "TKN-010":  ["ESF-D-SBOM"],                                # SBOM
+        "TKN-011":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "TKN-012":  ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "TKN-013":  ["ESF-D-RUNTIME-HARDENING"],                   # sidecar privileged
         # ── Argo Workflows ────────────────────────────────────────
         "ARGO-001": ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # template image not pinned
         "ARGO-002": ["ESF-D-PRIV-BUILD"],                          # template privileged

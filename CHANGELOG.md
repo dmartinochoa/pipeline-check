@@ -12,6 +12,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Five new Tekton rules (`TKN-009`..`TKN-013`).** Closes the
+  obvious posture gaps in the Tekton pack — it shipped at 8 rules
+  while every CI provider averaged 30+. ``TKN-009`` fires when a
+  Task / ClusterTask produces deployable artifacts (``docker
+  build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.)
+  but invokes no signing tool (cosign / sigstore / slsa-framework
+  / notation), reusing the shared signing-token catalog
+  (MEDIUM). ``TKN-010`` fires when an artifact-producing Task
+  has no SBOM step (syft / cyclonedx / cdxgen / spdx-tools)
+  (MEDIUM). ``TKN-011`` fires when an artifact-producing Task
+  emits no SLSA provenance attestation (``slsa-framework`` /
+  ``cosign attest`` / ``in-toto`` / ``witness run``); Tekton
+  Chains is the Tekton-native answer for cluster-side
+  enforcement (MEDIUM). ``TKN-012`` fires when no vulnerability
+  scanner runs across any Task / Pipeline / *Run document
+  (trivy / grype / snyk / npm-audit / pip-audit / osv-scanner /
+  semgrep / checkov / tfsec) (MEDIUM). ``TKN-013`` closes a real
+  bypass: ``TKN-002`` already hardens ``spec.steps``, but
+  ``spec.sidecars`` (which run alongside steps in the same pod)
+  was uncovered, so a privileged ``docker:dind`` sidecar would
+  cancel the protection of every hardened step in the same Task
+  (HIGH; same precedence as TKN-002). TKN-009..011 scope to
+  Task / ClusterTask kinds because PipelineRun / TaskRun would
+  otherwise false-positive on a "deploy"-shaped reference name.
+  Provider catalog: 8 to 13 tekton rules. 16 new per-rule tests
+  in ``tests/tekton/test_rules.py``; OWASP / NIST 800-53 / NIST
+  800-190 / SLSA / OpenSSF Scorecard / ESF / CIS supply chain
+  mappings added; README + ``docs/index.md`` provider listings
+  + tekton.md provider doc regenerated; insecure / secure
+  fixtures extended to exercise / pass every new rule.
 - **Five new Buildkite rules (`BK-009`..`BK-013`).** Closes the
   obvious posture gaps in the Buildkite pack — it shipped at 8
   rules while every other CI provider averaged 30+. ``BK-009``

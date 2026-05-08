@@ -202,6 +202,10 @@ STANDARD = Standard(
         "TKN-006":  ["Build.L3.Ephemeral"],                        # no timeout
         "TKN-007":  ["Build.L3.NonFalsifiable"],                   # default ServiceAccount
         "TKN-008":  ["Build.L3.Isolated"],                         # remote install / TLS bypass
+        "TKN-009":  ["Build.L2.Signed"],                           # artifact signing
+        "TKN-010":  ["Build.L1.Provenance"],                       # SBOM
+        "TKN-011":  ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
         # ── Argo Workflows ────────────────────────────────────────
         "ARGO-001": ["Build.L3.NonFalsifiable"],                   # template image not digest-pinned
         "ARGO-002": ["Build.L3.Isolated"],                         # template privileged / root

@@ -283,6 +283,10 @@ STANDARD = Standard(
         "TKN-005":  ["Token-Permissions"],                             # leaked creds
         "TKN-007":  ["Token-Permissions"],                             # default SA
         "TKN-008":  ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
+        "TKN-009":  ["Signed-Releases"],                               # artifact signing
+        "TKN-010":  ["SBOM"],                                          # SBOM
+        "TKN-011":  ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "TKN-012":  ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Argo Workflows ───────────────────────────────────────────
         "ARGO-001": ["Pinned-Dependencies"],                           # template image not pinned
         "ARGO-002": ["Dangerous-Workflow"],                            # template privileged
