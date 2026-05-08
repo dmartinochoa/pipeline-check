@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Two cross-provider attack chains (`AC-016` / `AC-017`).**
+  ``AC-016`` "OIDC role drift" fires when ``GHA-030`` (job uses
+  OIDC ``id-token: write`` without an ``environment:`` gate) and
+  ``IAM-002`` (CI/CD role has wildcard ``Action`` in attached
+  policy) both trip in the same scan — the GitHub side leaves the
+  token-mint ungated against fork PRs, the AWS side gives the
+  assumed role unbounded authority, and the OIDC pattern's
+  short-lived-key promise loses its tight-scope half. MITRE
+  T1078.004 + T1556. ``AC-017`` "Build cache poisoning to mutable
+  ECR tag" fires when ``GHA-011`` (cache key derived from
+  attacker-controllable input) and ``ECR-002`` (image tag
+  mutability not enforced) both trip — a fork-PR-driven cache
+  poisoning lands on the next default-branch build, which pushes
+  to a mutable tag every consumer pulls by name. MITRE T1195.001
+  + T1546. Catalog: 15 chains to 17.
 - **`docs_note` backfill across the AWS rule pack.** 58 of 363
   rules — every AWS-pack rule across CA / CB / CCM / CD / CP / CT
   / CW / CWL / EB / ECR / IAM / KMS / LMB / PBAC / S3 / SIGN / SM /

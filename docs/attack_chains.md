@@ -482,5 +482,57 @@ Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism i
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-016 — OIDC role drift: ungated GitHub trust meets wildcard AWS authority { #ac-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow requests an OIDC token without an ``environment:`` gate (GHA-030) AND the AWS IAM role it assumes carries a wildcard ``Action`` (IAM-002). Together, any branch — including a fork PR if the workflow is fork-runnable — can mint a token that maps to a role with broad authority over the account.
+
+**References**
+
+- <https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/managing-environments-for-deployment>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg to break the chain. On the GitHub side: require an ``environment:`` key on every job that uses ``id-token: write``, and configure that environment with required reviewers + deployment-branch restrictions. On the AWS side: scope the role's policies to specific actions and resources — replace ``Action: '*'`` with the narrow set the workflow actually needs. Best is both: environment gate + least-privilege role + a ``token.actions.githubusercontent.com:sub`` condition in the role's trust policy that names the specific repo/ref.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### AC-017 — Build cache poisoning that lands on a mutable ECR tag { #ac-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> persistence -> impact</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow's cache key derives from attacker-controllable input (GHA-011) AND the ECR repository it pushes to has mutable image tags (ECR-002). A fork-PR-driven cache poisoning lands compiled artifacts on the cache; the next default-branch build restores them and pushes the resulting image under a tag that consumers pull by name, replacing the previous content for every downstream deployment.
+
+**References**
+
+- <https://adnanthekhan.com/2024/05/06/the-monsters-in-your-build-cache-github-actions-cache-poisoning/>
+- <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html>
+- <https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg to break the chain. On the GitHub side: the cache key must be deterministic from the build's own inputs (lockfile hash, source-tree hash) — never from PR-controlled context (``github.head_ref``, ``github.event.*.title``, etc.). On the AWS side: set ``imageTagMutability=IMMUTABLE`` on the ECR repository and reference images by digest in deployment manifests. Best is both: deterministic cache keys + immutable tags + digest-pinned consumers.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

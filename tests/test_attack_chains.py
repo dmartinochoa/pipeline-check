@@ -99,7 +99,8 @@ class TestEngine:
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
             "AC-009", "AC-010", "AC-011", "AC-012",
-            "AC-013", "AC-014", "AC-015",
+            "AC-013", "AC-014", "AC-015", "AC-016",
+            "AC-017",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -621,6 +622,95 @@ class TestChainAC015:
         ])
         chain = next(c for c in out if c.chain_id == "AC-015")
         assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC016:
+    """AC-016 — OIDC role drift: ungated GitHub trust + wildcard AWS authority."""
+
+    WF = ".github/workflows/release.yml"
+    ROLE = "arn:aws:iam::123456789012:role/ci-deploy"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("IAM-002", self.ROLE),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        assert ac16[0].severity is Severity.CRITICAL
+        assert set(ac16[0].triggering_check_ids) == {"GHA-030", "IAM-002"}
+        assert "T1078.004" in ac16[0].mitre_attack
+        assert "T1556" in ac16[0].mitre_attack
+
+    def test_does_not_fire_without_gha030(self):
+        # IAM wildcard is bad on its own; this chain is specifically
+        # about the OIDC trust-side gap that lets fork PRs reach it.
+        out = chains_pkg.evaluate([_f("IAM-002", self.ROLE)])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_does_not_fire_without_iam002(self):
+        out = chains_pkg.evaluate([_f("GHA-030", self.WF)])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, passed=True),
+            _f("IAM-002", self.ROLE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("IAM-002", self.ROLE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-016")
+        assert "credential-access" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+
+class TestChainAC017:
+    """AC-017 — Build cache poisoning that lands on a mutable ECR tag."""
+
+    WF = ".github/workflows/release.yml"
+    REPO = "myapp"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF),
+            _f("ECR-002", self.REPO),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        assert ac17[0].severity is Severity.HIGH
+        assert set(ac17[0].triggering_check_ids) == {"GHA-011", "ECR-002"}
+        # T1195.001 is the supply-chain dependency-compromise leg.
+        assert "T1195.001" in ac17[0].mitre_attack
+
+    def test_does_not_fire_without_gha011(self):
+        # Mutable ECR tags alone are a posture issue but the chain
+        # is about the cache-poisoned-build feeding them.
+        out = chains_pkg.evaluate([_f("ECR-002", self.REPO)])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_does_not_fire_without_ecr002(self):
+        out = chains_pkg.evaluate([_f("GHA-011", self.WF)])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, passed=True),
+            _f("ECR-002", self.REPO, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, confidence=Confidence.HIGH),
+            _f("ECR-002", self.REPO, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-017")
+        assert chain.confidence is Confidence.MEDIUM
 
 
 # ── Gate integration ─────────────────────────────────────────────────
