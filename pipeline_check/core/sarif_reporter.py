@@ -26,14 +26,26 @@ Key shape notes:
   10 tags surfaces a runtime warning and silently drops the
   overflow, which is why the cap is enforced here. Tags that get
   truncated are still present in full on ``properties.controls``.
+- Each result carries a ``partialFingerprints`` map so GitHub Code
+  Scanning, Azure DevOps, and other SARIF consumers can dedupe
+  findings across runs. Fingerprints are content-based: two scans of
+  an unchanged repo produce identical fingerprints, so an existing
+  alert stays open instead of resolving + re-opening on every push.
+  Touching an unrelated line elsewhere in the file leaves the
+  fingerprint stable; touching the offending line itself produces a
+  new fingerprint, which is the signal GHCS uses to resolve the
+  prior alert and file a fresh one. See :func:`_finding_fingerprints`.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import re
 from typing import Any
 
 from .chains import Chain
-from .checks.base import Confidence, Finding, Severity
+from .checks.base import Confidence, Finding, Location, Severity
 from .scorer import ScoreResult
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
@@ -158,6 +170,123 @@ def report_sarif(
     return json.dumps(payload, indent=2)
 
 
+#: Fingerprint version. Bumped only when the hash inputs change in a
+#: way that would invalidate every existing GHCS alert. The version
+#: name is the dict key SARIF consumers see in
+#: ``partialFingerprints``; bumping it produces a new key alongside
+#: the old one if/when we ever ship a v2.
+_FINGERPRINT_VERSION = "pipelineCheckV1"
+
+#: Cap on the per-file source bytes we read for fingerprint snippets.
+#: Generated workflow files can occasionally be large; reading every
+#: SARIF emit pass is on the hot path. 256 KB is generous for any
+#: real CI/CD config (the largest GitHub workflow files in the wild
+#: are <40 KB) and keeps the worst case bounded.
+_FINGERPRINT_MAX_FILE_BYTES = 256 * 1024
+
+#: Whitespace normalizer for snippet content. SARIF fingerprints have
+#: to survive cosmetic re-indentation (a Prettier run that re-formats
+#: YAML must not invalidate every alert), so we collapse runs of
+#: whitespace and strip leading/trailing whitespace before hashing.
+_WS_RE = re.compile(r"\s+")
+
+
+def _normalize_path(path: str) -> str:
+    """Make path comparison stable across platforms.
+
+    Backslashes -> forward slashes; lowercased on Windows because the
+    filesystem itself is case-insensitive there. Repeated runs on the
+    same checkout produce the same string regardless of which OS ran
+    the scan.
+    """
+    norm = path.replace("\\", "/")
+    if os.name == "nt":
+        norm = norm.lower()
+    return norm
+
+
+def _read_snippet(path: str, line: int | None) -> str:
+    """Return a normalized snippet of *path* at *line*, or ``""``.
+
+    Reads *line* from disk if the file exists and is small enough.
+    Whitespace is collapsed so a re-indent doesn't invalidate the
+    fingerprint. Returns ``""`` for unreadable / out-of-range / non-
+    file inputs — callers must treat that as "fingerprint from id +
+    path only".
+    """
+    if not path or line is None or line <= 0:
+        return ""
+    try:
+        if not os.path.isfile(path):
+            return ""
+        if os.path.getsize(path) > _FINGERPRINT_MAX_FILE_BYTES:
+            return ""
+        with open(path, encoding="utf-8") as fh:
+            for idx, body in enumerate(fh, start=1):
+                if idx == line:
+                    return _WS_RE.sub(" ", body).strip()
+                if idx > line:
+                    break
+    except (OSError, UnicodeDecodeError):
+        return ""
+    return ""
+
+
+def _hash(*parts: str) -> str:
+    """SHA-256 of the parts joined by NUL — collision-resistant enough
+    for cross-run dedup, short enough that SARIF payloads stay readable."""
+    h = hashlib.sha256()
+    h.update("\0".join(parts).encode("utf-8"))
+    return h.hexdigest()
+
+
+def _finding_fingerprints(f: Finding) -> dict[str, str]:
+    """Build the ``partialFingerprints`` dict for a finding.
+
+    Inputs (in priority order):
+      1. ``check_id`` — same rule, different rule = different fingerprint.
+      2. Normalized path of the primary location (or the resource).
+      3. Normalized snippet of the primary location's start line, when
+         the file is readable. When the file isn't readable (AWS
+         resource, Terraform plan, in-memory test fixture, deleted
+         file), the fingerprint falls back to (id, path) only — still
+         stable across runs.
+
+    A rule fix that edits the offending line changes the snippet ->
+    new fingerprint, so GHCS resolves the prior alert and files a
+    fresh one. Editing an unrelated line elsewhere leaves the snippet
+    untouched.
+    """
+    primary: Location | None = f.locations[0] if f.locations else None
+    raw_path = (primary.path if primary else None) or f.resource or ""
+    norm_path = _normalize_path(raw_path)
+    snippet = _read_snippet(
+        primary.path if primary else "",
+        primary.start_line if primary else None,
+    )
+    digest = _hash(f.check_id, norm_path, snippet)
+    return {_FINGERPRINT_VERSION: digest}
+
+
+def _chain_fingerprints(c: Chain) -> dict[str, str]:
+    """Build the ``partialFingerprints`` dict for an attack chain.
+
+    Two distinct chain instances on the same chain_id can fire if the
+    correlation matched on different resources (e.g. ``group_by_resource``
+    chains like AC-009 fire once per workflow). Sorted resources and
+    triggering check IDs produce a stable hash per chain instance
+    regardless of finding-list order.
+    """
+    sorted_resources = sorted(c.resources or [])
+    sorted_triggers = sorted(c.triggering_check_ids or [])
+    digest = _hash(
+        c.chain_id,
+        "|".join(sorted_resources),
+        "|".join(sorted_triggers),
+    )
+    return {_FINGERPRINT_VERSION: digest}
+
+
 def _build_chain_rules(chains: list[Chain]) -> list[dict[str, Any]]:
     """Emit one SARIF rule per distinct chain_id."""
     seen: dict[str, dict[str, Any]] = {}
@@ -221,6 +350,7 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict[str, Any]
         "rank": _CONFIDENCE_RANK.get(chain.confidence, 100.0),
         "message": {"text": chain.summary, "markdown": chain.narrative},
         "locations": locations,
+        "partialFingerprints": _chain_fingerprints(chain),
         "properties": {
             "severity": chain.severity.value,
             "confidence": chain.confidence.value,
@@ -361,6 +491,10 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
         "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "message": {"text": f.description},
         "locations": locations,
+        # ``partialFingerprints`` lets GHCS / GitLab / Azure DevOps
+        # match the same finding across runs so an unchanged repo
+        # doesn't re-alert on every push.
+        "partialFingerprints": _finding_fingerprints(f),
         "properties": properties,
     }
     return result

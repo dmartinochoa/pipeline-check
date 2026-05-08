@@ -59,6 +59,10 @@ STANDARD = Standard(
         "ADO-028":  ["ING-1"],
         "JF-031":   ["ING-1"],
         "CC-028":   ["ING-1"],
+        "BK-004":   ["ING-1"],             # curl-pipe to shell
+        "BK-008":   ["ING-1"],             # TLS bypass
+        "TKN-008":  ["ING-1"],             # remote install / TLS bypass
+        "ARGO-008": ["ING-1"],             # remote install / TLS bypass
 
         # ── SCA-1: scan for known vulns ────────────────────────────
         "GHA-020":  ["SCA-1"],
@@ -70,6 +74,9 @@ STANDARD = Standard(
         "GCB-008":  ["SCA-1"],
         "ECR-001":  ["SCA-1"],
         "ECR-007":  ["SCA-1"],             # Inspector v2 enhanced scanning
+        "BK-012":   ["SCA-1"],
+        "TKN-012":  ["SCA-1"],
+        "ARGO-012": ["SCA-1"],
 
         # ── SCA-3: scan for malware / malicious activity ───────────
         "CB-011":   ["SCA-3"],
@@ -109,6 +116,9 @@ STANDARD = Standard(
         "CB-005":   ["UPD-1"],
         "CB-009":   ["UPD-1"],
         "ECR-002":  ["UPD-1"],
+        "BK-001":   ["UPD-1"],
+        "TKN-001":  ["UPD-1"],
+        "ARGO-001": ["UPD-1"],
 
         # ── UPD-2: automated update tool ───────────────────────────
         "GHA-022":  ["UPD-2"],
@@ -132,6 +142,8 @@ STANDARD = Standard(
         "JF-024":   ["ENF-1"],
         "CC-009":   ["ENF-1"],
         "CB-008":   ["ENF-1"],
+        "BK-007":   ["ENF-1"],             # deploy block step
+        "BK-013":   ["ENF-1"],             # deploy branches: filter
 
         # ── REB-2: digital signing of artifacts ────────────────────
         "SIGN-001": ["REB-2"],
@@ -147,6 +159,9 @@ STANDARD = Standard(
         "JF-006":   ["REB-2"],
         "CC-006":   ["REB-2"],
         "GCB-009":  ["REB-2"],
+        "BK-009":   ["REB-2"],
+        "TKN-009":  ["REB-2"],
+        "ARGO-009": ["REB-2"],
 
         # ── REB-3: SBOM generation ─────────────────────────────────
         "GHA-007":  ["REB-3"],
@@ -155,6 +170,9 @@ STANDARD = Standard(
         "ADO-007":  ["REB-3"],
         "JF-007":   ["REB-3"],
         "CC-007":   ["REB-3"],
+        "BK-010":   ["REB-3"],
+        "TKN-010":  ["REB-3"],
+        "ARGO-010": ["REB-3"],
 
         # ── REB-4: signed-SBOM / attested provenance ───────────────
         "GHA-024":  ["REB-4"],
@@ -163,5 +181,8 @@ STANDARD = Standard(
         "ADO-024":  ["REB-4"],
         "JF-028":   ["REB-4"],
         "CC-024":   ["REB-4"],
+        "BK-011":   ["REB-4"],
+        "TKN-011":  ["REB-4"],
+        "ARGO-011": ["REB-4"],
     },
 )

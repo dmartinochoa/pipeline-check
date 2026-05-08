@@ -12,6 +12,94 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PCI DSS v4 + S2C2F mapping backfill across BK / TKN / ARGO.**
+  Rounds 22-24 added 15 new rules (BK-009..013, TKN-009..013,
+  ARGO-009..013) but only mapped them across 7 of the 13
+  standards. PCI DSS v4 had **zero** entries for the entire
+  Buildkite, Tekton, and Argo packs — every rule fell through
+  to "unmapped" in ``--standard-report pci_dss_v4``. S2C2F was
+  similarly missing the three packs' supply-chain rules. This
+  round backfills both.
+  PCI DSS v4 picks up 39 new mappings: BK / TKN / ARGO 1..13
+  each, slotted into the same Req-6 / Req-7 / Req-8 / Req-10
+  controls the older CI providers already use (e.g.,
+  artifact-signing rules → 6.5.1 + 10.3.2; vuln-scan rules →
+  6.3.1 + 6.3.3; sidecar / SA-token rules → 6.4.1 / 7.2.5).
+  Catalog-wide coverage: 18% to 29%; floor bumped 18 -> 27.
+  S2C2F picks up 21 new mappings concentrated in the practices
+  the new rules actually evidence: REB-2 (signing), REB-3
+  (SBOM), REB-4 (signed-SBOM / provenance), SCA-1 (vuln scan),
+  ING-1 (untrusted source / TLS bypass), UPD-1 (pinning), ENF-1
+  (deploy gates). Catalog-wide coverage: 25% to 31%; floor
+  bumped 25 -> 29.
+- **Two cross-provider attack chains (`AC-020` / `AC-021`).**
+  ``AC-020`` "Tekton hostPath build workload meets cluster-admin
+  RBAC" fires when ``TKN-004`` (Tekton Task mounts hostPath /
+  shares host namespaces) and ``K8S-020`` (cluster-admin
+  ClusterRoleBinding) both trip in the same scan. The Tekton-
+  layer mirror of AC-011: a TaskRun the build pipeline kicks off
+  has both node-level filesystem access and cluster-wide API
+  authority, so a compromised Task spec turns into static-pod
+  backdoor + cluster-wide credential harvest. Severity CRITICAL.
+  MITRE T1611 + T1098.003 + T1078. ``AC-021`` "Argo default-SA
+  workflow lands on a default-SA RoleBinding" fires when
+  ``ARGO-003`` (workflow uses the default ServiceAccount) and
+  ``K8S-029`` (RoleBinding grants verbs to the default SA) both
+  trip. ARGO-003 alone is a hygiene gap; K8S-029 alone is a
+  hygiene gap; together the combination turns "use a custom SA"
+  into a concrete privilege-escalation primitive — anyone who
+  can submit a Workflow runs code under whatever verbs the
+  RoleBinding grants. Severity HIGH. MITRE T1078 + T1098.003.
+  Catalog: 19 chains to 21. 12 new tests in
+  ``tests/test_attack_chains.py`` covering both legs failing,
+  each leg alone, both passing, kill-chain phase, MITRE codes,
+  resource dedup, and confidence inheritance;
+  ``docs/attack_chains.md`` registered-chains table extended
+  + catalog cards regenerated; README headline 19 to 21 chains.
+- **`--explain` v2: `[Related rules]` and `[Autofixable]` sections.**
+  Finishes the cross-reference triangle that round 19 started. The
+  ``[Triggers attack chains]`` section already cross-referenced
+  rule -> chain; this round adds rule -> sibling rules and rule ->
+  autofix.
+  ``[Related rules]`` lists checks in the same topic cluster
+  (same threat / different layer, or same control / different
+  provider). 18 clusters cover the major patterns: K8s
+  securityContext (K8S-005/006/007/035), K8s RBAC, K8s
+  ServiceAccount, cross-provider literal-secrets / script-injection
+  / image-pinning / signing / SBOM / SLSA-provenance / vuln-
+  scanning / TLS-bypass / curl-pipe / deploy-gate / self-hosted-
+  ephemeral / token-persistence. So ``--explain GHA-008`` now
+  surfaces ``GL-008``, ``BB-008``, ``ADO-008``, ``JF-008``,
+  ``CC-008``, ``BK-002``, ``TKN-005``, ``ARGO-006`` — the same
+  literal-secret threat across every provider in the repo. A
+  regression test walks every cluster entry and asserts the IDs
+  resolve through the explain index, so a typo trips at CI.
+  ``[Autofixable]`` says "Yes" with a CLI hint when the check has
+  a registered fixer (``autofix.available_fixers()``); the section
+  is omitted otherwise. Doesn't distinguish comment-only vs
+  structural — that lives in the patch ``--fix`` emits.
+- **SARIF results now carry stable `partialFingerprints`.**
+  Every result in the SARIF payload now includes a
+  ``partialFingerprints.pipelineCheckV1`` entry — a SHA-256 of
+  ``(check_id, normalized path, snippet of the offending line)``.
+  GitHub Code Scanning (and GitLab / Azure DevOps) use this to
+  match the same finding across runs: an unchanged repo no longer
+  re-alerts on every push, and a fix that edits the offending
+  line produces a new fingerprint that triggers GHCS to resolve
+  the prior alert. Path normalization (``\\`` -> ``/``, lowercase
+  on Windows) keeps the hash stable across cross-platform CI;
+  whitespace in the snippet is collapsed so a Prettier re-indent
+  doesn't invalidate every alert. Findings without a readable
+  Location (AWS resources, Terraform plan output, in-memory test
+  fixtures) fall back to ``(check_id, resource)`` only — still
+  stable across runs but missing the line-content cache-buster.
+  Attack chains get the same treatment, with a fingerprint
+  derived from ``(chain_id, sorted resources, sorted triggering
+  check ids)`` so a re-ordering of the finding list produces
+  the same fingerprint. Eight new tests in
+  ``tests/test_sarif_reporter.py`` lock the stable / changes-
+  on-fix / unchanged-on-unrelated-edit / cross-resource /
+  fallback semantics.
 - **Five new Argo Workflows rules (`ARGO-009`..`ARGO-013`).**
   Closes the third (and last) thin-pack pattern — Argo shipped at
   8 rules while every other CI provider averaged 30+. The four
