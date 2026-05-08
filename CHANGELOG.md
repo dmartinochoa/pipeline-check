@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SARIF results now carry stable `partialFingerprints`.**
+  Every result in the SARIF payload now includes a
+  ``partialFingerprints.pipelineCheckV1`` entry — a SHA-256 of
+  ``(check_id, normalized path, snippet of the offending line)``.
+  GitHub Code Scanning (and GitLab / Azure DevOps) use this to
+  match the same finding across runs: an unchanged repo no longer
+  re-alerts on every push, and a fix that edits the offending
+  line produces a new fingerprint that triggers GHCS to resolve
+  the prior alert. Path normalization (``\\`` -> ``/``, lowercase
+  on Windows) keeps the hash stable across cross-platform CI;
+  whitespace in the snippet is collapsed so a Prettier re-indent
+  doesn't invalidate every alert. Findings without a readable
+  Location (AWS resources, Terraform plan output, in-memory test
+  fixtures) fall back to ``(check_id, resource)`` only — still
+  stable across runs but missing the line-content cache-buster.
+  Attack chains get the same treatment, with a fingerprint
+  derived from ``(chain_id, sorted resources, sorted triggering
+  check ids)`` so a re-ordering of the finding list produces
+  the same fingerprint. Eight new tests in
+  ``tests/test_sarif_reporter.py`` lock the stable / changes-
+  on-fix / unchanged-on-unrelated-edit / cross-resource /
+  fallback semantics.
 - **Five new Argo Workflows rules (`ARGO-009`..`ARGO-013`).**
   Closes the third (and last) thin-pack pattern — Argo shipped at
   8 rules while every other CI provider averaged 30+. The four

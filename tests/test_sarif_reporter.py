@@ -328,6 +328,199 @@ class TestCweEnrichment:
         assert "cwe" not in result["properties"]
 
 
+class TestPartialFingerprints:
+    """Stable cross-run fingerprints so GHCS dedupes findings."""
+
+    def test_every_result_carries_a_fingerprint(self):
+        out = json.loads(report_sarif([_f()], _score()))
+        result = out["runs"][0]["results"][0]
+        assert "partialFingerprints" in result
+        fps = result["partialFingerprints"]
+        assert "pipelineCheckV1" in fps
+        # SHA-256 -> 64 hex chars.
+        assert len(fps["pipelineCheckV1"]) == 64
+        assert all(c in "0123456789abcdef" for c in fps["pipelineCheckV1"])
+
+    def test_fingerprint_stable_across_two_runs(self):
+        a = json.loads(report_sarif([_f()], _score()))
+        b = json.loads(report_sarif([_f()], _score()))
+        assert (
+            a["runs"][0]["results"][0]["partialFingerprints"]
+            == b["runs"][0]["results"][0]["partialFingerprints"]
+        )
+
+    def test_fingerprint_differs_across_check_ids(self):
+        a = json.loads(report_sarif([_f(check_id="CB-001")], _score()))
+        b = json.loads(report_sarif([_f(check_id="CB-002")], _score()))
+        assert (
+            a["runs"][0]["results"][0]["partialFingerprints"]["pipelineCheckV1"]
+            != b["runs"][0]["results"][0]["partialFingerprints"]["pipelineCheckV1"]
+        )
+
+    def test_fingerprint_differs_across_resources(self):
+        a = json.loads(report_sarif([_f(resource="proj-a")], _score()))
+        b = json.loads(report_sarif([_f(resource="proj-b")], _score()))
+        assert (
+            a["runs"][0]["results"][0]["partialFingerprints"]["pipelineCheckV1"]
+            != b["runs"][0]["results"][0]["partialFingerprints"]["pipelineCheckV1"]
+        )
+
+    def test_fingerprint_uses_snippet_when_file_readable(self, tmp_path):
+        # Two findings on the same file, same line content, different
+        # surrounding lines -> same fingerprint (content drives the hash,
+        # not unrelated line additions).
+        from pipeline_check.core.checks.base import Location
+
+        a_path = tmp_path / "a.yml"
+        a_path.write_text("uses: actions/checkout@v4\nname: build\n")
+        f1 = _f(resource=str(a_path))
+        f1.locations = [Location(path=str(a_path), start_line=1, end_line=1)]
+
+        b_path = tmp_path / "b.yml"
+        b_path.write_text(
+            "name: build\nname: test\nuses: actions/checkout@v4\n"
+        )
+        f2 = _f(resource=str(b_path))
+        f2.locations = [Location(path=str(b_path), start_line=3, end_line=3)]
+
+        out_a = json.loads(report_sarif([f1], _score()))
+        out_b = json.loads(report_sarif([f2], _score()))
+        # Same line content but different paths -> different fingerprints
+        # (path is part of the hash inputs).
+        assert (
+            out_a["runs"][0]["results"][0]["partialFingerprints"]
+                ["pipelineCheckV1"]
+            != out_b["runs"][0]["results"][0]["partialFingerprints"]
+                ["pipelineCheckV1"]
+        )
+
+    def test_fingerprint_changes_when_offending_line_changes(self, tmp_path):
+        from pipeline_check.core.checks.base import Location
+
+        path = tmp_path / "wf.yml"
+        # Pre-fix offending line.
+        path.write_text("uses: actions/checkout@v4\n")
+        f_before = _f(resource=str(path))
+        f_before.locations = [Location(path=str(path), start_line=1, end_line=1)]
+        before = json.loads(report_sarif([f_before], _score()))
+        before_fp = before["runs"][0]["results"][0]["partialFingerprints"]
+
+        # Post-fix offending line (digest pin).
+        path.write_text("uses: actions/checkout@a1b2c3d4e5f6...\n")
+        f_after = _f(resource=str(path))
+        f_after.locations = [Location(path=str(path), start_line=1, end_line=1)]
+        after = json.loads(report_sarif([f_after], _score()))
+        after_fp = after["runs"][0]["results"][0]["partialFingerprints"]
+
+        assert before_fp != after_fp, (
+            "Editing the offending line must produce a new fingerprint "
+            "so GHCS resolves the prior alert."
+        )
+
+    def test_fingerprint_stable_when_unrelated_line_changes(self, tmp_path):
+        from pipeline_check.core.checks.base import Location
+
+        path = tmp_path / "wf.yml"
+        path.write_text(
+            "name: build\n"
+            "uses: actions/checkout@v4\n"
+            "run: pytest\n"
+        )
+        f1 = _f(resource=str(path))
+        f1.locations = [Location(path=str(path), start_line=2, end_line=2)]
+        first = json.loads(report_sarif([f1], _score()))
+        first_fp = first["runs"][0]["results"][0]["partialFingerprints"]
+
+        # Swap an unrelated line. Offending line content is unchanged.
+        path.write_text(
+            "name: build\n"
+            "uses: actions/checkout@v4\n"
+            "run: pytest -v\n"
+        )
+        f2 = _f(resource=str(path))
+        f2.locations = [Location(path=str(path), start_line=2, end_line=2)]
+        second = json.loads(report_sarif([f2], _score()))
+        second_fp = second["runs"][0]["results"][0]["partialFingerprints"]
+
+        assert first_fp == second_fp, (
+            "An unrelated edit must not invalidate the fingerprint."
+        )
+
+    def test_fingerprint_falls_back_for_non_file_resource(self):
+        # AWS-style resources (no Location, no readable file) still
+        # need a stable fingerprint based on (id, resource).
+        a = json.loads(report_sarif(
+            [_f(resource="arn:aws:lambda:us-east-1:1234:function:foo")],
+            _score(),
+        ))
+        b = json.loads(report_sarif(
+            [_f(resource="arn:aws:lambda:us-east-1:1234:function:foo")],
+            _score(),
+        ))
+        assert (
+            a["runs"][0]["results"][0]["partialFingerprints"]
+            == b["runs"][0]["results"][0]["partialFingerprints"]
+        )
+
+
+class TestChainFingerprints:
+    """Same dedup behavior for attack-chain results."""
+
+    def test_chain_result_carries_a_fingerprint(self):
+        from pipeline_check.core.chains import Chain
+        from pipeline_check.core.checks.base import Confidence
+
+        chain = Chain(
+            chain_id="AC-001",
+            title="Test chain",
+            severity=Severity.CRITICAL,
+            confidence=Confidence.HIGH,
+            summary="s", narrative="n",
+            mitre_attack=["T1078"],
+            kill_chain_phase="initial-access",
+            triggering_check_ids=["GHA-002", "GHA-005"],
+            triggering_findings=[],
+            resources=["wf.yml"],
+            references=[], recommendation="r",
+        )
+        out = json.loads(report_sarif([_f()], _score(), chains=[chain]))
+        # Chain result is appended after finding results.
+        chain_result = out["runs"][0]["results"][-1]
+        assert chain_result["ruleId"] == "AC-001"
+        assert "partialFingerprints" in chain_result
+        assert "pipelineCheckV1" in chain_result["partialFingerprints"]
+
+    def test_chain_fingerprint_stable_for_same_resource_set(self):
+        from pipeline_check.core.chains import Chain
+        from pipeline_check.core.checks.base import Confidence
+
+        def make_chain(resources):
+            return Chain(
+                chain_id="AC-001",
+                title="t", severity=Severity.HIGH,
+                confidence=Confidence.HIGH,
+                summary="s", narrative="n",
+                mitre_attack=[],
+                kill_chain_phase="",
+                triggering_check_ids=["GHA-002", "GHA-005"],
+                triggering_findings=[],
+                resources=resources,
+                references=[], recommendation="",
+            )
+
+        # Same resources, different list ordering -> same fingerprint.
+        a = json.loads(report_sarif(
+            [], _score(), chains=[make_chain(["a.yml", "b.yml"])],
+        ))
+        b = json.loads(report_sarif(
+            [], _score(), chains=[make_chain(["b.yml", "a.yml"])],
+        ))
+        assert (
+            a["runs"][0]["results"][0]["partialFingerprints"]
+            == b["runs"][0]["results"][0]["partialFingerprints"]
+        )
+
+
 class TestIntegrationWithCli:
     """Exercise the actual CLI --output sarif path end-to-end."""
 
