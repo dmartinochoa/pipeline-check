@@ -86,6 +86,18 @@ CASES: list[tuple[str, str, Path, str]] = [
      FIXTURES / "circleci" / "insecure-config.yml", "CC-016"),
     ("gitlab", "gitlab_path",
      FIXTURES / "gitlab" / "insecure.gitlab-ci.yml", "GL-016"),
+    # Round-17 batch — issue_comment trigger, LB source ranges,
+    # shell-eval, two more script-injection rules.
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-013"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-026"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-005"),
+    ("circleci", "circleci_path",
+     FIXTURES / "circleci" / "insecure-config.yml", "CC-002"),
+    ("bitbucket", "bitbucket_path",
+     FIXTURES / "bitbucket" / "insecure-bitbucket-pipelines.yml", "BB-002"),
 ]
 
 

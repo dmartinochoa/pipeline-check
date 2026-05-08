@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precision retrofit, fourth batch — five more rules.**
+  ``GHA-013`` (issue_comment trigger without author guard) — anchors
+  on the workflow's ``on:`` block. ``K8S-026`` (LoadBalancer Service
+  without ``loadBalancerSourceRanges``) — anchors on the Service
+  ``spec`` block where the missing source-range list belongs.
+  ``DF-005`` (RUN body uses dangerous shell-eval idioms) — one
+  Location per offending RUN line, mirrors the DF-004 / DF-008
+  shape. ``CC-002`` (CircleCI script injection via untrusted env
+  vars) — anchors on the offending job, deduped per-job so a job
+  with multiple unsafe ``run:`` commands gets one Location not
+  many. ``BB-002`` (Bitbucket script injection via attacker-
+  controllable context) — anchors on the offending step.
+  28/363 -> 33/363 line-precise. Five new entries in
+  ``tests/test_line_precision.py``.
 - **Four new Cloud Build rules (`GCB-023`..`GCB-026`).** Round
   out the cloudbuild pack with build-correctness and
   audit/discoverability checks. ``GCB-023`` flags steps that

@@ -8,7 +8,8 @@ from ..._primitives.tainted_variables import (
     has_direct_taint,
     has_unsafe_reference,
 )
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_steps, step_scripts
 from ._helpers import UNTRUSTED_VAR_RE
@@ -59,19 +60,28 @@ def _bb_ref_pattern(name: str) -> str:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for loc, step in iter_steps(doc):
         scripts = step_scripts(step)
+        hit = False
         # 1. Direct interpolation of untrusted predefined vars.
         if has_direct_taint(scripts, UNTRUSTED_VAR_RE):
             offenders.append(loc)
-            continue
-        # 2. Indirect: script exports tainted value into a local var
-        #    then references that var unquoted in a later line.
-        tainted = _tainted_exports(scripts)
-        if tainted and has_unsafe_reference(
-            scripts, tainted, ref_pattern=_bb_ref_pattern
-        ):
-            offenders.append(loc)
+            hit = True
+        else:
+            # 2. Indirect: script exports tainted value into a local
+            #    var then references that var unquoted later.
+            tainted = _tainted_exports(scripts)
+            if tainted and has_unsafe_reference(
+                scripts, tainted, ref_pattern=_bb_ref_pattern
+            ):
+                offenders.append(loc)
+                hit = True
+        if hit:
+            line = _line_of(step) if isinstance(step, dict) else None
+            locations.append(Location(
+                path=path, start_line=line, end_line=line,
+            ))
     passed = not offenders
     desc = (
         "No script interpolates attacker-controllable ref / PR variables."
@@ -85,4 +95,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

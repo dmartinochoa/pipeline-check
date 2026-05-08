@@ -4,7 +4,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import workflow_triggers
 
@@ -74,8 +75,20 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"`github.event.sender.login`, or `github.actor`. Any GitHub "
         f"user can post a comment and trigger this workflow."
     )
+    locations: list[Location] = []
+    if not passed:
+        # Anchor on the workflow's ``on:`` block — that's where the
+        # missing guard lives. The loader's str-key shim normalises
+        # the YAML 1.1 ``on`` -> ``True`` quirk, so a plain ``"on"``
+        # lookup is sufficient. Falls back to the doc's own line
+        # when ``on:`` somehow isn't a dict.
+        on_block = doc.get("on")
+        anchor: Any = on_block if isinstance(on_block, dict) else doc
+        line = _line_of(anchor)
+        locations.append(Location(path=path, start_line=line, end_line=line))
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

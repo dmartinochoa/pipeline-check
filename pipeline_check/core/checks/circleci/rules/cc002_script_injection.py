@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_run_commands
 from ._helpers import UNTRUSTED_ENV_RE
@@ -33,10 +34,18 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
+    seen_jobs: set[str] = set()
     for job_id, job in iter_jobs(doc):
         for idx, cmd in enumerate(iter_run_commands(job)):
             if UNTRUSTED_ENV_RE.search(cmd):
                 offenders.append(f"{job_id}[{idx}]")
+                if job_id not in seen_jobs:
+                    seen_jobs.add(job_id)
+                    line = _line_of(job)
+                    locations.append(Location(
+                        path=path, start_line=line, end_line=line,
+                    ))
     passed = not offenders
     desc = (
         "No `run:` command interpolates attacker-controllable environment "
@@ -51,4 +60,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )
