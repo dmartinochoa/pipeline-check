@@ -16,6 +16,11 @@ can evidence controls in multiple standards at once.
     <p>CI/CD-relevant subset of the CIS AWS benchmark — IAM, S3, CloudTrail, KMS hardening.</p>
     <span class="pg-doc-card__meta">{{ standards.cis_aws_foundations.controls }} controls · {{ standards.cis_aws_foundations.checks }} checks evidenced</span>
   </a>
+  <a class="pg-doc-card" href="cis_kubernetes/">
+    <h3>CIS Kubernetes</h3>
+    <p>CIS Kubernetes Benchmark, Section 5 (Policies). RBAC, Pod Security Standards, NetworkPolicy, Secrets, namespaces.</p>
+    <span class="pg-doc-card__meta">{{ standards.cis_kubernetes.controls }} controls · {{ standards.cis_kubernetes.checks }} checks evidenced</span>
+  </a>
   <a class="pg-doc-card" href="cis_supply_chain/">
     <h3>CIS Supply Chain</h3>
     <p>CIS Software Supply Chain Security Guide. Source, build, dependency, and artifact controls.</p>

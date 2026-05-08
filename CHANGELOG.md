@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CIS Kubernetes Benchmark v1.10 — new compliance standard.**
+  Adds the 14th registered standard. Covers Section 5 (Policies)
+  of the benchmark — the workload-manifest controls a posture-
+  from-YAML scanner can evidence: 5.1 RBAC and Service Accounts
+  (cluster-admin minimization, wildcard verbs, default-SA bindings,
+  token-automount), 5.2 Pod Security Standards (privileged,
+  hostNamespaces, allowPrivilegeEscalation, runAsRoot,
+  capabilities, seccomp, hostPath, hostPort), 5.3 NetworkPolicies
+  (default-deny, allow-list enforcement), 5.4 Secrets Management
+  (env-mounted credentials, plaintext data), 5.7 General Policies
+  (namespace separation, default-namespace avoidance,
+  SecurityContext applied broadly). Sections 1-4 (control-plane
+  components, etcd, kubelet) require live cluster inspection and
+  are intentionally out of scope — run ``kube-bench`` for those.
+  31 of the 40 K8s rules + 6 cross-cutting K8s-related rules map
+  to 24 controls; ``--list-standards``, ``--standard-report
+  cis_kubernetes``, ``pipeline_check --standard cis_kubernetes``,
+  and SARIF tag ``cis_kubernetes`` all pick it up automatically.
+  Catalog standards count 13 to 14; updated README +
+  ``docs/index.md`` claim, plus ``docs/standards/cis_kubernetes.md``
+  reference page mirroring the cis_aws_foundations doc shape.
+  Floor in ``test_floors_hold`` set to 7% (the standard is
+  intentionally K8s-narrow, like cis_aws_foundations is AWS-narrow,
+  so catalog-wide coverage caps at the K8s-pack share).
 - **NIST CSF 2.0 + SOC 2 mappings for the K8s + Helm packs.** Both
   standards previously had **zero** entries for the entire
   Kubernetes (40 rules) and Helm (10 rules) packs, so

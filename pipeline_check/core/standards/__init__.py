@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from .base import ControlRef, Standard
 from .data.cis_aws_foundations import STANDARD as _CIS
+from .data.cis_kubernetes import STANDARD as _CIS_K8S
 from .data.cis_supply_chain import STANDARD as _CIS_SC
 from .data.esf_supply_chain import STANDARD as _ESF_SC
 from .data.nist_800_53 import STANDARD as _NIST_800_53
@@ -32,6 +33,7 @@ from .registry import available, get, register, resolve, resolve_for_check
 
 register(_OWASP)
 register(_CIS)
+register(_CIS_K8S)
 register(_CIS_SC)
 register(_ESF_SC)
 register(_NIST_SSDF)
