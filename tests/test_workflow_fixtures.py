@@ -238,7 +238,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 23)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 27)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never
@@ -462,7 +462,7 @@ class TestArgoFixtures:
      {f"ARGO-{i:03d}" for i in range(1, 9)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
-     {f"GCB-{i:03d}" for i in range(1, 23)}),
+     {f"GCB-{i:03d}" for i in range(1, 27)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
      {f"DF-{i:03d}" for i in range(1, 21)}),

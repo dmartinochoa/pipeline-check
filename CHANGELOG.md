@@ -12,6 +12,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Four new Cloud Build rules (`GCB-023`..`GCB-026`).** Round
+  out the cloudbuild pack with build-correctness and
+  audit/discoverability checks. ``GCB-023`` flags steps that
+  reference ``$_USER_VAR`` not declared in ``substitutions:`` —
+  with the strict ``MUST_MATCH`` default the build fails at
+  parse, but combined with ``ALLOW_LOOSE`` (GCB-022) the typo'd
+  ref silently expands to empty (MEDIUM). ``GCB-024`` flags
+  builds that push Docker images via an explicit ``docker push``
+  step but don't declare the resulting image in the top-level
+  ``images:`` array — Cloud Build's image-attestation layer only
+  tracks images declared there (LOW). ``GCB-025`` flags builds
+  with an empty ``tags:`` field — tags drive Cloud Logging
+  filtering and post-incident discovery (LOW). ``GCB-026`` flags
+  step ``waitFor:`` references that don't match any declared
+  step ``id:`` — Cloud Build silently treats dangling references
+  as no-wait, so dependency ordering becomes ineffective without
+  warning (MEDIUM). Provider catalog: 22 to 26 cloudbuild rules.
+  23 new tests in ``tests/test_gcb_rules_023_026.py``; OWASP +
+  NIST 800-53 mappings added; README + ``docs/index.md`` provider
+  listings + cloudbuild.md provider doc regenerated;
+  insecure-cloudbuild.yaml fixture extended with examples that
+  trigger every new rule (and ``images:`` array removed so
+  GCB-024 fires); secure-cloudbuild.yaml gains a ``tags:``
+  declaration so GCB-025 passes.
+
+### Added
+
 - **Four new HELM-native rules (`HELM-007`..`HELM-010`).** Round
   out the chart-supply-chain pack with chart-listing hygiene and
   freshness signals. ``HELM-007`` fires when ``Chart.yaml``'s

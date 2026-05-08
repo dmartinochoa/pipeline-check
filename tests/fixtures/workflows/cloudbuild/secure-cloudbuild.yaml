@@ -79,5 +79,12 @@ steps:
         # there is no gcloud fetch and no literal secret URI in args.
         deploy --env production
 
+# GCB-025 safe: ``tags:`` declared so this build is filterable in
+# Cloud Logging by environment + service.
+tags: ['prod', 'backend', 'app']
+
+# GCB-024 safe: every image the build produces is declared here,
+# so Cloud Build's attestation layer tracks it for SLSA provenance
+# and Binary Authorization.
 images:
   - 'gcr.io/example-project/app:v1.2.3'

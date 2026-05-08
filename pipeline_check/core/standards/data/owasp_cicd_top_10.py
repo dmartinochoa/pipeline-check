@@ -352,6 +352,10 @@ STANDARD = Standard(
         "GCB-020":  ["CICD-SEC-2"],   # default Cloud Build SA email
         "GCB-021":  ["CICD-SEC-7"],   # no private worker pool
         "GCB-022":  ["CICD-SEC-4"],   # substitutionOption ALLOW_LOOSE
+        "GCB-023":  ["CICD-SEC-4"],   # undeclared user substitution
+        "GCB-024":  ["CICD-SEC-9"],   # images: missing despite docker push
+        "GCB-025":  ["CICD-SEC-10"],  # tags: empty (audit/discoverability)
+        "GCB-026":  ["CICD-SEC-4"],   # waitFor references unknown id
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],

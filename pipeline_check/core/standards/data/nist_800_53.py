@@ -178,6 +178,10 @@ STANDARD = Standard(
         "GCB-020":  ["AC-3", "AC-6"],                    # default Cloud Build SA email
         "GCB-021":  ["SC-7"],                            # no private worker pool
         "GCB-022":  ["CM-6", "SA-11"],                   # substitutionOption ALLOW_LOOSE
+        "GCB-023":  ["CM-6", "SA-11"],                   # undeclared user substitution
+        "GCB-024":  ["SR-4", "CM-8"],                    # images: missing
+        "GCB-025":  ["AU-2", "SI-2"],                    # tags: empty
+        "GCB-026":  ["CM-6"],                            # waitFor unknown id
         # Kubernetes — runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
