@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
@@ -43,12 +44,21 @@ def _sec_ctx(c: dict[str, Any]) -> dict[str, Any]:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
-            if _sec_ctx(c).get("allowPrivilegeEscalation") is not False:
+            sc = _sec_ctx(c)
+            if sc.get("allowPrivilegeEscalation") is not False:
                 offenders.append(
                     f"{m.kind}/{m.name} {kind}={container_name(c)}"
                 )
+                # Anchor on the securityContext block when present,
+                # otherwise the container — same fallback shape as K8S-005.
+                line = _line_of(sc) or _line_of(c)
+                locations.append(Location(
+                    path=m.path, start_line=line, end_line=line,
+                    doc_index=m.doc_index,
+                ))
     passed = not offenders
     desc = (
         "Every container sets ``allowPrivilegeEscalation: false``."
@@ -62,4 +72,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

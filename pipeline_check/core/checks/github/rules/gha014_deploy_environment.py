@@ -5,7 +5,8 @@ import re
 from typing import Any
 
 from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
@@ -55,6 +56,7 @@ def _job_has_deploy_commands(job: dict[str, Any]) -> bool:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    locations: list[Location] = []
     for job_id, job in iter_jobs(doc):
         is_deploy = bool(_DEPLOY_RE.search(job_id))
         if not is_deploy:
@@ -63,6 +65,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not job.get("environment"):
             ungated.append(job_id)
+            # Anchor on the offending job entry so the user lands on
+            # the line where ``environment:`` should be added.
+            line = _line_of(job)
+            if line is not None:
+                locations.append(Location(
+                    path=path, start_line=line, end_line=line,
+                ))
     passed = not ungated
     desc = (
         "Every deploy job binds a GitHub environment."
@@ -75,4 +84,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

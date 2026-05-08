@@ -1,7 +1,7 @@
 """JF-002 — shell steps must not interpolate attacker-controllable env vars."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import SHELL_STEP_RE, UNTRUSTED_ENV_RE
@@ -31,6 +31,7 @@ RULE = Rule(
 
 def check(jf: Jenkinsfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in SHELL_STEP_RE.finditer(jf.text):
         body = (
             m.group("triple_d") or m.group("triple_s")
@@ -41,6 +42,9 @@ def check(jf: Jenkinsfile) -> Finding:
         if UNTRUSTED_ENV_RE.search(body):
             line_no = jf.text[: m.start()].count("\n") + 1
             offenders.append(f"line {line_no}")
+            locations.append(Location(
+                path=jf.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No shell step interpolates attacker-controllable Jenkins env vars."
@@ -54,4 +58,5 @@ def check(jf: Jenkinsfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=jf.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

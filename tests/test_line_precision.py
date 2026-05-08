@@ -110,6 +110,19 @@ CASES: list[tuple[str, str, Path, str]] = [
      FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-013"),
     ("circleci", "circleci_path",
      FIXTURES / "circleci" / "insecure-config.yml", "CC-009"),
+    # Round-21 batch — ADO script-injection, K8S allowPrivilegeEscalation,
+    # Jenkins script-injection, Argo privileged container, GHA deploy
+    # environment.
+    ("azure", "azure_path",
+     FIXTURES / "azure" / "insecure-azure-pipelines.yml", "ADO-002"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-006"),
+    ("jenkins", "jenkinsfile_path",
+     FIXTURES / "jenkins" / "Jenkinsfile.insecure", "JF-002"),
+    ("argo", "argo_path",
+     FIXTURES / "argo" / "insecure-argo.yaml", "ARGO-002"),
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-014"),
 ]
 
 

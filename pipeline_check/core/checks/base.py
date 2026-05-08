@@ -32,6 +32,7 @@ __all__ = [
     "confidence_rank",
     "Finding",
     "Location",
+    "ControlRef",
     "BaseCheck",
     # re-exported from blob
     "walk_strings",

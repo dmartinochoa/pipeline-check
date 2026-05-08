@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precision retrofit, sixth batch — five more rules.**
+  ``ADO-002`` (Azure DevOps script injection via attacker-
+  controllable context) anchors on the offending step, deduped
+  per-step. ``K8S-006`` (container ``allowPrivilegeEscalation``
+  not explicitly false) anchors on the ``securityContext``
+  block, falling back to the container — same precedence as
+  K8S-005. ``JF-002`` (Jenkins shell step interpolates
+  attacker-controllable env var) emits one Location per offending
+  ``sh`` / ``bat`` / ``powershell`` step using the offset that
+  ``finditer`` recovers from the Jenkinsfile text. ``ARGO-002``
+  (Argo template container runs privileged or as root) anchors
+  on ``securityContext`` → container → template, plus
+  ``spec.podSpecPatch`` when that's the offending leg. ``GHA-014``
+  (GitHub Actions deploy job missing ``environment:`` binding)
+  anchors on the offending job entry where the ``environment:``
+  line goes. 38/363 to 43/363 line-precise. Five new entries in
+  ``tests/test_line_precision.py``.
 - **Line-precision retrofit, fifth batch — five more rules.**
   ``GHA-005`` (AWS long-lived credentials in env / step inputs)
   emits a Location at the offending step, env block, or
@@ -353,6 +370,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **`ControlRef` re-export now explicit in ``checks.base``.**
+  ``pipeline_check.__init__`` re-exports ``ControlRef`` from
+  ``pipeline_check.core.checks.base``, but the latter only had it
+  imported (for use as a type annotation) without naming it in
+  ``__all__``. Strict mypy under ``--no-implicit-reexport`` flagged
+  the public re-export as ``not explicitly exported``. Adding it to
+  ``__all__`` keeps the public import path stable without a code-
+  side migration.
 - **Reporter output gaps caught by a release-readiness audit.**
   JUnit ``<testcase>`` elements now carry the ``time="0"``
   attribute that JUnit-4 / Surefire schemas require — some CI
