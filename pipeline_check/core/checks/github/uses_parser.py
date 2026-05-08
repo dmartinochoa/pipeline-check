@@ -35,7 +35,7 @@ UsesKind = Literal["local-action", "local-workflow", "remote-workflow",
                    "remote-action", "docker"]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class UsesRef:
     """Structured form of a ``uses:`` reference.
 

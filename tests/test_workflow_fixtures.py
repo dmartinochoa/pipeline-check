@@ -238,7 +238,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 23)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 27)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never
@@ -277,7 +277,7 @@ class TestCloudBuildFixtures:
 
 
 class TestBuildkiteFixtures:
-    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 9)}
+    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 14)}
 
     def _scan(self, filename: str):
         ctx = BuildkiteContext.from_path(FIXTURES / "buildkite" / filename)
@@ -341,7 +341,7 @@ class TestDockerfileFixtures:
 
 
 class TestKubernetesFixtures:
-    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 31)}
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 36)}
 
     def _scan(self, filename: str):
         ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
@@ -373,7 +373,7 @@ class TestKubernetesFixtures:
 
 
 class TestTektonFixtures:
-    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 9)}
+    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 14)}
 
     def _scan(self, filename: str):
         ctx = TektonContext.from_path(FIXTURES / "tekton" / filename)
@@ -405,7 +405,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 9)}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 14)}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)
@@ -453,22 +453,22 @@ class TestArgoFixtures:
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("buildkite", "buildkite/insecure-pipeline.yml",
      BuildkiteContext, BuildkitePipelineChecks,
-     {f"BK-{i:03d}" for i in range(1, 9)}),
+     {f"BK-{i:03d}" for i in range(1, 14)}),
     ("tekton", "tekton/insecure-tekton.yaml",
      TektonContext, TektonChecks,
-     {f"TKN-{i:03d}" for i in range(1, 9)}),
+     {f"TKN-{i:03d}" for i in range(1, 14)}),
     ("argo", "argo/insecure-argo.yaml",
      ArgoContext, ArgoChecks,
-     {f"ARGO-{i:03d}" for i in range(1, 9)}),
+     {f"ARGO-{i:03d}" for i in range(1, 14)}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
-     {f"GCB-{i:03d}" for i in range(1, 23)}),
+     {f"GCB-{i:03d}" for i in range(1, 27)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
      {f"DF-{i:03d}" for i in range(1, 21)}),
     ("kubernetes", "k8s/insecure.yaml",
      KubernetesContext, KubernetesManifestChecks,
-     {f"K8S-{i:03d}" for i in range(1, 31)}),
+     {f"K8S-{i:03d}" for i in range(1, 36)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

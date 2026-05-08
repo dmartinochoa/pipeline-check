@@ -38,7 +38,7 @@ _TRUSTED_REGISTRY_HOSTS = frozenset({
 })
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ImageInfo:
     """Parsed view of a container-image reference.
 

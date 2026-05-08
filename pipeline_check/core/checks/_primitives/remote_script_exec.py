@@ -128,7 +128,7 @@ _POWERSHELL_RE = re.compile(
 # ── Public API ───────────────────────────────────────────────────
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RemoteExecFinding:
     """A single remote-script-to-interpreter hit."""
 

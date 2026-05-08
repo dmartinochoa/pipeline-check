@@ -23,6 +23,7 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.helm.base import HelmContext
+from ..checks.helm.charts_check import HelmChartChecks
 from ..checks.kubernetes.manifests import KubernetesManifestChecks
 from ..inventory import Component
 from .base import BaseProvider
@@ -55,11 +56,13 @@ class HelmProvider(BaseProvider):
 
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
-        # Same orchestrator as the kubernetes provider — every K8S-*
-        # rule applies unchanged because HelmContext IS-A
-        # KubernetesContext. Helm-native rules (HELM-001..) are
-        # deferred to a follow-up release per the v0.5.0 scope.
-        return [KubernetesManifestChecks]
+        # Two passes over the same HelmContext, iterating disjoint
+        # slices of it: K8S-* rules walk ``ctx.manifests`` (the
+        # rendered output of ``helm template``), HELM-* rules walk
+        # ``ctx.charts`` (the parsed ``Chart.yaml`` / ``Chart.lock``
+        # of each chart on disk). HelmContext IS-A KubernetesContext,
+        # so the K8s orchestrator accepts it unchanged.
+        return [KubernetesManifestChecks, HelmChartChecks]
 
     def inventory(self, context: HelmContext) -> list[Component]:
         out: list[Component] = []

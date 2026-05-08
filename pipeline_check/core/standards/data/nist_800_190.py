@@ -160,6 +160,15 @@ STANDARD = Standard(
         "CC-029":   ["4.1.5"],
         "GCB-001":  ["4.1.5"],
         "GCB-007":  ["4.1.5", "4.2.2"],
+        # Helm chart-supply-chain — chart provenance is the chart-
+        # equivalent of the image-pinning / untrusted-image story.
+        # HELM-001 (legacy v1 schema) and HELM-004 (range version)
+        # both leave the chart's dependency surface unverified at
+        # render time; HELM-002 (no Chart.lock digests) is the
+        # direct analog of an unpinned image tag.
+        "HELM-001": ["4.1.5"],
+        "HELM-002": ["4.1.5"],
+        "HELM-004": ["4.1.5"],
 
         # ── 4.2.1 — Insecure connections to registries ──────────────
         "GHA-023":  ["4.2.1"],
@@ -169,6 +178,10 @@ STANDARD = Standard(
         "JF-023":   ["4.2.1"],
         "CC-023":   ["4.2.1"],
         "S3-005":   ["4.2.1"],
+        # HELM-003 — Helm chart repos are the registry analog for
+        # chart distribution; a non-HTTPS dep repository is the
+        # exact pattern 4.2.1 calls out.
+        "HELM-003": ["4.2.1"],
 
         # ── 4.2.2 — Stale images / drift ────────────────────────────
         # CB-005 / ECR-002 / GCB-007 co-map up in 4.1.1 / 4.1.5 to
@@ -245,5 +258,21 @@ STANDARD = Standard(
         "K8S-017":  ["4.1.4"],
         "K8S-018":  ["4.1.4"],
         "K8S-022":  ["4.4.4"],
+        # Tekton — Tekton runs as Kubernetes-native pipeline kinds, so
+        # the same runtime-hardening controls apply. Supply-chain
+        # rules (TKN-009..012 signing/SBOM/provenance/vuln-scan) live
+        # outside 800-190's scope and aren't mapped here.
+        "TKN-001":  ["4.1.5"],
+        "TKN-002":  ["4.1.2", "4.4.4"],
+        "TKN-004":  ["4.4.4"],
+        "TKN-005":  ["4.1.4"],
+        "TKN-013":  ["4.1.2", "4.4.4"],
+        # Argo Workflows — same K8s-native runtime concerns. Supply-
+        # chain rules (ARGO-009..012) are out of 800-190's scope.
+        "ARGO-001": ["4.1.5"],
+        "ARGO-002": ["4.1.2", "4.4.4"],
+        "ARGO-004": ["4.4.4"],
+        "ARGO-006": ["4.1.4"],
+        "ARGO-013": ["4.1.2"],
     },
 )

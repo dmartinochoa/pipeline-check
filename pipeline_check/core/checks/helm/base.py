@@ -19,7 +19,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..base import BaseCheck
 from ..kubernetes.base import KubernetesContext, Manifest
+from .charts import Chart, parse_chart
 from .render import HelmRenderError, render_chart
 
 
@@ -29,7 +31,17 @@ class HelmContext(KubernetesContext):
     Subclasses ``KubernetesContext`` so the existing
     ``KubernetesManifestChecks`` orchestrator (and every K8S-* rule)
     accepts it without isinstance checks.
+
+    Carries an extra ``charts`` list — one :class:`Chart` per rendered
+    chart, with the parsed ``Chart.yaml`` / ``Chart.lock`` content the
+    HELM-* rules need. The K8s rule pack ignores this attribute (it
+    only iterates ``self.manifests``); HELM-* rules iterate ``charts``
+    instead.
     """
+
+    def __init__(self, manifests: list[Manifest]) -> None:
+        super().__init__(manifests)
+        self.charts: list[Chart] = []
 
     @classmethod
     def from_path(
@@ -68,28 +80,34 @@ class HelmContext(KubernetesContext):
 
         manifests: list[Manifest] = []
         warnings: list[str] = []
+        charts: list[Chart] = []
         scanned = 0
         skipped = 0
-        for chart in chart_paths:
+        for chart_path in chart_paths:
+            chart_meta = parse_chart(chart_path)
+            if chart_meta is not None:
+                warnings.extend(chart_meta.parse_warnings)
+                charts.append(chart_meta)
             try:
                 result = render_chart(
-                    chart,
+                    chart_path,
                     values_files=values_files,
                     set_overrides=set_overrides,
                 )
             except HelmRenderError as exc:
-                warnings.append(f"{chart}: helm render failed: {exc}")
+                warnings.append(f"{chart_path}: helm render failed: {exc}")
                 skipped += 1
                 continue
             sub = KubernetesContext.from_yaml_stream(
                 result.yaml,
-                path_hint=str(chart),
+                path_hint=str(chart_path),
                 source_templates=result.source_templates,
             )
             warnings.extend(sub.warnings)
             manifests.extend(sub.manifests)
             scanned += 1
         ctx = cls(manifests)
+        ctx.charts = charts
         ctx.files_scanned = scanned
         ctx.files_skipped = skipped
         ctx.warnings = warnings
@@ -120,4 +138,25 @@ def _discover_charts(root: Path) -> list[Path]:
     return out
 
 
-__all__ = ["HelmContext"]
+class HelmChartBaseCheck(BaseCheck):
+    """Base for HELM-* rule modules that operate on chart metadata.
+
+    Distinct from :class:`KubernetesBaseCheck` because chart-level
+    rules don't read ``ctx.manifests`` — they walk ``ctx.charts``,
+    which is populated above and carries the parsed ``Chart.yaml`` /
+    ``Chart.lock`` for each rendered chart. The K8s rule pack still
+    runs over the same ``HelmContext`` via its own orchestrator;
+    these two passes coexist without overlap because they iterate
+    disjoint attributes of the context.
+    """
+
+    PROVIDER = "helm"
+
+    def __init__(
+        self, ctx: HelmContext, target: str | None = None,
+    ) -> None:
+        super().__init__(context=ctx, target=target)
+        self.ctx: HelmContext = ctx
+
+
+__all__ = ["HelmChartBaseCheck", "HelmContext"]

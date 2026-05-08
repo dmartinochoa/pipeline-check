@@ -14,6 +14,14 @@ RULE = Rule(
     recommendation=(
         "Set encryptionType=KMS with a customer-managed key ARN."
     ),
+    docs_note=(
+        "Same shape as CP-002 / CWL-002 / CCM-002: AES256 (the "
+        "AWS-managed default) gives confidentiality at rest but no "
+        "key-policy or CloudTrail Decrypt-event story. Container "
+        "images are arguably sensitive intellectual property — the "
+        "same key-policy + audit shape as build outputs in S3 is "
+        "warranted."
+    ),
 )
 
 

@@ -38,7 +38,7 @@ class HelmRenderError(RuntimeError):
         self.stderr = stderr
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RenderResult:
     """Output of one ``helm template`` invocation."""
 

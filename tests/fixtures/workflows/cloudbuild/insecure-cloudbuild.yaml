@@ -35,14 +35,28 @@ availableSecrets:
 steps:
   # GCB-001: step image is tag-pinned (:latest).
   # GCB-016: ``dir`` field traverses out of /workspace via ``..``.
+  # GCB-023: ``$_TYPO`` is referenced but not declared in
+  # ``substitutions:`` — with ALLOW_LOOSE (set in options) it
+  # silently expands to empty.
   - id: build
     name: 'gcr.io/cloud-builders/docker'
     dir: '../shared-cache'
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'
+      - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX$_TYPO'
       - '.'
+
+  # GCB-024: explicit docker push but no top-level ``images:`` array
+  # declared (the array is removed below) — the image lands in the
+  # registry but Cloud Build's attestation layer doesn't track it.
+  # GCB-026: ``waitFor`` references step id "setup" which doesn't
+  # exist (the build step was renamed but the reference wasn't
+  # updated). Cloud Build silently treats it as no-wait.
+  - id: docker_push
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX']
+    waitFor: ['setup']
 
   # GCB-003: secret fetched inline via gcloud inside args —
   # resolved value lands in build logs.
@@ -78,5 +92,8 @@ secrets:
     secretEnv:
       LEGACY_TOKEN: CiQA...EXAMPLE-CIPHERTEXT-PLACEHOLDER...
 
-images:
-  - 'gcr.io/$PROJECT_ID/app:$_ARTIFACT_SUFFIX'
+# GCB-024: ``images:`` array is intentionally absent. The
+# ``docker_push`` step above pushes the image but Cloud Build's
+# attestation layer never learns about it.
+# GCB-025: no top-level ``tags:`` either — every build is anchored
+# only by its UUID build-id, no audit dimension.

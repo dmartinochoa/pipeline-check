@@ -18,6 +18,15 @@ RULE = Rule(
         "each artifact store. This enables key rotation, fine-grained access "
         "policies, and CloudTrail auditing of decrypt operations."
     ),
+    docs_note=(
+        "The pipeline's S3 artifact store holds intermediate build "
+        "outputs handed between stages. Default SSE-S3 (AES256) "
+        "encrypts at rest but uses an AWS-owned key whose policy "
+        "you can't scope. A customer-managed CMK gives the same "
+        "key-policy + CloudTrail Decrypt-event audit story you'd "
+        "apply to Lambda code, Secrets Manager, or any other "
+        "build output."
+    ),
 )
 
 

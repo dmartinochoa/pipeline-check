@@ -48,12 +48,22 @@ _GRADE_EMOJI: dict[str, str] = {
 
 
 def _esc(s: str) -> str:
-    """Escape characters that would corrupt a Markdown table row."""
+    """Escape characters that would corrupt a Markdown table row.
+
+    Order matters: backslash first (so ``\\`` doesn't double-escape
+    the substitutions that come after), then pipes (table-cell
+    separator), then backticks (would open an inline code span that
+    spans cells if unbalanced), then newlines / CR (row terminators).
+    """
     if not s:
         return ""
-    # Backslash-escape pipes; collapse newlines to a single space so
-    # the row doesn't wrap across table cells.
-    return s.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ").replace("\r", "")
+    return (
+        s.replace("\\", "\\\\")
+        .replace("|", "\\|")
+        .replace("`", "\\`")
+        .replace("\n", " ")
+        .replace("\r", "")
+    )
 
 
 def _row(f: Finding) -> str:

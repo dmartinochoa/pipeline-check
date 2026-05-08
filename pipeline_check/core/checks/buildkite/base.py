@@ -51,7 +51,7 @@ from .._yaml_lines import (
 from ..base import BaseCheck, Location
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pipeline:
     """A parsed Buildkite YAML document."""
 

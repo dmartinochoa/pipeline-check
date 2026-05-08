@@ -17,6 +17,15 @@ RULE = Rule(
         "consumers to the new name if needed. Plain ``String`` parameters "
         "are visible via ``ssm:GetParameter`` without any KMS authorization."
     ),
+    docs_note=(
+        "An SSM ``String`` parameter is plaintext at rest and at "
+        "API; ``ssm:GetParameter`` without any KMS Decrypt authority "
+        "returns the value. ``SecureString`` adds KMS-encryption + "
+        "the ``WithDecryption=true`` flag (which forces an explicit "
+        "KMS authorization step). Secret-named parameters (``TOKEN``, "
+        "``PASSWORD``, ``KEY``) are almost always intended to be "
+        "SecureString and rarely should not be."
+    ),
 )
 
 

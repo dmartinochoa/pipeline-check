@@ -23,6 +23,14 @@ RULE = Rule(
         "(e.g. ``apigateway.amazonaws.com``) are the common legitimate "
         "case — ensure they carry a condition."
     ),
+    docs_note=(
+        "A wildcard-principal Allow on a Lambda function resource "
+        "policy lets anyone invoke. The legitimate case is a "
+        "service principal (API Gateway, S3 events) where AWS "
+        "fills in the SourceArn/SourceAccount at invoke time — "
+        "without those conditions, any account using that service "
+        "can invoke."
+    ),
 )
 
 

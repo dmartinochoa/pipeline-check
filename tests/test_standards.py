@@ -234,3 +234,188 @@ class TestControlRef:
                        control_id="c", control_title="t")
         with pytest.raises(dataclasses.FrozenInstanceError):
             r.standard = "y"  # type: ignore[misc]
+
+
+# ── Cross-pack OWASP coverage ────────────────────────────────────────
+#
+# Every rule in a ``rules/`` package declares its OWASP control(s)
+# in the ``Rule.owasp`` tuple. The authoritative mapping lives in
+# ``owasp_cicd_top_10.py`` and is what reporters / SARIF / explain
+# read at runtime. Pre-2026-05 there was a 36-rule gap between the
+# two: rules declared an OWASP tag in their metadata but the data
+# file hadn't been backfilled, so ``resolve_for_check`` returned
+# nothing.
+#
+# These tests lock the gap closed: every rule must (a) be present
+# in the OWASP mapping, and (b) carry every control its
+# ``Rule.owasp`` declared. A new rule that lands without a backfill
+# trips both.
+
+
+def _all_rule_packs() -> list[str]:
+    """Walk the filesystem to enumerate every ``rules/`` package."""
+    from pathlib import Path
+
+    import pipeline_check.core.checks as checks_pkg
+
+    checks_root = Path(checks_pkg.__file__).parent
+    out: list[str] = []
+    for child in sorted(checks_root.iterdir()):
+        if not child.is_dir() or child.name.startswith("_"):
+            continue
+        rules_dir = child / "rules"
+        if not rules_dir.is_dir():
+            continue
+        if any(
+            f.suffix == ".py" and f.name not in {"__init__.py"}
+            and not f.name.startswith("_")
+            for f in rules_dir.iterdir()
+        ):
+            out.append(f"pipeline_check.core.checks.{child.name}.rules")
+    return out
+
+
+class TestEveryRuleHasDocsNote:
+    """Every rule must populate ``Rule.docs_note`` so ``--explain``
+    has a body to render in the [What it checks] section.
+
+    Pre-2026-05 history: the AWS rule pack shipped 58 rules with an
+    empty ``docs_note`` field — a migration artifact from the
+    class-based-to-rule-based refactor. ``pipeline_check --explain
+    IAM-001`` rendered the header + recommendation but no
+    threat-model body, leaving operators without the "why this
+    check matters" framing other packs always had."""
+
+    def test_every_rule_has_non_empty_docs_note(self):
+        from pipeline_check.core.checks.rule import discover_rules
+
+        missing: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if not rule.docs_note or not rule.docs_note.strip():
+                    missing.append(f"{rule.id} ({pack})")
+        assert not missing, (
+            f"{len(missing)} rules without ``docs_note``: "
+            f"{missing[:10]}{'…' if len(missing) > 10 else ''}. "
+            f"Add a 1-3 sentence docs_note explaining the threat "
+            f"model — distinct from the recommendation's how-to-fix."
+        )
+
+
+class TestEveryRuleHasOwaspMapping:
+
+    def test_every_discovered_rule_appears_in_owasp_data_file(self):
+        from pipeline_check.core.checks.rule import discover_rules
+        owasp = standards.get("owasp_cicd_top_10").mappings
+        missing: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if rule.id not in owasp:
+                    missing.append(f"{rule.id} ({pack})")
+        assert not missing, (
+            f"{len(missing)} rules with no OWASP mapping in "
+            f"owasp_cicd_top_10.py: {missing[:8]}"
+            f"{'…' if len(missing) > 8 else ''}. Add the entries to "
+            f"the data file's ``mappings`` dict."
+        )
+
+    def test_owasp_data_matches_each_rules_declared_tags(self):
+        """``Rule.owasp`` must agree with the data file.
+
+        The rule module's ``owasp=("CICD-SEC-X",)`` tuple is the
+        author's declaration of which OWASP controls evidence the
+        finding. The data-file mapping is what the runtime reads.
+        Drift between the two means the reporter / SARIF / explain
+        render the wrong control set even though the rule "knows"
+        the right one.
+        """
+        from pipeline_check.core.checks.rule import discover_rules
+        owasp = standards.get("owasp_cicd_top_10").mappings
+        drift: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                if not rule.owasp:
+                    continue
+                declared = set(rule.owasp)
+                mapped = set(owasp.get(rule.id, []))
+                missing = declared - mapped
+                if missing:
+                    drift.append(
+                        f"{rule.id}: Rule.owasp declares {sorted(declared)} "
+                        f"but data file has {sorted(mapped)} (missing: {sorted(missing)})"
+                    )
+        assert not drift, (
+            f"{len(drift)} rules whose declared OWASP tags don't all "
+            f"appear in the data file:\n  " + "\n  ".join(drift[:10])
+            + ("\n  …" if len(drift) > 10 else "")
+        )
+
+
+class TestPerFrameworkCoverageFloor:
+    """Lock the per-framework coverage % above documented floors.
+
+    Each backfill round ratchets these upward; a future contributor
+    that adds a rule pack and forgets to map it across the
+    supply-chain frameworks (SLSA / OpenSSF / CIS / ESF / NIST) will
+    drop the percentage on at least one and trip the assertion. The
+    floors are a couple percent below current state to absorb a
+    single-rule addition without a CI break.
+    """
+
+    # (standard_name, minimum coverage percent of the rule-pack catalog).
+    # Set just below current state so a single rule lands without
+    # tripping; a coordinated pack add or framework regression does
+    # trip. Bump the floor in the same PR that lifts the actual
+    # number — that's the ratchet.
+    FLOORS: dict[str, int] = {
+        "owasp_cicd_top_10":   100,
+        "nist_csf_2":           60,
+        "esf_supply_chain":     60,
+        "openssf_scorecard":    58,
+        "nist_800_53":          55,
+        "nist_800_190":         45,
+        "slsa":                 42,
+        "soc2":                 40,
+        "cis_supply_chain":     28,
+        "s2c2f":                25,
+        "nist_ssdf":            18,
+        "pci_dss_v4":           18,
+        # cis_aws_foundations is intentionally narrow: only AWS-pack
+        # rules can map to it, and not all of them have a CIS
+        # Foundations analog. The floor caps catalog-wide coverage
+        # at the AWS-pack share, not the full 363 rules.
+        "cis_aws_foundations":  10,
+    }
+
+    def test_floors_hold(self):
+        from pipeline_check.core.checks.rule import discover_rules
+
+        rule_ids: list[str] = []
+        for pack in _all_rule_packs():
+            for rule, _ in discover_rules(pack):
+                rule_ids.append(rule.id)
+        total = len(rule_ids)
+
+        per_std: dict[str, int] = {name: 0 for name in self.FLOORS}
+        for rid in rule_ids:
+            stds = {x.standard for x in standards.resolve_for_check(rid)}
+            for s in stds:
+                if s in per_std:
+                    per_std[s] += 1
+
+        below: list[str] = []
+        for std, floor in self.FLOORS.items():
+            pct = 100 * per_std[std] // max(1, total)
+            if pct < floor:
+                below.append(
+                    f"{std}: {per_std[std]}/{total} = {pct}% "
+                    f"(floor {floor}%)"
+                )
+        assert not below, (
+            "Standards coverage dropped below floor:\n  "
+            + "\n  ".join(below)
+            + "\n\nEither backfill the affected mappings or, if the "
+            "drop is intentional (e.g. a new rule pack landed and "
+            "the matching framework mappings are deferred to a "
+            "follow-up), lower the floor in this test deliberately."
+        )

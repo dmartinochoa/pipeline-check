@@ -90,7 +90,7 @@ _TARBALL_URL_RE = re.compile(
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LockfileIssue:
     """A single integrity-bypassing install command."""
 

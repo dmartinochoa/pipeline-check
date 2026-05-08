@@ -22,14 +22,18 @@ import pkgutil
 import re
 import sys
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from .checks._confidence import confidence_for
 from .checks.base import Severity
 from .checks.rule import Rule, discover_rules
 from .standards import resolve_for_check
 
+if TYPE_CHECKING:
+    from .chains.base import ChainRule
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class _CheckMeta:
     """Everything ``explain`` needs to render a check — either derived
     from a ``Rule`` or from a class-based module's docstring."""
@@ -42,7 +46,11 @@ class _CheckMeta:
     docstring: str = ""
 
 
-# Rule-based packages: ``Rule`` metadata fully populated.
+# Rule-based packages: ``Rule`` metadata fully populated. Every
+# provider whose checks live under ``<provider>/rules/`` belongs
+# here — the regression test in ``tests/test_cli_explain.py``
+# asserts that every discovered rule across these packs renders
+# successfully, so a missing entry is caught at CI time.
 _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.github.rules",
     "pipeline_check.core.checks.gitlab.rules",
@@ -51,6 +59,13 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.jenkins.rules",
     "pipeline_check.core.checks.circleci.rules",
     "pipeline_check.core.checks.aws.rules",
+    "pipeline_check.core.checks.cloudbuild.rules",
+    "pipeline_check.core.checks.buildkite.rules",
+    "pipeline_check.core.checks.tekton.rules",
+    "pipeline_check.core.checks.argo.rules",
+    "pipeline_check.core.checks.dockerfile.rules",
+    "pipeline_check.core.checks.kubernetes.rules",
+    "pipeline_check.core.checks.helm.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.
@@ -70,6 +85,38 @@ _ROW_RE = re.compile(
 
 
 _CACHE: dict[str, _CheckMeta] | None = None
+
+#: Lazy chain-by-check-id index. ``None`` until the first call to
+#: :func:`_chains_for_check_id`. Cached because the chains registry
+#: is small (~20 entries) and immutable for the process lifetime,
+#: and the explain renderer is potentially called once per check ID.
+_CHAINS_BY_CHECK_ID: dict[str, list[ChainRule]] | None = None
+
+
+def _chains_for_check_id(check_id: str) -> list[ChainRule]:
+    """Return chain rules whose ``triggering_check_ids`` contains *check_id*.
+
+    Result is sorted by chain id for deterministic explain output.
+    Lazily builds and caches the inverted index on first call.
+    """
+    global _CHAINS_BY_CHECK_ID
+    if _CHAINS_BY_CHECK_ID is None:
+        # Local import — chains pulls in checks.base, which the
+        # explain module already depends on, but the inverse import
+        # path is cleaner to keep lazy in case the chains pkg ever
+        # depends on explain.
+        from .chains import list_rules
+
+        index: dict[str, list[ChainRule]] = {}
+        for chain_rule in list_rules():
+            for cid in chain_rule.triggering_check_ids:
+                index.setdefault(cid, []).append(chain_rule)
+        # Sort each list by chain id so the explain output is
+        # stable across Python's import-order quirks.
+        for cid in index:
+            index[cid].sort(key=lambda cr: cr.id)
+        _CHAINS_BY_CHECK_ID = index
+    return _CHAINS_BY_CHECK_ID.get(check_id, [])
 
 
 def _build_index() -> dict[str, _CheckMeta]:
@@ -233,6 +280,24 @@ def _render_meta(meta: _CheckMeta) -> str:
             "  Reference implementation lives in a class-based check "
             "module; run the scanner to see the exact resource match "
             "or consult the provider reference doc."
+        )
+        lines.append("")
+
+    # Cross-reference any attack chains whose triggering_check_ids
+    # include this rule. Surfaces the rule -> chain relationship so
+    # an operator reading ``--explain GHA-001`` sees that the
+    # finding feeds into AC-009 / AC-018 / AC-003 etc.
+    triggering_chains = _chains_for_check_id(meta.id)
+    if triggering_chains:
+        lines.append("[Triggers attack chains]")
+        for chain_rule in triggering_chains:
+            lines.append(
+                f"  {chain_rule.id}  {chain_rule.title}  "
+                f"[{chain_rule.severity.value}]"
+            )
+        lines.append(
+            "  Run ``pipeline_check --explain AC-NNN`` for the full "
+            "kill-chain narrative."
         )
         lines.append("")
 

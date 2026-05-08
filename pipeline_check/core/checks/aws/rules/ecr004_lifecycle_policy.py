@@ -18,6 +18,14 @@ RULE = Rule(
         "period (e.g. 7 days) and limits the number of tagged images retained, "
         "reducing exposure to images with known CVEs."
     ),
+    docs_note=(
+        "Without a lifecycle policy, untagged images and old tagged "
+        "images accumulate indefinitely. Stale images keep CVE "
+        "attack surface available — anyone who can pull from the "
+        "repo can pull the old, unpatched version even after a "
+        "newer build has shipped. Lifecycle expiry is the housekeeper "
+        "that closes that window."
+    ),
 )
 
 

@@ -17,6 +17,13 @@ RULE = Rule(
         "shared across the account and its key policy cannot be audited "
         "or scoped per parameter."
     ),
+    docs_note=(
+        "``alias/aws/ssm`` is the AWS-managed default for "
+        "SecureString — its key policy is fixed and account-wide. "
+        "A customer-managed key gives you the same per-parameter "
+        "key-policy + CloudTrail audit story you'd apply to "
+        "Secrets Manager (which always uses a CMK)."
+    ),
 )
 
 

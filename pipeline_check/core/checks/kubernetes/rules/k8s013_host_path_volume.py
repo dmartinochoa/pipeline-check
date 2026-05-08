@@ -1,7 +1,8 @@
 """K8S-013 — Pod uses a ``hostPath`` volume."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import KubernetesContext, iter_volumes, iter_workload_pod_specs
 
@@ -32,11 +33,20 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for v in iter_volumes(ps):
-            if isinstance(v.get("hostPath"), dict):
+            hp = v.get("hostPath")
+            if isinstance(hp, dict):
                 vol_name = v.get("name", "?")
                 offenders.append(f"{m.kind}/{m.name} volume={vol_name}")
+                # Land on the ``hostPath:`` block when it carries
+                # source-line markers; fall back to the volume entry.
+                line = _line_of(hp) or _line_of(v)
+                locations.append(Location(
+                    path=m.path, start_line=line, end_line=line,
+                    doc_index=m.doc_index,
+                ))
     passed = not offenders
     desc = (
         "No workload uses hostPath volumes."
@@ -50,4 +60,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

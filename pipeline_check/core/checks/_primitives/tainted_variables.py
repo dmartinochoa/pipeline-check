@@ -27,6 +27,7 @@ precision. Source extraction stays in the per-provider rule;
 """
 from __future__ import annotations
 
+import functools
 import re
 from collections.abc import Callable, Iterable
 
@@ -37,6 +38,18 @@ from ..base import is_quoted_assignment
 #: so ``cmd "$X"`` is safe even if ``$X`` carries shell
 #: metacharacters — the value is treated as a single literal argument.
 _DQ_SEGMENT_RE = re.compile(r'"[^"]*"')
+
+
+#: Compile-cache for per-name reference patterns. ``has_unsafe_reference``
+#: is called per-step / per-job across 4-6 different injection-detection
+#: rules in a single scan; without caching, each invocation
+#: recompiles the same regex strings. The cache size is bounded so a
+#: pathological scan with thousands of distinct variable names doesn't
+#: balloon memory; the LRU eviction is fine because the inner-loop
+#: hits are concentrated on the few names that actually carry taint.
+@functools.lru_cache(maxsize=512)
+def _compile_cached(pattern: str) -> re.Pattern[str]:
+    return re.compile(pattern)
 
 
 def has_direct_taint(
@@ -76,7 +89,7 @@ def has_unsafe_reference(
        reference and is unsafe.
     """
     for name in names:
-        rx = re.compile(ref_pattern(name))
+        rx = _compile_cached(ref_pattern(name))
         for line in lines:
             if not rx.search(line):
                 continue

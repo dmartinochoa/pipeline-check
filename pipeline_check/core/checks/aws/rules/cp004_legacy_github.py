@@ -15,6 +15,15 @@ RULE = Rule(
         "Migrate to owner=AWS, provider=CodeStarSourceConnection and "
         "reference a CodeConnections connection ARN."
     ),
+    docs_note=(
+        "The legacy ThirdParty/GitHub source-action provider stores a "
+        "long-lived OAuth token in the pipeline's action "
+        "configuration. The token has whatever scope the granting "
+        "GitHub user has, never rotates, and isn't directly "
+        "revocable from the AWS side. CodeConnections (formerly "
+        "CodeStar Connections) replaces this with an AWS-managed "
+        "connection that the GitHub user can revoke."
+    ),
 )
 
 

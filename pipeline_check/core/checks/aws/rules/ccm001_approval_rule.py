@@ -19,6 +19,13 @@ RULE = Rule(
         "every repository. Without one, any PR author with push rights can "
         "self-approve and merge."
     ),
+    docs_note=(
+        "Approval-rule templates are CodeCommit's analog of GitHub's "
+        "branch-protection require-review. Without one associated, "
+        "the repository accepts merges from any push-permitted "
+        "principal — including the PR author themselves — without "
+        "any second-pair-of-eyes gate."
+    ),
 )
 
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._primitives import shell_eval
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, run_bodies
 
@@ -31,9 +31,16 @@ RULE = Rule(
 
 def check(df: Dockerfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for line_no, body in run_bodies(df):
+        line_offenders = 0
         for hit in shell_eval.scan(body):
             offenders.append(f"L{line_no}: {hit.kind}")
+            line_offenders += 1
+        if line_offenders:
+            locations.append(Location(
+                path=df.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No ``RUN`` body uses dangerous shell-eval idioms."
@@ -47,4 +54,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

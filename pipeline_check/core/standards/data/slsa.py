@@ -180,5 +180,58 @@ STANDARD = Standard(
         "CC-025":   ["Build.L3.Isolated"],                         # cache poisoning
         "CC-027":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
         "CC-028":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
+        # ── Buildkite ─────────────────────────────────────────────
+        "BK-001":   ["Build.L3.NonFalsifiable"],                   # plugin not pinned
+        "BK-002":   ["Build.L3.NonFalsifiable"],                   # leaked creds in env
+        "BK-003":   ["Build.L3.Isolated"],                         # untrusted variable injection
+        "BK-004":   ["Build.L3.Isolated"],                         # curl | bash
+        "BK-005":   ["Build.L3.Isolated"],                         # Docker privileged
+        "BK-006":   ["Build.L3.Ephemeral"],                        # no timeout
+        "BK-007":   ["Build.L3.NonFalsifiable"],                   # deploy not gated
+        "BK-008":   ["Build.L3.Isolated"],                         # TLS bypass
+        "BK-009":   ["Build.L2.Signed"],                           # artifact signing
+        "BK-010":   ["Build.L1.Provenance"],                       # SBOM
+        "BK-011":   ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
+        # ── Tekton ────────────────────────────────────────────────
+        "TKN-001":  ["Build.L3.NonFalsifiable"],                   # step image not digest-pinned
+        "TKN-002":  ["Build.L3.Isolated"],                         # step privileged / root
+        "TKN-003":  ["Build.L3.Isolated"],                         # param injection in script
+        "TKN-004":  ["Build.L3.Isolated"],                         # hostPath / host namespaces
+        "TKN-005":  ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
+        "TKN-006":  ["Build.L3.Ephemeral"],                        # no timeout
+        "TKN-007":  ["Build.L3.NonFalsifiable"],                   # default ServiceAccount
+        "TKN-008":  ["Build.L3.Isolated"],                         # remote install / TLS bypass
+        "TKN-009":  ["Build.L2.Signed"],                           # artifact signing
+        "TKN-010":  ["Build.L1.Provenance"],                       # SBOM
+        "TKN-011":  ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
+        # ── Argo Workflows ────────────────────────────────────────
+        "ARGO-001": ["Build.L3.NonFalsifiable"],                   # template image not digest-pinned
+        "ARGO-002": ["Build.L3.Isolated"],                         # template privileged / root
+        "ARGO-003": ["Build.L3.NonFalsifiable"],                   # default ServiceAccount
+        "ARGO-004": ["Build.L3.Isolated"],                         # hostPath / host namespaces
+        "ARGO-005": ["Build.L3.Isolated"],                         # parameter injection in script
+        "ARGO-006": ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
+        "ARGO-007": ["Build.L3.Ephemeral"],                        # no activeDeadlineSeconds
+        "ARGO-008": ["Build.L3.Isolated"],                         # remote install / TLS bypass
+        "ARGO-009": ["Build.L2.Signed"],                           # artifact signing
+        "ARGO-010": ["Build.L1.Provenance"],                       # SBOM
+        "ARGO-011": ["Build.L1.Provenance", "Build.L2.Signed",
+                     "Build.L3.NonFalsifiable"],                   # SLSA provenance
+        # ── Helm chart-supply-chain ───────────────────────────────
+        # The chart's own packaging metadata sits at the build-output
+        # boundary — Chart.lock and Chart.yaml are the chart's
+        # "provenance metadata" the same way an image manifest is for
+        # a container build. HELM-002 (no Chart.lock digest) is the
+        # exact NonFalsifiable failure for chart distribution.
+        "HELM-001": ["Build.L1.Provenance"],                       # legacy v1 schema
+        "HELM-002": ["Build.L3.NonFalsifiable",
+                     "Build.L1.Provenance"],                       # missing Chart.lock digests
+        "HELM-003": ["Build.L3.Isolated",
+                     "Build.L3.NonFalsifiable"],                   # non-HTTPS dep repo
+        "HELM-004": ["Build.L3.NonFalsifiable"],                   # version not exact-pinned
+        "HELM-005": ["Build.L1.Provenance"],                       # maintainers chain-of-custody
+        "HELM-006": ["Build.L1.Provenance"],                       # kubeVersion compat range
     },
 )

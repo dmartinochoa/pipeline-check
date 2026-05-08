@@ -17,6 +17,14 @@ RULE = Rule(
         "that matches the prefix — frequently triggering unintended "
         "Lambda invocations or SNS sends."
     ),
+    docs_note=(
+        "Wildcard target ARNs (e.g. "
+        "``arn:aws:lambda:us-east-1:123456789012:function:*``) "
+        "match every resource that fits the prefix. This is rarely "
+        "intentional — usually a copy-paste from a more permissive "
+        "resource ARN — and means the rule fans out to a much "
+        "larger set of consumers than the author meant."
+    ),
 )
 
 

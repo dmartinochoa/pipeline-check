@@ -18,6 +18,14 @@ RULE = Rule(
         "encrypting them with a CMK means the key policy controls who can "
         "read the logs, not just S3/CloudWatch IAM."
     ),
+    docs_note=(
+        "CloudWatch Logs default encryption is service-managed — "
+        "fine for confidentiality, but no audit trail or scoping. "
+        "Build logs are a frequent secret-leak vector (CWL-001's "
+        "rationale extended), so the same key-policy + Decrypt-event "
+        "story you'd apply to S3 / Lambda / Secrets Manager is "
+        "warranted here too."
+    ),
 )
 
 

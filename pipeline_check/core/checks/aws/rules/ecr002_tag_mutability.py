@@ -16,6 +16,14 @@ RULE = Rule(
         "by digest (sha256:...) in deployment manifests for strongest "
         "immutability guarantees."
     ),
+    docs_note=(
+        "Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` "
+        "can be re-pushed silently — the same tag points to different "
+        "image content over time. Pinning by digest (``sha256:...``) "
+        "in deployment manifests is the only durable reference; "
+        "IMMUTABLE on the repo enforces the property registry-side "
+        "so a forgotten digest reference doesn't drift."
+    ),
 )
 
 

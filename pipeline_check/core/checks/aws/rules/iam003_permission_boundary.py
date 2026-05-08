@@ -12,6 +12,14 @@ RULE = Rule(
     owasp=("CICD-SEC-2",),
     cwe=("CWE-732",),
     recommendation="Attach a permissions boundary defining max permissions.",
+    docs_note=(
+        "A permissions boundary is the maximum-permission ceiling "
+        "for a role. Without one, every future PR that attaches "
+        "another inline / managed policy raises the role's "
+        "effective authority indefinitely. With a boundary in "
+        "place, the policy churn happens beneath a fixed cap that "
+        "your security team owns separately."
+    ),
 )
 
 

@@ -9,6 +9,10 @@ spec:
   entrypoint: main
   serviceAccountName: argo-workflow-runner
   activeDeadlineSeconds: 3600
+  # ARGO-013: opt out of SA-token automount at the workflow level.
+  # Templates that genuinely need K8s API access can set
+  # automountServiceAccountToken: true on themselves only.
+  automountServiceAccountToken: false
   arguments:
     parameters:
       - name: ref
@@ -37,6 +41,9 @@ spec:
                 key: token
         command: [bash]
         # ARGO-005 / ARGO-008: parameter referenced quoted, no curl-pipe.
+        # ARGO-009 / ARGO-010 / ARGO-011 / ARGO-012: this template builds
+        # an image, scans for vulns, generates an SBOM, signs the
+        # result, and attests provenance before pushing.
         source: |
           set -e
           echo "Building $REF"
@@ -44,3 +51,9 @@ spec:
           curl -fsSLO https://example.com/install.sh.sha256
           sha256sum -c install.sh.sha256
           bash install.sh
+          docker build -t internal/app:$REF .
+          trivy image --severity HIGH,CRITICAL --exit-code 1 internal/app:$REF
+          syft internal/app:$REF -o cyclonedx-json > sbom.json
+          cosign sign --yes internal/app:$REF
+          cosign attest --predicate provenance.json --type slsaprovenance internal/app:$REF
+          docker push internal/app:$REF

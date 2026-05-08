@@ -35,6 +35,7 @@ RULE = ChainRule(
         "deploy job. Either fix alone narrows the chain."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-003", "GHA-014"),
 )
 
 

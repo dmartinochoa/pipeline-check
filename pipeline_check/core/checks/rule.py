@@ -44,7 +44,7 @@ from typing import Any
 from .base import Finding, Severity
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Rule:
     """Static metadata for a check. Paired 1:1 with a ``check`` callable
     that the orchestrator invokes."""

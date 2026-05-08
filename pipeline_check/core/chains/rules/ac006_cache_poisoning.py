@@ -36,6 +36,7 @@ RULE = ChainRule(
         "and scope by ref. Either fix breaks the chain."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-002", "GHA-011"),
 )
 
 

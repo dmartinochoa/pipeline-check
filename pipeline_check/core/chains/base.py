@@ -8,7 +8,7 @@ from typing import Any
 from ..checks.base import Confidence, Finding, Severity
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ChainRule:
     """Static metadata for an attack-chain detector.
 
@@ -35,9 +35,17 @@ class ChainRule:
     #: ``--list-chains`` to filter and by the engine to short-circuit
     #: when the scan provider can't possibly produce a triggering finding.
     providers: tuple[str, ...] = ()
+    #: The check_ids whose findings this chain's ``match()`` correlates.
+    #: Cross-references the rule layer: ``--explain CHECK_ID`` looks up
+    #: every chain whose ``triggering_check_ids`` contains the rule's
+    #: id and surfaces them under a "Triggers attack chains" section.
+    #: Each chain rule should declare this; ``match()`` callbacks
+    #: typically hard-code the same list when constructing ``Chain``
+    #: instances.
+    triggering_check_ids: tuple[str, ...] = ()
 
 
-@dataclass
+@dataclass(slots=True)
 class Chain:
     """An attack-chain instance — a concrete correlation of findings.
 

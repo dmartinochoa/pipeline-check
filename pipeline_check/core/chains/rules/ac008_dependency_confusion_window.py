@@ -35,6 +35,7 @@ RULE = ChainRule(
         "private one and disable upstream fall-through."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-021", "GHA-029"),
 )
 
 

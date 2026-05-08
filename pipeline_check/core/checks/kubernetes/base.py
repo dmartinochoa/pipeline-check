@@ -47,7 +47,7 @@ WORKLOAD_KINDS: frozenset[str] = (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Manifest:
     """One parsed Kubernetes API document."""
 

@@ -19,6 +19,15 @@ RULE = Rule(
         "Inspector v2 enhanced scanning adds language-ecosystem CVEs and "
         "runs continuously as new vulnerabilities are published."
     ),
+    docs_note=(
+        "ECR-001's basic on-push scan covers OS-level packages — apt "
+        "/ yum / apk lineage. Most production CVE risk is in "
+        "language ecosystems (npm, pip, gem, mvn) which the basic "
+        "scanner ignores. Inspector v2 enhanced scanning closes "
+        "that gap and runs continuously, so a CVE published two "
+        "weeks after a build still surfaces against the deployed "
+        "image."
+    ),
 )
 
 

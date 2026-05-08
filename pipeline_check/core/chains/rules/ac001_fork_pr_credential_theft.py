@@ -36,6 +36,7 @@ RULE = ChainRule(
         "with OIDC `role-to-assume` scoped to the workflow."
     ),
     providers=("github",),
+    triggering_check_ids=("GHA-002", "GHA-005"),
 )
 
 

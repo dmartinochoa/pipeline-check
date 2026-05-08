@@ -16,6 +16,15 @@ RULE = Rule(
         "pointing at a customer-managed CMK. Domain encryption is set at "
         "creation and cannot be changed after."
     ),
+    docs_note=(
+        "AWS-owned encryption (the default ``alias/aws/codeartifact`` "
+        "key) keeps the key policy under AWS's control, not yours. "
+        "That's fine for confidentiality but means cross-account "
+        "auditability of every Decrypt event lives with AWS, and you "
+        "can't revoke or scope key access without recreating the "
+        "domain. A customer-managed CMK puts both controls back in "
+        "your hands."
+    ),
 )
 
 

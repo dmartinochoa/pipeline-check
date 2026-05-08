@@ -16,6 +16,15 @@ RULE = Rule(
         "to the deployment group's alarmConfiguration. Enable automatic "
         "rollback on DEPLOYMENT_STOP_ON_ALARM to halt bad deployments."
     ),
+    docs_note=(
+        "Alarm-based rollback is what lets a canary configuration "
+        "actually stop a bad deploy mid-flight. Without alarms wired "
+        "into ``alarmConfiguration``, CodeDeploy's only signal that "
+        "the deploy went wrong is the deployment-state machine "
+        "itself — which doesn't notice an application-level "
+        "regression. CD-002's canary work and this rule's "
+        "alarm-based halt are paired."
+    ),
 )
 
 

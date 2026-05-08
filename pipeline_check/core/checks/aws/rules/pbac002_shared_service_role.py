@@ -18,6 +18,14 @@ RULE = Rule(
         "scoped to only the permissions that specific project requires. "
         "This limits the blast radius if one project's build is compromised."
     ),
+    docs_note=(
+        "One CodeBuild service role across many projects means a "
+        "compromise of any project's build environment grants "
+        "access to whatever resources every other project's build "
+        "needs. Per-project roles cap the radius — a backdoor in "
+        "the ``foo-tests`` build can't reach the ``deploy-prod`` "
+        "build's secrets if they each have their own role."
+    ),
 )
 
 

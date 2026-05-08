@@ -21,6 +21,13 @@ spec:
     - name: docker-sock
       hostPath:
         path: /var/run/docker.sock
+  # TKN-013: privileged sidecar (docker-in-docker) running as root.
+  sidecars:
+    - name: docker-daemon
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+        runAsNonRoot: false
   steps:
     - name: build
       # TKN-001: tag-only image, no @sha256 digest.
@@ -35,10 +42,15 @@ spec:
           value: "AKIAIOSFODNN7EXAMPLE"  # checkov:skip=CKV_SECRET_2 test fixture
       # TKN-003 + TKN-008: $(params.ref) inlined unquoted, plus
       # curl-pipe-shell in the same script body.
+      # TKN-009 / TKN-010 / TKN-011 / TKN-012 also fire on this
+      # Task because it builds & pushes a container without any
+      # signing / SBOM / SLSA provenance / vuln scanning step.
       script: |
         set -e
         echo Building $(params.ref)
         curl https://example.com/install.sh | sh
+        docker build -t internal/app:latest .
+        docker push internal/app:latest
 ---
 apiVersion: tekton.dev/v1
 kind: PipelineRun

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, env_pairs
 
@@ -45,14 +45,21 @@ def _looks_literal(value: str) -> bool:
 
 def check(df: Dockerfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for line_no, key, value in env_pairs(df):
+        hit = False
         # Direct AWS-key shape match — flag regardless of key name.
         if AWS_KEY_RE.search(value):
             offenders.append(f"L{line_no}: {key} (AKIA-shaped value)")
-            continue
+            hit = True
         # Secret-named key + literal value.
-        if SECRETISH_KEY_RE.search(key) and _looks_literal(value):
+        elif SECRETISH_KEY_RE.search(key) and _looks_literal(value):
             offenders.append(f"L{line_no}: {key} (literal credential-shaped name)")
+            hit = True
+        if hit:
+            locations.append(Location(
+                path=df.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No ``ENV`` / ``ARG`` directive carries a credential-shaped literal."
@@ -66,4 +73,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

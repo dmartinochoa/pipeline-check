@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, workflow_triggers
+from ..base import iter_jobs, iter_steps, step_location, workflow_triggers
 from ._helpers import PR_HEAD_REF_RE
 
 RULE = Rule(
@@ -42,6 +42,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             recommendation="No action required.", passed=True,
         )
     offending: list[str] = []
+    locations: list[Location] = []
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses")
@@ -50,6 +51,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             ref = ((step.get("with") or {}).get("ref") or "")
             if isinstance(ref, str) and PR_HEAD_REF_RE.search(ref):
                 offending.append(f"{job_id}[{idx}]")
+                locations.append(step_location(path, step))
     passed = not offending
     desc = (
         "pull_request_target workflow does not check out untrusted PR head code."
@@ -63,4 +65,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

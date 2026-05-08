@@ -272,5 +272,55 @@ STANDARD = Standard(
         "CC-026":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "CC-027":   ["ESF-D-INJECTION"],
         "CC-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        # ── Buildkite ─────────────────────────────────────────────
+        "BK-001":   ["ESF-S-PIN-DEPS"],                            # plugin not pinned
+        "BK-002":   ["ESF-D-SECRETS"],                             # secret in env
+        "BK-003":   ["ESF-D-INJECTION"],                           # untrusted variable injection
+        "BK-004":   ["ESF-S-VERIFY-DEPS"],                         # curl | bash
+        "BK-005":   ["ESF-D-PRIV-BUILD"],                          # Docker privileged
+        "BK-006":   ["ESF-D-BUILD-TIMEOUT"],                       # no timeout
+        "BK-007":   ["ESF-C-APPROVAL"],                            # deploy not gated
+        "BK-008":   ["ESF-S-TRUSTED-REG"],                         # TLS bypass
+        "BK-009":   ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "BK-010":   ["ESF-D-SBOM"],                                # SBOM
+        "BK-011":   ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "BK-012":   ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "BK-013":   ["ESF-C-ENV-SEP"],                             # deploy without branch filter
+        # ── Tekton ────────────────────────────────────────────────
+        "TKN-001":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # step image not digest-pinned
+        "TKN-002":  ["ESF-D-PRIV-BUILD"],                          # step privileged
+        "TKN-003":  ["ESF-D-INJECTION"],                           # param injection
+        "TKN-004":  ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
+        "TKN-005":  ["ESF-D-SECRETS"],                             # leaked creds
+        "TKN-006":  ["ESF-D-BUILD-TIMEOUT"],                       # no timeout
+        "TKN-007":  ["ESF-C-LEAST-PRIV"],                          # default SA
+        "TKN-008":  ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
+        "TKN-009":  ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "TKN-010":  ["ESF-D-SBOM"],                                # SBOM
+        "TKN-011":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "TKN-012":  ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "TKN-013":  ["ESF-D-RUNTIME-HARDENING"],                   # sidecar privileged
+        # ── Argo Workflows ────────────────────────────────────────
+        "ARGO-001": ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # template image not pinned
+        "ARGO-002": ["ESF-D-PRIV-BUILD"],                          # template privileged
+        "ARGO-003": ["ESF-C-LEAST-PRIV"],                          # default SA
+        "ARGO-004": ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
+        "ARGO-005": ["ESF-D-INJECTION"],                           # parameter injection
+        "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds
+        "ARGO-007": ["ESF-D-BUILD-TIMEOUT"],                       # no activeDeadlineSeconds
+        "ARGO-008": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
+        "ARGO-009": ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "ARGO-010": ["ESF-D-SBOM"],                                # SBOM
+        "ARGO-011": ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "ARGO-012": ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "ARGO-013": ["ESF-D-LEAST-PRIV"],                          # SA token automount
+        # ── Helm chart-supply-chain ───────────────────────────────
+        # Helm chart deps are exactly the Supplier-side controls'
+        # use case: third-party charts pulled from registries.
+        "HELM-001": ["ESF-S-PIN-DEPS"],                            # legacy v1 (no in-tree lock)
+        "HELM-002": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],       # missing Chart.lock digests
+        "HELM-003": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS dep repo
+        "HELM-004": ["ESF-S-PIN-DEPS"],                            # version range
+        "HELM-005": ["ESF-S-VERIFY-DEPS"],                         # maintainers chain-of-custody
     },
 )

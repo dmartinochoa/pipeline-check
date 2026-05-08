@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, iter_instructions
 
@@ -56,7 +56,9 @@ _PORT_RE = re.compile(r"\b(\d{1,5})\b(?:/(?:tcp|udp))?")
 
 def check(df: Dockerfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for ins in iter_instructions(df, directive="EXPOSE"):
+        line_offenders = 0
         for m in _PORT_RE.finditer(ins.args):
             try:
                 port = int(m.group(1))
@@ -65,6 +67,13 @@ def check(df: Dockerfile) -> Finding:
             label = _DANGEROUS_PORTS.get(port)
             if label:
                 offenders.append(f"L{ins.line_no}: {port}/{label}")
+                line_offenders += 1
+        if line_offenders:
+            # One Location per offending EXPOSE line; an EXPOSE that
+            # lists multiple dangerous ports clusters on the line.
+            locations.append(Location(
+                path=df.path, start_line=ins.line_no, end_line=ins.line_no,
+            ))
     passed = not offenders
     desc = (
         "No ``EXPOSE`` directive references a remote-access port."
@@ -78,4 +87,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

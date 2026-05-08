@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**450+ checks** across **16 providers**, mapped to **13 compliance standards**, with **100 autofixers**, plus **14 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**500+ checks** across **16 providers**, mapped to **13 compliance standards**, with **103 autofixers**, plus **19 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -89,13 +89,13 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 22 checks (`GCB-001`--`022`) |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 8 checks (`BK-001`--`008`) |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 8 checks (`TKN-001`--`008`) |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 8 checks (`ARGO-001`--`008`) |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 13 checks (`BK-001`--`013`) |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 13 checks (`TKN-001`--`013`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 13 checks (`ARGO-001`--`013`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
-| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 30 checks (`K8S-001`--`030`) |
-| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 30 K8S-* rules on the result. Requires `helm` (Helm 3) on PATH. |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 35 checks (`K8S-001`--`035`) |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 35 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -103,9 +103,13 @@ security, package integrity, timeout enforcement, vulnerability scanning, TLS
 verification, and more. The Kubernetes provider focuses on workload posture
 (image digest pinning, securityContext, hostPath / host-namespace exposure,
 RBAC blast radius, Secret hygiene). The Helm provider renders charts via
-`helm template` and runs the Kubernetes rule pack on the result, so today's
-K8S-* rules apply to chart-deployed workloads without duplication. See
-[docs/providers/](docs/providers/) for the full per-check reference.
+`helm template` and runs the Kubernetes rule pack on the result, plus ten
+chart-supply-chain rules (`HELM-001`--`010`: legacy `apiVersion: v1`,
+missing `Chart.lock` digests, non-HTTPS dependency / home / sources URLs,
+non-pinned dependency versions, missing maintainers / description /
+appVersion, missing `kubeVersion` range, stale `Chart.lock` > 90 days)
+read straight off the on-disk chart files. See [docs/providers/](docs/providers/)
+for the full per-check reference.
 
 ---
 
@@ -113,7 +117,7 @@ K8S-* rules apply to chart-deployed workloads without duplication. See
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   450+ checks across 16 providers
+  Config files   |  Scanner  |   500+ checks across 16 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -141,7 +145,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 100 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 103 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -346,7 +350,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 100 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 103 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -364,9 +368,9 @@ pipeline_check/
         ├── azure/rules/       # ADO-001 .. ADO-030
         ├── jenkins/rules/     # JF-001 .. JF-032
         ├── circleci/rules/    # CC-001 .. CC-031
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-022
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── dockerfile/rules/  # DF-001 .. DF-020
-        ├── kubernetes/rules/  # K8S-001 .. K8S-030
+        ├── kubernetes/rules/  # K8S-001 .. K8S-035
         ├── helm/              # Renders charts; reuses the K8s rule pack
         └── custom/            # YAML rule loader + predicate engine
 ```

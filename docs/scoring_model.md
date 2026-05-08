@@ -37,11 +37,12 @@ If every finding is INFO (or there are none), the score is 100.
 
 ## Exit codes
 
-| Code | Meaning        |
-|------|----------------|
-| `0`  | Gate passed    |
-| `1`  | Gate failed    |
-| `2`  | Scanner error  |
+| Code | Meaning                       |
+|------|-------------------------------|
+| `0`  | Gate passed                   |
+| `1`  | Gate failed                   |
+| `2`  | Scanner error                 |
+| `3`  | Usage / config / unknown ID   |
 
 The default gate is `--fail-on CRITICAL` — one CRITICAL finding in the
 effective set (after baseline + ignore filtering) fails CI. The grade

@@ -17,6 +17,13 @@ RULE = Rule(
         "scope can drive reconnaissance or persistence from an unlogged "
         "region."
     ),
+    docs_note=(
+        "An attacker who knows your CloudTrail trail is regional "
+        "deliberately operates from a different region. Multi-region "
+        "trails capture management events from every region into a "
+        "single trail — closing the gap without you having to "
+        "enumerate which regions you actually use."
+    ),
 )
 
 

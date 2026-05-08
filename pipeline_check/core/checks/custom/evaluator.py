@@ -360,7 +360,7 @@ _LEAF_OPS: dict[str, Callable[[Any, str], Predicate]] = {
 _TEMPLATE_RE = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CompiledTemplate:
     """A description template with `{{ jsonpath }}` placeholders."""
 
@@ -459,7 +459,7 @@ def _format(value: Any) -> str:
 # ── Convenience: compile + apply a full rule body ──────────────────
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CompiledRule:
     """Compiled (for_each, assert, description) body of a custom rule."""
 

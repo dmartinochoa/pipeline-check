@@ -41,7 +41,7 @@ _DIRECTIVES: frozenset[str] = frozenset({
 })
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Instruction:
     """One parsed directive.
 
@@ -57,7 +57,7 @@ class Instruction:
     raw: str           #: Original source text, including continuations
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Dockerfile:
     """A parsed Dockerfile / Containerfile document."""
 

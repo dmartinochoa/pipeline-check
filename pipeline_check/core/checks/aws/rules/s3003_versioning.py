@@ -18,6 +18,14 @@ RULE = Rule(
         "artifact versions are retained and rollback is possible. Combine "
         "with a lifecycle rule to expire old versions after a retention period."
     ),
+    docs_note=(
+        "Versioning makes overwrites and deletes recoverable: the "
+        "previous content of an object survives until lifecycle "
+        "expires it. Without versioning, an artifact overwrite (a "
+        "bad pipeline run, a malicious replacement, a typo'd "
+        "``aws s3 cp``) is unrecoverable — the original bytes are "
+        "gone."
+    ),
 )
 
 

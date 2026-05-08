@@ -37,7 +37,7 @@ _LIBRARY_RE = re.compile(r"@Library\(\s*['\"]([^'\"]+)['\"]\s*\)")
 _STAGE_HEAD_RE = re.compile(r"stage\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\{")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Jenkinsfile:
     """A parsed Jenkinsfile (text + minimally-extracted facts)."""
 

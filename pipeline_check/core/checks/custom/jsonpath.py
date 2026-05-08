@@ -36,13 +36,13 @@ class JsonPathError(ValueError):
 # A step yields ``(value,)`` tuples — wrapping in a tuple keeps the
 # loop in :func:`iter_matches` straightforward and lets us extend to
 # carry path-of-match info later without changing the protocol.
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _Step:
     kind: str          # "field" | "index" | "wildcard"
     value: Any = None  # field name (str) or list index (int); None for wildcard
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CompiledPath:
     """A parsed jsonpath, ready to apply against any document."""
 

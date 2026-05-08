@@ -170,3 +170,153 @@ def test_man_topic_explain_listed():
     body = manual.render("explain")
     assert "TOPIC: explain" in body
     assert "--explain" in body
+
+
+# ─── Every rule pack is registered in _RULE_PACKAGES ──────────────────────
+#
+# Pre-2026-05 history: only seven rule packs were registered, leaving
+# kubernetes / dockerfile / cloudbuild / buildkite / tekton / argo /
+# helm with no ``--explain`` coverage even though the rule modules
+# fully populated their ``Rule`` metadata. The walker below discovers
+# every ``rules/`` package on disk, then asserts each rule's ID
+# resolves through the explain renderer. A new rule pack added without
+# updating ``_RULE_PACKAGES`` trips this test.
+
+
+def _discover_all_rule_packages() -> list[str]:
+    """Find every ``pipeline_check.core.checks.<provider>.rules`` package.
+
+    Walks the filesystem rather than the providers registry — a rule
+    pack is anything with a populated ``rules/`` dir, regardless of
+    whether the provider has been wired into ``providers/__init__.py``.
+    """
+    from pathlib import Path
+
+    import pipeline_check.core.checks as checks_pkg
+
+    checks_root = Path(checks_pkg.__file__).parent
+    out: list[str] = []
+    for child in sorted(checks_root.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name.startswith("_"):
+            continue
+        rules_dir = child / "rules"
+        if not rules_dir.is_dir():
+            continue
+        # Confirm the dir actually has rule modules (not just an empty
+        # __init__.py — empty packs contribute no IDs to test).
+        has_rules = any(
+            f.suffix == ".py"
+            and f.name not in {"__init__.py"}
+            and not f.name.startswith("_")
+            for f in rules_dir.iterdir()
+        )
+        if has_rules:
+            out.append(f"pipeline_check.core.checks.{child.name}.rules")
+    return out
+
+
+def test_every_rule_pack_is_registered_in_explain_index():
+    """Every ``rules/`` dir on disk must be in ``_RULE_PACKAGES``.
+
+    This is the structural lock — the dynamic test below verifies the
+    same coverage by walking IDs, but this one fails with a clearer
+    error message when a contributor forgets ``_RULE_PACKAGES``.
+    """
+    from pipeline_check.core.explain import _RULE_PACKAGES
+
+    discovered = set(_discover_all_rule_packages())
+    registered = set(_RULE_PACKAGES)
+    missing = discovered - registered
+    assert not missing, (
+        f"Rule packs on disk but missing from "
+        f"pipeline_check.core.explain._RULE_PACKAGES: "
+        f"{sorted(missing)}. ``--explain`` will fail to resolve their "
+        f"IDs until they're added."
+    )
+
+
+def test_every_discovered_rule_id_renders():
+    """For every rule across every registered pack, ``render(id)``
+    returns exit code 0 and a populated body.
+
+    Catches both the structural-registration failure and a deeper
+    case where a rule module imports cleanly but its metadata can't
+    be rendered (e.g. a Severity enum drift).
+    """
+    from pipeline_check.core.checks.rule import discover_rules
+    from pipeline_check.core.explain import _RULE_PACKAGES
+
+    failures: list[str] = []
+    for pkg_fqn in _RULE_PACKAGES:
+        for rule, _ in discover_rules(pkg_fqn):
+            body, code = render(rule.id)
+            if code != 0:
+                failures.append(
+                    f"{rule.id} from {pkg_fqn}: render exited {code}"
+                )
+                continue
+            if rule.id not in body:
+                failures.append(
+                    f"{rule.id}: rendered body did not contain the ID"
+                )
+            if rule.title not in body:
+                failures.append(
+                    f"{rule.id}: rendered body did not contain the title"
+                )
+    assert not failures, "\n".join(failures)
+
+
+# ─── Triggers-attack-chains cross-reference ───────────────────────────
+
+
+def test_every_chain_declares_triggering_check_ids():
+    """Every chain rule must populate ``triggering_check_ids``.
+
+    The rule-side ``--explain`` output uses this field to surface
+    chains that include the rule. A chain that ships with an empty
+    field becomes invisible to that lookup, breaking the cross-
+    reference for any rule whose check_id the chain consumes.
+    """
+    from pipeline_check.core.chains import list_rules
+
+    missing = [r.id for r in list_rules() if not r.triggering_check_ids]
+    assert not missing, (
+        f"Chain rule(s) without triggering_check_ids: {missing}. "
+        f"Populate the field on the ChainRule so --explain RULE_ID "
+        f"can surface the rule -> chain link."
+    )
+
+
+def test_explain_surfaces_triggering_attack_chains_section():
+    """``--explain GHA-001`` should list AC-* chains it triggers."""
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "[Triggers attack chains]" in body
+    # GHA-001 is in AC-003, AC-009, AC-018 — confirm at least the
+    # AC-009 link is rendered.
+    assert "AC-009" in body
+    assert "AC-018" in body
+
+
+def test_explain_omits_chain_section_for_check_id_with_no_chains():
+    """A rule no chain references shouldn't render the section."""
+    # GHA-022 is a Dependabot/Renovate check — no chain has it in
+    # its triggering set as of this round.
+    body, code = render("GHA-022")
+    assert code == 0
+    assert "[Triggers attack chains]" not in body
+
+
+def test_chains_for_check_id_helper_caches():
+    """The lookup is cached; first call builds the index, subsequent
+    calls reuse it. Confirms the cache hook is wired."""
+    from pipeline_check.core import explain as explain_mod
+
+    explain_mod._CHAINS_BY_CHECK_ID = None  # type: ignore[assignment]
+    chains_first = explain_mod._chains_for_check_id("GHA-001")
+    assert explain_mod._CHAINS_BY_CHECK_ID is not None
+    chains_second = explain_mod._chains_for_check_id("GHA-001")
+    # Same list object on the second call — proves the cache hit.
+    assert chains_first == chains_second

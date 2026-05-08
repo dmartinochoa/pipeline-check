@@ -17,6 +17,15 @@ RULE = Rule(
     recommendation=(
         "Add a Condition requiring sts:ExternalId for external principals."
     ),
+    docs_note=(
+        "A trust policy that lets an external AWS account assume "
+        "the role without an ``sts:ExternalId`` condition is "
+        "vulnerable to the confused-deputy pattern: a third-party "
+        "SaaS configured with your role ARN can also be used by "
+        "another customer of that SaaS to assume your role (if "
+        "they know the ARN). ``sts:ExternalId`` ties the role to a "
+        "specific tenancy."
+    ),
 )
 
 

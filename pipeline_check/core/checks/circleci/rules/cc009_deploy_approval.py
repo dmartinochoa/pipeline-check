@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_workflow_jobs
 from ._helpers import DEPLOY_RE
@@ -32,6 +33,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    locations: list[Location] = []
     # Build a per-workflow map of approval job names.
     workflows = doc.get("workflows") or {}
     if not isinstance(workflows, dict):
@@ -59,6 +61,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if any(req in approval_jobs for req in requires):
             continue
         ungated.append(f"{wf_name}/{job_name}")
+        # Anchor on the workflow's job entry — that's where the
+        # ``requires: [<approval-job>]`` line should be added.
+        line = _line_of(job_cfg) if isinstance(job_cfg, dict) else None
+        locations.append(Location(
+            path=path, start_line=line, end_line=line,
+        ))
     passed = not ungated
     desc = (
         "Every deploy job is gated by a manual approval step."
@@ -71,4 +79,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

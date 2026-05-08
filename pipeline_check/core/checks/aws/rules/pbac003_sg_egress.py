@@ -21,6 +21,14 @@ RULE = Rule(
         "STS). A wildcard egress rule lets a compromised build exfiltrate "
         "to anywhere on the internet."
     ),
+    docs_note=(
+        "A security-group egress rule of ``0.0.0.0/0`` on all "
+        "ports/protocols means a compromised build can connect to "
+        "any endpoint on the internet — typosquat-package registry, "
+        "C2 server, attacker-owned dump endpoint. Even when the "
+        "build is inside a VPC (PBAC-001), this egress rule "
+        "negates the network-side gating."
+    ),
 )
 
 

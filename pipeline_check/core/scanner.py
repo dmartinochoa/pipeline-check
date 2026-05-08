@@ -25,7 +25,7 @@ from .checks.custom.runner import make_custom_rules_check
 from .inventory import Component
 
 
-@dataclass
+@dataclass(slots=True)
 class ScanMetadata:
     """Metadata about a scan run, surfaced in the CLI summary line."""
 

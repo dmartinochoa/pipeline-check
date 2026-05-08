@@ -27,6 +27,14 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-009`](#ac-009) | Supply Chain Repo Poisoning | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-002`](providers/github.md#gha-002) + [`GHA-008`](providers/github.md#gha-008) |
 | [`AC-010`](#ac-010) | Self-Hosted Runner Environment Exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-012`](providers/github.md#gha-012) + ([`GHA-016`](providers/github.md#gha-016) or [`GHA-019`](providers/github.md#gha-019)) |
 | [`AC-011`](#ac-011) | Kubernetes Cluster Takeover via hostPath + cluster-admin | <span class="pg-sev pg-sev--critical">CRITICAL</span> | kubernetes | [`K8S-013`](providers/kubernetes.md#k8s-013) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
+| [`AC-012`](#ac-012) | Reusable Workflow Secret Exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-025`](providers/github.md#gha-025) + [`GHA-034`](providers/github.md#gha-034) |
+| [`AC-013`](#ac-013) | Caller-Controlled Runner with Token Persistence | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-036`](providers/github.md#gha-036) + [`GHA-019`](providers/github.md#gha-019) |
+| [`AC-014`](#ac-014) | Caller-Controlled Runner with Token Persistence (GitLab) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | gitlab | [`GL-032`](providers/gitlab.md#gl-032) + [`GL-020`](providers/gitlab.md#gl-020) |
+| [`AC-015`](#ac-015) | Helm chart-supply-chain takeover via legacy + unlocked + plaintext | <span class="pg-sev pg-sev--critical">CRITICAL</span> | helm | [`HELM-001`](providers/helm.md#helm-001) + [`HELM-002`](providers/helm.md#helm-002) + [`HELM-003`](providers/helm.md#helm-003) |
+| [`AC-016`](#ac-016) | OIDC role drift: ungated GitHub trust meets wildcard AWS authority | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`IAM-002`](providers/aws.md) |
+| [`AC-017`](#ac-017) | Build cache poisoning that lands on a mutable ECR tag | <span class="pg-sev pg-sev--high">HIGH</span> | github / aws | [`GHA-011`](providers/github.md#gha-011) + [`ECR-002`](providers/aws.md) |
+| [`AC-018`](#ac-018) | Unpinned action lands on deploy job with no environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-014`](providers/github.md#gha-014) |
+| [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
@@ -451,6 +459,136 @@ A pipeline's ``tags:`` is computed from an attacker-controllable CI variable (GL
 **Recommended action**
 
 Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag list, or validate the value against an allowlist in a ``rules:`` guard before the job runs, so the trigger can't pick an attacker-controlled runner. (b) Stop writing ``CI_JOB_TOKEN`` (or other CI-managed credentials) to disk — use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-015 — Helm chart-supply-chain takeover via legacy + unlocked + plaintext { #ac-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1557</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> persistence</span> <span class="pg-tag pg-tag--owasp">helm</span>
+</div>
+
+A Helm chart simultaneously declares the legacy v1 schema (HELM-001), ships dependencies without ``Chart.lock`` digest verification (HELM-002), and lists at least one dependency on a non-HTTPS repository (HELM-003). An attacker on the path to ``helm dependency build`` substitutes the dependency tarball; nothing in the chart's metadata can detect or reject the swap, so the substituted code runs in every cluster the chart deploys to.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+- <https://helm.sh/docs/topics/charts/#chart-dependencies>
+- <https://helm.sh/docs/helm/helm_dependency_build/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism is available. Re-run ``helm dependency update`` to populate per-dependency ``sha256:`` digests in the lock and commit it alongside ``Chart.yaml``. Switch each ``dependencies[].repository`` to ``https://``, ``oci://``, or a ``file://`` sibling — Helm 3.8+ pulls OCI-hosted charts over HTTPS by default and is the recommended distribution shape. Removing any *one* of these three legs breaks this chain (the lock catches a swap on the next update; HTTPS catches it before the tarball lands; v2 makes the lock possible in the first place).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-016 — OIDC role drift: ungated GitHub trust meets wildcard AWS authority { #ac-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow requests an OIDC token without an ``environment:`` gate (GHA-030) AND the AWS IAM role it assumes carries a wildcard ``Action`` (IAM-002). Together, any branch — including a fork PR if the workflow is fork-runnable — can mint a token that maps to a role with broad authority over the account.
+
+**References**
+
+- <https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/managing-environments-for-deployment>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg to break the chain. On the GitHub side: require an ``environment:`` key on every job that uses ``id-token: write``, and configure that environment with required reviewers + deployment-branch restrictions. On the AWS side: scope the role's policies to specific actions and resources — replace ``Action: '*'`` with the narrow set the workflow actually needs. Best is both: environment gate + least-privilege role + a ``token.actions.githubusercontent.com:sub`` condition in the role's trust policy that names the specific repo/ref.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### AC-017 — Build cache poisoning that lands on a mutable ECR tag { #ac-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> persistence -> impact</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow's cache key derives from attacker-controllable input (GHA-011) AND the ECR repository it pushes to has mutable image tags (ECR-002). A fork-PR-driven cache poisoning lands compiled artifacts on the cache; the next default-branch build restores them and pushes the resulting image under a tag that consumers pull by name, replacing the previous content for every downstream deployment.
+
+**References**
+
+- <https://adnanthekhan.com/2024/05/06/the-monsters-in-your-build-cache-github-actions-cache-poisoning/>
+- <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html>
+- <https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg to break the chain. On the GitHub side: the cache key must be deterministic from the build's own inputs (lockfile hash, source-tree hash) — never from PR-controlled context (``github.head_ref``, ``github.event.*.title``, etc.). On the AWS side: set ``imageTagMutability=IMMUTABLE`` on the ECR repository and reference images by digest in deployment manifests. Best is both: deterministic cache keys + immutable tags + digest-pinned consumers.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-018 — Unpinned action lands on deploy job with no environment gate { #ac-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A workflow uses a third-party action pinned by tag rather than commit SHA (GHA-001) AND its deploy job has no ``environment:`` binding (GHA-014). A compromise of the upstream action maintainer's account — or a malicious release re-tagged under the existing version — runs in the deploy job's context without a required-reviewer gate, shipping attacker-controlled code to production on the next workflow trigger.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/managing-environments-for-deployment>
+- <https://www.stepsecurity.io/blog/popular-github-action-tj-actions-changed-files-is-compromised>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every third-party action to a 40-char commit SHA (``actions/checkout@<sha> # v4.1.0``) and put deploy jobs behind a GitHub Environment that requires reviewer approval and restricts deployment branches. Either fix alone breaks the chain — the SHA pin removes the supply-chain leg, the environment gate removes the unattended-deploy leg. Best is both, plus a deployment-branch restriction so only ``main`` / ``release/*`` can reach the gated environment.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-019 — Lambda env-secret meets a CI/CD role with PassRole * { #ac-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">credential-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A Lambda function holds a credential-shaped literal in its env vars (LMB-003) AND a CI/CD service role in the same account grants ``iam:PassRole`` with ``Resource: '*'`` (IAM-004). The first leak gives any read-account principal the credential; the second turns that credential into a role-hop primitive against any IAM role in the account.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+- <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>
+- <https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-encryption>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close either leg. On the Lambda side: move every env-var credential into Secrets Manager or SSM SecureString and fetch it at function init; the env vars then carry only the secret's ARN, not the value. On the IAM side: scope ``iam:PassRole`` with ``Resource: <specific-role-ARNs>`` and add an ``iam:PassedToService`` condition. The credential leak is its own compliance failure; the PassRole wildcard is its own; the chain stops being a chain when either is fixed.
 
 </div>
 

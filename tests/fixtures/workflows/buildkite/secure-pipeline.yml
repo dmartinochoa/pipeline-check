@@ -21,6 +21,24 @@ steps:
       branch="$BUILDKITE_BRANCH"
       ./scripts/build.sh --branch "$branch"
 
+  - label: ":mag: Vuln scan"
+    timeout_in_minutes: 10
+    # BK-012: trivy scans the source / image for known CVEs.
+    command: |
+      trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+      trivy image --severity HIGH,CRITICAL --exit-code 1 myapp:fixed-tag
+
+  - label: ":package: SBOM + sign + provenance"
+    timeout_in_minutes: 15
+    # BK-009: cosign signs the published image.
+    # BK-010: syft writes a CycloneDX SBOM.
+    # BK-011: cosign attest records the build provenance.
+    command: |
+      syft myapp:fixed-tag -o cyclonedx-json > sbom.json
+      cosign sign --yes myapp:fixed-tag
+      cosign attest --predicate provenance.json --type slsaprovenance myapp:fixed-tag
+      buildkite-agent artifact upload sbom.json
+
   - label: ":package: Install tooling"
     timeout_in_minutes: 10
     # BK-004: download, verify, then execute (no curl|sh).
@@ -38,6 +56,9 @@ steps:
 
   - label: ":rocket: Deploy production"
     timeout_in_minutes: 20
+    # BK-013: branches: restricts the deploy to release branches only,
+    # so a feature-branch PR can't accidentally promote to prod.
+    branches: "main release/*"
     command: |
       kubectl apply -f deploy/prod
       aws ecs update-service --cluster prod --service web

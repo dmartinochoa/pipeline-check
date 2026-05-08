@@ -23,6 +23,15 @@ RULE = Rule(
         "wildcard grants let any holder of the principal re-key, schedule "
         "deletion, or export material at will."
     ),
+    docs_note=(
+        "``kms:*`` on a key policy is administrative authority over "
+        "the cipher boundary: ``CancelKeyDeletion``, "
+        "``ScheduleKeyDeletion``, ``ReEncrypt``, ``UpdateKeyDescription``, "
+        "and the data-plane decrypt actions all collapse into one "
+        "grant. A CI/CD principal almost never needs more than the "
+        "data-plane subset (``Decrypt`` / ``GenerateDataKey`` / "
+        "``Encrypt``)."
+    ),
 )
 
 

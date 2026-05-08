@@ -178,6 +178,10 @@ STANDARD = Standard(
         "GCB-020":  ["AC-3", "AC-6"],                    # default Cloud Build SA email
         "GCB-021":  ["SC-7"],                            # no private worker pool
         "GCB-022":  ["CM-6", "SA-11"],                   # substitutionOption ALLOW_LOOSE
+        "GCB-023":  ["CM-6", "SA-11"],                   # undeclared user substitution
+        "GCB-024":  ["SR-4", "CM-8"],                    # images: missing
+        "GCB-025":  ["AU-2", "SI-2"],                    # tags: empty
+        "GCB-026":  ["CM-6"],                            # waitFor unknown id
         # Kubernetes — runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
@@ -211,6 +215,70 @@ STANDARD = Standard(
         "K8S-028":  ["SC-7", "CM-7"],                    # container hostPort
         "K8S-029":  ["AC-3", "AC-6"],                    # default-SA binding
         "K8S-030":  ["AC-6", "SC-7", "CM-7"],            # control-plane scheduling
+        "K8S-031":  ["CM-6", "AC-6"],                    # PSA warn missing
+        "K8S-032":  ["SC-7", "AC-3"],                    # NetworkPolicy default-deny missing
+        "K8S-033":  ["CM-6", "SI-2"],                    # ResourceQuota / LimitRange missing
+        "K8S-034":  ["AC-6", "AC-2"],                    # ServiceAccount automount default
+        "K8S-035":  ["AC-6", "CM-6"],                    # runAsUser: 0
+        # Helm chart-supply-chain. The same SR family that covers
+        # image pinning (K8S-001 / DF-001) covers chart pinning;
+        # SC-8 (transmission integrity) covers HELM-003's plaintext
+        # repo URL. SR-3 — supply chain controls. SR-11 — component
+        # authenticity (the Chart.lock digest is the authenticity
+        # signal). SI-2 — flaw remediation hooks on the schema lock.
+        "HELM-001": ["SR-3", "CM-2"],                    # legacy v1 schema
+        "HELM-002": ["SR-3", "SR-11", "SI-7"],           # Chart.lock digest
+        "HELM-003": ["SR-3", "SC-8", "SC-13"],           # non-HTTPS dep repo
+        "HELM-004": ["SR-3", "SR-11", "SI-2"],           # version not exact-pinned
+        "HELM-005": ["SR-3", "SR-4"],                    # maintainers chain-of-custody
+        "HELM-006": ["CM-2", "CM-6"],                    # kubeVersion compat range
+        "HELM-007": ["SR-3"],                            # description (chain-of-custody)
+        "HELM-008": ["SR-3", "SI-2"],                    # Chart.lock stale (flaw remediation cadence)
+        "HELM-009": ["SR-3", "SC-8"],                    # home / sources non-HTTPS
+        "HELM-010": ["CM-2"],                            # appVersion (config baseline)
+        # Buildkite — pipeline-config posture maps to the same SR /
+        # CM / IA families as the other CI providers' rules.
+        "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
+        "BK-002":   ["IA-5", "SC-28"],                   # secret in env
+        "BK-003":   ["CM-6", "SA-11"],                   # untrusted variable injection
+        "BK-004":   ["SR-3", "SR-11", "SI-7"],           # curl | bash
+        "BK-005":   ["AC-6", "CM-7"],                    # Docker privileged
+        "BK-006":   ["AU-2", "SI-2"],                    # no timeout
+        "BK-007":   ["AC-3", "SA-10"],                   # deploy not gated
+        "BK-008":   ["SC-8", "SC-13"],                   # TLS bypass
+        "BK-009":   ["SI-7", "SR-4"],                    # artifacts not signed
+        "BK-010":   ["SR-4", "CM-8"],                    # no SBOM
+        "BK-011":   ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "BK-012":   ["RA-5", "SI-2"],                    # no vuln scanning
+        "BK-013":   ["AC-3"],                            # deploy without branch filter
+        # Tekton — Kubernetes-native pipeline kinds.
+        "TKN-001":  ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
+        "TKN-002":  ["AC-6", "CM-7"],                    # step privileged
+        "TKN-003":  ["CM-6", "SA-11"],                   # param injection
+        "TKN-004":  ["SC-7", "AC-6", "SI-7"],            # hostPath / host namespaces
+        "TKN-005":  ["IA-5", "SC-28"],                   # leaked creds
+        "TKN-006":  ["AU-2", "SI-2"],                    # no timeout
+        "TKN-007":  ["AC-2", "AC-6"],                    # default ServiceAccount
+        "TKN-008":  ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
+        "TKN-009":  ["SI-7", "SR-4"],                    # artifacts not signed
+        "TKN-010":  ["SR-4", "CM-8"],                    # no SBOM
+        "TKN-011":  ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "TKN-012":  ["RA-5", "SI-2"],                    # no vuln scanning
+        "TKN-013":  ["AC-6", "CM-7"],                    # sidecar privileged
+        # Argo Workflows
+        "ARGO-001": ["SR-3", "SR-11", "SI-2"],           # template image not pinned
+        "ARGO-002": ["AC-6", "CM-7"],                    # template privileged
+        "ARGO-003": ["AC-2", "AC-6"],                    # default SA
+        "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
+        "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
+        "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
+        "ARGO-007": ["AU-2", "SI-2"],                    # no activeDeadlineSeconds
+        "ARGO-008": ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
+        "ARGO-009": ["SI-7", "SR-4"],                    # artifacts not signed
+        "ARGO-010": ["SR-4", "CM-8"],                    # no SBOM
+        "ARGO-011": ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "ARGO-012": ["RA-5", "SI-2"],                    # no vuln scanning
+        "ARGO-013": ["AC-6", "IA-5"],                    # SA token automount
         # Dockerfile — image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned

@@ -59,7 +59,7 @@ from .scorer import ScoreResult
 _GRADES = ("A", "B", "C", "D")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class IgnoreRule:
     """One line of an ignore file.
 
@@ -81,7 +81,7 @@ class IgnoreRule:
         return ref > self.expires
 
 
-@dataclass
+@dataclass(slots=True)
 class GateConfig:
     """All knobs the CI gate understands. None/empty means 'not applied'."""
 
@@ -119,7 +119,7 @@ class GateConfig:
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class GateResult:
     """Outcome of ``evaluate_gate``."""
 

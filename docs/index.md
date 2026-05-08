@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 16 providers, graded against 13 compliance frameworks. 
-100 of the 450+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+103 of the 500+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,10 +55,10 @@ A read-only scanner for 16 providers, graded against 13 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">450+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">500+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">16</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">100</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">103</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
@@ -159,13 +159,13 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">30 checks</span></a>
   <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">32 checks</span></a>
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">31 checks</span></a>
-  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">22 checks</span></a>
-  <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">8 checks</span></a>
-  <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">8 checks</span></a>
-  <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">8 checks</span></a>
+  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">26 checks</span></a>
+  <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">13 checks</span></a>
+  <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">13 checks</span></a>
+  <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">13 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
-  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">30 checks</span></a>
-  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 30 K8S-* rules</span></a>
+  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">35 checks</span></a>
+  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 35 K8S-* rules + 10 HELM-*</span></a>
 </div>
 </section>
 
@@ -217,7 +217,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
     click B "providers/" "16 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "450+ checks emit findings with severity, location, fix"
+    click C "attack_chains/" "500+ checks emit findings with severity, location, fix"
     click D "standards/" "13 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._primitives import remote_script_exec
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, run_bodies
 
@@ -31,10 +31,20 @@ RULE = Rule(
 
 def check(df: Dockerfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for line_no, body in run_bodies(df):
+        line_offenders = 0
         for hit in remote_script_exec.scan(body):
             tag = " (vendor-trusted)" if hit.vendor_trusted else ""
             offenders.append(f"L{line_no}: {hit.kind} -> {hit.host}{tag}")
+            line_offenders += 1
+        if line_offenders:
+            # One Location per RUN line that contained at least one hit
+            # — keeps reporters' "click to jump to line" experience
+            # clean even when a single RUN piped two installers.
+            locations.append(Location(
+                path=df.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No ``RUN`` body invokes curl-pipe / wget-pipe to an interpreter."
@@ -47,4 +57,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

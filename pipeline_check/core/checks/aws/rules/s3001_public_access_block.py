@@ -18,6 +18,14 @@ RULE = Rule(
         "bucket: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, "
         "and RestrictPublicBuckets."
     ),
+    docs_note=(
+        "S3 Block Public Access is the bucket-level circuit breaker "
+        "that supersedes any future ACL or bucket-policy edit. "
+        "Without all four settings enabled, a misconfigured "
+        "CloudFormation change or a stray ``aws s3api`` call can "
+        "re-expose the bucket to the public — even if the bucket "
+        "had previously been private."
+    ),
 )
 
 

@@ -16,6 +16,14 @@ RULE = Rule(
         "configuration to maintain a durable audit trail of all build "
         "activity."
     ),
+    docs_note=(
+        "A CodeBuild project with neither CloudWatch Logs nor S3 "
+        "logging enabled leaves no durable record of what the build "
+        "did. The CodeBuild console shows the last execution's logs "
+        "for a short retention window, but anything older — and any "
+        "automated review of historical activity during incident "
+        "response — is gone."
+    ),
 )
 
 

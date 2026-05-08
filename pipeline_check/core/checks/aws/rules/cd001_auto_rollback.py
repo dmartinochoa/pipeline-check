@@ -16,6 +16,12 @@ RULE = Rule(
         "DEPLOYMENT_FAILURE event so CodeDeploy automatically reverts to "
         "the last successful revision when a deployment fails."
     ),
+    docs_note=(
+        "Without ``autoRollbackConfiguration``, a CodeDeploy "
+        "deployment that fails leaves the failed revision live until "
+        "an operator notices. The default is opt-in, not opt-out — "
+        "deployments fail-open, not fail-back."
+    ),
 )
 
 

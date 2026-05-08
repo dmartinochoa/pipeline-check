@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import KubernetesContext
 
@@ -50,6 +51,7 @@ def _ports_summary(spec: dict[str, Any]) -> str:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind != "Service":
             continue
@@ -64,6 +66,13 @@ def check(ctx: KubernetesContext) -> Finding:
         ports = _ports_summary(spec)
         ports_str = f" ports=[{ports}]" if ports else ""
         offenders.append(f"Service/{m.name}{ports_str}")
+        # Anchor on the Service's spec block — that's where the
+        # missing ``loadBalancerSourceRanges`` would be added.
+        line = _line_of(spec)
+        locations.append(Location(
+            path=m.path, start_line=line, end_line=line,
+            doc_index=m.doc_index,
+        ))
     passed = not offenders
     desc = (
         "No LoadBalancer Service is open to the entire internet."
@@ -77,4 +86,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

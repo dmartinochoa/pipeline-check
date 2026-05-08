@@ -17,7 +17,7 @@ from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pipeline:
     """A parsed bitbucket-pipelines.yml document."""
 

@@ -99,7 +99,8 @@ class TestEngine:
             "AC-001", "AC-002", "AC-003", "AC-004",
             "AC-005", "AC-006", "AC-007", "AC-008",
             "AC-009", "AC-010", "AC-011", "AC-012",
-            "AC-013", "AC-014",
+            "AC-013", "AC-014", "AC-015", "AC-016",
+            "AC-017", "AC-018", "AC-019",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -542,6 +543,274 @@ class TestChainAC014:
         ])
         ac14 = next(c for c in out if c.chain_id == "AC-014")
         assert ac14.confidence is Confidence.MEDIUM
+
+
+class TestChainAC015:
+    """AC-015 — Helm chart-supply-chain takeover."""
+
+    HELM_RESOURCE = "helm/charts"
+
+    def test_fires_when_all_three_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        ac15 = [c for c in out if c.chain_id == "AC-015"]
+        assert len(ac15) == 1
+        chain = ac15[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"HELM-001", "HELM-002", "HELM-003"}
+        # MITRE technique IDs surface for downstream MITRE ATT&CK
+        # mappings; T1195.002 is the load-bearing one for the supply-
+        # chain story this chain narrates.
+        assert "T1195.002" in chain.mitre_attack
+        assert "T1557" in chain.mitre_attack  # adversary-in-the-middle leg
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-015")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_helm001(self):
+        # v2 chart with unlocked + plaintext deps still loses, but
+        # the chain is specifically about the schema-lock-out leg.
+        out = chains_pkg.evaluate([
+            _f("HELM-002", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_without_helm002(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-003", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_without_helm003(self):
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE),
+            _f("HELM-002", self.HELM_RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        # Findings present but green — none of the rules actually
+        # tripped. The chain should stay quiet rather than light up
+        # on the ID alone.
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE, passed=True),
+            _f("HELM-002", self.HELM_RESOURCE, passed=True),
+            _f("HELM-003", self.HELM_RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-015" for c in out)
+
+    def test_confidence_picks_lowest_leg(self):
+        # min_confidence: a HIGH leg + a HIGH leg + a LOW leg yields
+        # LOW, since the chain is only as confident as its shakiest
+        # finding.
+        out = chains_pkg.evaluate([
+            _f("HELM-001", self.HELM_RESOURCE, confidence=Confidence.HIGH),
+            _f("HELM-002", self.HELM_RESOURCE, confidence=Confidence.HIGH),
+            _f("HELM-003", self.HELM_RESOURCE, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-015")
+        assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC016:
+    """AC-016 — OIDC role drift: ungated GitHub trust + wildcard AWS authority."""
+
+    WF = ".github/workflows/release.yml"
+    ROLE = "arn:aws:iam::123456789012:role/ci-deploy"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("IAM-002", self.ROLE),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        assert ac16[0].severity is Severity.CRITICAL
+        assert set(ac16[0].triggering_check_ids) == {"GHA-030", "IAM-002"}
+        assert "T1078.004" in ac16[0].mitre_attack
+        assert "T1556" in ac16[0].mitre_attack
+
+    def test_does_not_fire_without_gha030(self):
+        # IAM wildcard is bad on its own; this chain is specifically
+        # about the OIDC trust-side gap that lets fork PRs reach it.
+        out = chains_pkg.evaluate([_f("IAM-002", self.ROLE)])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_does_not_fire_without_iam002(self):
+        out = chains_pkg.evaluate([_f("GHA-030", self.WF)])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, passed=True),
+            _f("IAM-002", self.ROLE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-016" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("IAM-002", self.ROLE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-016")
+        assert "credential-access" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+
+class TestChainAC017:
+    """AC-017 — Build cache poisoning that lands on a mutable ECR tag."""
+
+    WF = ".github/workflows/release.yml"
+    REPO = "myapp"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF),
+            _f("ECR-002", self.REPO),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        assert ac17[0].severity is Severity.HIGH
+        assert set(ac17[0].triggering_check_ids) == {"GHA-011", "ECR-002"}
+        # T1195.001 is the supply-chain dependency-compromise leg.
+        assert "T1195.001" in ac17[0].mitre_attack
+
+    def test_does_not_fire_without_gha011(self):
+        # Mutable ECR tags alone are a posture issue but the chain
+        # is about the cache-poisoned-build feeding them.
+        out = chains_pkg.evaluate([_f("ECR-002", self.REPO)])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_does_not_fire_without_ecr002(self):
+        out = chains_pkg.evaluate([_f("GHA-011", self.WF)])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, passed=True),
+            _f("ECR-002", self.REPO, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-017" for c in out)
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, confidence=Confidence.HIGH),
+            _f("ECR-002", self.REPO, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-017")
+        assert chain.confidence is Confidence.MEDIUM
+
+
+class TestChainAC018:
+    """AC-018 — unpinned action lands on deploy job with no env gate."""
+
+    WF = ".github/workflows/release.yml"
+    OTHER_WF = ".github/workflows/lint.yml"
+
+    def test_fires_when_both_legs_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF),
+            _f("GHA-014", self.WF),
+        ])
+        ac18 = [c for c in out if c.chain_id == "AC-018"]
+        assert len(ac18) == 1
+        assert ac18[0].severity is Severity.CRITICAL
+        assert set(ac18[0].triggering_check_ids) == {"GHA-001", "GHA-014"}
+        assert "T1195.002" in ac18[0].mitre_attack
+
+    def test_does_not_fire_on_different_workflows(self):
+        # Each leg on a different workflow doesn't compose — the
+        # chain narrative claims same-workflow co-occurrence.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF),
+            _f("GHA-014", self.OTHER_WF),
+        ])
+        assert not any(c.chain_id == "AC-018" for c in out)
+
+    def test_does_not_fire_without_gha001(self):
+        out = chains_pkg.evaluate([_f("GHA-014", self.WF)])
+        assert not any(c.chain_id == "AC-018" for c in out)
+
+    def test_does_not_fire_without_gha014(self):
+        out = chains_pkg.evaluate([_f("GHA-001", self.WF)])
+        assert not any(c.chain_id == "AC-018" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, passed=True),
+            _f("GHA-014", self.WF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-018" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF), _f("GHA-014", self.WF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-018")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+
+
+class TestChainAC019:
+    """AC-019 — Lambda env-secret meets PassRole *."""
+
+    LAMBDA = "arn:aws:lambda:us-east-1:123456789012:function:my-fn"
+    ROLE = "arn:aws:iam::123456789012:role/ci-deploy"
+
+    def test_fires_when_both_legs_fail(self):
+        out = chains_pkg.evaluate([
+            _f("LMB-003", self.LAMBDA),
+            _f("IAM-004", self.ROLE),
+        ])
+        ac19 = [c for c in out if c.chain_id == "AC-019"]
+        assert len(ac19) == 1
+        assert ac19[0].severity is Severity.CRITICAL
+        assert "T1552.001" in ac19[0].mitre_attack
+        assert "T1098.003" in ac19[0].mitre_attack
+
+    def test_does_not_fire_without_lmb003(self):
+        out = chains_pkg.evaluate([_f("IAM-004", self.ROLE)])
+        assert not any(c.chain_id == "AC-019" for c in out)
+
+    def test_does_not_fire_without_iam004(self):
+        out = chains_pkg.evaluate([_f("LMB-003", self.LAMBDA)])
+        assert not any(c.chain_id == "AC-019" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("LMB-003", self.LAMBDA, passed=True),
+            _f("IAM-004", self.ROLE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-019" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("LMB-003", self.LAMBDA),
+            _f("IAM-004", self.ROLE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-019")
+        assert "credential-access" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("LMB-003", self.LAMBDA, confidence=Confidence.HIGH),
+            _f("IAM-004", self.ROLE, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-019")
+        assert chain.confidence is Confidence.LOW
 
 
 # ── Gate integration ─────────────────────────────────────────────────

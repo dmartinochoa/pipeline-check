@@ -40,7 +40,7 @@ STANDARD = Standard(
         "CB-008":   ["CICD-SEC-4"],
         "CB-009":   ["CICD-SEC-3"],
         "CB-010":   ["CICD-SEC-4"],
-        "CB-011":   ["CICD-SEC-4"],
+        "CB-011":   ["CICD-SEC-4", "CICD-SEC-7"],
         # CodePipeline
         "CP-001":   ["CICD-SEC-1"],
         "CP-002":   ["CICD-SEC-9"],
@@ -160,11 +160,16 @@ STANDARD = Standard(
         "GHA-024":  ["CICD-SEC-9"],
         "GHA-025":  ["CICD-SEC-3"],
         "GHA-026":  ["CICD-SEC-7"],
-        "GHA-027":  ["CICD-SEC-4"],
+        "GHA-027":  ["CICD-SEC-4", "CICD-SEC-7"],
         "GHA-028":  ["CICD-SEC-4"],
         "GHA-029":  ["CICD-SEC-3"],
+        "GHA-030":  ["CICD-SEC-2"],   # OIDC without environment gate
+        "GHA-031":  ["CICD-SEC-4"],   # retired set-output / save-state
+        "GHA-032":  ["CICD-SEC-4"],   # local-script invocation on untrusted trigger
+        "GHA-033":  ["CICD-SEC-6"],   # secret echoed in run:
         "GHA-034":  ["CICD-SEC-2", "CICD-SEC-6"],  # secrets: inherit
         "GHA-035":  ["CICD-SEC-4"],   # github-script injection
+        "GHA-036":  ["CICD-SEC-7"],   # runs-on interpolates untrusted context
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -190,12 +195,14 @@ STANDARD = Standard(
         "GL-022":   ["CICD-SEC-3"],
         "GL-023":   ["CICD-SEC-3"],
         "GL-024":   ["CICD-SEC-9"],
-        "GL-025":   ["CICD-SEC-4"],
+        "GL-025":   ["CICD-SEC-4", "CICD-SEC-7"],
         "GL-026":   ["CICD-SEC-4"],
         "GL-027":   ["CICD-SEC-3"],
         "GL-028":   ["CICD-SEC-3"],
         "GL-029":   ["CICD-SEC-1"],
         "GL-030":   ["CICD-SEC-3"],
+        "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
+        "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3"],
         "BB-002":   ["CICD-SEC-4"],
@@ -221,9 +228,10 @@ STANDARD = Standard(
         "BB-022":   ["CICD-SEC-3"],
         "BB-023":   ["CICD-SEC-3"],
         "BB-024":   ["CICD-SEC-9"],
-        "BB-025":   ["CICD-SEC-4"],
+        "BB-025":   ["CICD-SEC-4", "CICD-SEC-7"],
         "BB-026":   ["CICD-SEC-4"],
         "BB-027":   ["CICD-SEC-3"],
+        "BB-028":   ["CICD-SEC-2"],   # OIDC without deployment-gated environment
         "BB-029":   ["CICD-SEC-3"],   # step+service image pinning
         # Azure DevOps Pipelines
         "ADO-001":  ["CICD-SEC-3"],
@@ -251,9 +259,11 @@ STANDARD = Standard(
         "ADO-023":  ["CICD-SEC-3"],
         "ADO-024":  ["CICD-SEC-9"],
         "ADO-025":  ["CICD-SEC-3"],
-        "ADO-026":  ["CICD-SEC-4"],
+        "ADO-026":  ["CICD-SEC-4", "CICD-SEC-7"],
         "ADO-027":  ["CICD-SEC-4"],
         "ADO-028":  ["CICD-SEC-3"],
+        "ADO-029":  ["CICD-SEC-2"],   # service-connection job without env gate
+        "ADO-030":  ["CICD-SEC-7"],   # pool interpolates attacker-controllable value
         # Jenkins
         "JF-001":   ["CICD-SEC-3"],
         "JF-002":   ["CICD-SEC-4"],
@@ -283,9 +293,10 @@ STANDARD = Standard(
         "JF-026":   ["CICD-SEC-4"],
         "JF-027":   ["CICD-SEC-9"],
         "JF-028":   ["CICD-SEC-9"],
-        "JF-029":   ["CICD-SEC-4"],
+        "JF-029":   ["CICD-SEC-4", "CICD-SEC-7"],
         "JF-030":   ["CICD-SEC-4"],
         "JF-031":   ["CICD-SEC-3"],
+        "JF-032":   ["CICD-SEC-7"],   # agent label interpolates untrusted ref
         # CircleCI
         "CC-001":   ["CICD-SEC-3"],
         "CC-002":   ["CICD-SEC-4"],
@@ -312,11 +323,12 @@ STANDARD = Standard(
         "CC-023":   ["CICD-SEC-3"],
         "CC-024":   ["CICD-SEC-9"],
         "CC-025":   ["CICD-SEC-4"],
-        "CC-026":   ["CICD-SEC-4"],
+        "CC-026":   ["CICD-SEC-4", "CICD-SEC-7"],
         "CC-027":   ["CICD-SEC-4"],
         "CC-028":   ["CICD-SEC-3"],
         "CC-029":   ["CICD-SEC-3"],
         "CC-030":   ["CICD-SEC-6"],
+        "CC-031":   ["CICD-SEC-2"],   # OIDC role assumption without branch / approval gate
         # Google Cloud Build
         "GCB-001":  ["CICD-SEC-3"],
         "GCB-002":  ["CICD-SEC-2"],
@@ -333,13 +345,17 @@ STANDARD = Standard(
         "GCB-013":  ["CICD-SEC-3"],   # package source integrity
         "GCB-014":  ["CICD-SEC-10"],  # logging disabled
         "GCB-015":  ["CICD-SEC-9"],   # no SBOM
-        "GCB-016":  ["CICD-SEC-7"],   # dir path escape
-        "GCB-017":  ["CICD-SEC-9", "CICD-SEC-10"],  # no SLSA provenance
+        "GCB-016":  ["CICD-SEC-4", "CICD-SEC-7"],   # dir path escape
+        "GCB-017":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # no SLSA provenance
         "GCB-018":  ["CICD-SEC-6"],   # legacy KMS secrets block
         "GCB-019":  ["CICD-SEC-4"],   # shell entrypoint + user substitution
         "GCB-020":  ["CICD-SEC-2"],   # default Cloud Build SA email
         "GCB-021":  ["CICD-SEC-7"],   # no private worker pool
         "GCB-022":  ["CICD-SEC-4"],   # substitutionOption ALLOW_LOOSE
+        "GCB-023":  ["CICD-SEC-4"],   # undeclared user substitution
+        "GCB-024":  ["CICD-SEC-9"],   # images: missing despite docker push
+        "GCB-025":  ["CICD-SEC-10"],  # tags: empty (audit/discoverability)
+        "GCB-026":  ["CICD-SEC-4"],   # waitFor references unknown id
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],
@@ -364,17 +380,33 @@ STANDARD = Standard(
         "K8S-021":  ["CICD-SEC-2", "CICD-SEC-5"],
         "K8S-022":  ["CICD-SEC-7"],
         "K8S-023":  ["CICD-SEC-7"],   # PSA enforce label missing
-        "K8S-024":  ["CICD-SEC-10"],  # missing health probes
-        "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5"],  # system-* priority class
+        "K8S-024":  ["CICD-SEC-7", "CICD-SEC-10"],  # missing health probes
+        "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5", "CICD-SEC-7"],  # system-* priority class
         "K8S-026":  ["CICD-SEC-7"],   # LB without source ranges
         "K8S-027":  ["CICD-SEC-7"],   # Ingress without TLS
         "K8S-028":  ["CICD-SEC-7"],   # container hostPort
         "K8S-029":  ["CICD-SEC-2", "CICD-SEC-5"],  # default-SA binding
         "K8S-030":  ["CICD-SEC-7"],   # control-plane scheduling
+        "K8S-031":  ["CICD-SEC-7"],   # PSA warn label missing
+        "K8S-032":  ["CICD-SEC-7"],   # NetworkPolicy default-deny missing
+        "K8S-033":  ["CICD-SEC-7"],   # ResourceQuota / LimitRange missing
+        "K8S-034":  ["CICD-SEC-2"],   # ServiceAccount automount default
+        "K8S-035":  ["CICD-SEC-7"],   # container runAsUser: 0
+        # Helm chart-supply-chain
+        "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
+        "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests
+        "HELM-003": ["CICD-SEC-3"],   # non-HTTPS dep repository
+        "HELM-004": ["CICD-SEC-3"],   # dep version not exact-pinned
+        "HELM-005": ["CICD-SEC-3"],   # maintainers chain-of-custody
+        "HELM-006": ["CICD-SEC-3"],   # kubeVersion compat range
+        "HELM-007": ["CICD-SEC-3"],   # description empty
+        "HELM-008": ["CICD-SEC-3"],   # Chart.lock stale > 90 days
+        "HELM-009": ["CICD-SEC-3"],   # home / sources non-HTTPS
+        "HELM-010": ["CICD-SEC-3"],   # appVersion empty
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
-        "DF-003":   ["CICD-SEC-3"],   # ADD URL no checksum
+        "DF-003":   ["CICD-SEC-3", "CICD-SEC-9"],   # ADD URL no checksum
         "DF-004":   ["CICD-SEC-3"],   # curl-pipe in RUN
         "DF-005":   ["CICD-SEC-4"],   # shell-eval idiom
         "DF-006":   ["CICD-SEC-6"],   # secret in ENV/ARG
@@ -387,10 +419,52 @@ STANDARD = Standard(
         "DF-013":   ["CICD-SEC-7"],   # EXPOSE 22 / remote-access port
         "DF-014":   ["CICD-SEC-7"],   # WORKDIR system path
         "DF-015":   ["CICD-SEC-7"],   # chmod 777 / world-writable
-        "DF-016":   ["CICD-SEC-9"],   # missing OCI provenance labels
+        "DF-016":   ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],   # missing OCI provenance labels
         "DF-017":   ["CICD-SEC-7"],   # ENV PATH prepends a writable dir
         "DF-018":   ["CICD-SEC-7"],   # RUN chown rewrites a system path
         "DF-019":   ["CICD-SEC-6"],   # COPY/ADD credential-shaped file
         "DF-020":   ["CICD-SEC-6"],   # ARG credential-shaped name
+        # Buildkite
+        "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
+        "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env
+        "BK-003":   ["CICD-SEC-4"],   # untrusted variable interpolated
+        "BK-004":   ["CICD-SEC-3", "CICD-SEC-1"],  # remote curl-pipe to shell
+        "BK-005":   ["CICD-SEC-5"],   # docker --privileged / host bind
+        "BK-006":   ["CICD-SEC-9"],   # missing timeout_in_minutes
+        "BK-007":   ["CICD-SEC-2", "CICD-SEC-7"],  # deploy step not gated
+        "BK-008":   ["CICD-SEC-3"],   # TLS verification disabled
+        "BK-009":   ["CICD-SEC-9"],   # artifacts not signed
+        "BK-010":   ["CICD-SEC-9"],   # SBOM not generated
+        "BK-011":   ["CICD-SEC-9"],   # SLSA provenance not produced
+        "BK-012":   ["CICD-SEC-9"],   # no vulnerability scanning
+        "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
+        # Tekton
+        "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
+        "TKN-002":  ["CICD-SEC-5"],   # step runs privileged / as root
+        "TKN-003":  ["CICD-SEC-4", "CICD-SEC-1"],  # param injection in script
+        "TKN-004":  ["CICD-SEC-5"],   # hostPath / host namespaces
+        "TKN-005":  ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
+        "TKN-006":  ["CICD-SEC-9"],   # no explicit timeout
+        "TKN-007":  ["CICD-SEC-2"],   # default ServiceAccount
+        "TKN-008":  ["CICD-SEC-3"],   # remote install / TLS bypass
+        "TKN-009":  ["CICD-SEC-9"],   # artifacts not signed
+        "TKN-010":  ["CICD-SEC-9"],   # SBOM not generated
+        "TKN-011":  ["CICD-SEC-9"],   # SLSA provenance not produced
+        "TKN-012":  ["CICD-SEC-9"],   # no vulnerability scanning
+        "TKN-013":  ["CICD-SEC-5"],   # sidecar privileged / root
+        # Argo Workflows
+        "ARGO-001": ["CICD-SEC-3"],   # template image not digest-pinned
+        "ARGO-002": ["CICD-SEC-5"],   # template privileged / root
+        "ARGO-003": ["CICD-SEC-2"],   # default ServiceAccount
+        "ARGO-004": ["CICD-SEC-5"],   # hostPath / host namespaces
+        "ARGO-005": ["CICD-SEC-4", "CICD-SEC-1"],  # parameter injection in script
+        "ARGO-006": ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
+        "ARGO-007": ["CICD-SEC-9"],   # missing activeDeadlineSeconds
+        "ARGO-008": ["CICD-SEC-3"],   # remote install / TLS bypass
+        "ARGO-009": ["CICD-SEC-9"],   # artifacts not signed
+        "ARGO-010": ["CICD-SEC-9"],   # SBOM not generated
+        "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
+        "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
+        "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
     },
 )

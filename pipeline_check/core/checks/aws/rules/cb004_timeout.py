@@ -19,6 +19,14 @@ RULE = Rule(
         "(typically 15\u201360 minutes) to limit the blast radius of a runaway "
         "or abused build."
     ),
+    docs_note=(
+        "A CodeBuild project at AWS's 480-minute maximum is rarely "
+        "deliberate. Without a tighter ceiling, a runaway test loop, "
+        "a fork-PR cryptomining payload, or a build that hangs on "
+        "stdin keeps the build host (and its IAM role) live for the "
+        "full eight hours, racking up cost and extending the "
+        "compromise window."
+    ),
 )
 
 

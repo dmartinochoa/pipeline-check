@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import Dockerfile, run_bodies
 
@@ -44,10 +44,20 @@ _PRIV_RE = re.compile(
 
 def check(df: Dockerfile) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for line_no, body in run_bodies(df):
+        line_offenders = 0
         for m in _PRIV_RE.finditer(body):
             snippet = m.group(0)[:60]
             offenders.append(f"L{line_no}: {snippet}")
+            line_offenders += 1
+        if line_offenders:
+            # One Location per offending RUN line — keeps reporters'
+            # click-to-jump tidy when a single RUN chains two
+            # privileged invocations.
+            locations.append(Location(
+                path=df.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No ``RUN`` body invokes ``--privileged`` / dangerous "
@@ -61,4 +71,5 @@ def check(df: Dockerfile) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

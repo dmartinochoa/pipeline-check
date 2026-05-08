@@ -136,5 +136,53 @@ STANDARD = Standard(
         "CC-021":   ["3.1.3"],
         "CC-022":   ["3.1.3"],
         "CC-023":   ["3.1.5"],
+        # ── Buildkite ─────────────────────────────────────────────
+        "BK-001":   ["1.4.1", "3.1.5"],            # plugin not pinned
+        "BK-002":   ["2.3.4"],                     # secret in env
+        "BK-003":   ["2.1.3", "2.3.8"],            # untrusted variable injection
+        "BK-004":   ["1.4.1", "3.1.5"],            # curl | bash
+        "BK-005":   ["2.1.3"],                     # Docker privileged
+        "BK-006":   ["2.2.2"],                     # no timeout
+        "BK-007":   ["2.3.8", "5.1.4"],            # deploy not gated
+        "BK-008":   ["3.1.3"],                     # TLS bypass
+        "BK-009":   ["4.1.1"],                     # artifact signing
+        "BK-010":   ["4.4.1"],                     # SBOM
+        "BK-011":   ["4.1.1", "4.4.1"],            # SLSA provenance
+        "BK-012":   ["1.4.1", "3.1.3"],            # vuln scanning
+        # ── Tekton ────────────────────────────────────────────────
+        "TKN-001":  ["1.4.1", "3.1.3"],            # step image not digest-pinned
+        "TKN-002":  ["2.1.3"],                     # step privileged
+        "TKN-003":  ["2.1.3", "2.3.8"],            # param injection
+        "TKN-004":  ["2.1.3"],                     # hostPath / host namespaces
+        "TKN-005":  ["2.3.4"],                     # leaked creds
+        "TKN-006":  ["2.2.2"],                     # no timeout
+        "TKN-007":  ["2.4.3"],                     # default SA
+        "TKN-008":  ["1.4.1", "3.1.5"],            # remote install / TLS
+        "TKN-009":  ["4.1.1"],                     # artifact signing
+        "TKN-010":  ["4.4.1"],                     # SBOM
+        "TKN-011":  ["4.1.1", "4.4.1"],            # SLSA provenance
+        "TKN-012":  ["1.4.1", "3.1.3"],            # vuln scanning
+        # ── Argo Workflows ────────────────────────────────────────
+        "ARGO-001": ["1.4.1", "3.1.3"],            # template image not pinned
+        "ARGO-002": ["2.1.3"],                     # template privileged
+        "ARGO-003": ["2.4.3"],                     # default SA
+        "ARGO-004": ["2.1.3"],                     # hostPath / host namespaces
+        "ARGO-005": ["2.1.3", "2.3.8"],            # parameter injection
+        "ARGO-006": ["2.3.4"],                     # leaked creds
+        "ARGO-007": ["2.2.2"],                     # no activeDeadlineSeconds
+        "ARGO-008": ["1.4.1", "3.1.5"],            # remote install / TLS
+        "ARGO-009": ["4.1.1"],                     # artifact signing
+        "ARGO-010": ["4.4.1"],                     # SBOM
+        "ARGO-011": ["4.1.1", "4.4.1"],            # SLSA provenance
+        "ARGO-012": ["1.4.1", "3.1.3"],            # vuln scanning
+        # ── Helm chart-supply-chain ───────────────────────────────
+        # Chart packaging metadata sits at the artifact / build-deps
+        # boundary. HELM-002's missing-digest is the exact "signed
+        # metadata of dependencies is verified" failure (3.1.3).
+        "HELM-001": ["1.4.1", "3.1.3"],            # legacy v1 (no in-tree dep manifest)
+        "HELM-002": ["3.1.3", "4.1.1"],            # missing Chart.lock digests
+        "HELM-003": ["3.1.5"],                     # non-HTTPS dep repo
+        "HELM-004": ["1.4.1", "3.1.3"],            # version range
+        "HELM-005": ["4.4.1"],                     # maintainers chain-of-custody
     },
 )

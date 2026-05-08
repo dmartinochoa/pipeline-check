@@ -31,7 +31,7 @@ import yaml
 from ..base import BaseCheck
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CloudFormationResource:
     """A single resource extracted from a CFN template."""
 

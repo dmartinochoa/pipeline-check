@@ -24,6 +24,14 @@ RULE = Rule(
         "rolling config) so that defects are caught before they affect all "
         "instances or traffic."
     ),
+    docs_note=(
+        "AllAtOnce shifts 100% of traffic to the new revision in one "
+        "step. There's no gradient to halt on if a CloudWatch alarm "
+        "trips mid-rollout — the bad revision is already serving "
+        "every request. Canary / linear configs introduce the "
+        "shift-then-watch shape that lets monitors catch a "
+        "regression before it's universal."
+    ),
 )
 
 

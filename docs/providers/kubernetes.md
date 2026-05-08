@@ -56,7 +56,7 @@ Four rules target non-workload kinds:
 
 ## What it covers
 
-30 checks · 13 have an autofix patch (``--fix``).
+35 checks · 13 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -90,6 +90,11 @@ Four rules target non-workload kinds:
 | [K8S-028](#k8s-028) | Container declares hostPort | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [K8S-029](#k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [K8S-030](#k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [K8S-031](#k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [K8S-032](#k8s-032) | Namespace lacks default-deny NetworkPolicy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [K8S-033](#k8s-033) | Namespace lacks ResourceQuota or LimitRange | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [K8S-034](#k8s-034) | ServiceAccount automountServiceAccountToken not explicitly false | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [K8S-035](#k8s-035) | Container securityContext.runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -695,6 +700,106 @@ Fires on a non-system workload whose ``spec.nodeSelector`` contains a control-pl
 **Recommended action**
 
 Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.kubernetes.io/control-plane`` (or the legacy ``master`` spelling) from non-system workloads. A pod scheduled on a control-plane node shares the kernel with the API server, etcd, and kubelet credentials — credential theft from any such pod yields cluster-wide takeover. Application workloads belong on dedicated worker nodes; system add-ons that legitimately need control-plane scheduling should run as a DaemonSet in ``kube-system``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## K8S-031 — Namespace missing PSA warn label { #k8s-031 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Pod Security Admission supports three modes: ``enforce`` (reject), ``audit`` (log to API audit), and ``warn`` (return a kubectl warning). K8S-023 covers ``enforce``; this rule covers ``warn``. The convention from upstream PSA docs is to set ``warn`` to the next-strictest tier above your current ``enforce`` so an upgrade from baseline to restricted is a predictable rollout, not a surprise.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``metadata.labels.pod-security.kubernetes.io/warn`` on every Namespace, ideally one tier ahead of the enforce label (e.g. ``enforce: baseline`` + ``warn: restricted``). The warn level surfaces violations as ``kubectl apply`` warnings without rejecting the resource — developers see what would break before an enforcement upgrade lands.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## K8S-032 — Namespace lacks default-deny NetworkPolicy { #k8s-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
+</div>
+
+Kubernetes' default network model is allow-everything: without any NetworkPolicy targeting a namespace, every pod can talk to every other pod across every namespace, and every pod can reach the internet. A default-deny policy flips the default to deny, so the only flows that work are those an explicit allow policy permits. The check fires on namespaces declared in the manifest set that have at least one workload but no default-deny NetworkPolicy covering them. Cross-doc correlation: it walks the full manifest stream to match Namespace/workload/NetworkPolicy across files.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Apply a default-deny NetworkPolicy in every namespace that carries workloads. The canonical shape is ``podSelector: {}`` (matches every pod) plus ``policyTypes: [Ingress, Egress]`` with no ``ingress:`` / ``egress:`` rules — every flow is denied unless a more permissive NetworkPolicy in the same namespace explicitly allows it. Pair with per-workload allow-list policies for the flows the application actually needs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## K8S-033 — Namespace lacks ResourceQuota or LimitRange { #k8s-033 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
+</div>
+
+Without a ResourceQuota, a single namespace can consume the cluster's entire scheduling capacity — a fork bomb in a CronJob, a memory leak in a Deployment, or a cryptominer that landed via a fork-PR build can starve every other tenant. Without a LimitRange, individual pods without explicit ``resources:`` requests get a default of zero — the scheduler treats them as best-effort and packs them on any node, including ones already at memory pressure. The two work together: quota caps the aggregate, range caps the per-workload baseline. Cross-doc correlation: walks the manifest stream to match Namespace / workload / ResourceQuota / LimitRange across files.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Apply a ``ResourceQuota`` *and* a ``LimitRange`` to every namespace that hosts application workloads. ResourceQuota caps the namespace's total CPU / memory / pod / object consumption; LimitRange enforces per-pod request / limit defaults so a workload that forgets to declare its own doesn't get unbounded scheduling. Together they bound the blast radius of a runaway, leaky, or attacker-driven pod explosion to a single namespace.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## K8S-034 — ServiceAccount automountServiceAccountToken not explicitly false { #k8s-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+K8S-012 covers the pod-level ``automountServiceAccountToken`` setting; this rule covers the same control at the ServiceAccount level. The two are complementary: the SA-level default flips the cluster-wide baseline (``true`` -> ``false``), the pod-level override re-enables only where needed. Without the SA-level disable, every pod that doesn't set its own override mounts a token that can call the K8s API as that SA — a useful credential for an attacker who lands code in any pod, regardless of the workload's own intent.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``automountServiceAccountToken: false`` at the ServiceAccount level for every SA that doesn't actively need to call the Kubernetes API. The pods that legitimately do (operators, sidecars that read namespaces, controllers) can opt back in per-pod via ``spec.automountServiceAccountToken: true``. The default is mount-everywhere, which is the wrong direction for least privilege.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## K8S-035 — Container securityContext.runAsUser is 0 { #k8s-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
+</div>
+
+K8S-007 covers ``runAsNonRoot: false`` (the boolean form). This rule covers the explicit numeric form: a container that sets ``runAsUser: 0`` runs as root regardless of ``runAsNonRoot`` being declared elsewhere — Kubernetes won't reject the spec, it just runs the container as root. The two rules are paired so neither shape slips through alone. The pod-level ``securityContext.runAsUser`` inherits to every container that doesn't override it; this rule fires on the *effective* UID, walking pod-level first then per-container override.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation — a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
 
 </div>
 

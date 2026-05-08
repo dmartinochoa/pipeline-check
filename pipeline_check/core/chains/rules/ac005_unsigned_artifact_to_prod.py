@@ -36,6 +36,24 @@ RULE = ChainRule(
         "environment with required reviewers)."
     ),
     # Provider-agnostic: the chain spans multiple providers in practice.
+    triggering_check_ids=(
+        "GHA-006",
+        "GL-006",
+        "BB-006",
+        "ADO-006",
+        "JF-006",
+        "CC-006",
+        "GCB-009",
+        "SIGN-001",
+        "GHA-014",
+        "GL-004",
+        "BB-004",
+        "ADO-004",
+        "JF-005",
+        "CC-009",
+        "CP-001",
+        "CP-005",
+    ),
 )
 
 # A build-side check id (lack of signing/provenance) → list of

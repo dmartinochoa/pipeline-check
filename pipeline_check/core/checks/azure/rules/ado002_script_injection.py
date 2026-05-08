@@ -8,7 +8,8 @@ from ..._primitives.tainted_variables import (
     has_direct_taint,
     has_unsafe_reference,
 )
-from ...base import Finding, Severity
+from ..._yaml_lines import line_of
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 from ._helpers import UNTRUSTED_VAR_RE
@@ -76,6 +77,8 @@ def _ado_ref_pattern(name: str) -> str:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
+    seen_step_lines: set[int] = set()
     pipeline_tainted = _tainted_vars(doc.get("variables"))
     for job_loc, job in iter_jobs(doc):
         job_tainted = pipeline_tainted | _tainted_vars(job.get("variables"))
@@ -86,15 +89,25 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     continue
                 lines = body.splitlines()
                 loc = f"{job_loc}.{step_loc}"
+                hit = False
                 # 1. Direct interpolation of untrusted ADO macros.
                 if has_direct_taint(lines, UNTRUSTED_VAR_RE):
                     offenders.append(loc)
-                    break
+                    hit = True
                 # 2. Indirect: tainted variable referenced unquoted.
-                if job_tainted and has_unsafe_reference(
+                elif job_tainted and has_unsafe_reference(
                     lines, job_tainted, ref_pattern=_ado_ref_pattern
                 ):
                     offenders.append(loc)
+                    hit = True
+                if hit:
+                    step_line = line_of(step)
+                    if step_line is not None and step_line not in seen_step_lines:
+                        seen_step_lines.add(step_line)
+                        locations.append(Location(
+                            path=path,
+                            start_line=step_line, end_line=step_line,
+                        ))
                     break
     passed = not offenders
     desc = (
@@ -109,4 +122,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

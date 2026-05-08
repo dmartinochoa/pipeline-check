@@ -19,6 +19,15 @@ RULE = Rule(
         "the same key material indefinitely, so a single cryptographic "
         "exposure (side-channel, accidental export) is permanent."
     ),
+    docs_note=(
+        "Annual rotation regenerates the underlying key material "
+        "for the same CMK ARN. Existing ciphertexts can still be "
+        "decrypted (KMS keeps old material around), but new "
+        "encrypts use the new material — so a cryptographic "
+        "exposure (side-channel, an accidental export, an old "
+        "compromised offline backup) only protects ciphertexts "
+        "from before the rotation."
+    ),
 )
 
 

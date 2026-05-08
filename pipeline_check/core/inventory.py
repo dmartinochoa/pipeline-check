@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass
+@dataclass(slots=True)
 class Component:
     """A single resource/file/workflow the scanner discovered."""
 

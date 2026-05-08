@@ -17,6 +17,14 @@ RULE = Rule(
         "only PRs targeting specific branches run. Without a filter, "
         "any fork-PR can execute the pipeline's build and deploy stages."
     ),
+    docs_note=(
+        "V2 pipelines added native PR triggers; without a "
+        "``branches.includes`` filter, any PR — including fork PRs "
+        "from outside the org — fires the pipeline. The build stage "
+        "runs with whatever IAM authority the pipeline's role "
+        "carries, which is the full attack surface a fork-PR "
+        "compromise can reach."
+    ),
 )
 
 

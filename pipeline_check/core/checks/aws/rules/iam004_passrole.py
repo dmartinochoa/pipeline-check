@@ -16,6 +16,15 @@ RULE = Rule(
         "Restrict iam:PassRole to specific role ARNs and add an "
         "iam:PassedToService condition."
     ),
+    docs_note=(
+        "``iam:PassRole`` with ``Resource: '*'`` lets the principal "
+        "hand any role to any service. Combined with a service that "
+        "runs your code (Lambda, ECS, CodeBuild, EC2 Instance "
+        "Profiles), this is role-hop privilege escalation: launch "
+        "an ephemeral resource configured with a higher-privileged "
+        "role, run code under that identity, exfil. Scoping by ARN "
+        "+ ``iam:PassedToService`` removes the escalation path."
+    ),
 )
 
 

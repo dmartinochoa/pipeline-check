@@ -21,6 +21,15 @@ RULE = Rule(
         "triggers extend the blast radius of a repository compromise to "
         "whatever the target ARN can do."
     ),
+    docs_note=(
+        "A repo trigger pointing at an SNS topic or Lambda in a "
+        "different account fires under the receiving account's "
+        "permissions on every push. Sometimes this is the intended "
+        "shape (a centralized notifications account), but a "
+        "cross-account fan-out from a compromised repo can drive "
+        "actions in the receiving account that the source-account "
+        "owner can't directly observe."
+    ),
 )
 
 _ARN_ACCOUNT_RE = re.compile(r"^arn:aws:[^:]+:[^:]*:(\d{12}):")

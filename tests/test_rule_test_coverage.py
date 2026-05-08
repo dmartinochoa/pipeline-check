@@ -42,6 +42,7 @@ PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
     "argo":       ("pipeline_check.core.checks.argo.rules",       100),
     "dockerfile": ("pipeline_check.core.checks.dockerfile.rules", 100),
     "kubernetes": ("pipeline_check.core.checks.kubernetes.rules", 100),
+    "helm":       ("pipeline_check.core.checks.helm.rules",       100),
 }
 
 

@@ -32,6 +32,7 @@ __all__ = [
     "confidence_rank",
     "Finding",
     "Location",
+    "ControlRef",
     "BaseCheck",
     # re-exported from blob
     "walk_strings",
@@ -122,7 +123,7 @@ def confidence_rank(c: "Confidence") -> int:
     return _CONFIDENCE_RANK[c]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Location:
     """Where a finding lands inside a source file.
 
@@ -163,7 +164,7 @@ class Location:
         return out
 
 
-@dataclass
+@dataclass(slots=True)
 class Finding:
     check_id: str
     title: str
