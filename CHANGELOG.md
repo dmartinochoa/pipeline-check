@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`--explain` v2: `[Related rules]` and `[Autofixable]` sections.**
+  Finishes the cross-reference triangle that round 19 started. The
+  ``[Triggers attack chains]`` section already cross-referenced
+  rule -> chain; this round adds rule -> sibling rules and rule ->
+  autofix.
+  ``[Related rules]`` lists checks in the same topic cluster
+  (same threat / different layer, or same control / different
+  provider). 18 clusters cover the major patterns: K8s
+  securityContext (K8S-005/006/007/035), K8s RBAC, K8s
+  ServiceAccount, cross-provider literal-secrets / script-injection
+  / image-pinning / signing / SBOM / SLSA-provenance / vuln-
+  scanning / TLS-bypass / curl-pipe / deploy-gate / self-hosted-
+  ephemeral / token-persistence. So ``--explain GHA-008`` now
+  surfaces ``GL-008``, ``BB-008``, ``ADO-008``, ``JF-008``,
+  ``CC-008``, ``BK-002``, ``TKN-005``, ``ARGO-006`` — the same
+  literal-secret threat across every provider in the repo. A
+  regression test walks every cluster entry and asserts the IDs
+  resolve through the explain index, so a typo trips at CI.
+  ``[Autofixable]`` says "Yes" with a CLI hint when the check has
+  a registered fixer (``autofix.available_fixers()``); the section
+  is omitted otherwise. Doesn't distinguish comment-only vs
+  structural — that lives in the patch ``--fix`` emits.
 - **SARIF results now carry stable `partialFingerprints`.**
   Every result in the SARIF payload now includes a
   ``partialFingerprints.pipelineCheckV1`` entry — a SHA-256 of

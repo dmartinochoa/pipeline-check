@@ -24,6 +24,7 @@ import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .autofix import available_fixers
 from .checks._confidence import confidence_for
 from .checks.base import Severity
 from .checks.rule import Rule, discover_rules
@@ -117,6 +118,113 @@ def _chains_for_check_id(check_id: str) -> list[ChainRule]:
             index[cid].sort(key=lambda cr: cr.id)
         _CHAINS_BY_CHECK_ID = index
     return _CHAINS_BY_CHECK_ID.get(check_id, [])
+
+
+#: Topic clusters for the ``[Related rules]`` cross-reference. Each
+#: entry groups checks that an operator landing on one ID is likely
+#: to also want to know about — same threat / different layer or same
+#: control / different provider.
+#:
+#: A check may belong to multiple clusters; the rendered cross-ref is
+#: the union of all matching clusters minus the check itself, deduped
+#: and sorted. Adding a new cluster: append a new key with a tuple of
+#: check IDs. ``test_topic_clusters_reference_real_check_ids`` walks
+#: every entry and asserts every ID resolves through the explain index,
+#: so a typo trips at CI time.
+_TOPIC_CLUSTERS: dict[str, tuple[str, ...]] = {
+    # Container runtime hardening.
+    "k8s_security_context": (
+        "K8S-005", "K8S-006", "K8S-007", "K8S-035",
+    ),
+    "k8s_host_namespaces": (
+        "K8S-002", "K8S-003", "K8S-004", "K8S-013", "K8S-014",
+    ),
+    "k8s_rbac": (
+        "K8S-019", "K8S-020", "K8S-021", "K8S-029",
+    ),
+    "k8s_namespace_posture": (
+        "K8S-023", "K8S-031", "K8S-032", "K8S-033",
+    ),
+    "k8s_service_account": (
+        "K8S-011", "K8S-012", "K8S-034", "ARGO-013",
+    ),
+    "k8s_runtime_priv_escalation": (
+        "ARGO-002", "TKN-002", "TKN-013",
+    ),
+    # Cross-provider CI/CD families.
+    "ci_literal_secrets": (
+        "GHA-008", "GL-008", "BB-008", "ADO-003", "ADO-008",
+        "JF-008", "CC-008", "BK-002", "TKN-005", "ARGO-006",
+    ),
+    "ci_script_injection": (
+        "GHA-003", "GL-002", "BB-002", "ADO-002",
+        "JF-002", "CC-002",
+    ),
+    "ci_image_pinning": (
+        "GHA-001", "GL-001", "BB-001", "ADO-001", "ADO-005",
+        "JF-001", "CC-001", "BK-001", "TKN-001", "ARGO-001",
+    ),
+    "ci_signing": (
+        "GHA-006", "GL-006", "BB-006", "ADO-006",
+        "JF-006", "CC-006", "BK-009", "TKN-009", "ARGO-009",
+    ),
+    "ci_sbom": (
+        "GHA-007", "GL-007", "BB-007", "ADO-007",
+        "JF-007", "CC-007", "BK-010", "TKN-010", "ARGO-010",
+    ),
+    "ci_slsa_provenance": (
+        "GHA-024", "GL-024", "BB-024", "ADO-024",
+        "JF-028", "CC-024", "BK-011", "TKN-011", "ARGO-011",
+    ),
+    "ci_vuln_scanning": (
+        "GHA-020", "GL-019", "BB-015", "ADO-020",
+        "JF-020", "CC-020", "BK-012", "TKN-012", "ARGO-012",
+    ),
+    "ci_tls_bypass": (
+        "GHA-023", "GL-023", "BB-023", "ADO-023",
+        "JF-023", "CC-023", "BK-008",
+    ),
+    "ci_curl_pipe": (
+        "GHA-016", "GL-016", "BB-012", "ADO-016",
+        "JF-016", "CC-016", "BK-004", "TKN-008", "ARGO-008",
+    ),
+    "ci_deploy_gate": (
+        "GHA-014", "GL-004", "BB-004", "ADO-004",
+        "JF-005", "CC-009", "BK-007", "BK-013",
+    ),
+    "ci_self_hosted_ephemeral": (
+        "GHA-012", "GL-014", "BB-016", "ADO-013",
+        "JF-014", "CC-010",
+    ),
+    "ci_token_persistence": (
+        "GHA-019", "GL-020", "BB-017",
+    ),
+}
+
+#: Lazy inverted index: check_id -> tuple of related check_ids (sorted,
+#: deduped, with the check_id itself removed). Built on first call.
+_RELATED_BY_CHECK_ID: dict[str, tuple[str, ...]] | None = None
+
+
+def _related_check_ids(check_id: str) -> tuple[str, ...]:
+    """Return the union of all ``_TOPIC_CLUSTERS`` containing *check_id*.
+
+    Empty when the ID isn't in any cluster. The result excludes
+    ``check_id`` itself and is sorted for stable output.
+    """
+    global _RELATED_BY_CHECK_ID
+    if _RELATED_BY_CHECK_ID is None:
+        index: dict[str, set[str]] = {}
+        for members in _TOPIC_CLUSTERS.values():
+            members_set = set(members)
+            for member in members:
+                index.setdefault(member, set()).update(members_set)
+        # Drop self-references and freeze to a sorted tuple per ID.
+        _RELATED_BY_CHECK_ID = {
+            cid: tuple(sorted(others - {cid}))
+            for cid, others in index.items()
+        }
+    return _RELATED_BY_CHECK_ID.get(check_id, ())
 
 
 def _build_index() -> dict[str, _CheckMeta]:
@@ -298,6 +406,45 @@ def _render_meta(meta: _CheckMeta) -> str:
         lines.append(
             "  Run ``pipeline_check --explain AC-NNN`` for the full "
             "kill-chain narrative."
+        )
+        lines.append("")
+
+    # Topic-clustered cross-references — same threat / different layer
+    # or same control / different provider. Keeps the operator from
+    # fixing GHA-008 in isolation when GL-008 / BB-008 / etc. share
+    # the same root cause across the rest of the repo.
+    related = _related_check_ids(meta.id)
+    if related:
+        index = _build_index()
+        # Drop entries the index doesn't know about — guards against
+        # a cluster typo or a deleted-but-not-removed-from-cluster
+        # ID surfacing in user output. ``test_topic_clusters_*`` traps
+        # the same drift at CI time.
+        known = [cid for cid in related if cid in index]
+        if known:
+            lines.append("[Related rules]")
+            for cid in known:
+                title = index[cid].title
+                sev = index[cid].severity.value
+                lines.append(f"  {cid}  {title}  [{sev}]")
+            lines.append(
+                "  Same threat / different layer or same control / "
+                "different provider — fixing only the rule you opened "
+                "leaves these uncovered. Run ``pipeline_check --explain "
+                "<id>`` for any of them."
+            )
+            lines.append("")
+
+    # Whether the rule has a registered autofixer. The user can run
+    # ``--fix`` to emit the patch and ``--apply`` to write it in
+    # place; some autofixers are comment-only (drop a TODO marker
+    # above the line) where text rewriting can't safely synthesize
+    # the structural fix. The exact shape is visible in the patch.
+    if meta.id.upper() in available_fixers():
+        lines.append("[Autofixable]")
+        lines.append(
+            "  Yes — run ``pipeline_check --fix`` to emit the patch, "
+            "or ``--fix --apply`` to write it in place."
         )
         lines.append("")
 

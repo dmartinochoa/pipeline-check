@@ -320,3 +320,108 @@ def test_chains_for_check_id_helper_caches():
     chains_second = explain_mod._chains_for_check_id("GHA-001")
     # Same list object on the second call — proves the cache hit.
     assert chains_first == chains_second
+
+
+# ─── Topic-clustered related rules ────────────────────────────────────
+
+
+def test_topic_clusters_reference_real_check_ids():
+    """Every check_id in every cluster must resolve through the index.
+
+    Catches typos and IDs that were removed without updating the
+    cluster table.
+    """
+    from pipeline_check.core.explain import _TOPIC_CLUSTERS, _build_index
+
+    index = _build_index()
+    missing: list[tuple[str, str]] = []
+    for cluster, members in _TOPIC_CLUSTERS.items():
+        for cid in members:
+            if cid not in index:
+                missing.append((cluster, cid))
+    assert not missing, (
+        f"Topic-cluster entries referencing unknown check IDs: {missing}. "
+        f"Either fix the typo, remove the ID, or add the missing rule."
+    )
+
+
+def test_related_check_ids_unions_across_clusters():
+    """A check in two clusters returns the union of both, deduped, "
+    "without itself."""
+    from pipeline_check.core.explain import _related_check_ids
+
+    # K8S-012 is in both ``k8s_service_account`` and an ARGO/TKN
+    # cluster context; its related set must include companions from
+    # both clusters and exclude K8S-012 itself.
+    related = _related_check_ids("K8S-012")
+    assert "K8S-012" not in related
+    assert "K8S-034" in related  # k8s_service_account
+    assert "K8S-011" in related  # k8s_service_account
+
+
+def test_related_check_ids_empty_for_uncategorized_rule():
+    """A rule no cluster references returns an empty tuple."""
+    from pipeline_check.core.explain import _related_check_ids
+
+    # GHA-022 (Dependabot/Renovate config) isn't in any current
+    # topic cluster — confirms the empty-tuple return shape.
+    assert _related_check_ids("GHA-022") == ()
+
+
+def test_related_check_ids_caches_inverted_index():
+    """First call builds the inverted index; subsequent calls reuse it."""
+    from pipeline_check.core import explain as explain_mod
+
+    explain_mod._RELATED_BY_CHECK_ID = None  # type: ignore[assignment]
+    explain_mod._related_check_ids("K8S-005")
+    assert explain_mod._RELATED_BY_CHECK_ID is not None
+    explain_mod._related_check_ids("K8S-005")
+    # No assertion on object identity — the function returns a tuple
+    # of strings, not the cached set.
+
+
+def test_explain_renders_related_rules_section():
+    """``--explain K8S-005`` lists its securityContext siblings."""
+    body, code = render("K8S-005")
+    assert code == 0
+    assert "[Related rules]" in body
+    # K8S-005 is in the k8s_security_context cluster with K8S-006/007/035.
+    assert "K8S-006" in body
+    assert "K8S-007" in body
+
+
+def test_explain_omits_related_rules_section_when_no_cluster():
+    """A rule no cluster contains shouldn't render the section."""
+    body, code = render("GHA-022")
+    assert code == 0
+    assert "[Related rules]" not in body
+
+
+# ─── Autofixable cross-reference ──────────────────────────────────────
+
+
+def test_explain_renders_autofixable_section_for_registered_fixer():
+    """A check with a registered fixer surfaces an `[Autofixable]` line."""
+    from pipeline_check.core.autofix import available_fixers
+
+    fixers = set(available_fixers())
+    assert fixers, "expected at least one registered fixer"
+    sample = next(iter(sorted(fixers)))
+    body, code = render(sample)
+    assert code == 0, body
+    assert "[Autofixable]" in body
+    assert "--fix" in body
+
+
+def test_explain_omits_autofixable_section_when_no_fixer():
+    """A check without a registered fixer doesn't render the section."""
+    from pipeline_check.core.autofix import available_fixers
+    from pipeline_check.core.explain import available_ids
+
+    all_ids = set(available_ids())
+    fixers = set(available_fixers())
+    no_fix = sorted(all_ids - fixers)
+    assert no_fix, "expected at least one check with no fixer"
+    body, code = render(no_fix[0])
+    assert code == 0
+    assert "[Autofixable]" not in body
