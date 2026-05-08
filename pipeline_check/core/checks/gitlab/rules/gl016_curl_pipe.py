@@ -4,8 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives import remote_script_exec
-from ...base import Finding, Severity, blob_lower
+from ..._yaml_lines import line_of as _line_of
+from ...base import Finding, Location, Severity, blob_lower
 from ...rule import Rule
+from ..base import iter_jobs, job_scripts
 
 RULE = Rule(
     id="GL-016",
@@ -29,7 +31,22 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
+    # Document-level blob scan — keeps the legacy detection surface
+    # so a curl-pipe in a workflow-level ``variables:`` value or a
+    # ``before_script:`` at root still trips the rule.
     hits = remote_script_exec.scan(blob_lower(doc))
+
+    # Per-job rescan to recover the offending job's line. Walks the
+    # same script lists ``job_scripts`` already consolidates.
+    locations: list[Location] = []
+    for _, job in iter_jobs(doc):
+        scripts = job_scripts(job)
+        if any(remote_script_exec.scan(s) for s in scripts):
+            line = _line_of(job)
+            locations.append(Location(
+                path=path, start_line=line, end_line=line,
+            ))
+
     passed = not hits
     desc = (
         "No curl-pipe or wget-pipe patterns detected in this pipeline."
@@ -41,4 +58,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

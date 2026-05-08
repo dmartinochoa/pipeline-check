@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Line-precision retrofit, third batch — five more rules.**
+  ``GHA-017`` (docker run with insecure flags) — restructured the
+  blob-scan to also walk steps and rescan each step's ``run:``
+  body so the matching step's source line is the anchor. The
+  workflow-level blob fallback stays for catches in ``env:`` /
+  ``container.options:``. ``DF-008`` (RUN invokes
+  docker --privileged / dangerous --cap-add) — one Location per
+  offending RUN. ``K8S-021`` (Role/ClusterRole grants wildcard
+  verbs on wildcard resources) — anchors on the offending rules
+  entry, not the manifest root. ``CC-016`` and ``GL-016``
+  (curl-pipe / wget-pipe to interpreter) — same pattern as
+  GHA-017: keep the document-level blob scan as the legacy
+  detection surface, add a per-job rescan that recovers the
+  offending job's source line. 23/363 to 28/363 line-precise.
+  Five new entries in ``tests/test_line_precision.py``.
 - **CIS AWS Foundations Benchmark backfill across the AWS rule
   pack.** AWS-pack CIS coverage was 22/71 (31%); the rest of the
   AWS rules fit cleanly into the existing CIS controls

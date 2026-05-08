@@ -71,6 +71,21 @@ CASES: list[tuple[str, str, Path, str]] = [
      FIXTURES / "gitlab" / "insecure.gitlab-ci.yml", "GL-002"),
     ("jenkins", "jenkinsfile_path",
      FIXTURES / "jenkins" / "Jenkinsfile.insecure", "JF-001"),
+    # Round-12 batch — privileged docker, wildcard RBAC, curl-pipe.
+    # GHA-017 / DF-008 anchor at the offending step / RUN line;
+    # K8S-021 anchors on the offending rules entry; CC-016 / GL-016
+    # anchor on the offending job (the cross-job blob scan stays
+    # for legacy coverage but the per-job rescan recovers the line).
+    ("github", "gha_path",
+     FIXTURES / "github" / "insecure-release.yml", "GHA-017"),
+    ("dockerfile", "dockerfile_path",
+     FIXTURES / "dockerfile" / "insecure-Dockerfile", "DF-008"),
+    ("kubernetes", "k8s_path",
+     FIXTURES / "k8s" / "insecure.yaml", "K8S-021"),
+    ("circleci", "circleci_path",
+     FIXTURES / "circleci" / "insecure-config.yml", "CC-016"),
+    ("gitlab", "gitlab_path",
+     FIXTURES / "gitlab" / "insecure.gitlab-ci.yml", "GL-016"),
 ]
 
 
