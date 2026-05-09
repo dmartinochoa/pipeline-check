@@ -146,6 +146,16 @@ jobs:
       # in stdout that starts with `::` injects into the workflow's
       # output map.
       - run: echo "::set-output name=version::$VERSION"
+      # TAINT-001: cross-step output flow. Producer step writes a
+      # PR-title-derived value to $GITHUB_OUTPUT; consumer step
+      # below interpolates it back into a shell command. GHA-003
+      # already flags the producer's interpolation; TAINT-001
+      # flags the actual cross-step injection at the consumer.
+      - id: extract-title
+        run: |
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+      - run: |
+          echo "Building PR titled: ${{ steps.extract-title.outputs.title }}"
       # GHA-032: invokes a local script under the pull_request_target
       # trigger declared at the top of this workflow. The script
       # body resolves against the PR-controlled checkout.

@@ -371,6 +371,12 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # CircleCI — only CC-024..026 currently have CASES.
     *(f"CC-{i:03d}" for i in range(1, 24)),
     *(f"CC-{i:03d}" for i in range(27, 32)),
+    # Cross-cutting taint engine — covered by tests/test_gha_taint.py
+    # with inline workflow docs rather than the per-check fixture
+    # pattern; the workflow shapes the rule cares about (multi-step
+    # output flow) don't compress into a single safe/unsafe pair
+    # cleanly without dragging in unrelated rules.
+    "TAINT-001",
 })
 
 
