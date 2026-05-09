@@ -32,7 +32,14 @@ def _build_server() -> Any:
 
     server = Server("pipeline-check", version=__version__)
 
-    @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
+    # The ``unused-ignore`` codes below cover the build matrix
+    # case where ``mcp`` isn't installed (CI's hash-locked dev
+    # install doesn't carry the optional ``[mcp]`` extra). Without
+    # the SDK present, the underlying error codes
+    # (``no-untyped-call`` / ``untyped-decorator``) don't fire,
+    # so the bare suppression would itself trip
+    # ``warn_unused_ignores``.
+    @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator,unused-ignore]
     async def _list_tools() -> list[types.Tool]:
         return [
             types.Tool(
@@ -43,7 +50,7 @@ def _build_server() -> Any:
             for spec in _tools.TOOL_SPECS
         ]
 
-    @server.call_tool(validate_input=True)  # type: ignore[untyped-decorator]
+    @server.call_tool(validate_input=True)  # type: ignore[untyped-decorator,unused-ignore]
     async def _call_tool(
         name: str, arguments: dict[str, Any] | None,
     ) -> list[types.TextContent]:
