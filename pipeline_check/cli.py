@@ -1380,6 +1380,21 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--serve",
+    is_flag=True,
+    default=False,
+    help=(
+        "Run pipeline-check as a Model Context Protocol (MCP) "
+        "server on stdio. Lets MCP-aware AI clients (Claude "
+        "Desktop, Claude Code, Cursor, Continue, Zed) introspect "
+        "the rule catalog and run scans on demand. Requires the "
+        "optional ``[mcp]`` extra: ``pip install "
+        "'pipeline-check[mcp]'``. The process blocks until the "
+        "client disconnects; no scan flags are honored in this "
+        "mode (each scan is requested as an MCP tool call)."
+    ),
+)
+@click.option(
     "--explain-chain",
     "explain_chain_id",
     default=None,
@@ -1475,6 +1490,7 @@ def scan(
     explain_chain_id: str | None,
     fail_on_chain_ids: tuple[str, ...],
     fail_on_any_chain: bool,
+    serve: bool = False,
     resolve_remote: bool = False,
     gh_token: str | None = None,
     no_cache: bool = False,
@@ -1511,6 +1527,28 @@ def scan(
             click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
             if std.url:
                 click.echo(f"    {std.url}")
+        return
+
+    if serve:
+        # Lazy import so the optional ``mcp`` SDK doesn't load at
+        # CLI startup. The harness raises a clean RuntimeError when
+        # the package isn't installed; surface it as exit 3.
+        try:
+            from .mcp_server import run_stdio
+        except ImportError as exc:  # pragma: no cover - import-time safeguard
+            click.echo(
+                f"[error] MCP support unavailable: {exc}. "
+                "Install with ``pip install 'pipeline-check[mcp]'``.",
+                err=True,
+            )
+            sys.exit(3)
+        try:
+            run_stdio()
+        except RuntimeError as exc:
+            click.echo(f"[error] {exc}", err=True)
+            sys.exit(3)
+        except KeyboardInterrupt:
+            pass
         return
 
     if list_checks:

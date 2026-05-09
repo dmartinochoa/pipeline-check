@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **MCP (Model Context Protocol) server (``--serve``).** Locally-
+  running MCP server that lets AI clients (Claude Desktop,
+  Claude Code, Cursor, Continue, Zed) drive scans and
+  introspect the rule catalog directly. stdio transport, ten
+  tools advertised: ``list_providers``, ``list_checks``,
+  ``explain_check``, ``list_chains``, ``explain_chain``,
+  ``list_standards``, ``scan``, ``inventory``, ``threat_model``,
+  ``scan_markdown``. Every tool returns JSON-serializable data
+  with input schemas validated on each call; errors come back
+  as ``{"error": ...}`` payloads, never as raw stack traces.
+
+  The ``mcp`` Python SDK is an *optional* extra to keep the
+  default install slim. Install with
+  ``pip install 'pipeline-check[mcp]'``. The CLI flag fails with
+  exit 3 + an actionable message when the extra is missing.
+
+  Architecture splits ``pipeline_check/mcp_server/tools.py``
+  (pure functions wrapping the existing Scanner / registries,
+  no SDK import) from ``pipeline_check/mcp_server/server.py``
+  (binds tool functions to MCP request types, runs the asyncio
+  stdio loop). The split keeps tool logic unit-testable without
+  spinning up an MCP loop and lets future transports (HTTP+SSE,
+  streamable-http) reuse the same tool surface.
+
+  Claude Desktop / Claude Code config snippets in ``docs/mcp.md``.
+
 - **STRIDE threat-model generator (``--output threatmodel``).**
   New output format that emits a self-contained Markdown
   threat-model document populated from the same scan output

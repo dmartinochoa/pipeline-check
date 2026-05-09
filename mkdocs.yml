@@ -168,6 +168,7 @@ nav:
       - CI gate: ci_gate.md
   - Output formats: output.md
   - Attack chains: attack_chains.md
+  - MCP server: mcp.md
   - Contributing:
       - Architecture: architecture.md
       - Adding a rule: writing_a_rule.md

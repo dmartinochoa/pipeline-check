@@ -54,6 +54,11 @@ ai = [
     "anthropic>=0.40.0",
     "openai>=1.0.0",
 ]
+# Opt-in MCP (Model Context Protocol) server (``--serve``). Lets
+# MCP-aware AI clients drive scans and query the rule catalog.
+# The default install carries no MCP SDK so the AWS-Lambda /
+# minimal-install paths stay slim.
+mcp = ["mcp>=1.0.0"]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
