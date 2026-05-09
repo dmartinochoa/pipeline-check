@@ -120,6 +120,24 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "prefect_api_key":        r"pnu_[A-Za-z0-9]{36,}",
     # Neon serverless Postgres API keys (neon_ prefix).
     "neon_api_key":           r"neon_[A-Za-z0-9_\-]{36,}",
+    # Cohere production / API keys (co_pat_ prefix; trial keys use a
+    # bare token shape that's too generic to detect by shape alone).
+    "cohere_api_key":         r"co_pat_[A-Za-z0-9]{40,}",
+    # Replicate API tokens (r8_ prefix + 40 alnum). Distinct enough
+    # that a bare ``r8_`` substring outside this regex won't overlap.
+    "replicate_token":        r"r8_[A-Za-z0-9]{40}",
+    # Asana personal access tokens. Format is ``1/<account-id>:<32 hex>``
+    # where account-id is the 16-digit numeric Asana user ID. The
+    # leading digit-and-slash plus the colon make this much narrower
+    # than a bare 32-hex shape.
+    "asana_pat":              r"1/\d{15,18}:[a-f0-9]{32}",
+    # Square access tokens. Two scoped prefixes (atp = access token,
+    # csp = client secret) followed by URL-safe base64.
+    "square_access_token":    r"sq0(?:atp|csp)-[A-Za-z0-9_\-]{20,}",
+    # Terraform Cloud / Terraform Enterprise tokens. Format is
+    # ``<14 alnum>.atlasv1.<base64-padded body>``. The middle
+    # ``.atlasv1.`` literal makes the regex very specific.
+    "terraform_cloud_token":  r"[A-Za-z0-9]{14}\.atlasv1\.[A-Za-z0-9_\-]{60,}",
 }
 
 
@@ -182,7 +200,16 @@ PLACEHOLDER_MARKER_RE = re.compile(
 # a BEGIN marker is present.
 #
 PEM_BLOCK_RE = re.compile(
-    r"-----BEGIN (?P<kind>(?:RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY)-----",
+    r"-----BEGIN (?P<kind>"
+    # "<algo> PRIVATE KEY" — typical OpenSSL output (RSA / DSA / EC),
+    # OpenSSH-format keys, PGP private blocks. ``ENCRYPTED PRIVATE
+    # KEY`` is the PKCS#8 password-protected form, still a credential
+    # leak even though the body is encrypted (offline brute-force is
+    # cheap once the file has left the perimeter).
+    r"(?:RSA|DSA|EC|OPENSSH|PGP|ENCRYPTED) PRIVATE KEY"
+    # "PRIVATE KEY" — PKCS#8 unencrypted form, no algorithm prefix.
+    r"|PRIVATE KEY"
+    r")-----",
     re.IGNORECASE,
 )
 

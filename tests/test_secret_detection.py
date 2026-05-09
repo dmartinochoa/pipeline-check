@@ -85,6 +85,13 @@ DETECTORS: list[tuple[str, str]] = [
     ("render_api_key",        "rnd_" + _FILLER[:35]),
     ("prefect_api_key",       "pnu_" + _FILLER[:40]),
     ("neon_api_key",          "neon_" + _FILLER[:40]),
+    # ── New detectors (round 3) ──
+    ("cohere_api_key",        "co_pat_" + _FILLER[:45]),
+    ("replicate_token",       "r8_" + _FILLER[:40]),
+    ("asana_pat",             "1/" + "1" * 16 + ":" + "0123456789abcdef" * 2),
+    ("square_access_token",   "sq0atp-" + _FILLER[:25]),
+    ("square_access_token",   "sq0csp-" + _FILLER[:25]),
+    ("terraform_cloud_token", "abcdef1234567g.atlasv1." + _FILLER[:65]),
 ]
 
 
@@ -144,6 +151,12 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("rnd_short",                          "Render key needs 32+ chars after rnd_"),
     ("pnu_short",                          "Prefect key needs 36+ chars after pnu_"),
     ("neon_short",                         "Neon key needs 36+ chars after neon_"),
+    # ── New detectors (round 3) ──
+    ("co_pat_short",                       "Cohere key needs 40+ chars after co_pat_"),
+    ("r8_short",                           "Replicate token needs exactly 40 chars after r8_"),
+    ("1/12345:short",                      "Asana PAT needs 15-18 digit ID and 32-hex secret"),
+    ("sq0atp-short",                       "Square token needs 20+ chars after sq0atp-"),
+    ("abc.atlasv1.short",                  "Terraform Cloud token needs 14 alnum + .atlasv1. + 60+ chars"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.
@@ -210,6 +223,21 @@ def test_pem_block_label_includes_key_kind():
     ec_hits  = secrets_mod.find_secret_values({"k": pem_ec})
     assert any("rsa_private_key" in h for h in rsa_hits)
     assert any("ec_private_key" in h for h in ec_hits)
+
+
+def test_pem_block_detects_encrypted_pkcs8() -> None:
+    """PKCS#8 password-protected private keys still need to fire — the
+    encrypted body plus an offline brute-force are a credential leak,
+    even though the body isn't a usable secret on its own."""
+    pem = (
+        "-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
+        "MIIE6TAbBgkqhkiG9w0BBQMwDgQIabc123\n"
+        "-----END ENCRYPTED PRIVATE KEY-----\n"
+    )
+    hits = secrets_mod.find_secret_values({"k": pem})
+    assert any("encrypted_private_key" in h for h in hits), (
+        f"encrypted PKCS#8 block must surface a private_key hit; got {hits}"
+    )
 
 
 def test_pem_block_dedup_within_one_doc():
