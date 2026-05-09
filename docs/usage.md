@@ -43,8 +43,12 @@ pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
 pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
 pipeline_check --pipeline cloudbuild --cloudbuild-path cloudbuild.yaml
+pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
+pipeline_check --pipeline tekton --tekton-path tekton/
+pipeline_check --pipeline argo --argo-path workflows/
 pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
+pipeline_check --pipeline helm --helm-path charts/myapp/
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
@@ -145,7 +149,7 @@ pipeline_check --fix --apply      # write patches in place
 pipeline_check --fix | git apply  # review first, then apply
 ```
 
-103 fixers cover pinning, secrets, timeouts, TLS bypass, script
+111 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 

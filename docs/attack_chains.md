@@ -761,5 +761,58 @@ On the injection side: stop interpolating ``{{inputs.parameters.<name>}}`` / ``{
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-026: Buildkite injection lands on auto-deploy step with no manual gate { #ac-026 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">buildkite</span>
+</div>
+
+A ``pipeline.yml`` interpolates an untrusted Buildkite variable (``$BUILDKITE_MESSAGE``, ``$BUILDKITE_BRANCH``, ``$BUILDKITE_PULL_REQUEST_TITLE``, etc.) into a step's ``command:`` body (BK-003) AND a deploy-named step in the same pipeline runs without a ``manual:`` or ``input:`` gate (BK-007). The combination converts a fork-controllable injection point into an unattended production push, the Buildkite analog of AC-002 / AC-022 on the GitHub and GitLab surfaces.
+
+**References**
+
+- <https://buildkite.com/docs/pipelines/environment-variables>
+- <https://buildkite.com/docs/pipelines/block-step>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-01-Insufficient-Flow-Control-Mechanisms>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating Buildkite metadata variables directly into ``command:`` bodies. Bind the value through ``env:`` instead (``env: { MSG: "$BUILDKITE_MESSAGE" }`` then reference ``"$MSG"`` inside the command) so the shell sees a quoted variable rather than syntax it can interpret. On the gate side: every deploy-named step should carry a ``manual:`` block (or be preceded by a separate ``input:`` step) so a human reviewer acknowledges the deploy. Configure the manual block's ``branches:`` filter and the surrounding step's ``branches:`` filter together so a fork PR build can't trigger production. Either fix breaks the chain; both is best.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-027: Image bakes a credential file AND exposes a remote-access port { #ac-027 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1190</span> <span class="pg-tag" title="kill-chain phase">credential-access -> initial-access -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">dockerfile</span>
+</div>
+
+A ``Dockerfile`` ``COPY`` / ``ADD`` source path names a credential file (``id_rsa``, ``.aws/credentials``, ``.npmrc``, ``.kube/config``, etc.: DF-019) AND the same image ``EXPOSE`` s a sensitive remote-access port (22, 23, 21, 3389, 5900, common database / cache / search ports: DF-013). The image ships a key and a way to reach it from the outside; pulling a public mirror or exfiltrating a single CI build artifact yields both halves of the credential-and-listener pair.
+
+**References**
+
+- <https://docs.docker.com/build/building/best-practices/#exclude-with-dockerignore>
+- <https://docs.docker.com/engine/security/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-06-Insufficient-Credential-Hygiene>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential out of the image. Mount it at runtime: a Kubernetes secret (or projected SA token), AWS Secrets Manager / GCP Secret Manager / Vault for cloud creds, or a container-level env var sourced from the orchestrator. The image stops being a leak surface the moment the credential isn't baked in. Drop the ``EXPOSE`` for the remote-access daemon: the container runtime's exec path (``docker exec`` / ``kubectl exec``) covers every legitimate debugging use without opening a port or shipping an extra daemon. Either fix breaks the chain on its own. Add a ``.dockerignore`` rule to keep credential files out of build context as a third layer; the COPY can't bake in what the build never sees.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

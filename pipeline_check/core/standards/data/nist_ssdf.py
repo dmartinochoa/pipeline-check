@@ -128,5 +128,62 @@ STANDARD = Standard(
         "CC-021":   ["PW.4.4"],                        # no lockfile
         "CC-022":   ["PW.4.1"],                        # no dependency updates
         "CC-023":   ["PW.4.4"],                        # TLS verification bypass
+        # Buildkite — same shape as the other CI providers, mapped to
+        # the corresponding tasks. Plugin / curl-pipe / TLS-bypass land
+        # under PW.4.* (acquire / verify components); secret / signing
+        # land under PS.* (protect software, integrity, provenance).
+        "BK-001":   ["PW.4.1", "PW.4.4"],              # plugin not pinned
+        "BK-002":   ["PS.1.1"],                        # literal secret
+        "BK-003":   ["PW.6.1", "PW.9.1"],              # untrusted variable interp
+        "BK-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe
+        "BK-005":   ["PO.5.1", "PW.9.1"],              # privileged container
+        "BK-006":   ["PO.5.2", "PW.9.1"],              # no timeout
+        "BK-007":   ["PO.5.1"],                        # no manual deploy gate
+        "BK-008":   ["PW.4.4"],                        # TLS bypass
+        "BK-009":   ["PS.2.1", "PS.3.2"],              # no signing
+        "BK-010":   ["PS.3.2"],                        # no SBOM
+        "BK-011":   ["PS.3.2"],                        # no SLSA provenance
+        "BK-012":   ["RV.1.1"],                        # no vuln scan
+        "BK-013":   ["PO.5.1"],                        # no branches filter
+        # Dockerfile — image-build supply chain. Pinning / verification
+        # rules tie to PW.4.* (acquire and verify 3rd-party components);
+        # privileged / root / sensitive-path rules tie to PO.5.1 +
+        # PW.9.1 (env separation, secure defaults); credential-shape
+        # rules tie to PS.1.1 (least-privilege code storage).
+        "DF-001":   ["PW.4.1", "PW.4.4"],              # FROM not digest-pinned
+        "DF-002":   ["PO.5.1", "PW.9.1"],              # runs as root
+        "DF-003":   ["PW.4.4", "PS.2.1"],              # ADD remote, no integrity
+        "DF-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe in RUN
+        "DF-005":   ["PW.6.1", "PW.9.1"],              # shell-eval
+        "DF-006":   ["PS.1.1"],                        # ENV credential literal
+        "DF-007":   ["PO.3.3", "RV.1.1"],              # no HEALTHCHECK
+        "DF-008":   ["PO.5.1", "PW.9.1"],              # docker --privileged
+        "DF-009":   ["PW.6.1"],                        # ADD where COPY suffices
+        "DF-010":   ["PW.4.1"],                        # apt dist-upgrade
+        "DF-011":   ["PW.4.1"],                        # no cache cleanup
+        "DF-012":   ["PO.5.1", "PW.9.1"],              # RUN sudo
+        "DF-013":   ["PO.5.1", "PW.9.1"],              # sensitive EXPOSE
+        "DF-014":   ["PW.9.1"],                        # WORKDIR /etc
+        "DF-015":   ["PW.9.1"],                        # chmod 777
+        "DF-016":   ["PS.3.2"],                        # no OCI provenance labels
+        "DF-017":   ["PW.9.1"],                        # PATH world-writable
+        "DF-018":   ["PW.9.1"],                        # chown system path
+        "DF-019":   ["PS.1.1"],                        # COPY credential file
+        "DF-020":   ["PS.1.1"],                        # credential-named ARG
+        # Helm chart-supply-chain — every HELM-* rule scores a chart's
+        # own posture (lockfile drift, transport, plaintext metadata),
+        # so they ride mostly on PW.4.* (acquire / verify components)
+        # and PS.3.* (provenance / archive). Hygiene fields (description,
+        # maintainers, appVersion) tie to PO.3.3 audit trail.
+        "HELM-001": ["PW.6.1"],                        # legacy apiVersion
+        "HELM-002": ["PW.4.4", "PS.3.2"],              # no lockfile digests
+        "HELM-003": ["PW.4.4", "PS.2.1"],              # non-HTTPS dep repo
+        "HELM-004": ["PW.4.1", "PW.4.4"],              # dep version range
+        "HELM-005": ["PO.3.3"],                        # missing maintainers
+        "HELM-006": ["PO.5.1"],                        # missing kubeVersion
+        "HELM-007": ["PO.3.3"],                        # missing description
+        "HELM-008": ["PW.4.1"],                        # stale Chart.lock
+        "HELM-009": ["PW.4.4"],                        # non-HTTPS home/sources
+        "HELM-010": ["PO.3.3", "PS.3.2"],              # missing appVersion
     },
 )

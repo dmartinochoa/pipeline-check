@@ -209,6 +209,10 @@ Add a top-level `permissions:` block (start with `contents: read`) and grant add
 
 Long-lived `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets in GitHub Actions can't be rotated on a fine-grained schedule and remain valid until manually revoked. OIDC with `role-to-assume` yields short-lived credentials per workflow run.
 
+**Known false-positive modes**
+
+- LocalStack and Moto integration tests set ``AWS_ENDPOINT_URL`` to a localhost address and use the sentinel ``test`` / ``test`` access keys (the LocalStack convention). Those values can't authenticate against real AWS, so the rule auto-suppresses an env block that pairs a localhost endpoint with sentinel keys.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -396,6 +400,10 @@ Add an `if:` condition that checks `github.event.comment.author_association` (e.
 </div>
 
 Without an `environment:` binding, a deploy job can't be gated by required reviewers, deployment-branch policies, or wait timers. Any push to the triggering branch will deploy immediately.
+
+**Known false-positive modes**
+
+- Integration-test jobs that run ``terraform apply`` or ``kubectl apply`` against a local mock (LocalStack, Moto, kind, k3d) aren't real deploys. The rule auto-suppresses a step whose env carries ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` pointing at a localhost address.
 
 <div class="pg-rule__rec" markdown>
 

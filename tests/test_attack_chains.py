@@ -102,7 +102,7 @@ class TestEngine:
             "AC-013", "AC-014", "AC-015", "AC-016",
             "AC-017", "AC-018", "AC-019", "AC-020",
             "AC-021", "AC-022", "AC-023", "AC-024",
-            "AC-025",
+            "AC-025", "AC-026", "AC-027",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -1262,6 +1262,135 @@ class TestChainAC025:
         chain_ids = {c.chain_id for c in out}
         assert "AC-025" in chain_ids
         assert "AC-021" not in chain_ids
+
+
+class TestChainAC026:
+    """AC-026 — Buildkite injection lands on auto-deploy step."""
+
+    PIPELINE = ".buildkite/pipeline.yml"
+    OTHER_PIPELINE = ".buildkite/release.yml"
+
+    def test_fires_when_both_legs_on_same_pipeline(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE),
+            _f("BK-007", self.PIPELINE),
+        ])
+        ac26 = [c for c in out if c.chain_id == "AC-026"]
+        assert len(ac26) == 1
+        assert ac26[0].severity is Severity.CRITICAL
+        assert set(ac26[0].triggering_check_ids) == {"BK-003", "BK-007"}
+        assert "T1059" in ac26[0].mitre_attack
+        assert "T1078" in ac26[0].mitre_attack
+        assert "T1556" in ac26[0].mitre_attack
+
+    def test_does_not_fire_on_different_pipelines(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE),
+            _f("BK-007", self.OTHER_PIPELINE),
+        ])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_without_bk003(self):
+        out = chains_pkg.evaluate([_f("BK-007", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_without_bk007(self):
+        out = chains_pkg.evaluate([_f("BK-003", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, passed=True),
+            _f("BK-007", self.PIPELINE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_kill_chain_phase_matches_ac002_ac022_shape(self):
+        # AC-026 is the Buildkite peer of AC-002 (GHA) and AC-022
+        # (GitLab). The kill chain phase must read the same way:
+        # initial-access -> execution -> impact.
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE), _f("BK-007", self.PIPELINE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-026")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, confidence=Confidence.HIGH),
+            _f("BK-007", self.PIPELINE, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-026")
+        assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC027:
+    """AC-027 — Dockerfile credential file + exposed remote-access port."""
+
+    DF = "Dockerfile"
+    OTHER_DF = "build/Dockerfile.test"
+
+    def test_fires_when_both_legs_on_same_dockerfile(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.DF),
+        ])
+        ac27 = [c for c in out if c.chain_id == "AC-027"]
+        assert len(ac27) == 1
+        assert ac27[0].severity is Severity.CRITICAL
+        assert set(ac27[0].triggering_check_ids) == {"DF-013", "DF-019"}
+        # The kill chain shape — credential-access + initial-access +
+        # lateral-movement — is what makes AC-027 distinct from the
+        # injection-shaped chains. Lock it in.
+        assert "T1552.001" in ac27[0].mitre_attack
+        assert "T1078" in ac27[0].mitre_attack
+
+    def test_does_not_fire_on_different_dockerfiles(self):
+        # An ssh key in image A and an ``EXPOSE 22`` in image B don't
+        # compose — the credential-and-listener pair must ship in the
+        # same image.
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.OTHER_DF),
+        ])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_without_df013(self):
+        out = chains_pkg.evaluate([_f("DF-019", self.DF)])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_without_df019(self):
+        out = chains_pkg.evaluate([_f("DF-013", self.DF)])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF, passed=True),
+            _f("DF-019", self.DF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF), _f("DF-019", self.DF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-027")
+        assert "credential-access" in chain.kill_chain_phase
+        assert "initial-access" in chain.kill_chain_phase
+        assert "lateral-movement" in chain.kill_chain_phase
+
+    def test_fires_per_dockerfile_when_multiple_have_both(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.DF),
+            _f("DF-013", self.OTHER_DF),
+            _f("DF-019", self.OTHER_DF),
+        ])
+        ac27 = [c for c in out if c.chain_id == "AC-027"]
+        assert len(ac27) == 2
+        assert {c.resources[0] for c in ac27} == {self.DF, self.OTHER_DF}
 
 
 

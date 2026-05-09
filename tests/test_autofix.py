@@ -1361,3 +1361,156 @@ class TestHelm003PlaintextRepoTODO:
         once = autofix.generate_fix(_finding("HELM-003"), chart)
         assert once is not None
         assert autofix.generate_fix(_finding("HELM-003"), once) is None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Buildkite / Tekton / Argo fixers
+#
+# Buildkite, Tekton, and Argo each ride on the cross-provider fixer
+# helpers that GHA / GL / BB / ADO / CC / JF have used since v0.2.x.
+# These tests lock in the registration: regressing the loops in
+# ``autofix/_impl.py`` would silently drop fixer coverage for the
+# three thinnest providers in the catalog.
+# ──────────────────────────────────────────────────────────────────────
+
+
+class TestBuildkiteFixers:
+    def test_bk002_redacts_secret(self):
+        wf = (
+            "steps:\n"
+            "  - command: echo hi\n"
+            "    env:\n"
+            "      AWS_KEY: AKIAIOSFODNN7EXAMPLE\n"
+        )
+        after = autofix.generate_fix(_finding("BK-002"), wf)
+        assert after is not None
+        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "<REDACTED>" in after
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk004_comments_out_curl_pipe(self):
+        wf = "  - command: curl https://e.example/install.sh | bash\n"
+        after = autofix.generate_fix(_finding("BK-004"), wf)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk005_strips_privileged(self):
+        wf = "  - command: docker run --privileged ubuntu:latest cmd\n"
+        after = autofix.generate_fix(_finding("BK-005"), wf)
+        assert after is not None
+        assert "--privileged" not in after
+        assert "docker run" in after
+
+    def test_bk008_comments_out_tls_bypass(self):
+        wf = "  - command: curl --insecure https://api.example/x\n"
+        after = autofix.generate_fix(_finding("BK-008"), wf)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk004_idempotent(self):
+        wf = "  - command: curl https://e.example/install.sh | bash\n"
+        once = autofix.generate_fix(_finding("BK-004"), wf)
+        assert once is not None
+        assert autofix.generate_fix(_finding("BK-004"), once) is None
+
+
+class TestTektonFixers:
+    def test_tkn005_redacts_secret_in_step_env(self):
+        # Tekton task step env shape: ``env: [{name: K, value: V}]``.
+        # The shared ``_fix_gha008`` regex matches ``value: V`` lines
+        # exactly the same as the YAML CI providers.
+        manifest = (
+            "apiVersion: tekton.dev/v1\n"
+            "kind: Task\n"
+            "spec:\n"
+            "  steps:\n"
+            "    - name: deploy\n"
+            "      env:\n"
+            "        - name: TOKEN\n"
+            "          value: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-005"), manifest)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+
+    def test_tkn008_handles_curl_pipe(self):
+        manifest = (
+            "spec:\n"
+            "  steps:\n"
+            "    - name: install\n"
+            "      script: |\n"
+            "        curl https://e.example/i.sh | bash\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_tkn008_handles_tls_bypass(self):
+        manifest = (
+            "spec:\n"
+            "  steps:\n"
+            "    - name: fetch\n"
+            "      script: |\n"
+            "        curl --insecure https://api.example/data\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+
+class TestArgoFixers:
+    def test_argo006_redacts_secret_in_template_env(self):
+        manifest = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "spec:\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      container:\n"
+            "        env:\n"
+            "          - name: API_KEY\n"
+            "            value: AKIAIOSFODNN7EXAMPLE\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-006"), manifest)
+        assert after is not None
+        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "<REDACTED>" in after
+
+    def test_argo008_handles_curl_pipe(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: install\n"
+            "      script:\n"
+            "        source: |\n"
+            "          curl https://e.example/i.sh | bash\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_argo008_handles_tls_bypass(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: fetch\n"
+            "      script:\n"
+            "        source: |\n"
+            "          export NODE_TLS_REJECT_UNAUTHORIZED=0\n"
+            "          node index.js\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_argo008_no_op_when_safe(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: build\n"
+            "      script:\n"
+            "        source: |\n"
+            "          npm ci && npm run build\n"
+        )
+        assert autofix.generate_fix(_finding("ARGO-008"), manifest) is None

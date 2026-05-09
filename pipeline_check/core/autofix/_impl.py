@@ -129,6 +129,9 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 @register("BB-008")
 @register("ADO-008")
 @register("CC-008")
+@register("BK-002")
+@register("TKN-005")
+@register("ARGO-006")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -424,7 +427,12 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016"):
+for _cid in (
+    "GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016",
+    # Buildkite has a dedicated curl-pipe rule (BK-004); the heuristic
+    # is provider-agnostic so the same comment-out fixer applies.
+    "BK-004",
+):
     register(_cid)(_comment_curl_pipe)
 
 
@@ -457,7 +465,13 @@ def _strip_docker_flags(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017", "CC-017"):
+for _cid in (
+    "GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017", "CC-017",
+    # Buildkite's docker-insecure rule (BK-005) flags the same
+    # ``--privileged`` / ``--cap-add`` / host-bind shapes; reuse the
+    # shared flag-stripping fixer.
+    "BK-005",
+):
     register(_cid)(_strip_docker_flags)
 
 
@@ -1071,7 +1085,16 @@ _TODO_TLS = "TODO(pipeline-check): remove TLS/SSL verification bypass"
 
 
 def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
-    """Comment out TLS verification bypass lines."""
+    """Comment out TLS verification bypass lines.
+
+    ``TLS_BYPASS_RE`` is the same case-sensitive lowercase pattern the
+    detection rules use against ``blob_lower(doc)``. Matching the raw
+    line directly used to skip uppercase env-var assignments
+    (``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``GIT_SSL_NO_VERIFY=1``);
+    lowercase the search input so the fixer's recall matches what
+    detection saw, while still emitting the operator's original case
+    in the commented-out output.
+    """
     from ..checks.base import TLS_BYPASS_RE
     out: list[str] = []
     changed = False
@@ -1080,7 +1103,7 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
         if _TODO_TLS in line or stripped.startswith("#") or stripped.startswith("//"):
             out.append(line)
             continue
-        if TLS_BYPASS_RE.search(line):
+        if TLS_BYPASS_RE.search(line.lower()):
             indent = line[: len(line) - len(line.lstrip())]
             out.append(f"{indent}# {_TODO_TLS}\n")
             out.append(f"{indent}# {stripped}")
@@ -1094,12 +1117,43 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023"):
+for _cid in (
+    "GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023",
+    # Buildkite's TLS-bypass rule covers the same flags / env vars.
+    "BK-008",
+):
     register(_cid)(_comment_tls_bypass)
 
 
 # Cloud Build TLS bypass reuses the same heuristic as the CI providers.
 register("GCB-011")(_comment_tls_bypass)
+
+
+# ── Tekton / Argo combined curl-pipe + TLS-bypass fixer ──────────────
+#
+# TKN-008 and ARGO-008 each fire on EITHER a curl-pipe-shell or a TLS-
+# bypass idiom inside a step script. Each underlying primitive has its
+# own comment-out fixer above; chain them so the rule's autofix
+# handles both shapes in one pass.
+def _comment_curl_pipe_and_tls(
+    content: str, finding: Finding,
+) -> str | None:
+    """Apply both the curl-pipe and the TLS-bypass comment-out fixers.
+
+    Each leg is idempotent and operates line-by-line, so running them
+    in sequence on the cumulative output is safe. Returns the changed
+    text only if at least one of the two legs found something to
+    comment out.
+    """
+    curl = _comment_curl_pipe(content, finding)
+    tls = _comment_tls_bypass(curl or content, finding)
+    if curl is None and tls is None:
+        return None
+    return tls or curl
+
+
+for _cid in ("TKN-008", "ARGO-008"):
+    register(_cid)(_comment_curl_pipe_and_tls)
 
 
 # ── Kubernetes drop-line fixers (K8S-002/003/004/005) ────────────────

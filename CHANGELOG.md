@@ -12,6 +12,96 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-026 — Buildkite injection lands on auto-deploy step with no
+  manual gate.** New cross-rule attack chain on the Buildkite
+  surface, mirroring the AC-002 (GitHub) and AC-022 (GitLab)
+  injection-meets-impact shape. Fires when the same
+  ``pipeline.yml`` carries BK-003 (a step's ``command:``
+  interpolates an untrusted Buildkite metadata variable —
+  ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_BRANCH``,
+  ``$BUILDKITE_PULL_REQUEST_TITLE``, etc.) AND BK-007 (a deploy-
+  named step has no ``manual:`` or ``input:`` gate). Combined,
+  anyone who can land a commit on a branch the pipeline runs
+  against supplies the injection vector AND triggers the
+  unattended deploy in the same run; the injected command
+  executes with the deploy step's credentials. Closes a real
+  catalog gap: every CI provider with both primitives can
+  compose this chain, but until now the catalog covered GitHub
+  and GitLab and left Buildkite as the one provider with both
+  ingredients but no chain. Severity CRITICAL, MITRE ``T1059`` /
+  ``T1078`` / ``T1556``, kill-chain ``initial-access -> execution
+  -> impact``. Auto-discovered; ``--explain BK-003`` and
+  ``--explain BK-007`` now list AC-026 alongside their existing
+  chain references; ``--list-chains`` and
+  ``--explain-chain AC-026`` pick it up. Catalog 25 -> 26.
+- **AC-027 — Image bakes a credential file AND exposes a remote-
+  access port.** First Dockerfile-side attack chain. Fires when
+  the same ``Dockerfile`` carries DF-019 (a ``COPY`` / ``ADD``
+  source path names a credential file: ``id_rsa``,
+  ``.aws/credentials``, ``.npmrc``, ``.kube/config``, etc.) AND
+  DF-013 (an ``EXPOSE`` declares a sensitive remote-access port:
+  22 sshd, 23 telnet, 21 ftp, 3389 rdp, 5900 vnc, common database
+  / cache / search ports). The image ships a key AND a way to
+  reach it from the outside; pulling a public mirror or
+  exfiltrating a single CI build artifact yields both halves of
+  the credential-and-listener pair. Distinct kill-chain shape
+  from the other 26 catalog chains: ``credential-access ->
+  initial-access -> lateral-movement`` rather than the typical
+  ``initial-access -> execution`` shape. Severity CRITICAL,
+  MITRE ``T1552.001`` / ``T1078`` / ``T1190``. Auto-discovered;
+  ``--explain DF-013`` and ``--explain DF-019`` now list AC-027.
+  Catalog 26 -> 27. Dockerfile gains its first attack chain
+  (provider went 0 -> 1).
+- **NIST SSDF mappings backfilled for Buildkite, Dockerfile, and
+  Helm.** All three packs previously had **zero** entries in
+  ``nist_ssdf``: every BK / DF / HELM rule rendered as
+  "unmapped" in ``--standard-report nist_ssdf``. 43 new
+  mappings close the gap (BK 13, DF 20, HELM 10), routed
+  across SSDF practice areas:
+  - PW.4.* (acquire and verify 3rd-party components) for
+    pinning rules and curl-pipe / TLS-bypass shapes
+    (BK-001 / BK-004 / BK-008 / DF-001 / DF-003 / DF-004 /
+    DF-010 / DF-011 / HELM-002 / HELM-003 / HELM-004 / HELM-008).
+  - PS.* (protect software, integrity, provenance) for credential
+    and signing rules (BK-002 / BK-009 / BK-010 / BK-011 /
+    DF-006 / DF-016 / DF-019 / DF-020 / HELM-002 / HELM-010).
+  - PO.5.1 / PW.9.1 (env separation, secure defaults) for
+    privileged / root / sensitive-port rules (BK-005 / BK-007 /
+    BK-013 / DF-002 / DF-008 / DF-012 / DF-013 / DF-014 / DF-015 /
+    DF-017 / DF-018).
+  - PO.3.3 (audit trail) for hygiene fields (HELM-005 / HELM-007
+    / DF-007 / HELM-010).
+  - RV.1.1 (vulnerability response) for scanning / health-check
+    rules (BK-012 / DF-007).
+  Standards coverage per provider now: Buildkite 8/14 -> 9/14,
+  Dockerfile 2/14 -> 3/14, Helm 9/14 -> 10/14.
+- **Buildkite / Tekton / Argo each gain autofixer coverage.** All
+  three providers had 13 rules and zero fixers — the only thin
+  spots in the catalog after rounds 22-24 expanded their rule
+  packs. Eight new fixer registrations close the gap by re-using
+  the cross-provider helpers the GHA / GL / BB / ADO / CC / JF
+  packs already ride on (no new patching logic, just additional
+  ``register(...)`` entries plus one composed fixer for the
+  TKN-008 / ARGO-008 case that bundles two primitives):
+  - **BK-002 / TKN-005 / ARGO-006** (literal secret in pipeline
+    body) join ``_fix_gha008`` — replaces credential-shaped RHS
+    values with ``"<REDACTED>"`` and leaves a rotate-and-wire-up
+    TODO comment.
+  - **BK-004** (curl-pipe) joins ``_comment_curl_pipe``.
+  - **BK-005** (docker insecure flags) joins
+    ``_strip_docker_flags`` for ``--privileged`` / ``-v`` /
+    ``--cap-add`` / ``--net=host``.
+  - **BK-008** (TLS bypass) joins ``_comment_tls_bypass``.
+  - **TKN-008 / ARGO-008** (curl-pipe **OR** TLS bypass) get a
+    new composed fixer that chains both primitives, since each
+    rule can fire on either shape.
+  Catalog autofixers: 103 → 111. Per-provider counts:
+  Buildkite 0 → 4, Tekton 0 → 2, Argo 0 → 2; the three thinnest
+  packs now run with the rest. 13 new tests in
+  ``tests/test_autofix.py`` lock per-fixer behavior plus the
+  composed-fixer dispatch and idempotency. README / docs / usage
+  numerical claims bumped 103 → 111; provider docs regenerated
+  to surface the autofix chip on every newly-covered rule.
 - **Three new malicious-activity patterns covering canonical
   attacker idioms the catalog missed.** ``_malicious.py`` gains
   PowerShell IEX downloader detection (``IEX (New-Object
@@ -132,6 +222,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **TLS-bypass autofixer recall on uppercase env vars.**
+  ``_comment_tls_bypass`` matched ``TLS_BYPASS_RE`` (a case-
+  sensitive lowercase pattern shared with the detection rules
+  that always run against ``blob_lower(doc)``) directly against
+  the raw original-case lines, so uppercase env-var assignments
+  like ``NODE_TLS_REJECT_UNAUTHORIZED=0`` and
+  ``GIT_SSL_NO_VERIFY=1`` were detected but never fixed. Now
+  searches against ``line.lower()`` while still emitting the
+  operator's original-case line in the commented-out output.
+  Surfaced while wiring TKN-008 and ARGO-008 onto the same
+  primitive; a longstanding silent gap on the GHA / GL / BB /
+  ADO / CC / JF ``*-023`` rules too.
+- **Argument-injection (CWE-88) hardening on ``--diff-base`` and
+  ``--baseline-from-git``.** Both flags compose user-controlled
+  values into git as positional arguments via f-string
+  (``f"{base_ref}...HEAD"``, ``f"{ref}:{path}"``). Git parses any
+  argv element starting with ``-`` as an option even when it
+  appears in a positional slot, so a value like
+  ``--output=/tmp/pwned`` would have been interpreted by
+  ``git diff`` as a write-to-arbitrary-path flag rather than a
+  rev. Two layers of defense land here: the ``diff.py`` helpers
+  reject any leading-``-`` ref / path with a clear ValueError
+  (covers CLI users, library callers, and config-file driven
+  invocations uniformly), and the same git invocations now pass
+  ``--end-of-options`` (git 2.24+) so even an internal regression
+  that forgot the ref check can't smuggle a flag past the
+  positional cutoff. The CLI raises ``UsageError`` instead of the
+  lower-layer ``ValueError`` so operators see the same error
+  shape as for other input-validation failures. Eight new
+  parameterized tests in ``tests/test_diff_mode.py`` lock the
+  rejection path and the argv-shape invariant.
 - **``produces_artifacts`` heuristic recognises GitHub Pages
   workflows.** A workflow using ``actions/deploy-pages`` can only
   ship a static documentation site, never a software artifact —

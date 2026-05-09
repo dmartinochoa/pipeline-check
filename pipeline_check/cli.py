@@ -1677,6 +1677,18 @@ def scan(
         if not os.path.exists(crp):
             raise click.UsageError(f"--custom-rules not found: {crp}")
 
+    if diff_base is not None and diff_base.startswith("-"):
+        # ``diff_base`` is composed into ``git diff --name-only
+        # <base>...HEAD``. A leading ``-`` makes git parse the value
+        # as an option (e.g. ``--output=path``, write-anywhere
+        # primitive). Catch it here so the CLI shows a clean
+        # UsageError; the helper also validates as defense in depth
+        # (CWE-88, argument injection).
+        raise click.UsageError(
+            "--diff-base must not start with '-' "
+            "(would be parsed as a git flag, not a positional ref)"
+        )
+
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
 
@@ -1870,6 +1882,16 @@ def scan(
                 "--baseline-from-git expects REF:PATH (e.g. origin/main:baseline.json)"
             )
         ref_part, path_part = baseline_from_git.split(":", 1)
+        # ``ref_part`` and ``path_part`` flow into ``git show`` as
+        # positional arguments composed via f-string. Reject leading
+        # ``-`` here so the CLI surfaces a clean UsageError instead of
+        # the lower-layer ValueError; the helper validates again as a
+        # second line of defense (CWE-88, argument injection).
+        if ref_part.startswith("-") or path_part.startswith("-"):
+            raise click.UsageError(
+                "--baseline-from-git REF and PATH must not start with '-' "
+                "(would be parsed as a git flag, not a positional argument)"
+            )
         baseline_git_pair = (ref_part, path_part)
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
