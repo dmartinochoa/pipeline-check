@@ -1512,6 +1512,18 @@ def scan(
                 click.echo(f"  - {ref}")
         return
 
+    if explain_id and ai_explain_id:
+        # ``--ai-explain`` already runs the deterministic body before
+        # the AI section, so passing both flags is always a mistake.
+        # Reject it explicitly instead of silently letting ``--explain``
+        # win (which used to drop the AI section without any signal).
+        raise click.UsageError(
+            "--explain and --ai-explain are mutually exclusive. "
+            "Use --ai-explain CHECK_ID for the deterministic body "
+            "plus the AI-generated section, or --explain CHECK_ID "
+            "for the deterministic body alone."
+        )
+
     if explain_id:
         from .core.explain import print_explain
         sys.exit(print_explain(explain_id))

@@ -299,8 +299,10 @@ def _find_entropy_hits(doc: Any) -> list[str]:
             continue
         # Skip if a deterministic detector already would catch this —
         # the deterministic label is more useful to operators than a
-        # generic ``entropy:`` label.
-        if SECRET_VALUE_RE.fullmatch(candidate):
+        # generic ``entropy:`` label. ``_classify`` covers both the
+        # built-in catalog and user-registered ``--secret-pattern``s
+        # so a custom token never gets emitted twice.
+        if _classify(candidate) is not None:
             continue
         if shannon_entropy(candidate) < MIN_ENTROPY_BITS_PER_CHAR:
             continue

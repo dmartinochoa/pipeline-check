@@ -362,7 +362,7 @@ def read_readme(repo_path: str = ".", limit_lines: int = 60) -> str:
                         break
                     lines.append(line.rstrip())
             return "\n".join(lines)
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             continue
     return ""
 

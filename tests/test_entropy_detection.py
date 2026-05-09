@@ -215,9 +215,12 @@ class TestSuppression:
 
     def test_natural_language_does_not_fire(self):
         # English-shaped value (with spaces) shouldn't match the
-        # token-shape regex even if entropy were high.
+        # token-shape regex even if entropy were high. The key is
+        # credential-shaped on purpose so the credential-key gate
+        # passes — without that, the test would be a tautology
+        # (the non-credential gate would catch it first).
         enable_entropy_detection(True)
-        doc = {"description": "the quick brown fox jumps over"}
+        doc = {"API_KEY": "the quick brown fox jumps over"}
         assert all(not h.startswith("entropy:") for h in find_secret_values(doc))
 
     def test_non_credential_key_does_not_fire(self):

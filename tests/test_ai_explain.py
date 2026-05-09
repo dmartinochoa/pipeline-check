@@ -401,6 +401,20 @@ class TestCliFlag:
         assert result.exit_code != 0
         assert "no-such-file.yml" in result.output
 
+    def test_explain_and_ai_explain_are_mutually_exclusive(self, monkeypatch):
+        # Passing both flags used to silently drop the AI side because
+        # ``--explain`` ran first. The CLI must reject the combination
+        # so the operator notices the typo / misuse.
+        stub = self._patch_stub(monkeypatch)
+        runner = CliRunner()
+        result = runner.invoke(
+            scan, ["--explain", "GHA-001", "--ai-explain", "GHA-001"],
+        )
+        assert result.exit_code != 0
+        assert "mutually exclusive" in result.output
+        # The stub must not have been called either.
+        assert stub.last_user == ""
+
 
 # ── Determinism contract ─────────────────────────────────────────
 
