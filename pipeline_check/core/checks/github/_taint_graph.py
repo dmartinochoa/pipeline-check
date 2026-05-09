@@ -156,19 +156,48 @@ def _iter_step_output_refs(text: str) -> Iterator[tuple[str, str]]:
 # ── Engine state ───────────────────────────────────────────────────────
 
 
+# Match ``${{ needs.<job>.outputs.<name> }}`` references. Mirrors
+# the step-output regex above; same whitespace tolerance and
+# capture shape.
+_NEEDS_OUTPUT_REF_RE = re.compile(
+    r"\$\{\{\s*needs\.(?P<job>[A-Za-z_][A-Za-z0-9_-]*)"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+)
+
+
+def _iter_needs_output_refs(text: str) -> Iterator[tuple[str, str]]:
+    """Yield ``(job_id, output_name)`` for each cross-job needs ref."""
+    for m in _NEEDS_OUTPUT_REF_RE.finditer(text):
+        yield m.group("job"), m.group("output")
+
+
 @dataclass
 class _GraphState:
     """Per-workflow taint graph.
 
-    Internal state used during analysis. Each entry maps a
-    ``(job_id, step_id, output_name)`` triple to the source(s) whose
-    taint reached that output. Multiple sources can taint the same
-    output (e.g., a step echoing two interpolated context fields),
-    so values are sets.
+    Two kinds of tainted destinations:
+
+      * ``tainted_outputs`` — step outputs published via
+        ``$GITHUB_OUTPUT``. Keyed ``job_id -> step_id -> output_name``.
+      * ``tainted_job_outputs`` — job-level outputs declared via
+        ``jobs.<id>.outputs:`` and consumed in downstream jobs via
+        ``${{ needs.<id>.outputs.<name> }}``. Keyed
+        ``job_id -> output_name``. A job output inherits taint
+        from any step output it references AND from any direct
+        ``${{ github.event.* }}`` interpolation in its declared
+        value.
+
+    Both maps store the list of original :class:`TaintSource`
+    instances so the path renderer can show where the data first
+    entered the workflow.
     """
 
     # ``job_id -> step_id -> output_name -> tainted_sources``
     tainted_outputs: dict[str, dict[str, dict[str, list[TaintSource]]]] = (
+        field(default_factory=dict)
+    )
+    # ``job_id -> output_name -> tainted_sources``
+    tainted_job_outputs: dict[str, dict[str, list[TaintSource]]] = (
         field(default_factory=dict)
     )
 
@@ -187,6 +216,19 @@ class _GraphState:
             job_id, {},
         ).get(step_id, {}).get(name, [])
 
+    def record_job_output(
+        self, job_id: str, name: str, sources: list[TaintSource],
+    ) -> None:
+        bucket = self.tainted_job_outputs.setdefault(job_id, {}).setdefault(
+            name, [],
+        )
+        bucket.extend(sources)
+
+    def lookup_job_output(
+        self, job_id: str, name: str,
+    ) -> list[TaintSource]:
+        return self.tainted_job_outputs.get(job_id, {}).get(name, [])
+
 
 # ── Public API ─────────────────────────────────────────────────────────
 
@@ -196,23 +238,37 @@ def analyze_workflow(
 ) -> list[TaintPath]:
     """Build a taint graph for *doc* and return every source-to-sink path.
 
-    Two passes:
+    Three passes:
 
-      1. **Producer pass** — walk every step's ``run:`` body looking
-         for ``$GITHUB_OUTPUT`` writes whose RHS interpolates an
-         untrusted context. Record each tainted output in
-         :class:`_GraphState`.
+      1. **Step-output producer pass** — walk every step's ``run:``
+         body looking for ``$GITHUB_OUTPUT`` writes whose RHS
+         interpolates an untrusted context. Record each tainted
+         output in :class:`_GraphState.tainted_outputs`.
 
-      2. **Consumer pass** — walk every step's ``run:`` body looking
-         for ``steps.<id>.outputs.<name>`` references whose
-         ``(id, name)`` was recorded in pass 1. Each reference
-         emits a :class:`TaintPath` with the source location, the
-         step-output hop, and the consuming sink location.
+      2. **Job-output propagation pass** — walk every job's
+         ``outputs:`` mapping. For each ``output_name: <expression>``,
+         a job output inherits taint when the expression carries
+         either a ``${{ steps.<id>.outputs.<name> }}`` reference
+         pointing at a tainted step output, or a direct
+         ``${{ github.event.* }}`` interpolation. Recorded in
+         :class:`_GraphState.tainted_job_outputs`.
+
+      3. **Consumer pass** — walk every step's ``run:`` and ``with:``
+         bodies. Two consumer shapes emit paths:
+
+         - ``${{ steps.<id>.outputs.<name> }}`` whose ``(id, name)``
+           was recorded in pass 1 (within the same job). One-hop
+           path: ``source -> steps.<id>.outputs.<name> -> sink``.
+         - ``${{ needs.<job>.outputs.<name> }}`` whose
+           ``(job, name)`` was recorded in pass 2. Two-hop path:
+           ``source -> steps.<id>.outputs.<name> ->
+           jobs.<job>.outputs.<name> -> sink`` (rendered via
+           ``hops``).
 
     Same-step writes-then-reads inside one ``run:`` body don't fire
     here (the source is in the same step that consumes the output;
     GHA-003 already flags this as direct interpolation). The engine's
-    contribution is **across-step** flow.
+    contribution is **across-step** and **across-job** flow.
     """
     if not isinstance(doc, dict):
         return []
@@ -249,7 +305,44 @@ def analyze_workflow(
                         str(job_id), step_id, name, src,
                     )
 
-    # ── Pass 2: detect downstream consumers. ──────────────────────
+    # ── Pass 2: collect tainted job-level outputs. ────────────────
+    # ``jobs.<id>.outputs:`` is the canonical channel for surfacing
+    # a step output to downstream jobs that ``needs:`` this one.
+    # The output value is a string-typed expression; if that
+    # expression references a tainted step output OR interpolates
+    # a context source directly, the job output inherits the
+    # taint.
+    for job_id, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        outputs = job.get("outputs")
+        if not isinstance(outputs, dict):
+            continue
+        for output_name, expression in outputs.items():
+            if not isinstance(output_name, str):
+                continue
+            if not isinstance(expression, str):
+                continue
+            propagated: list[TaintSource] = []
+            # Step-output channel.
+            for ref_step, ref_output in _iter_step_output_refs(expression):
+                propagated.extend(
+                    state.lookup_output(str(job_id), ref_step, ref_output),
+                )
+            # Direct ``${{ github.event.* }}`` channel: if the job
+            # output declares the source inline, taint enters here
+            # without going through a step output first.
+            for m in UNTRUSTED_CONTEXT_RE.finditer(expression):
+                propagated.append(TaintSource(
+                    expr=_strip_braces(m.group(0)),
+                    location=f"{job_id}.outputs.{output_name}",
+                ))
+            if propagated:
+                state.record_job_output(
+                    str(job_id), output_name, propagated,
+                )
+
+    # ── Pass 3: detect downstream consumers (single + cross-job). ──
     for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
@@ -266,6 +359,7 @@ def analyze_workflow(
                 body = _stringify_field(step.get(sink_field))
                 if not body:
                     continue
+                # 3a. Same-job step-output consumer.
                 for ref_step, ref_output in _iter_step_output_refs(body):
                     if ref_step == this_step_id:
                         # Same-step self-reference, GHA-003 territory.
@@ -284,6 +378,23 @@ def analyze_workflow(
                             sink_location=f"{job_id}[{idx}]",
                             sink_consumer=(
                                 f"steps.{ref_step}.outputs.{ref_output}"
+                            ),
+                        ))
+                # 3b. Cross-job needs.<job>.outputs.<name> consumer.
+                for ref_job, ref_output in _iter_needs_output_refs(body):
+                    sources = state.lookup_job_output(ref_job, ref_output)
+                    if not sources:
+                        continue
+                    for src in sources:
+                        paths.append(TaintPath(
+                            source=src,
+                            hops=(
+                                f"steps.<producer>.outputs.{ref_output}",
+                                f"jobs.{ref_job}.outputs.{ref_output}",
+                            ),
+                            sink_location=f"{job_id}[{idx}]",
+                            sink_consumer=(
+                                f"needs.{ref_job}.outputs.{ref_output}"
                             ),
                         ))
     return paths

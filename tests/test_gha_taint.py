@@ -23,6 +23,9 @@ from pipeline_check.core.checks.github._taint_graph import (
 from pipeline_check.core.checks.github.rules import (
     taint001_step_output_taint as t1,
 )
+from pipeline_check.core.checks.github.rules import (
+    taint002_cross_job_output_taint as t2,
+)
 
 
 def _doc(yaml_text: str) -> dict:
@@ -284,3 +287,115 @@ jobs:
 """)
         f = t1.check("wf.yml", doc)
         assert f.passed
+
+    def test_silent_on_cross_job_path(self) -> None:
+        # Cross-job is TAINT-002's territory; TAINT-001 stays silent
+        # so the two rules don't double-fire on the same workflow.
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  extract:
+    outputs:
+      title: ${{ steps.x.outputs.title }}
+    steps:
+      - id: x
+        run: echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+  use:
+    needs: extract
+    steps:
+      - run: echo "${{ needs.extract.outputs.title }}"
+""")
+        assert t1.check("wf.yml", doc).passed
+
+
+# ── TAINT-002 rule wrapper ─────────────────────────────────────────
+
+
+class TestTAINT002:
+    def test_passes_when_no_cross_job_paths(self) -> None:
+        # No cross-job propagation in this workflow.
+        doc = _doc("""
+on: push
+jobs:
+  build:
+    steps:
+      - run: echo hello
+""")
+        assert t2.check("wf.yml", doc).passed
+
+    def test_passes_on_same_job_only_path(self) -> None:
+        # Single-job step-output flow is TAINT-001 territory.
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  build:
+    steps:
+      - id: extract
+        run: |
+          echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+      - run: echo "${{ steps.extract.outputs.title }}"
+""")
+        assert t2.check("wf.yml", doc).passed
+
+    def test_fails_on_cross_job_propagation(self) -> None:
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  extract:
+    outputs:
+      title: ${{ steps.x.outputs.title }}
+    steps:
+      - id: x
+        run: echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+  use:
+    needs: extract
+    steps:
+      - run: echo "${{ needs.extract.outputs.title }}"
+""")
+        f = t2.check("wf.yml", doc)
+        assert not f.passed
+        # Description carries the source, the job-output hop, and
+        # the consumer side.
+        assert "github.event.issue.title" in f.description
+        assert "jobs.extract.outputs.title" in f.description
+        assert "needs.extract.outputs.title" in f.description
+        assert "1 cross-job taint path" in f.description
+
+    def test_fails_on_direct_github_event_in_job_output(self) -> None:
+        # A job output that interpolates ``${{ github.event.* }}``
+        # directly (no intermediate step output) is also tainted
+        # and the cross-job consumer fires TAINT-002.
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  extract:
+    outputs:
+      title: ${{ github.event.issue.title }}
+    steps:
+      - run: echo noop
+  use:
+    needs: extract
+    steps:
+      - run: echo "${{ needs.extract.outputs.title }}"
+""")
+        f = t2.check("wf.yml", doc)
+        assert not f.passed
+        assert "github.event.issue.title" in f.description
+
+    def test_silent_when_consumer_uses_unknown_needs_output(self) -> None:
+        # Consumer references a needs.X.outputs.Y that wasn't
+        # declared as tainted (the producer's expression is benign).
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  extract:
+    outputs:
+      title: hardcoded-string
+    steps:
+      - run: echo noop
+  use:
+    needs: extract
+    steps:
+      - run: echo "${{ needs.extract.outputs.title }}"
+""")
+        assert t2.check("wf.yml", doc).passed

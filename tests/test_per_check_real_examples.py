@@ -377,6 +377,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # output flow) don't compress into a single safe/unsafe pair
     # cleanly without dragging in unrelated rules.
     "TAINT-001",
+    "TAINT-002",
 })
 
 

@@ -474,6 +474,7 @@ STANDARD = Standard(
         # Cross-cutting dataflow / taint engine (provider-spanning,
         # currently GHA-only in v1)
         "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT
+        "TAINT-002": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-job taint via jobs.<id>.outputs:
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged

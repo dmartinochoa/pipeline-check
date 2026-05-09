@@ -12,6 +12,47 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-002 cross-job output propagation.** The GHA dataflow
+  engine now follows ``jobs.<id>.outputs:`` declarations so a
+  step output that surfaces as a job output and is consumed in a
+  downstream job via ``${{ needs.<id>.outputs.<name> }}`` is
+  detected as a separate ``TAINT-002`` finding. ``TAINT-001``
+  stays scoped to same-job step-output flow; the rules are
+  mutually exclusive on a given path so they don't double-fire.
+  Engine adds a third pass tracking job-output taint with two
+  inheritance channels: a ``${{ steps.<id>.outputs.<name> }}``
+  reference picks up the producing step's taint, and a direct
+  ``${{ github.event.* }}`` interpolation in the job-output
+  declaration is also tracked. Same source vocabulary,
+  ``UNTRUSTED_CONTEXT_RE``, that GHA-003 / TAINT-001 use.
+- **XPC-002 tag-mutability cross-provider chain.** Second
+  cross-provider chain (``XPC-NNN`` family). Fires when a
+  multi-provider run carries both ``DF-001`` (Dockerfile
+  floating ``FROM`` tag) and ``K8S-001`` (Kubernetes workload
+  uses a floating-tag image) failures. The composite says: tag
+  mutability spans build- and runtime layers, an attacker who
+  pushes malicious bytes under a known tag affects both the
+  build artifact and the running cluster with no separate
+  compensating control. One chain entry per
+  ``(dockerfile, manifest)`` cross-product pair.
+- **Multi-provider scan mode.** New ``--pipelines github,oci``
+  CLI flag (plural, comma-separated, mutually exclusive with the
+  single-valued ``--pipeline``) scans every named provider in one
+  invocation and evaluates the chain engine once over the union
+  of all sub-scan findings. That's what activates the
+  cross-provider attack-chain family ``XPC-NNN``, single-provider
+  runs of ``--pipeline github`` or ``--pipeline oci`` alone never
+  see both check IDs in the chain engine's input. Each provider's
+  path flag is auto-detected the same way as in single-provider
+  mode; the per-provider auto-detection runs once per name in
+  the list. Implementation: new ``MultiScanner`` in
+  ``pipeline_check.core.scanner`` that delegates each sub-scan
+  to :class:`Scanner` with chain evaluation suppressed, then
+  evaluates chains once over the unified findings. Aggregate
+  ``ScanMetadata`` and ``inventory()`` are exposed on the
+  multi-scanner so reporters consume the same shape regardless
+  of single- vs multi-mode. Backward-compatible: every existing
+  ``--pipeline X`` invocation behaves unchanged.
 - **TAINT-001 / dataflow taint engine for GHA.** First v0.6.0
   vision item, *landed early on dev*. New per-workflow taint
   graph (``pipeline_check.core.checks.github._taint_graph``)

@@ -839,5 +839,30 @@ Close the verifier loop on both ends. In the workflow, add a provenance-emitting
 
 </div>
 
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-002: Tag mutability across pipeline + runtime (Dockerfile + K8s) { #xpc-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">build -> deploy (tag mutation propagates through both)</span> <span class="pg-tag pg-tag--owasp">dockerfile</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
+</div>
+
+Both the Dockerfile's ``FROM`` line and the Kubernetes workload manifest reference floating image tags. An attacker who pushes a malicious blob under a known tag (stolen registry credentials, compromised upstream CI) affects the build artifact AND the running workload at the same time, with no separate fix-once-and-it's-done place to break the chain.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3>
+- <https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin both ends to ``@sha256:<digest>``. In the Dockerfile, rewrite ``FROM python:3.12`` to ``FROM python:3.12@sha256:<digest>``. In the Kubernetes manifest, rewrite ``image: my-org/app:1`` to ``image: my-org/app:1@sha256:<digest>`` (and configure ``imagePullPolicy: IfNotPresent`` so the kubelet doesn't re-resolve on every pod restart). Capture the digest with ``crane digest`` or ``docker buildx imagetools inspect`` and update the digest deliberately in version control when the upstream version moves.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

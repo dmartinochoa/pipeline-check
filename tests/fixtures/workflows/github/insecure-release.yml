@@ -156,6 +156,11 @@ jobs:
           echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
       - run: |
           echo "Building PR titled: ${{ steps.extract-title.outputs.title }}"
+      # TAINT-002: cross-job output propagation. The branch-extract
+      # job below carries head_ref through a job output; the
+      # consumer job interpolates it via needs.<id>.outputs.<name>.
+      # Same injection pattern as TAINT-001 but spans the
+      # ``jobs.<id>.outputs:`` boundary.
       # GHA-032: invokes a local script under the pull_request_target
       # trigger declared at the top of this workflow. The script
       # body resolves against the PR-controlled checkout.
@@ -181,3 +186,25 @@ jobs:
           role-to-assume: arn:aws:iam::123456789012:role/release-oidc
           aws-region: us-east-1
       - run: aws s3 cp dist/ s3://release-bucket/ --recursive
+
+  # TAINT-002: branch-extract surfaces an attacker-controllable
+  # head_ref through a job-level output, and the build-info
+  # consumer downstream interpolates it via
+  # ``${{ needs.branch-extract.outputs.label }}`` into a shell
+  # body. GHA-003 catches the inner ``${{ github.head_ref }}``
+  # interpolation in the producer; TAINT-002 catches the actual
+  # cross-job injection at the consumer.
+  branch-extract:
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.x.outputs.label }}
+    steps:
+      - id: x
+        run: |
+          echo "label=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+  build-info:
+    needs: branch-extract
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Branch label: ${{ needs.branch-extract.outputs.label }}"

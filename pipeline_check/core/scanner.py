@@ -345,6 +345,179 @@ class Scanner:
         return findings
 
 
+class MultiScanner:
+    """Run several :class:`Scanner` instances over one CLI invocation
+    and evaluate the chain engine once on the union of their findings.
+
+    The single-provider :class:`Scanner` invokes the chain engine at
+    the end of its own ``run()``, which is the right shape when only
+    one provider's findings are in scope. For cross-provider chain
+    rules (``XPC-NNN``) to fire, the chain engine has to see findings
+    from BOTH providers in the same evaluation pass; that's what
+    :class:`MultiScanner` provides.
+
+    The class deliberately delegates to :class:`Scanner` per provider
+    rather than reimplementing context construction, the per-provider
+    diff filter, the post_filter hook, or the override / custom-rule
+    plumbing. Each delegated Scanner runs with ``chains_enabled=False``
+    so single-provider chains aren't evaluated twice; the multi-scan
+    re-evaluates every chain (single and cross-provider alike) on the
+    union once all per-provider scans are done.
+
+    Parameters
+    ----------
+    pipelines:
+        Ordered list of provider names (must each match a registered
+        :class:`BaseProvider.NAME`). Order determines the order
+        per-provider sub-scans run and the order findings appear in
+        the unified result list.
+
+    Every other keyword argument is forwarded verbatim to each
+    :class:`Scanner` so the existing CLI flag → kwarg flow keeps
+    working without per-flag fan-out logic here. Provider-specific
+    path flags (e.g., ``gha_path``, ``oci_manifest``) flow through
+    each Scanner; the providers that don't recognize a given flag
+    silently ignore it.
+    """
+
+    def __init__(
+        self,
+        pipelines: list[str] | tuple[str, ...],
+        chains_enabled: bool = True,
+        **scanner_kwargs: Any,
+    ) -> None:
+        if not pipelines:
+            raise ValueError(
+                "MultiScanner requires at least one pipeline; pass "
+                "Scanner directly when scanning a single provider."
+            )
+        # Per-sub-scanner chains stay disabled regardless of
+        # ``chains_enabled``: when chains are wanted we run them once
+        # over the union (so cross-provider chains see both sides);
+        # when disabled the union pass is skipped too.
+        scanner_kwargs.pop("chains_enabled", None)
+        self._chains_enabled = chains_enabled
+        self.pipelines: list[str] = [p.lower() for p in pipelines]
+        self._scanners: list[Scanner] = [
+            Scanner(pipeline=p, chains_enabled=False, **scanner_kwargs)
+            for p in self.pipelines
+        ]
+        #: Per-provider scan metadata, keyed by lower-case provider
+        #: name. Mirrors ``Scanner.metadata`` so reporters that
+        #: consume per-scan stats (warnings, files_scanned) can
+        #: iterate this dict.
+        self.metadata_by_provider: dict[str, ScanMetadata] = {
+            p: s.metadata for p, s in zip(
+                self.pipelines, self._scanners, strict=True,
+            )
+        }
+        #: Chains detected across the union of every sub-scan's
+        #: findings. Populated as a side effect of :meth:`run`,
+        #: matches the :class:`Scanner.chains` shape so reporters
+        #: can use either type interchangeably.
+        self.chains: list[Chain] = []
+
+    def run(
+        self,
+        checks: list[str] | None = None,
+        target: str | None = None,
+        standards: list[str] | None = None,
+    ) -> list[Finding]:
+        """Run every sub-scanner, return the union of findings.
+
+        Side effects:
+
+          * ``self.chains`` is set to the chain engine's evaluation
+            over the unified findings list (per-Scanner ``chains``
+            attributes stay empty since we constructed each with
+            ``chains_enabled=False``);
+          * ``self.metadata_by_provider`` retains the per-Scanner
+            ``ScanMetadata`` reference so ``elapsed_seconds`` /
+            ``files_scanned`` / ``warnings`` are queryable per
+            provider.
+
+        Sub-scanners run in the order ``self.pipelines`` was
+        constructed; findings are concatenated in that order so a
+        consumer iterating the result list sees a stable, repeatable
+        sequence.
+        """
+        findings: list[Finding] = []
+        for scanner in self._scanners:
+            findings.extend(scanner.run(
+                checks=checks, target=target, standards=standards,
+            ))
+        # Single chain-engine pass over the unified findings so
+        # cross-provider chain rules (XPC-NNN) see both providers'
+        # findings at once. Single-provider chain rules still match
+        # against the same union, so a chain that fires on findings
+        # from one provider continues to fire here.
+        if self._chains_enabled:
+            self.chains = _chains.evaluate(findings)
+        else:
+            self.chains = []
+        return findings
+
+    def inventory(
+        self,
+        type_patterns: list[str] | None = None,
+    ) -> list[Component]:
+        """Aggregate component inventory across every sub-scanner.
+
+        Mirrors :meth:`Scanner.inventory` so reporters can call
+        the same method whether the scanner is single- or
+        multi-provider. Each sub-scanner's inventory pass runs
+        independently and the results are concatenated; ordering
+        is the same as ``self.pipelines``.
+        """
+        out: list[Component] = []
+        for scanner in self._scanners:
+            out.extend(scanner.inventory(type_patterns=type_patterns))
+        return out
+
+    @property
+    def _check_classes(self) -> list[Any]:
+        """Concatenated check-class list across every sub-scanner.
+
+        Used by the CLI's verbose-mode logging only. The actual
+        scan dispatch happens via the per-Scanner ``run()`` calls
+        in :meth:`run`; this accessor exists so callers that hold
+        a ``Scanner | MultiScanner`` union can introspect the
+        count without branching on the type.
+        """
+        out: list[Any] = []
+        for scanner in self._scanners:
+            out.extend(scanner._check_classes)
+        return out
+
+    @property
+    def metadata(self) -> ScanMetadata:
+        """Aggregate :class:`ScanMetadata` over every sub-scanner.
+
+        Reporters that want a single ``metadata`` value (the same
+        shape :class:`Scanner` exposes) can use this property
+        without having to walk the per-provider dict. Provider name
+        is rendered as a comma-joined list; counts are summed;
+        warnings are concatenated; ``elapsed_seconds`` is the sum
+        of every sub-scan's elapsed time.
+        """
+        warnings: list[str] = []
+        files_scanned = 0
+        files_skipped = 0
+        elapsed = 0.0
+        for meta in self.metadata_by_provider.values():
+            warnings.extend(meta.warnings)
+            files_scanned += meta.files_scanned
+            files_skipped += meta.files_skipped
+            elapsed += meta.elapsed_seconds
+        return ScanMetadata(
+            provider=",".join(self.pipelines),
+            files_scanned=files_scanned,
+            files_skipped=files_skipped,
+            warnings=warnings,
+            elapsed_seconds=elapsed,
+        )
+
+
 def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
     """Drop workflow/pipeline entries whose file was not changed vs ``base_ref``.
 

@@ -92,21 +92,26 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    paths = analyze_workflow(doc)
-    if not paths:
+    # TAINT-001 is the single-job case: source step output -> sink
+    # step in the same job. Cross-job propagation is TAINT-002's
+    # territory. The path classifier here is the ``hops`` length:
+    # single-hop paths only.
+    same_job_paths = [p for p in analyze_workflow(doc) if len(p.hops) == 1]
+    if not same_job_paths:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
             description=(
                 "No cross-step taint path detected via "
-                "``$GITHUB_OUTPUT`` propagation."
+                "``$GITHUB_OUTPUT`` propagation within a single job."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    rendered = [p.render() for p in paths]
+    rendered = [p.render() for p in same_job_paths]
     desc = (
-        f"{len(paths)} cross-step taint path(s) reach a downstream "
-        f"sink: {'; '.join(rendered[:3])}"
+        f"{len(same_job_paths)} cross-step taint path(s) reach a "
+        f"downstream sink in the same job: "
+        f"{'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
     return Finding(
