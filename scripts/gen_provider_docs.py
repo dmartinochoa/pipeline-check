@@ -505,7 +505,7 @@ on them.
 ## Producer workflow
 
 ```bash
-# --drone-path is auto-detected when .drone.yml exists at cwd.
+# --drone-path is auto-detected when .drone.yml or .drone.yaml exists at cwd.
 pipeline_check --pipeline drone
 
 # ...or pass it explicitly.

@@ -95,6 +95,11 @@ class DroneContext:
                     path=str(f), doc_index=idx, data=data,
                 ))
         ctx = cls(pipelines)
+        # Count every file the loader actually inspected, not just
+        # the ones that produced a ``kind: pipeline`` doc. A file
+        # that only carried Drone secrets (``kind: secret``) is
+        # still a scanned file from a telemetry standpoint.
+        ctx.files_scanned = len(files)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
@@ -164,17 +169,22 @@ def iter_services(
             yield idx, raw
 
 
-def step_label(step: dict[str, Any], fallback_idx: int) -> str:
-    """Return a stable human name for a step.
+def step_label(
+    step: dict[str, Any], fallback_idx: int, *, kind: str = "steps",
+) -> str:
+    """Return a stable human name for a step or service.
 
     Drone's ``name:`` is required in practice, but tolerate its
     absence so a malformed pipeline still produces a readable
-    finding.
+    finding. *kind* parameterises the fallback so service
+    callers (DR-001 / DR-002 iterating ``iter_services``)
+    produce ``services[0]`` rather than the misleading
+    ``steps[0]``.
     """
     name = step.get("name")
     if isinstance(name, str) and name.strip():
         return name.strip()
-    return f"steps[{fallback_idx}]"
+    return f"{kind}[{fallback_idx}]"
 
 
 def step_commands(step: dict[str, Any]) -> list[str]:

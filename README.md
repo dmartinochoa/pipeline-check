@@ -297,7 +297,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci` |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
@@ -330,8 +330,8 @@ See [docs/standards/](docs/standards/).
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
 `--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`,
-`--cloudbuild-path`, `--buildkite-path`, `--tekton-path`, `--argo-path`,
-`--dockerfile-path`, `--k8s-path`, `--helm-path`) are
+`--cloudbuild-path`, `--buildkite-path`, `--drone-path`, `--tekton-path`, `--argo-path`,
+`--dockerfile-path`, `--k8s-path`, `--helm-path`, `--oci-manifest`) are
 auto-detected from the working directory when omitted. The Helm provider also
 takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
 forwarded to `helm template`.

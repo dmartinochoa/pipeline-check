@@ -88,7 +88,8 @@ def check(pipeline: Pipeline) -> Finding:
         kind = _classify_image(svc.get("image", ""))
         if kind != PinKind.DIGEST:
             offenders.append(
-                f"services.{step_label(svc, idx)}={svc.get('image', '<missing>')}"
+                f"services.{step_label(svc, idx, kind='services')}"
+                f"={svc.get('image', '<missing>')}"
             )
     passed = not offenders
     desc = (

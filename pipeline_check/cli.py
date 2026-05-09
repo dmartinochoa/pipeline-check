@@ -969,7 +969,7 @@ def _install_completion_callback(
     help=(
         "Path to a Drone CI ``.drone.yml`` / ``.drone.yaml`` file "
         "or a directory containing one (required when --pipeline "
-        "drone). Auto-detects ./.drone.yml."
+        "drone). Auto-detects ./.drone.yml or ./.drone.yaml."
     ),
 )
 @click.option(

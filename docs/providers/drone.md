@@ -12,7 +12,7 @@ on them.
 ## Producer workflow
 
 ```bash
-# --drone-path is auto-detected when .drone.yml exists at cwd.
+# --drone-path is auto-detected when .drone.yml or .drone.yaml exists at cwd.
 pipeline_check --pipeline drone
 
 # ...or pass it explicitly.
@@ -71,7 +71,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Detection mirrors the GHA-001 / GL-001 / JF-009 / ADO-009 family: any ``image:`` whose ref doesn't end in ``@sha256:<64 hex>`` fires. ``:latest`` and missing-tag references emit the strongest message; a specific-version tag (``golang:1.21.5``) still fires but can be fixed with a one-line digest swap. The rule scopes itself to ``type: docker`` / ``kubernetes`` pipelines (the container-flavored ones); ``ssh`` / ``exec`` / ``digitalocean`` pipelines have no ``image:`` field and pass-by-default.
+Detection mirrors the GL-001 / JF-009 / ADO-009 / CC-003 family: any container ``image:`` whose ref doesn't end in ``@sha256:<64 hex>`` fires. ``:latest`` and missing-tag references emit the strongest message; a specific-version tag (``golang:1.21.5``) still fires but can be fixed with a one-line digest swap. The rule scopes itself to ``type: docker`` / ``kubernetes`` pipelines (the container-flavored ones); ``ssh`` / ``exec`` / ``digitalocean`` pipelines have no ``image:`` field and pass-by-default.
 
 **Known false-positive modes**
 

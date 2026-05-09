@@ -161,11 +161,13 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">31 checks</span></a>
   <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">26 checks</span></a>
   <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">13 checks</span></a>
+  <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">6 checks</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">13 checks</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">13 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">40 checks</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 40 K8S-* rules + 10 HELM-*</span></a>
+  <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">6 checks</span></a>
 </div>
 </section>
 

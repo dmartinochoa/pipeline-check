@@ -73,7 +73,9 @@ def check(pipeline: Pipeline) -> Finding:
             offenders.append(f"steps.{step_label(step, idx)}")
     for idx, svc in iter_services(pipeline):
         if _is_privileged(svc):
-            offenders.append(f"services.{step_label(svc, idx)}")
+            offenders.append(
+                f"services.{step_label(svc, idx, kind='services')}"
+            )
     passed = not offenders
     desc = (
         "No step or service runs with ``privileged: true``."
