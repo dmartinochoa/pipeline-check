@@ -233,5 +233,40 @@ STANDARD = Standard(
         "HELM-004": ["Build.L3.NonFalsifiable"],                   # version not exact-pinned
         "HELM-005": ["Build.L1.Provenance"],                       # maintainers chain-of-custody
         "HELM-006": ["Build.L1.Provenance"],                       # kubeVersion compat range
+        # ── Dockerfile (image build process is the SLSA build) ────
+        # Pinning rules tie to L3.NonFalsifiable (digest pinning is
+        # the canonical "tenant can't substitute" mitigation).
+        # Privileged / root build steps tie to L3.Isolated (the
+        # build environment must not be influenced by other builds
+        # or by the build's own tenant). Provenance labels tie to
+        # L1.Provenance + L2.Signed.
+        "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
+        "DF-004": ["Build.L3.Isolated",
+                   "Build.L3.NonFalsifiable"],                     # curl-pipe
+        "DF-008": ["Build.L3.Isolated"],                           # docker --privileged
+        "DF-010": ["Build.L3.NonFalsifiable"],                     # apt upgrade
+        "DF-016": ["Build.L1.Provenance",
+                   "Build.L2.Signed"],                             # OCI provenance labels
+        # ── Cloud Build (GCB platform IS a SLSA build environment) ─
+        "GCB-001": ["Build.L3.NonFalsifiable"],                    # step image not pinned
+        "GCB-004": ["Build.L3.NonFalsifiable"],                    # community step not SHA-pinned
+        "GCB-007": ["Build.L3.NonFalsifiable"],                    # version: latest secret
+        "GCB-008": ["Build.L1.Provenance",
+                    "Build.L2.Signed"],                            # no signing
+        "GCB-009": ["Build.L1.Provenance"],                        # no SBOM
+        "GCB-014": ["Build.L3.Isolated"],                          # untrusted substitution
+        "GCB-015": ["Build.L1.Provenance",
+                    "Build.L2.Signed",
+                    "Build.L3.NonFalsifiable"],                    # no provenance attestation
+        "GCB-018": ["Build.L3.NonFalsifiable"],                    # legacy gcr.io
+        "GCB-019": ["Build.L3.Isolated"],                          # privileged step
+        "GCB-021": ["Build.L3.Isolated",
+                    "Build.L3.Ephemeral"],                         # no private worker pool
+        "GCB-022": ["Build.L3.Isolated"],                          # ALLOW_LOOSE substitution
+        "GCB-023": ["Build.L1.Provenance",
+                    "Build.L2.Signed"],                            # build artifacts not signed
+        "GCB-024": ["Build.L1.Provenance"],                        # missing provenance labels
+        "GCB-025": ["Build.L3.NonFalsifiable"],                    # outdated runner image
     },
 )

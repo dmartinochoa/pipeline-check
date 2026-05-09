@@ -1,9 +1,9 @@
 # Helm chart provider
 
 Renders Helm charts via `helm template` and runs the [Kubernetes
-provider's](kubernetes.md) 35-rule pack against the resulting
-manifests, plus a small chart-supply-chain rule pack
-(`HELM-001`--`003`) that reads `Chart.yaml` and `Chart.lock`
+provider's](kubernetes.md) 40-rule pack against the resulting
+manifests, plus a chart-supply-chain rule pack
+(`HELM-001`--`010`) that reads `Chart.yaml` and `Chart.lock`
 straight off disk. The K8s pass scores rendered workloads
 (securityContext, hostPath, RBAC, …); the HELM pass scores the
 chart's own posture (legacy schema, lockfile drift, plaintext
@@ -86,14 +86,14 @@ deploy.
 Ten rules score the chart's own packaging metadata, read straight
 off `Chart.yaml` / `Chart.lock` rather than the rendered output:
 
-- **HELM-001: Legacy `apiVersion: v1`** (MEDIUM). v1 is Helm 2's
+- **HELM-001: Legacy `apiVersion: v1`**{#helm-001} (MEDIUM). v1 is Helm 2's
   chart format. Helm 3 still renders it but the shape predates
   `Chart.lock` and inlined dependencies, so HELM-002 can't get
   traction until the chart is bumped to `v2`. Fix by editing
   `Chart.yaml` and re-running `helm dependency update` to
   regenerate the lock against the new shape. `--fix` drops a
   comment-only TODO above the offending line.
-- **HELM-002: Missing or incomplete `Chart.lock`** (HIGH). A
+- **HELM-002: Missing or incomplete `Chart.lock`**{#helm-002} (HIGH). A
   `v2` chart that declares `dependencies:` but ships no
   `Chart.lock`, ships a lock missing entries the manifest declares,
   or ships entries without a `sha256:` digest. Each of those leaves
@@ -102,7 +102,7 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
   after every change to `dependencies:` and committing the
   regenerated lock. `--fix` drops a comment-only TODO above the
   `dependencies:` key.
-- **HELM-003: Non-HTTPS dependency repository** (HIGH). Walks
+- **HELM-003: Non-HTTPS dependency repository**{#helm-003} (HIGH). Walks
   `dependencies[].repository` and rejects `http://`, `git://`,
   `ftp://`, and other plaintext schemes. Accepted shapes are
   `https://` (chart-museum / OSS chart repos), `oci://` (registry-

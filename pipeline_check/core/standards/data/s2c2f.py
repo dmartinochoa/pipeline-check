@@ -184,5 +184,25 @@ STANDARD = Standard(
         "BK-011":   ["REB-4"],
         "TKN-011":  ["REB-4"],
         "ARGO-011": ["REB-4"],
+
+        # ── Dockerfile (image build = OSS consumption boundary) ───
+        # ING-1 covers using trusted package managers / registries;
+        # SCA-1 covers vuln scanning OSS; UPD-1 / UPD-2 cover
+        # tracking and updating OSS; REB-2 / REB-3 cover signing
+        # and SBOMs of produced artifacts.
+        "DF-001":  ["ING-1", "UPD-1"],   # FROM not digest-pinned
+        "DF-003":  ["ING-1", "UPD-1"],   # ADD remote no integrity
+        "DF-004":  ["ING-1"],            # curl-pipe
+        "DF-010":  ["UPD-1"],            # apt upgrade unpinned
+        "DF-011":  ["UPD-1"],            # no cache cleanup
+        "DF-016":  ["REB-3"],            # no OCI provenance labels
+
+        # ── Helm chart deps (chart = OSS bundled into a release) ──
+        "HELM-001": ["ING-1"],           # legacy v1
+        "HELM-002": ["UPD-1", "REB-3"],  # missing Chart.lock digests
+        "HELM-003": ["ING-1"],           # non-HTTPS dep repo
+        "HELM-004": ["UPD-1"],           # version range
+        "HELM-008": ["UPD-1"],           # stale Chart.lock
+        "HELM-009": ["ING-1"],           # non-HTTPS home/sources
     },
 )

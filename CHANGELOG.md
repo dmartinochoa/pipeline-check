@@ -52,6 +52,44 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``--explain DF-013`` and ``--explain DF-019`` now list AC-027.
   Catalog 26 -> 27. Dockerfile gains its first attack chain
   (provider went 0 -> 1).
+- **Standards-mapping backfill rounds out BK / DF / HELM / GCB to
+  the realistic ceiling.** Previous round closed NIST SSDF for
+  the three thinnest packs; this round closes every other
+  standard that semantically applies. After this commit each of
+  Buildkite, Dockerfile, Helm, and Cloud Build maps to 12/14
+  registered standards (the ``cis_aws_foundations`` and
+  ``cis_kubernetes`` exceptions are intentional, those benchmarks
+  are scoped to AWS and Kubernetes posture respectively and don't
+  apply here).
+  Eight standards files gained mappings:
+  - **``cis_supply_chain``**: Dockerfile (18 rules → CIS sections
+    1.4 / 2.1 / 2.3 / 4.4) and Cloud Build (26 rules) added; Helm
+    expanded HELM-006..010.
+  - **``esf_supply_chain``**: Dockerfile (15 rules) and Cloud
+    Build (26) added; Helm expanded HELM-006..010.
+  - **``nist_800_190``**: Dockerfile (17 rules — NIST 800-190
+    Section 4.1 maps almost line-for-line to a Dockerfile's
+    threat surface) and Buildkite (7 rules — runtime container
+    concerns) added.
+  - **``nist_csf_2``**: Dockerfile (19 rules) and Buildkite (13)
+    added.
+  - **``nist_ssdf``**: Cloud Build (26 rules) added — closes the
+    last unmapped CI provider on this standard.
+  - **``openssf_scorecard``**: Dockerfile (9 rules — Pinned-
+    Dependencies / Dangerous-Workflow / Token-Permissions /
+    SBOM) added.
+  - **``pci_dss_v4``**: Dockerfile (14), Helm (6), and Cloud
+    Build (20) added.
+  - **``s2c2f``**: Dockerfile (6 — ING-1 / UPD-1 / REB-3) and
+    Helm (6) added.
+  - **``slsa``**: Dockerfile (6 — Build.L1.Provenance /
+    L2.Signed / L3.NonFalsifiable / L3.Isolated) and Cloud
+    Build (14) added.
+  - **``soc2``**: Dockerfile (18) and Buildkite (13) added.
+  Net 263 new mappings. Operators running ``--standard-report
+  <name>`` will now see BK / DF / HELM / GCB findings annotated
+  on every applicable framework rather than rendering as
+  "unmapped".
 - **NIST SSDF mappings backfilled for Buildkite, Dockerfile, and
   Helm.** All three packs previously had **zero** entries in
   ``nist_ssdf``: every BK / DF / HELM rule rendered as

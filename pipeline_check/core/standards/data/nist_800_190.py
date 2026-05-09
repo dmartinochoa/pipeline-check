@@ -278,5 +278,39 @@ STANDARD = Standard(
         "ARGO-004": ["4.4.4"],
         "ARGO-006": ["4.1.4"],
         "ARGO-013": ["4.1.2"],
+        # ── Dockerfile (image build = container risk surface) ─────
+        # Section 4.1 maps almost line-for-line to a Dockerfile's
+        # threat model: 4.1.1 vulns baked into images, 4.1.2 config
+        # defects (privileged, root, sensitive ports), 4.1.4
+        # cleartext secrets in images, 4.1.5 untrusted images
+        # (unpinned).
+        "DF-001": ["4.1.5"],                       # FROM not digest-pinned
+        "DF-002": ["4.1.2", "4.4.4"],              # runs as root
+        "DF-003": ["4.1.5", "4.2.1"],              # ADD remote, no integrity
+        "DF-004": ["4.2.1"],                       # curl-pipe
+        "DF-005": ["4.4.5"],                       # shell-eval
+        "DF-006": ["4.1.4"],                       # ENV credential literal
+        "DF-008": ["4.1.2", "4.4.4"],              # docker --privileged
+        "DF-010": ["4.2.2"],                       # apt upgrade (drift)
+        "DF-012": ["4.1.2", "4.4.4"],              # RUN sudo
+        "DF-013": ["4.1.2", "4.4.3"],              # sensitive EXPOSE
+        "DF-014": ["4.1.2"],                       # WORKDIR /etc
+        "DF-015": ["4.1.2"],                       # chmod 777
+        "DF-016": ["4.1.5"],                       # missing OCI provenance
+        "DF-017": ["4.1.2"],                       # PATH world-writable
+        "DF-018": ["4.1.2"],                       # chown system path
+        "DF-019": ["4.1.4"],                       # COPY credential file
+        "DF-020": ["4.1.4"],                       # credential ARG
+        # ── Buildkite (CI runner runs builds inside containers) ───
+        # Mostly 4.1.2 / 4.4.4 (runtime config defects), 4.1.5
+        # (untrusted images), 4.1.4 (secrets baked into env), and
+        # 4.4.6 (rogue images executed inside the pipeline).
+        "BK-001": ["4.1.5", "4.4.6"],              # plugin not pinned
+        "BK-002": ["4.1.4"],                       # literal secret in env
+        "BK-003": ["4.4.5"],                       # untrusted variable injection
+        "BK-004": ["4.2.1", "4.4.6"],              # curl-pipe
+        "BK-005": ["4.1.2", "4.4.4"],              # privileged container
+        "BK-008": ["4.2.1"],                       # TLS bypass
+        "BK-012": ["4.1.1"],                       # no vuln scan
     },
 )

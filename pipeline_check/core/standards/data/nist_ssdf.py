@@ -185,5 +185,32 @@ STANDARD = Standard(
         "HELM-008": ["PW.4.1"],                        # stale Chart.lock
         "HELM-009": ["PW.4.4"],                        # non-HTTPS home/sources
         "HELM-010": ["PO.3.3", "PS.3.2"],              # missing appVersion
+        # ── Cloud Build (GCB) ────────────────────────────────────
+        "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
+        "GCB-002": ["PS.1.1"],                         # plaintext env secret
+        "GCB-003": ["PS.1.1"],                         # plain script secret
+        "GCB-004": ["PW.4.1", "PW.4.4"],               # community step not SHA-pinned
+        "GCB-005": ["PS.1.1"],                         # secret-shaped substitution
+        "GCB-006": ["PO.3.3"],                         # build logging disabled
+        "GCB-007": ["PW.4.1"],                         # latest secret version
+        "GCB-008": ["PS.2.1", "PS.3.2"],               # no signing
+        "GCB-009": ["PS.3.2"],                         # no SBOM
+        "GCB-010": ["PO.5.1"],                         # default network egress
+        "GCB-011": ["PW.4.4"],                         # TLS bypass
+        "GCB-012": ["RV.1.1"],                         # no vuln scan
+        "GCB-013": ["PS.1.1"],                         # default service account
+        "GCB-014": ["PW.6.1", "PW.9.1"],               # untrusted substitution
+        "GCB-015": ["PS.3.2"],                         # no provenance
+        "GCB-016": ["PO.5.2", "PW.9.1"],               # no timeout
+        "GCB-017": ["PO.3.3"],                         # default logs
+        "GCB-018": ["PW.4.1"],                         # legacy gcr.io
+        "GCB-019": ["PO.5.1", "PW.9.1"],               # privileged step
+        "GCB-020": ["PS.1.1"],                         # default SA email
+        "GCB-021": ["PO.5.1"],                         # no private worker pool
+        "GCB-022": ["PW.6.1", "PW.9.1"],               # ALLOW_LOOSE substitution
+        "GCB-023": ["PS.2.1", "PS.3.2"],               # build artifacts not signed
+        "GCB-024": ["PS.3.2"],                         # missing provenance labels
+        "GCB-025": ["PW.4.1"],                         # outdated runner image
+        "GCB-026": ["PS.1.1"],                         # public storage bucket
     },
 )

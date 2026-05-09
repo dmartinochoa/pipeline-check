@@ -3006,3 +3006,251 @@ th.pg-sortable:focus-visible {
   }
 }
 
+/* ============================================================
+   Refinement layer — typography, interaction, print
+   ============================================================
+   Additive polish that sits on top of the established design
+   system. None of these change layout; they sharpen rendering
+   and unify the interaction language across the site.
+   ============================================================ */
+
+/* ── Anchor scroll: smooth, with header clearance ──────────────
+   Material's header is sticky. Without scroll-padding, jumping to
+   an in-page anchor (`#section-id`) hides the heading underneath
+   the chrome. Padding equals the topbar + tabs height. Smoothness
+   is opt-out for reduced-motion users. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ── Variable-font optical sizing + legibility ─────────────────
+   Mona Sans + JetBrains Mono ship optical-size axes; opting in
+   means the hero's clamp-scaled display H1 actually uses the
+   "display" optical cut, while body copy uses the "text" cut.
+   ``optimizeLegibility`` enables kerning + contextual ligatures
+   on browsers that gate them behind this hint. */
+html {
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+}
+
+/* ── Modern line-breaking on prose ──────────────────────────────
+   Headings already get ``text-wrap: balance`` per section. For
+   body paragraphs and lists, ``pretty`` is the better trade-off:
+   the browser scans the last few lines and rebalances to avoid
+   single-word last lines (widows). Costs nothing on browsers
+   that don't support it (silently falls back to the default).
+   Only target unclassed prose <p> so designer-set ``balance`` on
+   hero/section/CTA leads (which carry classes like .pg-hero__lede)
+   keeps winning by intent rather than by specificity tie-break. */
+.md-typeset p:not([class]),
+.md-typeset li,
+.md-typeset dd,
+.md-typeset blockquote {
+  text-wrap: pretty;
+}
+
+/* ── Brand-tinted text selection ───────────────────────────────
+   The default browser blue selection on a near-black slate canvas
+   reads as alien chrome. A 30% teal wash matches the rest of the
+   accent language. */
+::selection {
+  background: color-mix(in oklab, var(--pg-teal-500) 30%, transparent);
+  color: inherit;
+}
+
+[data-md-color-scheme="slate"] ::selection {
+  background: color-mix(in oklab, var(--pg-teal-400) 32%, transparent);
+  color: #fff;
+}
+
+/* ── Unified focus-visible baseline ────────────────────────────
+   ``:where(...)`` keeps specificity at zero so any component
+   (.md-button, .pg-flow__node, .pg-sortable, …) that already
+   declares its own focus styling wins automatically. This rule
+   is the safety net for everything else: prose links, footnote
+   refs, ToC items, form controls Material doesn't restyle. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--pg-teal-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* On dark navy chrome (header/footer/home), shift to the brighter
+   teal-300 so the ring stays visible. */
+body:has(.pg-home) :where(a, button, input):focus-visible,
+.md-header :where(a, button, input):focus-visible,
+.md-footer :where(a, button, input):focus-visible {
+  outline-color: var(--pg-teal-300);
+}
+
+/* ── Tabular numerics on inner-page tables ─────────────────────
+   Provider rule lists, scoring matrices, and standards control
+   tables all align numeric columns ("36 checks", "v0.4.2", line
+   numbers). Lining + tabular figures lock each digit to the same
+   advance width so columns stop drifting between rows. */
+.md-typeset table:not([class]) td {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ── Refined <kbd> key cap ─────────────────────────────────────
+   Material's default kbd reads as a 90s tech-blog inline tag.
+   Hairline pill in the brand palette with a faint inset highlight
+   reads like a real key cap. */
+.md-typeset kbd {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  font-weight: 600;
+  padding: 0.1em 0.5em;
+  border-radius: 6px;
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 92%,
+    var(--md-default-fg-color));
+  border: 1px solid var(--md-default-fg-color--lightest);
+  box-shadow: 0 1px 0 var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color);
+  vertical-align: 1px;
+  letter-spacing: 0.02em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset kbd {
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 70%,
+    var(--md-default-fg-color));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ── Search input focus ring ───────────────────────────────────
+   Material's default search input has no visible focus state — the
+   surface stays the same colour. A subtle teal halo confirms the
+   keyboard caret is captured, matching the rest of the focus
+   language. */
+.md-search__form:focus-within {
+  background: color-mix(in oklab,
+    var(--md-default-fg-color) 12%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab,
+    var(--pg-teal-400) 35%, transparent);
+}
+
+body:has(.pg-home) .md-search__form:focus-within,
+.md-header .md-search__form:focus-within {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 2px color-mix(in oklab,
+    var(--pg-teal-400) 50%, transparent);
+}
+
+/* ── Inline code: dial-back the slate tint ─────────────────────
+   The base rule mixes the dark canvas with 20% teal, which can
+   read as "highlighted" rather than "muted brand" against the
+   navy chrome. ~14% lands in the right place. Light-mode tint is
+   left untouched. */
+[data-md-color-scheme="slate"] .md-typeset code {
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 86%,
+    var(--pg-teal-500));
+  border-color: color-mix(in oklab,
+    var(--md-default-bg-color) 78%,
+    var(--pg-teal-500));
+}
+
+/* ── Print + save-as-PDF ──────────────────────────────────────
+   Auditors save pages to PDF for evidence packets. Strip the
+   chrome and force black-on-white prose so the printed page
+   reads like a clean technical document, not a screenshot of
+   a docs site. Hyperlinks expand inline so reference URLs
+   survive the print. */
+@media print {
+  .md-header,
+  .md-tabs,
+  .md-footer,
+  .md-sidebar,
+  body::before {
+    display: none !important;
+  }
+
+  .md-main,
+  .md-main__inner,
+  .md-content,
+  .md-content__inner {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body,
+  .md-typeset {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .md-typeset h1,
+  .md-typeset h2,
+  .md-typeset h3,
+  .md-typeset h4 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  .md-typeset h1::after,
+  .md-typeset h2::before {
+    display: none !important;
+  }
+
+  .md-typeset a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Expand external links inline so the reference is preserved
+     when the page is printed and the cursor is gone. */
+  .md-typeset a[href^="http"]::after {
+    content: " (" attr(href) ")" !important;
+    font-size: 0.85em;
+    color: #555;
+  }
+
+  .md-typeset pre,
+  .md-typeset .highlight,
+  .md-typeset .codehilite {
+    background: #f6f8fa !important;
+    border: 1px solid #d0d7de !important;
+    page-break-inside: avoid;
+  }
+
+  .md-typeset table:not([class]) {
+    page-break-inside: avoid;
+  }
+
+  /* Home-page hero / stats / CTA collapse to plain prose blocks
+     on paper — the navy gradients and animated lines are noise
+     in print. */
+  .pg-hero,
+  .pg-cta,
+  .pg-stats,
+  .pg-section {
+    background: #fff !important;
+    color: #000 !important;
+    padding: 1rem 0 !important;
+    border: none !important;
+  }
+
+  .pg-hero__lede,
+  .pg-cta p,
+  .pg-section__lede {
+    color: #333 !important;
+  }
+
+  .pg-terminal,
+  .pg-patrol,
+  .pg-flowchart {
+    display: none !important;
+  }
+}
+

@@ -380,5 +380,48 @@ STANDARD = Standard(
         "HELM-008": ["GV.SC-07"],   # Chart.lock stale
         "HELM-009": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS sources
         "HELM-010": ["GV.SC-04"],   # appVersion empty
+        # ── Dockerfile, image-build supply chain. ─────────────────
+        # Pinning + verification rules tie to GV.SC-05 (supply chain
+        # requirements established and verified). Privileged / root
+        # rules tie to PR.PS-01 (config management practices).
+        # Credential rules tie to PR.AA-01 (identity / credential
+        # management). Vuln-scan / outdated-dep rules tie to PR.PS-02.
+        "DF-001": ["GV.SC-05"],                 # FROM not digest-pinned
+        "DF-002": ["PR.PS-01"],                 # runs as root
+        "DF-003": ["GV.SC-05", "PR.DS-02"],     # ADD remote no integrity
+        "DF-004": ["GV.SC-05", "PR.DS-02"],     # curl-pipe
+        "DF-005": ["PR.PS-05"],                 # shell-eval
+        "DF-006": ["PR.AA-01", "PR.DS-01"],     # ENV credential literal
+        "DF-007": ["DE.CM-09"],                 # no HEALTHCHECK
+        "DF-008": ["PR.PS-01"],                 # docker --privileged
+        "DF-010": ["PR.PS-02"],                 # apt upgrade
+        "DF-011": ["PR.PS-02"],                 # no cache cleanup
+        "DF-012": ["PR.PS-01"],                 # RUN sudo
+        "DF-013": ["PR.PS-01", "PR.IR-01"],     # sensitive EXPOSE
+        "DF-014": ["PR.PS-01"],                 # WORKDIR /etc
+        "DF-015": ["PR.PS-01"],                 # chmod 777
+        "DF-016": ["GV.SC-05"],                 # OCI provenance labels
+        "DF-017": ["PR.PS-01"],                 # PATH world-writable
+        "DF-018": ["PR.PS-01"],                 # chown system path
+        "DF-019": ["PR.AA-01"],                 # COPY credential file
+        "DF-020": ["PR.AA-01"],                 # credential ARG
+        # ── Buildkite. CI provider mappings mirror what the GHA /
+        # GitLab packs already use: PR.PS-01 (config management),
+        # GV.SC-05 (third-party verification), PR.AA-01 (credential
+        # mgmt), PR.PS-04 (logs), PR.PS-05 (unauth-software preven-
+        # tion), DE.CM-* (monitoring).
+        "BK-001": ["GV.SC-05"],                 # plugin not pinned
+        "BK-002": ["PR.AA-01", "PR.DS-01"],     # literal secret
+        "BK-003": ["PR.PS-05"],                 # untrusted variable interp
+        "BK-004": ["GV.SC-05", "PR.DS-02"],     # curl-pipe
+        "BK-005": ["PR.PS-01"],                 # privileged container
+        "BK-006": ["PR.PS-01"],                 # no timeout
+        "BK-007": ["PR.AA-05", "PR.PS-06"],     # no manual deploy gate
+        "BK-008": ["PR.DS-02"],                 # TLS bypass
+        "BK-009": ["GV.SC-05", "PR.PS-06"],     # no signing
+        "BK-010": ["GV.SC-05"],                 # no SBOM
+        "BK-011": ["GV.SC-05"],                 # no SLSA provenance
+        "BK-012": ["PR.PS-02", "DE.CM-09"],     # no vuln scan
+        "BK-013": ["PR.AA-05"],                 # no branches filter
     },
 )

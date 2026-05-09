@@ -308,5 +308,18 @@ STANDARD = Standard(
         "HELM-002": ["Pinned-Dependencies"],                           # missing Chart.lock digests
         "HELM-003": ["Pinned-Dependencies"],                           # non-HTTPS dep repo
         "HELM-004": ["Pinned-Dependencies"],                           # version range
+        # ── Dockerfile (image base / build deps = pinned deps) ────
+        # Scorecard's Pinned-Dependencies covers actions, images,
+        # includes, and packages. ``FROM image:tag`` without a
+        # digest is the canonical image-not-pinned failure.
+        "DF-001": ["Pinned-Dependencies"],                              # FROM not digest-pinned
+        "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
+        "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe
+        "DF-005": ["Dangerous-Workflow"],                               # shell-eval
+        "DF-006": ["Token-Permissions"],                                # ENV credential literal
+        "DF-010": ["Pinned-Dependencies"],                              # apt upgrade unpinned
+        "DF-016": ["SBOM"],                                             # missing OCI provenance
+        "DF-019": ["Token-Permissions"],                                # COPY credential file
+        "DF-020": ["Token-Permissions"],                                # credential ARG
     },
 )

@@ -286,5 +286,46 @@ STANDARD = Standard(
         "HELM-004": ["CC8.1"],            # dep version not exact-pinned
         "HELM-008": ["CC8.1"],            # Chart.lock stale
         "HELM-009": ["CC6.7"],            # non-HTTPS sources
+        # ── Dockerfile (image build = configuration change) ────────
+        # CC6.1 / CC6.8 covers logical access + malicious-software
+        # prevention (privileged / root / sensitive ports). CC6.7
+        # covers data-in-transit (curl-pipe / TLS bypass). CC8.1
+        # covers change management (pinning, version drift).
+        "DF-001": ["CC8.1"],                # FROM not digest-pinned
+        "DF-002": ["CC6.1", "CC6.8"],       # runs as root
+        "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity
+        "DF-004": ["CC6.7", "CC8.1"],       # curl-pipe
+        "DF-005": ["CC6.8"],                # shell-eval
+        "DF-006": ["CC6.1"],                # ENV credential literal
+        "DF-007": ["CC7.2"],                # no HEALTHCHECK
+        "DF-008": ["CC6.1", "CC6.8"],       # docker --privileged
+        "DF-010": ["CC8.1"],                # apt upgrade
+        "DF-012": ["CC6.1"],                # RUN sudo
+        "DF-013": ["CC6.6", "CC6.8"],       # sensitive EXPOSE
+        "DF-014": ["CC6.8"],                # WORKDIR /etc
+        "DF-015": ["CC6.8"],                # chmod 777
+        "DF-016": ["CC8.1"],                # OCI provenance labels
+        "DF-017": ["CC6.8"],                # PATH world-writable
+        "DF-018": ["CC6.8"],                # chown system path
+        "DF-019": ["CC6.1"],                # COPY credential file
+        "DF-020": ["CC6.1"],                # credential ARG
+        # ── Buildkite (CI provider) ───────────────────────────────
+        # Mirrors GHA / GitLab pack mappings: CC6.1 (logical access /
+        # secrets), CC8.1 (change management), CC6.6 (network
+        # boundary), CC6.7 (data in transit), CC7.1 / CC7.2
+        # (vulnerability monitoring).
+        "BK-001": ["CC8.1"],                # plugin not pinned
+        "BK-002": ["CC6.1"],                # literal secret
+        "BK-003": ["CC6.8"],                # untrusted variable
+        "BK-004": ["CC6.7", "CC8.1"],       # curl-pipe
+        "BK-005": ["CC6.1", "CC6.8"],       # privileged container
+        "BK-006": ["CC6.1"],                # no timeout
+        "BK-007": ["CC8.1"],                # no manual deploy gate
+        "BK-008": ["CC6.7"],                # TLS bypass
+        "BK-009": ["CC8.1"],                # no signing
+        "BK-010": ["CC8.1"],                # no SBOM
+        "BK-011": ["CC8.1"],                # no SLSA provenance
+        "BK-012": ["CC7.1"],                # no vuln scan
+        "BK-013": ["CC8.1"],                # no branches filter
     },
 )

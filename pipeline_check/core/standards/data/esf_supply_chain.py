@@ -322,5 +322,53 @@ STANDARD = Standard(
         "HELM-003": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS dep repo
         "HELM-004": ["ESF-S-PIN-DEPS"],                            # version range
         "HELM-005": ["ESF-S-VERIFY-DEPS"],                         # maintainers chain-of-custody
+        "HELM-006": ["ESF-D-CODE-REVIEW"],                         # missing kubeVersion
+        "HELM-007": ["ESF-S-VERIFY-DEPS"],                         # description metadata
+        "HELM-008": ["ESF-S-PIN-DEPS"],                            # stale Chart.lock
+        "HELM-009": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS home/sources
+        "HELM-010": ["ESF-S-VERIFY-DEPS"],                         # appVersion
+        # ── Dockerfile (image build supply chain) ──────────────────
+        "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
+        "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
+        "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity
+        "DF-004": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],      # curl-pipe
+        "DF-005": ["ESF-D-INJECTION"],                             # shell-eval
+        "DF-006": ["ESF-D-SECRETS"],                               # ENV credential
+        "DF-008": ["ESF-D-PRIV-BUILD"],                            # docker --privileged
+        "DF-010": ["ESF-S-PIN-DEPS"],                              # apt upgrade
+        "DF-012": ["ESF-D-PRIV-BUILD"],                            # RUN sudo
+        "DF-013": ["ESF-D-PRIV-BUILD"],                            # sensitive port
+        "DF-014": ["ESF-D-PRIV-BUILD"],                            # WORKDIR /etc
+        "DF-015": ["ESF-D-PRIV-BUILD"],                            # chmod 777
+        "DF-016": ["ESF-D-SBOM"],                                  # OCI provenance labels
+        "DF-019": ["ESF-D-SECRETS"],                               # COPY credential file
+        "DF-020": ["ESF-D-SECRETS"],                               # credential ARG
+        # ── Cloud Build ────────────────────────────────────────────
+        "GCB-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GCB-002": ["ESF-D-SECRETS"],
+        "GCB-003": ["ESF-D-SECRETS"],
+        "GCB-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GCB-005": ["ESF-D-SECRETS"],
+        "GCB-006": ["ESF-D-BUILD-LOGS"],
+        "GCB-007": ["ESF-S-PIN-DEPS"],
+        "GCB-008": ["ESF-D-SIGN-ARTIFACTS"],
+        "GCB-009": ["ESF-D-SBOM"],
+        "GCB-010": ["ESF-D-BUILD-ENV"],
+        "GCB-011": ["ESF-S-VERIFY-DEPS"],
+        "GCB-012": ["ESF-S-VULN-MGMT"],
+        "GCB-013": ["ESF-D-TOKEN-HYGIENE"],
+        "GCB-014": ["ESF-D-INJECTION"],
+        "GCB-015": ["ESF-D-SBOM"],
+        "GCB-016": ["ESF-D-BUILD-TIMEOUT"],
+        "GCB-017": ["ESF-D-BUILD-LOGS"],
+        "GCB-018": ["ESF-S-TRUSTED-REG"],
+        "GCB-019": ["ESF-D-PRIV-BUILD"],
+        "GCB-020": ["ESF-D-TOKEN-HYGIENE"],
+        "GCB-021": ["ESF-D-BUILD-ENV"],
+        "GCB-022": ["ESF-D-INJECTION"],
+        "GCB-023": ["ESF-D-SIGN-ARTIFACTS"],
+        "GCB-024": ["ESF-D-SBOM"],
+        "GCB-025": ["ESF-S-PIN-DEPS"],
+        "GCB-026": ["ESF-C-ARTIFACT-AUTHZ"],
     },
 )

@@ -164,5 +164,53 @@ STANDARD = Standard(
         "ARGO-011": ["6.5.1", "10.3.2"],                 # SLSA provenance
         "ARGO-012": ["6.3.1", "6.3.3"],                  # no vuln scanning
         "ARGO-013": ["7.2.5"],                           # SA token automount
+        # ── Dockerfile (image build = system component change) ─
+        # Pinning rules tie to 6.4.3 / 6.5.1 (change control,
+        # secure dev). Privileged / root rules tie to 6.4.1
+        # (secure build/config). Credential rules tie to 8.2.1
+        # (strong unique identifiers). Vuln-related rules tie to
+        # 6.3.1 / 6.3.3.
+        "DF-001": ["6.4.3", "6.5.1"],                    # FROM not digest-pinned
+        "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
+        "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity
+        "DF-004": ["6.5.1", "6.3.3"],                    # curl-pipe
+        "DF-005": ["6.5.1"],                             # shell-eval
+        "DF-006": ["8.2.1", "8.2.2"],                    # ENV credential literal
+        "DF-008": ["6.4.1", "7.2.5"],                    # docker --privileged
+        "DF-010": ["6.3.3"],                             # apt upgrade
+        "DF-012": ["7.2.5"],                             # RUN sudo
+        "DF-013": ["6.4.1"],                             # sensitive EXPOSE
+        "DF-015": ["6.4.1"],                             # chmod 777
+        "DF-016": ["10.3.2", "6.5.1"],                   # OCI provenance
+        "DF-019": ["8.2.1", "8.2.2"],                    # COPY credential file
+        "DF-020": ["8.2.1"],                             # credential ARG
+        # ── Helm chart-supply-chain ────────────────────────────
+        "HELM-001": ["6.4.3"],                           # legacy apiVersion
+        "HELM-002": ["6.5.1", "10.3.2"],                 # missing Chart.lock digests
+        "HELM-003": ["6.3.3"],                           # non-HTTPS dep repo
+        "HELM-004": ["6.4.3", "6.5.1"],                  # version range
+        "HELM-008": ["6.3.3"],                           # stale Chart.lock
+        "HELM-009": ["6.3.3"],                           # non-HTTPS home/sources
+        # ── Cloud Build ────────────────────────────────────────
+        "GCB-001": ["6.4.3", "6.5.1"],                   # step image not pinned
+        "GCB-002": ["8.2.1", "8.2.2"],                   # plaintext env secret
+        "GCB-003": ["8.2.1"],                            # plain script secret
+        "GCB-004": ["6.4.3", "6.5.1"],                   # community step not pinned
+        "GCB-005": ["8.2.1"],                            # secret-shaped substitution
+        "GCB-006": ["10.2.1"],                           # build logging disabled
+        "GCB-008": ["6.5.1", "10.3.2"],                  # no signing
+        "GCB-009": ["6.5.1"],                            # no SBOM
+        "GCB-010": ["7.2.5"],                            # default network egress
+        "GCB-011": ["6.3.3"],                            # TLS bypass
+        "GCB-012": ["6.3.1", "6.3.3"],                   # no vuln scan
+        "GCB-013": ["7.2.5", "8.2.2"],                   # default service account
+        "GCB-014": ["6.5.1"],                            # untrusted substitution
+        "GCB-015": ["6.5.1", "10.3.2"],                  # no provenance
+        "GCB-016": ["6.4.1"],                            # no timeout
+        "GCB-019": ["6.4.1", "7.2.5"],                   # privileged step
+        "GCB-020": ["7.2.5", "8.2.2"],                   # default SA email
+        "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
+        "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
+        "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
     },
 )
