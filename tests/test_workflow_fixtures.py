@@ -376,7 +376,7 @@ class TestKubernetesFixtures:
 
 
 class TestTektonFixtures:
-    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 14)}
+    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 14)} | {"TAINT-006"}
 
     def _scan(self, filename: str):
         ctx = TektonContext.from_path(FIXTURES / "tekton" / filename)
@@ -459,7 +459,7 @@ class TestArgoFixtures:
      {f"BK-{i:03d}" for i in range(1, 14)} | {"TAINT-005"}),
     ("tekton", "tekton/insecure-tekton.yaml",
      TektonContext, TektonChecks,
-     {f"TKN-{i:03d}" for i in range(1, 14)}),
+     {f"TKN-{i:03d}" for i in range(1, 14)} | {"TAINT-006"}),
     ("argo", "argo/insecure-argo.yaml",
      ArgoContext, ArgoChecks,
      {f"ARGO-{i:03d}" for i in range(1, 14)}),

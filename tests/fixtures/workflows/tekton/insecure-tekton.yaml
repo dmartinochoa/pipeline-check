@@ -62,3 +62,47 @@ spec:
   # TKN-007: no serviceAccountName (defaults to "default").
   pipelineRef:
     name: build-and-deploy-pipeline
+---
+# TAINT-006: cross-task results-forwarding taint flow. The
+# ``extract`` task pipes ``$(params.title)`` into a result
+# file; the ``deploy`` task receives the result as its own
+# param via ``$(tasks.extract.results.clean)`` and references
+# the param unquoted in its script. TKN-003 catches the
+# producer's inner interpolation; TAINT-006 catches the
+# cross-task injection at the consumer.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: build-and-deploy-pipeline
+  namespace: ci
+spec:
+  params:
+    - name: pr-title
+  tasks:
+    - name: extract
+      params:
+        - name: title
+          value: $(params.pr-title)
+      taskSpec:
+        params:
+          - name: title
+        results:
+          - name: clean
+        steps:
+          - name: extract
+            image: alpine
+            script: |
+              echo "$(params.title)" > $(results.clean.path)
+    - name: deploy
+      runAfter: [extract]
+      params:
+        - name: title
+          value: $(tasks.extract.results.clean)
+      taskSpec:
+        params:
+          - name: title
+        steps:
+          - name: deploy
+            image: alpine
+            script: |
+              echo Deploying release for $(params.title)

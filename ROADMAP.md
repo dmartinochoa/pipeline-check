@@ -307,6 +307,14 @@ Pilot scope: GitHub Actions and GitLab CI.
     meta-data is per-build (not per-step) so the engine
     skips temporal ordering and fires on any pipeline that
     contains both a tainted set and a get on the same key.
+  * ``TAINT-006`` (Tekton, *landed*) — cross-task flow via
+    ``$(tasks.<task>.results.<output>)`` substitution in a
+    Pipeline document. Producer task writes a tainted
+    ``$(params.X)`` into ``$(results.Y.path)``; consumer task
+    receives the result through its own param via
+    ``$(tasks.<producer>.results.Y)`` and references the param
+    unquoted in its script. Inline ``taskSpec:`` only;
+    ``taskRef:`` cross-document resolution is the next gap.
 
 Next gaps: end-to-end coupling between the
 ``--resolve-remote`` resolver and the GHA pass-4 forward

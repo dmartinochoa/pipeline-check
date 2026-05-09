@@ -12,6 +12,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-006 Tekton results cross-task taint flow.** Fourth
+  TAINT-engine port. New
+  ``pipeline_check.core.checks.tekton._taint_graph`` follows
+  Tekton's canonical inter-task channel:
+  ``$(tasks.<task>.results.<output>)`` substitution. A producer
+  task's inline ``taskSpec.steps[*].script`` writes to
+  ``$(results.<X>.path)`` from a ``$(params.<Y>)`` reference;
+  the Pipeline forwards the result to a downstream task's
+  ``params:`` via ``$(tasks.<producer>.results.<X>)``; the
+  downstream task's script references its own param unquoted.
+  TKN-003 catches the producer's inner interpolation; TAINT-006
+  catches the cross-task injection at the consumer.
+  v1 limitations: only inline ``taskSpec:`` is walked
+  (``taskRef:`` cross-document resolution would need the same
+  machinery as the GHA ``--resolve-remote`` flow); ``finally:``
+  blocks aren't walked yet. The ``TAINT-NNN`` family now spans
+  GHA (TAINT-001..003), GitLab CI (TAINT-004), Buildkite
+  (TAINT-005), and Tekton (TAINT-006), four distinct
+  propagation channels sharing the same producer-consumer
+  engine shape.
 - **TAINT-005 Buildkite meta-data cross-step taint flow.** Third
   TAINT-engine port. New
   ``pipeline_check.core.checks.buildkite._taint_graph`` follows
