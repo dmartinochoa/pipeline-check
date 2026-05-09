@@ -61,7 +61,10 @@ __all__ = [
 
 # Use the C-accelerated YAML loader when available (libyaml bindings).
 # CSafeLoader is functionally identical to SafeLoader but ~30-50x faster,
-# which matters when scanning 100+ workflow files in a monorepo.
+# which matters when scanning 100+ workflow files in a monorepo. The
+# union annotation declares both arms so types-PyYAML doesn't reject
+# the fallback as a narrowing assignment from CSafeLoader.
+_YAML_LOADER: type[_yaml.CSafeLoader] | type[_yaml.SafeLoader]
 try:
     _YAML_LOADER = _yaml.CSafeLoader
 except AttributeError:

@@ -193,8 +193,18 @@ def _make_constructor(fn_key: str) -> Callable[[yaml.Loader, yaml.Node], dict[st
             return {fn_key: value}
         if isinstance(node, yaml.SequenceNode):
             return {fn_key: loader.construct_sequence(node, deep=True)}
-        # MappingNode (rare, e.g. !Sub with variable-map form)
-        return {fn_key: loader.construct_mapping(node, deep=True)}
+        # MappingNode (rare, e.g. !Sub with variable-map form). The
+        # isinstance narrows the static type for ``construct_mapping``,
+        # which the types-PyYAML stub spells as ``MappingNode`` rather
+        # than the broader ``Node``.
+        if isinstance(node, yaml.MappingNode):
+            return {fn_key: loader.construct_mapping(node, deep=True)}
+        raise yaml.constructor.ConstructorError(
+            None, None,
+            f"unsupported node type {type(node).__name__} for "
+            f"intrinsic {fn_key}",
+            node.start_mark,
+        )
     return _construct
 
 

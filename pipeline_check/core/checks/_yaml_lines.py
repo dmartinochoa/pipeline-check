@@ -103,7 +103,10 @@ class _LineLoader(yaml.SafeLoader):
             )
         mapping: LineDict = LineDict()
         for key_node, value_node in node.value:
-            key = self.construct_object(key_node, deep=deep)
+            # types-PyYAML annotates these helpers as untyped, hence
+            # the per-call ignore on the construct_* calls below and
+            # in ``construct_sequence``.
+            key = self.construct_object(key_node, deep=deep)  # type: ignore[no-untyped-call]
             try:
                 hash(key)
             except TypeError as exc:
@@ -111,7 +114,7 @@ class _LineLoader(yaml.SafeLoader):
                     "while constructing a mapping", node.start_mark,
                     f"found unhashable key ({exc})", key_node.start_mark,
                 ) from exc
-            value = self.construct_object(value_node, deep=deep)
+            value = self.construct_object(value_node, deep=deep)  # type: ignore[no-untyped-call]
             mapping[key] = value
         mapping._line = node.start_mark.line + 1  # 1-based
         mapping._col = node.start_mark.column + 1
@@ -128,7 +131,7 @@ class _LineLoader(yaml.SafeLoader):
             )
         out: LineList = LineList()
         for child in node.value:
-            out.append(self.construct_object(child, deep=deep))
+            out.append(self.construct_object(child, deep=deep))  # type: ignore[no-untyped-call]
             out._item_lines.append(child.start_mark.line + 1)
             out._item_cols.append(child.start_mark.column + 1)
         out._line = node.start_mark.line + 1
@@ -179,10 +182,13 @@ def safe_load_all_with_lines(text: str) -> Iterator[tuple[int, Any]]:
             node = loader.get_node()
             if node is None:
                 continue
-            doc = loader.construct_document(node)
+            # construct_document / dispose are untyped in the
+            # types-PyYAML stubs; ignore at call site rather than
+            # widening the loader's annotated surface.
+            doc = loader.construct_document(node)  # type: ignore[no-untyped-call]
             yield node.start_mark.line + 1, doc
     finally:
-        loader.dispose()
+        loader.dispose()  # type: ignore[no-untyped-call]
 
 
 def line_of(obj: Any) -> int | None:

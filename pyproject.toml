@@ -127,10 +127,6 @@ disallow_untyped_defs = true
 # disable ``type-arg`` since ``boto3``'s untyped paginator output
 # would otherwise require ``cast()`` at every wrapper site.
 disallow_any_generics = true
-# Silence "Library stubs not installed for X" until requirements-dev.txt
-# is regenerated to include types-PyYAML. The runtime behavior is fine;
-# this only affects mypy's static checks on yaml.* call sites.
-disable_error_code = ["import-untyped"]
 
 # pyyaml ships without type stubs in our hash-locked lockfile, so
 # ``yaml.SafeLoader`` resolves to ``Any``. The three project-side
