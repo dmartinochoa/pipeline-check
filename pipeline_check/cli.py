@@ -125,6 +125,7 @@ class _GroupedCommand(click.Command):
             "--dockerfile-path", "--k8s-path", "--helm-path",
             "--buildkite-path", "--tekton-path", "--argo-path",
             "--helm-values", "--helm-set", "--oci-manifest",
+            "--drone-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -300,18 +301,19 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
     docstring header. We parse it so the output is uniform.
     """
     rows: list[tuple[str, str, str]] = []
-    rule_packages = {
-        "github": ["pipeline_check.core.checks.github.rules"],
-        "gitlab": ["pipeline_check.core.checks.gitlab.rules"],
-        "bitbucket": ["pipeline_check.core.checks.bitbucket.rules"],
-        "azure": ["pipeline_check.core.checks.azure.rules"],
-        "jenkins": ["pipeline_check.core.checks.jenkins.rules"],
-        "circleci": ["pipeline_check.core.checks.circleci.rules"],
-        "buildkite": ["pipeline_check.core.checks.buildkite.rules"],
-        "tekton": ["pipeline_check.core.checks.tekton.rules"],
-        "argo": ["pipeline_check.core.checks.argo.rules"],
-        "aws": ["pipeline_check.core.checks.aws.rules"],
-    }
+    # Rule-based packages are derived from the filesystem so a new
+    # provider under ``pipeline_check/core/checks/<name>/rules/``
+    # is auto-listed without a CLI edit. Same source-of-truth
+    # pattern as ``_all_check_ids`` and the custom-rule loader's
+    # built-in-ID collision check.
+    from pathlib import Path as _Path
+    _checks_root = _Path(__file__).parent / "core" / "checks"
+    _provider_rule_dir = _checks_root / pipeline / "rules"
+    rule_packages: dict[str, list[str]] = {}
+    if _provider_rule_dir.is_dir():
+        rule_packages[pipeline] = [
+            f"pipeline_check.core.checks.{pipeline}.rules"
+        ]
     from .core.checks.rule import discover_rules
     for pkg in rule_packages.get(pipeline, []):
         try:
@@ -460,6 +462,8 @@ def _detect_pipeline_from_cwd() -> str | None:
         or os.path.isfile(".buildkite/pipeline.yaml")
     ):
         return "buildkite"
+    if os.path.isfile(".drone.yml") or os.path.isfile(".drone.yaml"):
+        return "drone"
     if os.path.isfile("Dockerfile") or os.path.isfile("Containerfile"):
         return "dockerfile"
     for _cfn in (
@@ -676,7 +680,7 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path, --oci-manifest); "
+        "--argo-path, --oci-manifest, --drone-path); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -955,6 +959,17 @@ def _install_completion_callback(
         "or ``oras manifest fetch``), or a directory containing one "
         "(required when --pipeline oci). Pure parser, no registry "
         "pull, no daemon access. Auto-detects ./index.json."
+    ),
+)
+@click.option(
+    "--drone-path",
+    "drone_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Drone CI ``.drone.yml`` / ``.drone.yaml`` file "
+        "or a directory containing one (required when --pipeline "
+        "drone). Auto-detects ./.drone.yml or ./.drone.yaml."
     ),
 )
 @click.option(
@@ -1397,6 +1412,7 @@ def scan(
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
+    drone_path: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1768,6 +1784,12 @@ def scan(
             candidates=("index.json",),
             detect_label="index.json",
         )
+    elif pipeline_lc == "drone":
+        drone_path = _resolve_provider_path(
+            "drone", flag="drone-path", value=drone_path,
+            candidates=(".drone.yml", ".drone.yaml"),
+            detect_label=".drone.yml/.drone.yaml",
+        )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1846,6 +1868,7 @@ def scan(
         helm_values=list(helm_values) or None,
         helm_set=list(helm_set) or None,
         oci_manifest=oci_manifest,
+        drone_path=drone_path,
     )
 
     if verbose:

@@ -139,6 +139,7 @@ nav:
       - CircleCI: providers/circleci.md
       - Google Cloud Build: providers/cloudbuild.md
       - Buildkite: providers/buildkite.md
+      - Drone CI: providers/drone.md
       - Tekton: providers/tekton.md
       - Argo Workflows: providers/argo.md
       - Dockerfile: providers/dockerfile.md

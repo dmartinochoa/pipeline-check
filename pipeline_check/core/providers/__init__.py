@@ -22,6 +22,7 @@ from .circleci import CircleCIProvider
 from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
 from .dockerfile import DockerfileProvider
+from .drone import DroneProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .helm import HelmProvider
@@ -69,3 +70,4 @@ register(DockerfileProvider())
 register(KubernetesProvider())
 register(HelmProvider())
 register(OCIProvider())
+register(DroneProvider())
