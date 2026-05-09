@@ -119,7 +119,7 @@ class TestDronePipelineChecksOrchestrator:
         ids = sorted(f.check_id for f in findings)
         assert ids == [
             "DR-001", "DR-002", "DR-003",
-            "DR-004", "DR-005", "DR-006",
+            "DR-004", "DR-005", "DR-006", "DR-007",
         ]
         # Every rule passes on the hardened fixture.
         assert all(f.passed for f in findings), [
@@ -133,8 +133,9 @@ class TestDronePipelineChecksOrchestrator:
         _write(f, _VULNERABLE)
         ctx = DroneContext.from_path(f)
         findings = DronePipelineChecks(ctx).run()
-        # DR-005 only fires on plugin steps (the vulnerable
-        # fixture has none); every other rule fires.
+        # DR-005 only fires on plugin steps and DR-007 only fires on
+        # sensitive host-path mounts; the vulnerable fixture has
+        # neither, so every other rule fires.
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",
@@ -178,9 +179,10 @@ class TestScannerWiring:
         ids = sorted(f.check_id for f in findings)
         assert ids == [
             "DR-001", "DR-002", "DR-003",
-            "DR-004", "DR-005", "DR-006",
+            "DR-004", "DR-005", "DR-006", "DR-007",
         ]
-        # Vulnerable fixture trips 5 of 6 (DR-005 needs a plugin).
+        # Vulnerable fixture trips 5 of 7 (DR-005 needs a plugin,
+        # DR-007 needs a host-path volume).
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",

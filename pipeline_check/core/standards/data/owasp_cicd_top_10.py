@@ -487,6 +487,7 @@ STANDARD = Standard(
         "DR-004":   ["CICD-SEC-6", "CICD-SEC-7"],   # literal secret
         "DR-005":   ["CICD-SEC-3"],                 # plugin floating tag
         "DR-006":   ["CICD-SEC-3", "CICD-SEC-1"],   # TLS bypass in commands
+        "DR-007":   ["CICD-SEC-5"],                 # sensitive host-path mount
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation

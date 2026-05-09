@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DR-007 Drone sensitive host-path mount.** New Drone rule.
+  Pipeline-level ``volumes:`` declarations of the form
+  ``host: { path: <sensitive> }`` (Docker socket,
+  ``/var/lib/docker``, ``/var/run``, ``/etc``, ``/proc``,
+  ``/sys``, ``/``) are container-escape primitives equivalent
+  to GHA-026 / BK-005. Detection uses prefix-with-segment-
+  boundary matching so subpaths under a sensitive root also
+  fire (``/var/lib/docker/volumes`` -> yes;
+  ``/var-foo`` -> no). Description names which step or
+  service mounts the volume; a declared-but-unmounted volume
+  still fires (the runner's allow-bind config is itself the
+  risk shape). Drone catalog: 6 -> 7.
 - **TAINT-007 Argo cross-template ``outputs.parameters`` taint flow.**
   Fifth TAINT-engine port. New
   ``pipeline_check.core.checks.argo._taint_graph`` follows
