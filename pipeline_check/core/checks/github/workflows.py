@@ -14,8 +14,12 @@ up automatically.
 Rule signature: ``check(path: str, doc: dict) -> Finding`` is the
 default. Rules that need the caller-vs-callee context for resolved
 reusable workflows extend the signature to
-``check(path: str, doc: dict, wf: Workflow) -> Finding``; the
-orchestrator detects the third parameter at discovery time via
+``check(path: str, doc: dict, wf: Workflow) -> Finding``. Rules that
+need cross-workflow analysis (e.g., looking up the callee body of a
+reusable-workflow ``uses:`` reference to confirm the input is
+actually consumed in a sink) widen further to
+``check(path, doc, wf, ctx: GitHubContext) -> Finding``. The
+orchestrator detects each form at discovery time via
 ``inspect.signature`` and dispatches accordingly. Existing rules
 don't need to change.
 """
@@ -29,19 +33,23 @@ from ..rule import Rule, discover_rules
 from .base import GitHubBaseCheck, GitHubContext
 
 
-def _accepts_workflow(check_fn: Callable[..., Finding]) -> bool:
-    """True iff *check_fn* declares a third positional parameter.
+def _positional_count(check_fn: Callable[..., Finding]) -> int:
+    """Return the count of positional parameters on *check_fn*.
 
-    Rule modules can opt into receiving the full :class:`Workflow`
-    dataclass (which carries resolver-provided inheritance metadata)
-    by widening their signature to three positionals. This helper
-    inspects the signature once at orchestrator construction so the
-    per-call dispatch is a flag check, not a re-introspection.
+    Used by the orchestrator to dispatch:
+
+      * 2 positionals -> ``check(path, doc)``;
+      * 3 positionals -> ``check(path, doc, wf)``;
+      * 4 positionals -> ``check(path, doc, wf, ctx)``.
+
+    Anything outside [2, 4] falls through to the default 2-arg
+    invocation; rules whose signature can't be introspected
+    (lambdas, C-implemented callables) get the same treatment.
     """
     try:
         sig = inspect.signature(check_fn)
     except (TypeError, ValueError):
-        return False
+        return 2
     positionals = [
         p for p in sig.parameters.values()
         if p.kind in (
@@ -49,7 +57,7 @@ def _accepts_workflow(check_fn: Callable[..., Finding]) -> bool:
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
         )
     ]
-    return len(positionals) >= 3
+    return len(positionals)
 
 
 class WorkflowChecks(GitHubBaseCheck):
@@ -65,16 +73,18 @@ class WorkflowChecks(GitHubBaseCheck):
         # is a list of ``(Rule, check_fn)`` pairs in lexical module
         # order, which matches the natural GHA-001 → GHA-012 sort.
         rules = discover_rules("pipeline_check.core.checks.github.rules")
-        self._rules: list[tuple[Rule, Callable[..., Finding], bool]] = [
-            (rule, fn, _accepts_workflow(fn))
+        self._rules: list[tuple[Rule, Callable[..., Finding], int]] = [
+            (rule, fn, _positional_count(fn))
             for rule, fn in rules
         ]
 
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for wf in self.ctx.workflows:
-            for rule, check_fn, wants_wf in self._rules:
-                if wants_wf:
+            for rule, check_fn, argc in self._rules:
+                if argc >= 4:
+                    finding = check_fn(wf.path, wf.data, wf, self.ctx)
+                elif argc == 3:
                     finding = check_fn(wf.path, wf.data, wf)
                 else:
                     finding = check_fn(wf.path, wf.data)

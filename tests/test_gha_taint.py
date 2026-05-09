@@ -20,6 +20,10 @@ import yaml
 from pipeline_check.core.checks.github._taint_graph import (
     analyze_workflow,
 )
+from pipeline_check.core.checks.github.base import (
+    GitHubContext,
+    Workflow,
+)
 from pipeline_check.core.checks.github.rules import (
     taint001_step_output_taint as t1,
 )
@@ -29,6 +33,18 @@ from pipeline_check.core.checks.github.rules import (
 from pipeline_check.core.checks.github.rules import (
     taint003_reusable_workflow_taint as t3,
 )
+
+
+def _ctx_for(doc: dict, *, callees: list[Workflow] | None = None) -> tuple[Workflow, GitHubContext]:
+    """Build a (caller workflow, context) pair for TAINT-003 tests.
+
+    By default the context only carries the caller; pass ``callees``
+    to seed additional workflows so the rule can resolve them.
+    """
+    caller = Workflow(path="wf.yml", data=doc)
+    workflows = [caller, *(callees or [])]
+    ctx = GitHubContext(workflows)
+    return caller, ctx
 
 
 def _doc(yaml_text: str) -> dict:
@@ -416,7 +432,8 @@ jobs:
     steps:
       - run: echo hello
 """)
-        assert t3.check("wf.yml", doc).passed
+        wf, ctx = _ctx_for(doc)
+        assert t3.check("wf.yml", doc, wf, ctx).passed
 
     def test_passes_when_with_block_has_no_taint(self) -> None:
         doc = _doc("""
@@ -428,9 +445,11 @@ jobs:
       version: v1.2.3
       static-flag: true
 """)
-        assert t3.check("wf.yml", doc).passed
+        wf, ctx = _ctx_for(doc)
+        assert t3.check("wf.yml", doc, wf, ctx).passed
 
-    def test_fails_on_direct_github_event_forward(self) -> None:
+    def test_fails_on_direct_github_event_forward_unconfirmed(self) -> None:
+        # No callee body in the context -> unconfirmed.
         doc = _doc("""
 on: pull_request_target
 jobs:
@@ -439,15 +458,14 @@ jobs:
     with:
       title: ${{ github.event.issue.title }}
 """)
-        f = t3.check("wf.yml", doc)
+        wf, ctx = _ctx_for(doc)
+        f = t3.check("wf.yml", doc, wf, ctx)
         assert not f.passed
         assert "github.event.issue.title" in f.description
-        assert "./.github/workflows/build.yml" in f.description
+        assert "UNCONFIRMED" in f.description
         assert "1 reusable-workflow forward" in f.description
 
     def test_fails_on_head_ref_forward(self) -> None:
-        # ``github.head_ref`` is also user-controllable (fork-PR
-        # branch names contain attacker text).
         doc = _doc("""
 on: pull_request_target
 jobs:
@@ -456,11 +474,10 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
 """)
-        assert not t3.check("wf.yml", doc).passed
+        wf, ctx = _ctx_for(doc)
+        assert not t3.check("wf.yml", doc, wf, ctx).passed
 
     def test_fails_when_step_output_forward(self) -> None:
-        # The forwarded value is itself a tainted step output
-        # (one job extracts, another forward).
         doc = _doc("""
 on: pull_request_target
 jobs:
@@ -477,12 +494,12 @@ jobs:
     with:
       title: ${{ needs.prep.outputs.title }}
 """)
-        f = t3.check("wf.yml", doc)
+        wf, ctx = _ctx_for(doc)
+        f = t3.check("wf.yml", doc, wf, ctx)
         assert not f.passed
         assert "github.event.issue.title" in f.description
 
     def test_emits_one_finding_per_tainted_input(self) -> None:
-        # Two distinct tainted inputs forwarded into the callee.
         doc = _doc("""
 on: pull_request_target
 jobs:
@@ -493,13 +510,12 @@ jobs:
       branch: ${{ github.head_ref }}
       static: hardcoded
 """)
-        f = t3.check("wf.yml", doc)
+        wf, ctx = _ctx_for(doc)
+        f = t3.check("wf.yml", doc, wf, ctx)
         assert not f.passed
         assert "2 reusable-workflow forward" in f.description
 
     def test_does_not_double_fire_with_taint001(self) -> None:
-        # A workflow with a uses-forward but no same-job step
-        # output flow should fire TAINT-003 only.
         doc = _doc("""
 on: pull_request_target
 jobs:
@@ -508,6 +524,138 @@ jobs:
     with:
       title: ${{ github.event.issue.title }}
 """)
-        assert not t3.check("wf.yml", doc).passed
+        wf, ctx = _ctx_for(doc)
+        assert not t3.check("wf.yml", doc, wf, ctx).passed
         assert t1.check("wf.yml", doc).passed
         assert t2.check("wf.yml", doc).passed
+
+    def test_confirmed_when_local_callee_consumes_input(self) -> None:
+        # Caller forward a tainted source into a local callee whose
+        # script body interpolates the input unquoted. The rule
+        # should mark the path as CONFIRMED end-to-end.
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        callee_doc = _doc("""
+on:
+  workflow_call:
+    inputs:
+      title:
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ inputs.title }}
+""")
+        callee_wf = Workflow(path=".github/workflows/build.yml", data=callee_doc)
+        wf, ctx = _ctx_for(caller_doc, callees=[callee_wf])
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert not f.passed
+        assert "CONFIRMED" in f.description
+        assert ".github/workflows/build.yml" in f.description
+        # Confidence is HIGH for fully-confirmed paths.
+        from pipeline_check.core.checks.base import Confidence
+        assert f.confidence == Confidence.HIGH
+
+    def test_unconfirmed_when_callee_quotes_the_input(self) -> None:
+        # Callee references the input in a SAFE quoted form. The
+        # caller-side forward is still flagged but stays at MEDIUM
+        # confidence (no end-to-end injection sink).
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        callee_doc = _doc("""
+on:
+  workflow_call:
+    inputs:
+      title:
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ inputs.title }}"
+""")
+        callee_wf = Workflow(path=".github/workflows/build.yml", data=callee_doc)
+        wf, ctx = _ctx_for(caller_doc, callees=[callee_wf])
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert not f.passed
+        assert "UNCONFIRMED" in f.description
+        from pipeline_check.core.checks.base import Confidence
+        assert f.confidence == Confidence.MEDIUM
+
+    def test_confirmed_when_callee_consumes_via_with_block(self) -> None:
+        # Callee uses an action whose ``with:`` parameter
+        # interpolates the input (actions/github-script-style sink).
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/script.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        callee_doc = _doc("""
+on:
+  workflow_call:
+    inputs:
+      title:
+        type: string
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: console.log(${{ inputs.title }})
+""")
+        callee_wf = Workflow(path=".github/workflows/script.yml", data=callee_doc)
+        wf, ctx = _ctx_for(caller_doc, callees=[callee_wf])
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert not f.passed
+        assert "CONFIRMED" in f.description
+
+    def test_remote_callee_matched_by_source_ref(self) -> None:
+        # The resolver attaches remote callees to ctx with
+        # ``source_ref`` set; the rule must match by that field
+        # for ``owner/repo/path.yml@sha`` references.
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: example/shared/.github/workflows/build.yml@abc123
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        callee_doc = _doc("""
+on:
+  workflow_call:
+    inputs:
+      title:
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ inputs.title }}
+""")
+        callee_wf = Workflow(
+            path="caller.yml -> example/shared/.github/workflows/build.yml@abc123",
+            data=callee_doc,
+            source_ref="example/shared/.github/workflows/build.yml@abc123",
+        )
+        wf, ctx = _ctx_for(caller_doc, callees=[callee_wf])
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert not f.passed
+        assert "CONFIRMED" in f.description

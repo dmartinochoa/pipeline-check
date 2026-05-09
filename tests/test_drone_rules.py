@@ -27,6 +27,9 @@ from pipeline_check.core.checks.drone.rules import (
 from pipeline_check.core.checks.drone.rules import (
     dr006_tls_bypass as r6,
 )
+from pipeline_check.core.checks.drone.rules import (
+    dr007_host_path_mount as r7,
+)
 
 _DIGEST = "@sha256:" + "0" * 64
 
@@ -37,6 +40,7 @@ def _pipeline(
     steps: list[dict[str, Any]] | None = None,
     services: list[dict[str, Any]] | None = None,
     environment: dict[str, Any] | None = None,
+    volumes: list[dict[str, Any]] | None = None,
 ) -> Pipeline:
     data: dict[str, Any] = {
         "kind": "pipeline",
@@ -49,6 +53,8 @@ def _pipeline(
         data["services"] = services
     if environment is not None:
         data["environment"] = environment
+    if volumes is not None:
+        data["volumes"] = volumes
     return Pipeline(path=".drone.yml", doc_index=0, data=data)
 
 
@@ -412,3 +418,117 @@ class TestDR006TLSBypass:
     def test_passes_on_non_container_pipeline(self) -> None:
         p = _pipeline(type_="exec", steps=[{"name": "x"}])
         assert r6.check(p).passed
+
+
+# ── DR-007 ───────────────────────────────────────────────────────────
+
+
+class TestDR007HostPathMount:
+    def test_passes_when_no_volumes_block(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}"},
+        ])
+        assert r7.check(p).passed
+
+    def test_passes_on_temp_volume(self) -> None:
+        # tmpfs is ephemeral and not a host bind, safe.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[{"name": "cache", "temp": {}}],
+        )
+        assert r7.check(p).passed
+
+    def test_passes_on_unsensitive_host_path(self) -> None:
+        # ``/tmp/builds`` isn't on the sensitive list.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[
+                {"name": "scratch", "host": {"path": "/tmp/builds"}},
+            ],
+        )
+        assert r7.check(p).passed
+
+    def test_fails_on_docker_socket_mount(self) -> None:
+        p = _pipeline(
+            steps=[
+                {"name": "build", "image": f"x{_DIGEST}",
+                 "volumes": [{"name": "docker-sock",
+                              "path": "/var/run/docker.sock"}]},
+            ],
+            volumes=[
+                {"name": "docker-sock",
+                 "host": {"path": "/var/run/docker.sock"}},
+            ],
+        )
+        f = r7.check(p)
+        assert not f.passed
+        assert "/var/run/docker.sock" in f.description
+        assert "steps.build" in f.description
+
+    def test_fails_on_var_lib_docker(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[
+                {"name": "docker", "host": {"path": "/var/lib/docker"}},
+            ],
+        )
+        assert not r7.check(p).passed
+
+    def test_fails_on_etc(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[{"name": "etc", "host": {"path": "/etc"}}],
+        )
+        assert not r7.check(p).passed
+
+    def test_fails_on_proc(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[{"name": "p", "host": {"path": "/proc"}}],
+        )
+        assert not r7.check(p).passed
+
+    def test_fails_on_root(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[{"name": "root", "host": {"path": "/"}}],
+        )
+        assert not r7.check(p).passed
+
+    def test_fires_when_volume_declared_but_unmounted(self) -> None:
+        # Declaration alone is a finding: it signals the runner is
+        # configured to allow the bind. The description distinguishes
+        # the two cases via the "declared, not mounted" breadcrumb.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[
+                {"name": "docker-sock",
+                 "host": {"path": "/var/run/docker.sock"}},
+            ],
+        )
+        f = r7.check(p)
+        assert not f.passed
+        assert "declared, not mounted" in f.description
+
+    def test_handles_subpath_under_sensitive_prefix(self) -> None:
+        # ``/var/lib/docker/volumes`` is a subpath of a sensitive
+        # prefix and should fire too.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[
+                {"name": "v",
+                 "host": {"path": "/var/lib/docker/volumes"}},
+            ],
+        )
+        assert not r7.check(p).passed
+
+    def test_passes_on_path_that_resembles_but_not_under_prefix(
+        self,
+    ) -> None:
+        # ``/var-foo`` shouldn't match ``/var`` or any of the listed
+        # prefixes (prefix match requires a path-segment boundary).
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            volumes=[{"name": "v", "host": {"path": "/var-foo"}}],
+        )
+        assert r7.check(p).passed

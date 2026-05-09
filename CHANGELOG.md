@@ -12,6 +12,50 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-003 resolver-coupled callee analysis.** TAINT-003
+  now does cross-workflow analysis when the callee body is
+  loaded into the same scan (local references via
+  ``--gha-path``, remote references via ``--resolve-remote``).
+  For each tainted ``with:`` forward, the rule resolves the
+  matching callee in ``ctx.workflows`` (matching by
+  ``source_ref`` for remote refs, path-suffix for local refs),
+  walks the callee's ``run:`` and ``with:`` bodies for unquoted
+  ``${{ inputs.<name> }}`` references, and tags the path
+  accordingly:
+
+    * **Confirmed** (HIGH confidence) — the callee actually
+      consumes the forwarded input in a sink, end-to-end
+      injection chain proven.
+    * **Unconfirmed** (MEDIUM confidence) — either the callee
+      wasn't loaded, or the callee body doesn't reference the
+      forwarded input in any sink. Still a risk surface (a
+      future change to the callee could expose it) but the
+      end-to-end chain isn't proven.
+
+  Description shape: ``[CONFIRMED in <callee-path>] <chain>``
+  vs ``[UNCONFIRMED] <chain>``, plus a header counting
+  confirmed vs unconfirmed paths. ``Finding.confidence_locked``
+  is set so the centralised confidence demoter doesn't flatten
+  the deliberate split.
+
+  Closes the v1 limitation noted in the original TAINT-003
+  ROADMAP entry. The orchestrator gained a 4-arg rule
+  signature (``check(path, doc, wf, ctx)``) so future rules
+  needing cross-workflow analysis can opt in the same way;
+  existing 2- and 3-arg rules dispatch unchanged.
+
+- **DR-007 Drone sensitive host-path mount.** New Drone rule.
+  Pipeline-level ``volumes:`` declarations of the form
+  ``host: { path: <sensitive> }`` (Docker socket,
+  ``/var/lib/docker``, ``/var/run``, ``/etc``, ``/proc``,
+  ``/sys``, ``/``) are container-escape primitives equivalent
+  to GHA-026 / BK-005. Detection uses prefix-with-segment-
+  boundary matching so subpaths under a sensitive root also
+  fire (``/var/lib/docker/volumes`` -> yes;
+  ``/var-foo`` -> no). Description names which step or
+  service mounts the volume; a declared-but-unmounted volume
+  still fires (the runner's allow-bind config is itself the
+  risk shape). Drone catalog: 6 -> 7.
 - **TAINT-007 Argo cross-template ``outputs.parameters`` taint flow.**
   Fifth TAINT-engine port. New
   ``pipeline_check.core.checks.argo._taint_graph`` follows
