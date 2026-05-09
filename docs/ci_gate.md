@@ -94,7 +94,7 @@ The file is discovered automatically when present; override with
 
 #### Expiring suppressions (YAML format)
 
-Pass `--ignore-file .pipelineguard-ignore.yml` (or any `.yml` / `.yaml`
+Pass `--ignore-file .pipeline-check-ignore.yml` (or any `.yml` / `.yaml`
 extension) to use the structured format:
 
 ```yaml
@@ -218,7 +218,7 @@ apply or discard. Currently registered fixers:
 |----------|----------------------------------------------------------------------|
 | GHA-002  | Adds `persist-credentials: false` under every `actions/checkout` step; handles both `- uses: ...` and named (`- name: ... / uses: ...`) forms. |
 | GHA-004  | Inserts `permissions: contents: read` at the top of the workflow.    |
-| GHA-008  | Replaces credential-shaped literals with `"<REDACTED>"` and a `TODO(pipelineguard)` marker. Preserves any operator comment on the line. |
+| GHA-008  | Replaces credential-shaped literals with `"<REDACTED>"` and a `TODO(pipeline-check)` marker. Preserves any operator comment on the line. |
 
 Fixers are idempotent — re-running against already-remediated content
 emits nothing for that finding. A broken fixer logs to stderr and is

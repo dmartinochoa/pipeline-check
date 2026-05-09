@@ -670,7 +670,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   against a cluster whose API surface dropped something the chart
   still uses (LOW). Provider catalog: 3 native to 6 native.
 - **Three new comment-only autofixers (`HELM-001` / `HELM-002` /
-  `HELM-003`).** Each drops a ``# TODO(pipelineguard HELM-NNN):``
+  `HELM-003`).** Each drops a ``# TODO(pipeline-check HELM-NNN):``
   marker above the offending Chart.yaml line so the change is
   visible in review. Same comment-only shape used for the K8s and
   Dockerfile rules where text-rewriting can't safely synthesize
@@ -715,6 +715,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rebrand: removed leaked `pipelineguard` codename from autofix
+  output, docs, and tests.** The published name has always been
+  `pipeline-check` (per `pyproject.toml`), but 91 instances of an
+  earlier codename had leaked through: 37 sites in
+  `pipeline_check/core/autofix.py` were stamping
+  ``# TODO(pipelineguard): ...`` markers into customer YAML /
+  Dockerfile / Helm chart files every time `--autofix` ran, 53
+  test-assertion sites in `test_autofix.py` / `test_bug_fixes.py`
+  were locking the wrong string (so the test suite was structurally
+  enforcing the bug), 1 site in `pipeline_check/core/manual.py`
+  showed up in `--man autofix` output, and 2 sites in
+  `docs/ci_gate.md` documented an `.pipelineguard-ignore.yml`
+  filename example that the loader never accepted (the actual
+  default is `.pipelinecheckignore`, with optional YAML form
+  `.pipeline-check-ignore.yml`). Also corrected
+  `docs/providers/aws.md` IAM-policy snippet from
+  `PipelineGuardReadOnlyScan` / `pipeline-guard-readonly.json` to
+  `PipelineCheckReadOnlyScan` / `pipeline-check-readonly.json`,
+  fixed `scripts/build_lambda.sh` (header comment, output zip
+  filename, build-output echo), and added a regression guard
+  (`tests/test_brand_leak.py`) that scans every tracked
+  `.py` / `.md` / `.yml` / `.yaml` / `.toml` / `.sh` for the
+  forbidden token (case-insensitive) and fails CI if it ever
+  drifts back. Verified end-to-end: a synthetic GHA-008 fixture
+  through `generate_fix` now emits
+  `# TODO(pipeline-check): rotate and wire up a secret`, and
+  `pipeline_check --man autofix` reads the same.
 - **SARIF fingerprint stability for AWS-resource findings on
   Windows.** ``_finding_fingerprints`` previously routed every
   ``f.resource`` value through ``_normalize_path``, which

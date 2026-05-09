@@ -212,7 +212,7 @@ def test_bug_e_gha008_preserves_existing_comment():
     assert "INFRA-4123" in out, (
         "operator's original comment was clobbered by the TODO insertion"
     )
-    assert "TODO(pipelineguard)" in out
+    assert "TODO(pipeline-check)" in out
 
 
 def test_bug_e_gha008_still_adds_todo_without_existing_comment():
@@ -220,7 +220,7 @@ def test_bug_e_gha008_still_adds_todo_without_existing_comment():
     out = autofix.generate_fix(_f("GHA-008"), wf)
     assert out is not None
     assert "AKIA" not in out
-    assert "TODO(pipelineguard)" in out
+    assert "TODO(pipeline-check)" in out
 
 
 # ────────────────────────────────────────────────────────────────────────

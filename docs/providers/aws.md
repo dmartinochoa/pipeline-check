@@ -118,7 +118,7 @@ service rather than failing.
 
 ### Copy-paste IAM policy
 
-Save the following as `pipeline-guard-readonly.json` and attach it to the
+Save the following as `pipeline-check-readonly.json` and attach it to the
 role or user the scanner runs as. Every action is read-only and every
 resource is `*` because boto3 list/describe APIs do not accept
 resource-level conditions.
@@ -128,7 +128,7 @@ resource-level conditions.
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "PipelineGuardReadOnlyScan",
+      "Sid": "PipelineCheckReadOnlyScan",
       "Effect": "Allow",
       "Action": [
         "cloudtrail:DescribeTrails",
