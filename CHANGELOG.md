@@ -12,6 +12,198 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Three new malicious-activity patterns covering canonical
+  attacker idioms the catalog missed.** ``_malicious.py`` gains
+  PowerShell IEX downloader detection (``IEX (New-Object
+  Net.WebClient).DownloadString(...)`` and the
+  ``Invoke-WebRequest | IEX`` / ``iwr | iex`` short forms — the
+  Cobalt-Strike / commodity-malware loader shape), socat reverse
+  shells (``TCP-LISTEN:port EXEC:bash``, the ``TCP:host:port
+  SYSTEM:`` connect-back form, and the ``OPENSSL:host:443 EXEC:``
+  TLS-tunneled variant — covers the reverse-shell tooling missed
+  by the existing bash / nc / perl / python patterns), and base64-
+  encoded credential exfil (``base64 ~/.aws/credentials | curl
+  ...`` and peers — real intrusions prefer encoded over plain text
+  to defeat keyword-based IDS). Each new pattern is wired through
+  the existing ``find_malicious_patterns()`` dispatch, so every
+  ``*-027`` / ``*-025`` / ``*-029`` / ``CB-011`` malicious-activity
+  rule across the providers picks them up without per-rule edits.
+  New ``tests/test_malicious_patterns.py`` (23 cases) locks
+  positive matches, negative cases for benign sibling idioms (a
+  legit ``Invoke-WebRequest`` that doesn't pipe to IEX, socat as
+  a TCP relay, base64 of a build artifact), and three suppression
+  invariants so a future ``looks_like_example`` rewrite can't
+  silently start letting real hits through.
+- **Five new credential detectors plus encrypted PKCS#8 PEM block
+  detection.** ``_patterns.SECRET_DETECTORS`` adds Cohere
+  production keys (``co_pat_<40+>``), Replicate API tokens
+  (``r8_<40>``), Asana personal access tokens
+  (``1/<account-id>:<32-hex>``), Square access tokens
+  (``sq0(atp|csp)-<token>``), and Terraform Cloud / Enterprise
+  tokens (``<14-alnum>.atlasv1.<60+>`` — the literal
+  ``.atlasv1.`` middle segment makes the regex tight enough to
+  not collide with arbitrary base62). ``PEM_BLOCK_RE`` now also
+  matches ``-----BEGIN ENCRYPTED PRIVATE KEY-----`` (PKCS#8
+  password-protected form) — still a credential leak even when
+  the body is encrypted, since offline brute-force is cheap once
+  the file leaves the perimeter. Per-detector positive + negative
+  cases land in ``tests/test_secret_detection.py`` (99 → 111
+  cases).
+- **Six new TLS-verification-bypass patterns in
+  ``_primitives/tls_bypass.py``.** Adds Docker daemon / CLI
+  ``--insecure-registry`` (the ``dockerd`` startup-script idiom
+  for talking to an internal registry over plain HTTP), Maven /
+  Gradle JVM-property opt-outs
+  (``-Dmaven.wagon.http.ssl.insecure=true``,
+  ``-Dorg.gradle.https.insecure=true``,
+  ``systemProp.https.insecure=true``), and AWS CLI bypasses
+  (``AWS_S3_NO_VERIFY_SSL=true`` env var, ``aws --no-verify-ssl``
+  request flag). Every existing ``*-023`` TLS-bypass rule across
+  the providers picks them up via the shared primitive without
+  per-rule edits.
+- **New ``checks/_primitives/local_mock.py`` primitive.** One
+  source of truth for "this env block points at a LocalStack /
+  Moto / kind / k3d local mock." Exports ``LOCAL_ENDPOINT_RE``
+  (anchored localhost / 127.0.0.1 / ::1 matcher),
+  ``env_targets_local_mock(env)`` (any AWS / k8s endpoint pointed
+  at localhost), and ``env_has_localstack_sentinel(env)`` (the
+  combined "localhost endpoint + literal ``test`` access keys"
+  signal). GHA-005 and GHA-014 both consume it; future rules with
+  the same FP risk plug in by importing.
+
+### Changed
+
+- **``RULE.known_fp`` is now populated on 25 demoted rules and
+  rendered in provider docs.** The ``--explain CHECK-ID`` and
+  provider-doc surfaces previously dropped the ``known_fp`` field
+  for any rule whose confidence default lived in
+  ``_confidence.py`` rather than in the rule module — readers had
+  no way to see *why* a rule defaulted to LOW or MEDIUM. Anchored
+  on three already-documented IDs (GHA-016 curl-pipe, GHA-027
+  malicious-activity, GHA-008 credential-literal) and propagated
+  the same prose to the GitLab / Bitbucket / Azure DevOps /
+  Jenkins / CircleCI / CodeBuild peers across the curl-pipe,
+  malicious-activity, credential-literal, dep-update, and
+  outdated-image rule families. ``scripts/gen_provider_docs.py``
+  now renders ``known_fp`` as a "Known false-positive modes"
+  bullet list between the body prose and the recommendation block,
+  closing the drift between ``--explain`` (which had been
+  rendering it) and the published provider-reference docs (which
+  had been dropping it).
+- **CLI per-provider path detection collapses into a small
+  helper.** ``main()``'s 16-block elif ladder for
+  ``--<provider>-path PATH`` resolution becomes one helper
+  (``_resolve_provider_path``) plus 12 one-call dispatches.
+  ``cloudformation`` (template-folder probe) and ``helm``
+  (``--helm-values`` validation) stay inline because their
+  contracts don't fit the table. Net: ``cli.py`` shed ~150 lines.
+  Adding the next provider is now a 6-line table entry instead of
+  a 15-line elif block.
+- **``autofix.py`` split into a package.** The 1,910-line file
+  becomes ``autofix/__init__.py`` (the public surface —
+  ``register``, ``generate_fix``, ``render_patch``,
+  ``available_fixers``, ``_FIXERS``, ``Fixer``) plus
+  ``autofix/_impl.py`` (the 100+ fixer implementations). The
+  package facade runs every ``@register(...)`` decorator at
+  import time via a side-effect import from ``__init__``. Future
+  contributors can drop a per-provider sibling module
+  (``autofix/k8s.py``, ``autofix/dockerfile.py``) and wire it into
+  ``__init__`` with one line; the public API is unchanged. No
+  behavior change for callers.
+- **Scanner extracts ``_build_context``.** The diff-filter +
+  ``post_filter`` hook + warning-capture logic moves out of
+  ``Scanner.__init__`` into a ``_build_context()`` method so tests
+  can substitute their own context-building strategy without
+  re-implementing the rest of Scanner construction. The
+  ``import fnmatch`` lazy imports inside ``run()`` and
+  ``inventory()`` get hoisted to module scope. ``_load_custom_rules``
+  no longer hand-maintains a 9-package list — rule packages come
+  from a filesystem glob mirroring the CLI's existing approach,
+  so adding a new provider's ``rules/`` subpackage automatically
+  participates in collision detection without a registry edit.
+- **``__version__`` is a single source of truth literal.** Drops
+  the ``importlib.metadata.version("pipeline_check")`` lookup that
+  silently went stale on editable installs whenever
+  ``pyproject.toml`` got bumped without a reinstall, producing a
+  misleading ``--version`` for contributors. The literal stays
+  the canonical source; the release script bumps it alongside
+  ``[project] version`` in ``pyproject.toml`` and the ``vX.Y.Z``
+  git tag.
+
+### Fixed
+
+- **``produces_artifacts`` heuristic recognises GitHub Pages
+  workflows.** A workflow using ``actions/deploy-pages`` can only
+  ship a static documentation site, never a software artifact —
+  but the heuristic's bare ``deploy`` / ``publish`` substring
+  tokens used to match action names like ``actions/deploy-pages``
+  and step names like "Deploy to GitHub Pages", causing GHA-006
+  / GHA-007 / GHA-020 / GHA-024 (signing / SBOM / vuln-scan /
+  SLSA-attest) to fire on docs-only workflows. Now returns
+  ``False`` outright when ``actions/deploy-pages`` appears
+  anywhere; sibling Pages-action substrings (``upload-pages-
+  artifact``, ``configure-pages``) are pre-stripped from the blob
+  before the bare-token match runs so a hybrid workflow (real
+  publish + docs site) still detects via its real artifact token.
+- **GHA-005 no longer fires on LocalStack / Moto sentinel envs.**
+  A step pairing ``AWS_ENDPOINT_URL`` at a localhost address with
+  the literal ``test`` access keys is talking to a local mock —
+  boto3 / aws-sdk would refuse those credentials against real
+  AWS, so the long-lived-keys violation was a false positive.
+  Detection is structural and conservative (both signals
+  required), so a workflow that hardcodes ``test`` keys without a
+  localhost endpoint still fires.
+- **GHA-014 skips deploy commands against a local mock.** A job
+  whose env block (or any of its steps' envs) carries
+  ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` at a localhost
+  address is an integration test, not a deploy. ``terraform
+  apply`` against LocalStack no longer requires a GitHub
+  ``environment:`` gate.
+- **``tests/test_doc_claims.py`` derives its catalog total from
+  code.** Previously hardcoded ``_AWSLIKE_TOTAL = 71 + 63``
+  (literally violating the test's own promise that "numbers come
+  from code"). Now scans the AWS / Terraform / CloudFormation
+  modules for ``check_id="..."`` literals and sums dynamically.
+  Tolerance tightened from 50 to 20 since the count is no longer
+  hand-maintained. Catalog total floor on README and
+  ``docs/index.md`` bumped 500+ → 520+ to match.
+- **``pyproject.toml`` gains ``[project.optional-dependencies]
+  dev``.** The ``Makefile install`` target was running
+  ``pip install -e ".[dev]"`` against a non-existent extra. The
+  new extra mirrors ``requirements-dev.in`` (floor versions only;
+  the hash-locked, reproducible install lives in
+  ``requirements-dev.txt``).
+- **``requirements-dev.txt`` actually pins ruff and mypy.** The
+  ``ci:`` lint and type-check steps had been doing
+  ``pip install ruff`` / ``pip install mypy`` un-pinned because
+  neither was actually in the lockfile despite both being in
+  ``requirements-dev.in``. Regenerated the lockfile so both ride
+  the hash-pinned install path; pinned ``mypy<2.0`` because
+  mypy 2.0 tightens ``no-untyped-call`` against several PyYAML
+  helpers (lifting that pin is its own follow-up). Dropped the
+  ``disable_error_code = ["import-untyped"]`` placeholder in
+  ``pyproject.toml`` now that ``types-PyYAML`` actually resolves
+  through the lockfile, with per-call ``# type: ignore[no-
+  untyped-call]`` markers on the handful of PyYAML constructor
+  helpers the stubs annotate as untyped.
+- **MANIFEST hygiene + cross-platform Makefile.** ``MANIFEST.in``
+  excludes ``.pre-commit-hooks.yaml`` alongside the existing
+  ``.pre-commit-config.yaml`` exclusion, both as defense in depth
+  against either landing in a published sdist. ``make install``
+  switches to the same hash-locked ``requirements-dev.txt`` flow
+  CI uses, removing the broken ``pip install -e ".[dev]"`` call.
+  ``make clean`` runs through a Python one-liner so it works on
+  Windows. ``make lint`` now also covers ``scripts/`` (where a
+  malformed ``# noqa: ANN001.`` directive — period instead of
+  whitespace — had been silently tripping a ruff warning).
+- **One ruff ``E501`` long-line and one stale-noqa warning.**
+  Wrapped ``ac013_caller_runner_token_persist.py:24`` (was 126
+  chars) and rewrote the malformed
+  ``scripts/gen_attack_chains_doc.py:60`` ``# noqa`` directive
+  ruff was logging at every run.
+
+### Added
+
 - **AC-025 — Argo param injection lands in a privileged or root
   step.** New cross-rule attack chain on the Argo Workflows
   surface, mirroring the AC-023 shape (Tekton). Fires when the
