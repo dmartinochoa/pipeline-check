@@ -61,9 +61,9 @@ of v0.2.x to v0.3.x left behind.
   generously-padded ceilings. Catches catastrophic regressions
   (O(n) → O(n²)) without taking on a `pytest-benchmark` dep.
 
-### Still in flight for v0.4.0
+### Closed out for v0.4.0
 
-- **Thin provider expansion.** Closed out for v0.4.0. Third wave
+- **Thin provider expansion.** Third wave
   added Kubernetes `K8S-029` (RoleBinding to a namespace's
   `default` ServiceAccount) and `K8S-030` (workload schedules onto
   the control-plane node via `nodeSelector` or `tolerations`);
@@ -80,7 +80,7 @@ of v0.2.x to v0.3.x left behind.
   `options.substitutionOption: ALLOW_LOOSE`, the silent-empty-
   string opt-in that masks undefined refs). Earlier waves had
   landed `K8S-027` / `K8S-028` / `DF-017` / `DF-018` / `GCB-019`.
-- **Real performance benchmark.** *Closed out for v0.4.0.*
+- **Real performance benchmark.**
   `tests/perf/test_benchmark.py` replaces the smoke gate with a
   ``pytest-benchmark`` run on a 1000-line synthetic GHA workflow
   and a 5000-line CFN template, asserting absolute median ceilings
@@ -93,7 +93,7 @@ of v0.2.x to v0.3.x left behind.
   detect regressions; CI doesn't save baselines (they'd flap as
   GitHub-hosted runner hardware shifts) and relies on the
   ceilings instead.
-- **Strict mypy (full).** *Closed out for v0.4.0.* All nine
+- **Strict mypy (full).** All nine
   strict flags landed across the release: `no_implicit_optional`,
   `warn_redundant_casts`, `warn_unused_ignores`, `strict_equality`,
   `check_untyped_defs`, `disallow_subclassing_any` (with two narrow
@@ -280,7 +280,7 @@ to an emergent path-finder over a per-pipeline dataflow graph.
   full chain in the description. Reuses the existing
   ``Chain`` data type for inventory output.
 - **Output** — new ``TAINT-NNN`` rule family, one per
-  recognised source-sink pattern. ``--explain TAINT-001``
+  recognized source-sink pattern. ``--explain TAINT-001``
   shows the canonical attack sequence; the per-finding
   description carries the *concrete* path detected on this
   scan.
@@ -290,10 +290,10 @@ sources, ``env:`` / ``steps.*.outputs`` propagators,
 ``run:`` sinks). Extends to GitLab CI, Drone, Tekton, Argo,
 Buildkite once the engine shape is validated.
 
-This is the move that puts pipeline-check distinctly ahead
-of every commercial CI/CD scanner (Trivy, Checkov, KICS,
-Snyk all do per-rule local matching only). The 27 hand-coded
-attack chains today become a calibration set for the
+This is the move that distinguishes pipeline-check from the
+common per-rule local matching that mainstream commercial CI/CD
+scanners (Trivy, Checkov, KICS, Snyk) emphasize today. The 27
+hand-coded attack chains today become a calibration set for the
 engine, not the ceiling on what gets detected.
 
 ### Cross-provider correlation engine
