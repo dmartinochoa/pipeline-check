@@ -24,6 +24,14 @@ RULE = Rule(
         "credential-pattern catalog, catches secrets pasted into "
         "script bodies or environment blocks."
     ),
+    known_fp=(
+        "Test fixtures and documentation blobs sometimes embed "
+        "credential-shaped strings (JWT samples, AKIAI... examples). "
+        "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
+        "deliberately NOT suppressed, if it appears in a real "
+        "pipeline it almost always means a copy-paste from docs was "
+        "never substituted. Defaults to LOW confidence.",
+    ),
 )
 
 

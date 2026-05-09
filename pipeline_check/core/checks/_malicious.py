@@ -84,6 +84,28 @@ _OBFUSCATED_EXEC: tuple[MaliciousPattern, ...] = (
             r"\b(?:xxd|od|hexdump)\s+-[rR](?:\s+-p)?\s+[^|]*\|\s*(?:ba|d)?sh\b",
         ),
     ),
+    # PowerShell remote-download-and-execute. The classic Cobalt-Strike
+    # / commodity-malware shape: pull a script from a URL and pass it
+    # straight to ``Invoke-Expression``. Both the long and short forms
+    # show up in real intrusions; ``IEX`` and ``Invoke-Expression`` are
+    # interchangeable PowerShell aliases.
+    MaliciousPattern(
+        "obfuscated-exec", "PowerShell DownloadString IEX",
+        re.compile(
+            r"(?:IEX|Invoke-Expression)\s*\(?\s*"
+            r"\(\s*New-Object\s+(?:System\.)?Net\.WebClient\s*\)\s*"
+            r"\.\s*DownloadString\s*\(",
+            re.IGNORECASE,
+        ),
+    ),
+    MaliciousPattern(
+        "obfuscated-exec", "PowerShell Invoke-WebRequest piped to IEX",
+        re.compile(
+            r"(?:Invoke-WebRequest|iwr|curl|wget)\s+[^|\n]*\|\s*"
+            r"(?:IEX|Invoke-Expression)\b",
+            re.IGNORECASE,
+        ),
+    ),
 )
 
 
@@ -117,6 +139,20 @@ _REVERSE_SHELL: tuple[MaliciousPattern, ...] = (
         re.compile(
             r"perl\s+-e\s+['\"][^'\"]*use\s+Socket[^'\"]*exec\s*\(\s*['\"]/bin/",
             re.DOTALL,
+        ),
+    ),
+    # ``socat`` is the swiss army knife of reverse-shell tooling: a
+    # single binary handling TCP, TLS, and PTY reshaping. The two
+    # canonical forms below are the "shell on connect" (TCP-LISTEN
+    # passive) and "shell on connect-back" (TCP active). Both pair a
+    # network endpoint with ``EXEC:`` or ``SYSTEM:`` running a shell.
+    MaliciousPattern(
+        "reverse-shell", "socat TCP-EXEC reverse shell",
+        re.compile(
+            r"\bsocat\b\s+[^\n]*"
+            r"(?:TCP|TCP4|TCP6|OPENSSL)(?:-LISTEN|4-LISTEN|6-LISTEN)?:\S+"
+            r"\s+(?:EXEC|SYSTEM):",
+            re.IGNORECASE,
         ),
     ),
 )
@@ -225,6 +261,20 @@ _CREDENTIAL_EXFIL: tuple[MaliciousPattern, ...] = (
         "credential-exfil", "AWS credentials file exfil",
         re.compile(
             r"(?:cat|head|tail)\s+[~/.]+aws/(?:credentials|config)"
+            r"[^|\n]*\|\s*(?:curl|wget|nc|ncat)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # Encoded-then-exfil: ``base64 secret | curl ...``. Common in real
+    # incidents because the encoded payload survives shell-escaping
+    # and IDS pattern matching that targets raw key shapes. Pairs any
+    # "encoder" tool (base64 / xxd / hexdump) with the same egress
+    # tools as the plain-text variants above.
+    MaliciousPattern(
+        "credential-exfil", "base64-encoded credential exfil",
+        re.compile(
+            r"\b(?:base64|xxd|od|hexdump)\b\s+[^|\n]*"
+            r"(?:credentials|secret|\.env|id_rsa|id_ed25519|\.aws|\.kube)"
             r"[^|\n]*\|\s*(?:curl|wget|nc|ncat)\b",
             re.IGNORECASE,
         ),

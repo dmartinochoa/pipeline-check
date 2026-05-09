@@ -29,6 +29,17 @@ RULE = Rule(
         "``// cosign verify … // webhook.site`` in a legitimate "
         "annotation doesn't false-positive."
     ),
+    known_fp=(
+        "Security-training repositories, CTF challenges, and red-team "
+        "exercise pipelines legitimately contain reverse-shell strings "
+        "or exfil domains as literals. Matches inside YAML keys / HCL "
+        "attributes whose names contain ``example``, ``fixture``, "
+        "``sample``, ``demo``, or ``test`` are auto-suppressed; bare "
+        "lines in a production pipeline still fire.",
+        "Defaults to LOW confidence. Filter with ``--min-confidence "
+        "MEDIUM`` to ignore all matches; the rule still surfaces the "
+        "hit for teams that want to spot-check.",
+    ),
 )
 
 
