@@ -301,6 +301,10 @@ Add a vulnerability scanner template. ``trivy fs /workdir`` for source / filesys
 
 Companion to ARGO-003 (default ServiceAccount). The default SA only matters when its token is mounted; an explicit ``automountServiceAccountToken: false`` removes the token from the pod regardless of which SA the pod is bound to. Detection: workflow passes when the spec sets it to ``false`` AND every template either inherits that or sets its own ``automountServiceAccountToken: false``. A template with it explicitly ``true`` (or unset against an unset spec-level value) is the failing shape.
 
+**Known false-positive modes**
+
+- Templates that genuinely need to call the Kubernetes API (GitOps pull, ``kubectl apply`` from inside the workflow). Set ``automountServiceAccountToken: true`` on that template specifically and bind it to a least-privilege SA, the rule then fires only on the broad spec-level absence, which is the actual gap.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**

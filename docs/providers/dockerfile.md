@@ -363,6 +363,10 @@ Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<s
 
 World-writable directories under ``/`` are an established container-escape vector: any compromised process running as non-root can drop a payload that root-owned daemons later execute. The rule fires on the literal ``777``, ``a+w``, and ``a+rwx`` modes; the more conservative ``775`` and ``ugo+x`` are not flagged.
 
+**Known false-positive modes**
+
+- Test fixtures or scratch builds that intentionally share a directory across multiple non-root users may legitimately use ``777``. Suppress with an ignore-file entry rather than weakening the rule.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -382,6 +386,10 @@ Replace ``chmod 777 <path>`` with the narrowest permissions the workload actuall
 </div>
 
 The OCI image-spec annotation set is a small de facto standard maintained by the OCI working group. Only ``image.source`` and ``image.revision`` are checked because they're the two whose absence makes incident response materially harder; ``image.title`` / ``image.description`` are nice-to-have but the rule doesn't fire on those.
+
+**Known false-positive modes**
+
+- A multi-stage build's intermediate stages don't need provenance labels, only the final image ships. The rule fires per Dockerfile, not per stage; suppress for files where the final ``FROM`` is intentional throwaway scratch.
 
 <div class="pg-rule__rec" markdown>
 
@@ -443,6 +451,10 @@ Don't ``chown`` system directories at build time. If the runtime user needs to o
 
 Fires on any ``COPY`` or ``ADD`` whose source basename is a well-known credential filename (``id_rsa``, ``.npmrc``, ``.netrc``, ``.env``, ``terraform.tfvars``, …) or whose path tail matches a canonical credential location (``.aws/credentials``, ``.docker/config.json``, ``.kube/config``). Files with private-key extensions (``.pem``, ``.key``, ``.p12``, ``.pfx``, ``.jks``) are also flagged. Globs are not expanded, the rule reads the literal source token.
 
+**Known false-positive modes**
+
+- Empty placeholder files (``.env`` shipped as a template, ``config.json`` carrying only public flags). Suppress with a brief ``.pipelinecheckignore`` rationale and prefer an explicit non-secret name (``.env.example``).
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -462,6 +474,10 @@ Don't ``COPY`` credential files into an image. Anything baked into a layer is re
 </div>
 
 Complements DF-006 (which flags an ENV/ARG with a literal credential-shaped value). This rule fires on the *name* alone, ``ARG NPM_TOKEN``, ``ARG GITHUB_PAT``, ``ARG DB_PASSWORD``, even when no default is set, because BuildKit records the resolved value in the image's history the moment ``--build-arg`` supplies one. Names are matched via the same ``_primitives/secret_shapes`` regex used by the other secret-name rules.
+
+**Known false-positive modes**
+
+- An ``ARG`` whose name matches the regex but is a non-secret config knob (a counter-example like ``ARG TOKEN_LIMIT``). Rare; rename or suppress the finding with a brief rationale.
 
 <div class="pg-rule__rec" markdown>
 

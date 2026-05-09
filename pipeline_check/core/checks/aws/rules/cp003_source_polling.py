@@ -25,6 +25,14 @@ RULE = Rule(
         "CodeCommit triggers tie each pipeline start to the "
         "originating event."
     ),
+    known_fp=(
+        "``PollForSourceChanges=true`` is the CFN default for "
+        "CodeCommit sources, so legacy templates can carry the flag "
+        "without an active design decision behind it. The rule is "
+        "advisory (consider EventBridge / CodeStarSourceConnection) "
+        "rather than a real risk; defaults to LOW confidence so CI "
+        "gates default-filter it.",
+    ),
 )
 
 

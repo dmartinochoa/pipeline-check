@@ -30,6 +30,15 @@ RULE = Rule(
         "workspace files and process state. The check looks for an "
         "`ephemeral` substring in `agent { label '...' }` blocks."
     ),
+    known_fp=(
+        "The check looks for the literal substring "
+        "``ephemeral`` in the agent label. Teams that use a "
+        "different convention (``temp``, ``runner-pool``, "
+        "org-specific ARC labels) trip the rule even when their "
+        "runners are auto-scaled and ephemeral in fact. "
+        "Defaults to MEDIUM confidence so CI gates can require "
+        "``--min-confidence HIGH``.",
+    ),
 )
 
 

@@ -23,6 +23,15 @@ RULE = Rule(
         "CB-009 handles the separate concern of tag vs digest pinning "
         "for custom images."
     ),
+    known_fp=(
+        "One version behind the current "
+        "``aws/codebuild/standard`` is a hygiene warning, not a "
+        "production issue, and defaults to MEDIUM confidence. "
+        "The rule emits HIGH only when the project is two or "
+        "more versions behind. Custom or third-party images are "
+        "not version-checked here; CB-009 handles tag-vs-digest "
+        "pinning for those.",
+    ),
 )
 
 

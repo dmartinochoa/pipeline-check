@@ -724,6 +724,16 @@ def _render_rule(rule: Rule) -> str:
     if rule.docs_note:
         parts.append(rule.docs_note.strip() + "\n\n")
 
+    # ── Known-FP modes: surface the same prose ``--explain`` shows so
+    # readers see why a rule defaults to LOW / MEDIUM confidence and
+    # what kind of legitimate code trips it. Rendered as a bullet list
+    # so a multi-mode entry stays scannable. ──
+    if rule.known_fp:
+        parts.append("**Known false-positive modes**\n\n")
+        for mode in rule.known_fp:
+            parts.append(f"- {mode.strip()}\n")
+        parts.append("\n")
+
     # ── Recommendation: framed block so it stands out from the body
     # narrative. Marked with ``markdown`` so embedded code blocks /
     # bullet lists in the recommendation render. ──

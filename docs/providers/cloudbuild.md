@@ -178,6 +178,10 @@ Declare an explicit ``timeout:`` at the top of ``cloudbuild.yaml`` bounded to th
 
 Complements GCB-004 (dynamicSubstitutions + user substitution in args). GCB-006 fires on intrinsically risky shell idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the substitution source is currently trusted.
 
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -418,6 +422,10 @@ Set ``options.requestedVerifyOption: VERIFIED`` on builds that publish container
 
 Cloud Build supports two secret-injection mechanisms. The older ``secrets:`` block carries KMS-encrypted ciphertext directly in the YAML; the cipher is decrypted at build time if the build's service account has ``cloudkms.cryptoKeyDecrypter`` on the key. The newer ``availableSecrets`` block references Secret Manager versions by URL, which is the documented modern approach. The legacy form still works, but rotating a value means re-encrypting and committing a new ciphertext.
 
+**Known false-positive modes**
+
+- Builds that use both forms during a migration trip the rule on the legacy block. That's intentional, finishing the migration is the fix.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -458,6 +466,10 @@ Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values
 
 Complements GCB-002, which only fires when ``serviceAccount:`` is unset. This rule fires when an explicit value is set but still resolves to the project default, typically the email shape ``<digits>@cloudbuild.gserviceaccount.com``, optionally wrapped in the ``projects/<id>/serviceAccounts/...`` URI form. The April-2024 GCP default-identity change kept the same SA shape; the broad-permissions concern remains.
 
+**Known false-positive modes**
+
+- Single-pipeline GCP projects where the default SA's roles are actively scoped down. Rare in practice; create a named SA anyway so the audit log stays unambiguous about which pipeline made each API call.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -478,6 +490,10 @@ Don't bind the build to ``<project-number>@cloudbuild.gserviceaccount.com``. The
 
 Cloud Build runs in a shared Google-managed pool by default. Switching to a *private worker pool* is the prerequisite for every other network-perimeter control: egress restriction to specific peered networks, ingress blocking of public endpoints, and traffic interoperation with VPC Service Controls. Both ``options.pool.name`` and the legacy ``options.workerPool`` field are accepted.
 
+**Known false-positive modes**
+
+- OSS / sample / one-off builds that legitimately have no private network and no internal endpoints to protect. Suppress with a brief ``.pipelinecheckignore`` rationale rather than disabling at the catalog level.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -497,6 +513,10 @@ Set ``options.pool.name: projects/<PROJECT>/locations/<REGION>/workerPools/<NAME
 </div>
 
 Cloud Build accepts two values for ``options.substitutionOption``: ``MUST_MATCH`` (default, any undefined ``$_VAR`` reference fails the build at parse time) and ``ALLOW_LOOSE`` (undefined references silently expand to ``""``). The default is the safer setting; this rule only fires on the explicit ``ALLOW_LOOSE`` opt-in. Builds that genuinely depend on optional substitutions should pass them through ``substitutions:`` defaults, not rely on silent empty-string fallback.
+
+**Known false-positive modes**
+
+- Migration scenarios where a long-running pipeline pre-dates MUST_MATCH and the operator needs ALLOW_LOOSE temporarily. Suppress with a brief ``.pipelinecheckignore`` rationale and an ``expires:`` date so the waiver doesn't outlive the migration.
 
 <div class="pg-rule__rec" markdown>
 
@@ -538,6 +558,10 @@ Add an entry for every ``$_USER_VAR`` referenced anywhere in the build to the to
 
 Walks step args / entrypoint / cmd looking for ``docker push`` (or the ``buildx imagetools push`` variant) invocations. When the build has at least one such step but the top-level ``images:`` field is missing or empty, fires. Steps that build *and* push via the ``gcr.io/cloud-builders/docker`` builder image are the common case; ``--push`` flags on ``buildx build`` are also detected. ``kaniko`` and ``buildah`` push idioms aren't currently detected. Those are different builder images entirely.
 
+**Known false-positive modes**
+
+- Multi-stage builds where one step pushes an intermediate image to a private cache registry and the final stage pushes the production artifact (which IS in ``images:``) would trip this rule on the cache push. Suppress with ``--ignore-file`` when this matches.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -557,6 +581,10 @@ Add every image the build produces to the top-level ``images:`` array (e.g. ``im
 </div>
 
 Cloud Build tags are user-defined labels attached to a build. They appear in the build's metadata (``tags:`` field on the Build resource), in every Cloud Logging audit event for the build, and as a filter argument to ``gcloud builds list --filter='tags:<value>'``. Substitution-bearing tags (``$BRANCH_NAME``, ``$COMMIT_SHA``) count as populated. Cloud Build expands them at submission time.
+
+**Known false-positive modes**
+
+- Single-purpose project-local builds in a sandbox project may legitimately not need tags. Suppress with ``--ignore-file`` if that matches.
 
 <div class="pg-rule__rec" markdown>
 

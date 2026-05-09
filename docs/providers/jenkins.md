@@ -216,6 +216,10 @@ Add a `sh 'syft . -o cyclonedx-json > sbom.json'` step (or Trivy with `--format 
 
 Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalog. Secrets committed to Groovy source are visible in every fork and every build log.
 
+**Known false-positive modes**
+
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -336,6 +340,10 @@ Add a verification step before consuming the artifact: `sh 'sha256sum -c manifes
 
 Static Jenkins agents that persist between builds leak workspace files and process state. The check looks for an `ephemeral` substring in `agent { label '...' }` blocks.
 
+**Known false-positive modes**
+
+- The check looks for the literal substring ``ephemeral`` in the agent label. Teams that use a different convention (``temp``, ``runner-pool``, org-specific ARC labels) trip the rule even when their runners are auto-scaled and ephemeral in fact. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH``.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -375,6 +383,10 @@ Wrap the pipeline body or individual stages with `timeout(time: N, unit: 'MINUTE
 </div>
 
 Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a Jenkinsfile. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the build agent.
+
+**Known false-positive modes**
+
+- Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
 <div class="pg-rule__rec" markdown>
 
@@ -495,6 +507,10 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 </div>
 
 Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Known false-positive modes**
+
+- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``) and security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``) are exempted by the ``DEP_UPDATE_RE`` tooling allowlist. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
 
 <div class="pg-rule__rec" markdown>
 
@@ -636,6 +652,11 @@ Add a ``sh 'cosign attest --predicate=provenance.intoto.jsonl …'`` step after 
 
 Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox escape). Those flag risky defaults; this flags concrete evidence, reverse shells, base64-decoded execution, miner binaries, exfil channels, credential-dump pipes, shell-history erasure. Runs on the comment-stripped Groovy text so ``// cosign verify … // webhook.site`` in a legitimate annotation doesn't false-positive.
 
+**Known false-positive modes**
+
+- Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
+- Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -655,6 +676,10 @@ Treat as a potential compromise. Identify the commit that introduced the matchin
 </div>
 
 Complements JF-002 (script injection from untrusted build parameters). Fires on intrinsically risky shell idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted.
+
+**Known false-positive modes**
+
+- ``sh 'eval "$(ssh-agent -s)"'`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
 
 <div class="pg-rule__rec" markdown>
 
@@ -695,6 +720,10 @@ Pin git dependencies to a commit SHA. Publish private packages to an internal re
 </div>
 
 JF-014 catches agent labels that aren't ephemeral; this rule catches the upstream targeting choice. When ``label`` inside an ``agent { ... }`` block is computed from a build parameter or an SCM-controlled environment variable, whoever queues the build (or pushes the branch / opens the PR) picks which agent the job lands on, including any privileged label the controller exposes. Two attacker surfaces are flagged: untrusted ``env.*`` refs (``BRANCH_NAME``, ``CHANGE_BRANCH``, ``TAG_NAME``, …) and ``params.X`` references (caller-controlled at trigger time). The rule walks all four ``agent { ... }`` shapes, direct ``label``, the ``node { label … }`` form, and ``docker { label … }`` / ``dockerfile { label … }``, via brace-balanced scan so nested DSL blocks parse correctly.
+
+**Known false-positive modes**
+
+- Author-controlled environment refs like ``${env.JOB_NAME}`` or ``${env.BUILD_NUMBER}`` are intentionally not flagged, those values come from Jenkins itself, not from the triggerer. Pipelines that intentionally select agents via a vetted parameter and gate the assignment behind a Groovy validator should suppress with ``.pipelinecheckignore`` and a rationale rather than disable the rule everywhere.
 
 <div class="pg-rule__rec" markdown>
 
