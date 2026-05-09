@@ -36,26 +36,37 @@ caller — and even then the caller-side surface (the
 because the operator who controls the caller is usually not
 the operator who controls the callee.
 
-TAINT-003 fires caller-side: any ``with:`` value forwarded
-into a ``uses:`` reusable workflow that interpolates a
-``${{ github.event.* }}`` source directly, OR forward a
-tainted step output / cross-job ``needs.*`` value. The
-description names the callee so the operator can audit the
-matching ``inputs.<name>`` consumer in the callee body.
+TAINT-003 fires caller-side. When the callee body is loaded
+into the same scan (either on disk under ``--gha-path`` for
+``./local-callee.yml`` references, or fetched by the
+``--resolve-remote`` resolver for remote refs), the rule also
+checks whether the callee actually consumes the forwarded
+input in a sink and tags the finding accordingly:
 
-v1 limitations: caller-side detection only. Confirming the
-callee actually consumes the input in a sink is the next
-extension (requires loading the callee body, which the
-``--resolve-remote`` resolver already does for remote
-references but doesn't yet feed into the taint engine).
+  * **Confirmed** — the callee's ``run:`` / ``with:`` references
+    ``${{ inputs.<name> }}`` unquoted, so the caller-side
+    forward lands in an actual injection sink. Severity HIGH,
+    confidence HIGH.
+  * **Unconfirmed** — either the callee wasn't loaded, or the
+    callee body doesn't reference the forwarded input in any
+    sink the rule can see. The forward is still a risk surface
+    (a future change to the callee could expose it), but the
+    end-to-end chain isn't proven. Severity HIGH, confidence
+    MEDIUM.
+
+When ``--resolve-remote`` is off and the callee isn't on
+disk, every forward is unconfirmed by definition. That's the
+v1 behavior preserved.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Confidence, Finding, Severity
 from ...rule import Rule
-from .._taint_graph import analyze_workflow
+from .._taint_graph import TaintPath, analyze_workflow
+from ..base import GitHubContext, Workflow
 
 RULE = Rule(
     id="TAINT-003",
@@ -80,33 +91,189 @@ RULE = Rule(
         "``${{ inputs.<name> }}`` interpolation)."
     ),
     docs_note=(
-        "Detection is caller-side: walk every "
-        "``jobs.<id>.uses: <callee>`` reference, find every "
-        "``with:`` value that interpolates an attacker-"
-        "controllable source (direct ``${{ github.event.* }}``, "
-        "a tainted step output via ``${{ steps.<id>.outputs."
-        "<name> }}``, or a cross-job ``${{ needs.<job>.outputs."
-        "<name> }}``), and flag the forward.\n\n"
-        "v1 doesn't load the callee body, so the rule can't "
-        "tell whether the callee actually uses the input in a "
-        "sink. Confirming end-to-end injection is the next "
-        "engine extension; for now the caller-side surface is "
-        "where the operator who controls the caller can fix "
-        "the issue without coordinating with the callee's "
-        "owner."
+        "Detection walks every ``jobs.<id>.uses: <callee>`` "
+        "reference, finds every ``with:`` value that "
+        "interpolates an attacker-controllable source (direct "
+        "``${{ github.event.* }}``, a tainted step output via "
+        "``${{ steps.<id>.outputs.<name> }}``, or a cross-job "
+        "``${{ needs.<job>.outputs.<name> }}``), and flags the "
+        "forward.\n\n"
+        "When the callee body is loaded into the same scan "
+        "(local ``./.github/workflows/<file>.yml`` references "
+        "via ``--gha-path``, or remote refs fetched by "
+        "``--resolve-remote``), the rule also checks whether "
+        "the callee references ``${{ inputs.<name> }}`` "
+        "unquoted in a sink. Confirmed end-to-end paths get "
+        "HIGH confidence; caller-side-only forward stay at "
+        "MEDIUM (still a risk surface, but a future change to "
+        "the callee could expose it)."
     ),
     known_fp=(
         "Callees that wrap the input safely (immediately copy "
         "into env, sanitise before use) make the caller-side "
-        "forward harmless. The rule has no way to read the "
-        "callee body for v1; suppress via ignore-file scoped "
-        "to the caller workflow when the callee's handling is "
-        "audited and sound.",
+        "forward harmless. When the callee body is loaded into "
+        "the scan, the rule downgrades to MEDIUM confidence on "
+        "those paths; suppress via ignore-file when the "
+        "callee's handling is audited and sound. Without "
+        "``--resolve-remote`` the rule can't see remote callee "
+        "bodies and every forward stays at MEDIUM, the right "
+        "default for unverifiable cross-repo flow.",
     ),
 )
 
 
-def check(path: str, doc: dict[str, Any]) -> Finding:
+# Match the unquoted-reference shape inside a callee's ``run:``
+# body. Uses the same quote-state walker idea as GHA-003: strip
+# double-quoted segments and re-check, since ``"${{ inputs.X }}"``
+# is the safe form (the value lands in a single shell token).
+_INPUT_REF_BARE_RE = re.compile(
+    r"\$\{\{\s*inputs\.(?P<name>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+)
+_DQ_SEGMENT_RE = re.compile(r'"[^"]*"')
+
+
+def _consumed_unquoted(text: str, input_name: str) -> bool:
+    """True when *text* references ``${{ inputs.<input_name> }}``
+    outside any double-quoted segment.
+
+    Mirrors the GHA-003 quote-state logic: a reference inside a
+    ``"..."`` segment is treated as safe (the shell tokeniser
+    keeps the expanded value intact). Anything still matching
+    after the strip is an unquoted reference and is unsafe.
+    """
+    stripped = _DQ_SEGMENT_RE.sub("", text)
+    for m in _INPUT_REF_BARE_RE.finditer(stripped):
+        if m.group("name") == input_name:
+            return True
+    return False
+
+
+def _consumed_in_with(value: Any, input_name: str) -> bool:
+    """True when a ``with:`` block value references the input.
+
+    ``with:`` values are a sink for downstream actions whose own
+    code reads the value (``actions/github-script@<ref>``'s
+    ``script:`` parameter is the canonical example). The rule
+    treats any ``${{ inputs.<name> }}`` interpolation in a
+    ``with:`` value as a sink, with the same quote-state
+    sensitivity as for ``run:`` bodies.
+    """
+    if not isinstance(value, str):
+        return False
+    return _consumed_unquoted(value, input_name)
+
+
+def _callee_consumes_input(
+    callee: Workflow, input_name: str,
+) -> bool:
+    """Walk the callee body for unquoted ``${{ inputs.<name> }}``.
+
+    Returns True if any step's ``run:`` body or ``with:`` block
+    interpolates the named input outside a quoted token. The
+    callee's own ``inputs:`` declaration is informational; the
+    real signal is whether downstream code actually reads the
+    value in a way that re-evaluates it.
+    """
+    doc = callee.data
+    if not isinstance(doc, dict):
+        return False
+    jobs = doc.get("jobs")
+    if not isinstance(jobs, dict):
+        return False
+    for job in jobs.values():
+        if not isinstance(job, dict):
+            continue
+        steps = job.get("steps") or []
+        if not isinstance(steps, list):
+            continue
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            run = step.get("run")
+            if isinstance(run, str) and _consumed_unquoted(run, input_name):
+                return True
+            with_block = step.get("with")
+            if isinstance(with_block, dict):
+                for wval in with_block.values():
+                    if _consumed_in_with(wval, input_name):
+                        return True
+    return False
+
+
+def _resolve_callee(
+    ctx: GitHubContext, callee_ref: str,
+) -> Workflow | None:
+    """Find the loaded callee Workflow that matches the caller's ref.
+
+    Two match shapes:
+
+      * Remote refs (``owner/repo/path.yml@sha``) — match against
+        ``Workflow.source_ref`` exactly. Only set on workflows
+        the resolver fetched.
+      * Local refs (``./.github/workflows/x.yml``) — match by
+        path-suffix. The caller's ref is repo-relative; the
+        loaded workflow's path can be absolute, relative, or
+        prefixed by the GHA-path root. Suffix-match against
+        the basename + parent dir handles all three.
+    """
+    ref = callee_ref.strip()
+    if not ref:
+        return None
+    # Remote workflow ref.
+    if "@" in ref and not ref.startswith(("/", "./")):
+        for wf in ctx.workflows:
+            if wf.source_ref and wf.source_ref == ref:
+                return wf
+        return None
+    # Local ref — strip leading ``./`` and match by suffix on the
+    # loaded workflows' paths. Replace backslashes for Windows.
+    needle = ref.lstrip("./").replace("\\", "/")
+    for wf in ctx.workflows:
+        wf_path = wf.path.replace("\\", "/")
+        if wf_path.endswith(needle):
+            return wf
+        # Path basenames often differ (caller spells
+        # ``.github/workflows/x.yml`` while the loaded path is
+        # ``<root>/x.yml``). Fall back to basename match.
+        if wf_path.rsplit("/", 1)[-1] == needle.rsplit("/", 1)[-1]:
+            return wf
+    return None
+
+
+def _classify_path(
+    path: TaintPath, ctx: GitHubContext,
+) -> tuple[bool, str | None]:
+    """Return ``(confirmed, callee_path_or_none)`` for a TAINT-003 path.
+
+    Parses the engine's ``sink_consumer`` field to extract the
+    forwarded input name and the callee ref, then resolves the
+    callee in the context. ``confirmed`` is True iff the callee
+    body's run / with bodies actually reference the forwarded
+    input unquoted. ``callee_path_or_none`` is the matched
+    callee's ``Workflow.path`` (for description rendering) or
+    ``None`` when the callee couldn't be resolved.
+    """
+    # ``sink_consumer`` shape: ``inputs.<name>@<callee-ref>``.
+    consumer = path.sink_consumer
+    if "@" not in consumer:
+        return False, None
+    head, _, callee_ref = consumer.partition("@")
+    if not head.startswith("inputs."):
+        return False, None
+    input_name = head[len("inputs."):]
+    callee = _resolve_callee(ctx, callee_ref)
+    if callee is None:
+        return False, None
+    confirmed = _callee_consumes_input(callee, input_name)
+    return confirmed, callee.path
+
+
+def check(
+    path: str,
+    doc: dict[str, Any],
+    wf: Workflow,
+    ctx: GitHubContext,
+) -> Finding:
     # TAINT-003 paths are emitted by pass-4 of the engine. The
     # discriminator is the hop format: ``jobs.<id>.with.<name>``
     # (with-prefix). Same-job step-output paths (TAINT-001) and
@@ -125,15 +292,48 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    rendered = [p.render() for p in forward_paths]
+    confirmed_paths: list[tuple[TaintPath, str]] = []
+    unconfirmed_paths: list[TaintPath] = []
+    for p in forward_paths:
+        ok, callee_path = _classify_path(p, ctx)
+        if ok and callee_path:
+            confirmed_paths.append((p, callee_path))
+        else:
+            unconfirmed_paths.append(p)
+
+    # Confidence: HIGH iff every forward is end-to-end confirmed,
+    # MEDIUM otherwise (a single unconfirmed path leaves uncertainty
+    # in the finding's overall trust level). Default-on confidence
+    # demotion in core/checks/_confidence.py would normally apply
+    # here; we lock the per-finding confidence so the demotion
+    # doesn't override our deliberate choice.
+    confirmed_count = len(confirmed_paths)
+    unconfirmed_count = len(unconfirmed_paths)
+    confidence = (
+        Confidence.HIGH
+        if confirmed_count and not unconfirmed_count
+        else Confidence.MEDIUM
+    )
+
+    rendered: list[str] = []
+    for p, cpath in confirmed_paths:
+        rendered.append(f"[CONFIRMED in {cpath}] {p.render()}")
+    for p in unconfirmed_paths:
+        rendered.append(f"[UNCONFIRMED] {p.render()}")
+    total = confirmed_count + unconfirmed_count
     desc = (
-        f"{len(forward_paths)} reusable-workflow forward(s) carry "
-        f"untrusted data into a callee's ``inputs:``: "
+        f"{total} reusable-workflow forward(s) carry untrusted data "
+        f"into a callee's ``inputs:`` "
+        f"({confirmed_count} confirmed end-to-end, "
+        f"{unconfirmed_count} unconfirmed): "
         f"{'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
-    return Finding(
+    finding = Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        confidence=confidence,
     )
+    finding.confidence_locked = True
+    return finding

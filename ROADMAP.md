@@ -326,14 +326,23 @@ Pilot scope: GitHub Actions and GitLab CI.
     propagation channels — engine portability fully
     validated.
 
-Next gaps: end-to-end coupling between the
-``--resolve-remote`` resolver and the GHA pass-4 forward
-detection (so a tainted ``with:`` paired with a callee whose
-``inputs.<name>`` actually lands in a sink emits a
-high-confidence finding); GitLab ``extends:`` job-template
-inheritance and ``include:`` cross-pipeline taint; then the
-engine extends to Drone, Tekton, Argo, Buildkite — every
-provider with the same producer/consumer shape.
+End-to-end coupling between the ``--resolve-remote`` resolver
+and the GHA pass-4 forward detection (so a tainted ``with:``
+paired with a callee whose ``inputs.<name>`` lands in a sink
+emits a high-confidence finding) *landed on dev*: TAINT-003
+now walks the callee body when it's available in
+``ctx.workflows`` (local refs via ``--gha-path``, remote refs
+via ``--resolve-remote``), tags each path as Confirmed or
+Unconfirmed, and locks the per-finding confidence to HIGH /
+MEDIUM accordingly. The orchestrator gained a 4-arg rule
+signature so future rules needing cross-workflow analysis can
+opt in the same way.
+
+Remaining gaps: GitLab ``extends:`` job-template inheritance
+and ``include:`` cross-pipeline taint. The TAINT engine has
+been ported to GitLab, GHA, Buildkite, Tekton, and Argo
+(producer/consumer shapes); Drone CI's cross-step plumbing is
+artifact-based and a thinner port.
 
 This is the move that distinguishes pipeline-check from the
 common per-rule local matching that mainstream commercial CI/CD
