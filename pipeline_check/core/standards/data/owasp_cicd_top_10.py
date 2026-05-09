@@ -206,6 +206,7 @@ STANDARD = Standard(
         "GL-030":   ["CICD-SEC-3"],
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
+        "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3"],
         "BB-002":   ["CICD-SEC-4"],

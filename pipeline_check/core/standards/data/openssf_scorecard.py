@@ -117,6 +117,7 @@ STANDARD = Standard(
         "GL-023":   ["Dangerous-Workflow"],
         "GL-025":   ["Dangerous-Workflow"],                            # malicious activity
         "GL-026":   ["Dangerous-Workflow"],
+        "GL-033":   ["Dangerous-Workflow"],                            # global before_script taint
         "BB-002":   ["Dangerous-Workflow"],
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],

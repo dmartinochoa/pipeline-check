@@ -360,8 +360,8 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # GitHub Actions — GHA-028..039
     *(f"GHA-{i:03d}" for i in range(28, 40)),
-    # GitLab CI — GL-026..032
-    *(f"GL-{i:03d}" for i in range(26, 33)),
+    # GitLab CI — GL-026..033
+    *(f"GL-{i:03d}" for i in range(26, 34)),
     # Bitbucket — BB-026..029
     *(f"BB-{i:03d}" for i in range(26, 30)),
     # Azure DevOps — ADO-027..030

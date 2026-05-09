@@ -85,7 +85,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 39 checks (`GHA-001`--`039`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 32 checks (`GL-001`--`032`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 33 checks (`GL-001`--`033`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |

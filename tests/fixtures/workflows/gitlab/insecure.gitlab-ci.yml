@@ -8,6 +8,14 @@ include:
 
 image: python:latest
 
+# GL-033 — document-root before_script interpolates the
+# pusher-controlled commit title. Every job in the pipeline
+# inherits this script line and runs it verbatim, so a single
+# malicious commit message is N injections at once. iter_jobs
+# skips this top-level keyword so GL-002 misses it.
+before_script:
+  - echo "Build for ${CI_COMMIT_TITLE}"
+
 # GL-028 — top-level services image not pinned.
 services:
   - postgres:latest

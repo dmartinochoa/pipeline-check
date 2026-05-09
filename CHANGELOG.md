@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-033 global before_script / after_script taint
+  propagation.** New rule. ``iter_jobs`` deliberately skips
+  top-level keywords (``before_script``, ``after_script``,
+  ``default``, ``image``, ``services``, ``variables``,
+  ``stages``, ``workflow``, ``include``, ...), which means
+  GL-002's per-job injection scan never sees a tainted
+  ``$CI_COMMIT_TITLE`` interpolation in a document-root
+  ``before_script:`` or ``default.before_script:`` even
+  though it propagates to every job in the pipeline. GL-033
+  closes that gap by scanning document-root ``before_script:``,
+  ``after_script:``, and ``default.before_script:`` /
+  ``default.after_script:`` for the same attacker-
+  controllable predefined CI variables tracked by GL-002.
+  Severity HIGH because the injection reach is N times the
+  per-job equivalent (one global script line is N injections
+  in N jobs at once).
+
+  GitLab catalog: 32 -> 33.
+
 - **GHA-039 services / container credentials literal.** New
   rule, peer-tool gap closure (Zizmor's
   ``hardcoded-container-credentials``). Flags any literal
