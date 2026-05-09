@@ -220,21 +220,30 @@ legs were baselined separately.
 
 Chain reference: [attack_chains.md](attack_chains.md).
 
-## GitHub Actions dataflow taint analysis
+## Cross-provider dataflow taint analysis
 
-The GitHub provider ships a workflow-wide taint engine that follows
-attacker-controllable input across step, job, and reusable-workflow
-boundaries:
+The `TAINT-NNN` family is a workflow-wide / pipeline-wide
+taint engine that follows attacker-controllable input across
+step, job, template, and reusable-workflow boundaries. Each
+provider gets its own engine port routed through the host's
+native cross-step propagation channel:
 
-| Rule       | Tracks                                                                |
-|------------|-----------------------------------------------------------------------|
-| `TAINT-001` | `${{ github.event.* }}` flowing through `$GITHUB_OUTPUT` to a downstream same-job step |
-| `TAINT-002` | The same flow crossing a `jobs.<id>.outputs.*` boundary into another job |
-| `TAINT-003` | Untrusted input forwarded into a reusable-workflow `with:` input     |
+| Rule         | Provider     | Channel                                                                       |
+|--------------|--------------|-------------------------------------------------------------------------------|
+| `TAINT-001`  | GHA          | `${{ github.event.* }}` flowing through `$GITHUB_OUTPUT` to a same-job step  |
+| `TAINT-002`  | GHA          | The same flow crossing a `jobs.<id>.outputs.*` boundary into another job     |
+| `TAINT-003`  | GHA          | Untrusted input forwarded into a reusable-workflow `with:` input             |
+| `TAINT-004`  | GitLab CI    | `$CI_COMMIT_*` / `$CI_MERGE_REQUEST_*` flowing through `artifacts.reports.dotenv` to a downstream `needs:` job |
+| `TAINT-005`  | Buildkite    | `$BUILDKITE_*` flowing through the per-build `buildkite-agent meta-data` store to a downstream step |
+| `TAINT-006`  | Tekton       | `$(params.<X>)` flowing into `$(results.<Y>.path)` then read via `$(tasks.<producer>.results.<Y>)` in a consumer task's script |
+| `TAINT-007`  | Argo Workflows | `{{inputs.parameters.<X>}}` flowing through `outputs.parameters` then read via `{{tasks.<producer>.outputs.parameters.<X>}}` in a consumer template |
 
-Each finding carries the full source-to-sink chain in its description.
-Single-rule scanners stop at the producer's GHA-003 finding and miss
-the actual injection sink one step (or one job) later.
+Each finding carries the full source-to-sink chain in its
+description. Single-rule scanners stop at the producer's
+direct-interpolation finding (GHA-003 / GL-002 / BK-003 /
+TKN-003 / ARGO-005) and miss the actual injection sink one
+step (or one job, or one template) later. The TAINT family
+is what catches the cross-boundary flow.
 
 ## Dataflow secret detection
 

@@ -24,7 +24,7 @@ Shape:
 ```json
 {
   "schema_version": "1.0",
-  "tool_version": "0.3.0",
+  "tool_version": "0.4.x",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
     {
@@ -42,16 +42,22 @@ Shape:
   ],
   "chains": [
     {
-      "id": "AC-001",
+      "chain_id": "AC-001",
       "title": "Fork-PR Credential Theft (pull_request_target)",
       "severity": "CRITICAL",
       "confidence": "HIGH",
-      "mitre_techniques": ["T1078", "T1552.004"],
-      "kill_chain_phase": "initial-access -> credential-access",
+      "summary": "...",
+      "narrative": "...",
+      "mitre_attack": ["T1078.004", "T1195.002", "T1552.001"],
+      "kill_chain_phase": "initial-access -> credential-access -> exfiltration",
+      "triggering_check_ids": ["GHA-002", "GHA-005"],
       "triggering_findings": [
         {"check_id": "GHA-002", "resource": ".github/workflows/release.yml"},
         {"check_id": "GHA-005", "resource": ".github/workflows/release.yml"}
-      ]
+      ],
+      "resources": [".github/workflows/release.yml"],
+      "references": ["https://..."],
+      "recommendation": "..."
     }
   ]
 }

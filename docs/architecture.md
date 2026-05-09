@@ -76,6 +76,57 @@ A rule is one module that exports a `RULE` (metadata) and a `check`
 function (behavior). The orchestrator auto-discovers rules at import
 time. See [Adding a rule](writing_a_rule.md) for the contract.
 
+## Dataflow / taint-path engines
+
+Each rule in the catalog operates locally on one workflow / one
+job / one step, the framework's per-rule shape doesn't model
+cross-boundary data flow. The `TAINT-NNN` family is the layer
+above that: per-pipeline graph engines that follow attacker-
+controllable input across the provider's native cross-step
+propagation channel and emit one finding per source-to-sink
+path.
+
+Each engine lives at `core/checks/<provider>/_taint_graph.py`
+and ships a single `analyze_<...>(doc)` entry point that
+returns a list of `TaintPath` objects. The rule layer
+(`taint00N_*.py` under the same provider) is a thin wrapper
+that filters paths and emits a `Finding`. Engine state is
+provider-shaped, so each port chooses its own internal
+representation, but every engine uses the same producer →
+forwarding → consumer pass structure:
+
+| Provider     | Engine module                              | Channel                                              |
+|--------------|--------------------------------------------|------------------------------------------------------|
+| GHA          | `checks/github/_taint_graph.py`            | `$GITHUB_OUTPUT` step output dictionary, `jobs.<id>.outputs:`, reusable-workflow `with:` |
+| GitLab CI    | `checks/gitlab/_taint_graph.py`            | `artifacts.reports.dotenv` per-artifact files        |
+| Buildkite    | `checks/buildkite/_taint_graph.py`         | `buildkite-agent meta-data` per-build server store   |
+| Tekton       | `checks/tekton/_taint_graph.py`            | `$(tasks.<X>.results.<Y>)` cross-task substitution   |
+| Argo         | `checks/argo/_taint_graph.py`              | `{{tasks.<X>.outputs.parameters.<Y>}}` substitution  |
+
+A new provider's TAINT port follows the same pattern: identify
+the host's producer / consumer / propagation primitives, walk
+the parsed pipeline document through the same three-pass
+shape, return `TaintPath` objects.
+
+## Cross-provider attack chains
+
+The `XPC-NNN` chain rules under `core/chains/rules/` correlate
+findings across provider boundaries. They never fire under a
+single-provider scan, the chain engine sees only one provider's
+result set. The `--pipelines` CLI flag (handled by
+`MultiScanner` in `core/scanner.py`) is what activates them: it
+runs each named provider's `Scanner` with `chains_enabled=False`,
+unifies the result lists, then runs the chain engine once over
+the union so `XPC-NNN.match()` can see findings from every
+provider in the same pass. Per-provider chain rules
+(`AC-NNN`) still match against the same union, so single-
+provider correlation isn't lost.
+
+The chain rule shape is the same as the single-provider
+chains: a `ChainRule` dataclass with metadata + a `match()`
+callable that takes the findings list and returns zero or
+more `Chain` instances.
+
 ## Standards mapping
 
 `core/standards/data/<name>.py` maps check IDs to control IDs for one

@@ -113,9 +113,11 @@ the default; turning it off is opt-in.
 ### Attack-chain correlation
 30 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
-findings line up in one scan. The GitHub `TAINT-NNN` engine follows
-`${{ github.event.* }}` through `$GITHUB_OUTPUT`, across `jobs.outputs:`,
-and into reusable-workflow inputs.
+findings line up in one scan. The `TAINT-NNN` dataflow engine follows
+attacker-controllable input across cross-step boundaries on five providers
+(GitHub Actions, GitLab CI, Buildkite, Tekton, Argo Workflows), each routed
+through that host's native channel — `$GITHUB_OUTPUT`, dotenv artifact,
+`buildkite-agent meta-data`, Tekton results, Argo `outputs.parameters`.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a>
 </div>
 

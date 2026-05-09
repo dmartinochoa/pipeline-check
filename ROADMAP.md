@@ -318,7 +318,7 @@ Pilot scope: GitHub Actions and GitLab CI.
   * ``TAINT-007`` (Argo Workflows, *landed*) — cross-template
     flow via ``{{tasks.<task>.outputs.parameters.<output>}}``.
     Producer template interpolates ``{{inputs.parameters.X}}``
-    into an output path; downstream task forwards the output
+    into an output path; downstream task forward the output
     via the cross-task substitution; consumer template
     references the value unquoted. Both ``dag:`` and
     ``steps:`` orchestrators covered. The ``TAINT-NNN`` family
