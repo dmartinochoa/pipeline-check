@@ -1,4 +1,4 @@
-"""BK-008 — TLS verification disabled in step commands."""
+"""BK-008. TLS verification disabled in step commands."""
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +26,7 @@ RULE = Rule(
     docs_note=(
         "Detection fires on the canonical bypass flags across curl, "
         "wget, git, npm, pip, gcloud, and openssl. The check is "
-        "deliberately conservative — partial-word matches "
+        "deliberately conservative, partial-word matches "
         "(``--insecure-protocols``) are excluded."
     ),
 )

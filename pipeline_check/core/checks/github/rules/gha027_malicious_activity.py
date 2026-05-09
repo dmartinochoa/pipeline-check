@@ -1,4 +1,4 @@
-"""GHA-027 — workflow contains evidence of malicious activity."""
+"""GHA-027, workflow contains evidence of malicious activity."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,13 +20,13 @@ RULE = Rule(
         "introduced them, rotate any credentials the workflow has "
         "access to, and audit CloudTrail/AuditLogs for exfil. If the "
         "match is a legitimate red-team exercise, whitelist via "
-        "``.pipelinecheckignore`` with an ``expires:`` date — never a "
+        "``.pipelinecheckignore`` with an ``expires:`` date, never a "
         "permanent suppression."
     ),
     docs_note=(
         "Distinct from the hygiene checks. GHA-016 flags ``curl | "
         "bash`` as a risky default; this rule fires only on concrete "
-        "indicators — reverse shells, base64-decoded execution, known "
+        "indicators, reverse shells, base64-decoded execution, known "
         "miner binaries or pool URLs, exfil-channel domains, "
         "credential-dump pipes, history-erasure commands. Categories "
         "reported: ``obfuscated-exec``, ``reverse-shell``, "

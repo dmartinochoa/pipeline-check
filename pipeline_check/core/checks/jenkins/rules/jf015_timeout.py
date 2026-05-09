@@ -1,4 +1,4 @@
-"""JF-015 — pipeline should declare a `timeout` wrapper."""
+"""JF-015, pipeline should declare a `timeout` wrapper."""
 from __future__ import annotations
 
 import re
@@ -12,7 +12,7 @@ _TIMEOUT_RE = re.compile(r"\btimeout\s*\(")
 
 RULE = Rule(
     id="JF-015",
-    title="Pipeline has no `timeout` wrapper — unbounded build",
+    title="Pipeline has no `timeout` wrapper, unbounded build",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
@@ -37,7 +37,7 @@ def check(jf: Jenkinsfile) -> Finding:
     desc = (
         "Pipeline declares a `timeout()` wrapper."
         if passed else
-        "Pipeline has no `timeout()` wrapper — the build will run "
+        "Pipeline has no `timeout()` wrapper, the build will run "
         "until the Jenkins global default (or indefinitely)."
     )
     return Finding(

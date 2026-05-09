@@ -22,7 +22,7 @@
 
 Each row below pairs a `check_id` with the SLSA Build-Track requirements
 its passing state evidences. Source of truth:
-`pipeline_check/core/standards/data/slsa.py` — regenerate with
+`pipeline_check/core/standards/data/slsa.py`, regenerate with
 `python scripts/gen_standards_mappings.py slsa`.
 
 | Check | Control(s) |
@@ -162,7 +162,7 @@ its passing state evidences. Source of truth:
 
 ## Not covered
 
-- **Source track** (branch protection, 2-reviewer, retained history) —
+- **Source track** (branch protection, 2-reviewer, retained history),
   requires GitHub/GitLab policy inspection beyond Actions workflows.
-- **Dependency track** — requires package-manifest and lockfile
+- **Dependency track**: requires package-manifest and lockfile
   analysis across the dependency graph.

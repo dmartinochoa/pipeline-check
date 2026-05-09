@@ -9,7 +9,7 @@ from .base import TerraformBaseCheck
 
 
 def _first(block_list: list[Any] | None) -> dict[str, Any]:
-    # Validate the head's type rather than relying on truthiness — a
+    # Validate the head's type rather than relying on truthiness, a
     # non-dict truthy value (string, number, list) would propagate out
     # and break callers that expect a mapping. Mirrors
     # ``extended._first``.

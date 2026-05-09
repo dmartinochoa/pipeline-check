@@ -1,4 +1,4 @@
-"""ECR-007 — Inspector v2 enhanced scanning disabled for ECR repositories."""
+"""ECR-007. Inspector v2 enhanced scanning disabled for ECR repositories."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -20,7 +20,7 @@ RULE = Rule(
         "runs continuously as new vulnerabilities are published."
     ),
     docs_note=(
-        "ECR-001's basic on-push scan covers OS-level packages — apt "
+        "ECR-001's basic on-push scan covers OS-level packages, apt "
         "/ yum / apk lineage. Most production CVE risk is in "
         "language ecosystems (npm, pip, gem, mvn) which the basic "
         "scanner ignores. Inspector v2 enhanced scanning closes "
@@ -39,7 +39,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     try:
         resp = client.batch_get_account_status(accountIds=[])
     except ClientError:
-        # Surface as a single finding — Inspector may be disabled or the
+        # Surface as a single finding. Inspector may be disabled or the
         # caller may lack permission; either way flag it as a gap.
         return [Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -55,7 +55,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         return [Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="inspector2",
-            description="Inspector v2 returned no account status — likely disabled.",
+            description="Inspector v2 returned no account status, likely disabled.",
             recommendation=RULE.recommendation, passed=False,
         )]
     findings: list[Finding] = []

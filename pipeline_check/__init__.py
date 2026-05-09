@@ -1,4 +1,4 @@
-"""pipeline-check — CI/CD security posture scanner.
+"""pipeline-check. CI/CD security posture scanner.
 
 This module re-exports the small, stable surface library callers can
 rely on. Anything not listed in ``__all__`` is internal and may move

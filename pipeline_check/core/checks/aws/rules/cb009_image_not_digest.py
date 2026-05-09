@@ -1,4 +1,4 @@
-"""CB-009 — CodeBuild environment image is tag-pinned, not digest-pinned."""
+"""CB-009. CodeBuild environment image is tag-pinned, not digest-pinned."""
 from __future__ import annotations
 
 from ..._primitives.container_image import classify
@@ -20,7 +20,7 @@ RULE = Rule(
     docs_note=(
         "CodeBuild pulls the environment image on every build. A tag pointer "
         "can be moved by whoever controls the registry; a digest cannot. "
-        "AWS-managed ``aws/codebuild/...`` images are exempt — those are "
+        "AWS-managed ``aws/codebuild/...`` images are exempt. Those are "
         "covered by CB-005 and are not part of the tag-mutation threat model."
     ),
 )

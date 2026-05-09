@@ -1,4 +1,4 @@
-"""ADO-026 — pipeline contains evidence of malicious activity."""
+"""ADO-026, pipeline contains evidence of malicious activity."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     ),
     docs_note=(
         "ADO pipelines can run arbitrary shell via ``bash`` / "
-        "``script`` / ``powershell`` tasks — this rule scans every "
+        "``script`` / ``powershell`` tasks. This rule scans every "
         "string value for known-bad patterns (reverse shells, "
         "base64-decoded execution, miner binaries, exfil channels). "
         "Orthogonal to ADO-016/ADO-017/ADO-023."

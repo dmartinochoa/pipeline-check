@@ -1,4 +1,4 @@
-"""AC-010 — Self-Hosted Runner Environment Exfiltration.
+"""AC-010. Self-Hosted Runner Environment Exfiltration.
 
 A non-ephemeral self-hosted runner that fetches and executes
 unpinned remote code is a one-shot foothold: the attacker only has

@@ -1,1 +1,1 @@
-"""Bitbucket Pipelines checks — parse ``bitbucket-pipelines.yml``."""
+"""Bitbucket Pipelines checks, parse ``bitbucket-pipelines.yml``."""

@@ -1,4 +1,4 @@
-"""CC-025 — CircleCI cache key must not derive from attacker-controllable input."""
+"""CC-025. CircleCI cache key must not derive from attacker-controllable input."""
 from __future__ import annotations
 
 from typing import Any
@@ -16,7 +16,7 @@ RULE = Rule(
     cwe=("CWE-345",),
     recommendation=(
         "Derive ``save_cache`` and ``restore_cache`` keys from values "
-        "the attacker can't control — the lockfile checksum "
+        "the attacker can't control, the lockfile checksum "
         "(``{{ checksum \"package-lock.json\" }}``) and the build "
         "variant, not ``{{ .Branch }}`` or ``${CIRCLE_PR_NUMBER}``. "
         "A PR-scoped branch can seed a poisoned cache entry that a "
@@ -25,8 +25,8 @@ RULE = Rule(
     docs_note=(
         "CircleCI's ``restore_cache`` falls through each listed key "
         "until it finds a hit. When one of those keys is derived from "
-        "``CIRCLE_BRANCH``, ``CIRCLE_TAG``, or ``CIRCLE_PR_*`` — "
-        "values an attacker can set by opening a PR — the attacker "
+        "``CIRCLE_BRANCH``, ``CIRCLE_TAG``, or ``CIRCLE_PR_*``, "
+        "values an attacker can set by opening a PR, the attacker "
         "can plant a cache entry that a protected job later uses. "
         "Uses checksum-of-lockfile or a static version label instead."
     ),

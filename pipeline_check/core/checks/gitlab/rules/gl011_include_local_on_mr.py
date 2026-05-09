@@ -1,4 +1,4 @@
-"""GL-011 — MR-triggered pipelines must not use `include: local:`."""
+"""GL-011. MR-triggered pipelines must not use `include: local:`."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +23,7 @@ RULE = Rule(
     docs_note=(
         "`include: local: '<path>'` resolves from the current "
         "pipeline's checked-out tree. On an MR pipeline the tree is "
-        "the MR source branch — the MR author controls the included "
+        "the MR source branch, the MR author controls the included "
         "YAML content."
     ),
 )

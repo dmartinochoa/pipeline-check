@@ -1,4 +1,4 @@
-"""DF-015 — ``RUN`` grants world-writable / world-executable permissions."""
+"""DF-015, ``RUN`` grants world-writable / world-executable permissions."""
 from __future__ import annotations
 
 import re
@@ -43,7 +43,7 @@ RULE = Rule(
 # 777, 0777. Symbolic: ``a+w``, ``a+rwx``, ``+w`` (which is shorthand
 # for ``a+w``). Anchored to a word boundary so the false-positive of
 # ``--chmod=755`` in ``COPY`` (different directive entirely) doesn't
-# matter — ``run_bodies`` only feeds RUN args to the regex.
+# matter, ``run_bodies`` only feeds RUN args to the regex.
 _CHMOD_WORLDWRITE_RE = re.compile(
     r"\bchmod\b[^\n]*?"
     r"(?:"

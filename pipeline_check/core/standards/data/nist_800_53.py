@@ -1,4 +1,4 @@
-"""NIST SP 800-53 Rev. 5 — CI/CD-relevant control subset.
+"""NIST SP 800-53 Rev. 5. CI/CD-relevant control subset.
 
 800-53 is the federal security and privacy control catalog. This module
 covers the controls whose evidence can be collected from CI/CD state,
@@ -182,7 +182,7 @@ STANDARD = Standard(
         "GCB-024":  ["SR-4", "CM-8"],                    # images: missing
         "GCB-025":  ["AU-2", "SI-2"],                    # tags: empty
         "GCB-026":  ["CM-6"],                            # waitFor unknown id
-        # Kubernetes — runtime configuration evidences SC-7 (boundary
+        # Kubernetes, runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
         "K8S-001":  ["SR-3", "SR-11", "SI-2"],           # image not digest-pinned
@@ -228,9 +228,9 @@ STANDARD = Standard(
         # Helm chart-supply-chain. The same SR family that covers
         # image pinning (K8S-001 / DF-001) covers chart pinning;
         # SC-8 (transmission integrity) covers HELM-003's plaintext
-        # repo URL. SR-3 — supply chain controls. SR-11 — component
+        # repo URL. SR-3, supply chain controls. SR-11, component
         # authenticity (the Chart.lock digest is the authenticity
-        # signal). SI-2 — flaw remediation hooks on the schema lock.
+        # signal). SI-2, flaw remediation hooks on the schema lock.
         "HELM-001": ["SR-3", "CM-2"],                    # legacy v1 schema
         "HELM-002": ["SR-3", "SR-11", "SI-7"],           # Chart.lock digest
         "HELM-003": ["SR-3", "SC-8", "SC-13"],           # non-HTTPS dep repo
@@ -241,7 +241,7 @@ STANDARD = Standard(
         "HELM-008": ["SR-3", "SI-2"],                    # Chart.lock stale (flaw remediation cadence)
         "HELM-009": ["SR-3", "SC-8"],                    # home / sources non-HTTPS
         "HELM-010": ["CM-2"],                            # appVersion (config baseline)
-        # Buildkite — pipeline-config posture maps to the same SR /
+        # Buildkite, pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
         "BK-002":   ["IA-5", "SC-28"],                   # secret in env
@@ -256,7 +256,7 @@ STANDARD = Standard(
         "BK-011":   ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
         "BK-012":   ["RA-5", "SI-2"],                    # no vuln scanning
         "BK-013":   ["AC-3"],                            # deploy without branch filter
-        # Tekton — Kubernetes-native pipeline kinds.
+        # Tekton. Kubernetes-native pipeline kinds.
         "TKN-001":  ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
         "TKN-002":  ["AC-6", "CM-7"],                    # step privileged
         "TKN-003":  ["CM-6", "SA-11"],                   # param injection
@@ -284,7 +284,7 @@ STANDARD = Standard(
         "ARGO-011": ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
         "ARGO-012": ["RA-5", "SI-2"],                    # no vuln scanning
         "ARGO-013": ["AC-6", "IA-5"],                    # SA token automount
-        # Dockerfile — image build choices evidence supply-chain (SR)
+        # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER

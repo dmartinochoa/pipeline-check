@@ -3,10 +3,10 @@
 Subset covering the practices and tasks this scanner can evidence from
 CI/CD state. The SSDF is grouped into four practice areas:
 
-- PO — Prepare the Organization
-- PS — Protect the Software
-- PW — Produce Well-Secured Software
-- RV — Respond to Vulnerabilities
+- PO. Prepare the Organization
+- PS. Protect the Software
+- PW. Produce Well-Secured Software
+- RV. Respond to Vulnerabilities
 
 Only the tasks for which at least one check produces evidence are
 included. A single task may be evidenced by multiple checks, and a

@@ -1,9 +1,9 @@
-"""HELM-008 — ``Chart.lock`` generated more than 90 days ago.
+"""HELM-008, ``Chart.lock`` generated more than 90 days ago.
 
 A stale ``Chart.lock`` means ``helm dependency update`` hasn't been
 run in a while. The dependencies are still pinned (good) but no one
-has refreshed against the upstream registry's published versions —
-known CVEs, deprecation notices, and security advisories from the
+has refreshed against the upstream registry's published versions.
+Known CVEs, deprecation notices, and security advisories from the
 last quarter haven't been considered. The right cadence is "run
 ``helm dependency update`` at least every release", which for most
 production charts means at least every couple of months.
@@ -43,7 +43,7 @@ RULE = Rule(
         "(an ISO-8601 string Helm writes when the lock was last "
         "regenerated) and compares against ``now``. Fires when the "
         "delta is more than 90 days. Charts without ``Chart.lock`` "
-        "are skipped — HELM-002 covers the missing-lock case "
+        "are skipped. HELM-002 covers the missing-lock case "
         "directly. Charts whose ``generated:`` field is malformed "
         "or absent silently pass on this rule (HELM-002 covers the "
         "absent-lock case from a different angle)."
@@ -83,7 +83,7 @@ def _parse_generated(value: object) -> datetime | None:
     except ValueError:
         return None
     if dt.tzinfo is None:
-        # Naive datetime — assume UTC. Helm always writes a tz, but
+        # Naive datetime, assume UTC. Helm always writes a tz, but
         # be defensive against hand-edited locks.
         dt = dt.replace(tzinfo=timezone.utc)
     return dt

@@ -1,1 +1,1 @@
-"""Azure DevOps Pipelines checks — parse ``azure-pipelines.yml``."""
+"""Azure DevOps Pipelines checks, parse ``azure-pipelines.yml``."""

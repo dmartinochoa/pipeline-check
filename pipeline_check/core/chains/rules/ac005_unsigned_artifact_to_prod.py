@@ -1,4 +1,4 @@
-"""AC-005 — Unsigned Artifact to Production (cross-provider).
+"""AC-005. Unsigned Artifact to Production (cross-provider).
 
 A pipeline that builds artifacts without signing/provenance AND
 auto-deploys to production without approval lets a build-time
@@ -60,7 +60,7 @@ RULE = ChainRule(
 # deploy-side check ids that, if also failing, complete the chain.
 # Key insight: signing failures live on workflow files; deploy-gate
 # failures live on AWS pipeline ARNs / workflow files / Cloud Build
-# configs. We don't require same-resource — the chain is real even
+# configs. We don't require same-resource, the chain is real even
 # when build and deploy live in different files.
 _BUILD_FAILS = (
     "GHA-006", "GL-006", "BB-006", "ADO-006", "JF-006", "CC-006",

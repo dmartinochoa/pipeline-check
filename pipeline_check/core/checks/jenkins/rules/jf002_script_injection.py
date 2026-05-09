@@ -1,4 +1,4 @@
-"""JF-002 — shell steps must not interpolate attacker-controllable env vars."""
+"""JF-002, shell steps must not interpolate attacker-controllable env vars."""
 from __future__ import annotations
 
 from ...base import Finding, Location, Severity

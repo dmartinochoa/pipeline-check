@@ -1,4 +1,4 @@
-"""K8S-019 — Workload deployed in the ``default`` namespace."""
+"""K8S-019. Workload deployed in the ``default`` namespace."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

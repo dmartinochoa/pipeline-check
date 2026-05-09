@@ -1,4 +1,4 @@
-"""JF-014 — agents should declare an ephemeral marker."""
+"""JF-014, agents should declare an ephemeral marker."""
 from __future__ import annotations
 
 import re

@@ -1,4 +1,4 @@
-"""K8S-009 — Container capabilities not dropping ALL or adding dangerous caps."""
+"""K8S-009. Container capabilities not dropping ALL or adding dangerous caps."""
 from __future__ import annotations
 
 from typing import Any

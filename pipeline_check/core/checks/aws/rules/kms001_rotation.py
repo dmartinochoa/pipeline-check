@@ -1,4 +1,4 @@
-"""KMS-001 — KMS customer-managed key has rotation disabled."""
+"""KMS-001. KMS customer-managed key has rotation disabled."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
         "Annual rotation regenerates the underlying key material "
         "for the same CMK ARN. Existing ciphertexts can still be "
         "decrypted (KMS keeps old material around), but new "
-        "encrypts use the new material — so a cryptographic "
+        "encrypts use the new material, so a cryptographic "
         "exposure (side-channel, an accidental export, an old "
         "compromised offline backup) only protects ciphertexts "
         "from before the rotation."

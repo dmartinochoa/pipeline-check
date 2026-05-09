@@ -1,4 +1,4 @@
-"""AC-009 — Supply Chain Repo Poisoning.
+"""AC-009. Supply Chain Repo Poisoning.
 
 A workflow combines three legs that, together, give a fork-PR
 attacker durable code execution against the repo's stored secrets:

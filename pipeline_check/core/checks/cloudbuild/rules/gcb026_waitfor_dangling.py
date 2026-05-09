@@ -1,4 +1,4 @@
-"""GCB-026 — Step's ``waitFor:`` references a step ``id:`` that doesn't exist."""
+"""GCB-026. Step's ``waitFor:`` references a step ``id:`` that doesn't exist."""
 from __future__ import annotations
 
 from typing import Any
@@ -19,7 +19,7 @@ RULE = Rule(
         "an ``id:`` declared on a sibling step in the same build. The "
         "special token ``-`` (start at the beginning of the build, "
         "no dependencies) is the only non-id value Cloud Build "
-        "accepts. A typo in ``waitFor:`` doesn't fail the build — "
+        "accepts. A typo in ``waitFor:`` doesn't fail the build, "
         "Cloud Build silently skips the wait, so a step that was "
         "supposed to run *after* a setup step ends up running in "
         "parallel with it."
@@ -31,7 +31,7 @@ RULE = Rule(
         "``waitFor: ['-']`` runs at the start of the build; a "
         "step with ``waitFor: ['<id>']`` waits for the specific "
         "step. There's no validation that the referenced id "
-        "exists — typo'd ids are silently treated like ``-`` "
+        "exists, typo'd ids are silently treated like ``-`` "
         "(no-wait), so the dependency disappears without warning. "
         "This rule catches the silent-skip by walking every "
         "``waitFor:`` value and cross-referencing it against the "
@@ -73,7 +73,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     f"waitFor references unknown id ``{ref}``"
                 )
                 locations.append(step_location(path, step))
-                # One Location per step is enough — multiple bad
+                # One Location per step is enough, multiple bad
                 # ids in one step's waitFor list still cluster on
                 # the step's source line.
                 break

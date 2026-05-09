@@ -1,4 +1,4 @@
-"""GL-012 — cache key must not derive from MR-controlled CI variables."""
+"""GL-012, cache key must not derive from MR-controlled CI variables."""
 from __future__ import annotations
 
 from typing import Any

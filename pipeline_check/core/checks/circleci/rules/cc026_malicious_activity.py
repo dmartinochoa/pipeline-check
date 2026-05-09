@@ -1,4 +1,4 @@
-"""CC-026 — config contains evidence of malicious activity."""
+"""CC-026, config contains evidence of malicious activity."""
 from __future__ import annotations
 
 from typing import Any

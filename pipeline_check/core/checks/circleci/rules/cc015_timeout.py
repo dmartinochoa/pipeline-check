@@ -1,4 +1,4 @@
-"""CC-015 — run steps should have no_output_timeout configured."""
+"""CC-015, run steps should have no_output_timeout configured."""
 from __future__ import annotations
 
 from typing import Any

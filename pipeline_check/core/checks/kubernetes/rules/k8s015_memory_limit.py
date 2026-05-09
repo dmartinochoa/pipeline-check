@@ -1,4 +1,4 @@
-"""K8S-015 — Container missing ``resources.limits.memory``."""
+"""K8S-015. Container missing ``resources.limits.memory``."""
 from __future__ import annotations
 
 from typing import Any

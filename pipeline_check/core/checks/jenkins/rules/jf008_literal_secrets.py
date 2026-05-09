@@ -1,4 +1,4 @@
-"""JF-008 — whole-document credential-shaped literal scan."""
+"""JF-008, whole-document credential-shaped literal scan."""
 from __future__ import annotations
 
 from ..._secrets import find_secret_values

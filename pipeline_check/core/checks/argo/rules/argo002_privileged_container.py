@@ -1,4 +1,4 @@
-"""ARGO-002 — Template containers must not run privileged or as root."""
+"""ARGO-002. Template containers must not run privileged or as root."""
 from __future__ import annotations
 
 import re
@@ -75,7 +75,7 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{template_name(tmpl, idx)}: {', '.join(issues)}"
                     )
                     # Anchor on securityContext when present, then the
-                    # container, then the template — same precedence
+                    # container, then the template, same precedence
                     # as K8S-005 / K8S-006.
                     line = _line_of(sc) or _line_of(container) or _line_of(tmpl)
                     locations.append(Location(

@@ -1,4 +1,4 @@
-"""Component inventory — what the scanner actually saw.
+"""Component inventory, what the scanner actually saw.
 
 Findings answer "what's wrong". The inventory answers "what was
 scanned". Together they let downstream tooling (SOC2/PCI audit
@@ -7,7 +7,7 @@ resource was present on this date and produced these findings".
 
 Every provider implements ``BaseProvider.inventory(context) ->
 list[Component]``; default is an empty list so providers that don't
-care pay nothing. Components are deliberately flat — the ``metadata``
+care pay nothing. Components are deliberately flat, the ``metadata``
 dict carries provider-specific details without forcing a taxonomy on
 the top-level schema.
 """
@@ -33,13 +33,13 @@ class Component:
     #:   - Workflow providers: ``"workflow"``, ``"pipeline"``, or ``"jenkinsfile"``
     type: str
 
-    #: Human-meaningful identifier — bucket name, role name, workflow
+    #: Human-meaningful identifier, bucket name, role name, workflow
     #: filename, Terraform address, CFN logical id. Must be unique
     #: within ``(provider, type)`` for a given scan so consumers can
     #: correlate with findings.
     identifier: str
 
-    #: Where the component came from — a file path for shift-left
+    #: Where the component came from, a file path for shift-left
     #: providers, an ARN or region for live AWS, an empty string when
     #: no better provenance is available.
     source: str = ""

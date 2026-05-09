@@ -1,4 +1,4 @@
-"""K8S-017 — Container ``env[].value`` carries a credential-shaped literal."""
+"""K8S-017. Container ``env[].value`` carries a credential-shaped literal."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,14 +24,14 @@ RULE = Rule(
         "Replace literal ``env[].value`` entries that hold "
         "credentials with ``env[].valueFrom.secretKeyRef`` or "
         "``envFrom.secretRef``. A literal env value lives in the "
-        "manifest YAML — it gets committed to git, surfaced by "
+        "manifest YAML. It gets committed to git, surfaced by "
         "``kubectl get pod -o yaml``, and embedded in audit logs. "
         "Externalising into a Secret (and ideally a SealedSecret / "
         "ExternalSecret / SOPS-encrypted source) keeps the value "
         "out of the manifest."
     ),
     docs_note=(
-        "Reuses ``_primitives/secret_shapes`` — flags AKIA-prefixed "
+        "Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed "
         "AWS access keys outright, plus credential-named keys "
         "(``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the "
         "value is a non-empty literal. ``valueFrom`` entries are "
@@ -45,7 +45,7 @@ def _looks_literal(value: Any) -> bool:
         return False
     if not value:
         return False
-    # ``$(VAR)`` is K8s downward-API substitution — not a literal.
+    # ``$(VAR)`` is K8s downward-API substitution, not a literal.
     if value.startswith("$(") and value.endswith(")"):
         return False
     return True

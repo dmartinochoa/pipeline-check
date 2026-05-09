@@ -40,7 +40,7 @@
 | GV.SC-04 | ADO-007, ADO-018, BB-007, BB-014, CA-002, CC-007, CC-018, ECR-006, GHA-007, GHA-018, GL-007, GL-018, JF-007, JF-018 |
 | GV.SC-05 | ADO-001, ADO-005, ADO-009, ADO-021, ADO-025, ADO-028, BB-001, BB-009, BB-021, BB-027, CB-009, CC-001, CC-003, CC-021, CC-028, CC-029, ECR-002, GCB-001, GHA-001, GHA-021, GHA-025, GHA-029, GL-001, GL-005, GL-009, GL-021, GL-027, GL-028, GL-030, JF-001, JF-009, JF-021, JF-031 |
 | GV.SC-07 | ADO-001, ADO-022, BB-001, BB-022, CA-002, CB-005, CC-001, CC-022, ECR-006, GHA-001, GHA-022, GL-001, GL-022, JF-001, JF-022 |
-| GV.SC-08 | _(organizational control — no direct pipeline signal)_ |
+| GV.SC-08 | _(organizational control, no direct pipeline signal)_ |
 | PR.AA-01 | ADO-003, ADO-008, ADO-014, BB-003, BB-008, BB-011, BB-017, BB-019, CB-001, CB-006, CC-005, CC-008, CC-019, CP-004, GCB-003, GCB-007, GHA-005, GHA-008, GHA-019, GL-003, GL-008, GL-013, GL-020, IAM-005, IAM-007, JF-004, JF-008, JF-010, SM-001, SSM-001 |
 | PR.AA-03 | GCB-002, IAM-005, IAM-008 |
 | PR.AA-05 | CA-004, CC-030, CCM-003, GHA-004, IAM-001, IAM-002, IAM-003, IAM-004, IAM-006, KMS-002, SM-002 |
@@ -63,11 +63,11 @@
 ## Controls without direct check coverage
 
 The following controls are listed above for completeness but have
-no checks mapped to them in this scanner — they typically require
+no checks mapped to them in this scanner. They typically require
 process evidence, runtime telemetry, or audit artifacts outside
 the pipeline-config surface.
 
-- **GV.SC-08** — Relevant suppliers and other third parties are included in incident planning, response, and recovery activities
+- **GV.SC-08**: Relevant suppliers and other third parties are included in incident planning, response, and recovery activities
 
 ## Summary
 

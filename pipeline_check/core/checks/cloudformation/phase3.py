@@ -1,4 +1,4 @@
-"""CloudFormation Phase-3 parity — ECR-006, PBAC-003/005, CP-005/007, EB-001.
+"""CloudFormation Phase-3 parity. ECR-006, PBAC-003/005, CP-005/007, EB-001.
 
 Mirrors ``checks/terraform/phase3.py``. Runtime-only Phase-3 checks
 (ECR-007 Inspector state, SIGN-001/002 profile status, EB-002 wildcard
@@ -162,7 +162,7 @@ def _pbac005_cp005_cp007(ctx: CloudFormationContext) -> list[Finding]:
                 passed=False,
             ))
 
-        # CP-007 — V2 PipelineType with unrestricted PR trigger
+        # CP-007. V2 PipelineType with unrestricted PR trigger
         if as_str(p.properties.get("PipelineType")) == "V2":
             open_triggers = []
             triggers = p.properties.get("Triggers") or []

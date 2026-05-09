@@ -1,4 +1,4 @@
-"""CB-006 — CodeBuild external source authenticates with a long-lived token."""
+"""CB-006. CodeBuild external source authenticates with a long-lived token."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

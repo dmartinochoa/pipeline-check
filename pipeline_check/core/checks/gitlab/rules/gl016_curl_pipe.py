@@ -1,4 +1,4 @@
-"""GL-016 — remote script piped to shell interpreter."""
+"""GL-016, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from typing import Any
@@ -31,7 +31,7 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    # Document-level blob scan — keeps the legacy detection surface
+    # Document-level blob scan, keeps the legacy detection surface
     # so a curl-pipe in a workflow-level ``variables:`` value or a
     # ``before_script:`` at root still trips the rule.
     hits = remote_script_exec.scan(blob_lower(doc))

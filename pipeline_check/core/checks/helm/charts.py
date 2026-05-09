@@ -4,7 +4,7 @@ The render pipeline at :mod:`pipeline_check.core.checks.helm.render` runs
 ``helm template`` and feeds the resulting Kubernetes YAML into the
 existing K8s rule pack. That is the right shape for "do my workloads
 follow K8s posture rules" but it discards the chart's own supply-chain
-surface — ``Chart.yaml`` (apiVersion, dependencies, repositories) and
+surface, ``Chart.yaml`` (apiVersion, dependencies, repositories) and
 ``Chart.lock`` (per-dependency digests) never appear in the rendered
 output. Helm-native rules need the raw chart files.
 
@@ -13,7 +13,7 @@ directory and attaches them to the :class:`HelmContext` as
 :class:`Chart` records, alongside the rendered manifests. ``.tgz``
 charts are unpacked transparently by Helm at render time, but for the
 purposes of HELM-* rules we read their ``Chart.yaml`` straight from
-the archive — same metadata, no shell-out required.
+the archive, same metadata, no shell-out required.
 
 The parser is deliberately lenient: a chart whose ``Chart.yaml`` won't
 parse lands in ``ctx.warnings`` and is skipped, so a single broken
@@ -71,7 +71,7 @@ class Chart:
         Helm 3 charts (``apiVersion: v2``) declare deps in
         ``Chart.yaml`` directly. Helm 2 charts (``apiVersion: v1``)
         used a sibling ``requirements.yaml``. We only read v2 deps
-        here — HELM-001 catches the v1 shape outright, so its
+        here. HELM-001 catches the v1 shape outright, so its
         dependencies are intentionally not walked.
         """
         deps = self.chart_yaml.get("dependencies")
@@ -85,7 +85,7 @@ def parse_chart(path: str | Path) -> Chart | None:
 
     *path* is either a directory containing ``Chart.yaml`` or a
     packaged ``.tgz``. Returns ``None`` (not a raise) for inputs
-    without a parseable ``Chart.yaml`` — caller decides whether to
+    without a parseable ``Chart.yaml``, caller decides whether to
     warn or silently skip.
     """
     p = Path(path)
@@ -128,7 +128,7 @@ def _parse_tgz(tgz_path: Path) -> Chart | None:
     """Read ``Chart.yaml`` / ``Chart.lock`` from a packaged chart.
 
     ``helm package`` lays the archive out as
-    ``<chart-name>/Chart.yaml`` etc. — exactly one top-level directory.
+    ``<chart-name>/Chart.yaml`` etc., exactly one top-level directory.
     We read only those two files; subchart archives nested under
     ``<chart-name>/charts/`` are intentionally not walked here (their
     metadata follows them when the parent is rendered, and HELM-*
@@ -173,7 +173,7 @@ def _find_top_level(
     """Return ``<top-dir>/<leaf>`` from the archive, if present.
 
     A packaged chart's archive has exactly one top-level directory.
-    We don't enforce that — just return the first match for
+    We don't enforce that, just return the first match for
     ``*/<leaf>`` whose path has exactly two components.
     """
     for member in tar.getmembers():
@@ -223,7 +223,7 @@ def _parse_yaml_text(
         warnings.append(f"{label}: YAML parse error: {first}")
         return None
     if doc is None:
-        # Empty Chart.lock or Chart.yaml — treat as parseable-but-empty.
+        # Empty Chart.lock or Chart.yaml, treat as parseable-but-empty.
         return {}
     if not isinstance(doc, dict):
         warnings.append(

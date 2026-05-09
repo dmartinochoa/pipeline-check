@@ -1,4 +1,4 @@
-"""K8S-028 — Container declares ``hostPort``, exposing service on the node IP."""
+"""K8S-028. Container declares ``hostPort``, exposing service on the node IP."""
 from __future__ import annotations
 
 from typing import Any
@@ -35,7 +35,7 @@ RULE = Rule(
         "port and survives in legacy manifests. Modern clusters use "
         "Services, which integrate with the kube-proxy, ingress "
         "controllers, and NetworkPolicies. ``hostPort`` is invisible "
-        "to all of those — a port-scan from any other pod that "
+        "to all of those, a port-scan from any other pod that "
         "knows the node IP reaches the workload directly. If a "
         "DaemonSet legitimately needs it (host-agent shape), "
         "suppress this rule with a brief ``.pipelinecheckignore`` "

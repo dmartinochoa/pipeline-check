@@ -1,10 +1,10 @@
-"""ADO-025 — cross-repo templates must pin a ref: to a commit SHA.
+"""ADO-025, cross-repo templates must pin a ref: to a commit SHA.
 
 ADO-011 covers the PR-branch swap on *local* templates. This rule
 covers the parallel risk for *cross-repo* templates: a ``template:
 foo.yml@resource`` that points at an ``resources.repositories`` entry
 without a ``ref:`` (or with a branch/tag ref) will follow whatever
-upstream commit the callee repo publishes — effectively RCE by tag
+upstream commit the callee repo publishes, effectively RCE by tag
 move.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ RULE = Rule(
     recommendation=(
         "On every ``resources.repositories`` entry referenced from a "
         "``template: ...@repo-alias`` directive, set ``ref: refs/tags/"
-        "<sha>`` or the bare 40-char commit SHA — never a branch or "
+        "<sha>`` or the bare 40-char commit SHA, never a branch or "
         "floating tag. A moved branch/tag swaps the template body "
         "without changing your pipeline file."
     ),
@@ -60,7 +60,7 @@ def _repo_is_pinned(repo: dict[str, Any]) -> bool:
     ref = repo.get("ref")
     if not isinstance(ref, str):
         return False
-    # Branches are always mutable — even a branch named after a SHA
+    # Branches are always mutable, even a branch named after a SHA
     # (``refs/heads/<40-hex>``) is just a movable pointer. Reject the
     # whole namespace before the SHA check so the alias shape can't
     # masquerade as an immutable pin.

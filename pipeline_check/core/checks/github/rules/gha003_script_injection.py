@@ -1,4 +1,4 @@
-"""GHA-003 — `run:` blocks must not interpolate attacker-controllable context."""
+"""GHA-003, `run:` blocks must not interpolate attacker-controllable context."""
 from __future__ import annotations
 
 from typing import Any
@@ -57,7 +57,7 @@ def _gha_ref_pattern(name: str) -> str:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
-    # Workflow-level tainted env vars — inherited by all jobs.
+    # Workflow-level tainted env vars, inherited by all jobs.
     wf_tainted = _tainted_env_vars(doc.get("env"))
     for job_id, job in iter_jobs(doc):
         # Job-level env inherits workflow-level taint.

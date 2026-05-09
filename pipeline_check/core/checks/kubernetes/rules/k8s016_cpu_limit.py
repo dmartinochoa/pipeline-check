@@ -1,4 +1,4 @@
-"""K8S-016 — Container missing ``resources.limits.cpu``."""
+"""K8S-016. Container missing ``resources.limits.cpu``."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     recommendation=(
         "Set ``resources.limits.cpu`` on every container. CPU "
         "throttling is the kernel's defense against a neighbour "
-        "consuming all node cycles — without a limit, a "
+        "consuming all node cycles, without a limit, a "
         "compromised container can stall everything else on the "
         "node, including the kubelet. Pair the limit with a "
         "``requests.cpu`` for scheduling."

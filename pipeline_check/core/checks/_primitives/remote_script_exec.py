@@ -2,8 +2,8 @@
 
 ``curl <url> | bash`` and its variants execute attacker-controllable
 content the moment the URL's host (or TLS / DNS / CDN path to it)
-is compromised. The pattern is endemic in CI bootstrap scripts — it
-fits on one line and requires no checkout step — which is exactly
+is compromised. The pattern is endemic in CI bootstrap scripts. It
+fits on one line and requires no checkout step, which is exactly
 why it makes such a reliable beach-head for supply-chain attacks.
 
 Idioms detected:
@@ -11,15 +11,15 @@ Idioms detected:
 1. **Direct pipe**: ``curl … | bash`` / ``wget … | sh`` (also
    ``python[23]``, ``perl``, ``ruby``, and ``sudo`` variants).
 2. **Process-substitution pipe**: ``bash -c "$(curl …)"`` /
-   ``sh -c "$(wget …)"`` — the shell re-enters itself on the
+   ``sh -c "$(wget …)"``, the shell re-enters itself on the
    downloaded content.
 3. **Python inline fetcher**: ``python -c "urllib…get(url).read…"``
    and the ``requests.get`` variant, typically used to grab a
    loader on minimal images.
-4. **Download-then-execute**: ``curl > x.sh && bash x.sh`` — the
+4. **Download-then-execute**: ``curl > x.sh && bash x.sh``, the
    script hits disk but is still attacker-controlled.
 5. **PowerShell**: ``irm <url> | iex`` / ``Invoke-WebRequest | iex``
-   / ``Invoke-RestMethod | iex`` — the Windows analogue.
+   / ``Invoke-RestMethod | iex``, the Windows analogue.
 
 Vendor-trusted classification
 -----------------------------
@@ -27,7 +27,7 @@ Vendor-trusted classification
 A short allowlist of well-known installer hosts (rustup.rs,
 get.docker.com, bun.sh/install, cli.github.com, …) is tracked so
 callers can downgrade confidence uniformly. The allowlist matches
-the GHA-016 ``known_fp`` catalog — every other provider's
+the GHA-016 ``known_fp`` catalog, every other provider's
 wrapper inherits the same distinction without re-stating it.
 
 The primitive itself does NOT emit Findings, set severity, or
@@ -82,7 +82,7 @@ _PIPE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# (ba)?sh -c "$(curl|wget URL)"  — re-enter the shell on fetched
+# (ba)?sh -c "$(curl|wget URL)" , re-enter the shell on fetched
 # content. Single or double quotes.
 _SHELL_SUBSHELL_RE = re.compile(
     r"\b(?P<interp>(?:ba)?sh)\s+-c\s+"
@@ -106,7 +106,7 @@ _PYTHON_INLINE_RE = re.compile(
 
 # curl|wget URL > x.sh ; bash x.sh
 # The second half only needs to show *some* interpreter invocation
-# on the same line after a statement separator — capturing the exact
+# on the same line after a statement separator, capturing the exact
 # filename is fragile across `&& / ; / newline` variants.
 _DOWNLOAD_EXEC_RE = re.compile(
     r"\b(?P<fetcher>curl|wget)\b[^;&\n]*?"

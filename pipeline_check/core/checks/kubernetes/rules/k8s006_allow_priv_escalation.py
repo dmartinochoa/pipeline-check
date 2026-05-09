@@ -1,4 +1,4 @@
-"""K8S-006 — Container ``allowPrivilegeEscalation`` not explicitly false."""
+"""K8S-006. Container ``allowPrivilegeEscalation`` not explicitly false."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
         "Set ``securityContext.allowPrivilegeEscalation: false`` on "
         "every container. The Linux ``no_new_privs`` flag stops "
         "setuid binaries and capabilities from gaining elevated "
-        "privileges — without this, a compromised process can escape "
+        "privileges, without this, a compromised process can escape "
         "via setuid utilities still installed in many base images."
     ),
     docs_note=(
@@ -53,7 +53,7 @@ def check(ctx: KubernetesContext) -> Finding:
                     f"{m.kind}/{m.name} {kind}={container_name(c)}"
                 )
                 # Anchor on the securityContext block when present,
-                # otherwise the container — same fallback shape as K8S-005.
+                # otherwise the container, same fallback shape as K8S-005.
                 line = _line_of(sc) or _line_of(c)
                 locations.append(Location(
                     path=m.path, start_line=line, end_line=line,

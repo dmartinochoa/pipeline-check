@@ -1,33 +1,33 @@
-"""CIS Kubernetes Benchmark v1.10 — subset covering manifest-evidenceable controls.
+"""CIS Kubernetes Benchmark v1.10, subset covering manifest-evidenceable controls.
 
 The benchmark spans control-plane components (Sections 1-3),
 worker-node configuration (Section 4), and policies (Section 5).
 Sections 1-4 require kubelet / API-server / etcd configuration that
-isn't visible from manifests alone — those are out of scope for a
+isn't visible from manifests alone. Those are out of scope for a
 posture-from-YAML scanner. Section 5 (Policies) is where workload
 posture lives, and it's where the K8s rule pack lands.
 
 Sections covered here:
 
-  - **5.1 RBAC and Service Accounts** — cluster-admin minimization,
+  - **5.1 RBAC and Service Accounts**, cluster-admin minimization,
     wildcard verbs, default-SA bindings, token automount.
-  - **5.2 Pod Security Standards** — privileged, hostNamespaces,
+  - **5.2 Pod Security Standards**, privileged, hostNamespaces,
     allowPrivilegeEscalation, runAsNonRoot, readOnlyRootFilesystem,
     capabilities, seccomp, hostPath.
-  - **5.3 Network Policies and CNI** — default-deny, allow-list
+  - **5.3 Network Policies and CNI**, default-deny, allow-list
     enforcement.
-  - **5.4 Secrets Management** — env-mounted credentials, plaintext
+  - **5.4 Secrets Management**, env-mounted credentials, plaintext
     Secret data.
-  - **5.7 General Policies** — namespace separation, default-namespace
+  - **5.7 General Policies**, namespace separation, default-namespace
     avoidance, securityContext applied broadly.
 
 Out of scope (require non-manifest evidence):
 
-  - 5.1.6 (system:masters group) — RBAC subjects detail.
-  - 5.2.10 (allowed-capabilities allowlist) — admission controller
+  - 5.1.6 (system:masters group). RBAC subjects detail.
+  - 5.2.10 (allowed-capabilities allowlist), admission controller
     config.
-  - 5.5.x (extensible admission control) — controller config.
-  - 5.6.x (multi-tenancy) — namespace policies + admission.
+  - 5.5.x (extensible admission control), controller config.
+  - 5.6.x (multi-tenancy), namespace policies + admission.
 
 A pipeline_check finding that maps here is necessary but not
 sufficient for CIS K8s alignment. The benchmark also requires

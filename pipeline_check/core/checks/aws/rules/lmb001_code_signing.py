@@ -1,4 +1,4 @@
-"""LMB-001 — Lambda function has no code-signing config."""
+"""LMB-001. Lambda function has no code-signing config."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -24,8 +24,8 @@ RULE = Rule(
         "Lambda code-signing config + a Signer profile (SIGN-001) "
         "validates that an uploaded zip was signed by a known "
         "profile before it's allowed to run. Without one, anyone "
-        "who reaches ``lambda:UpdateFunctionCode`` — a CI/CD role "
-        "compromise, a misattached IAM policy — can replace the "
+        "who reaches ``lambda:UpdateFunctionCode``, a CI/CD role "
+        "compromise, a misattached IAM policy, can replace the "
         "function's code with no chain-of-custody check."
     ),
 )

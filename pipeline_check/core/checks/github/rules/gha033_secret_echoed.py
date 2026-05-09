@@ -1,4 +1,4 @@
-"""GHA-033 — ``run:`` body echoes / prints a secret value to the build log."""
+"""GHA-033, ``run:`` body echoes / prints a secret value to the build log."""
 from __future__ import annotations
 
 import re
@@ -17,7 +17,7 @@ RULE = Rule(
     cwe=("CWE-532", "CWE-200"),
     recommendation=(
         "Don't print secret values from a script. GitHub's log "
-        "redaction is a best-effort string match — it doesn't catch "
+        "redaction is a best-effort string match. It doesn't catch "
         "base64 / urlencoded / partial substrings, and any caller "
         "that retrieves the raw log via the API gets the unredacted "
         "stream. If you need to confirm the secret exists, log a "
@@ -122,7 +122,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{len(offenders)} ``run:`` block(s) print secret values to "
         f"the build log: {', '.join(offenders[:5])}"
         f"{'…' if len(offenders) > 5 else ''}. Log redaction is "
-        f"best-effort — substrings, base64-encoded copies, and "
+        f"best-effort, substrings, base64-encoded copies, and "
         f"partial echoes evade it, and API log readers see the raw "
         f"stream."
     )

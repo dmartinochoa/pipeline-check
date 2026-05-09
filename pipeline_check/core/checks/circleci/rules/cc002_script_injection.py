@@ -1,4 +1,4 @@
-"""CC-002 — run: commands must not interpolate attacker-controllable env vars."""
+"""CC-002, run: commands must not interpolate attacker-controllable env vars."""
 from __future__ import annotations
 
 from typing import Any

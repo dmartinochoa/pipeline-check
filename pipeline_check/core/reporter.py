@@ -77,7 +77,7 @@ def report_terminal(
     failed = sum(1 for f in findings if not f.passed)
     passed_count = total - failed
 
-    # Severity failure breakdown — lower-case counts per the design system's
+    # Severity failure breakdown, lower-case counts per the design system's
     # grading copy: "2 critical · 4 high · 7 medium · 3 low".
     sev_parts: list[str] = []
     for sev in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW):
@@ -230,7 +230,7 @@ def report_json(
     dashboards can distinguish "nothing found" from "not asked for".
 
     When *chains* is supplied the payload gains a ``chains`` top-level
-    array — multi-finding attack-chain correlations. Always present
+    array, multi-finding attack-chain correlations. Always present
     (possibly empty) when chain evaluation ran; omitted when the caller
     explicitly disabled chains via ``--no-chains``.
     """
@@ -253,7 +253,7 @@ def report_chains_terminal(
 ) -> None:
     """Render attack chains as one panel per chain to the terminal.
 
-    A chain is the strongest signal pipeline_check produces — multiple
+    A chain is the strongest signal pipeline_check produces, multiple
     findings combine into a real attack path. Always rendered after
     the findings table (and before inventory), with a colored border
     matching the chain's severity so a CRITICAL chain is immediately
@@ -267,7 +267,7 @@ def report_chains_terminal(
     console.print(
         Panel(
             (
-                f"[bold]{len(chains)} attack chain(s) detected[/bold] — "
+                f"[bold]{len(chains)} attack chain(s) detected[/bold], "
                 "multiple findings combine into a real attack path. "
                 "Fix any one finding in a chain to break it."
             ),
@@ -326,7 +326,7 @@ def report_inventory_terminal(
         console.print("[dim]Inventory: no components discovered.[/dim]")
         return
     table = Table(
-        title=f"Inventory — {len(inventory)} component(s)",
+        title=f"Inventory, {len(inventory)} component(s)",
         box=box.SIMPLE_HEAD,
         show_lines=False,
     )

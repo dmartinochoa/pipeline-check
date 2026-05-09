@@ -1,4 +1,4 @@
-"""TKN-007 — ``TaskRun`` / ``PipelineRun`` runs as the default ServiceAccount."""
+"""TKN-007, ``TaskRun`` / ``PipelineRun`` runs as the default ServiceAccount."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +20,7 @@ RULE = Rule(
         "carries only the secrets and RBAC the run actually needs. "
         "Falling back to the namespace's ``default`` SA grants "
         "access to whatever cluster-admin or wildcard role someone "
-        "later binds to ``default`` — a privilege-escalation surface "
+        "later binds to ``default``, a privilege-escalation surface "
         "that should never be load-bearing for build pods."
     ),
     docs_note=(

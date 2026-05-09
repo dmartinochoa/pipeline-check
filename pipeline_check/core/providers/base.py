@@ -10,7 +10,7 @@ To add a new provider
 2. Set NAME, implement build_context() and check_classes.
 3. Call ``register(<YourProvider>())`` in ``pipeline_check/core/providers/__init__.py``.
 
-The Scanner and CLI will pick it up automatically — no other files need editing.
+The Scanner and CLI will pick it up automatically, no other files need editing.
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class BaseProvider(abc.ABC):
         """Return the ordered list of check classes for this provider.
 
         Adding a new check to an existing provider only requires updating this
-        list — the Scanner and registry do not need to change.
+        list, the Scanner and registry do not need to change.
         """
 
     def inventory(self, context: Any) -> list[Component]:
@@ -54,7 +54,7 @@ class BaseProvider(abc.ABC):
         Default implementation returns ``[]`` so providers that don't
         expose an asset view still satisfy the contract. Override to
         surface the resources / files / workflows the context is
-        built from — the Scanner's ``inventory()`` delegates here.
+        built from, the Scanner's ``inventory()`` delegates here.
         """
         return []
 
@@ -65,13 +65,13 @@ class BaseProvider(abc.ABC):
         the loaded workflow set with reusable callees fetched by the
         remote-ref resolver (only when ``--resolve-remote`` is set).
         Doing the expansion here means callees added for an unchanged
-        caller don't get processed under ``--diff-base`` — the diff
+        caller don't get processed under ``--diff-base``, the diff
         filter has already pruned the caller, so its callees never
         get queued.
 
         Implementations should mutate *context* in place; they have
         no return value. Failures should be appended to
-        ``context.warnings`` rather than raised — the rest of the
+        ``context.warnings`` rather than raised, the rest of the
         scan should still complete.
         """
         return None

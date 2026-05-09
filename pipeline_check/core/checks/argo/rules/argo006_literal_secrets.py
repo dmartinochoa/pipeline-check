@@ -1,4 +1,4 @@
-"""ARGO-006 — Literal secret values in env or parameter defaults."""
+"""ARGO-006. Literal secret values in env or parameter defaults."""
 from __future__ import annotations
 
 import re

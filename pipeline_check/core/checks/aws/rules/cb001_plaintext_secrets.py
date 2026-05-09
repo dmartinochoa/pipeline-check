@@ -1,4 +1,4 @@
-"""CB-001 — Secrets in plaintext CodeBuild environment variables."""
+"""CB-001. Secrets in plaintext CodeBuild environment variables."""
 from __future__ import annotations
 
 from ..._patterns import SECRET_NAME_RE, SECRET_VALUE_RE

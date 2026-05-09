@@ -1,7 +1,7 @@
 # Buildkite provider
 
 Parses `.buildkite/pipeline.yml` (or any user-named pipeline file) on
-disk — no Buildkite API token, no agent install required. Each
+disk, no Buildkite API token, no agent install required. Each
 document must declare a top-level `steps:` list; files without it are
 skipped by the loader.
 
@@ -21,11 +21,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Buildkite-specific checks
 
-- **BK-001** — plugin refs must be pinned to an exact tag
+- **BK-001**, plugin refs must be pinned to an exact tag
   (`docker-compose#v4.13.0`) or a 40-char SHA. Branch refs (`#main`)
   and bare names float and let a compromised plugin release execute
   in the pipeline.
-- **BK-007** — every step that looks like a deploy (label / command
+- **BK-007**, every step that looks like a deploy (label / command
   matches `deploy`, `kubectl apply`, `terraform apply`, `helm
   upgrade`, …) must be preceded by a `block:` or `input:` step in
   the same pipeline file. Buildkite waits for a human to click
@@ -55,7 +55,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BK-001 — Buildkite plugin not pinned to an exact version { #bk-001 }
+## BK-001: Buildkite plugin not pinned to an exact version { #bk-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -75,7 +75,7 @@ Pin every plugin reference to an exact tag (``docker-compose#v4.13.0``) or a 40-
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BK-002 — Literal secret value in pipeline env block { #bk-002 }
+## BK-002: Literal secret value in pipeline env block { #bk-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
@@ -95,7 +95,7 @@ Move the value out of the pipeline file. Use Buildkite's agent secrets hooks (``
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BK-003 — Untrusted Buildkite variable interpolated in command { #bk-003 }
+## BK-003: Untrusted Buildkite variable interpolated in command { #bk-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -115,7 +115,7 @@ Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAG
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BK-004 — Remote script piped into shell interpreter { #bk-004 }
+## BK-004: Remote script piped into shell interpreter { #bk-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -135,7 +135,7 @@ Download the installer to disk, verify a checksum or signature, then execute it.
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BK-005 — Container started with --privileged or host-bind escalation { #bk-005 }
+## BK-005: Container started with --privileged or host-bind escalation { #bk-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -155,13 +155,13 @@ Drop ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host``, and ``-v /var/ru
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## BK-006 — Step has no timeout_in_minutes { #bk-006 }
+## BK-006: Step has no timeout_in_minutes { #bk-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
 </div>
 
-Buildkite has no implicit timeout; agents will wait forever. Set ``timeout_in_minutes:`` per step. The pipeline-level default counts — a global ``steps:`` block with ``timeout_in_minutes:`` is fine, since Buildkite copies it to each step.
+Buildkite has no implicit timeout; agents will wait forever. Set ``timeout_in_minutes:`` per step. The pipeline-level default counts, a global ``steps:`` block with ``timeout_in_minutes:`` is fine, since Buildkite copies it to each step.
 
 <div class="pg-rule__rec" markdown>
 
@@ -175,7 +175,7 @@ Set ``timeout_in_minutes:`` on every command step. A compromised dependency or a
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-007 — Deploy step not gated by a manual block / input { #bk-007 }
+## BK-007: Deploy step not gated by a manual block / input { #bk-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-CHANGE-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-285</span>
@@ -195,13 +195,13 @@ Insert a ``- block: "Deploy?"`` (or ``- input:`` step) in front of every deploy 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-008 — TLS verification disabled in step command { #bk-008 }
+## BK-008: TLS verification disabled in step command { #bk-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-COMMS-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
 </div>
 
-Detection fires on the canonical bypass flags across curl, wget, git, npm, pip, gcloud, and openssl. The check is deliberately conservative — partial-word matches (``--insecure-protocols``) are excluded.
+Detection fires on the canonical bypass flags across curl, wget, git, npm, pip, gcloud, and openssl. The check is deliberately conservative, partial-word matches (``--insecure-protocols``) are excluded.
 
 <div class="pg-rule__rec" markdown>
 
@@ -215,19 +215,19 @@ Drop ``curl -k`` / ``--insecure``, ``wget --no-check-certificate``, ``git -c htt
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-009 — Artifacts not signed (no cosign/sigstore step) { #bk-009 }
+## BK-009: Artifacts not signed (no cosign/sigstore step) { #bk-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Unsigned artifacts can't be verified downstream — a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
+Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Add a signing step — install cosign once (``brew install cosign`` in the agent image, or a ``cosign-install`` plugin) and call ``cosign sign --yes <ref>`` after the build. For container images pushed to ECR / GCR / GHCR, the same call signs by digest. Publish the signature alongside the artifact and verify it at consumption time.
+Add a signing step, install cosign once (``brew install cosign`` in the agent image, or a ``cosign-install`` plugin) and call ``cosign sign --yes <ref>`` after the build. For container images pushed to ECR / GCR / GHCR, the same call signs by digest. Publish the signature alongside the artifact and verify it at consumption time.
 
 </div>
 
@@ -235,13 +235,13 @@ Add a signing step — install cosign once (``brew install cosign`` in the agent
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-010 — No SBOM generated for build artifacts { #bk-010 }
+## BK-010: No SBOM generated for build artifacts { #bk-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-An SBOM (CycloneDX or SPDX) records every component baked into the build. Without one, post-incident triage can't answer ``did this CVE ship?`` for a given artifact. Detection uses the shared SBOM-token catalog — syft, cyclonedx, cdxgen, spdx-tools, microsoft/sbom-tool.
+An SBOM (CycloneDX or SPDX) records every component baked into the build. Without one, post-incident triage can't answer ``did this CVE ship?`` for a given artifact. Detection uses the shared SBOM-token catalog, syft, cyclonedx, cdxgen, spdx-tools, microsoft/sbom-tool.
 
 <div class="pg-rule__rec" markdown>
 
@@ -255,13 +255,13 @@ Add an SBOM-generation step. ``syft <artifact> -o cyclonedx-json > sbom.json`` r
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-011 — No SLSA provenance attestation produced { #bk-011 }
+## BK-011: No SLSA provenance attestation produced { #bk-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Provenance generation is distinct from signing. A signed artifact proves *who* published it; a provenance attestation proves *where / how* it was built. Without it, a leaked signing key forges identity but a leaked build environment also forges provenance — you need both for the SLSA L3 non-falsifiability guarantee. Detection uses the shared provenance-token catalog (``slsa-framework``, ``cosign attest``, ``in-toto``, ``attest-build-provenance``).
+Provenance generation is distinct from signing. A signed artifact proves *who* published it; a provenance attestation proves *where / how* it was built. Without it, a leaked signing key forges identity but a leaked build environment also forges provenance. You need both for the SLSA L3 non-falsifiability guarantee. Detection uses the shared provenance-token catalog (``slsa-framework``, ``cosign attest``, ``in-toto``, ``attest-build-provenance``).
 
 <div class="pg-rule__rec" markdown>
 
@@ -275,19 +275,19 @@ Run ``cosign attest --predicate slsa.json`` (or the SLSA-framework generator fro
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-012 — No vulnerability scanning step { #bk-012 }
+## BK-012: No vulnerability scanning step { #bk-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
 </div>
 
-Vulnerability scanning sits at a different layer from signing and SBOM — it answers ``does this artifact ship a known CVE?`` rather than ``can we verify what it is?``. Detection uses the shared vuln-scan-token catalog: trivy, grype, snyk, npm-audit, pip-audit, anchore, dependency-check, checkov, semgrep.
+Vulnerability scanning sits at a different layer from signing and SBOM. It answers ``does this artifact ship a known CVE?`` rather than ``can we verify what it is?``. Detection uses the shared vuln-scan-token catalog: trivy, grype, snyk, npm-audit, pip-audit, anchore, dependency-check, checkov, semgrep.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Add a vulnerability scanner — ``trivy fs .`` for source / filesystem, ``trivy image <ref>`` for container images, ``grype`` and ``snyk`` for either. Add ``npm audit`` / ``pip-audit`` for language-specific dep audits. Fail the step on findings above a chosen severity so a regression blocks the merge instead of shipping.
+Add a vulnerability scanner, ``trivy fs .`` for source / filesystem, ``trivy image <ref>`` for container images, ``grype`` and ``snyk`` for either. Add ``npm audit`` / ``pip-audit`` for language-specific dep audits. Fail the step on findings above a chosen severity so a regression blocks the merge instead of shipping.
 
 </div>
 
@@ -295,13 +295,13 @@ Add a vulnerability scanner — ``trivy fs .`` for source / filesystem, ``trivy 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BK-013 — Deploy step has no branches: filter { #bk-013 }
+## BK-013: Deploy step has no branches: filter { #bk-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-A step is treated as a deploy when its label, key, or any command line contains a deploy keyword (``deploy``, ``ship-it``, ``release``, ``promote``, ``rollout``, ``helm upgrade``, ``kubectl apply``, ``terraform apply``, ``aws ecs update-service``, ``aws lambda update-function-code``, ``gcloud run deploy``). The check passes when the step declares ``branches:`` with at least one literal branch name (a wildcard like ``"*"`` is treated as an explicit opt-out, not a passing filter, and still trips). The pipeline-level default also counts — top-level ``steps:`` with ``branches:`` propagates.
+A step is treated as a deploy when its label, key, or any command line contains a deploy keyword (``deploy``, ``ship-it``, ``release``, ``promote``, ``rollout``, ``helm upgrade``, ``kubectl apply``, ``terraform apply``, ``aws ecs update-service``, ``aws lambda update-function-code``, ``gcloud run deploy``). The check passes when the step declares ``branches:`` with at least one literal branch name (a wildcard like ``"*"`` is treated as an explicit opt-out, not a passing filter, and still trips). The pipeline-level default also counts, top-level ``steps:`` with ``branches:`` propagates.
 
 <div class="pg-rule__rec" markdown>
 

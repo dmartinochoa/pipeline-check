@@ -1,4 +1,4 @@
-"""CCM-001 — CodeCommit repository has no approval rule template attached."""
+"""CCM-001. CodeCommit repository has no approval rule template attached."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
         "Approval-rule templates are CodeCommit's analog of GitHub's "
         "branch-protection require-review. Without one associated, "
         "the repository accepts merges from any push-permitted "
-        "principal — including the PR author themselves — without "
+        "principal, including the PR author themselves, without "
         "any second-pair-of-eyes gate."
     ),
 )

@@ -1,4 +1,4 @@
-"""GCB-025 — Build has no top-level ``tags:`` for audit / discoverability."""
+"""GCB-025. Build has no top-level ``tags:`` for audit / discoverability."""
 from __future__ import annotations
 
 from typing import Any
@@ -15,7 +15,7 @@ RULE = Rule(
     cwe=("CWE-778",),
     recommendation=(
         "Add a top-level ``tags:`` array to every ``cloudbuild.yaml``"
-        " — at minimum, an environment tag (``prod`` / ``staging`` / "
+        ", at minimum, an environment tag (``prod`` / ``staging`` / "
         "``dev``) and a service tag (``backend`` / ``frontend`` / "
         "``infra``). Cloud Build records tags in the build metadata "
         "and Cloud Logging entries so post-incident triage of "
@@ -31,7 +31,7 @@ RULE = Rule(
         "audit event for the build, and as a filter argument to "
         "``gcloud builds list --filter='tags:<value>'``. "
         "Substitution-bearing tags (``$BRANCH_NAME``, "
-        "``$COMMIT_SHA``) count as populated — Cloud Build "
+        "``$COMMIT_SHA``) count as populated. Cloud Build "
         "expands them at submission time."
     ),
     known_fp=(

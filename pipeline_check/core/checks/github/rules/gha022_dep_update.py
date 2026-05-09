@@ -1,4 +1,4 @@
-"""GHA-022 — dependency update command bypasses lockfile pins."""
+"""GHA-022, dependency update command bypasses lockfile pins."""
 from __future__ import annotations
 
 from typing import Any

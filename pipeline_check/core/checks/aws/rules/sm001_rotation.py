@@ -1,4 +1,4 @@
-"""SM-001 — Secrets Manager secrets referenced by CI/CD have no rotation."""
+"""SM-001. Secrets Manager secrets referenced by CI/CD have no rotation."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -18,7 +18,7 @@ RULE = Rule(
         "value) compromises the secret for its full lifetime."
     ),
     docs_note=(
-        "Only secrets actually referenced by CodeBuild are checked — secrets "
+        "Only secrets actually referenced by CodeBuild are checked, secrets "
         "used purely by application workloads are out of scope for a CI/CD "
         "scanner."
     ),

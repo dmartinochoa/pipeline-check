@@ -1,4 +1,4 @@
-"""GL-026 — dangerous shell idioms (eval, ``sh -c "$VAR"``, backtick var).
+"""GL-026, dangerous shell idioms (eval, ``sh -c "$VAR"``, backtick var).
 
 Complements GL-002 (script injection via untrusted MR context). GL-002
 traces taint from attacker-controlled CI variables into ``script:``
@@ -30,13 +30,13 @@ RULE = Rule(
         "``eval``, ``sh -c \"$X\"``, and `` `$X` `` all re-parse the "
         "variable's value as shell syntax. Once a CI variable feeds "
         "into one of these idioms, any ``;``, ``&&``, ``|``, backtick, "
-        "or ``$()`` in the value executes — even if the variable's "
+        "or ``$()`` in the value executes, even if the variable's "
         "source is currently trusted, future refactors may expose it."
     ),
     known_fp=(
         "``eval \"$(ssh-agent -s)\"`` and similar "
         "``eval \"$(<literal-tool>)\"`` bootstrap idioms are "
-        "intentionally NOT flagged — the substituted command is "
+        "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
 )

@@ -1,7 +1,7 @@
-"""GHA-025 — reusable workflow ``uses:`` must pin a 40-char SHA.
+"""GHA-025, reusable workflow ``uses:`` must pin a 40-char SHA.
 
 GHA-001 already covers step-level ``uses:`` references. Reusable
-workflows live at the job level (``jobs.<id>.uses:``) — a distinct
+workflows live at the job level (``jobs.<id>.uses:``), a distinct
 surface GHA-001 doesn't walk. Same SHA-pin contract, different host:
 the `.yml` referenced by ``uses:`` executes with the caller's token
 so an upstream tag move is an RCE vector.

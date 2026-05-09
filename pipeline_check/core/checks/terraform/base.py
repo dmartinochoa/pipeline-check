@@ -1,7 +1,7 @@
 """Terraform-specific base check and context.
 
 Check modules under this package subclass ``TerraformBaseCheck`` and read
-resources from ``self.ctx`` — a :class:`TerraformContext` wrapping the
+resources from ``self.ctx``, a :class:`TerraformContext` wrapping the
 parsed output of ``terraform show -json``. Checks never parse HCL; they
 operate on the resolved, typed plan representation Terraform emits.
 
@@ -62,7 +62,7 @@ class TerraformContext:
         Exposed separately from ``resources()`` so rules that only care
         about managed-state changes keep their current semantics. Data
         sources are useful when a check needs to follow an indirect
-        reference — e.g. an ``aws_iam_policy_document`` rendered via
+        reference, e.g. an ``aws_iam_policy_document`` rendered via
         ``.json`` output and consumed elsewhere in the plan.
         """
         for r in self._data_sources:

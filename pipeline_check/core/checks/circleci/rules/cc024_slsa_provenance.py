@@ -1,4 +1,4 @@
-"""CC-024 — CircleCI config must emit SLSA provenance attestation."""
+"""CC-024. CircleCI config must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any

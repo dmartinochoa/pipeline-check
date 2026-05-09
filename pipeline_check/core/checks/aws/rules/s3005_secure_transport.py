@@ -1,4 +1,4 @@
-"""S3-005 — CodePipeline artifact bucket policy missing aws:SecureTransport Deny."""
+"""S3-005. CodePipeline artifact bucket policy missing aws:SecureTransport Deny."""
 from __future__ import annotations
 
 import json
@@ -23,8 +23,8 @@ RULE = Rule(
     docs_note=(
         "S3 endpoints accept HTTP and HTTPS by default. Without an "
         "explicit Deny on ``aws:SecureTransport=false``, a "
-        "plaintext request — typically from a misconfigured client "
-        "or a SDK with a stale endpoint — is honored if signed. "
+        "plaintext request, typically from a misconfigured client "
+        "or a SDK with a stale endpoint, is honored if signed. "
         "The bucket policy Deny is the only enforcement; no "
         "account-level switch covers it."
     ),
@@ -61,7 +61,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                     check_id=RULE.id, title=RULE.title, severity=RULE.severity,
                     resource=bucket,
                     description=(
-                        "No bucket policy is attached — plaintext HTTP requests "
+                        "No bucket policy is attached, plaintext HTTP requests "
                         "are not explicitly denied."
                     ),
                     recommendation=(

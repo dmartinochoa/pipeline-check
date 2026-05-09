@@ -1,4 +1,4 @@
-"""JF-032 — ``agent { label }`` interpolates an attacker-controllable Groovy expression."""
+"""JF-032, ``agent { label }`` interpolates an attacker-controllable Groovy expression."""
 from __future__ import annotations
 
 import re
@@ -29,19 +29,19 @@ RULE = Rule(
         "an ``agent { ... }`` block is computed from a build parameter "
         "or an SCM-controlled environment variable, whoever queues the "
         "build (or pushes the branch / opens the PR) picks which "
-        "agent the job lands on — including any privileged label the "
+        "agent the job lands on, including any privileged label the "
         "controller exposes. Two attacker surfaces are flagged: "
         "untrusted ``env.*`` refs (``BRANCH_NAME``, ``CHANGE_BRANCH``, "
         "``TAG_NAME``, …) and ``params.X`` references (caller-"
         "controlled at trigger time). The rule walks all four "
-        "``agent { ... }`` shapes — direct ``label``, the ``node "
+        "``agent { ... }`` shapes, direct ``label``, the ``node "
         "{ label … }`` form, and ``docker { label … }`` / "
-        "``dockerfile { label … }`` — via brace-balanced scan so "
+        "``dockerfile { label … }``, via brace-balanced scan so "
         "nested DSL blocks parse correctly."
     ),
     known_fp=(
         "Author-controlled environment refs like ``${env.JOB_NAME}`` "
-        "or ``${env.BUILD_NUMBER}`` are intentionally not flagged — "
+        "or ``${env.BUILD_NUMBER}`` are intentionally not flagged, "
         "those values come from Jenkins itself, not from the "
         "triggerer. Pipelines that intentionally select agents via a "
         "vetted parameter and gate the assignment behind a Groovy "
@@ -61,8 +61,8 @@ def _agent_blocks(text: str) -> list[str]:
     """Return the body text of every ``agent { ... }`` block in *text*.
 
     Walks Groovy braces depth-aware (mirrors the shape of
-    ``base._extract_stages``) so a block containing nested DSL —
-    ``agent { docker { image "..." label "..." } }`` — is captured
+    ``base._extract_stages``) so a block containing nested DSL,
+    ``agent { docker { image "..." label "..." } }``, is captured
     in full. String literals are skipped via ``_skip_string`` so
     braces inside strings don't desync the depth count.
     """
@@ -102,7 +102,7 @@ def check(jf: Jenkinsfile) -> Finding:
         f"{', '.join(sorted(set(offenders))[:5])}"
         f"{'…' if len(set(offenders)) > 5 else ''}. "
         f"Whoever queues the build (or pushes the branch / opens the "
-        f"PR) picks which agent the job lands on — including "
+        f"PR) picks which agent the job lands on, including "
         f"privileged labels the controller exposes."
     )
     return Finding(

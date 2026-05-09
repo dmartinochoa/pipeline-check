@@ -1,7 +1,7 @@
 """Jenkins context and base check.
 
 Jenkins pipelines are Groovy, not YAML. We deliberately avoid any
-attempt to parse Groovy as an AST — the surface is too dynamic, and
+attempt to parse Groovy as an AST, the surface is too dynamic, and
 real Jenkinsfiles routinely embed shell, JSON, and freeform Groovy
 expressions inside ``script {}`` blocks where a parser would lose
 fidelity. Instead, every check operates on the raw text via the
@@ -45,7 +45,7 @@ class Jenkinsfile:
     text: str
     library_refs: list[str] = field(default_factory=list)
     stages: list[tuple[str, str]] = field(default_factory=list)
-    #: Text with Groovy comments stripped — computed once at
+    #: Text with Groovy comments stripped, computed once at
     #: construction time so checks JF-006/007/020 share the work.
     text_no_comments: str = field(default="", repr=False)
 

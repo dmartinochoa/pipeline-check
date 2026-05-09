@@ -1,4 +1,4 @@
-"""CB-002 — CodeBuild project runs with Docker privileged mode."""
+"""CB-002. CodeBuild project runs with Docker privileged mode."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

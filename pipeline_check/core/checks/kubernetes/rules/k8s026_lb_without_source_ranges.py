@@ -1,4 +1,4 @@
-"""K8S-026 — Service type LoadBalancer without loadBalancerSourceRanges."""
+"""K8S-026. Service type LoadBalancer without loadBalancerSourceRanges."""
 from __future__ import annotations
 
 from typing import Any
@@ -66,7 +66,7 @@ def check(ctx: KubernetesContext) -> Finding:
         ports = _ports_summary(spec)
         ports_str = f" ports=[{ports}]" if ports else ""
         offenders.append(f"Service/{m.name}{ports_str}")
-        # Anchor on the Service's spec block — that's where the
+        # Anchor on the Service's spec block, that's where the
         # missing ``loadBalancerSourceRanges`` would be added.
         line = _line_of(spec)
         locations.append(Location(

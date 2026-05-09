@@ -1,4 +1,4 @@
-"""SSM-001 — SSM parameter with secret-like name stored as String (not SecureString)."""
+"""SSM-001. SSM parameter with secret-like name stored as String (not SecureString)."""
 from __future__ import annotations
 
 from ..._patterns import SECRET_NAME_RE

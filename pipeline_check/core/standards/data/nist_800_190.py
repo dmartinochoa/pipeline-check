@@ -1,4 +1,4 @@
-"""NIST SP 800-190 — Application Container Security Guide (2017).
+"""NIST SP 800-190. Application Container Security Guide (2017).
 
 Purpose-built for container-based workloads. Section 4 enumerates
 *risks* across images, registries, orchestrators, containers, and the
@@ -26,24 +26,24 @@ STANDARD = Standard(
     version="1.0 (Sep 2017)",
     url="https://doi.org/10.6028/NIST.SP.800-190",
     controls={
-        # ── 4.1 — Image risks ───────────────────────────────────────
-        "4.1.1": "Image vulnerabilities — unpatched CVEs baked into images",
-        "4.1.2": "Image configuration defects — privileged flags, insecure runtime settings",
+        # ── 4.1. Image risks ───────────────────────────────────────
+        "4.1.1": "Image vulnerabilities, unpatched CVEs baked into images",
+        "4.1.2": "Image configuration defects, privileged flags, insecure runtime settings",
         "4.1.3": "Embedded malware in images",
         "4.1.4": "Embedded clear-text secrets in images",
-        "4.1.5": "Use of untrusted images — unpinned tags, unknown provenance",
-        # ── 4.2 — Registry risks ────────────────────────────────────
+        "4.1.5": "Use of untrusted images, unpinned tags, unknown provenance",
+        # ── 4.2. Registry risks ────────────────────────────────────
         "4.2.1": "Insecure connections to registries (no TLS / cert validation bypassed)",
-        "4.2.2": "Stale images in registries — drift and unpatched images",
+        "4.2.2": "Stale images in registries, drift and unpatched images",
         "4.2.3": "Insufficient authentication and authorization restrictions on registries",
-        # ── 4.4 — Container risks ───────────────────────────────────
-        "4.4.3": "Unbounded network access from containers — egress not restricted",
-        "4.4.4": "Insecure container runtime configurations — privileged flag, host namespace sharing",
-        "4.4.5": "App vulnerabilities — untrusted code paths reached at runtime",
-        "4.4.6": "Rogue containers — unvetted images executed inside pipeline",
+        # ── 4.4. Container risks ───────────────────────────────────
+        "4.4.3": "Unbounded network access from containers, egress not restricted",
+        "4.4.4": "Insecure container runtime configurations, privileged flag, host namespace sharing",
+        "4.4.5": "App vulnerabilities, untrusted code paths reached at runtime",
+        "4.4.6": "Rogue containers, unvetted images executed inside pipeline",
     },
     mappings={
-        # ── 4.1.1 — Image vulnerabilities ───────────────────────────
+        # ── 4.1.1. Image vulnerabilities ───────────────────────────
         # CB-005 / ECR-002 / GCB-007 also evidence 4.2.2 (stale/drift).
         "CB-005":   ["4.1.1", "4.2.2"],
         "ECR-001":  ["4.1.1"],
@@ -56,7 +56,7 @@ STANDARD = Standard(
         "CC-020":   ["4.1.1"],
         "GCB-008":  ["4.1.1"],
 
-        # ── 4.1.2 — Image configuration defects ─────────────────────
+        # ── 4.1.2. Image configuration defects ─────────────────────
         "CB-002":   ["4.1.2", "4.4.4"],
         "GHA-017":  ["4.1.2", "4.4.4"],
         "GHA-026":  ["4.1.2", "4.4.3"],
@@ -67,7 +67,7 @@ STANDARD = Standard(
         "JF-025":   ["4.1.2", "4.4.4"],
         "CC-017":   ["4.1.2", "4.4.4"],
 
-        # ── 4.1.3 — Embedded malware ────────────────────────────────
+        # ── 4.1.3. Embedded malware ────────────────────────────────
         "CB-011":   ["4.1.3"],
         "GHA-003":  ["4.1.3"],
         "GHA-016":  ["4.1.3"],
@@ -96,7 +96,7 @@ STANDARD = Standard(
         "GCB-004":  ["4.1.3"],
         "GCB-006":  ["4.1.3"],
 
-        # ── 4.1.4 — Embedded clear-text secrets ─────────────────────
+        # ── 4.1.4. Embedded clear-text secrets ─────────────────────
         "CB-001":   ["4.1.4"],
         "GHA-005":  ["4.1.4"],
         "GHA-008":  ["4.1.4"],
@@ -117,7 +117,7 @@ STANDARD = Standard(
         "GCB-003":  ["4.1.4"],
         "LMB-003":  ["4.1.4"],
 
-        # ── 4.1.5 — Use of untrusted images (pinning + provenance) ──
+        # ── 4.1.5. Use of untrusted images (pinning + provenance) ──
         "CB-009":   ["4.1.5"],
         "ECR-002":  ["4.1.5", "4.2.2"],
         "ECR-006":  ["4.1.5"],
@@ -160,7 +160,7 @@ STANDARD = Standard(
         "CC-029":   ["4.1.5"],
         "GCB-001":  ["4.1.5"],
         "GCB-007":  ["4.1.5", "4.2.2"],
-        # Helm chart-supply-chain — chart provenance is the chart-
+        # Helm chart-supply-chain, chart provenance is the chart-
         # equivalent of the image-pinning / untrusted-image story.
         # HELM-001 (legacy v1 schema) and HELM-004 (range version)
         # both leave the chart's dependency surface unverified at
@@ -170,7 +170,7 @@ STANDARD = Standard(
         "HELM-002": ["4.1.5"],
         "HELM-004": ["4.1.5"],
 
-        # ── 4.2.1 — Insecure connections to registries ──────────────
+        # ── 4.2.1. Insecure connections to registries ──────────────
         "GHA-023":  ["4.2.1"],
         "GL-023":   ["4.2.1"],
         "BB-023":   ["4.2.1"],
@@ -178,22 +178,22 @@ STANDARD = Standard(
         "JF-023":   ["4.2.1"],
         "CC-023":   ["4.2.1"],
         "S3-005":   ["4.2.1"],
-        # HELM-003 — Helm chart repos are the registry analog for
+        # HELM-003. Helm chart repos are the registry analog for
         # chart distribution; a non-HTTPS dep repository is the
         # exact pattern 4.2.1 calls out.
         "HELM-003": ["4.2.1"],
 
-        # ── 4.2.2 — Stale images / drift ────────────────────────────
+        # ── 4.2.2. Stale images / drift ────────────────────────────
         # CB-005 / ECR-002 / GCB-007 co-map up in 4.1.1 / 4.1.5 to
         # preserve a single dict-key per check_id.
         "ECR-004":  ["4.2.2"],
 
-        # ── 4.2.3 — Registry auth/authz restrictions ────────────────
+        # ── 4.2.3. Registry auth/authz restrictions ────────────────
         "ECR-003":  ["4.2.3"],
         "CA-004":   ["4.2.3"],
         "ECR-005":  ["4.2.3"],             # KMS-encrypted = authz to decrypt
 
-        # ── 4.4.3 — Unbounded container network access ──────────────
+        # ── 4.4.3. Unbounded container network access ──────────────
         "PBAC-001": ["4.4.3"],
         "PBAC-003": ["4.4.3"],
         "GHA-012":  ["4.4.3"],             # self-hosted runner = uncontrolled net
@@ -203,9 +203,9 @@ STANDARD = Standard(
         "JF-014":   ["4.4.3"],
         "CC-010":   ["4.4.3"],
 
-        # ── 4.4.5 — App vulnerabilities reached at runtime ──────────
+        # ── 4.4.5. App vulnerabilities reached at runtime ──────────
         # Untrusted trigger paths that run untrusted code against
-        # pipeline identity — poisoned pipeline execution.
+        # pipeline identity, poisoned pipeline execution.
         "CB-010":   ["4.4.5"],
         "GHA-002":  ["4.4.5"],
         "GHA-009":  ["4.4.5"],
@@ -222,7 +222,7 @@ STANDARD = Standard(
         "JF-019":   ["4.4.5"],
         "CC-012":   ["4.4.5"],
 
-        # ── 4.4.6 — Rogue / unvetted containers ─────────────────────
+        # ── 4.4.6. Rogue / unvetted containers ─────────────────────
         "CP-003":   ["4.4.6"],             # polling source = rogue-commit window
         "CP-007":   ["4.4.6"],
         "GHA-011":  ["4.4.6"],             # poisoned cache
@@ -235,10 +235,10 @@ STANDARD = Standard(
         # ── Kubernetes manifests ────────────────────────────────────
         # K8s rules are doubly-mapped because most controls evidence
         # both an image-config defect (4.1.2) AND an insecure runtime
-        # configuration (4.4.4 — privileged, host-namespace sharing).
+        # configuration (4.4.4, privileged, host-namespace sharing).
         # Orchestrator risks (4.3) are out of scope per the file
         # docstring, so K8S-019..021 (RBAC, namespace) intentionally
-        # have no mapping here — they live in OWASP CICD-SEC-2/5.
+        # have no mapping here. They live in OWASP CICD-SEC-2/5.
         "K8S-001":  ["4.1.5"],
         "K8S-002":  ["4.4.4"],
         "K8S-003":  ["4.4.4"],
@@ -262,7 +262,7 @@ STANDARD = Standard(
         "K8S-037":  ["4.1.4"],                           # ConfigMap credential literal
         "K8S-039":  ["4.1.2", "4.4.4"],                  # shareProcessNamespace
         "K8S-040":  ["4.1.2", "4.4.4"],                  # procMount: Unmasked
-        # Tekton — Tekton runs as Kubernetes-native pipeline kinds, so
+        # Tekton. Tekton runs as Kubernetes-native pipeline kinds, so
         # the same runtime-hardening controls apply. Supply-chain
         # rules (TKN-009..012 signing/SBOM/provenance/vuln-scan) live
         # outside 800-190's scope and aren't mapped here.
@@ -271,7 +271,7 @@ STANDARD = Standard(
         "TKN-004":  ["4.4.4"],
         "TKN-005":  ["4.1.4"],
         "TKN-013":  ["4.1.2", "4.4.4"],
-        # Argo Workflows — same K8s-native runtime concerns. Supply-
+        # Argo Workflows, same K8s-native runtime concerns. Supply-
         # chain rules (ARGO-009..012) are out of 800-190's scope.
         "ARGO-001": ["4.1.5"],
         "ARGO-002": ["4.1.2", "4.4.4"],

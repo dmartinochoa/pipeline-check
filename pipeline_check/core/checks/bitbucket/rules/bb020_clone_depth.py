@@ -1,4 +1,4 @@
-"""BB-020 — full clone exposes entire repository history to pipeline."""
+"""BB-020, full clone exposes entire repository history to pipeline."""
 from __future__ import annotations
 
 from typing import Any

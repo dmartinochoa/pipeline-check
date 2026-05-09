@@ -1,4 +1,4 @@
-"""GL-027 — package install from git URL / local path / tarball URL."""
+"""GL-027, package install from git URL / local path / tarball URL."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "Complements GL-021 (missing lockfile flag). Git URL installs "
         "without a commit pin, local-path installs, and direct tarball "
         "URLs all bypass the registry integrity controls the lockfile "
-        "relies on — an attacker who can move a branch head, drop a "
+        "relies on, an attacker who can move a branch head, drop a "
         "sibling checkout, or change a served tarball can substitute "
         "code into the build."
     ),

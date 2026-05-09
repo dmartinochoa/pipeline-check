@@ -5,7 +5,7 @@ file becomes a :class:`Dockerfile` carrying the original text plus a
 list of structured :class:`Instruction` records. Checks subclass
 :class:`DockerfileBaseCheck` and iterate ``self.ctx.dockerfiles``.
 
-The parser is deliberately small — it does NOT execute build args, it
+The parser is deliberately small. It does NOT execute build args, it
 does NOT resolve ``FROM <stage>`` references, and it does NOT
 validate semantics. Its job is to surface the directive shape so
 per-rule regexes don't each reimplement comment-stripping, line-
@@ -20,7 +20,7 @@ Behavior notes:
   whitespace) are dropped. Inline ``#`` is NOT a comment in
   Dockerfile syntax (it's part of the value), so it's preserved.
 - Directive case is normalized to upper-case (``FROM``, ``RUN``).
-- Multi-stage builds are flattened — every ``FROM`` opens a new
+- Multi-stage builds are flattened, every ``FROM`` opens a new
   stage but rules see the linear instruction stream and decide for
   themselves whether to scope by stage.
 """
@@ -78,7 +78,7 @@ def parse_dockerfile(text: str) -> tuple[Instruction, ...]:
     Joins line continuations (``\\`` at end of physical line),
     discards full-line comments, and normalises directive names to
     upper case. Lines that don't match a known directive are silently
-    skipped — the goal is best-effort detection, not strict parsing.
+    skipped, the goal is best-effort detection, not strict parsing.
     """
     out: list[Instruction] = []
     physical_lines = text.splitlines(keepends=False)
@@ -144,7 +144,7 @@ class DockerfileContext:
         if root.is_file():
             files = [root]
         else:
-            # Match the canonical filenames first — most repos have
+            # Match the canonical filenames first, most repos have
             # exactly one Dockerfile at root or under a service dir.
             # ``*.Dockerfile`` (e.g. ``api.Dockerfile``) is also picked
             # up; arbitrary suffixes like ``Dockerfile.dev`` work too.
@@ -251,13 +251,13 @@ def env_pairs(df: Dockerfile) -> list[tuple[int, str, str]]:
             continue
         body = ins.args
         if "=" in body:
-            # ENV KEY=VAL [KEY=VAL ...] — multiple pairs allowed on one line.
+            # ENV KEY=VAL [KEY=VAL ...], multiple pairs allowed on one line.
             for token in _split_env_kv(body):
                 if "=" in token:
                     k, _, v = token.partition("=")
                     out.append((ins.line_no, k.strip(), v.strip().strip('"').strip("'")))
         else:
-            # Legacy ENV KEY VALUE — first whitespace-separated token
+            # Legacy ENV KEY VALUE, first whitespace-separated token
             # is the key, remainder is the value.
             tokens = body.split(maxsplit=1)
             if tokens:

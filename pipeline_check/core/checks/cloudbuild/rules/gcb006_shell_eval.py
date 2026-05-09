@@ -1,4 +1,4 @@
-"""GCB-006 — dangerous shell idioms (``eval``, ``sh -c $VAR``, backtick exec).
+"""GCB-006, dangerous shell idioms (``eval``, ``sh -c $VAR``, backtick exec).
 
 Reuses the shared ``_primitives.shell_eval`` detector so Cloud Build
 benefits from the same pattern catalog as GHA-028 / GL-026 / BB-026 /
@@ -28,14 +28,14 @@ RULE = Rule(
     ),
     docs_note=(
         "Complements GCB-004 (dynamicSubstitutions + user substitution "
-        "in args). GCB-006 fires on intrinsically risky shell idioms — "
-        "``eval``, ``sh -c \"$X\"``, backtick exec — regardless of "
+        "in args). GCB-006 fires on intrinsically risky shell idioms, "
+        "``eval``, ``sh -c \"$X\"``, backtick exec, regardless of "
         "whether the substitution source is currently trusted."
     ),
     known_fp=(
         "``eval \"$(ssh-agent -s)\"`` and similar "
         "``eval \"$(<literal-tool>)\"`` bootstrap idioms are "
-        "intentionally NOT flagged — the substituted command is "
+        "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
 )

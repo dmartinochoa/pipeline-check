@@ -1,4 +1,4 @@
-"""AC-004 — Self-Hosted Runner Persistent Foothold.
+"""AC-004. Self-Hosted Runner Persistent Foothold.
 
 A non-ephemeral self-hosted runner that processes fork PRs (or any
 untrusted trigger) becomes a persistent foothold: malicious code can
@@ -33,7 +33,7 @@ RULE = ChainRule(
     recommendation=(
         "Use ephemeral runners (one job, then destroy the host). If "
         "ephemeral isn't possible, restrict the workflow trigger to "
-        "first-party events only — `pull_request` from forks must "
+        "first-party events only, `pull_request` from forks must "
         "land on GitHub-hosted runners exclusively."
     ),
     providers=("github",),
@@ -49,12 +49,12 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"In `{resource}`:\n"
             "  1. Workflow accepts `pull_request_target` and checks "
-            "out PR-head code (GHA-002) — fork PRs reach the runner.\n"
+            "out PR-head code (GHA-002), fork PRs reach the runner.\n"
             "  2. The runner is self-hosted without ephemeral lifecycle "
-            "(GHA-012) — the host survives between jobs.\n"
+            "(GHA-012), the host survives between jobs.\n"
             "  3. Attacker opens fork PR with code that writes a cron "
-            "or systemd unit. The next job on that runner — a privileged "
-            "deploy from a maintainer's branch — runs in an environment "
+            "or systemd unit. The next job on that runner, a privileged "
+            "deploy from a maintainer's branch, runs in an environment "
             "the attacker still owns."
         )
         out.append(Chain(

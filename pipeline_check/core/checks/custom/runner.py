@@ -3,7 +3,7 @@
 The Scanner appends one ``CustomRulesCheck`` (built by
 :func:`make_custom_rules_check`) to a provider's check-class list at
 construction time. From the orchestrator's point of view, custom
-rules look like just another check — same ``BaseCheck`` shape, same
+rules look like just another check, same ``BaseCheck`` shape, same
 :class:`Finding` output, no special plumbing in reporting / scoring /
 SARIF / `--explain`.
 
@@ -80,8 +80,8 @@ def make_custom_rules_check(
                 return findings
             if doc_attr is None:
                 # Provider isn't in the YAML-doc-list set and isn't K8s.
-                # Should not happen — the loader's ALLOWED_PROVIDERS
-                # mirrors this set — but failing closed beats crashing.
+                # Should not happen, the loader's ALLOWED_PROVIDERS
+                # mirrors this set, but failing closed beats crashing.
                 return findings
             docs = getattr(self.ctx, doc_attr, None) or []
             for compiled in compiled_rules:

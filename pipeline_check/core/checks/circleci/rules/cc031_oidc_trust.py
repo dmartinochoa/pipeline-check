@@ -1,4 +1,4 @@
-"""CC-031 — OIDC role assumption without branch filter or approval gate.
+"""CC-031. OIDC role assumption without branch filter or approval gate.
 
 Narrows CC-030 to specifically the OIDC-role-assumption shape. CC-030
 catches every ungated context binding (MEDIUM); CC-031 catches the
@@ -17,7 +17,7 @@ from ..base import iter_workflow_jobs
 
 #: Parameter names that pass a cloud-role ARN into an orb job at the
 #: workflow-binding layer. Detection signal is intentionally name-
-#: based — every common AWS / Azure / GCP CircleCI orb uses one of
+#: based, every common AWS / Azure / GCP CircleCI orb uses one of
 #: these conventions and the parameter shape is stable.
 _OIDC_ROLE_PARAMS = (
     "role_arn",
@@ -29,7 +29,7 @@ _OIDC_ROLE_PARAMS = (
 
 def _has_oidc_role_param(job_cfg: dict[str, Any]) -> bool:
     """True when the workflow job binding passes any of the OIDC-role
-    parameter names. Values are not validated — the *presence* of
+    parameter names. Values are not validated, the *presence* of
     the parameter is the signal that role assumption happens."""
     return any(p in job_cfg for p in _OIDC_ROLE_PARAMS)
 
@@ -86,7 +86,7 @@ RULE = Rule(
         "blast radius of the IdP-side trust policy."
     ),
     docs_note=(
-        "Pairs with IAM-008 — IAM-008 verifies the cloud-side trust "
+        "Pairs with IAM-008. IAM-008 verifies the cloud-side trust "
         "policy pins audience + subject; this rule verifies the "
         "CircleCI-side workflow can't drive the role assumption "
         "from any branch. Distinct from CC-030 (broad context "

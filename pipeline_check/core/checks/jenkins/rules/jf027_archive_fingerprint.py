@@ -1,4 +1,4 @@
-"""JF-027 — ``archiveArtifacts`` should record a fingerprint for provenance."""
+"""JF-027, ``archiveArtifacts`` should record a fingerprint for provenance."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -22,7 +22,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Fingerprinting hashes the artifact on archive so Jenkins can "
-        "trace its flow between jobs — the same mechanism JF-013 "
+        "trace its flow between jobs, the same mechanism JF-013 "
         "relies on for verification-step pairing. It's cheap and "
         "retroactive: enabling it on the producer job unlocks a "
         "build-traceability audit for every downstream consumer."
@@ -46,7 +46,7 @@ def check(jf: Jenkinsfile) -> Finding:
         "``archiveArtifacts`` is paired with ``fingerprint: true``."
         if passed else
         "Pipeline archives artifacts but never sets ``fingerprint: "
-        "true`` — downstream jobs can't verify the artifact's origin."
+        "true``, downstream jobs can't verify the artifact's origin."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

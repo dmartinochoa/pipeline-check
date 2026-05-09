@@ -1,4 +1,4 @@
-"""K8S-032 — Namespace lacks a default-deny NetworkPolicy."""
+"""K8S-032. Namespace lacks a default-deny NetworkPolicy."""
 from __future__ import annotations
 
 from typing import Any
@@ -19,7 +19,7 @@ RULE = Rule(
         "Apply a default-deny NetworkPolicy in every namespace that "
         "carries workloads. The canonical shape is ``podSelector: {}`` "
         "(matches every pod) plus ``policyTypes: [Ingress, Egress]`` "
-        "with no ``ingress:`` / ``egress:`` rules — every flow is "
+        "with no ``ingress:`` / ``egress:`` rules, every flow is "
         "denied unless a more permissive NetworkPolicy in the same "
         "namespace explicitly allows it. Pair with per-workload "
         "allow-list policies for the flows the application actually "
@@ -43,7 +43,7 @@ RULE = Rule(
         "often delegate L4 default-deny to the mesh's authorization "
         "policy. The check only looks at native NetworkPolicy and "
         "won't see that.",
-        "kube-system / kube-public / kube-node-lease are exempt — "
+        "kube-system / kube-public / kube-node-lease are exempt, "
         "control-plane components frequently need open networking "
         "and have their own admission-time guards.",
     ),
@@ -67,7 +67,7 @@ def _is_default_deny(np_data: dict[str, Any]) -> bool:
 
     Matches a NetworkPolicy whose ``podSelector`` is the empty
     mapping (every pod) and which has neither ``ingress:`` nor
-    ``egress:`` rules — or one whose ``policyTypes`` declares Ingress
+    ``egress:`` rules, or one whose ``policyTypes`` declares Ingress
     / Egress without populating the corresponding rule list. Both
     forms are equivalent in Kubernetes' admission semantics.
     """
@@ -114,7 +114,7 @@ def check(ctx: KubernetesContext) -> Finding:
     locations: list[Location] = []
     for ns in sorted(candidates):
         if ns not in namespaces_with_workloads:
-            # An empty namespace doesn't need a default-deny — there's
+            # An empty namespace doesn't need a default-deny, there's
             # nothing in it to deny. Skip.
             continue
         if ns in namespaces_with_default_deny:

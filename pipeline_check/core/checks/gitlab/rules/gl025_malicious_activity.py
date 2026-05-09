@@ -1,4 +1,4 @@
-"""GL-025 — pipeline contains evidence of malicious activity."""
+"""GL-025, pipeline contains evidence of malicious activity."""
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +26,7 @@ RULE = Rule(
         "execution, miner binaries, Discord/Telegram webhooks, "
         "``webhook.site`` callbacks, ``env | curl`` credential dumps, "
         "``history -c`` audit erasure). Orthogonal to GL-003 (curl "
-        "pipe) and GL-017 (Docker insecure flags) — those flag risky "
+        "pipe) and GL-017 (Docker insecure flags). Those flag risky "
         "defaults; this flags evidence."
     ),
 )

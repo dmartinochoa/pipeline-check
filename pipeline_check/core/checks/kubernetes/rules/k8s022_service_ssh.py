@@ -1,4 +1,4 @@
-"""K8S-022 — Service exposes SSH (port 22)."""
+"""K8S-022. Service exposes SSH (port 22)."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "Mirrors DF-013 (``EXPOSE 22`` in a Dockerfile) at the "
         "Service level. The check fires on Service ports whose "
         "``port`` or ``targetPort`` is 22, regardless of Service "
-        "type — a NodePort/LoadBalancer 22 is dramatically worse "
+        "type, a NodePort/LoadBalancer 22 is dramatically worse "
         "but a ClusterIP 22 still indicates an sshd container "
         "somewhere."
     ),

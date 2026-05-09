@@ -1,4 +1,4 @@
-"""ADO-001 — tasks must pin a full semver, not a floating major."""
+"""ADO-001, tasks must pin a full semver, not a floating major."""
 from __future__ import annotations
 
 from typing import Any

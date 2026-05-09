@@ -1,4 +1,4 @@
-"""BK-010 — pipeline should emit an SBOM for the build artifact."""
+"""BK-010, pipeline should emit an SBOM for the build artifact."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "An SBOM (CycloneDX or SPDX) records every component baked "
         "into the build. Without one, post-incident triage can't "
         "answer ``did this CVE ship?`` for a given artifact. Detection "
-        "uses the shared SBOM-token catalog — syft, cyclonedx, cdxgen, "
+        "uses the shared SBOM-token catalog, syft, cyclonedx, cdxgen, "
         "spdx-tools, microsoft/sbom-tool."
     ),
 )
@@ -36,7 +36,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     passed = has_sbom(doc)

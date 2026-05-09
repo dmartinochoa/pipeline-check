@@ -9,18 +9,18 @@
 
 ## Sections
 
-- **1 Source Code** — contribution identity, 3rd-party verification
-- **2 Build Pipelines** — build env hardening, worker isolation,
+- **1 Source Code**: contribution identity, 3rd-party verification
+- **2 Build Pipelines**: build env hardening, worker isolation,
   pipeline integrity, audit logs
-- **3 Build Dependencies** — signed metadata, trusted package managers
-- **4 Artifacts** — signing, access controls, registry auth, SBOM
-- **5 Deployment** — manifest review, env separation, audit
+- **3 Build Dependencies**: signed metadata, trusted package managers
+- **4 Artifacts**: signing, access controls, registry auth, SBOM
+- **5 Deployment**: manifest review, env separation, audit
 
 ## Mapping to checks
 
 Each row below pairs a `check_id` with the CIS Supply Chain sub-controls
 its passing state evidences. Source of truth:
-`pipeline_check/core/standards/data/cis_supply_chain.py` — regenerate
+`pipeline_check/core/standards/data/cis_supply_chain.py`, regenerate
 with `python scripts/gen_standards_mappings.py cis_supply_chain`.
 
 | Check | Control(s) |

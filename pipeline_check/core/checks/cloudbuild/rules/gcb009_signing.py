@@ -1,4 +1,4 @@
-"""GCB-009 — Pipeline should invoke a signing / attestation tool.
+"""GCB-009. Pipeline should invoke a signing / attestation tool.
 
 Cloud Build pipelines that publish to Artifact Registry or push
 container images should attach a cryptographic signature or in-toto
@@ -24,7 +24,7 @@ RULE = Rule(
     esf=("ESF-D-SIGN-ARTIFACTS",),
     cwe=("CWE-345",),
     recommendation=(
-        "Add a signing step before ``images:`` is resolved — for "
+        "Add a signing step before ``images:`` is resolved, for "
         "example, a step with ``name: gcr.io/projectsigstore/cosign`` "
         "that runs ``cosign sign --yes <registry>/<repo>@<digest>``. "
         "Pair with an attestation step (``cosign attest --predicate "
@@ -51,7 +51,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

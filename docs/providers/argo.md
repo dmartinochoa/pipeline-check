@@ -1,7 +1,7 @@
 # Argo Workflows provider
 
 Parses Argo API documents (`apiVersion: argoproj.io/*`) from `.yaml`
-/ `.yml` files on disk — text-only static analysis, no `argo` binary,
+/ `.yml` files on disk, text-only static analysis, no `argo` binary,
 no cluster access. Recognized kinds: `Workflow`, `WorkflowTemplate`,
 `ClusterWorkflowTemplate`, `CronWorkflow`. Documents that don't
 carry an `argoproj.io/*` apiVersion are silently skipped.
@@ -20,11 +20,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Argo-specific checks
 
-- **ARGO-005** — `{{inputs.parameters.X}}` substitution happens
+- **ARGO-005**, `{{inputs.parameters.X}}` substitution happens
   before the shell parses the script, so any unquoted use in
   `script.source` / `container.args` is a command-injection
   primitive. Pass the parameter via `env:` and reference quoted.
-- **ARGO-003** — `Workflow` / `CronWorkflow` must set
+- **ARGO-003**, `Workflow` / `CronWorkflow` must set
   `serviceAccountName`. Workflows that fall back to the namespace's
   `default` SA inherit whatever role someone later binds to
   `default`.
@@ -53,7 +53,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ARGO-001 — Argo template container image not pinned to a digest { #argo-001 }
+## ARGO-001: Argo template container image not pinned to a digest { #argo-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -73,7 +73,7 @@ Pin every container / script template image to a content-addressable digest (``a
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ARGO-002 — Argo template container runs privileged or as root { #argo-002 }
+## ARGO-002: Argo template container runs privileged or as root { #argo-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -93,7 +93,7 @@ Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPr
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-003 — Argo workflow uses the default ServiceAccount { #argo-003 }
+## ARGO-003: Argo workflow uses the default ServiceAccount { #argo-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-IAM</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -105,7 +105,7 @@ Applies to ``Workflow`` and ``CronWorkflow``. ``WorkflowTemplate`` / ``ClusterWo
 
 **Recommended action**
 
-Set ``spec.serviceAccountName`` (or ``spec.workflowSpec.serviceAccountName`` for CronWorkflow) to a least-privilege ServiceAccount that carries only the secrets and RBAC the workflow needs. Falling back to the namespace's ``default`` SA grants access to whatever cluster-admin or wildcard role someone later binds to ``default`` — a privilege-escalation surface that should never be load-bearing for workflow pods.
+Set ``spec.serviceAccountName`` (or ``spec.workflowSpec.serviceAccountName`` for CronWorkflow) to a least-privilege ServiceAccount that carries only the secrets and RBAC the workflow needs. Falling back to the namespace's ``default`` SA grants access to whatever cluster-admin or wildcard role someone later binds to ``default``, a privilege-escalation surface that should never be load-bearing for workflow pods.
 
 </div>
 
@@ -113,7 +113,7 @@ Set ``spec.serviceAccountName`` (or ``spec.workflowSpec.serviceAccountName`` for
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ARGO-004 — Argo workflow mounts hostPath or shares host namespaces { #argo-004 }
+## ARGO-004: Argo workflow mounts hostPath or shares host namespaces { #argo-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
@@ -133,7 +133,7 @@ Use ``emptyDir`` or PVC-backed volumes instead of ``hostPath``. Drop ``hostNetwo
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ARGO-005 — Argo input parameter interpolated unsafely in script / args { #argo-005 }
+## ARGO-005: Argo input parameter interpolated unsafely in script / args { #argo-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -153,7 +153,7 @@ Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ARGO-006 — Literal secret value in Argo template env or parameter default { #argo-006 }
+## ARGO-006: Literal secret value in Argo template env or parameter default { #argo-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
@@ -173,7 +173,7 @@ Mount secrets via ``env.valueFrom.secretKeyRef`` (or a ``volumes:`` Secret mount
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## ARGO-007 — Argo workflow has no activeDeadlineSeconds { #argo-007 }
+## ARGO-007: Argo workflow has no activeDeadlineSeconds { #argo-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -193,7 +193,7 @@ Set ``spec.activeDeadlineSeconds`` (or ``spec.workflowSpec.activeDeadlineSeconds
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ARGO-008 — Argo script source pipes remote install or disables TLS { #argo-008 }
+## ARGO-008: Argo script source pipes remote install or disables TLS { #argo-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-D-COMMS-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -213,13 +213,13 @@ Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-009 — Artifacts not signed (no cosign/sigstore step) { #argo-009 }
+## ARGO-009: Artifacts not signed (no cosign/sigstore step) { #argo-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Detection mirrors GHA-006 / TKN-009 / BK-009 — the shared signing-token catalog (cosign, sigstore, slsa-github-generator, slsa-framework, notation-sign) is searched across every string in each Argo document. Fires only on artifact-producing Workflows / WorkflowTemplates (those that invoke ``docker build`` / ``docker push`` / kaniko / ``helm upgrade`` / ``aws s3 sync`` / etc.) so lint-only Workflows don't trip it.
+Detection mirrors GHA-006 / TKN-009 / BK-009, the shared signing-token catalog (cosign, sigstore, slsa-github-generator, slsa-framework, notation-sign) is searched across every string in each Argo document. Fires only on artifact-producing Workflows / WorkflowTemplates (those that invoke ``docker build`` / ``docker push`` / kaniko / ``helm upgrade`` / ``aws s3 sync`` / etc.) so lint-only Workflows don't trip it.
 
 <div class="pg-rule__rec" markdown>
 
@@ -233,7 +233,7 @@ Add a cosign step to the Workflow. The most common shape is a final ``sign`` tem
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-010 — No SBOM generated for build artifacts { #argo-010 }
+## ARGO-010: No SBOM generated for build artifacts { #argo-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
@@ -253,7 +253,7 @@ Add an SBOM-generation template. ``syft <artifact> -o cyclonedx-json > /tmp/sbom
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-011 — No SLSA provenance attestation produced { #argo-011 }
+## ARGO-011: No SLSA provenance attestation produced { #argo-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -273,13 +273,13 @@ Add a ``cosign attest --predicate slsa.json --type slsaprovenance <ref>`` step a
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-012 — No vulnerability scanning step { #argo-012 }
+## ARGO-012: No vulnerability scanning step { #argo-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
 </div>
 
-Vulnerability scanning sits at a different layer from signing and SBOM — it answers *does this artifact ship a known CVE?* rather than *can we verify what it is?*. Detection uses the shared vuln-scan-token catalog: trivy, grype, snyk, npm-audit, pip-audit, osv-scanner, govulncheck, anchore, codeql-action, semgrep, bandit, checkov, tfsec. Walks every Argo document and passes if any document includes a scanner reference.
+Vulnerability scanning sits at a different layer from signing and SBOM. It answers *does this artifact ship a known CVE?* rather than *can we verify what it is?*. Detection uses the shared vuln-scan-token catalog: trivy, grype, snyk, npm-audit, pip-audit, osv-scanner, govulncheck, anchore, codeql-action, semgrep, bandit, checkov, tfsec. Walks every Argo document and passes if any document includes a scanner reference.
 
 <div class="pg-rule__rec" markdown>
 
@@ -293,7 +293,7 @@ Add a vulnerability scanner template. ``trivy fs /workdir`` for source / filesys
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ARGO-013 — Argo workflow does not opt out of SA token automount { #argo-013 }
+## ARGO-013: Argo workflow does not opt out of SA token automount { #argo-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -305,7 +305,7 @@ Companion to ARGO-003 (default ServiceAccount). The default SA only matters when
 
 **Recommended action**
 
-Set ``spec.automountServiceAccountToken: false`` on the Workflow / WorkflowTemplate, or per-template (``templates[].automountServiceAccountToken: false``) on any template that doesn't need to talk to the Kubernetes API. An explicit ``false`` keeps a compromised step from using the workflow's SA token to escalate inside the cluster — even when the SA itself is hardened (ARGO-003), a token automounted into every pod widens the leak surface.
+Set ``spec.automountServiceAccountToken: false`` on the Workflow / WorkflowTemplate, or per-template (``templates[].automountServiceAccountToken: false``) on any template that doesn't need to talk to the Kubernetes API. An explicit ``false`` keeps a compromised step from using the workflow's SA token to escalate inside the cluster, even when the SA itself is hardened (ARGO-003), a token automounted into every pod widens the leak surface.
 
 </div>
 

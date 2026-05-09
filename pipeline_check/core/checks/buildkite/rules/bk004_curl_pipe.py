@@ -1,4 +1,4 @@
-"""BK-004 — ``curl <url> | sh`` and equivalents in step commands."""
+"""BK-004, ``curl <url> | sh`` and equivalents in step commands."""
 from __future__ import annotations
 
 from typing import Any

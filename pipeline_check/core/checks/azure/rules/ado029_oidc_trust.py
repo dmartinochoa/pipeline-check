@@ -1,4 +1,4 @@
-"""ADO-029 — Service-connection-using job without environment or branch gate."""
+"""ADO-029. Service-connection-using job without environment or branch gate."""
 from __future__ import annotations
 
 from typing import Any
@@ -44,7 +44,7 @@ def _job_has_branch_condition(job: dict[str, Any]) -> bool:
 
     ADO ``condition:`` expressions are free-form strings; the
     canonical "deploy only on main" idiom is
-    ``eq(variables['Build.SourceBranch'], 'refs/heads/main')`` — any
+    ``eq(variables['Build.SourceBranch'], 'refs/heads/main')``, any
     ``Build.SourceBranch`` mention in the condition is taken as a
     branch gate (false positives are acceptable; false negatives are
     not).
@@ -70,7 +70,7 @@ RULE = Rule(
         "role on Azure AD."
     ),
     docs_note=(
-        "Pairs with IAM-008 (the AWS-side OIDC rule) — Azure's "
+        "Pairs with IAM-008 (the AWS-side OIDC rule). Azure's "
         "equivalent trust path runs through service connections that "
         "map to Azure AD federated identity credentials. The "
         "ADO-side gate is either a deployment + environment or a "
@@ -84,7 +84,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for loc, job in iter_jobs(doc):
         # Deployment jobs bound to an environment are gated by
-        # environment approvals — silent pass.
+        # environment approvals, silent pass.
         is_deployment = "deployment" in job and job.get("environment") is not None
         if is_deployment:
             continue

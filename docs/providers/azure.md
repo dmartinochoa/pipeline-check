@@ -1,6 +1,6 @@
 # Azure DevOps Pipelines provider
 
-Parses an `azure-pipelines.yml` from disk — no network calls, no ADO
+Parses an `azure-pipelines.yml` from disk, no network calls, no ADO
 personal access token.
 
 ## Producer workflow
@@ -21,10 +21,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 The walker handles every layout ADO supports:
 
-- Flat single-job pipeline — top-level `steps:`
-- Single-stage multi-job — top-level `jobs:`
-- Multi-stage — `stages: → jobs: → steps:`
-- Deployment jobs — steps under
+- Flat single-job pipeline, top-level `steps:`
+- Single-stage multi-job, top-level `jobs:`
+- Multi-stage, `stages: → jobs: → steps:`
+- Deployment jobs, steps under
   `strategy.{runOnce|rolling|canary}.{preDeploy|deploy|routeTraffic|postRouteTraffic}.steps`
   and `strategy.*.on.{success|failure}.steps`.
 
@@ -48,7 +48,7 @@ The walker handles every layout ADO supports:
 | [ADO-012](#ado-012) | Cache@2 key derives from $(System.PullRequest.*) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ADO-013](#ado-013) | Self-hosted pool without explicit ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ADO-014](#ado-014) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-| [ADO-015](#ado-015) | Job has no `timeoutInMinutes` — unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [ADO-015](#ado-015) | Job has no `timeoutInMinutes`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [ADO-016](#ado-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [ADO-017](#ado-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [ADO-018](#ado-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -69,7 +69,7 @@ The walker handles every layout ADO supports:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-001 — Task reference not pinned to specific version { #ado-001 }
+## ADO-001: Task reference not pinned to specific version { #ado-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -89,7 +89,7 @@ Reference tasks by a full semver (`DownloadSecureFile@1.2.3`) or extension-publi
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-002 — Script injection via attacker-controllable context { #ado-002 }
+## ADO-002: Script injection via attacker-controllable context { #ado-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -109,7 +109,7 @@ Pass these values through an intermediate pipeline variable declared with `reado
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-003 — Variables contain literal secret values { #ado-003 }
+## ADO-003: Variables contain literal secret values { #ado-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
@@ -129,7 +129,7 @@ Store secrets in an Azure Key Vault or a Library variable group with the secret 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-004 — Deployment job missing environment binding { #ado-004 }
+## ADO-004: Deployment job missing environment binding { #ado-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -149,7 +149,7 @@ Add `environment: <name>` to every `deployment:` job. Configure approvals, requi
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-005 — Container image not pinned to specific version { #ado-005 }
+## ADO-005: Container image not pinned to specific version { #ado-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -169,7 +169,7 @@ Reference images by `@sha256:<digest>` or at minimum a full immutable version ta
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-006 — Artifacts not signed { #ado-006 }
+## ADO-006: Artifacts not signed { #ado-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -181,7 +181,7 @@ Passes when cosign / sigstore / slsa-* / notation-sign appears anywhere in the p
 
 **Recommended action**
 
-Add a task that runs `cosign sign` or `notation sign` — Azure Pipelines' workload identity federation enables keyless signing. Publish the signature to the artifact feed and verify it at deploy time.
+Add a task that runs `cosign sign` or `notation sign`, Azure Pipelines' workload identity federation enables keyless signing. Publish the signature to the artifact feed and verify it at deploy time.
 
 </div>
 
@@ -189,7 +189,7 @@ Add a task that runs `cosign sign` or `notation sign` — Azure Pipelines' workl
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-007 — SBOM not produced { #ado-007 }
+## ADO-007: SBOM not produced { #ado-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -201,7 +201,7 @@ Without an SBOM, downstream consumers can't audit the dependency set shipped in 
 
 **Recommended action**
 
-Add an SBOM step — `microsoft/sbom-tool`, `syft . -o cyclonedx-json`, or `anchore/sbom-action`. Publish the SBOM as a pipeline artifact so downstream consumers can ingest it.
+Add an SBOM step, `microsoft/sbom-tool`, `syft . -o cyclonedx-json`, or `anchore/sbom-action`. Publish the SBOM as a pipeline artifact so downstream consumers can ingest it.
 
 </div>
 
@@ -209,7 +209,7 @@ Add an SBOM step — `microsoft/sbom-tool`, `syft . -o cyclonedx-json`, or `anch
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-008 — Credential-shaped literal in pipeline body { #ado-008 }
+## ADO-008: Credential-shaped literal in pipeline body { #ado-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
@@ -229,7 +229,7 @@ Rotate the exposed credential. Move the value to Azure Key Vault or a secret var
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## ADO-009 — Container image pinned by tag rather than sha256 digest { #ado-009 }
+## ADO-009: Container image pinned by tag rather than sha256 digest { #ado-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -249,7 +249,7 @@ Resolve each image to its current digest and replace the tag with `@sha256:<dige
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-010 — Cross-pipeline `download:` ingestion unverified { #ado-010 }
+## ADO-010: Cross-pipeline `download:` ingestion unverified { #ado-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -269,13 +269,13 @@ Add a verification step before consuming the artifact: `cosign verify-attestatio
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-011 — `template: <local-path>` on PR-validated pipeline { #ado-011 }
+## ADO-011: `template: <local-path>` on PR-validated pipeline { #ado-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-`template: <relative-path>` includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch — letting the PR author swap the template body. Cross-repo templates (`template: foo.yml@my-repo`) are version-pinned and not affected.
+`template: <relative-path>` includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch, letting the PR author swap the template body. Cross-repo templates (`template: foo.yml@my-repo`) are version-pinned and not affected.
 
 <div class="pg-rule__rec" markdown>
 
@@ -289,7 +289,7 @@ Move the template into a separate, branch-protected repository and reference it 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-012 — Cache@2 key derives from $(System.PullRequest.*) { #ado-012 }
+## ADO-012: Cache@2 key derives from $(System.PullRequest.*) { #ado-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -309,7 +309,7 @@ Build the cache key from values the PR can't control: `$(Agent.OS)`, lockfile ha
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-013 — Self-hosted pool without explicit ephemeral marker { #ado-013 }
+## ADO-013: Self-hosted pool without explicit ephemeral marker { #ado-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
@@ -329,7 +329,7 @@ Configure the agent pool with autoscaling + ephemeral agents (the Azure VM Scale
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-014 — AWS auth uses long-lived access keys { #ado-014 }
+## ADO-014: AWS auth uses long-lived access keys { #ado-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -349,7 +349,7 @@ Use workload identity federation or an Azure Key Vault task to inject short-live
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-015 — Job has no `timeoutInMinutes` — unbounded build { #ado-015 }
+## ADO-015: Job has no `timeoutInMinutes`, unbounded build { #ado-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-TIMEOUT</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -361,7 +361,7 @@ Without `timeoutInMinutes`, the job runs until Azure's 60-minute default kills i
 
 **Recommended action**
 
-Add `timeoutInMinutes:` to each job, sized to the 95th percentile of historical runtime plus margin. Azure's default is 60 minutes — an explicitly shorter value limits blast radius and agent cost.
+Add `timeoutInMinutes:` to each job, sized to the 95th percentile of historical runtime plus margin. Azure's default is 60 minutes, an explicitly shorter value limits blast radius and agent cost.
 
 </div>
 
@@ -369,7 +369,7 @@ Add `timeoutInMinutes:` to each job, sized to the 95th percentile of historical 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-016 — Remote script piped to shell interpreter { #ado-016 }
+## ADO-016: Remote script piped to shell interpreter { #ado-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -389,7 +389,7 @@ Download the script to a file, verify its checksum, then execute it. Or vendor t
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-017 — Docker run with insecure flags (privileged/host mount) { #ado-017 }
+## ADO-017: Docker run with insecure flags (privileged/host mount) { #ado-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -409,7 +409,7 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-018 — Package install from insecure source { #ado-018 }
+## ADO-018: Package install from insecure source { #ado-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -429,13 +429,13 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-019 — `extends:` template on PR-validated pipeline points to local path { #ado-019 }
+## ADO-019: `extends:` template on PR-validated pipeline points to local path { #ado-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-`extends: template: <local-file>` includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch — letting the PR author swap the template body and inject arbitrary pipeline logic. Cross-repo templates (`template: foo.yml@my-repo`) are version-pinned and not affected.
+`extends: template: <local-file>` includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch, letting the PR author swap the template body and inject arbitrary pipeline logic. Cross-repo templates (`template: foo.yml@my-repo`) are version-pinned and not affected.
 
 <div class="pg-rule__rec" markdown>
 
@@ -449,7 +449,7 @@ Pin the extends template to a protected repository ref (`template@ref`). Local t
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-020 — No vulnerability scanning step { #ado-020 }
+## ADO-020: No vulnerability scanning step { #ado-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -461,7 +461,7 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 
 **Recommended action**
 
-Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 </div>
 
@@ -469,13 +469,13 @@ Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-au
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-021 — Package install without lockfile enforcement { #ado-021 }
+## ADO-021: Package install without lockfile enforcement { #ado-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest, exactly the window a supply-chain attacker exploits.
 
 <div class="pg-rule__rec" markdown>
 
@@ -489,7 +489,7 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-022 — Dependency update command bypasses lockfile pins { #ado-022 }
+## ADO-022: Dependency update command bypasses lockfile pins { #ado-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -509,7 +509,7 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-023 — TLS / certificate verification bypass { #ado-023 }
+## ADO-023: TLS / certificate verification bypass { #ado-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -529,7 +529,7 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-024 — No SLSA provenance attestation produced { #ado-024 }
+## ADO-024: No SLSA provenance attestation produced { #ado-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -549,7 +549,7 @@ Add a task that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` sta
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-025 — Cross-repo template not pinned to commit SHA { #ado-025 }
+## ADO-025: Cross-repo template not pinned to commit SHA { #ado-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -561,7 +561,7 @@ Azure Pipelines resolves ``template: build.yml@tools`` against the ``tools`` rep
 
 **Recommended action**
 
-On every ``resources.repositories`` entry referenced from a ``template: ...@repo-alias`` directive, set ``ref: refs/tags/<sha>`` or the bare 40-char commit SHA — never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.
+On every ``resources.repositories`` entry referenced from a ``template: ...@repo-alias`` directive, set ``ref: refs/tags/<sha>`` or the bare 40-char commit SHA, never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.
 
 </div>
 
@@ -569,13 +569,13 @@ On every ``resources.repositories`` entry referenced from a ``template: ...@repo
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## ADO-026 — Pipeline contains indicators of malicious activity { #ado-026 }
+## ADO-026: Pipeline contains indicators of malicious activity { #ado-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
 </div>
 
-ADO pipelines can run arbitrary shell via ``bash`` / ``script`` / ``powershell`` tasks — this rule scans every string value for known-bad patterns (reverse shells, base64-decoded execution, miner binaries, exfil channels). Orthogonal to ADO-016/ADO-017/ADO-023.
+ADO pipelines can run arbitrary shell via ``bash`` / ``script`` / ``powershell`` tasks. This rule scans every string value for known-bad patterns (reverse shells, base64-decoded execution, miner binaries, exfil channels). Orthogonal to ADO-016/ADO-017/ADO-023.
 
 <div class="pg-rule__rec" markdown>
 
@@ -589,13 +589,13 @@ Treat as a potential compromise. Identify the PR/branch that added the matching 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #ado-027 }
+## ADO-027: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #ado-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
 </div>
 
-Complements ADO-002 (script injection from untrusted PR context). Fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+Complements ADO-002 (script injection from untrusted PR context). Fires on intrinsically risky shell idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted.
 
 <div class="pg-rule__rec" markdown>
 
@@ -609,7 +609,7 @@ Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command i
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## ADO-028 — Package install bypasses registry integrity (git / path / tarball source) { #ado-028 }
+## ADO-028: Package install bypasses registry integrity (git / path / tarball source) { #ado-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -629,13 +629,13 @@ Pin git dependencies to a commit SHA. Publish private packages to an internal re
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-029 — Service-connection-using job without environment or branch gate { #ado-029 }
+## ADO-029: Service-connection-using job without environment or branch gate { #ado-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Pairs with IAM-008 (the AWS-side OIDC rule) — Azure's equivalent trust path runs through service connections that map to Azure AD federated identity credentials. The ADO-side gate is either a deployment + environment or a branch-pinned condition; this rule flags jobs that have neither.
+Pairs with IAM-008 (the AWS-side OIDC rule). Azure's equivalent trust path runs through service connections that map to Azure AD federated identity credentials. The ADO-side gate is either a deployment + environment or a branch-pinned condition; this rule flags jobs that have neither.
 
 <div class="pg-rule__rec" markdown>
 
@@ -649,13 +649,13 @@ Every job that consumes an Azure service connection (via ``AzureCLI@``, ``AzureP
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## ADO-030 — pool interpolates attacker-controllable value { #ado-030 }
+## ADO-030: pool interpolates attacker-controllable value { #ado-030 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the upstream targeting choice. When ``pool:`` (or its ``name`` / ``demands`` sub-fields) is computed from an attacker-controllable expression, whoever triggers the pipeline picks where the job runs — including any agent pool the project exposes (``deploy-prod``, ``signer``, ``hsm`` …). Two attacker surfaces are flagged: runtime SCM macros (``$(Build.SourceBranchName)``, ``$(System.PullRequest.SourceBranch)``, …) and caller-controlled template parameters (``${{ parameters.X }}`` — the value comes from whoever queued the run). The rule walks all three pool shapes — string scalar, dict ``{ name, vmImage, demands }``, and the ``demands`` list form.
+ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the upstream targeting choice. When ``pool:`` (or its ``name`` / ``demands`` sub-fields) is computed from an attacker-controllable expression, whoever triggers the pipeline picks where the job runs, including any agent pool the project exposes (``deploy-prod``, ``signer``, ``hsm`` …). Two attacker surfaces are flagged: runtime SCM macros (``$(Build.SourceBranchName)``, ``$(System.PullRequest.SourceBranch)``, …) and caller-controlled template parameters (``${{ parameters.X }}``, the value comes from whoever queued the run). The rule walks all three pool shapes, string scalar, dict ``{ name, vmImage, demands }``, and the ``demands`` list form.
 
 <div class="pg-rule__rec" markdown>
 

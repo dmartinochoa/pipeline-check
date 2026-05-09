@@ -1,4 +1,4 @@
-"""CA-004 — CodeArtifact repo permissions policy grants codeartifact:* with Resource *."""
+"""CA-004. CodeArtifact repo permissions policy grants codeartifact:* with Resource *."""
 from __future__ import annotations
 
 import json

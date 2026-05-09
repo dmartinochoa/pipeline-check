@@ -1,4 +1,4 @@
-"""ADO-013 — self-hosted pools should demand an ephemeral marker."""
+"""ADO-013, self-hosted pools should demand an ephemeral marker."""
 from __future__ import annotations
 
 from typing import Any

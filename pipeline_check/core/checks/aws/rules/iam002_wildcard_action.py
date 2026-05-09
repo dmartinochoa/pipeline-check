@@ -1,4 +1,4 @@
-"""IAM-002 — CI/CD role has a wildcard Action in any attached policy."""
+"""IAM-002. CI/CD role has a wildcard Action in any attached policy."""
 from __future__ import annotations
 
 from ..._iam_policy import has_wildcard_action

@@ -367,7 +367,7 @@ def _build_finding(
     """Roll a list of offender description strings into one Finding."""
     rule = compiled.rule
     if passed:
-        desc = f"{rule.title} — no offenders."
+        desc = f"{rule.title}, no offenders."
     else:
         head = ", ".join(offenders[:5])
         suffix = "…" if len(offenders) > 5 else ""

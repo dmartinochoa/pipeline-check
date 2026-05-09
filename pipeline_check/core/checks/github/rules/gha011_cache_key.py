@@ -1,4 +1,4 @@
-"""GHA-011 — cache key must not derive from attacker-controllable input."""
+"""GHA-011, cache key must not derive from attacker-controllable input."""
 from __future__ import annotations
 
 from typing import Any

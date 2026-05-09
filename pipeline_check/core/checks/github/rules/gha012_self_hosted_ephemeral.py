@@ -1,4 +1,4 @@
-"""GHA-012 — self-hosted runners must carry the `ephemeral` marker."""
+"""GHA-012, self-hosted runners must carry the `ephemeral` marker."""
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +26,7 @@ RULE = Rule(
         "filesystem and process state. A PR-triggered job writes to "
         "`/tmp`; a subsequent prod-deploy job on the same runner "
         "reads it. The mitigation is the runner's `--ephemeral` "
-        "mode — the runner exits after one job and re-registers "
+        "mode, the runner exits after one job and re-registers "
         "fresh. The check looks for an `ephemeral` label on the "
         "`runs-on` value; without one, the runner is presumed "
         "reusable. Recognises all three `runs-on` shapes: string, "

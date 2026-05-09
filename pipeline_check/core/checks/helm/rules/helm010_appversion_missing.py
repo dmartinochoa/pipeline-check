@@ -1,8 +1,8 @@
-"""HELM-010 — ``Chart.yaml`` ``appVersion`` field is empty or missing.
+"""HELM-010, ``Chart.yaml`` ``appVersion`` field is empty or missing.
 
 ``appVersion:`` is the version of the application packaged inside
 the chart, distinct from ``version:`` (which is the chart's own
-version). The two move independently — a chart at ``version: 1.4.2``
+version). The two move independently, a chart at ``version: 1.4.2``
 might package an app at ``appVersion: 17.2.0`` (Postgres 17.2,
 Redis 7.4, etc.).
 
@@ -38,7 +38,7 @@ RULE = Rule(
     docs_note=(
         "Library charts (``Chart.yaml`` ``type: library``) "
         "legitimately don't have an ``appVersion`` because they "
-        "package no application — those are exempted. For "
+        "package no application. Those are exempted. For "
         "application charts (``type: application``, the default), "
         "``appVersion`` is required for CVE tracking and "
         "release-tracking; without it, ``helm list`` shows ``-`` "

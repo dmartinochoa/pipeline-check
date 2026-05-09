@@ -1,4 +1,4 @@
-"""Scanner — orchestrates check classes via the provider registry.
+"""Scanner, orchestrates check classes via the provider registry.
 
 Adding a new provider or check module never requires editing this file.
 See the relevant provider module for instructions:
@@ -78,7 +78,7 @@ class Scanner:
             for k, v in (overrides or {}).items()
         }
         #: Attack-chains detected by the most recent ``run()``. Populated
-        #: as a side effect — chains derive from findings 1:1 with the
+        #: as a side effect, chains derive from findings 1:1 with the
         #: run, so consumers always want both together. Empty list when
         #: chains are disabled or no chains matched.
         self.chains: list[Chain] = []
@@ -146,7 +146,7 @@ class Scanner:
 
         Built-in IDs come from the union of every provider's rule
         registry. We deliberately don't filter by the active pipeline
-        — a custom rule with id ``GHA-001`` is rejected even when the
+       , a custom rule with id ``GHA-001`` is rejected even when the
         current scan is ``--pipeline kubernetes``, because the same
         rule file should round-trip across providers without surprise.
         """
@@ -189,7 +189,7 @@ class Scanner:
         """Return the list of components the active provider discovered.
 
         Delegates to ``provider.inventory(context)``. Safe to call
-        independently of ``run()`` — shift-left providers answer from
+        independently of ``run()``, shift-left providers answer from
         the already-loaded context, the AWS provider performs a fresh
         enumeration pass (one extra round-trip per service). Either
         call order works:
@@ -205,7 +205,7 @@ class Scanner:
         type_patterns:
             Optional glob patterns (``aws_*``, ``AWS::IAM::*``,
             ``workflow``). A component is kept when its ``type`` matches
-            any pattern. Case-sensitive — CFN types are PascalCase,
+            any pattern. Case-sensitive. CFN types are PascalCase,
             Terraform types are snake_case; callers should match the
             casing of the provider they're slicing.
         """
@@ -289,7 +289,7 @@ class Scanner:
                 f.confidence = confidence_for(f.check_id)
             # Apply user-configured per-rule overrides last so they
             # win over both the rule-default severity and any rule-set
-            # confidence. Unknown check IDs are silently ignored — the
+            # confidence. Unknown check IDs are silently ignored, the
             # config loader already warned on the typo. ``getattr``
             # guards against callers that bypass ``__init__`` (older
             # AWS test fixtures construct the Scanner via ``__new__``
@@ -302,14 +302,14 @@ class Scanner:
                     try:
                         f.severity = Severity(sev_str.upper())
                     except ValueError:
-                        # Defensive — config loader filters bad values
+                        # Defensive, config loader filters bad values
                         # already, but a programmatic caller could
                         # pass anything.
                         pass
 
         # Attack-chain correlation runs after confidence is finalised so
         # ``min_confidence(triggers)`` reflects the post-demotion value.
-        # A chain rule that crashes never aborts the scan — chains are
+        # A chain rule that crashes never aborts the scan, chains are
         # an additive signal, not a gate. ``getattr`` guards against
         # callers that bypass ``__init__`` (older tests use ``__new__``
         # + manual attribute setting); default-on matches the CLI
@@ -333,7 +333,7 @@ def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
 
     Terraform provider: filter ``planned_values.root_module.resources``
     by whether any ``.tf`` file mentioning the resource address
-    changed. Coarse but correct — if nothing in the plan's source
+    changed. Coarse but correct, if nothing in the plan's source
     files changed, nothing in the plan can have changed.
 
     AWS provider: ``--diff-base`` has no natural analogue (live API
@@ -341,7 +341,7 @@ def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
     silently ignoring the flag.
 
     ``changed_files`` returning ``None`` (git missing / base ref bad)
-    is treated as "no filter" — better to over-scan than to silently
+    is treated as "no filter", better to over-scan than to silently
     skip everything in CI.
     """
     if provider == "aws":
@@ -392,7 +392,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     module_dirs_changed = {
         _tf_dir(p) for p in tf_files_touched if _tf_dir(p)
     }
-    # Defensive nested-dict traversal — a malformed plan with a
+    # Defensive nested-dict traversal, a malformed plan with a
     # non-dict ``planned_values`` or ``root_module`` value would
     # otherwise raise AttributeError here. Missing/wrong shape → skip
     # the filter (safer to over-scan than to crash the CI run).
@@ -407,7 +407,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
         return
 
     def _keep(res: Any) -> bool:
-        # Fail open on shape errors — a malformed plan with a non-dict
+        # Fail open on shape errors, a malformed plan with a non-dict
         # resource entry shouldn't crash the diff filter. The
         # surrounding helpers already chose "skip the filter, scan
         # everything" over raising on bad shape; this preserves that
@@ -419,7 +419,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
             return True
         if not addr.startswith("module."):
             return root_changed
-        # module.<name>.<type>.<...> — use <name> as a directory hint.
+        # module.<name>.<type>.<...>, use <name> as a directory hint.
         parts = addr.split(".")
         if len(parts) < 2:
             return root_changed

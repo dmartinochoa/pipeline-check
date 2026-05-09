@@ -1,4 +1,4 @@
-"""KMS-002 — KMS key policy grants kms:* with Resource '*' to CI/CD principal."""
+"""KMS-002. KMS key policy grants kms:* with Resource '*' to CI/CD principal."""
 from __future__ import annotations
 
 import json

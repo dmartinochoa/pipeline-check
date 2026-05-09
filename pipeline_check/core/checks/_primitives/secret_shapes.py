@@ -7,7 +7,7 @@ key prefix, additional secret-looking identifiers), the update lands in
 one place and every provider picks it up.
 
 Providers still own their own *context* regex (which YAML fields or
-variable names are attacker-controlled) — that part is legitimately
+variable names are attacker-controlled). That part is legitimately
 per-provider and lives in the per-provider ``_helpers.py``.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ import re
 
 # A long-lived AWS access key id. ``AKIA`` is the prefix for a root/IAM
 # user access key; ``ASIA`` (temporary STS credentials) is deliberately
-# NOT matched here — those are short-lived and their presence in a
+# NOT matched here. Those are short-lived and their presence in a
 # pipeline is not a finding on its own.
 AWS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
 

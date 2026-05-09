@@ -1,4 +1,4 @@
-"""DF-018 — RUN ``chown -R`` rewrites ownership of a system path."""
+"""DF-018. RUN ``chown -R`` rewrites ownership of a system path."""
 from __future__ import annotations
 
 import re
@@ -28,7 +28,7 @@ RULE = Rule(
         "Recognises ``chown`` and ``chgrp`` invocations whose first "
         "non-flag path argument resolves under a system directory. "
         "The non-recursive case is also flagged because a single "
-        "``chown user /etc`` is just as harmful — the recursive "
+        "``chown user /etc`` is just as harmful, the recursive "
         "flag matters for the size of the blast radius, not for "
         "whether it's wrong. Application paths under ``/opt``, "
         "``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged."

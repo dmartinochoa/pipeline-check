@@ -1,4 +1,4 @@
-"""CC-017 — docker run with insecure flags (privileged / host mount)."""
+"""CC-017, docker run with insecure flags (privileged / host mount)."""
 from __future__ import annotations
 
 from typing import Any

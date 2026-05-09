@@ -1,4 +1,4 @@
-"""ARGO-005 — ``{{inputs.parameters.X}}`` interpolated unsafely."""
+"""ARGO-005, ``{{inputs.parameters.X}}`` interpolated unsafely."""
 from __future__ import annotations
 
 import re

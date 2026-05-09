@@ -1,4 +1,4 @@
-"""CC-027 — dangerous shell idioms in CircleCI command steps."""
+"""CC-027, dangerous shell idioms in CircleCI command steps."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,14 +21,14 @@ RULE = Rule(
     ),
     docs_note=(
         "Complements CC-002 (script injection from untrusted context). "
-        "Fires on intrinsically risky shell idioms — ``eval``, "
-        "``sh -c \"$X\"``, backtick exec — regardless of whether the "
+        "Fires on intrinsically risky shell idioms, ``eval``, "
+        "``sh -c \"$X\"``, backtick exec, regardless of whether the "
         "input source is currently trusted."
     ),
     known_fp=(
         "``eval \"$(ssh-agent -s)\"`` and similar "
         "``eval \"$(<literal-tool>)\"`` bootstrap idioms are "
-        "intentionally NOT flagged — the substituted command is "
+        "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
 )

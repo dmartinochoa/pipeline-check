@@ -1,4 +1,4 @@
-"""CC-009 — Deploy-like workflow jobs should have a manual approval gate."""
+"""CC-009. Deploy-like workflow jobs should have a manual approval gate."""
 from __future__ import annotations
 
 from typing import Any
@@ -61,7 +61,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if any(req in approval_jobs for req in requires):
             continue
         ungated.append(f"{wf_name}/{job_name}")
-        # Anchor on the workflow's job entry — that's where the
+        # Anchor on the workflow's job entry, that's where the
         # ``requires: [<approval-job>]`` line should be added.
         line = _line_of(job_cfg) if isinstance(job_cfg, dict) else None
         locations.append(Location(

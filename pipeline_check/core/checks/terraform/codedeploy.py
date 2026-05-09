@@ -83,7 +83,7 @@ def _cd002_all_at_once(values: dict[str, Any], resource: str) -> Finding:
     )
     return Finding(
         check_id="CD-002",
-        title="AllAtOnce deployment config — no canary or rolling strategy",
+        title="AllAtOnce deployment config, no canary or rolling strategy",
         severity=Severity.HIGH,
         resource=resource,
         description=desc,

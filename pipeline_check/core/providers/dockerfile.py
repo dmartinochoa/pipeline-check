@@ -1,8 +1,8 @@
-"""Dockerfile provider — scans Dockerfile / Containerfile on disk.
+"""Dockerfile provider, scans Dockerfile / Containerfile on disk.
 
     pipeline_check --pipeline dockerfile --dockerfile-path path/to/Dockerfile
 
-No registry pull, no image build, no daemon access — text-only static
+No registry pull, no image build, no daemon access, text-only static
 analysis. Mirrors the shape of the YAML CI providers (GitHub, GitLab,
 Bitbucket, Cloud Build).
 """
@@ -18,7 +18,7 @@ from .base import BaseProvider
 
 
 class DockerfileProvider(BaseProvider):
-    """Dockerfile provider — parses Dockerfile / Containerfile documents."""
+    """Dockerfile provider, parses Dockerfile / Containerfile documents."""
 
     NAME = "dockerfile"
 

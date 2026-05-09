@@ -1,4 +1,4 @@
-"""JF-029 — Jenkinsfile contains evidence of malicious activity."""
+"""JF-029. Jenkinsfile contains evidence of malicious activity."""
 from __future__ import annotations
 
 from ..._malicious import find_malicious_patterns
@@ -23,7 +23,7 @@ RULE = Rule(
     docs_note=(
         "Distinct from JF-016 (curl pipe) and JF-019 (Groovy sandbox "
         "escape). Those flag risky defaults; this flags concrete "
-        "evidence — reverse shells, base64-decoded execution, miner "
+        "evidence, reverse shells, base64-decoded execution, miner "
         "binaries, exfil channels, credential-dump pipes, shell-"
         "history erasure. Runs on the comment-stripped Groovy text so "
         "``// cosign verify … // webhook.site`` in a legitimate "

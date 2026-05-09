@@ -4,16 +4,16 @@ A full jsonpath implementation (`jsonpath-ng`, `jsonpath-rw`) is a
 non-trivial dep. The DSL only needs the path-traversal subset that
 covers the rule shapes in :mod:`docs/writing_a_custom_rule.md`:
 
-    $                       — root document
-    .field                  — literal field access
-    ['key']                 — quoted field access (keys with dashes/dots)
-    [N]                     — list index
-    [*]                     — list wildcard
+    $                      , root document
+    .field                 , literal field access
+    ['key']                , quoted field access (keys with dashes/dots)
+    [N]                    , list index
+    [*]                    , list wildcard
 
 That's enough for "for every container, assert image matches a
-regex" — the dominant pattern in the built-in rule catalog. Recursive
+regex", the dominant pattern in the built-in rule catalog. Recursive
 descent (``..``), filters (``?``), slicing, and union (``,``) are
-deliberately out — when someone needs them, they should write the
+deliberately out, when someone needs them, they should write the
 rule in Python.
 
 The compiled-once-then-applied shape is a list of "step" callables.
@@ -33,7 +33,7 @@ class JsonPathError(ValueError):
     """Raised when a jsonpath expression fails to parse."""
 
 
-# A step yields ``(value,)`` tuples — wrapping in a tuple keeps the
+# A step yields ``(value,)`` tuples, wrapping in a tuple keeps the
 # loop in :func:`iter_matches` straightforward and lets us extend to
 # carry path-of-match info later without changing the protocol.
 @dataclass(frozen=True, slots=True)
@@ -83,7 +83,7 @@ def compile_path(expression: str) -> CompiledPath:
     while pos < n:
         ch = expression[pos]
         if ch == ".":
-            # ``.field`` — read until the next ``.`` or ``[``.
+            # ``.field``, read until the next ``.`` or ``[``.
             # ``.*`` is the wildcard convenience form, equivalent to ``[*]``.
             pos += 1
             if pos >= n or expression[pos] in ".[":

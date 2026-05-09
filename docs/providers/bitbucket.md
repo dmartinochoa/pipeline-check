@@ -1,6 +1,6 @@
 # Bitbucket Pipelines provider
 
-Parses `bitbucket-pipelines.yml` on disk — no Bitbucket API token, no
+Parses `bitbucket-pipelines.yml` on disk, no Bitbucket API token, no
 runner install.
 
 ## Producer workflow
@@ -23,7 +23,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-002](#bb-002) | Script injection via attacker-controllable context | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-003](#bb-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [BB-004](#bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [BB-005](#bb-005) | Step has no `max-time` — unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [BB-005](#bb-005) | Step has no `max-time`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [BB-006](#bb-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-007](#bb-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-008](#bb-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -53,7 +53,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-001 — pipe: action not pinned to exact version { #bb-001 }
+## BB-001: pipe: action not pinned to exact version { #bb-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -73,7 +73,7 @@ Pin every `pipe:` to a full semver tag (e.g. `atlassian/aws-s3-deploy:1.4.0`) or
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-002 — Script injection via attacker-controllable context { #bb-002 }
+## BB-002: Script injection via attacker-controllable context { #bb-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -93,7 +93,7 @@ Always double-quote interpolations of ref-derived variables (`"$BITBUCKET_BRANCH
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-003 — Variables contain literal secret values { #bb-003 }
+## BB-003: Variables contain literal secret values { #bb-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
@@ -113,7 +113,7 @@ Store credentials as Repository / Deployment Variables in Bitbucket's Pipelines 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-004 — Deploy step missing `deployment:` environment gate { #bb-004 }
+## BB-004: Deploy step missing `deployment:` environment gate { #bb-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -133,7 +133,7 @@ Add `deployment: production` (or `staging` / `test`) to the step. Configure the 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-005 — Step has no `max-time` — unbounded build { #bb-005 }
+## BB-005: Step has no `max-time`, unbounded build { #bb-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-TIMEOUT</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -153,7 +153,7 @@ Add `max-time: <minutes>` to each step, sized to the 95th percentile of historic
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-006 — Artifacts not signed { #bb-006 }
+## BB-006: Artifacts not signed { #bb-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -173,7 +173,7 @@ Add a step that runs `cosign sign` against the built image or archive, using Bit
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-007 — SBOM not produced { #bb-007 }
+## BB-007: SBOM not produced { #bb-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -185,7 +185,7 @@ Without an SBOM, downstream consumers can't audit the dependency set shipped in 
 
 **Recommended action**
 
-Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM as a build artifact.
+Add an SBOM step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM as a build artifact.
 
 </div>
 
@@ -193,13 +193,13 @@ Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-008 — Credential-shaped literal in pipeline body { #bb-008 }
+## BB-008: Credential-shaped literal in pipeline body { #bb-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Complements BB-003 (variable-name scan). BB-008 checks every string in the pipeline against the cross-provider credential-pattern catalog — catches secrets pasted into script bodies or environment blocks.
+Complements BB-003 (variable-name scan). BB-008 checks every string in the pipeline against the cross-provider credential-pattern catalog, catches secrets pasted into script bodies or environment blocks.
 
 <div class="pg-rule__rec" markdown>
 
@@ -213,7 +213,7 @@ Rotate the exposed credential. Move the value to a Secured Repository or Deploym
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## BB-009 — pipe: pinned by version rather than sha256 digest { #bb-009 }
+## BB-009: pipe: pinned by version rather than sha256 digest { #bb-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -233,7 +233,7 @@ Resolve each pipe to its digest (`docker buildx imagetools inspect bitbucketpipe
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-010 — Deploy step ingests pull-request artifact unverified { #bb-010 }
+## BB-010: Deploy step ingests pull-request artifact unverified { #bb-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -253,7 +253,7 @@ Add a verification step before the deploy step consumes the artifact: `sha256sum
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-011 — AWS auth uses long-lived access keys { #bb-011 }
+## BB-011: AWS auth uses long-lived access keys { #bb-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -273,7 +273,7 @@ Use Bitbucket OIDC with `oidc: true` on the AWS pipe, or store credentials as se
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-012 — Remote script piped to shell interpreter { #bb-012 }
+## BB-012: Remote script piped to shell interpreter { #bb-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -293,7 +293,7 @@ Download the script to a file, verify its checksum, then execute it. Or vendor t
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-013 — Docker run with insecure flags (privileged/host mount) { #bb-013 }
+## BB-013: Docker run with insecure flags (privileged/host mount) { #bb-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -313,7 +313,7 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-014 — Package install from insecure source { #bb-014 }
+## BB-014: Package install from insecure source { #bb-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -333,7 +333,7 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-015 — No vulnerability scanning step { #bb-015 }
+## BB-015: No vulnerability scanning step { #bb-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -345,7 +345,7 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 
 **Recommended action**
 
-Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 </div>
 
@@ -353,7 +353,7 @@ Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-au
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-016 — Self-hosted runner without ephemeral marker { #bb-016 }
+## BB-016: Self-hosted runner without ephemeral marker { #bb-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
@@ -373,7 +373,7 @@ Use Docker-based self-hosted runners or configure runners to tear down between j
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-017 — Repository token written to persistent storage { #bb-017 }
+## BB-017: Repository token written to persistent storage { #bb-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -393,7 +393,7 @@ Never write BITBUCKET_TOKEN or REPOSITORY_OAUTH_ACCESS_TOKEN to files or artifac
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-018 — Cache key derives from attacker-controllable input { #bb-018 }
+## BB-018: Cache key derives from attacker-controllable input { #bb-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -413,7 +413,7 @@ Build the cache key from values the attacker cannot control. Prefer `hashFiles()
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-019 — after-script references secrets { #bb-019 }
+## BB-019: after-script references secrets { #bb-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -425,7 +425,7 @@ Bitbucket's `after-script` runs unconditionally after the main `script` block (i
 
 **Recommended action**
 
-Move secret-dependent operations into the main `script:` block. `after-script` runs even when the step fails and executes in a separate shell context — credential exposure here is harder to audit and more likely to persist in logs.
+Move secret-dependent operations into the main `script:` block. `after-script` runs even when the step fails and executes in a separate shell context, credential exposure here is harder to audit and more likely to persist in logs.
 
 </div>
 
@@ -433,7 +433,7 @@ Move secret-dependent operations into the main `script:` block. `after-script` r
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## BB-020 — Full clone depth exposes complete history { #bb-020 }
+## BB-020: Full clone depth exposes complete history { #bb-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -453,13 +453,13 @@ Set `clone: depth: 1` (or a small number) in pipeline or step options to limit t
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-021 — Package install without lockfile enforcement { #bb-021 }
+## BB-021: Package install without lockfile enforcement { #bb-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest, exactly the window a supply-chain attacker exploits.
 
 <div class="pg-rule__rec" markdown>
 
@@ -473,7 +473,7 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-022 — Dependency update command bypasses lockfile pins { #bb-022 }
+## BB-022: Dependency update command bypasses lockfile pins { #bb-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -493,7 +493,7 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-023 — TLS / certificate verification bypass { #bb-023 }
+## BB-023: TLS / certificate verification bypass { #bb-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -513,7 +513,7 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-024 — No SLSA provenance attestation produced { #bb-024 }
+## BB-024: No SLSA provenance attestation produced { #bb-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -533,13 +533,13 @@ Add a step that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` sta
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## BB-025 — Pipeline contains indicators of malicious activity { #bb-025 }
+## BB-025: Pipeline contains indicators of malicious activity { #bb-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
 </div>
 
-Specific indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, credential-dump pipes, audit-erasure commands). Does not replace BB-014 (TLS bypass) or BB-013 (Docker insecure) — those are hygiene; this is evidence.
+Specific indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, credential-dump pipes, audit-erasure commands). Does not replace BB-014 (TLS bypass) or BB-013 (Docker insecure), those are hygiene; this is evidence.
 
 <div class="pg-rule__rec" markdown>
 
@@ -553,13 +553,13 @@ Treat as a potential compromise. Identify the PR that added the matching step(s)
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #bb-026 }
+## BB-026: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #bb-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
 </div>
 
-Complements BB-002 (script injection from untrusted PR context). This rule fires on intrinsically risky idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+Complements BB-002 (script injection from untrusted PR context). This rule fires on intrinsically risky idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted.
 
 <div class="pg-rule__rec" markdown>
 
@@ -573,7 +573,7 @@ Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command i
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## BB-027 — Package install bypasses registry integrity (git / path / tarball source) { #bb-027 }
+## BB-027: Package install bypasses registry integrity (git / path / tarball source) { #bb-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -593,19 +593,19 @@ Pin git dependencies to a commit SHA. Publish private packages to an internal re
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-028 — OIDC step without deployment-gated environment { #bb-028 }
+## BB-028: OIDC step without deployment-gated environment { #bb-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the Bitbucket-side workflow can't request a token without a deployment gate. Bitbucket's ``pull-requests:`` triggers from forks so OIDC under that branch is always an unbounded blast radius.
+Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the Bitbucket-side workflow can't request a token without a deployment gate. Bitbucket's ``pull-requests:`` triggers from forks so OIDC under that branch is always an unbounded blast radius.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Every step that sets ``oidc: true`` must also declare a ``deployment:`` (production / staging / test). Bitbucket deployments enforce manual approvals, restricted variables, and audit logs that an ungated step bypasses. Steps reached through ``pull-requests:`` should never request OIDC tokens — any forked PR can drive the role assumption.
+Every step that sets ``oidc: true`` must also declare a ``deployment:`` (production / staging / test). Bitbucket deployments enforce manual approvals, restricted variables, and audit logs that an ungated step bypasses. Steps reached through ``pull-requests:`` should never request OIDC tokens, any forked PR can drive the role assumption.
 
 </div>
 
@@ -613,19 +613,19 @@ Every step that sets ``oidc: true`` must also declare a ``deployment:`` (product
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## BB-029 — image: (step or service) not pinned by sha256 digest { #bb-029 }
+## BB-029: image: (step or service) not pinned by sha256 digest { #bb-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-BB-001 / BB-009 only inspect ``pipe:`` references inside ``script:`` lists. Step ``image:`` directives and ``definitions.services.<name>.image:`` define the runtime container the build executes inside (and the auxiliary containers the step talks to over the loopback network). Both surfaces ship code into the build context — a compromised service image (the postgres container, the selenium-grid container, …) can exfiltrate every secret the step touches just as easily as the step image itself. This rule reuses ``_primitives.image_pinning.classify`` so the floating-tag semantics match GHA-001 / GL-001 / JF-009 / ADO-009 / CC-003 / K8S-001.
+BB-001 / BB-009 only inspect ``pipe:`` references inside ``script:`` lists. Step ``image:`` directives and ``definitions.services.<name>.image:`` define the runtime container the build executes inside (and the auxiliary containers the step talks to over the loopback network). Both surfaces ship code into the build context, a compromised service image (the postgres container, the selenium-grid container, …) can exfiltrate every secret the step touches just as easily as the step image itself. This rule reuses ``_primitives.image_pinning.classify`` so the floating-tag semantics match GHA-001 / GL-001 / JF-009 / ADO-009 / CC-003 / K8S-001.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Resolve every ``image:`` reference to its current digest (``docker buildx imagetools inspect <ref>`` or ``crane digest <ref>``) and pin via ``image: name@sha256:<digest>``. Floating tags (``:latest``, ``:3``, no tag) silently swap the runtime image — the build's reproducibility invariant is broken and a registry-side compromise lands inside CI without any local change.
+Resolve every ``image:`` reference to its current digest (``docker buildx imagetools inspect <ref>`` or ``crane digest <ref>``) and pin via ``image: name@sha256:<digest>``. Floating tags (``:latest``, ``:3``, no tag) silently swap the runtime image, the build's reproducibility invariant is broken and a registry-side compromise lands inside CI without any local change.
 
 </div>
 

@@ -1,4 +1,4 @@
-"""ARGO-013 — automountServiceAccountToken not explicitly false."""
+"""ARGO-013, automountServiceAccountToken not explicitly false."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -18,7 +18,7 @@ RULE = Rule(
         "(``templates[].automountServiceAccountToken: false``) on any "
         "template that doesn't need to talk to the Kubernetes API. "
         "An explicit ``false`` keeps a compromised step from using "
-        "the workflow's SA token to escalate inside the cluster — "
+        "the workflow's SA token to escalate inside the cluster, "
         "even when the SA itself is hardened (ARGO-003), a token "
         "automounted into every pod widens the leak surface."
     ),
@@ -37,7 +37,7 @@ RULE = Rule(
         "Templates that genuinely need to call the Kubernetes API "
         "(GitOps pull, ``kubectl apply`` from inside the workflow). "
         "Set ``automountServiceAccountToken: true`` on that template "
-        "specifically and bind it to a least-privilege SA — the "
+        "specifically and bind it to a least-privilege SA, the "
         "rule then fires only on the broad spec-level absence, "
         "which is the actual gap.",
     ),
@@ -55,11 +55,11 @@ def check(ctx: ArgoContext) -> Finding:
             if tmpl_value is False:
                 continue
             # If the template explicitly opts in, that's the legitimate
-            # K8s-API-using case — surface as info, but don't fail on
+            # K8s-API-using case, surface as info, but don't fail on
             # it. The user took an explicit decision.
             if tmpl_value is True:
                 continue
-            # Template is silent — inherits from the workflow spec.
+            # Template is silent, inherits from the workflow spec.
             if spec_value is False:
                 continue
             offenders.append(

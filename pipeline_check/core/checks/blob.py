@@ -10,7 +10,7 @@ scalar into a single lowercase blob once per document and memoize on
 The cache is cleared in :class:`~pipeline_check.core.checks.base.BaseCheck`
 ``__init__`` and in :meth:`Scanner._scan_provider` so entries from a
 previous scan (especially in long-lived Lambda containers) can't pin
-memory or — worse — collide with a newly-allocated doc that reused a
+memory or, worse, collide with a newly-allocated doc that reused a
 freed ``id()``.
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ def walk_strings(node: Any) -> Iterator[str]:
     """Yield every string scalar under a dict/list tree (iterative).
 
     Uses an explicit stack instead of recursion to reduce function-call
-    overhead — a single large workflow can have hundreds of nested
+    overhead, a single large workflow can have hundreds of nested
     dict/list nodes, each of which would be a separate generator frame
     in the recursive version.
     """
@@ -45,8 +45,8 @@ def blob_lower(doc: Any) -> str:
     """Concatenate all string values in ``doc`` into one lowercase blob.
 
     Memoized on object identity so that the multiple callers each
-    provider uses (``has_signing``, ``has_sbom``, and — through the
-    secrets helper — ``find_secret_values``) share one tree walk per
+    provider uses (``has_signing``, ``has_sbom``, and, through the
+    secrets helper, ``find_secret_values``) share one tree walk per
     workflow. ``id(doc)`` is stable for as long as the document
     object is alive, which is the whole ``run()`` invocation.
     """

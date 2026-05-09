@@ -1,4 +1,4 @@
-"""GCB-017 — Image-producing build does not request SLSA provenance."""
+"""GCB-017. Image-producing build does not request SLSA provenance."""
 from __future__ import annotations
 
 from typing import Any
@@ -62,7 +62,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="Build does not produce a container image — check not applicable.",
+            description="Build does not produce a container image, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     options = doc.get("options")

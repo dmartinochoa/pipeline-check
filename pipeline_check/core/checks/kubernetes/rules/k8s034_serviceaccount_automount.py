@@ -1,4 +1,4 @@
-"""K8S-034 — ServiceAccount automountServiceAccountToken not explicitly disabled."""
+"""K8S-034. ServiceAccount automountServiceAccountToken not explicitly disabled."""
 from __future__ import annotations
 
 from ..._yaml_lines import line_of as _line_of
@@ -30,7 +30,7 @@ RULE = Rule(
         "``false``), the pod-level override re-enables only where "
         "needed. Without the SA-level disable, every pod that doesn't "
         "set its own override mounts a token that can call the K8s "
-        "API as that SA — a useful credential for an attacker who "
+        "API as that SA, a useful credential for an attacker who "
         "lands code in any pod, regardless of the workload's own "
         "intent."
     ),
@@ -38,7 +38,7 @@ RULE = Rule(
         "Operator / controller workloads (cert-manager, "
         "metrics-server, ingress controllers) legitimately need API "
         "access from every pod. Their dedicated SAs should keep "
-        "automount enabled — leave them out of the cluster-wide "
+        "automount enabled, leave them out of the cluster-wide "
         "disable. ``default`` SA in every namespace is the high-fire "
         "case worth disabling.",
     ),

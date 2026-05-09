@@ -1,4 +1,4 @@
-"""CC-008 — Config must not contain credential-shaped literals."""
+"""CC-008. Config must not contain credential-shaped literals."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
         "Every string in the config is scanned against a set of "
         "credential patterns (AWS access keys, GitHub tokens, Slack "
         "tokens, JWTs, Stripe, Google, Anthropic, etc.). A match means "
-        "a secret was pasted into YAML — the value is visible in every "
+        "a secret was pasted into YAML, the value is visible in every "
         "fork and every build log and must be treated as compromised."
     ),
 )

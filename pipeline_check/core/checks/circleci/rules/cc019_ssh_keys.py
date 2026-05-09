@@ -1,4 +1,4 @@
-"""CC-019 — add_ssh_keys must specify fingerprints."""
+"""CC-019, add_ssh_keys must specify fingerprints."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "A bare `- add_ssh_keys` step (without `fingerprints:`) loads "
         "every SSH key configured on the project into the job. This "
-        "violates least privilege \u2014 the job gains access to keys it "
+        "violates least privilege, the job gains access to keys it "
         "does not need, increasing the blast radius if the job is "
         "compromised."
     ),

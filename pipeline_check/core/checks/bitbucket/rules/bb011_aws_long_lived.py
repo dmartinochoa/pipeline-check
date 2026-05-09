@@ -1,4 +1,4 @@
-"""BB-011 — pipeline should not embed long-lived AWS access keys."""
+"""BB-011, pipeline should not embed long-lived AWS access keys."""
 from __future__ import annotations
 
 import re

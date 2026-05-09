@@ -1,4 +1,4 @@
-"""PBAC-005 — CodePipeline stage action roles match the pipeline role."""
+"""PBAC-005. CodePipeline stage action roles match the pipeline role."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -23,7 +23,7 @@ RULE = Rule(
         "fall back to the pipeline-level role, which is the union "
         "of every stage's needs. A compromise of any one stage "
         "(typically the build, which runs untrusted code) gains "
-        "the deploy stage's authority — including production deploy "
+        "the deploy stage's authority, including production deploy "
         "credentials. Per-action roles cap the radius."
     ),
 )
@@ -51,7 +51,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             "scoped roleArn."
             if passed else
             f"Pipeline '{name}' runs every action ({total_actions}) with "
-            "the pipeline-level role — no per-stage separation of privilege."
+            "the pipeline-level role, no per-stage separation of privilege."
         )
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

@@ -1,4 +1,4 @@
-"""CA-002 — CodeArtifact repository connects to ``public:*`` upstream."""
+"""CA-002. CodeArtifact repository connects to ``public:*`` upstream."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError

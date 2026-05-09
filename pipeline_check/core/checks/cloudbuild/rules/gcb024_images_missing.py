@@ -1,11 +1,11 @@
-"""GCB-024 — Build pushes Docker images but the top-level ``images:`` is empty.
+"""GCB-024. Build pushes Docker images but the top-level ``images:`` is empty.
 
 Cloud Build's image-attestation flow (and the build-result UI's
 "Images" column) only tracks images that are declared in the
 top-level ``images:`` array. When a step does ``docker build`` +
 ``docker push`` but the build doesn't list the resulting image in
-``images:``, the push still happens — the image lands in the
-target registry — but Cloud Build records no provenance edge from
+``images:``, the push still happens, the image lands in the
+target registry, but Cloud Build records no provenance edge from
 the build to the image. The Cloud Build → Cloud Logging
 ``image_url`` field stays empty, Binary Authorization can't
 attest the image to this specific build, and the
@@ -53,7 +53,7 @@ RULE = Rule(
         "``gcr.io/cloud-builders/docker`` builder image are the "
         "common case; ``--push`` flags on ``buildx build`` are "
         "also detected. ``kaniko`` and ``buildah`` push idioms "
-        "aren't currently detected — those are different builder "
+        "aren't currently detected. Those are different builder "
         "images entirely."
     ),
     known_fp=(
@@ -126,7 +126,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No step pushes a Docker image — nothing to declare.",
+            description="No step pushes a Docker image, nothing to declare.",
             recommendation=RULE.recommendation, passed=True,
         )
     if _has_images_declared(doc):

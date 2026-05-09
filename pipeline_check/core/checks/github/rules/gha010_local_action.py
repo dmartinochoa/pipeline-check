@@ -1,4 +1,4 @@
-"""GHA-010 — local `uses: ./path` forbidden on untrusted-trigger workflows."""
+"""GHA-010, local `uses: ./path` forbidden on untrusted-trigger workflows."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
     docs_note=(
         "`uses: ./path/to/action` resolves the action against the "
         "CHECKED-OUT workspace. On `pull_request_target` / "
-        "`workflow_run`, that workspace can be PR-controlled — "
+        "`workflow_run`, that workspace can be PR-controlled, "
         "meaning the attacker supplies the `action.yml` that runs "
         "with default-branch privilege."
     ),
@@ -56,7 +56,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"references local action(s) at: {', '.join(offending[:5])}"
         f"{'…' if len(offending) > 5 else ''}. The action.yml is "
         f"resolved against the checked-out workspace, which on this "
-        f"trigger may be PR-controlled — letting the attacker ship "
+        f"trigger may be PR-controlled, letting the attacker ship "
         f"arbitrary action code into the privileged context."
     )
     return Finding(

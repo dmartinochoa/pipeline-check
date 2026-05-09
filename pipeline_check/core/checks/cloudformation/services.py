@@ -1,4 +1,4 @@
-"""CloudFormation Phase-2 parity — CA-*, CCM-*, LMB-*, KMS-*, SSM-*.
+"""CloudFormation Phase-2 parity. CA-*, CCM-*, LMB-*, KMS-*, SSM-*.
 
 Mirrors ``checks/terraform/services.py``. Notes:
 
@@ -125,7 +125,7 @@ def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# CodeCommit — CCM-002 (KMS), CCM-003 (cross-account triggers).
+# CodeCommit. CCM-002 (KMS), CCM-003 (cross-account triggers).
 # CCM-001 omitted (no CFN resource for approval-rule template association).
 # ---------------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
             recommendation="Set KmsKeyId to a customer-managed KMS key ARN.",
             passed=passed,
         ))
-        # CCM-003 — literal cross-account ARNs in Triggers.DestinationArn
+        # CCM-003, literal cross-account ARNs in Triggers.DestinationArn
         # signal potential cross-account drift. CFN's Triggers prop is a
         # list of {Name, DestinationArn, Events, ...} entries.
         triggers = r.properties.get("Triggers") or []
@@ -160,7 +160,7 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
                 continue
             dest = trig.get("DestinationArn")
             if isinstance(dest, str) and dest.count(":") >= 4:
-                # Literal ARN — we can't resolve what account; flag for audit.
+                # Literal ARN. We can't resolve what account; flag for audit.
                 offenders.append(dest)
         if triggers:
             out.append(Finding(
@@ -169,7 +169,7 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
                 severity=Severity.MEDIUM,
                 resource=r.address,
                 description=(
-                    f"Literal DestinationArn(s) in Triggers: {offenders} — verify "
+                    f"Literal DestinationArn(s) in Triggers: {offenders}, verify "
                     "these stay within the repository's account."
                     if offenders else
                     "All trigger destinations reference template resources, not literal ARNs."
@@ -340,7 +340,7 @@ def _ssm(ctx: CloudFormationContext) -> list[Finding]:
     for p in ctx.resources("AWS::SSM::Parameter"):
         name = as_str(p.properties.get("Name"))
         ptype = as_str(p.properties.get("Type"))
-        # AWS::SSM::Parameter only supports String/StringList — SecureString
+        # AWS::SSM::Parameter only supports String/StringList. SecureString
         # creation via CFN isn't supported as of this writing. We still check
         # the Type property defensively because the restriction is evolving.
         if SECRET_NAME_RE.search(name) and ptype != "SecureString":
@@ -351,7 +351,7 @@ def _ssm(ctx: CloudFormationContext) -> list[Finding]:
                 resource=p.address,
                 description=(
                     f"Parameter '{name}' has a secret-like name but Type={ptype or 'String'}. "
-                    "Note: CFN does not support creating SecureStrings directly — migrate "
+                    "Note: CFN does not support creating SecureStrings directly, migrate "
                     "the parameter to Secrets Manager or create it out-of-band."
                 ),
                 recommendation=(

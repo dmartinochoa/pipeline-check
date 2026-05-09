@@ -1,4 +1,4 @@
-"""PBAC-001 — CodeBuild project has no VPC configuration."""
+"""PBAC-001. CodeBuild project has no VPC configuration."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -19,7 +19,7 @@ RULE = Rule(
     ),
     docs_note=(
         "A CodeBuild project with no VPC configuration runs in "
-        "AWS-managed network space — egress to the public internet "
+        "AWS-managed network space, egress to the public internet "
         "is unrestricted, every package registry / CDN / arbitrary "
         "endpoint is reachable. Inside a VPC, security-group + "
         "VPC-endpoint policies become the egress gate, which is the "

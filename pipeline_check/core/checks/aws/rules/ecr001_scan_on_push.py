@@ -1,4 +1,4 @@
-"""ECR-001 — ECR repository has imageScanningConfiguration.scanOnPush disabled."""
+"""ECR-001. ECR repository has imageScanningConfiguration.scanOnPush disabled."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

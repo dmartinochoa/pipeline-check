@@ -40,7 +40,7 @@ END = "<!-- chain-catalog:end -->"
 # Provider rule-id prefix → provider doc slug, mirrors the table in
 # scripts/link_standards_check_ids.py. Triggering checks rendered in
 # narrative blocks become click-through links to the provider rule
-# pages where possible. Keep in sync with the linker — we don't
+# pages where possible. Keep in sync with the linker. We don't
 # share the table because that script lives at script-runtime,
 # while this one runs at doc-gen-time and we want it standalone.
 _PREFIX_TO_PROVIDER: dict[str, str] = {
@@ -57,7 +57,7 @@ def _severity_chip(severity: str) -> str:
     return f'<span class="pg-sev pg-sev--{sev_lc}">{severity}</span>'
 
 
-def _render_chain(rule) -> str:  # noqa: ANN001 — ChainRule is dataclass
+def _render_chain(rule) -> str:  # noqa: ANN001. ChainRule is dataclass
     """One ``<div class="pg-rule pg-rule--<sev>">`` card per chain."""
     sev = rule.severity.value
     sev_lc = sev.lower()
@@ -65,7 +65,7 @@ def _render_chain(rule) -> str:  # noqa: ANN001 — ChainRule is dataclass
     parts: list[str] = []
 
     parts.append(f'<div class="pg-rule pg-rule--{sev_lc}" markdown>\n\n')
-    parts.append(f"### {rule.id} — {rule.title} {{ #{anchor} }}\n\n")
+    parts.append(f"### {rule.id}: {rule.title} {{ #{anchor} }}\n\n")
 
     # Chip row: severity + MITRE techniques + kill-chain phase
     chips: list[str] = [_severity_chip(sev)]
@@ -123,7 +123,7 @@ def _render_catalog() -> str:
 
 def _splice(original: str, generated: str) -> str:
     if START not in original or END not in original:
-        # First-time injection — append after the file's existing
+        # First-time injection, append after the file's existing
         # content, with a blank line before the start sentinel.
         return original.rstrip() + f"\n\n{START}\n\n{generated}\n{END}\n"
     pre, _, rest = original.partition(START)

@@ -1,4 +1,4 @@
-"""GHA-031 — workflow uses retired ``::set-output::`` / ``::save-state::``."""
+"""GHA-031, workflow uses retired ``::set-output::`` / ``::save-state::``."""
 from __future__ import annotations
 
 import re
@@ -23,7 +23,7 @@ RULE = Rule(
         "commands stream through the runner's stdout, which lets any "
         "log line that happens to start with ``::`` inject into the "
         "command channel. The file-redirect forms write to a private "
-        "file the runner reads after the step exits — no log-line "
+        "file the runner reads after the step exits, no log-line "
         "interleaving, no injection."
     ),
     docs_note=(
@@ -36,7 +36,7 @@ RULE = Rule(
         "(``$GITHUB_OUTPUT`` / ``$GITHUB_STATE`` files) close that "
         "injection channel. Workflows still using the retired "
         "commands also depend on a deprecation timer that GitHub has "
-        "extended several times — they will eventually break."
+        "extended several times. They will eventually break."
     ),
 )
 

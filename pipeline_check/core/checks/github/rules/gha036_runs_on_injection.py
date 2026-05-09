@@ -1,4 +1,4 @@
-"""GHA-036 — job ``runs-on:`` interpolates an attacker-controllable expression."""
+"""GHA-036, job ``runs-on:`` interpolates an attacker-controllable expression."""
 from __future__ import annotations
 
 from typing import Any
@@ -27,7 +27,7 @@ RULE = Rule(
         "GHA-012 catches self-hosted runners that aren't ephemeral; "
         "this rule catches the upstream targeting choice. When "
         "``runs-on`` is computed from an untrusted expression, the "
-        "caller picks where the workflow runs — including any "
+        "caller picks where the workflow runs, including any "
         "self-hosted label the org owns. A reusable workflow that "
         "declares ``runs-on: ${{ inputs.runner }}`` lets a downstream "
         "caller route the job onto the production-deploy fleet (or "
@@ -35,15 +35,15 @@ RULE = Rule(
         "the privileges that fleet inherits. The same surface exists "
         "via ``workflow_dispatch`` inputs and any ``${{ github.event.* "
         "}}`` field that an attacker can populate. The rule walks "
-        "all three ``runs-on`` shapes — string scalar, list of labels, "
-        "and the long-form ``{ group, labels }`` dict — and matches "
+        "all three ``runs-on`` shapes, string scalar, list of labels, "
+        "and the long-form ``{ group, labels }`` dict, and matches "
         "the same untrusted-context regex GHA-003 / GHA-035 use."
     ),
     known_fp=(
         "Workflows that intentionally select runners by environment "
         "via a vetted matrix (``runs-on: ${{ matrix.os }}`` where "
         "``matrix.os`` is a hard-coded list inside the workflow) are "
-        "out of scope — the matrix values are author-controlled, not "
+        "out of scope, the matrix values are author-controlled, not "
         "caller-controlled. The rule only matches the catalog of "
         "untrusted contexts (``inputs.*``, ``github.event.*``, "
         "``github.head_ref``, …); ``matrix.*`` and ``env.*`` "
@@ -57,12 +57,12 @@ def _runs_on_strings(runs_on: Any) -> list[str]:
 
     Handles the three shapes GitHub Actions accepts:
 
-    * scalar — ``runs-on: ubuntu-latest``
-    * list — ``runs-on: [self-hosted, linux, x64]``
-    * mapping — ``runs-on: { group: prod, labels: [a, b] }``
+    * scalar, ``runs-on: ubuntu-latest``
+    * list, ``runs-on: [self-hosted, linux, x64]``
+    * mapping, ``runs-on: { group: prod, labels: [a, b] }``
 
     Non-string entries (a malformed workflow with an int label) are
-    skipped silently — the YAML loader already accepted them, so the
+    skipped silently, the YAML loader already accepted them, so the
     surface for injection is what matters here, not the schema.
     """
     out: list[str] = []
@@ -102,7 +102,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{', '.join(sorted(set(offenders))[:5])}"
         f"{'…' if len(set(offenders)) > 5 else ''}. "
         f"A caller (or PR sender, depending on trigger) can route "
-        f"the workflow onto any runner label the org exposes — "
+        f"the workflow onto any runner label the org exposes, "
         f"including privileged self-hosted fleets."
     )
     return Finding(

@@ -15,27 +15,27 @@ STANDARD = Standard(
     version="1.0",
     url="https://www.cisecurity.org/insights/white-papers/cis-software-supply-chain-security-guide",
     controls={
-        # 1 — Source Code
+        # 1. Source Code
         "1.3.4": "Ensure organization identity is required for contribution (no long-lived personal tokens)",
         "1.4.1": "Ensure third-party artifacts and open-source libraries are verified",
-        # 2 — Build Pipelines
+        # 2. Build Pipelines
         "2.1.3": "Ensure the build environment is hardened",
         "2.1.6": "Ensure build workers have minimal network connectivity",
         "2.2.2": "Ensure build workers are single-use",
         "2.3.4": "Ensure pipelines are scanned for secrets and sensitive data",
         "2.3.7": "Ensure pipeline steps produce audit logs",
         "2.3.8": "Ensure pipeline configuration files are reviewed before execution",
-        "2.4.2": "Ensure pipeline integrity — artifacts are signed by the pipeline",
+        "2.4.2": "Ensure pipeline integrity, artifacts are signed by the pipeline",
         "2.4.3": "Ensure access to the pipeline execution environment is restricted",
-        # 3 — Build Dependencies
+        # 3. Build Dependencies
         "3.1.3": "Ensure signed metadata of dependencies is verified",
         "3.1.5": "Ensure only trusted package managers and repositories are used",
-        # 4 — Artifacts
+        # 4. Artifacts
         "4.1.1": "Ensure all artifacts on all releases are verified (signed, integrity-checked)",
         "4.2.1": "Ensure access to artifacts is limited",
         "4.3.3": "Ensure package registries use authentication and authorisation",
         "4.4.1": "Ensure artifacts have provenance/SBOM metadata",
-        # 5 — Deployment
+        # 5. Deployment
         "5.1.4": "Ensure deployment configuration manifests are reviewed before apply",
         "5.2.1": "Ensure deployment environments are separated",
         "5.2.3": "Ensure deployment environment activity is audited",

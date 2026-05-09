@@ -1,4 +1,4 @@
-"""K8S-004 — Pod ``hostIPC: true`` shares the host's IPC namespace."""
+"""K8S-004. Pod ``hostIPC: true`` shares the host's IPC namespace."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

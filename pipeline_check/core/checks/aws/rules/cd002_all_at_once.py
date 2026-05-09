@@ -1,4 +1,4 @@
-"""CD-002 — CodeDeploy deployment group uses AllAtOnce (no canary/rolling)."""
+"""CD-002. CodeDeploy deployment group uses AllAtOnce (no canary/rolling)."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -14,7 +14,7 @@ _ALL_AT_ONCE_CONFIGS = {
 
 RULE = Rule(
     id="CD-002",
-    title="AllAtOnce deployment config \u2014 no canary or rolling strategy",
+    title="AllAtOnce deployment config, no canary or rolling strategy",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-1",),
     cwe=("CWE-754",),
@@ -27,7 +27,7 @@ RULE = Rule(
     docs_note=(
         "AllAtOnce shifts 100% of traffic to the new revision in one "
         "step. There's no gradient to halt on if a CloudWatch alarm "
-        "trips mid-rollout — the bad revision is already serving "
+        "trips mid-rollout, the bad revision is already serving "
         "every request. Canary / linear configs introduce the "
         "shift-then-watch shape that lets monitors catch a "
         "regression before it's universal."

@@ -1,4 +1,4 @@
-"""ADO-020 — no vulnerability scanning step."""
+"""ADO-020, no vulnerability scanning step."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-S-VULN-MGMT",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add a vulnerability scanning step \u2014 trivy, grype, snyk test, "
+        "Add a vulnerability scanning step, trivy, grype, snyk test, "
         "npm audit, pip-audit, or osv-scanner. Publish results so "
         "vulnerabilities surface before deployment."
     ),
@@ -33,7 +33,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

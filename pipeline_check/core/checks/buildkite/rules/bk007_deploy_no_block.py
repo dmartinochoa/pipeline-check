@@ -1,4 +1,4 @@
-"""BK-007 — Deploy steps must be gated by a manual ``block:`` step."""
+"""BK-007. Deploy steps must be gated by a manual ``block:`` step."""
 from __future__ import annotations
 
 import re
@@ -34,7 +34,7 @@ RULE = Rule(
     ),
     known_fp=(
         "Pipelines where the deploy gate lives in a triggered "
-        "pipeline rather than the local file — the local pipeline "
+        "pipeline rather than the local file, the local pipeline "
         "looks ungated even though the actual deploy is gated "
         "downstream. Add a no-op ``block:`` to silence.",
     ),

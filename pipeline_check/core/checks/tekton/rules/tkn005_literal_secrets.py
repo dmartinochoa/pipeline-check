@@ -1,4 +1,4 @@
-"""TKN-005 — Literal secret-shaped values in step env / param defaults."""
+"""TKN-005. Literal secret-shaped values in step env / param defaults."""
 from __future__ import annotations
 
 import re

@@ -1,4 +1,4 @@
-"""K8S-040 — Container with ``procMount: Unmasked``."""
+"""K8S-040. Container with ``procMount: Unmasked``."""
 from __future__ import annotations
 
 from typing import Any
@@ -28,13 +28,13 @@ RULE = Rule(
         "``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, "
         "``/proc/timer_list``, ``/proc/timer_stats``, "
         "``/proc/sched_debug``, ``/proc/scsi``) and remounts "
-        "``/proc/sys`` as read-only — these maskings are what stop "
+        "``/proc/sys`` as read-only. These maskings are what stop "
         "a container from reading the host's kernel structures or "
         "writing to ``/proc/sys`` and breaking the kernel out of "
         "namespace isolation. ``Unmasked`` undoes all of that."
     ),
     docs_note=(
-        "``procMount: Unmasked`` is rarely needed in practice — it "
+        "``procMount: Unmasked`` is rarely needed in practice. It "
         "exists for nested-container / KubeVirt scenarios where the "
         "container itself runs an inner container runtime that "
         "needs to set up its own ``/proc`` masking. For an "

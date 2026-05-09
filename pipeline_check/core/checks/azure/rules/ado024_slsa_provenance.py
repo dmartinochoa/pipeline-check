@@ -1,4 +1,4 @@
-"""ADO-024 — Azure DevOps pipeline must emit SLSA provenance attestation."""
+"""ADO-024. Azure DevOps pipeline must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any

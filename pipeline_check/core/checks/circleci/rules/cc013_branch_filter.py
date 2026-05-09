@@ -1,4 +1,4 @@
-"""CC-013 — workflows should have branch filters on sensitive jobs."""
+"""CC-013, workflows should have branch filters on sensitive jobs."""
 from __future__ import annotations
 
 from typing import Any

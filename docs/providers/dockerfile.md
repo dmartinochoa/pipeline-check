@@ -1,6 +1,6 @@
 # Dockerfile provider
 
-Parses `Dockerfile` / `Containerfile` documents on disk — text-only
+Parses `Dockerfile` / `Containerfile` documents on disk, text-only
 static analysis, no image build, no registry pull, no daemon access.
 Multi-stage builds are flattened: rules see the full instruction
 stream and decide for themselves whether to scope by stage (e.g.
@@ -30,15 +30,15 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 Several checks target Dockerfile concepts that have no direct
 analogue in other providers:
 
-- **DF-001** — `FROM` must pin by `@sha256:<digest>`. Reuses the same
+- **DF-001**, `FROM` must pin by `@sha256:<digest>`. Reuses the same
   classifier as GL-001 / JF-009 / ADO-009 / CC-003 so the
   floating-tag vocabulary matches across the tool.
-- **DF-002** — final stage must run as a non-root `USER`. Multi-stage
+- **DF-002**, final stage must run as a non-root `USER`. Multi-stage
   builds: only the runtime image's identity matters, so this rule
   scopes USER tracking to the directives after the *last* `FROM`.
-- **DF-003** — `ADD <url>` must carry a BuildKit `--checksum=sha256:`
+- **DF-003**, `ADD <url>` must carry a BuildKit `--checksum=sha256:`
   flag, otherwise it pulls remote content with no integrity check.
-- **DF-006** — `ENV` / `ARG` values are baked into image layers;
+- **DF-006**, `ENV` / `ARG` values are baked into image layers;
   ``docker history`` reads them even after they're overwritten. Any
   literal credential-shaped value (AKIA-prefixed, or a key named
   `*_PASSWORD` / `*_TOKEN` / `*_SECRET` with a non-empty literal) is
@@ -75,13 +75,13 @@ analogue in other providers:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-001 — FROM image not pinned to sha256 digest { #df-001 }
+## DF-001: FROM image not pinned to sha256 digest { #df-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Reuses ``_primitives/image_pinning.classify`` so the floating-tag semantics match GL-001 / JF-009 / ADO-009 / CC-003. ``PINNED_TAG`` (e.g. ``python:3.12.1-slim``) is treated as unpinned here too — only an explicit ``@sha256:`` survives, since the tag is mutable on the registry side.
+Reuses ``_primitives/image_pinning.classify`` so the floating-tag semantics match GL-001 / JF-009 / ADO-009 / CC-003. ``PINNED_TAG`` (e.g. ``python:3.12.1-slim``) is treated as unpinned here too, only an explicit ``@sha256:`` survives, since the tag is mutable on the registry side.
 
 <div class="pg-rule__rec" markdown>
 
@@ -95,7 +95,7 @@ Resolve every base image to its current digest (``docker buildx imagetools inspe
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-002 — Container runs as root (missing or root USER directive) { #df-002 }
+## DF-002: Container runs as root (missing or root USER directive) { #df-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -107,7 +107,7 @@ Multi-stage builds: only the final stage matters for runtime identity, since int
 
 **Recommended action**
 
-Add a ``USER <non-root>`` directive after package install steps (e.g. ``USER 1001`` or ``USER appuser``). Running as root inside a container is not isolation — a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
+Add a ``USER <non-root>`` directive after package install steps (e.g. ``USER 1001`` or ``USER appuser``). Running as root inside a container is not isolation, a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
 
 </div>
 
@@ -115,7 +115,7 @@ Add a ``USER <non-root>`` directive after package install steps (e.g. ``USER 100
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-003 — ADD pulls remote URL without integrity verification { #df-003 }
+## DF-003: ADD pulls remote URL without integrity verification { #df-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -127,7 +127,7 @@ Add a ``USER <non-root>`` directive after package install steps (e.g. ``USER 100
 
 **Recommended action**
 
-Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``curl -fsSLo``, verify a known-good checksum (``sha256sum -c``) or signature (``cosign verify-blob``), then extract / install. Better still: download the artifact in a builder stage and ``COPY`` it across — that way the verifier runs once at build time, not per-pull.
+Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``curl -fsSLo``, verify a known-good checksum (``sha256sum -c``) or signature (``cosign verify-blob``), then extract / install. Better still: download the artifact in a builder stage and ``COPY`` it across. That way the verifier runs once at build time, not per-pull.
 
 </div>
 
@@ -135,7 +135,7 @@ Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-004 — RUN executes a remote script via curl-pipe / wget-pipe { #df-004 }
+## DF-004: RUN executes a remote script via curl-pipe / wget-pipe { #df-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -155,13 +155,13 @@ Download to a file, verify checksum or signature, then execute. ``curl -fsSL <ur
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-005 — RUN uses shell-eval (eval / sh -c on a variable / backticks) { #df-005 }
+## DF-005: RUN uses shell-eval (eval / sh -c on a variable / backticks) { #df-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-Reuses ``_primitives/shell_eval.scan`` — same primitive used by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so the safe / unsafe vocabulary matches across the tool.
+Reuses ``_primitives/shell_eval.scan``, same primitive used by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so the safe / unsafe vocabulary matches across the tool.
 
 <div class="pg-rule__rec" markdown>
 
@@ -175,19 +175,19 @@ Replace ``eval "$X"`` and ``sh -c "$X"`` with explicit argv invocations. If the 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## DF-006 — ENV or ARG carries a credential-shaped literal value { #df-006 }
+## DF-006: ENV or ARG carries a credential-shaped literal value { #df-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Reuses ``_primitives/secret_shapes`` — flags AKIA-prefixed AWS keys outright (the literal AWS access-key shape) and credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal.
+Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS keys outright (the literal AWS access-key shape) and credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the image layer history — even if the value is later overwritten, ``docker history --no-trunc`` reads the original. Use ``RUN --mount=type=secret`` for build-time secrets or runtime env injection (``docker run -e SECRET=…``) for runtime ones. Rotate any secret already exposed.
+Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the image layer history, even if the value is later overwritten, ``docker history --no-trunc`` reads the original. Use ``RUN --mount=type=secret`` for build-time secrets or runtime env injection (``docker run -e SECRET=…``) for runtime ones. Rotate any secret already exposed.
 
 </div>
 
@@ -195,19 +195,19 @@ Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the i
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## DF-007 — No HEALTHCHECK directive declared { #df-007 }
+## DF-007: No HEALTHCHECK directive declared { #df-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
 </div>
 
-This is a defense-in-depth signal rather than an exploitation indicator — severity is LOW. A missing healthcheck doesn't create a vulnerability on its own, but downstream orchestrators (Kubernetes, ECS, Compose) cannot recover an unhealthy container they cannot detect, and that turns a soft failure (slow leak, deadlock) into a stale-process incident.
+This is a defense-in-depth signal rather than an exploitation indicator, severity is LOW. A missing healthcheck doesn't create a vulnerability on its own, but downstream orchestrators (Kubernetes, ECS, Compose) cannot recover an unhealthy container they cannot detect, and that turns a soft failure (slow leak, deadlock) into a stale-process incident.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Declare a ``HEALTHCHECK`` so the orchestrator can detect stuck or zombie containers. Example: ``HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://localhost/healthz || exit 1``. Skip this for builder/multi-stage intermediate images — only the runtime image needs one.
+Declare a ``HEALTHCHECK`` so the orchestrator can detect stuck or zombie containers. Example: ``HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://localhost/healthz || exit 1``. Skip this for builder/multi-stage intermediate images, only the runtime image needs one.
 
 </div>
 
@@ -215,7 +215,7 @@ Declare a ``HEALTHCHECK`` so the orchestrator can detect stuck or zombie contain
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-008 — RUN invokes docker --privileged or escalates capabilities { #df-008 }
+## DF-008: RUN invokes docker --privileged or escalates capabilities { #df-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -227,7 +227,7 @@ Mirrors GHA-017 / GL-017 / BB-013 / ADO-017 / CC-017 / JF-017 (``docker run --pr
 
 **Recommended action**
 
-A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If the build genuinely requires elevated capabilities (e.g. compiling a kernel module), do it in a sealed builder image and ``COPY`` the artifact out — don't carry the privileged execution into the runtime image.
+A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If the build genuinely requires elevated capabilities (e.g. compiling a kernel module), do it in a sealed builder image and ``COPY`` the artifact out, don't carry the privileged execution into the runtime image.
 
 </div>
 
@@ -235,7 +235,7 @@ A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## DF-009 — ADD used where COPY would suffice { #df-009 }
+## DF-009: ADD used where COPY would suffice { #df-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
@@ -247,7 +247,7 @@ Pure-local ``ADD <path> <dest>`` is functionally identical to ``COPY``, but ship
 
 **Recommended action**
 
-Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behaviors that make it the wrong default — it fetches HTTP(S) URLs and it auto-extracts ``.tar`` / ``.tar.gz`` archives. Both are easy to invoke accidentally and neither is reproducible. Reserve ``ADD`` for a deliberate URL-pull (covered by DF-003) or an explicit tarball extract.
+Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behaviors that make it the wrong default. It fetches HTTP(S) URLs and it auto-extracts ``.tar`` / ``.tar.gz`` archives. Both are easy to invoke accidentally and neither is reproducible. Reserve ``ADD`` for a deliberate URL-pull (covered by DF-003) or an explicit tarball extract.
 
 </div>
 
@@ -255,19 +255,19 @@ Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has two implicit behavior
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## DF-010 — apt-get dist-upgrade / upgrade pulls unknown package versions { #df-010 }
+## DF-010: apt-get dist-upgrade / upgrade pulls unknown package versions { #df-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Running ``apt-get upgrade`` (or ``dist-upgrade``) inside a Dockerfile is the classic pet-vs-cattle anti-pattern. Two back-to-back builds with the same Dockerfile can produce different images because the upstream archive moved between the two ``RUN`` invocations. ``dist-upgrade`` additionally relaxes dependency resolution — it can install / remove arbitrary packages to satisfy upgrades, so the resulting image's package set isn't even bounded by what the Dockerfile declares.
+Running ``apt-get upgrade`` (or ``dist-upgrade``) inside a Dockerfile is the classic pet-vs-cattle anti-pattern. Two back-to-back builds with the same Dockerfile can produce different images because the upstream archive moved between the two ``RUN`` invocations. ``dist-upgrade`` additionally relaxes dependency resolution. It can install / remove arbitrary packages to satisfy upgrades, so the resulting image's package set isn't even bounded by what the Dockerfile declares.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Drop the upgrade step. Build on a recent base image instead (rebuild your image when the base image gets a security patch — pin the base by digest per DF-001 so the rebuild is deterministic). ``apt-get install pkg=<version>`` for specific packages stays reproducible; ``upgrade`` / ``dist-upgrade`` does not.
+Drop the upgrade step. Build on a recent base image instead (rebuild your image when the base image gets a security patch, pin the base by digest per DF-001 so the rebuild is deterministic). ``apt-get install pkg=<version>`` for specific packages stays reproducible; ``upgrade`` / ``dist-upgrade`` does not.
 
 </div>
 
@@ -275,13 +275,13 @@ Drop the upgrade step. Build on a recent base image instead (rebuild your image 
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## DF-011 — Package manager install without cache cleanup in same layer { #df-011 }
+## DF-011: Package manager install without cache cleanup in same layer { #df-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--cwe">CWE-1116</span>
 </div>
 
-Each Dockerfile ``RUN`` produces a layer. Installing packages in one layer and cleaning the cache in a later layer leaves the cache files in the lower layer forever — final image size is unchanged and the residual files broaden the attack surface (e.g. apt's signed-by keys, package metadata). The fix is layout, not behavior: do install + cleanup in the same ``RUN``.
+Each Dockerfile ``RUN`` produces a layer. Installing packages in one layer and cleaning the cache in a later layer leaves the cache files in the lower layer forever, final image size is unchanged and the residual files broaden the attack surface (e.g. apt's signed-by keys, package metadata). The fix is layout, not behavior: do install + cleanup in the same ``RUN``.
 
 <div class="pg-rule__rec" markdown>
 
@@ -295,7 +295,7 @@ Combine the install and cleanup into the same ``RUN`` so the cache lands in a si
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-012 — RUN invokes sudo { #df-012 }
+## DF-012: RUN invokes sudo { #df-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -307,7 +307,7 @@ Combine the install and cleanup into the same ``RUN`` so the cache lands in a si
 
 **Recommended action**
 
-Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the default before any ``USER`` directive), in which case ``sudo`` is no-op noise, or the build switched to a non-root ``USER`` and needs root for a specific step — in which case temporarily revert with ``USER root`` for that ``RUN`` and switch back afterward.
+Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the default before any ``USER`` directive), in which case ``sudo`` is no-op noise, or the build switched to a non-root ``USER`` and needs root for a specific step, in which case temporarily revert with ``USER root`` for that ``RUN`` and switch back afterward.
 
 </div>
 
@@ -315,19 +315,19 @@ Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## DF-013 — EXPOSE declares sensitive remote-access port { #df-013 }
+## DF-013: EXPOSE declares sensitive remote-access port { #df-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
 </div>
 
-``EXPOSE`` is documentation, not a firewall — it doesn't actually open the port. But ``EXPOSE 22`` is a strong signal the image runs sshd, and any remote-access daemon inside the container blows up the threat model: now you have an extra auth surface, an extra service to keep patched, and a way for a compromised app to phone home from the outside. The container runtime / orchestrator's exec path covers every operational use case sshd traditionally served.
+``EXPOSE`` is documentation, not a firewall. It doesn't actually open the port. But ``EXPOSE 22`` is a strong signal the image runs sshd, and any remote-access daemon inside the container blows up the threat model: now you have an extra auth surface, an extra service to keep patched, and a way for a compromised app to phone home from the outside. The container runtime / orchestrator's exec path covers every operational use case sshd traditionally served.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Remove the ``EXPOSE`` line for the remote-access port. If the operator legitimately needs to reach the container, exec into it (``docker exec`` / ``kubectl exec``) — that path uses the orchestrator's auth and audit, doesn't open a network port, and doesn't ship an extra daemon inside the image. Containers should not run sshd / telnetd / ftpd / rsh-d / vncd / RDP alongside the application.
+Remove the ``EXPOSE`` line for the remote-access port. If the operator legitimately needs to reach the container, exec into it (``docker exec`` / ``kubectl exec``). That path uses the orchestrator's auth and audit, doesn't open a network port, and doesn't ship an extra daemon inside the image. Containers should not run sshd / telnetd / ftpd / rsh-d / vncd / RDP alongside the application.
 
 </div>
 
@@ -335,19 +335,19 @@ Remove the ``EXPOSE`` line for the remote-access port. If the operator legitimat
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## DF-014 — WORKDIR set to a system / kernel filesystem path { #df-014 }
+## DF-014: WORKDIR set to a system / kernel filesystem path { #df-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``ADD …``) resolve relative paths against the active ``WORKDIR``. A ``WORKDIR /sys`` followed by ``COPY conf.txt config.txt`` writes into the kernel's sysfs surface — at best a build-time error, at worst a container-escape primitive that lets a compromised step manipulate cgroups, devices, or kernel config.
+Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``ADD …``) resolve relative paths against the active ``WORKDIR``. A ``WORKDIR /sys`` followed by ``COPY conf.txt config.txt`` writes into the kernel's sysfs surface, at best a build-time error, at worst a container-escape primitive that lets a compromised step manipulate cgroups, devices, or kernel config.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories — pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
+Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories, pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
 
 </div>
 
@@ -355,7 +355,7 @@ Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<s
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## DF-015 — RUN grants world-writable permissions (chmod 777 / a+w) { #df-015 }
+## DF-015: RUN grants world-writable permissions (chmod 777 / a+w) { #df-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -375,7 +375,7 @@ Replace ``chmod 777 <path>`` with the narrowest permissions the workload actuall
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## DF-016 — Image lacks OCI provenance labels { #df-016 }
+## DF-016: Image lacks OCI provenance labels { #df-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -395,13 +395,13 @@ Add a ``LABEL`` line carrying at least ``org.opencontainers.image.source`` (the 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## DF-017 — ENV PATH prepends a world-writable directory { #df-017 }
+## DF-017: ENV PATH prepends a world-writable directory { #df-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-426</span>
 </div>
 
-A writable PATH entry that comes before the system bins lets any process inside the container shadow ``ls``, ``ps``, ``apt-get``, ``cat``, etc. by dropping a binary of the same name into the writable dir. On a multi-tenant image — or any image where an exploit can reach the filesystem — this is a free privilege-escalation vector.
+A writable PATH entry that comes before the system bins lets any process inside the container shadow ``ls``, ``ps``, ``apt-get``, ``cat``, etc. by dropping a binary of the same name into the writable dir. On a multi-tenant image, or any image where an exploit can reach the filesystem, this is a free privilege-escalation vector.
 
 <div class="pg-rule__rec" markdown>
 
@@ -415,13 +415,13 @@ Don't put ``/tmp``, ``/var/tmp``, ``/dev/shm``, or any other world-writable path
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## DF-018 — RUN chown rewrites ownership of a system path { #df-018 }
+## DF-018: RUN chown rewrites ownership of a system path { #df-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-Recognises ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful — the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
+Recognises ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful, the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
 
 <div class="pg-rule__rec" markdown>
 
@@ -435,13 +435,13 @@ Don't ``chown`` system directories at build time. If the runtime user needs to o
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-019 — COPY/ADD source path looks like a credential file { #df-019 }
+## DF-019: COPY/ADD source path looks like a credential file { #df-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
 </div>
 
-Fires on any ``COPY`` or ``ADD`` whose source basename is a well-known credential filename (``id_rsa``, ``.npmrc``, ``.netrc``, ``.env``, ``terraform.tfvars``, …) or whose path tail matches a canonical credential location (``.aws/credentials``, ``.docker/config.json``, ``.kube/config``). Files with private-key extensions (``.pem``, ``.key``, ``.p12``, ``.pfx``, ``.jks``) are also flagged. Globs are not expanded — the rule reads the literal source token.
+Fires on any ``COPY`` or ``ADD`` whose source basename is a well-known credential filename (``id_rsa``, ``.npmrc``, ``.netrc``, ``.env``, ``terraform.tfvars``, …) or whose path tail matches a canonical credential location (``.aws/credentials``, ``.docker/config.json``, ``.kube/config``). Files with private-key extensions (``.pem``, ``.key``, ``.p12``, ``.pfx``, ``.jks``) are also flagged. Globs are not expanded, the rule reads the literal source token.
 
 <div class="pg-rule__rec" markdown>
 
@@ -455,19 +455,19 @@ Don't ``COPY`` credential files into an image. Anything baked into a layer is re
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## DF-020 — ARG declares a credential-named build argument { #df-020 }
+## DF-020: ARG declares a credential-named build argument { #df-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
 </div>
 
-Complements DF-006 (which flags an ENV/ARG with a literal credential-shaped value). This rule fires on the *name* alone — ``ARG NPM_TOKEN``, ``ARG GITHUB_PAT``, ``ARG DB_PASSWORD`` — even when no default is set, because BuildKit records the resolved value in the image's history the moment ``--build-arg`` supplies one. Names are matched via the same ``_primitives/secret_shapes`` regex used by the other secret-name rules.
+Complements DF-006 (which flags an ENV/ARG with a literal credential-shaped value). This rule fires on the *name* alone, ``ARG NPM_TOKEN``, ``ARG GITHUB_PAT``, ``ARG DB_PASSWORD``, even when no default is set, because BuildKit records the resolved value in the image's history the moment ``--build-arg`` supplies one. Names are matched via the same ``_primitives/secret_shapes`` regex used by the other secret-name rules.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Don't pass secrets through ``ARG``. Build arguments are recorded in ``docker history`` whether the value comes from a default or from ``--build-arg`` at build time, so a credential-named ARG leaks the secret to anyone who can pull the image. Use ``RUN --mount=type=secret,id=<name>`` and feed the value with BuildKit's ``--secret`` flag — the secret never lands in a layer or in the build history.
+Don't pass secrets through ``ARG``. Build arguments are recorded in ``docker history`` whether the value comes from a default or from ``--build-arg`` at build time, so a credential-named ARG leaks the secret to anyone who can pull the image. Use ``RUN --mount=type=secret,id=<name>`` and feed the value with BuildKit's ``--secret`` flag, the secret never lands in a layer or in the build history.
 
 </div>
 

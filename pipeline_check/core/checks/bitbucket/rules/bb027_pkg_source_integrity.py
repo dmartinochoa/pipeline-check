@@ -1,4 +1,4 @@
-"""BB-027 — package install from git URL / local path / tarball URL."""
+"""BB-027, package install from git URL / local path / tarball URL."""
 from __future__ import annotations
 
 from typing import Any

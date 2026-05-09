@@ -1,4 +1,4 @@
-"""GL-004 — deploy jobs must be gated by manual approval or environment."""
+"""GL-004, deploy jobs must be gated by manual approval or environment."""
 from __future__ import annotations
 
 import re

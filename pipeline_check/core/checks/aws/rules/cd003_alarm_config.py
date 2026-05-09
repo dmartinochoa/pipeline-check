@@ -1,4 +1,4 @@
-"""CD-003 — CodeDeploy deployment group has no CloudWatch alarm monitoring."""
+"""CD-003. CodeDeploy deployment group has no CloudWatch alarm monitoring."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -21,7 +21,7 @@ RULE = Rule(
         "actually stop a bad deploy mid-flight. Without alarms wired "
         "into ``alarmConfiguration``, CodeDeploy's only signal that "
         "the deploy went wrong is the deployment-state machine "
-        "itself — which doesn't notice an application-level "
+        "itself, which doesn't notice an application-level "
         "regression. CD-002's canary work and this rule's "
         "alarm-based halt are paired."
     ),

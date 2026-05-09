@@ -1,4 +1,4 @@
-"""CI gate — turn a scan result into a pass/fail decision with nuance.
+"""CI gate, turn a scan result into a pass/fail decision with nuance.
 
 Historically ``pipeline_check`` failed CI only when the overall grade
 reached D. That's too coarse for real pipelines: a single new CRITICAL
@@ -28,11 +28,11 @@ tighten with ``--fail-on HIGH``.
 "Effective findings" are the failing findings after two subtractive
 filters:
 
-- **Baseline** (``--baseline path.json``) — a previously emitted JSON
+- **Baseline** (``--baseline path.json``), a previously emitted JSON
   report. Any ``(check_id, resource)`` pair already failing in the
   baseline is excluded from gate evaluation. They are still rendered in
   reports, so teams see them, but they don't block new commits.
-- **Ignore file** (``--ignore-file path``) — curated suppressions for
+- **Ignore file** (``--ignore-file path``), curated suppressions for
   accepted tech debt. Each line is either ``CHECK_ID`` (suppress
   everywhere) or ``CHECK_ID:RESOURCE`` (suppress for an exact resource
   match). ``#`` starts a comment. A sensible default path of
@@ -54,7 +54,7 @@ from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
 from .scorer import ScoreResult
 
-# Grade ordering — A is best, D is worst. Kept inline rather than imported
+# Grade ordering. A is best, D is worst. Kept inline rather than imported
 # from the scorer so this module has no upward coupling.
 _GRADES = ("A", "B", "C", "D")
 
@@ -66,7 +66,7 @@ class IgnoreRule:
     Suppressions can carry an ``expires`` date (YAML format only). Once
     the date is in the past, ``is_expired`` returns True and callers
     skip the rule so suppressions can't rot silently. The flat-text
-    format has no expiry field — those rules never expire.
+    format has no expiry field. Those rules never expire.
     """
 
     check_id: str           # upper-cased
@@ -126,7 +126,7 @@ class GateResult:
     passed: bool
     #: Human-readable reasons the gate failed. Empty on pass.
     reasons: list[str]
-    #: Failing findings after baseline + ignore filtering — the set the
+    #: Failing findings after baseline + ignore filtering, the set the
     #: gate conditions were evaluated against.
     effective: list[Finding]
     #: Failing findings suppressed by the ignore file.
@@ -157,7 +157,7 @@ def load_ignore_file(path: str | Path) -> list[IgnoreRule]:
 
     Two formats are supported, picked by extension:
 
-    - ``.yml`` / ``.yaml`` — structured list of entries::
+    - ``.yml`` / ``.yaml``, structured list of entries::
 
           - check_id: GHA-001
             resource: .github/workflows/release.yml
@@ -167,14 +167,14 @@ def load_ignore_file(path: str | Path) -> list[IgnoreRule]:
       ``expires`` (ISO date) is optional; once it passes the rule is
       returned but :py:meth:`IgnoreRule.is_expired` is True and
       ``evaluate_gate`` refuses to apply it. ``reason`` is metadata
-      only — kept so reviewers can see the justification without
+      only, kept so reviewers can see the justification without
       crawling git history.
 
-    - Anything else — the flat-text format (one ``CHECK_ID`` or
+    - Anything else, the flat-text format (one ``CHECK_ID`` or
       ``CHECK_ID:RESOURCE`` per line, ``#`` for comments). No expiry
       field; rules in this format never expire.
 
-    Missing files return an empty list rather than raising — the
+    Missing files return an empty list rather than raising, the
     default path is optional.
     """
     p = Path(path)
@@ -197,7 +197,7 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
             # An empty resource (``GHA-001:`` or ``GHA-001:   ``) is the
             # user asking for a blanket suppression, equivalent to
             # writing the check id alone. Normalize to None so the rule
-            # actually matches something — a literal ``""`` resource
+            # actually matches something, a literal ``""`` resource
             # would only suppress findings with an exact empty string.
             rules.append(IgnoreRule(
                 check_id=check_id.strip().upper(),
@@ -213,7 +213,7 @@ def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
     try:
         doc = yaml.load(p.read_text(encoding="utf-8"), Loader=_DupKeyIgnoreLoader)
     except yaml.YAMLError as exc:
-        # Surface the parse error — a typo here silently removes every
+        # Surface the parse error, a typo here silently removes every
         # suppression and the user has no way to tell without diffing
         # findings against a prior run.
         print(
@@ -273,7 +273,7 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
     pairs that failed in it.
 
     A missing file or a malformed document yields an empty set rather
-    than raising — the common case is "first run, no baseline yet" and
+    than raising, the common case is "first run, no baseline yet" and
     we don't want that to crash CI.
     """
     p = Path(path)
@@ -309,7 +309,7 @@ def _baseline_from_doc(doc: object) -> set[tuple[str, str]]:
     """Extract failing ``(check_id, resource)`` pairs from a baseline doc.
 
     Defensive: the baseline JSON comes from whatever the user hands us
-    — an old scan, a hand-edited file, or a completely unrelated JSON.
+   , an old scan, a hand-edited file, or a completely unrelated JSON.
     Every downstream caller (``load_baseline``, ``load_baseline_from_git``)
     already catches parse errors, so any *shape* error here must return
     an empty set rather than crashing CI.
@@ -357,7 +357,7 @@ def evaluate_gate(
     filtering is in play, the legacy default kicks in: fail iff
     ``score_result['grade'] == 'D'``. This preserves prior behavior.
 
-    *chains* are optional — when provided and ``config.fail_on_chains``
+    *chains* are optional, when provided and ``config.fail_on_chains``
     or ``config.fail_on_any_chain`` is set, matching chains add reasons
     to the gate result. Chains never apply baseline/ignore filtering;
     the rationale is that a correlated attack path is intrinsically a
@@ -365,7 +365,7 @@ def evaluate_gate(
     """
     failing = [f for f in findings if not f.passed]
 
-    # Filter: baseline — file wins over git-ref when both set.
+    # Filter: baseline, file wins over git-ref when both set.
     if config.baseline_path:
         baseline_pairs = load_baseline(config.baseline_path)
     elif config.baseline_from_git:
@@ -410,20 +410,20 @@ def evaluate_gate(
             by_sev = sorted({f.severity.value for f in tripping})
             reasons.append(
                 f"{len(tripping)} finding(s) at or above "
-                f"{fail_on.value} ({', '.join(by_sev)}) — {suffix}"
+                f"{fail_on.value} ({', '.join(by_sev)}), {suffix}"
             )
-        conditions.append(f"severity < {fail_on.value} — {suffix}")
+        conditions.append(f"severity < {fail_on.value}, {suffix}")
 
     if config.min_grade:
         grade = score_result.get("grade", "D")
-        conditions.append(f"grade >= {config.min_grade} — --min-grade")
+        conditions.append(f"grade >= {config.min_grade}, --min-grade")
         if _grade_worse_than(grade, config.min_grade):
             reasons.append(
                 f"Grade {grade} is worse than --min-grade {config.min_grade}"
             )
 
     if config.max_failures is not None:
-        conditions.append(f"failures <= {config.max_failures} — --max-failures")
+        conditions.append(f"failures <= {config.max_failures}, --max-failures")
         if len(effective) > config.max_failures:
             reasons.append(
                 f"{len(effective)} failing findings exceed --max-failures "
@@ -432,38 +432,38 @@ def evaluate_gate(
 
     if config.fail_on_checks:
         ids = ", ".join(sorted(config.fail_on_checks))
-        conditions.append(f"disallowed checks: {ids} — --fail-on-check")
+        conditions.append(f"disallowed checks: {ids}, --fail-on-check")
         tripped = sorted(
             {f.check_id for f in effective if f.check_id.upper() in config.fail_on_checks}
         )
         if tripped:
             reasons.append(
-                f"Disallowed check(s) failed: {', '.join(tripped)} — "
+                f"Disallowed check(s) failed: {', '.join(tripped)}, "
                 f"--fail-on-check"
             )
 
     tripped_chains: list[Chain] = []
     if chains:
         if config.fail_on_any_chain:
-            conditions.append("no attack chains — --fail-on-any-chain")
+            conditions.append("no attack chains, --fail-on-any-chain")
             if chains:
                 tripped_chains.extend(chains)
                 ids = ", ".join(sorted({c.chain_id for c in chains}))
                 reasons.append(
-                    f"{len(chains)} attack chain(s) detected: {ids} — "
+                    f"{len(chains)} attack chain(s) detected: {ids}, "
                     f"--fail-on-any-chain"
                 )
         elif config.fail_on_chains:
             wanted = {c.upper() for c in config.fail_on_chains}
             conditions.append(
-                f"disallowed chains: {', '.join(sorted(wanted))} — --fail-on-chain"
+                f"disallowed chains: {', '.join(sorted(wanted))}, --fail-on-chain"
             )
             matched = [c for c in chains if c.chain_id.upper() in wanted]
             if matched:
                 tripped_chains.extend(matched)
                 ids = ", ".join(sorted({c.chain_id for c in matched}))
                 reasons.append(
-                    f"Disallowed attack chain(s) detected: {ids} — "
+                    f"Disallowed attack chain(s) detected: {ids}, "
                     f"--fail-on-chain"
                 )
 
@@ -486,5 +486,5 @@ def _grade_worse_than(actual: str, bar: str) -> bool:
     try:
         return _GRADES.index(actual) > _GRADES.index(bar)
     except ValueError:
-        # Unknown grade — treat as worst.
+        # Unknown grade, treat as worst.
         return True

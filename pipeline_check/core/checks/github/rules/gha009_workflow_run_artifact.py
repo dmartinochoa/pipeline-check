@@ -1,4 +1,4 @@
-"""GHA-009 — workflow_run must verify artifacts before consumption."""
+"""GHA-009, workflow_run must verify artifacts before consumption."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
     docs_note=(
         "`on: workflow_run` runs in the privileged context of the "
         "default branch (write GITHUB_TOKEN, secrets accessible) but "
-        "consumes artifacts produced by the triggering workflow — "
+        "consumes artifacts produced by the triggering workflow, "
         "which is often a fork PR with no trust boundary. Classic "
         "PPE: a malicious PR uploads a tampered artifact, the "
         "privileged workflow_run downloads and executes it."

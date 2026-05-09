@@ -1,4 +1,4 @@
-"""K8S-038 — NetworkPolicy with overly broad allow rule (empty from / to)."""
+"""K8S-038. NetworkPolicy with overly broad allow rule (empty from / to)."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +20,7 @@ RULE = Rule(
         "explicit ``from: [{podSelector: {matchLabels: {…}}}]`` or "
         "``from: [{namespaceSelector: {matchLabels: {…}}}]`` that "
         "names the legitimate peer. An empty ``from`` / ``to`` peers "
-        "list means *every* source / destination — every pod in "
+        "list means *every* source / destination, every pod in "
         "every namespace, plus every external IP. This is "
         "indistinguishable from having no NetworkPolicy at all for "
         "the targeted pod, but visually appears to enforce a policy "

@@ -3,8 +3,8 @@
 Several providers (GitLab, Azure DevOps, CircleCI, Jenkins) ship a
 near-identical pair of regexes for deciding whether an ``image:``
 reference is pinned to a digest, a specific tag, or a floating
-tag. The shape of that decision is provider-independent — only the
-*display* of the unpinned reason differs — so the regexes and the
+tag. The shape of that decision is provider-independent, only the
+*display* of the unpinned reason differs, so the regexes and the
 classifier live here, and per-provider rules adapt the resulting
 :class:`PinKind` into their own prose.
 
@@ -31,13 +31,13 @@ VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
 
 class PinKind(str, Enum):
     """How tightly an image reference is pinned."""
-    #: ``…@sha256:<hex>`` — fully immutable.
+    #: ``…@sha256:<hex>``, fully immutable.
     DIGEST = "digest"
-    #: ``:3.12.1-slim`` — specific version tag, no digest.
+    #: ``:3.12.1-slim``, specific version tag, no digest.
     PINNED_TAG = "pinned_tag"
-    #: Bare reference — no ``:tag`` suffix.
+    #: Bare reference, no ``:tag`` suffix.
     NO_TAG = "no_tag"
-    #: ``:latest``, ``:3``, ``:stable`` — mutable tag.
+    #: ``:latest``, ``:3``, ``:stable``, mutable tag.
     FLOATING = "floating"
 
 

@@ -37,7 +37,7 @@ pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
 
-Run `pipeline_check` with no flags in any supported repo — it inspects
+Run `pipeline_check` with no flags in any supported repo. It inspects
 the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
 `Jenkinsfile`, `cloudbuild.yaml`, `Chart.yaml`, `template.yml`, …),
 picks the matching provider, and falls back to `aws` when nothing

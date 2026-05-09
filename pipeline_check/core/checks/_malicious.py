@@ -5,7 +5,7 @@ those flag *risky defaults* that could one day be exploited; this
 module flags *concrete evidence* that an attacker is already using
 the pipeline (reverse shells, exfil channels, miner binaries,
 obfuscated execution). Findings here are CRITICAL by design and
-should gate merges on their own — the cost of a false-negative is
+should gate merges on their own, the cost of a false-negative is
 orders of magnitude worse than a false-positive.
 
 Patterns are grouped into categories so a finding can name the

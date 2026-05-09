@@ -3,10 +3,10 @@
 ADO YAML can take four shapes depending on how much structure is
 declared:
 
-1. Flat single-job pipeline — top-level ``steps:``
-2. Single-stage multi-job — top-level ``jobs:`` (each with ``steps:``)
-3. Multi-stage — top-level ``stages:`` → ``jobs:`` → ``steps:``
-4. Deployment jobs — ``jobs:`` may contain ``deployment:`` entries whose
+1. Flat single-job pipeline, top-level ``steps:``
+2. Single-stage multi-job, top-level ``jobs:`` (each with ``steps:``)
+3. Multi-stage, top-level ``stages:`` → ``jobs:`` → ``steps:``
+4. Deployment jobs, ``jobs:`` may contain ``deployment:`` entries whose
    steps live under ``strategy.runOnce|rolling|canary.{preDeploy,deploy,
    routeTraffic,postRouteTraffic,on.{success,failure}}.steps``.
 
@@ -105,7 +105,7 @@ class AzureBaseCheck(BaseCheck):
 def iter_jobs(doc: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield ``(location, job_dict)`` for every job in the pipeline.
 
-    Handles all three shapes — flat steps, flat jobs, and staged jobs —
+    Handles all three shapes, flat steps, flat jobs, and staged jobs —
     as well as ``deployment:`` jobs.
     """
     # Shape 3: stages → jobs
@@ -166,7 +166,7 @@ def iter_steps(job: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
                         for i, step in enumerate(steps):
                             if isinstance(step, dict):
                                 yield f"{kind}.{phase}[{i}]", step
-            # YAML 1.1 coerces bareword `on:` to boolean True — handle both.
+            # YAML 1.1 coerces bareword `on:` to boolean True, handle both.
             on = body.get("on")
             if on is None:
                 on = body.get(True)

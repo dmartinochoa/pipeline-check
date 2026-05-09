@@ -1,4 +1,4 @@
-"""CloudFormation CodeBuild checks — mirror of the Terraform CB-001..007.
+"""CloudFormation CodeBuild checks, mirror of the Terraform CB-001..007.
 
 Same check IDs, same logic, same severities. Resource-type mapping:
 
@@ -162,7 +162,7 @@ def _cb003_logging_enabled(properties: dict[str, Any], address: str) -> Finding:
 def _cb004_timeout(properties: dict[str, Any], address: str) -> Finding:
     timeout = properties.get("TimeoutInMinutes")
     # CFN accepts both an integer (``TimeoutInMinutes: 30``) and its
-    # stringified form (``TimeoutInMinutes: "30"``) — the latter is
+    # stringified form (``TimeoutInMinutes: "30"``), the latter is
     # common when the value comes from a parameter default. Normalize
     # both before the threshold comparison so a valid string doesn't
     # false-positive.
@@ -295,7 +295,7 @@ def _cb007_webhook_filter(properties: dict[str, Any], address: str) -> Finding:
         f"Webhook for project defines {len(filter_groups)} filter group(s)."
         if passed else
         "Webhook is enabled but has no FilterGroups. Any push event from any "
-        "principal will trigger a build — including from forks for public repos."
+        "principal will trigger a build, including from forks for public repos."
     )
     return Finding(
         check_id="CB-007",

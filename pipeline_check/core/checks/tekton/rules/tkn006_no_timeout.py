@@ -1,4 +1,4 @@
-"""TKN-006 — ``Pipeline`` / ``PipelineRun`` / ``TaskRun`` lacks a timeout."""
+"""TKN-006, ``Pipeline`` / ``PipelineRun`` / ``TaskRun`` lacks a timeout."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "Applies to ``PipelineRun``, ``TaskRun``, and ``Pipeline``. "
         "For Pipelines, the rule looks for ``spec.tasks[].timeout`` "
         "as evidence of intent. ``Task`` / ``ClusterTask`` themselves "
-        "don't carry a timeout — the timeout lives on the concrete run."
+        "don't carry a timeout, the timeout lives on the concrete run."
     ),
 )
 
@@ -60,7 +60,7 @@ def _has_run_timeout(spec: dict[str, Any]) -> bool:
 def _pipeline_has_per_task_timeouts(spec: dict[str, Any]) -> bool:
     """Return True only if every task carries a meaningful timeout.
 
-    A single timed task can't bound the whole pipeline run — the
+    A single timed task can't bound the whole pipeline run, the
     untimed siblings still race to the controller default. The rule
     fires unless every task is bounded.
     """

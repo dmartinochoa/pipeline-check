@@ -1,4 +1,4 @@
-"""K8S-037 — ConfigMap data carries a credential-shaped literal."""
+"""K8S-037. ConfigMap data carries a credential-shaped literal."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
         "ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent "
         "injection). ConfigMaps are intended for non-sensitive "
         "config and are mounted into pods without the access "
-        "controls Secrets carry — the ``RoleBinding`` for "
+        "controls Secrets carry, the ``RoleBinding`` for "
         "``configmaps:get`` is typically far broader than the one "
         "for ``secrets:get``. A credential in a ConfigMap is "
         "effectively unprotected once any pod can read the "
@@ -33,7 +33,7 @@ RULE = Rule(
         "ConfigMap ``data`` and ``binaryData`` for AKIA-shaped "
         "AWS keys and credential-shaped key NAMES. Even when the "
         "value is a placeholder, having ``api_key: REPLACE_ME`` "
-        "in a ConfigMap is a maintenance footgun — someone will "
+        "in a ConfigMap is a maintenance footgun, someone will "
         "fill it in and commit. RBAC scoping for ``configmaps`` "
         "is typically much broader than ``secrets``, so any "
         "credential leak via this path reaches a wider audience."

@@ -1,4 +1,4 @@
-"""BB-018 — cache key must not derive from attacker-controllable input."""
+"""BB-018, cache key must not derive from attacker-controllable input."""
 from __future__ import annotations
 
 import re

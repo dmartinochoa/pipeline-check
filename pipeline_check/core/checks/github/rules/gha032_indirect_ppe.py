@@ -1,4 +1,4 @@
-"""GHA-032 — local script invoked from a ``run:`` block on an untrusted trigger.
+"""GHA-032, local script invoked from a ``run:`` block on an untrusted trigger.
 
 Complements GHA-010, which flags ``uses: ./<path>`` (local *action*
 references) on the same triggers. GHA-032 catches the equally-bad
@@ -32,7 +32,7 @@ RULE = Rule(
         "repo is the canonical fix."
     ),
     docs_note=(
-        "GHA-010 flags ``uses: ./action`` — the *action* form of the "
+        "GHA-010 flags ``uses: ./action``, the *action* form of the "
         "same threat. This rule extends to direct shell invocation: "
         "``run: ./scripts/setup.sh`` / ``run: bash scripts/setup.sh`` "
         "/ ``run: python tools/build.py`` resolve against the checked-"
@@ -50,7 +50,7 @@ RULE = Rule(
 #   bash scripts/build.sh      # interpreter + bare relative path
 #   python tools/build.py      # any-interpreter form
 #
-# We deliberately do NOT match ``bash -c "<command>"`` — that's
+# We deliberately do NOT match ``bash -c "<command>"``, that's
 # inline shell, no PR-controlled file. The first capture group
 # narrows to a leading interpreter token to keep the regex
 # anchored on the actual file reference.

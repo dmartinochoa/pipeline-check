@@ -1,4 +1,4 @@
-"""BB-005 — every step must declare a bounded `max-time`."""
+"""BB-005, every step must declare a bounded `max-time`."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from ..base import iter_steps
 
 RULE = Rule(
     id="BB-005",
-    title="Step has no `max-time` — unbounded build",
+    title="Step has no `max-time`, unbounded build",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),

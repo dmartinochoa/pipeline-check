@@ -1,4 +1,4 @@
-"""K8S-012 — Pod ``automountServiceAccountToken`` not explicitly false."""
+"""K8S-012. Pod ``automountServiceAccountToken`` not explicitly false."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -16,13 +16,13 @@ RULE = Rule(
         "Set ``spec.automountServiceAccountToken: false`` on every "
         "workload that doesn't need to talk to the Kubernetes API. "
         "Auto-mounted SA tokens are a free credential for an attacker "
-        "who lands a shell — without explicit opt-out the token sits "
+        "who lands a shell, without explicit opt-out the token sits "
         "at ``/var/run/secrets/kubernetes.io/serviceaccount/token`` "
         "ready to be exfiltrated. If the workload needs API access, "
         "leave it true but pair with a tight, dedicated RBAC role."
     ),
     docs_note=(
-        "An unset value defaults to True in Kubernetes — this rule "
+        "An unset value defaults to True in Kubernetes. This rule "
         "fails on unset because most application workloads do NOT "
         "need API access and the default exposes credentials by "
         "accident. Workloads that explicitly call the API should "

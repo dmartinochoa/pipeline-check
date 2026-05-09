@@ -47,7 +47,7 @@ that iterates ``$.workloads[*].containers[*]`` and writes
 ambient fallback, not the container classifier.
 
 Non-workload kinds (``Service``, ``Role``, ``Secret``, …) get an
-empty ``workloads`` list — the synthesized view doesn't fabricate
+empty ``workloads`` list, the synthesized view doesn't fabricate
 data, it only normalizes what's already there.
 
 The dict is built once per manifest per scan and passed to every

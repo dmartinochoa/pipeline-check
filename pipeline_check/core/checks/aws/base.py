@@ -8,9 +8,9 @@ not re-instantiate the same service client.
 Also exposes two shared helpers that used to be copy-pasted into every
 check module:
 
-- ``self.degraded(check_id, resource, error, recommendation)`` — builds the
+- ``self.degraded(check_id, resource, error, recommendation)``, builds the
   standard INFO-severity "API access failed" finding.
-- ``self._paginate(client, op_name, key)`` — yields every item from a
+- ``self._paginate(client, op_name, key)``, yields every item from a
   paginated list operation.
 """
 from __future__ import annotations
@@ -107,7 +107,7 @@ def _build_client(session: boto3.Session, service_name: str) -> Any:
     """Construct a boto3 client with the retry-safe config.
 
     Separate function so tests that stub ``session.client`` with a
-    MagicMock don't trip over unexpected ``config=`` kwargs — if the
+    MagicMock don't trip over unexpected ``config=`` kwargs, if the
     session refuses the kwarg, we fall back to a plain call.
     """
     try:

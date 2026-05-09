@@ -1,4 +1,4 @@
-"""DF-010 — ``apt-get dist-upgrade`` / ``upgrade`` in RUN."""
+"""DF-010, ``apt-get dist-upgrade`` / ``upgrade`` in RUN."""
 from __future__ import annotations
 
 import re
@@ -17,7 +17,7 @@ RULE = Rule(
     recommendation=(
         "Drop the upgrade step. Build on a recent base image instead "
         "(rebuild your image when the base image gets a security "
-        "patch — pin the base by digest per DF-001 so the rebuild is "
+        "patch, pin the base by digest per DF-001 so the rebuild is "
         "deterministic). ``apt-get install pkg=<version>`` for "
         "specific packages stays reproducible; ``upgrade`` / "
         "``dist-upgrade`` does not."
@@ -28,7 +28,7 @@ RULE = Rule(
         "back-to-back builds with the same Dockerfile can produce "
         "different images because the upstream archive moved between "
         "the two ``RUN`` invocations. ``dist-upgrade`` additionally "
-        "relaxes dependency resolution — it can install / remove "
+        "relaxes dependency resolution. It can install / remove "
         "arbitrary packages to satisfy upgrades, so the resulting "
         "image's package set isn't even bounded by what the "
         "Dockerfile declares."

@@ -1,8 +1,8 @@
-"""Bitbucket Pipelines provider — scans ``bitbucket-pipelines.yml``.
+"""Bitbucket Pipelines provider, scans ``bitbucket-pipelines.yml``.
 
     pipeline_check --pipeline bitbucket --bitbucket-path path/to/bitbucket-pipelines.yml
 
-Only YAML parsing is required — no network calls, no Bitbucket API token.
+Only YAML parsing is required, no network calls, no Bitbucket API token.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import BaseProvider
 
 
 class BitbucketProvider(BaseProvider):
-    """Bitbucket Pipelines provider — parses pipeline YAML from disk."""
+    """Bitbucket Pipelines provider, parses pipeline YAML from disk."""
 
     NAME = "bitbucket"
 

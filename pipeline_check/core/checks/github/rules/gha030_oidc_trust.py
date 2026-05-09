@@ -1,4 +1,4 @@
-"""GHA-030 — OIDC token requested without environment-protected job."""
+"""GHA-030. OIDC token requested without environment-protected job."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from ..base import iter_jobs, iter_steps
 
 #: ``uses:`` prefixes that exchange the GHA OIDC token for cloud
 #: credentials. A job that invokes any of these without an attached
-#: ``environment:`` is unprotected — any branch with push access (or
+#: ``environment:`` is unprotected, any branch with push access (or
 #: a fork PR, depending on the trigger) can drive the role assumption.
 _OIDC_CRED_STEPS = (
     "aws-actions/configure-aws-credentials",
@@ -65,7 +65,7 @@ RULE = Rule(
         "windows that the IdP-side trust policy cannot enforce alone."
     ),
     docs_note=(
-        "Pairs with IAM-008 — IAM-008 verifies the AWS-side trust "
+        "Pairs with IAM-008. IAM-008 verifies the AWS-side trust "
         "policy pins audience + subject; this rule verifies the "
         "GitHub-side workflow can't request the token from any "
         "branch without a deployment gate. A misconfiguration on "

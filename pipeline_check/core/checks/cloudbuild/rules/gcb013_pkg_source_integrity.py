@@ -1,8 +1,8 @@
-"""GCB-013 — package install bypasses registry integrity.
+"""GCB-013, package install bypasses registry integrity.
 
 Detects git-URL installs without a commit pin, local-path installs,
 and tarball-URL installs. Each of these routes around the registry's
-integrity controls — an attacker who can move a branch head, drop a
+integrity controls, an attacker who can move a branch head, drop a
 sibling checkout, or change a served tarball can substitute code into
 the build.
 
@@ -36,7 +36,7 @@ RULE = Rule(
         "Complements GCB-012 (literal secrets) and GCB-010 (curl-pipe). "
         "Where those catch attacker content at fetch time, this rule "
         "catches installs that silently bypass the lockfile/registry "
-        "integrity model — the build is technically reproducible but "
+        "integrity model, the build is technically reproducible but "
         "the source of truth is whatever the git ref / filesystem / "
         "tarball URL served most recently."
     ),

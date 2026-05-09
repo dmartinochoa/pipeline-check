@@ -83,7 +83,7 @@ def evaluate(
 
 
 def reset_cache() -> None:
-    """Clear the rule-discovery cache. Test-only — production scans
+    """Clear the rule-discovery cache. Test-only, production scans
     don't reload rules at runtime."""
     global _RULES_CACHE
     _RULES_CACHE = None

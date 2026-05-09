@@ -1,4 +1,4 @@
-"""Terraform IAM checks — scoped to CI/CD service roles.
+"""Terraform IAM checks, scoped to CI/CD service roles.
 
 IAM-001  Role has AdministratorAccess                         CRITICAL  CICD-SEC-2
 IAM-002  Role has wildcard Action in any policy               HIGH      CICD-SEC-2
@@ -87,7 +87,7 @@ class IAMChecks(TerraformBaseCheck):
             inline_separate.setdefault(role, []).append((pname, doc))
 
         # Customer-managed policies, indexed both by ARN and by name
-        # (Terraform lets attachments reference either — "arn" attribute is
+        # (Terraform lets attachments reference either, "arn" attribute is
         # always present, but we keep name as a fallback).
         customer_policies_by_arn: dict[str, dict[str, Any]] = {}
         customer_policies_by_name: dict[str, dict[str, Any]] = {}

@@ -1,4 +1,4 @@
-"""K8S-003 — Pod ``hostPID: true`` shares the host's process namespace."""
+"""K8S-003. Pod ``hostPID: true`` shares the host's process namespace."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

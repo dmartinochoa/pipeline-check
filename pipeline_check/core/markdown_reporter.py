@@ -2,10 +2,10 @@
 
 Built for two consumers:
 
-1. **GitHub Actions step summary** — writing to ``$GITHUB_STEP_SUMMARY``
+1. **GitHub Actions step summary**, writing to ``$GITHUB_STEP_SUMMARY``
    surfaces the report directly on the workflow run page. Supports
    tables, ``<details>``, and inline HTML. GFM is the spec.
-2. **PR / MR comment bots** — a compact, ranked table posts cleanly as
+2. **PR / MR comment bots**, a compact, ranked table posts cleanly as
    a single comment from any bot that speaks the GitHub or GitLab API.
 
 Shape:
@@ -18,12 +18,12 @@ Shape:
 Design calls:
 
 - Severity is rendered as a badge-style emoji prefix (🔴 CRITICAL /
-  🟠 HIGH / 🟡 MEDIUM / 🔵 LOW) — helps skimming and works in
+  🟠 HIGH / 🟡 MEDIUM / 🔵 LOW), helps skimming and works in
   terminal Markdown viewers too.
 - Pipe characters (``|``) inside table cells are escaped as ``\\|`` so
   a check title containing a pipe can't break the row.
 - Controls are rendered as an inline list of standard:control_id pairs,
-  not grouped by standard — keeps each row compact for PR comments.
+  not grouped by standard, keeps each row compact for PR comments.
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def report_markdown(
     """Render *findings* as a GitHub-Flavored Markdown report string.
 
     When *chains* is supplied, an Attack Chains section is rendered
-    between the summary line and the Failures table — the chain
+    between the summary line and the Failures table, the chain
     narrative is the highest-signal artifact in the report and
     should be the first thing a PR comment reader sees.
     """

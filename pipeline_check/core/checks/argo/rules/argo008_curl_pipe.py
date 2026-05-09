@@ -1,4 +1,4 @@
-"""ARGO-008 — ``curl ... | sh`` and TLS bypass in script sources."""
+"""ARGO-008, ``curl ... | sh`` and TLS bypass in script sources."""
 from __future__ import annotations
 
 from typing import Any

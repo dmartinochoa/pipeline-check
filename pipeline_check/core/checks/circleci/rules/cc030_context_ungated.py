@@ -1,21 +1,21 @@
-"""CC-030 — Workflow job carries ``context:`` but is not gated.
+"""CC-030. Workflow job carries ``context:`` but is not gated.
 
 A CircleCI context holds secrets (API tokens, cloud credentials).
 Binding a context to a job grants the job's steps access to those
 secrets. If the job has no branch filter and no manual-approval
-predecessor, *any* push — including feature branches, personal
-branches, and (depending on project settings) fork PRs — runs with
+predecessor, *any* push, including feature branches, personal
+branches, and (depending on project settings) fork PRs, runs with
 those secrets loaded. This rule fires when that condition holds.
 
 Distinct from:
 
-- **CC-004** — flags jobs that declare secret-looking variables
+- **CC-004**, flags jobs that declare secret-looking variables
   inline instead of using a context. CC-030 assumes the context
   pattern is right and audits the gating around it.
-- **CC-009** — flags *deploy-like* jobs without approval. CC-030
+- **CC-009**, flags *deploy-like* jobs without approval. CC-030
   doesn't care about the job name; a test job pulling a production
   secret is the same threat model.
-- **CC-013** — flags deploys without branch filters; CC-030 requires
+- **CC-013**, flags deploys without branch filters; CC-030 requires
   *either* a branch filter *or* an approval predecessor, not both.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ RULE = Rule(
     docs_note=(
         "CircleCI contexts are the recommended way to store shared "
         "secrets, but binding a context to a job is only half of least-"
-        "privilege — the other half is controlling *when* the binding "
+        "privilege, the other half is controlling *when* the binding "
         "activates. Unrestricted workflow entries with ``context:`` "
         "turn every branch push into a secret-read event."
     ),
@@ -103,14 +103,14 @@ def _has_context(job_cfg: dict[str, Any]) -> bool:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
-    # Cache approval-name lookups per workflow — iter_workflow_jobs can
+    # Cache approval-name lookups per workflow, iter_workflow_jobs can
     # visit the same workflow many times as it walks jobs.
     approvals_by_workflow: dict[str, set[str]] = {}
     for wf_name, job_name, job_cfg in iter_workflow_jobs(doc):
         if not _has_context(job_cfg):
             continue
         # Approval jobs themselves don't execute steps and don't load
-        # the context secrets into a shell — exclude them.
+        # the context secrets into a shell, exclude them.
         if job_cfg.get("type") == "approval":
             continue
         if _has_branch_filter(job_cfg):

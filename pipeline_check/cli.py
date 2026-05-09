@@ -22,7 +22,7 @@ Examples
     # Run specific checks only.
     pipeline_check --pipeline aws --checks CB-001 --checks CB-003
 
-    # Scan a Terraform plan — no AWS credentials needed.
+    # Scan a Terraform plan, no AWS credentials needed.
     pipeline_check --pipeline terraform --tf-plan plan.json
 
     # Annotate findings with a single standard, or list registered standards.
@@ -90,7 +90,7 @@ def _tolerate_unencodable_stdio() -> None:
         # ``reconfigure`` is only present on ``io.TextIOWrapper``, which
         # is the type sys.stdout/stderr carry when not redirected.
         # When they're redirected (a pipe, a captured fixture in tests)
-        # they may be a plain TextIO without ``reconfigure`` — caught
+        # they may be a plain TextIO without ``reconfigure``, caught
         # by the AttributeError below.
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:
@@ -110,7 +110,7 @@ _tolerate_unencodable_stdio()
 class _GroupedCommand(click.Command):
     """Click command that renders ``--help`` options under named sections.
 
-    Keeps option declarations unchanged — the section→flag mapping lives
+    Keeps option declarations unchanged, the section→flag mapping lives
     here so adding an option only forces a mapping edit when the author
     wants it in a specific section. Unmapped options fall into
     ``Other`` so nothing silently vanishes from help.
@@ -272,7 +272,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
     ``cloudformation/*`` + ``terraform/*``) expose ``Rule`` metadata via
     ``discover_rules``. Class-based modules (AWS core services,
     Terraform core services) have the same info in their module
-    docstring header — we parse it so the output is uniform.
+    docstring header. We parse it so the output is uniform.
     """
     rows: list[tuple[str, str, str]] = []
     rule_packages = {
@@ -295,7 +295,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         except Exception as exc:  # pragma: no cover - defensive
             click.echo(f"[warn] could not load {pkg}: {exc}", err=True)
 
-    # Class-based modules — parse the docstring header. CloudFormation
+    # Class-based modules, parse the docstring header. CloudFormation
     # modules don't carry the table header (their docstrings point at
     # Terraform's mirror); scan Terraform's source as a fallback so
     # ``--pipeline cloudformation --list-checks`` produces the same
@@ -414,7 +414,7 @@ def _all_check_ids() -> list[str]:
     if _CHECK_IDS_CACHE is not None:
         return _CHECK_IDS_CACHE
     ids: list[str] = []
-    # Rule-based providers — each has a rules/ package with RULE.id.
+    # Rule-based providers, each has a rules/ package with RULE.id.
     # Derive the package list from the filesystem so adding a new
     # provider under ``pipeline_check/core/checks/<name>/rules/``
     # automatically surfaces in ``--list-checks`` / ``--explain`` /
@@ -433,7 +433,7 @@ def _all_check_ids() -> list[str]:
                 ids.append(rule.id)
         except Exception:
             pass
-    # AWS / Terraform — class-based checks with hardcoded check_id strings.
+    # AWS / Terraform, class-based checks with hardcoded check_id strings.
     _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
     for provider_pkg_name in (
         "pipeline_check.core.checks.aws",
@@ -443,7 +443,7 @@ def _all_check_ids() -> list[str]:
             import importlib
             import pkgutil
             # Distinct from the ``pkg`` loop variables earlier (lines
-            # 264, 378) which iterate over strings — the inferred
+            # 264, 378) which iterate over strings, the inferred
             # ``str`` type would conflict with this Module assignment.
             provider_pkg_module = importlib.import_module(provider_pkg_name)
             for info in pkgutil.iter_modules(provider_pkg_module.__path__):
@@ -463,7 +463,7 @@ _SEVERITY_CHOICES = [
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
 ]
 
-# Derived from the provider registry — no manual list to maintain.
+# Derived from the provider registry, no manual list to maintain.
 # Registering a new provider in core/providers/__init__.py automatically
 # makes it available here. ``auto`` is a CLI-only sentinel that picks
 # a provider by looking at cwd; it is resolved before Scanner runs.
@@ -473,7 +473,7 @@ _PIPELINE_CHOICES = ["auto", *_providers.available()]
 def _load_config_callback(
     ctx: click.Context, _param: click.Parameter, value: str | None,
 ) -> str | None:
-    """Eager callback — populates ``ctx.default_map`` so every other flag's
+    """Eager callback, populates ``ctx.default_map`` so every other flag's
     default is pre-filled from the config file + environment.
 
     Precedence flows naturally from click here: ``default_map`` supplies
@@ -655,7 +655,7 @@ def _install_completion_callback(
     help=(
         "Follow ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` "
         "to the called workflow body and run the GHA rule pack against "
-        "it with the caller's permissions context. Default off — the "
+        "it with the caller's permissions context. Default off, the "
         "scanner stays read-from-disk-only by default. When off and a "
         "remote ref is encountered, a one-line stderr warning lists "
         "the count so users know what they're missing."
@@ -868,7 +868,7 @@ def _install_completion_callback(
     default=False,
     help=(
         "Emit a component inventory alongside findings. Lists every "
-        "resource/workflow/template the scanner discovered — "
+        "resource/workflow/template the scanner discovered, "
         "complements the findings view and feeds asset-register "
         "dashboards. Added to JSON output as an ``inventory`` top-level "
         "array; rendered as a table after the findings for terminal "
@@ -883,7 +883,7 @@ def _install_completion_callback(
     help=(
         "Glob pattern to scope --inventory output by component type "
         "(e.g. ``AWS::IAM::*``, ``aws_iam_role``, ``workflow``). "
-        "Repeat for multiple patterns — a component is kept when its "
+        "Repeat for multiple patterns, a component is kept when its "
         "type matches any of them. Implies --inventory."
     ),
 )
@@ -1070,7 +1070,7 @@ def _install_completion_callback(
     default=False,
     help=(
         "Emit a unified-diff patch to stdout for every failing finding "
-        "that has a registered autofix. Does not modify files — pipe "
+        "that has a registered autofix. Does not modify files, pipe "
         "the output into `git apply` to apply. Currently supports: "
         + ", ".join(_autofix.available_fixers()) + "."
     ),
@@ -1200,7 +1200,7 @@ def _install_completion_callback(
     help=(
         "Fail the gate if the named attack chain matched. Repeat for "
         "multiple (e.g. --fail-on-chain AC-001 --fail-on-chain AC-007). "
-        "Chain matches bypass baseline/ignore filtering — a correlated "
+        "Chain matches bypass baseline/ignore filtering, a correlated "
         "attack path is intrinsically a new finding."
     ),
 )
@@ -1276,7 +1276,7 @@ def scan(
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
-    """PipelineCheck — CI/CD Security Posture Scanner.
+    """PipelineCheck. CI/CD Security Posture Scanner.
 
     Analyzes CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
@@ -1303,7 +1303,7 @@ def scan(
 
     if list_standards:
         for std in _standards.resolve():
-            click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
+            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
             if std.url:
                 click.echo(f"    {std.url}")
         return
@@ -1341,7 +1341,7 @@ def scan(
                 err=True,
             )
             sys.exit(3)
-        click.echo(f"{rule.id} — {rule.title}")
+        click.echo(f"{rule.id}, {rule.title}")
         click.echo(f"  Severity: {rule.severity.value}")
         if rule.providers:
             click.echo(f"  Providers: {', '.join(rule.providers)}")
@@ -1378,7 +1378,7 @@ def scan(
                 f"Unknown standard {standard_report!r}. "
                 f"Available: {available or 'none'}."
             )
-        click.echo(f"{report_std.name}  —  {report_std.title} (v{report_std.version or 'n/a'})")
+        click.echo(f"{report_std.name} ,  {report_std.title} (v{report_std.version or 'n/a'})")
         if report_std.url:
             click.echo(f"  {report_std.url}")
         click.echo("")
@@ -1407,17 +1407,17 @@ def scan(
         from .core.config import last_unknown_keys
         dropped = last_unknown_keys()
         if not dropped:
-            click.echo("[config] OK — no unknown keys.")
+            click.echo("[config] OK, no unknown keys.")
             return
         for source, key, reason in dropped:
-            click.echo(f"[config] {source}: {key!r} — {reason}", err=True)
+            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
         click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
         sys.exit(3)
 
     if apply_fixes and not fix:
         raise click.UsageError("--apply requires --fix.")
 
-    # Mutually-exclusive flag combinations — catch these before the
+    # Mutually-exclusive flag combinations, catch these before the
     # provider context is built so the error points at the conflict
     # rather than surfacing as a silent no-op later.
     if inventory_only and fix:
@@ -1778,7 +1778,7 @@ def scan(
 
     score_result = score(findings)
 
-    # Collect the component inventory only when requested — some
+    # Collect the component inventory only when requested, some
     # providers (AWS runtime) perform extra API calls to build it.
     components = None
     if want_inventory:
@@ -1796,7 +1796,7 @@ def scan(
         if output in ("terminal", "both"):
             # When emitting both terminal and JSON, send the human-readable report to
             # stderr so the JSON on stdout remains clean and machine-parseable.
-            from rich.console import Console as _Console  # local import — only needed here
+            from rich.console import Console as _Console  # local import, only needed here
             console = _Console(stderr=(output == "both"))
             report_terminal(findings, score_result, severity_threshold=threshold, console=console)
             if chains:
@@ -1915,7 +1915,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
     stdout (``--output json/sarif/html/both``), the caller sets
     ``to_stderr=True`` to avoid corrupting that stream.
 
-    File read errors are silently skipped — a missing file is almost
+    File read errors are silently skipped, a missing file is almost
     always due to a finding with a synthetic resource name (e.g. an
     AWS check), not a real on-disk workflow. Per-path content is
     cached so multiple findings against the same file only re-read
@@ -2028,7 +2028,7 @@ def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> No
     if not detected:
         return
     click.echo(
-        f"[hint] no real AWS results — this looks like a '{detected}' "
+        f"[hint] no real AWS results. This looks like a '{detected}' "
         f"repo; try: pipeline_check --pipeline {detected}",
         err=True,
     )
@@ -2087,7 +2087,7 @@ def _emit_gate_summary(gate: Any) -> None:
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# `init` subcommand — scaffold a starter config file.
+# `init` subcommand, scaffold a starter config file.
 # ────────────────────────────────────────────────────────────────────────────
 
 
@@ -2126,7 +2126,7 @@ def init_cmd(target_path: str, force: bool) -> None:
     suffix = (
         f" (pipeline: {detected})"
         if detected
-        else " (no CI files detected — edit the 'pipeline:' line before use)"
+        else " (no CI files detected, edit the 'pipeline:' line before use)"
     )
     click.echo(f"[init] wrote {target_path}{suffix}")
 
@@ -2135,7 +2135,7 @@ def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
     Keeping the top-level command as ``scan`` preserves backward
-    compatibility — every documented ``pipeline_check --flag ...``
+    compatibility, every documented ``pipeline_check --flag ...``
     invocation keeps working. Subcommands are opt-in via a bare
     argv[1] match, so adding more later is cheap.
     """

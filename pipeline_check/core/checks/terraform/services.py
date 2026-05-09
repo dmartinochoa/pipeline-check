@@ -2,7 +2,7 @@
 
 Mirrors the AWS runtime rules under ``aws/rules/`` for shift-left scans.
 Some runtime checks don't translate (e.g. KMS-001 needs "is rotation
-actually on?" which is a runtime query — the Terraform analogue is
+actually on?" which is a runtime query, the Terraform analogue is
 ``enable_key_rotation`` on ``aws_kms_key``).
 """
 from __future__ import annotations
@@ -158,7 +158,7 @@ def _codecommit(ctx: TerraformContext) -> list[Finding]:
             recommendation="Set kms_key_id to a CMK ARN.",
             passed=passed,
         ))
-    # CCM-003 cross-account triggers — static check compares trigger dest
+    # CCM-003 cross-account triggers, static check compares trigger dest
     # account against every aws_codecommit_trigger in the plan.
     for t in ctx.resources("aws_codecommit_trigger"):
         triggers = t.values.get("trigger") or []
@@ -168,7 +168,7 @@ def _codecommit(ctx: TerraformContext) -> list[Finding]:
             # If the ARN includes an account id that appears elsewhere in the
             # plan's declared resources with a matching type, treat as same-account.
             # Without an AWS account context in the plan, we flag any trigger
-            # whose destination is not a reference/interpolation — a literal
+            # whose destination is not a reference/interpolation, a literal
             # ARN is suspicious and worth a manual review.
             if dest and dest.count(":") >= 4 and "${" not in dest:
                 offenders.append(dest)
@@ -178,7 +178,7 @@ def _codecommit(ctx: TerraformContext) -> list[Finding]:
             severity=Severity.MEDIUM,
             resource=t.address,
             description=(
-                f"Literal destination_arn(s) ({offenders}) — verify these "
+                f"Literal destination_arn(s) ({offenders}), verify these "
                 "stay within the repository's account."
                 if offenders else
                 "All destinations are plan-resource references."
@@ -251,7 +251,7 @@ def _lambda(ctx: TerraformContext) -> list[Finding]:
     for p in ctx.resources("aws_lambda_permission"):
         principal = p.values.get("principal", "")
         scoped = bool(p.values.get("source_arn")) or bool(p.values.get("source_account"))
-        # Only flag when principal is "*" AND unscoped — service principals
+        # Only flag when principal is "*" AND unscoped, service principals
         # with a source_arn/source_account are fine.
         offending = principal == "*" and not scoped
         out.append(Finding(

@@ -1,4 +1,4 @@
-"""GCB-011 — TLS / certificate verification bypass.
+"""GCB-011. TLS / certificate verification bypass.
 
 Cloud Build steps that disable TLS verification (``curl -k``,
 ``wget --no-check-certificate``, ``git config http.sslVerify false``,
@@ -24,7 +24,7 @@ RULE = Rule(
     esf=("ESF-S-VERIFY-DEPS",),
     cwe=("CWE-295",),
     recommendation=(
-        "Fix the underlying certificate issue — install the correct CA "
+        "Fix the underlying certificate issue, install the correct CA "
         "bundle into the step image, or point the tool at a mirror that "
         "presents a valid chain. Disabling verification trades a build "
         "error for a silent MITM window."

@@ -1,4 +1,4 @@
-"""BB-008 — whole-document credential-shaped literal scan."""
+"""BB-008, whole-document credential-shaped literal scan."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,7 +21,7 @@ RULE = Rule(
     docs_note=(
         "Complements BB-003 (variable-name scan). BB-008 checks "
         "every string in the pipeline against the cross-provider "
-        "credential-pattern catalog — catches secrets pasted into "
+        "credential-pattern catalog, catches secrets pasted into "
         "script bodies or environment blocks."
     ),
 )

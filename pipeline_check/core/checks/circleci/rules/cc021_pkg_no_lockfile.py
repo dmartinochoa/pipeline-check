@@ -1,4 +1,4 @@
-"""CC-021 — package install without lockfile enforcement."""
+"""CC-021, package install without lockfile enforcement."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Detects package-manager install commands that do not enforce a "
         "lockfile or hash verification. Without lockfile enforcement the "
-        "resolver pulls whatever version is currently latest \u2014 exactly "
+        "resolver pulls whatever version is currently latest, exactly "
         "the window a supply-chain attacker exploits."
     ),
 )

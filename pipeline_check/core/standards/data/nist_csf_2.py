@@ -1,7 +1,7 @@
 """NIST Cybersecurity Framework 2.0 (February 2024).
 
 CSF 2.0 added the GV (Govern) function and restructured the PR
-(Protect) function to include PR.PS (Platform Security) — both of
+(Protect) function to include PR.PS (Platform Security), both of
 which have direct CI/CD pipeline footprints.
 
 CSF is a *framework*, not a control list. Subcategory text is
@@ -23,7 +23,7 @@ STANDARD = Standard(
     version="2.0",
     url="https://doi.org/10.6028/NIST.CSWP.29",
     controls={
-        # ── GV (Govern) — new function in CSF 2.0 ───────────────────
+        # ── GV (Govern), new function in CSF 2.0 ───────────────────
         "GV.SC-03": "Cybersecurity supply chain risk management is integrated into CS and ERM programs",
         "GV.SC-04": "Suppliers are known and prioritized by criticality",
         "GV.SC-05": (
@@ -67,7 +67,7 @@ STANDARD = Standard(
         "RC.RP-01": "The recovery portion of the incident response plan is executed once initiated",
     },
     mappings={
-        # ── GV.SC — Supply-chain risk management ────────────────────
+        # ── GV.SC. Supply-chain risk management ────────────────────
         "GHA-001":  ["GV.SC-05", "GV.SC-07"],
         "GHA-021":  ["GV.SC-05"],
         "GHA-025":  ["GV.SC-05"],
@@ -123,7 +123,7 @@ STANDARD = Standard(
         "JF-007":   ["GV.SC-03", "GV.SC-04"],
         "CC-007":   ["GV.SC-03", "GV.SC-04"],
 
-        # ── PR.AA — Identity & access ───────────────────────────────
+        # ── PR.AA. Identity & access ───────────────────────────────
         "IAM-001":  ["PR.AA-05"],
         "IAM-002":  ["PR.AA-05"],
         "IAM-003":  ["PR.AA-05"],
@@ -168,7 +168,7 @@ STANDARD = Standard(
         "SM-002":   ["PR.AA-05"],
         "SSM-001":  ["PR.AA-01"],
 
-        # ── PR.DS — Data protection ─────────────────────────────────
+        # ── PR.DS. Data protection ─────────────────────────────────
         "S3-002":   ["PR.DS-01"],
         "S3-003":   ["PR.DS-01", "PR.IR-03", "RC.RP-01"],
         "S3-005":   ["PR.DS-02"],
@@ -185,7 +185,7 @@ STANDARD = Standard(
         "JF-023":   ["PR.DS-02"],
         "CC-023":   ["PR.DS-02"],
 
-        # ── PR.PS — Platform security (NEW in CSF 2.0) ──────────────
+        # ── PR.PS. Platform security (NEW in CSF 2.0) ──────────────
         # PS-01: configuration management
         "CB-002":   ["PR.PS-01"],
         "CB-004":   ["PR.PS-01"],
@@ -285,7 +285,7 @@ STANDARD = Standard(
         "CC-024":   ["PR.PS-06"],
         "GCB-009":  ["PR.PS-06"],
 
-        # ── PR.IR — Resilience & boundary protection ────────────────
+        # ── PR.IR. Resilience & boundary protection ────────────────
         "PBAC-001": ["PR.IR-01"],
         "PBAC-002": ["PR.IR-01"],
         "PBAC-003": ["PR.IR-01"],
@@ -318,13 +318,13 @@ STANDARD = Standard(
         "CD-001":   ["PR.IR-03", "RC.RP-01"],
         "CD-003":   ["PR.IR-03", "RS.MA-01"],
 
-        # ── DE.CM / DE.AE — Monitoring (cross-domain inputs) ────────
+        # ── DE.CM / DE.AE. Monitoring (cross-domain inputs) ────────
         "EB-001":   ["DE.CM-09"],
         "EB-002":   ["DE.CM-06"],
         "CW-001":   ["DE.CM-09"],
         "CB-007":   ["DE.CM-06"],
 
-        # ── Kubernetes — workload runtime + RBAC + network +
+        # ── Kubernetes, workload runtime + RBAC + network +
         # configuration management. The pack maps cleanly across
         # PR.PS (platform security), PR.AA (access), PR.IR (network),
         # PR.DS (data integrity), and DE.CM (runtime monitoring).
@@ -369,7 +369,7 @@ STANDARD = Standard(
         "K8S-039":  ["PR.PS-01"],               # shareProcessNamespace
         "K8S-040":  ["PR.PS-01"],               # procMount: Unmasked
 
-        # ── Helm — chart-supply-chain hygiene maps to GV.SC. ────────
+        # ── Helm, chart-supply-chain hygiene maps to GV.SC. ────────
         "HELM-001": ["GV.SC-05"],   # legacy v1 schema
         "HELM-002": ["GV.SC-05", "GV.SC-07"],   # Chart.lock missing digests
         "HELM-003": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS dep repo

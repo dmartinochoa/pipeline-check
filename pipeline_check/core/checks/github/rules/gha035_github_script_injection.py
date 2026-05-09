@@ -1,4 +1,4 @@
-"""GHA-035 — ``actions/github-script`` interpolates untrusted context into the JS source."""
+"""GHA-035, ``actions/github-script`` interpolates untrusted context into the JS source."""
 from __future__ import annotations
 
 from typing import Any
@@ -29,12 +29,12 @@ RULE = Rule(
         "GHA-003 covers ``run:`` blocks where shell expansion is the "
         "injection surface. ``actions/github-script@<ref>`` runs the "
         "``script:`` input as Node.js inside an authenticated Octokit "
-        "context — same threat model, different language. The rule "
+        "context, same threat model, different language. The rule "
         "fires when ``script:`` (or the legacy ``previews:`` companion "
         "for inline JS) contains a ``${{ github.event.* }}``, "
         "``${{ inputs.* }}``, ``${{ github.head_ref }}``, "
         "``${{ github.ref_name }}``, or any other untrusted context "
-        "expression — exactly the same catalog GHA-003 uses."
+        "expression, exactly the same catalog GHA-003 uses."
     ),
     known_fp=(
         "Scripts that interpolate ``${{ steps.*.outputs.* }}`` from a "
@@ -52,7 +52,7 @@ def _is_github_script_step(step: dict[str, Any]) -> bool:
     Matches both pinned (``actions/github-script@<sha>``) and
     floating (``@v7``) refs since the action is the same regardless
     of how it's pinned. Forks (``my-org/github-script``) aren't
-    matched — those are different actions even if they vendor the
+    matched. Those are different actions even if they vendor the
     same shape.
     """
     uses = step.get("uses")

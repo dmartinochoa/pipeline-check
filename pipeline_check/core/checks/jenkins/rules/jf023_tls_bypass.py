@@ -1,4 +1,4 @@
-"""JF-023 — TLS / certificate verification bypass."""
+"""JF-023. TLS / certificate verification bypass."""
 from __future__ import annotations
 
 from ..._primitives import tls_bypass

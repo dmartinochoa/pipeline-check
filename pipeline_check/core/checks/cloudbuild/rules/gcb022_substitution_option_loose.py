@@ -1,4 +1,4 @@
-"""GCB-022 — ``options.substitutionOption: ALLOW_LOOSE`` masks undefined refs."""
+"""GCB-022, ``options.substitutionOption: ALLOW_LOOSE`` masks undefined refs."""
 from __future__ import annotations
 
 from typing import Any
@@ -27,7 +27,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Cloud Build accepts two values for "
-        "``options.substitutionOption``: ``MUST_MATCH`` (default — "
+        "``options.substitutionOption``: ``MUST_MATCH`` (default, "
         "any undefined ``$_VAR`` reference fails the build at parse "
         "time) and ``ALLOW_LOOSE`` (undefined references silently "
         "expand to ``\"\"``). The default is the safer setting; this "
@@ -52,7 +52,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No ``options:`` block — substitutionOption defaults to MUST_MATCH.",
+            description="No ``options:`` block, substitutionOption defaults to MUST_MATCH.",
             recommendation=RULE.recommendation, passed=True,
         )
     raw = options.get("substitutionOption")
@@ -60,7 +60,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="``options.substitutionOption`` is unset — defaults to MUST_MATCH.",
+            description="``options.substitutionOption`` is unset, defaults to MUST_MATCH.",
             recommendation=RULE.recommendation, passed=True,
         )
     if raw.strip().upper() == "ALLOW_LOOSE":

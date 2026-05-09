@@ -1,6 +1,6 @@
 # GitLab CI provider
 
-Parses `.gitlab-ci.yml` on disk — no GitLab API token, no runner install.
+Parses `.gitlab-ci.yml` on disk, no GitLab API token, no runner install.
 Works against the file in a detached clone or a merged-result pipeline
 export.
 
@@ -34,7 +34,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-012](#gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-013](#gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-014](#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [GL-015](#gl-015) | Job has no `timeout` — unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [GL-015](#gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-016](#gl-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-017](#gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-018](#gl-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -57,7 +57,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-001 — Image not pinned to specific version or digest { #gl-001 }
+## GL-001: Image not pinned to specific version or digest { #gl-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -77,7 +77,7 @@ Reference images by `@sha256:<digest>` or at minimum a full immutable version ta
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-002 — Script injection via untrusted commit/MR context { #gl-002 }
+## GL-002: Script injection via untrusted commit/MR context { #gl-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -97,7 +97,7 @@ Read these values into intermediate `variables:` entries or shell variables and 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-003 — Variables contain literal secret values { #gl-003 }
+## GL-003: Variables contain literal secret values { #gl-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
@@ -117,7 +117,7 @@ Store credentials as protected + masked CI/CD variables in project or group sett
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-004 — Deploy job lacks manual approval or environment gate { #gl-004 }
+## GL-004: Deploy job lacks manual approval or environment gate { #gl-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -137,7 +137,7 @@ Add `when: manual` (optionally with `rules:` for protected branches) or bind the
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-005 — include: pulls remote / project without pinned ref { #gl-005 }
+## GL-005: include: pulls remote / project without pinned ref { #gl-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -157,7 +157,7 @@ Pin `include: project:` entries with `ref:` set to a tag or commit SHA. Avoid `i
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-006 — Artifacts not signed { #gl-006 }
+## GL-006: Artifacts not signed { #gl-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -177,7 +177,7 @@ Add a job that runs `cosign sign` (keyless OIDC with GitLab's id_tokens works ou
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-007 — SBOM not produced { #gl-007 }
+## GL-007: SBOM not produced { #gl-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -189,7 +189,7 @@ Without an SBOM, downstream consumers can't audit the dependency set shipped in 
 
 **Recommended action**
 
-Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or GitLab's built-in CycloneDX dependency-scanning template. Attach the SBOM as a pipeline artifact.
+Add an SBOM step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or GitLab's built-in CycloneDX dependency-scanning template. Attach the SBOM as a pipeline artifact.
 
 </div>
 
@@ -197,13 +197,13 @@ Add an SBOM step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-008 — Credential-shaped literal in pipeline body { #gl-008 }
+## GL-008: Credential-shaped literal in pipeline body { #gl-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Complements GL-003 (which looks at `variables:` block keys). GL-008 scans every string in the pipeline against the cross-provider credential-pattern catalog — catches secrets pasted into `script:` bodies or environment blocks where the name-based detector can't see them.
+Complements GL-003 (which looks at `variables:` block keys). GL-008 scans every string in the pipeline against the cross-provider credential-pattern catalog, catches secrets pasted into `script:` bodies or environment blocks where the name-based detector can't see them.
 
 <div class="pg-rule__rec" markdown>
 
@@ -217,7 +217,7 @@ Rotate the exposed credential immediately. Move the value to a protected + maske
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## GL-009 — Image pinned to version tag rather than sha256 digest { #gl-009 }
+## GL-009: Image pinned to version tag rather than sha256 digest { #gl-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -237,7 +237,7 @@ Resolve each image to its current digest (`docker buildx imagetools inspect <ref
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-010 — Multi-project pipeline ingests upstream artifact unverified { #gl-010 }
+## GL-010: Multi-project pipeline ingests upstream artifact unverified { #gl-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -257,13 +257,13 @@ Add a verification step before consuming the artifact: `cosign verify-attestatio
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-011 — include: local file pulled in MR-triggered pipeline { #gl-011 }
+## GL-011: include: local file pulled in MR-triggered pipeline { #gl-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-`include: local: '<path>'` resolves from the current pipeline's checked-out tree. On an MR pipeline the tree is the MR source branch — the MR author controls the included YAML content.
+`include: local: '<path>'` resolves from the current pipeline's checked-out tree. On an MR pipeline the tree is the MR source branch, the MR author controls the included YAML content.
 
 <div class="pg-rule__rec" markdown>
 
@@ -277,7 +277,7 @@ Move the included template into a separate, read-only project and reference it v
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-012 — Cache key derives from MR-controlled CI variable { #gl-012 }
+## GL-012: Cache key derives from MR-controlled CI variable { #gl-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -297,7 +297,7 @@ Build the cache key from values the MR can't control: lockfile contents (`files:
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-013 — AWS auth uses long-lived access keys { #gl-013 }
+## GL-013: AWS auth uses long-lived access keys { #gl-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -317,7 +317,7 @@ Use GitLab CI/CD OIDC with `id_tokens:` to obtain short-lived AWS credentials vi
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-014 — Self-managed runner without ephemeral tag { #gl-014 }
+## GL-014: Self-managed runner without ephemeral tag { #gl-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
@@ -337,7 +337,7 @@ Register the runner with `--executor docker` + `--docker-pull-policy always` so 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-015 — Job has no `timeout` — unbounded build { #gl-015 }
+## GL-015: Job has no `timeout`, unbounded build { #gl-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-TIMEOUT</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -357,7 +357,7 @@ Add `timeout:` to each job (e.g. `timeout: 30 minutes`), sized to the 95th perce
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-016 — Remote script piped to shell interpreter { #gl-016 }
+## GL-016: Remote script piped to shell interpreter { #gl-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -377,7 +377,7 @@ Download the script to a file, verify its checksum, then execute it. Or vendor t
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-017 — Docker run with insecure flags (privileged/host mount) { #gl-017 }
+## GL-017: Docker run with insecure flags (privileged/host mount) { #gl-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -397,7 +397,7 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-018 — Package install from insecure source { #gl-018 }
+## GL-018: Package install from insecure source { #gl-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -417,7 +417,7 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-019 — No vulnerability scanning step { #gl-019 }
+## GL-019: No vulnerability scanning step { #gl-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -429,7 +429,7 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 
 **Recommended action**
 
-Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 </div>
 
@@ -437,13 +437,13 @@ Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-au
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-020 — CI_JOB_TOKEN written to persistent storage { #gl-020 }
+## GL-020: CI_JOB_TOKEN written to persistent storage { #gl-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
 </div>
 
-Detects patterns where `CI_JOB_TOKEN` is redirected to a file, piped through `tee`, or appended to dotenv/artifact paths. Persisted tokens survive the job boundary and can be read by later stages, downloaded artifacts, or cache entries — turning a scoped credential into a long-lived one.
+Detects patterns where `CI_JOB_TOKEN` is redirected to a file, piped through `tee`, or appended to dotenv/artifact paths. Persisted tokens survive the job boundary and can be read by later stages, downloaded artifacts, or cache entries, turning a scoped credential into a long-lived one.
 
 <div class="pg-rule__rec" markdown>
 
@@ -457,13 +457,13 @@ Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. Use the token i
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-021 — Package install without lockfile enforcement { #gl-021 }
+## GL-021: Package install without lockfile enforcement { #gl-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest, exactly the window a supply-chain attacker exploits.
 
 <div class="pg-rule__rec" markdown>
 
@@ -477,7 +477,7 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-022 — Dependency update command bypasses lockfile pins { #gl-022 }
+## GL-022: Dependency update command bypasses lockfile pins { #gl-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -497,7 +497,7 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-023 — TLS / certificate verification bypass { #gl-023 }
+## GL-023: TLS / certificate verification bypass { #gl-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -517,7 +517,7 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-024 — No SLSA provenance attestation produced { #gl-024 }
+## GL-024: No SLSA provenance attestation produced { #gl-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -529,7 +529,7 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 **Recommended action**
 
-Add a job that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` statement, or adopt a SLSA-aware builder (the SLSA project ships GitLab templates). Signing the artifact (GL-006) isn't enough for SLSA L3 — the attestation describes *how* the build ran.
+Add a job that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` statement, or adopt a SLSA-aware builder (the SLSA project ships GitLab templates). Signing the artifact (GL-006) isn't enough for SLSA L3, the attestation describes *how* the build ran.
 
 </div>
 
@@ -537,13 +537,13 @@ Add a job that runs ``cosign attest`` against a ``provenance.intoto.jsonl`` stat
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GL-025 — Pipeline contains indicators of malicious activity { #gl-025 }
+## GL-025: Pipeline contains indicators of malicious activity { #gl-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
 </div>
 
-Fires on concrete indicators (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, ``webhook.site`` callbacks, ``env | curl`` credential dumps, ``history -c`` audit erasure). Orthogonal to GL-003 (curl pipe) and GL-017 (Docker insecure flags) — those flag risky defaults; this flags evidence.
+Fires on concrete indicators (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, ``webhook.site`` callbacks, ``env | curl`` credential dumps, ``history -c`` audit erasure). Orthogonal to GL-003 (curl pipe) and GL-017 (Docker insecure flags). Those flag risky defaults; this flags evidence.
 
 <div class="pg-rule__rec" markdown>
 
@@ -557,13 +557,13 @@ Treat as a potential compromise. Identify the MR that added the matching job(s),
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-026 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #gl-026 }
+## GL-026: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #gl-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
 </div>
 
-``eval``, ``sh -c "$X"``, and `` `$X` `` all re-parse the variable's value as shell syntax. Once a CI variable feeds into one of these idioms, any ``;``, ``&&``, ``|``, backtick, or ``$()`` in the value executes — even if the variable's source is currently trusted, future refactors may expose it.
+``eval``, ``sh -c "$X"``, and `` `$X` `` all re-parse the variable's value as shell syntax. Once a CI variable feeds into one of these idioms, any ``;``, ``&&``, ``|``, backtick, or ``$()`` in the value executes, even if the variable's source is currently trusted, future refactors may expose it.
 
 <div class="pg-rule__rec" markdown>
 
@@ -577,13 +577,13 @@ Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec of variables with dir
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-027 — Package install bypasses registry integrity (git / path / tarball source) { #gl-027 }
+## GL-027: Package install bypasses registry integrity (git / path / tarball source) { #gl-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Complements GL-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs all bypass the registry integrity controls the lockfile relies on — an attacker who can move a branch head, drop a sibling checkout, or change a served tarball can substitute code into the build.
+Complements GL-021 (missing lockfile flag). Git URL installs without a commit pin, local-path installs, and direct tarball URLs all bypass the registry integrity controls the lockfile relies on, an attacker who can move a branch head, drop a sibling checkout, or change a served tarball can substitute code into the build.
 
 <div class="pg-rule__rec" markdown>
 
@@ -597,7 +597,7 @@ Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-028 — services: image not pinned { #gl-028 }
+## GL-028: services: image not pinned { #gl-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -609,7 +609,7 @@ Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``
 
 **Recommended action**
 
-Pin every ``services:`` entry the same way ``image:`` is pinned — prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
+Pin every ``services:`` entry the same way ``image:`` is pinned, prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
 
 </div>
 
@@ -617,7 +617,7 @@ Pin every ``services:`` entry the same way ``image:`` is pinned — prefer ``@sh
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GL-029 — Manual deploy job defaults to allow_failure: true { #gl-029 }
+## GL-029: Manual deploy job defaults to allow_failure: true { #gl-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -629,7 +629,7 @@ This is the most common GitLab deployment gotcha: a manual ``deploy`` job looks 
 
 **Recommended action**
 
-Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab defaults ``allow_failure`` to *true* for manual jobs, which makes the pipeline report success whether or not the operator clicks — exactly the opposite of the gate you meant to add.
+Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab defaults ``allow_failure`` to *true* for manual jobs, which makes the pipeline report success whether or not the operator clicks, exactly the opposite of the gate you meant to add.
 
 </div>
 
@@ -637,7 +637,7 @@ Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab d
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-030 — trigger: include: pulls child pipeline without pinned ref { #gl-030 }
+## GL-030: trigger: include: pulls child pipeline without pinned ref { #gl-030 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -657,13 +657,13 @@ Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-031 — id_tokens: missing audience pin or environment binding { #gl-031 }
+## GL-031: id_tokens: missing audience pin or environment binding { #gl-031 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the GitLab-side workflow can't request a token without an audience claim or without a deployment gate.
+Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the GitLab-side workflow can't request a token without an audience claim or without a deployment gate.
 
 <div class="pg-rule__rec" markdown>
 
@@ -677,13 +677,13 @@ For every job that declares an ``id_tokens:`` block, pin a non-wildcard ``aud:``
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GL-032 — tags: interpolates untrusted CI variable { #gl-032 }
+## GL-032: tags: interpolates untrusted CI variable { #gl-032 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-GL-014 catches self-managed runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``tags:`` is computed from an attacker-controllable CI variable, the operator (or anyone who can craft a PR title / branch name / commit message that the workflow consumes) picks where the job runs — including any privileged tag the instance exposes (``deploy-prod``, ``signer``, ``hsm`` …). The rule reuses the same untrusted-context catalog as GL-002 (``CI_COMMIT_MESSAGE``, ``CI_COMMIT_REF_NAME``, ``CI_MERGE_REQUEST_TITLE`` and friends) so the two rules stay in lockstep.
+GL-014 catches self-managed runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``tags:`` is computed from an attacker-controllable CI variable, the operator (or anyone who can craft a PR title / branch name / commit message that the workflow consumes) picks where the job runs, including any privileged tag the instance exposes (``deploy-prod``, ``signer``, ``hsm`` …). The rule reuses the same untrusted-context catalog as GL-002 (``CI_COMMIT_MESSAGE``, ``CI_COMMIT_REF_NAME``, ``CI_MERGE_REQUEST_TITLE`` and friends) so the two rules stay in lockstep.
 
 <div class="pg-rule__rec" markdown>
 

@@ -1,4 +1,4 @@
-"""BK-001 — Plugins must be pinned to an exact tag/SHA, not a branch."""
+"""BK-001. Plugins must be pinned to an exact tag/SHA, not a branch."""
 from __future__ import annotations
 
 import re
@@ -39,7 +39,7 @@ RULE = Rule(
 # A pinned ref ends in either an exact-semver suffix or a 40-char SHA.
 _EXACT_SEMVER_RE = re.compile(r"#v?\d+\.\d+\.\d+(?:[-+][\w.]+)?$")
 _SHA_RE = re.compile(r"#[0-9a-f]{40}$")
-# Branch-style refs that float — explicit denylist so an unusual but
+# Branch-style refs that float, explicit denylist so an unusual but
 # legitimate semver tag doesn't get caught by the partial-pin fallback.
 _BRANCH_REFS: set[str] = {"main", "master", "develop", "trunk", "head"}
 

@@ -1,4 +1,4 @@
-"""JF-009 — docker agent images must be pinned by sha256 digest."""
+"""JF-009, docker agent images must be pinned by sha256 digest."""
 from __future__ import annotations
 
 from ...base import Finding, Location, Severity
@@ -23,7 +23,7 @@ RULE = Rule(
         "`agent { docker { image 'name:tag' } }` is not digest-"
         "pinned, so a repointed registry tag silently swaps the "
         "executor under every subsequent build. Unlike the YAML "
-        "providers, Jenkins has no separate tag-pinning check — so "
+        "providers, Jenkins has no separate tag-pinning check, so "
         "this one fires at HIGH regardless of whether the tag is "
         "floating or immutable."
     ),
@@ -52,7 +52,7 @@ def check(jf: Jenkinsfile) -> Finding:
                 unpinned.append(f"{ref} (tag, not digest)")
             is_offender = True
         if is_offender:
-            # 1-based line of the match — same pattern JF-001 uses
+            # 1-based line of the match, same pattern JF-001 uses
             # to recover line offsets from a text-based file.
             line_no = jf.text.count("\n", 0, m.start()) + 1
             locations.append(Location(

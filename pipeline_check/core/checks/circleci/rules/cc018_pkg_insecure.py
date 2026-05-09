@@ -1,4 +1,4 @@
-"""CC-018 — package install from insecure source."""
+"""CC-018, package install from insecure source."""
 from __future__ import annotations
 
 from typing import Any

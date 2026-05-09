@@ -1,4 +1,4 @@
-"""CC-029 — Machine executor image must be pinned to an immutable tag."""
+"""CC-029. Machine executor image must be pinned to an immutable tag."""
 from __future__ import annotations
 
 import re
@@ -16,15 +16,15 @@ RULE = Rule(
     esf=("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"),
     cwe=("CWE-829",),
     recommendation=(
-        "Pin every ``machine.image`` to a dated release tag — "
+        "Pin every ``machine.image`` to a dated release tag, "
         "``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, "
         "``:default``, or a bare image name. CircleCI rotates the "
         "``current`` / ``edge`` aliases on its own cadence, so builds "
         "re-run on an image the author never reviewed."
     ),
     docs_note=(
-        "CC-003 covers Docker images declared under ``docker:`` blocks "
-        "— it does not reach the machine executor, where the image is "
+        "CC-003 covers Docker images declared under ``docker:`` blocks. "
+        "It does not reach the machine executor, where the image is "
         "on ``machine.image``. A rolling tag (``current``, ``edge``, "
         "``default``) pulls a fresh image whenever CircleCI publishes "
         "one, reintroducing the same supply-chain risk Docker-image "
@@ -32,7 +32,7 @@ RULE = Rule(
     ),
 )
 
-# Immutable image tags from CircleCI — dated release suffix, e.g.
+# Immutable image tags from CircleCI, dated release suffix, e.g.
 # ``ubuntu-2204:2024.05.1`` or ``android:2024.01.1-node``. The leading
 # four-digit year gates the whole family so we don't have to hard-code
 # every current image family.
@@ -46,7 +46,7 @@ def _image_from_machine(machine: Any) -> str | None:
     """Return the image string from a ``machine:`` block, regardless of shape.
 
     CircleCI accepts:
-      - ``machine: true`` (default image — equivalent to unpinned)
+      - ``machine: true`` (default image, equivalent to unpinned)
       - ``machine: {image: <ref>}``
       - ``machine: {image: <ref>, docker_layer_caching: ...}``
     """

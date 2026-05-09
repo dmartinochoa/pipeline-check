@@ -1,4 +1,4 @@
-"""ADO-010 — cross-pipeline downloads must be verified."""
+"""ADO-010, cross-pipeline downloads must be verified."""
 from __future__ import annotations
 
 from typing import Any

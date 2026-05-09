@@ -20,7 +20,7 @@ from .tokens import (
     produces_artifacts,
 )
 
-# Re-exports — rule files have imported ``walk_strings`` / ``blob_lower`` /
+# Re-exports, rule files have imported ``walk_strings`` / ``blob_lower`` /
 # ``has_signing`` / ``SIGN_TOKENS`` / etc. from this module for a long time.
 # The canonical homes are now ``blob.py`` and ``tokens.py`` but we keep the
 # old names resolvable here so existing imports don't need to churn.
@@ -101,7 +101,7 @@ class Confidence(str, Enum):
     Orthogonal to :class:`Severity`. Severity answers "how bad is this
     if true"; confidence answers "how likely is this to be true at
     all". A CRITICAL-severity regex-blob match can legitimately be
-    LOW-confidence — the pattern is strong-sounding but fires on any
+    LOW-confidence, the pattern is strong-sounding but fires on any
     workflow that mentions the token, including docs/examples.
 
     Consumers filter via ``--min-confidence`` to trade recall for
@@ -132,7 +132,7 @@ class Location:
     the same value as ``start_line`` for single-line findings; ranges
     that span multiple lines set both. ``doc_index`` distinguishes
     documents inside a multi-doc YAML stream (Kubernetes / Tekton /
-    Argo) — index 0 means the first ``---``-separated body.
+    Argo), index 0 means the first ``---``-separated body.
 
     A finding can carry zero, one, or many locations. Zero locations
     means line precision wasn't available (e.g. AWS live-API scans
@@ -182,8 +182,8 @@ class Finding:
     cwe: list[str] = field(default_factory=list)
     #: How strongly the check's evidence supports this finding. Rules
     #: that leave this at the default (HIGH) are asserting their match
-    #: is structural/unambiguous. Heuristic rules — blob-search pattern
-    #: matches, context-dependent warnings — should return MEDIUM or
+    #: is structural/unambiguous. Heuristic rules, blob-search pattern
+    #: matches, context-dependent warnings, should return MEDIUM or
     #: LOW. The provider orchestrators apply bulk defaults from a
     #: curated list in ``checks/_confidence.py`` so rule authors don't
     #: need to reason about every case.
@@ -192,7 +192,7 @@ class Finding:
     #: above. When False (the default), the Scanner post-processes the
     #: finding by consulting ``checks/_confidence.py`` and may demote
     #: HIGH to MEDIUM/LOW for heuristic rules. When True, the Scanner
-    #: leaves the confidence untouched — for rules that need per-
+    #: leaves the confidence untouched, for rules that need per-
     #: finding control (e.g. CB-005 emitting HIGH for "two+ versions
     #: behind" even though the rule's blanket default is MEDIUM).
     confidence_locked: bool = False
@@ -238,7 +238,7 @@ class BaseCheck(abc.ABC):
         self.context = context
         #: Optional resource name to scope the scan to (e.g. a pipeline name).
         self.target = target
-        # NB: clearing per-instance guards against id() reuse — a doc
+        # NB: clearing per-instance guards against id() reuse, a doc
         # that was GC'd between test fixtures can have its id reassigned
         # to a fresh doc, and blob_lower would otherwise return the
         # stale cached blob. The protection outweighs the lost cross-
@@ -256,7 +256,7 @@ import re as _re
 # Used by the curl-pipe, docker-privileged, and package-insecure
 # checks across all five workflow providers.
 
-#: ``curl … | bash`` or ``wget … | sh`` — remote code execution via
+#: ``curl … | bash`` or ``wget … | sh``, remote code execution via
 #: pipe to interpreter. Covers bash, sh, python, perl, ruby, PowerShell,
 #: and download-then-execute variants.
 CURL_PIPE_RE = _re.compile(
@@ -269,7 +269,7 @@ CURL_PIPE_RE = _re.compile(
     r"|Invoke-(?:WebRequest|RestMethod)\s+[^|]*\|\s*iex",           # PowerShell long form
 )
 
-#: ``docker run --privileged`` or ``-v /…:/…`` — container escape via
+#: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
     r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net[= ]host"
@@ -280,7 +280,7 @@ DOCKER_INSECURE_RE = _re.compile(
 )
 
 #: ``pip install --index-url http://`` or ``npm install --registry=http://``
-#: — package install from insecure (non-TLS) registry or with trust overrides.
+#:, package install from insecure (non-TLS) registry or with trust overrides.
 #: Covers pip, npm, yarn, gem, nuget, and cargo.
 PKG_INSECURE_RE = _re.compile(
     r"(?:pip3?\s+install)"                                           # pip / pip3
@@ -294,7 +294,7 @@ PKG_INSECURE_RE = _re.compile(
     r"|cargo\s+install\s[^;&]*--index\s+http[^s]",                  # cargo
 )
 
-#: Package install without lockfile enforcement — supply-chain risk
+#: Package install without lockfile enforcement, supply-chain risk
 #: because the resolver pulls whatever version is currently latest.
 PKG_NO_LOCKFILE_RE = _re.compile(
     # npm install (should be npm ci); exempt -g/--global (different concern)
@@ -332,10 +332,10 @@ DEP_UPDATE_RE = _re.compile(
 #:
 #: Two categories:
 #:
-#:   * Build-system tools — ``pip``, ``setuptools``, ``wheel``,
+#:   * Build-system tools, ``pip``, ``setuptools``, ``wheel``,
 #:     ``virtualenv``, ``build``. These are used to produce / install
 #:     the artifact, not to ship inside it.
-#:   * Security-tooling installs — ``pip-audit``, ``cyclonedx-bom``,
+#:   * Security-tooling installs, ``pip-audit``, ``cyclonedx-bom``,
 #:     ``cyclonedx-py``, ``safety``, ``bandit``, ``semgrep``. These
 #:     are CI scanners that lint or attest the artifact; the version
 #:     pin churn is irrelevant to the supply chain because their
@@ -363,7 +363,7 @@ def has_dep_update(blob: str) -> bool:
     return False
 
 
-#: TLS / certificate-verification bypass — allows MITM injection.
+#: TLS / certificate-verification bypass, allows MITM injection.
 TLS_BYPASS_RE = _re.compile(
     r"\bnpm\s+config\s+set\s+strict-ssl\s+false\b"
     r"|\byarn\s+config\s+set\s+strict-ssl\s+false\b"
@@ -407,7 +407,7 @@ def is_quoted_assignment(line: str) -> bool:
     not executing it" escape hatch is applied consistently.
 
     **Not** safe when the RHS contains a command substitution like
-    ``$( … )`` wrapping untrusted input — the substitution executes
+    ``$( … )`` wrapping untrusted input, the substitution executes
     the content even inside double quotes.
     """
     if not _QUOTED_ASSIGNMENT_RE.match(line):

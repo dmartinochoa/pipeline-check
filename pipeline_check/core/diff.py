@@ -8,7 +8,7 @@ on a feature branch. Two-step filter:
 2. Workflow providers filter their loaded documents against this set
    so checks run only against the files a PR actually changes.
 
-The intent is scoping, not correctness — if git is unavailable or the
+The intent is scoping, not correctness, if git is unavailable or the
 base ref can't be resolved we return ``None`` (meaning "do not filter")
 rather than raising. The caller decides whether that's acceptable.
 """
@@ -23,7 +23,7 @@ def changed_files(base_ref: str, cwd: str | Path = ".") -> set[str] | None:
 
     Returns ``None`` on any git failure so the caller can fall back to
     scanning everything. Returns an empty set when the branch is in
-    sync with the base ref (intentional — means "scan nothing").
+    sync with the base ref (intentional, means "scan nothing").
     """
     try:
         result = subprocess.run(
@@ -69,7 +69,7 @@ def git_show(ref: str, path: str, cwd: str | Path = ".") -> str | None:
 
     Used by ``--baseline-from-git`` to resolve a prior scan's JSON
     report without requiring the caller to restore the artifact by
-    hand. ``None`` on any git failure — callers should degrade to a
+    hand. ``None`` on any git failure, callers should degrade to a
     full scan rather than refusing to run.
     """
     try:

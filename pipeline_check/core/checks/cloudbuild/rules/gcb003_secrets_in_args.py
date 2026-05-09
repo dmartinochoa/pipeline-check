@@ -1,4 +1,4 @@
-"""GCB-003 — Secrets passed via step args instead of ``secretEnv``.
+"""GCB-003. Secrets passed via step args instead of ``secretEnv``.
 
 Cloud Build supports two patterns for consuming Secret Manager
 secrets:
@@ -11,7 +11,7 @@ secrets:
    via ``$(gcloud secrets versions access ...)``) inline in
    ``args`` or ``entrypoint``. The value is captured in Cloud Build
    logs, stored in build history, and may echo into stdout of the
-   builder container — visible to anyone with ``roles/cloudbuild.
+   builder container, visible to anyone with ``roles/cloudbuild.
    builds.viewer``.
 
 This rule fires on step bodies (``args``, ``entrypoint``) that
@@ -39,7 +39,7 @@ RULE = Rule(
         "Map the secret under ``availableSecrets.secretManager[]`` "
         "with an ``env:`` alias, then reference it from each step "
         "via ``secretEnv: [ALIAS]``. Avoid inline ``gcloud secrets "
-        "versions access`` in ``args`` — the resolved plaintext "
+        "versions access`` in ``args``, the resolved plaintext "
         "lands in build logs."
     ),
     docs_note=(

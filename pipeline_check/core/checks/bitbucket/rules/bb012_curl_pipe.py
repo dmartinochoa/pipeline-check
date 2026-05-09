@@ -1,4 +1,4 @@
-"""BB-012 — remote script piped to shell interpreter."""
+"""BB-012, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from typing import Any

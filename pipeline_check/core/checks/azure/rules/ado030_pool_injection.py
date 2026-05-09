@@ -1,4 +1,4 @@
-"""ADO-030 — ``pool:`` interpolates an attacker-controllable value."""
+"""ADO-030, ``pool:`` interpolates an attacker-controllable value."""
 from __future__ import annotations
 
 from typing import Any
@@ -29,21 +29,21 @@ RULE = Rule(
         "this rule catches the upstream targeting choice. When "
         "``pool:`` (or its ``name`` / ``demands`` sub-fields) is "
         "computed from an attacker-controllable expression, whoever "
-        "triggers the pipeline picks where the job runs — including "
+        "triggers the pipeline picks where the job runs, including "
         "any agent pool the project exposes (``deploy-prod``, "
         "``signer``, ``hsm`` …). Two attacker surfaces are flagged: "
         "runtime SCM macros (``$(Build.SourceBranchName)``, "
         "``$(System.PullRequest.SourceBranch)``, …) and caller-"
-        "controlled template parameters (``${{ parameters.X }}`` — "
+        "controlled template parameters (``${{ parameters.X }}``, "
         "the value comes from whoever queued the run). The rule "
-        "walks all three pool shapes — string scalar, dict "
+        "walks all three pool shapes, string scalar, dict "
         "``{ name, vmImage, demands }``, and the ``demands`` list "
         "form."
     ),
     known_fp=(
         "Pipelines that intentionally select agent pools via a vetted "
         "``variables:`` block (``POOL_NAME: prod-pool``) are out of "
-        "scope — pipeline variables defined in the same file are "
+        "scope, pipeline variables defined in the same file are "
         "author-controlled. Static custom names are not flagged. The "
         "rule only matches the curated runtime-macro catalog and the "
         "literal ``${{ parameters.X }}`` template-parameter shape.",
@@ -56,14 +56,14 @@ def _pool_strings(pool: Any) -> list[str]:
 
     Three shapes are walked:
 
-    * scalar — ``pool: prod-pool``
-    * dict — ``pool: { name: prod-pool, vmImage: ubuntu-latest }``
-    * dict with demands — ``pool: { name: …, demands: [a -equals b] }``
+    * scalar, ``pool: prod-pool``
+    * dict, ``pool: { name: prod-pool, vmImage: ubuntu-latest }``
+    * dict with demands, ``pool: { name: …, demands: [a -equals b] }``
 
     ``vmImage`` is intentionally excluded because Microsoft-hosted
     images aren't a privileged-runner targeting surface. Non-string
     entries (a malformed pipeline with an int demand) are skipped
-    silently — the YAML loader already accepted them, so the
+    silently, the YAML loader already accepted them, so the
     surface for injection is what matters here, not the schema.
     """
     out: list[str] = []
@@ -116,7 +116,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{'…' if len(set(offenders)) > 5 else ''}. "
         f"A trigger (or anyone whose PR / branch the pipeline "
         f"consumes) can route the job onto any agent pool the "
-        f"project exposes — including privileged self-hosted pools."
+        f"project exposes, including privileged self-hosted pools."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

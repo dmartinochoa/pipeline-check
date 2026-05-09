@@ -1,7 +1,7 @@
 # Compliance standards
 
-Every finding produced by the scanner carries a list of `ControlRef` objects
-— references to controls in registered compliance standards. The same check
+Every finding produced by the scanner carries a list of `ControlRef` objects. References to controls in registered compliance standards. The same check
+
 can evidence controls in multiple standards at once.
 
 <div class="pg-doc-cards">
@@ -13,7 +13,7 @@ can evidence controls in multiple standards at once.
   </a>
   <a class="pg-doc-card" href="cis_aws_foundations/">
     <h3>CIS AWS Foundations</h3>
-    <p>CI/CD-relevant subset of the CIS AWS benchmark — IAM, S3, CloudTrail, KMS hardening.</p>
+    <p>CI/CD-relevant subset of the CIS AWS benchmark. IAM, S3, CloudTrail, KMS hardening.</p>
     <span class="pg-doc-card__meta">{{ standards.cis_aws_foundations.controls }} controls · {{ standards.cis_aws_foundations.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="cis_kubernetes/">
@@ -28,7 +28,7 @@ can evidence controls in multiple standards at once.
   </a>
   <a class="pg-doc-card" href="nist_ssdf/">
     <h3>NIST SSDF</h3>
-    <p>Secure Software Development Framework — the federal SSDLC reference (SP 800-218).</p>
+    <p>Secure Software Development Framework, the federal SSDLC reference (SP 800-218).</p>
     <span class="pg-doc-card__meta">{{ standards.nist_ssdf.controls }} controls · {{ standards.nist_ssdf.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="nist_800_53/">
@@ -38,12 +38,12 @@ can evidence controls in multiple standards at once.
   </a>
   <a class="pg-doc-card" href="nist_csf_2/">
     <h3>NIST CSF 2.0</h3>
-    <p>Cybersecurity Framework — Govern, Identify, Protect, Detect, Respond, Recover.</p>
+    <p>Cybersecurity Framework. Govern, Identify, Protect, Detect, Respond, Recover.</p>
     <span class="pg-doc-card__meta">{{ standards.nist_csf_2.controls }} controls · {{ standards.nist_csf_2.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="nist_800_190/">
     <h3>NIST 800-190</h3>
-    <p>Application Container Security Guide — image, registry, runtime, host hardening.</p>
+    <p>Application Container Security Guide, image, registry, runtime, host hardening.</p>
     <span class="pg-doc-card__meta">{{ standards.nist_800_190.controls }} controls · {{ standards.nist_800_190.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="slsa/">
@@ -58,7 +58,7 @@ can evidence controls in multiple standards at once.
   </a>
   <a class="pg-doc-card" href="esf_supply_chain/">
     <h3>NSA/CISA ESF</h3>
-    <p>Enduring Security Framework — Securing the Software Supply Chain (developer, customer, supplier).</p>
+    <p>Enduring Security Framework. Securing the Software Supply Chain (developer, customer, supplier).</p>
     <span class="pg-doc-card__meta">{{ standards.esf_supply_chain.controls }} controls · {{ standards.esf_supply_chain.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="openssf_scorecard/">
@@ -68,7 +68,7 @@ can evidence controls in multiple standards at once.
   </a>
   <a class="pg-doc-card" href="s2c2f/">
     <h3>S2C2F</h3>
-    <p>Secure Supply Chain Consumption Framework — ingest, inventory, scan, rebuild, fix.</p>
+    <p>Secure Supply Chain Consumption Framework, ingest, inventory, scan, rebuild, fix.</p>
     <span class="pg-doc-card__meta">{{ standards.s2c2f.controls }} controls · {{ standards.s2c2f.checks }} checks evidenced</span>
   </a>
   <a class="pg-doc-card" href="soc2/">
@@ -90,7 +90,7 @@ Omit `--standard` to include every registered standard.
 
 ## Architecture
 
-A standard is pure data — no code. Each one is a Python module in
+A standard is pure data, no code. Each one is a Python module in
 `pipeline_check/core/standards/data/` that defines a module-level `STANDARD`
 object:
 

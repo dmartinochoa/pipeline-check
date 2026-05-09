@@ -1,4 +1,4 @@
-"""K8S-018 — ``Secret`` stringData / data carries a credential-shaped literal."""
+"""K8S-018, ``Secret`` stringData / data carries a credential-shaped literal."""
 from __future__ import annotations
 
 import base64
@@ -20,7 +20,7 @@ RULE = Rule(
     cwe=("CWE-798",),
     recommendation=(
         "A ``Kind: Secret`` manifest committed to git defeats every "
-        "secret-management story Kubernetes claims to provide — "
+        "secret-management story Kubernetes claims to provide, "
         "the base64 encoding in ``data`` is *not* encryption. "
         "Replace with SealedSecrets (Bitnami), ExternalSecrets / "
         "ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent "
@@ -32,7 +32,7 @@ RULE = Rule(
         "Walks both ``stringData`` (plain text) and ``data`` (base64). "
         "Base64-encoded values are decoded and checked for AKIA-shaped "
         "AWS keys. Credential-shaped key NAMES with any non-empty "
-        "value are flagged regardless of encoding — even if the value "
+        "value are flagged regardless of encoding, even if the value "
         "is the literal placeholder ``REPLACE_ME``, having the name "
         "in the manifest is a maintenance footgun."
     ),

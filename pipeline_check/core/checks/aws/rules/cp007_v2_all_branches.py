@@ -1,4 +1,4 @@
-"""CP-007 — CodePipeline v2 pull-request trigger lacks branch scope."""
+"""CP-007. CodePipeline v2 pull-request trigger lacks branch scope."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -19,8 +19,8 @@ RULE = Rule(
     ),
     docs_note=(
         "V2 pipelines added native PR triggers; without a "
-        "``branches.includes`` filter, any PR — including fork PRs "
-        "from outside the org — fires the pipeline. The build stage "
+        "``branches.includes`` filter, any PR, including fork PRs "
+        "from outside the org, fires the pipeline. The build stage "
         "runs with whatever IAM authority the pipeline's role "
         "carries, which is the full attack surface a fork-PR "
         "compromise can reach."

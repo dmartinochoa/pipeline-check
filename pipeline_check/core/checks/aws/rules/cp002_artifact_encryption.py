@@ -1,4 +1,4 @@
-"""CP-002 — CodePipeline artifact store uses default S3 SSE, not a CMK."""
+"""CP-002. CodePipeline artifact store uses default S3 SSE, not a CMK."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""BK-013 — deploy steps must restrict to a release branch."""
+"""BK-013, deploy steps must restrict to a release branch."""
 from __future__ import annotations
 
 import re
@@ -33,7 +33,7 @@ RULE = Rule(
         "declares ``branches:`` with at least one literal branch "
         "name (a wildcard like ``\"*\"`` is treated as an explicit "
         "opt-out, not a passing filter, and still trips). The "
-        "pipeline-level default also counts — top-level ``steps:`` "
+        "pipeline-level default also counts, top-level ``steps:`` "
         "with ``branches:`` propagates."
     ),
     known_fp=(

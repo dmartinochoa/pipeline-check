@@ -1,4 +1,4 @@
-"""PBAC-003 — CodeBuild security group allows 0.0.0.0/0 all-port egress."""
+"""PBAC-003. CodeBuild security group allows 0.0.0.0/0 all-port egress."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
     docs_note=(
         "A security-group egress rule of ``0.0.0.0/0`` on all "
         "ports/protocols means a compromised build can connect to "
-        "any endpoint on the internet — typosquat-package registry, "
+        "any endpoint on the internet, typosquat-package registry, "
         "C2 server, attacker-owned dump endpoint. Even when the "
         "build is inside a VPC (PBAC-001), this egress rule "
         "negates the network-side gating."

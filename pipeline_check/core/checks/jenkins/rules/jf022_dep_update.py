@@ -1,4 +1,4 @@
-"""JF-022 — dependency update command bypasses lockfile pins."""
+"""JF-022, dependency update command bypasses lockfile pins."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_dep_update

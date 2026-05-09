@@ -1,4 +1,4 @@
-"""GL-031 — `id_tokens:` block missing audience pin or environment binding."""
+"""GL-031, `id_tokens:` block missing audience pin or environment binding."""
 from __future__ import annotations
 
 from typing import Any
@@ -13,7 +13,7 @@ def _id_tokens_block(job: dict[str, Any]) -> dict[str, Any] | None:
 
     GitLab uses ``id_tokens:`` (a mapping of token-name → spec) at the
     job level to request JWTs for OIDC federation. An empty value or
-    a non-dict shape is treated as absent — no token actually issues.
+    a non-dict shape is treated as absent, no token actually issues.
     """
     block = job.get("id_tokens")
     if isinstance(block, dict) and block:
@@ -25,7 +25,7 @@ def _aud_pinned(token_spec: Any) -> bool:
     """Return True if *token_spec* pins ``aud:`` to a non-wildcard value.
 
     A missing ``aud:``, an empty string, or a literal ``"*"`` defeats
-    the audience-binding contract — the token is acceptable to any
+    the audience-binding contract, the token is acceptable to any
     consumer that trusts GitLab's OIDC issuer.
     """
     if not isinstance(token_spec, dict):
@@ -58,7 +58,7 @@ RULE = Rule(
         "assume-role on the consumer side."
     ),
     docs_note=(
-        "Pairs with IAM-008 — IAM-008 verifies the cloud-side trust "
+        "Pairs with IAM-008. IAM-008 verifies the cloud-side trust "
         "policy pins audience + subject; this rule verifies the "
         "GitLab-side workflow can't request a token without an "
         "audience claim or without a deployment gate."

@@ -1,4 +1,4 @@
-"""CCM-003 — CodeCommit trigger targets an SNS/Lambda in a different account."""
+"""CCM-003. CodeCommit trigger targets an SNS/Lambda in a different account."""
 from __future__ import annotations
 
 import re

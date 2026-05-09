@@ -6,7 +6,7 @@ import re
 from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
 from ..._primitives.image_pinning import DIGEST_RE as DIGEST_RE
 
-# Orb pinning — semver or SHA is considered pinned.
+# Orb pinning, semver or SHA is considered pinned.
 # Floating: ``circleci/node@volatile``, ``circleci/node@1``.
 # Pinned: ``circleci/node@5.1.0``, ``circleci/node@5.1.0-rc.1``.
 PINNED_ORB_RE = re.compile(r"@v?\d+\.\d+\.\d+")
@@ -22,7 +22,7 @@ UNTRUSTED_ENV_RE = re.compile(
 )
 
 # AWS long-lived key env vars (matches variable *names*, not the key
-# literal — CircleCI rules look for the presence of these env-var names
+# literal. CircleCI rules look for the presence of these env-var names
 # in configs, which is a distinct shape from the ``AKIA…`` literal
 # matched by the shared ``secret_shapes.AWS_KEY_RE``).
 AWS_KEY_RE = re.compile(

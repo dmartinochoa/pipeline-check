@@ -26,16 +26,16 @@ SBOM_DIRECT_TOKENS = (
     "spdx-sbom-generator", "microsoft/sbom-tool",
 )
 
-# Provenance tokens — narrower than SIGN_TOKENS. SLSA Build L3 requires
+# Provenance tokens, narrower than SIGN_TOKENS. SLSA Build L3 requires
 # an in-toto attestation produced by a hardened builder, not just a
 # signed artifact. Anything here provably produces a provenance
 # attestation; ``cosign sign`` alone does NOT (it signs the artifact
 # but doesn't emit an in-toto statement describing how it was built).
 PROVENANCE_TOKENS = (
-    "slsa-github-generator",        # GHA — SLSA Level 3 builder
+    "slsa-github-generator",        # GHA. SLSA Level 3 builder
     "slsa-framework/slsa-",          # SLSA GitHub org actions
-    "actions/attest-build-provenance",  # GHA — native build-provenance action
-    "actions/attest@",               # GHA — generic attest action
+    "actions/attest-build-provenance",  # GHA, native build-provenance action
+    "actions/attest@",               # GHA, generic attest action
     "cosign attest",                 # sigstore attestation (distinct from `cosign sign`)
     "witness run",                   # testifysec/witness attestor
     "in-toto-attestation",           # in-toto library/CLI
@@ -66,7 +66,7 @@ _ARTIFACT_TOKENS = (
 )
 
 
-#: Vulnerability scanning tool tokens — same detection pattern as
+#: Vulnerability scanning tool tokens, same detection pattern as
 #: ``has_signing`` / ``has_sbom``.
 VULN_SCAN_TOKENS = (
     "trivy ", "grype ", "snyk ", "npm audit", "yarn audit",
@@ -96,7 +96,7 @@ def has_signing(doc: Any) -> bool:
 def has_provenance(doc: Any) -> bool:
     """Return True when the workflow emits an in-toto/SLSA provenance attestation.
 
-    Distinct from :func:`has_signing` — a workflow that only runs
+    Distinct from :func:`has_signing`, a workflow that only runs
     ``cosign sign`` signs the artifact but doesn't produce a
     provenance statement describing *how* the artifact was built.
     SLSA Build Level 3 requires the latter.
@@ -104,7 +104,7 @@ def has_provenance(doc: Any) -> bool:
     Note: PyPI trusted publishing's PEP 740 attestations are also
     valid provenance, but the ``with: { attestations: true }`` opt-in
     is a structural signal (YAML parses ``true`` as a bool, not a
-    string) — the per-rule check in
+    string), the per-rule check in
     ``checks/github/rules/gha024_slsa_provenance.py`` covers that
     case directly.
     """

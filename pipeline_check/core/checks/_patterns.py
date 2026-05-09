@@ -1,7 +1,7 @@
 """Shared regex patterns and constants used by multiple check providers.
 
 Kept in one place so AWS (live boto3) and Terraform (plan JSON) checks stay
-in sync — any update to a credential detector or managed-image version
+in sync, any update to a credential detector or managed-image version
 automatically applies to both.
 
 The credential catalog below is the authoritative list of "shape-based"
@@ -26,10 +26,10 @@ SECRET_NAME_RE = re.compile(
 # ──────────────────────────────────────────────────────────────────────
 #
 # Each entry is (name, regex_body). The regex_body is anchored at use
-# time — keep it WITHOUT ``^`` and ``$``. Add a new line when a new
+# time, keep it WITHOUT ``^`` and ``$``. Add a new line when a new
 # vendor publishes a stable token shape; only add patterns that are
 # specific enough to not collide with arbitrary base64 (e.g. don't
-# add a bare 40-char hex regex for "datadog API key" — too generic).
+# add a bare 40-char hex regex for "datadog API key", too generic).
 #
 # Picking thresholds:
 #   - Lengths come from the vendor's published spec where one exists.
@@ -62,7 +62,7 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "gitlab_pat":             r"glpat-[0-9A-Za-z_\-]{20}",
     # GitLab deploy tokens (project-scoped).
     "gitlab_deploy_token":    r"gldt-[0-9A-Za-z_\-]{20,}",
-    # SendGrid API key — ``SG.<22>.<43>``.
+    # SendGrid API key, ``SG.<22>.<43>``.
     "sendgrid":               r"SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}",
     # Anthropic API keys (current ``sk-ant-api03`` series).
     "anthropic_api_key":      r"sk-ant-api03-[A-Za-z0-9_\-]{90,}",
@@ -74,13 +74,13 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "twilio_api_key":         r"SK[0-9a-fA-F]{32}",
     # Twilio Account SID (AC prefix + 32 hex = 34 chars total).
     "twilio_account_sid":     r"AC[0-9a-fA-F]{32}",
-    # Mailchimp API key — 32 hex + datacenter suffix (-us1 through -us99).
+    # Mailchimp API key, 32 hex + datacenter suffix (-us1 through -us99).
     "mailchimp_api_key":      r"[0-9a-f]{32}-us\d{1,2}",
-    # Shopify access tokens — four scoped prefixes, 32 hex chars.
+    # Shopify access tokens, four scoped prefixes, 32 hex chars.
     "shopify_token":          r"shp(?:at|ca|pa|ss)_[0-9a-fA-F]{32}",
-    # Databricks personal access token — dapi prefix + 32 hex.
+    # Databricks personal access token, dapi prefix + 32 hex.
     "databricks_token":       r"dapi[0-9a-f]{32}",
-    # OpenAI API keys — legacy (sk-…T3BlbkFJ…) and new (sk-proj-…).
+    # OpenAI API keys, legacy (sk-…T3BlbkFJ…) and new (sk-proj-…).
     "openai_api_key":         r"sk-(?:proj-[A-Za-z0-9_\-]{40,}|[A-Za-z0-9]{20,}T3BlbkFJ[A-Za-z0-9]{20,})",
     # Hugging Face user access tokens.
     "huggingface_token":      r"hf_[A-Za-z0-9]{34,}",
@@ -94,7 +94,7 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "new_relic_api_key":      r"NRAK-[A-Za-z0-9]{27}",
     # Grafana Cloud service account token (glsa_ prefix).
     "grafana_api_key":        r"glsa_[A-Za-z0-9_]{32,}",
-    # Telegram Bot API token — numeric bot ID + alphanumeric secret.
+    # Telegram Bot API token, numeric bot ID + alphanumeric secret.
     "telegram_bot_token":     r"\d{8,10}:[A-Za-z0-9_\-]{35}",
     # Atlassian Cloud API tokens (Forge / Connect apps; ATATT3 prefix).
     "atlassian_api_token":    r"ATATT3[A-Za-z0-9_\-]{50,}",
@@ -108,7 +108,7 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "fly_api_token":          r"fo1_[A-Za-z0-9_\-]{40,}",
     # Pulumi Cloud access tokens (pul- prefix, 40 hex).
     "pulumi_access_token":    r"pul-[a-f0-9]{40}",
-    # Doppler secrets manager tokens — scoped prefixes (ct/sa/st/scrt/audit).
+    # Doppler secrets manager tokens, scoped prefixes (ct/sa/st/scrt/audit).
     "doppler_token":          r"dp\.(?:ct|sa|st|scrt|audit)\.[A-Za-z0-9]{40,}",
     # Netlify personal access tokens (nfp_ prefix).
     "netlify_token":          r"nfp_[A-Za-z0-9]{40,}",
@@ -132,7 +132,7 @@ SECRET_DETECTORS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 
-#: Compatibility alias — a single anchored regex that fires on any
+#: Compatibility alias, a single anchored regex that fires on any
 #: built-in detector. Older callers (e.g. the GHA-008 autofix and the
 #: SARIF best-effort line locator) match against this directly.
 SECRET_VALUE_RE = re.compile(
@@ -152,7 +152,7 @@ SECRET_VALUE_RE = re.compile(
 # Deliberately NOT included: ``EXAMPLE`` / ``FAKE`` / ``TEST``.
 #  - ``AKIAIOSFODNN7EXAMPLE`` is the canonical AWS-docs example, and
 #    if that string makes it into a real workflow it usually means
-#    someone copy-pasted from docs and forgot to substitute — exactly
+#    someone copy-pasted from docs and forgot to substitute, exactly
 #    the case the scanner exists to catch.
 #  - Real tokens at companies often have ``test`` / ``staging`` /
 #    ``fake`` substrings in their key names.
@@ -165,7 +165,7 @@ PLACEHOLDER_MARKER_RE = re.compile(
     r"|my[_\-]?(?:key|token|secret|api)"
     r"|insert[_\-]?(?:key|token|secret)"
     r"|dummy[_\-]?(?:key|token|secret)?"
-    r"|XXXXX"      # 5+ Xs in a row — typical doc redaction
+    r"|XXXXX"      # 5+ Xs in a row, typical doc redaction
     r"|<[^>]*>"    # angle-bracketed placeholders like <your-key>
     r")",
     re.IGNORECASE,
@@ -176,7 +176,7 @@ PLACEHOLDER_MARKER_RE = re.compile(
 # Multi-line PEM private-key blocks
 # ──────────────────────────────────────────────────────────────────────
 #
-# The token-based scanner can't catch these — a PEM block spans many
+# The token-based scanner can't catch these, a PEM block spans many
 # lines and the body is base64 data that splits on whitespace. A
 # separate substring scan over the joined string content fires when
 # a BEGIN marker is present.
@@ -187,7 +187,7 @@ PEM_BLOCK_RE = re.compile(
 )
 
 
-# AWS CodeBuild standard managed image — aws/codebuild/standard:X.0.
+# AWS CodeBuild standard managed image, aws/codebuild/standard:X.0.
 MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
 
 # Bump when AWS releases a new standard image major version.

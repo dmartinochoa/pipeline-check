@@ -1,9 +1,9 @@
-"""OpenSSF Scorecard v5 — CI/CD posture checks.
+"""OpenSSF Scorecard v5. CI/CD posture checks.
 
 Scorecard is a set of automated checks that score open-source projects
-on supply-chain posture. Many of its checks — Dangerous-Workflow,
+on supply-chain posture. Many of its checks. Dangerous-Workflow,
 Pinned-Dependencies, Token-Permissions, Signed-Releases, SBOM,
-Vulnerabilities, Dependency-Update-Tool — are exactly the signals this
+Vulnerabilities, Dependency-Update-Tool, are exactly the signals this
 scanner already produces from pipeline config, so the mapping is
 largely 1:1.
 
@@ -13,7 +13,7 @@ outside this scanner's scope):
   Contributors, Fuzzing, License, Maintained, Packaging,
   Security-Policy, Webhooks.
 
-Code-Review is partially evidenced — Scorecard defines it as "PR review
+Code-Review is partially evidenced. Scorecard defines it as "PR review
 required before merge", which we can't see, but pipeline-level approval
 gates (CICD-SEC-1 flow-control rules) and SCM-side approval-rule
 templates (CCM-001) are the closest CI/CD analogue and are included

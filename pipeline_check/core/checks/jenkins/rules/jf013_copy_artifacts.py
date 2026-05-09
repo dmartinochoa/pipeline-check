@@ -1,4 +1,4 @@
-"""JF-013 — copyArtifacts must be paired with a verification step."""
+"""JF-013, copyArtifacts must be paired with a verification step."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

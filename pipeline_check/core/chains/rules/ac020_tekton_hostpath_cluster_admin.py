@@ -1,14 +1,14 @@
-"""AC-020 — Tekton Task with hostPath meets cluster-admin RBAC.
+"""AC-020. Tekton Task with hostPath meets cluster-admin RBAC.
 
 Tekton TaskRuns execute inside the cluster. When a Task mounts a
 ``hostPath`` volume (TKN-004), every step in that Task can read /
-write the node filesystem — kubelet TLS keys at
+write the node filesystem, kubelet TLS keys at
 ``/var/lib/kubelet/pki/``, the container runtime socket, static
 pod manifests under ``/etc/kubernetes/manifests/``.
 
 When the same cluster also carries a ``ClusterRoleBinding``
-granting ``cluster-admin`` to a broad subject (K8S-020) — a
-service account, a default group, a token — the build pipeline
+granting ``cluster-admin`` to a broad subject (K8S-020), a
+service account, a default group, a token, the build pipeline
 has both legs of cluster takeover: node-level filesystem access
 through the hostPath escape AND the API authority to impersonate
 any account, read every Secret, replace DaemonSets across nodes,
@@ -18,7 +18,7 @@ This is the Tekton-layer mirror of AC-011 (which fires on plain
 ``Pod`` / ``Deployment`` workloads with the same two legs). The
 shape is the same, but the entry point shifts from "any pod that
 runs in the cluster" to "any TaskRun the build pipeline kicks
-off" — a much more frequently changing surface that ships with
+off", a much more frequently changing surface that ships with
 every PR.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ RULE = ChainRule(
         "ClusterRoleBinding granting cluster-admin (K8S-020). "
         "Anyone who can land code in a TaskRun has both an escape "
         "to the host filesystem and the API privileges needed to "
-        "pivot the entire cluster — read every Secret, deploy "
+        "pivot the entire cluster, read every Secret, deploy "
         "privileged workloads across all nodes, impersonate any "
         "service account."
     ),
@@ -54,7 +54,7 @@ RULE = ChainRule(
     recommendation=(
         "Replace the Task's ``hostPath`` volume with a Workspace "
         "(``workspaces`` declaration + per-TaskRun ``persistentVolumeClaim`` "
-        "/ ``emptyDir`` binding) — Tekton's native shape for sharing "
+        "/ ``emptyDir`` binding). Tekton's native shape for sharing "
         "files between steps without exposing the node filesystem. "
         "Audit cluster ``ClusterRoleBindings``: cluster-admin should "
         "be reserved for a narrow human-operator group with break-"
@@ -80,16 +80,16 @@ def match(findings: list[Finding]) -> list[Chain]:
     narrative = (
         "In this scan:\n"
         "  1. A Tekton Task mounts a hostPath volume or shares a "
-        "host namespace (TKN-004). Every step in that Task — and "
-        "every TaskRun that references it — runs with read/write "
+        "host namespace (TKN-004). Every step in that Task, and "
+        "every TaskRun that references it, runs with read/write "
         "access to the node filesystem. ``/var/lib/kubelet/pki/`` "
         "(kubelet TLS keys), ``/etc/kubernetes/manifests/`` (static "
         "pod definitions), and the container runtime socket are "
         "all reachable.\n"
         "  2. A ClusterRoleBinding in the cluster grants cluster-"
         "admin to a broad subject (K8S-020). Anyone authenticating "
-        "as a member of that subject — or anyone with a token from "
-        "a default ServiceAccount the binding covers — has "
+        "as a member of that subject, or anyone with a token from "
+        "a default ServiceAccount the binding covers, has "
         "unrestricted API access.\n"
         "  3. An attacker who lands a malicious Task spec (a "
         "compromised Git push, a fork PR that triggers a "

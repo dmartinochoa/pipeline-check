@@ -1,8 +1,8 @@
-"""Google Cloud Build provider — scans ``cloudbuild.yaml`` on disk.
+"""Google Cloud Build provider, scans ``cloudbuild.yaml`` on disk.
 
     pipeline_check --pipeline cloudbuild --cloudbuild-path path/to/cloudbuild.yaml
 
-Only YAML parsing is required — no Cloud Build API token, no Google
+Only YAML parsing is required, no Cloud Build API token, no Google
 credentials. Mirrors the shape of the GitHub/GitLab providers for
 consistency.
 """
@@ -18,7 +18,7 @@ from .base import BaseProvider
 
 
 class CloudBuildProvider(BaseProvider):
-    """Cloud Build provider — parses ``cloudbuild.yaml`` documents."""
+    """Cloud Build provider, parses ``cloudbuild.yaml`` documents."""
 
     NAME = "cloudbuild"
 

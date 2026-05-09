@@ -1,4 +1,4 @@
-"""S3-004 — CodePipeline artifact bucket has server-access logging disabled."""
+"""S3-004. CodePipeline artifact bucket has server-access logging disabled."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -20,7 +20,7 @@ RULE = Rule(
     ),
     docs_note=(
         "S3 server access logging records every API operation "
-        "against the bucket — who, when, what object, what method. "
+        "against the bucket, who, when, what object, what method. "
         "CloudTrail data events overlap but cost more; access logs "
         "are the cheap baseline. Without them, an exfiltration via "
         "``GetObject`` doesn't leave a trail you can investigate."

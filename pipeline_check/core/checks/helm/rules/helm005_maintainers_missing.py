@@ -1,9 +1,9 @@
-"""HELM-005 — ``Chart.yaml`` ships no usable ``maintainers:`` block.
+"""HELM-005, ``Chart.yaml`` ships no usable ``maintainers:`` block.
 
 ``maintainers:`` is the chart's chain-of-custody field. Without at
 least one entry that carries a ``name`` and either an ``email`` or
 ``url``, downstream consumers have no way to confirm the chart's
-provenance — a forked chart published under a familiar name passes
+provenance, a forked chart published under a familiar name passes
 ``helm install`` indistinguishably from the original. The Helm chart
 spec calls this field optional but every reference chart in
 ``artifacthub.io`` populates it; production charts shipped without
@@ -30,7 +30,7 @@ RULE = Rule(
         "``url``. The ``name`` is the human a downstream consumer "
         "files an issue against; the contact field is the channel "
         "they reach. Charts published to ArtifactHub or an internal "
-        "registry without this field are silently anonymous — fine "
+        "registry without this field are silently anonymous, fine "
         "for a personal scratch chart, not for one your CI pipeline "
         "will deploy to production."
     ),
@@ -40,7 +40,7 @@ RULE = Rule(
         "string and at least one of ``email:`` / ``url:`` populated. "
         "Entries that look like ``- name: TODO`` or carry blank "
         "contact fields fail the rule the same way a missing block "
-        "does — the field exists but doesn't carry a real "
+        "does, the field exists but doesn't carry a real "
         "chain-of-custody signal."
     ),
     known_fp=(

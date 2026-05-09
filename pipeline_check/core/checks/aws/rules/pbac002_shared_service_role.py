@@ -1,4 +1,4 @@
-"""PBAC-002 — CodeBuild service role is shared across multiple projects."""
+"""PBAC-002. CodeBuild service role is shared across multiple projects."""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -22,7 +22,7 @@ RULE = Rule(
         "One CodeBuild service role across many projects means a "
         "compromise of any project's build environment grants "
         "access to whatever resources every other project's build "
-        "needs. Per-project roles cap the radius — a backdoor in "
+        "needs. Per-project roles cap the radius, a backdoor in "
         "the ``foo-tests`` build can't reach the ``deploy-prod`` "
         "build's secrets if they each have their own role."
     ),

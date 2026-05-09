@@ -1,4 +1,4 @@
-"""BB-029 — ``image:`` (step or service) not pinned by sha256 digest."""
+"""BB-029, ``image:`` (step or service) not pinned by sha256 digest."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +20,7 @@ RULE = Rule(
         "(``docker buildx imagetools inspect <ref>`` or ``crane "
         "digest <ref>``) and pin via ``image: name@sha256:<digest>``. "
         "Floating tags (``:latest``, ``:3``, no tag) silently swap "
-        "the runtime image — the build's reproducibility invariant "
+        "the runtime image, the build's reproducibility invariant "
         "is broken and a registry-side compromise lands inside CI "
         "without any local change."
     ),
@@ -30,7 +30,7 @@ RULE = Rule(
         "``definitions.services.<name>.image:`` define the runtime "
         "container the build executes inside (and the auxiliary "
         "containers the step talks to over the loopback network). "
-        "Both surfaces ship code into the build context — a "
+        "Both surfaces ship code into the build context, a "
         "compromised service image (the postgres container, the "
         "selenium-grid container, …) can exfiltrate every secret "
         "the step touches just as easily as the step image itself. "
@@ -40,7 +40,7 @@ RULE = Rule(
     ),
     known_fp=(
         "Bitbucket-vendored helper images (``atlassian/`` namespace) "
-        "are still treated as third-party — the registry can move "
+        "are still treated as third-party, the registry can move "
         "the tag. Pin them too rather than suppressing the rule "
         "globally.",
     ),
@@ -67,7 +67,7 @@ def _walk_image_refs(doc: dict[str, Any]) -> list[tuple[str, str]]:
         if isinstance(image, str):
             refs.append((loc, image))
         elif isinstance(image, dict):
-            # ``image: { name: foo:bar, run-as-user: 1001 }`` —
+            # ``image: { name: foo:bar, run-as-user: 1001 }``,
             # the same long form the Bitbucket schema documents.
             name = image.get("name")
             if isinstance(name, str):

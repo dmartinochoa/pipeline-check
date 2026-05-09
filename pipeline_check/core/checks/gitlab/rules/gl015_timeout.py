@@ -1,4 +1,4 @@
-"""GL-015 — every job should declare a `timeout`."""
+"""GL-015, every job should declare a `timeout`."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from ..base import iter_jobs
 
 RULE = Rule(
     id="GL-015",
-    title="Job has no `timeout` — unbounded build",
+    title="Job has no `timeout`, unbounded build",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),

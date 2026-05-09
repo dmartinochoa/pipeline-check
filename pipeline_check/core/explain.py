@@ -1,4 +1,4 @@
-"""Per-check reference renderer — the body of ``pipeline_check explain``.
+"""Per-check reference renderer, the body of ``pipeline_check explain``.
 
 ``--help`` lists every flag; ``--man TOPIC`` is the narrative per
 subsystem; ``explain CHECK-ID`` is the narrative per check. The three
@@ -12,7 +12,7 @@ has one, and falls back to a docstring-parsed stub for class-based
 modules (AWS core services, Terraform core) where only ``id`` /
 ``title`` / ``severity`` are recoverable without running the check.
 
-Output is plain text — no ANSI, no rich markup — so it reads the same
+Output is plain text, no ANSI, no rich markup, so it reads the same
 through ``less``, piped to a file, or copy-pasted into a PR comment.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class _CheckMeta:
-    """Everything ``explain`` needs to render a check — either derived
+    """Everything ``explain`` needs to render a check, either derived
     from a ``Rule`` or from a class-based module's docstring."""
 
     id: str
@@ -49,7 +49,7 @@ class _CheckMeta:
 
 # Rule-based packages: ``Rule`` metadata fully populated. Every
 # provider whose checks live under ``<provider>/rules/`` belongs
-# here — the regression test in ``tests/test_cli_explain.py``
+# here, the regression test in ``tests/test_cli_explain.py``
 # asserts that every discovered rule across these packs renders
 # successfully, so a missing entry is caught at CI time.
 _RULE_PACKAGES: tuple[str, ...] = (
@@ -102,7 +102,7 @@ def _chains_for_check_id(check_id: str) -> list[ChainRule]:
     """
     global _CHAINS_BY_CHECK_ID
     if _CHAINS_BY_CHECK_ID is None:
-        # Local import — chains pulls in checks.base, which the
+        # Local import, chains pulls in checks.base, which the
         # explain module already depends on, but the inverse import
         # path is cleaner to keep lazy in case the chains pkg ever
         # depends on explain.
@@ -122,7 +122,7 @@ def _chains_for_check_id(check_id: str) -> list[ChainRule]:
 
 #: Topic clusters for the ``[Related rules]`` cross-reference. Each
 #: entry groups checks that an operator landing on one ID is likely
-#: to also want to know about — same threat / different layer or same
+#: to also want to know about, same threat / different layer or same
 #: control / different provider.
 #:
 #: A check may belong to multiple clusters; the rendered cross-ref is
@@ -232,7 +232,7 @@ def _build_index() -> dict[str, _CheckMeta]:
 
     Cached after the first call. Rule-based providers win when an ID
     appears in both (e.g. a class-based module that has since been
-    migrated to a rule — the newer Rule wins).
+    migrated to a rule, the newer Rule wins).
     """
     global _CACHE
     if _CACHE is not None:
@@ -240,7 +240,7 @@ def _build_index() -> dict[str, _CheckMeta]:
 
     index: dict[str, _CheckMeta] = {}
 
-    # Class-based first — rule-based registrations below overwrite.
+    # Class-based first, rule-based registrations below overwrite.
     for class_pkg_name in _CLASS_PACKAGES:
         try:
             pkg = importlib.import_module(class_pkg_name)
@@ -268,7 +268,7 @@ def _build_index() -> dict[str, _CheckMeta]:
                     docstring=doc,
                 )
 
-    # Rule-based — definitive for any ID they cover.
+    # Rule-based, definitive for any ID they cover.
     for pkg_fqn in _RULE_PACKAGES:
         try:
             for rule, _check in discover_rules(pkg_fqn):
@@ -292,7 +292,7 @@ def available_ids() -> list[str]:
 
 
 def _suggest(unknown: str, ids: list[str], limit: int = 5) -> list[str]:
-    """Offer near-matches for an unknown ID — prefix match wins over
+    """Offer near-matches for an unknown ID, prefix match wins over
     fuzzy so ``GHA-100`` suggests ``GHA-001 … GHA-099`` first."""
     u = unknown.upper()
     # Same prefix (e.g. "GHA-") first.
@@ -359,7 +359,7 @@ def _render_meta(meta: _CheckMeta) -> str:
             lines.append(f"  {std:<{col_width}}{ctrls}")
         lines.append("")
 
-    # Rule-based content — the fully-populated path.
+    # Rule-based content, the fully-populated path.
     if meta.source == "rule" and meta.rule is not None:
         rule = meta.rule
         if rule.cwe:
@@ -381,7 +381,7 @@ def _render_meta(meta: _CheckMeta) -> str:
                 lines.append(f"  {para}" if para else "")
             lines.append("")
     else:
-        # Class-based fallback — the docstring table we matched the
+        # Class-based fallback, the docstring table we matched the
         # row from is the most reliable thing we have.
         lines.append("[What it checks]")
         lines.append(
@@ -409,14 +409,14 @@ def _render_meta(meta: _CheckMeta) -> str:
         )
         lines.append("")
 
-    # Topic-clustered cross-references — same threat / different layer
+    # Topic-clustered cross-references, same threat / different layer
     # or same control / different provider. Keeps the operator from
     # fixing GHA-008 in isolation when GL-008 / BB-008 / etc. share
     # the same root cause across the rest of the repo.
     related = _related_check_ids(meta.id)
     if related:
         index = _build_index()
-        # Drop entries the index doesn't know about — guards against
+        # Drop entries the index doesn't know about, guards against
         # a cluster typo or a deleted-but-not-removed-from-cluster
         # ID surfacing in user output. ``test_topic_clusters_*`` traps
         # the same drift at CI time.
@@ -429,7 +429,7 @@ def _render_meta(meta: _CheckMeta) -> str:
                 lines.append(f"  {cid}  {title}  [{sev}]")
             lines.append(
                 "  Same threat / different layer or same control / "
-                "different provider — fixing only the rule you opened "
+                "different provider, fixing only the rule you opened "
                 "leaves these uncovered. Run ``pipeline_check --explain "
                 "<id>`` for any of them."
             )
@@ -443,7 +443,7 @@ def _render_meta(meta: _CheckMeta) -> str:
     if meta.id.upper() in available_fixers():
         lines.append("[Autofixable]")
         lines.append(
-            "  Yes — run ``pipeline_check --fix`` to emit the patch, "
+            "  Yes, run ``pipeline_check --fix`` to emit the patch, "
             "or ``--fix --apply`` to write it in place."
         )
         lines.append("")
@@ -461,7 +461,7 @@ def _render_meta(meta: _CheckMeta) -> str:
 
 
 def print_explain(check_id: str) -> int:
-    """CLI entry point — print and return the exit code."""
+    """CLI entry point, print and return the exit code."""
     body, code = render(check_id)
     sys.stdout.write(body)
     return code

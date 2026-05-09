@@ -1,4 +1,4 @@
-"""ARGO-010 — Argo workflow should emit an SBOM for produced artifacts."""
+"""ARGO-010. Argo workflow should emit an SBOM for produced artifacts."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_sbom, produces_artifacts
@@ -43,7 +43,7 @@ def check(ctx: ArgoContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="argo",
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     no_sbom = [d for d in artifact_producers if not has_sbom(d.data)]

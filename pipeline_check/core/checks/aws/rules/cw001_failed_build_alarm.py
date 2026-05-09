@@ -1,4 +1,4 @@
-"""CW-001 — No CloudWatch alarm on CodeBuild FailedBuilds metric."""
+"""CW-001. No CloudWatch alarm on CodeBuild FailedBuilds metric."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -16,14 +16,14 @@ RULE = Rule(
     recommendation=(
         "Create a CloudWatch alarm on the ``AWS/CodeBuild`` namespace "
         "``FailedBuilds`` metric (aggregated or per-project). Without "
-        "one, repeated build failures during a compromise — or a "
-        "runaway fork-PR build — won't reach on-call."
+        "one, repeated build failures during a compromise, or a "
+        "runaway fork-PR build, won't reach on-call."
     ),
     docs_note=(
         "Failure-rate signals are how on-call learns about an "
         "unfamiliar build crashing in a loop, an attacker probing the "
         "build environment, or a CI quota being exhausted. CloudWatch "
-        "captures the ``FailedBuilds`` metric automatically — the "
+        "captures the ``FailedBuilds`` metric automatically, the "
         "alarm is the missing fan-out."
     ),
 )
@@ -49,7 +49,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         description=(
             "CloudWatch alarm on AWS/CodeBuild FailedBuilds is configured."
             if covered else
-            "No alarm found on AWS/CodeBuild FailedBuilds — failures go unnoticed."
+            "No alarm found on AWS/CodeBuild FailedBuilds, failures go unnoticed."
         ),
         recommendation=RULE.recommendation, passed=covered,
     )]

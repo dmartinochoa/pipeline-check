@@ -1,4 +1,4 @@
-"""K8S-036 — ServiceAccount references an imagePullSecret that doesn't exist."""
+"""K8S-036. ServiceAccount references an imagePullSecret that doesn't exist."""
 from __future__ import annotations
 
 from ..._yaml_lines import line_of as _line_of
@@ -18,7 +18,7 @@ RULE = Rule(
         "kubernetes.io/dockerconfigjson`` (or ``dockercfg``) in the "
         "same namespace before applying the ServiceAccount, or fix "
         "the ``imagePullSecrets`` reference name. A dangling "
-        "reference doesn't fail apply — kubelet silently falls back "
+        "reference doesn't fail apply, kubelet silently falls back "
         "to anonymous registry pulls on every image fetch. Workloads "
         "either pull a different image than the operator intended "
         "or fail at runtime with ``ImagePullBackOff`` after the "
@@ -31,7 +31,7 @@ RULE = Rule(
         "cases: secrets created out-of-band (Sealed Secrets, "
         "External Secrets, or operator-applied ones) and SAs whose "
         "namespace is implicit / not declared in the manifest set. "
-        "For those, the rule passes — false-negative-friendly."
+        "For those, the rule passes, false-negative-friendly."
     ),
     known_fp=(
         "Manifests rendered for partial deployment where the secret "
@@ -45,7 +45,7 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     # Build (namespace, secret_name) -> Manifest index. Use "" as the
-    # implicit-namespace key — declared SAs without a namespace match
+    # implicit-namespace key, declared SAs without a namespace match
     # declared Secrets without one too.
     secrets: set[tuple[str, str]] = set()
     for m in ctx.manifests:

@@ -1,4 +1,4 @@
-"""ADO-014 — pipeline should not embed long-lived AWS access keys."""
+"""ADO-014, pipeline should not embed long-lived AWS access keys."""
 from __future__ import annotations
 
 import re

@@ -1,4 +1,4 @@
-"""GHA-005 — AWS auth should use OIDC, not long-lived access keys."""
+"""GHA-005. AWS auth should use OIDC, not long-lived access keys."""
 from __future__ import annotations
 
 import re as _re

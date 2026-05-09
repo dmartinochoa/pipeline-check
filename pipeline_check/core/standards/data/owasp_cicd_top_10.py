@@ -84,7 +84,7 @@ STANDARD = Standard(
         "CA-002":   ["CICD-SEC-3"],
         "CA-003":   ["CICD-SEC-8"],
         "CA-004":   ["CICD-SEC-2"],
-        # CodeCommit (CCM- prefix — avoids CC-* collision with CircleCI)
+        # CodeCommit (CCM- prefix, avoids CC-* collision with CircleCI)
         "CCM-000":  ["CICD-SEC-10"],
         "CCM-001":  ["CICD-SEC-1"],
         "CCM-002":  ["CICD-SEC-9"],

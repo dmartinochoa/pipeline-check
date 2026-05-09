@@ -1,4 +1,4 @@
-"""IAM-008 — OIDC-federated role trust policy missing audience/subject pin."""
+"""IAM-008. OIDC-federated role trust policy missing audience/subject pin."""
 from __future__ import annotations
 
 import json

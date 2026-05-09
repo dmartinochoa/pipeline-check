@@ -1,4 +1,4 @@
-"""JF-004 — withCredentials must not bind long-lived AWS keys."""
+"""JF-004, withCredentials must not bind long-lived AWS keys."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -24,7 +24,7 @@ RULE = Rule(
         "Fires when BOTH a credentialsId containing `aws` is "
         "referenced AND an AWS key variable name appears (requires "
         "both so an OIDC role binding doesn't false-positive). Also "
-        "fires when `withAWS(credentials: '…')` is used — the "
+        "fires when `withAWS(credentials: '…')` is used, the "
         "safe alternative is `withAWS(role: '…')`."
     ),
 )
@@ -36,7 +36,7 @@ def check(jf: Jenkinsfile) -> Finding:
     var = bool(AWS_KEY_VAR_RE.search(jf.text))
     with_creds_long_lived = binding and var
 
-    # Pattern 2: withAWS(credentials: '...') — static credential ID
+    # Pattern 2: withAWS(credentials: '...'), static credential ID
     # (withAWS(role: '...') is the safe pattern and is NOT matched)
     with_aws_creds = bool(WITH_AWS_CREDS_RE.search(jf.text))
 

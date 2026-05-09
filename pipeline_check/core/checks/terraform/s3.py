@@ -1,4 +1,4 @@
-"""Terraform S3 checks — scoped to CodePipeline artifact buckets.
+"""Terraform S3 checks, scoped to CodePipeline artifact buckets.
 
 S3-001  Public access block not fully enabled       CRITICAL  CICD-SEC-9
 S3-002  Server-side encryption not configured       HIGH      CICD-SEC-9
@@ -16,7 +16,7 @@ from .base import TerraformBaseCheck
 
 
 def _first(block_list: object) -> dict[str, Any]:
-    # Validate both container and head — see ``extended._first`` for
+    # Validate both container and head, see ``extended._first`` for
     # the canonical shape. Callers (`.get()`) always receive a dict.
     if not isinstance(block_list, list) or not block_list:
         return {}

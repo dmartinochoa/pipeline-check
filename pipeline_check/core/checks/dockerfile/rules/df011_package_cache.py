@@ -1,4 +1,4 @@
-"""DF-011 — package install in RUN without companion cache cleanup."""
+"""DF-011, package install in RUN without companion cache cleanup."""
 from __future__ import annotations
 
 import re
@@ -25,7 +25,7 @@ RULE = Rule(
     docs_note=(
         "Each Dockerfile ``RUN`` produces a layer. Installing packages "
         "in one layer and cleaning the cache in a later layer leaves "
-        "the cache files in the lower layer forever — final image "
+        "the cache files in the lower layer forever, final image "
         "size is unchanged and the residual files broaden the attack "
         "surface (e.g. apt's signed-by keys, package metadata). The "
         "fix is layout, not behavior: do install + cleanup in the "

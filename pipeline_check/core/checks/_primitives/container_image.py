@@ -14,7 +14,7 @@ lands everywhere at once, and (b) workflow providers that later
 grow a CodeBuild-style pinning rule can reuse the classifier without
 re-litigating the managed-image or trusted-registry list.
 
-The classifier is deliberately pure — no I/O, no registry calls.
+The classifier is deliberately pure, no I/O, no registry calls.
 ``classify(ref)`` returns a dataclass the caller can render however it
 wants.
 """
@@ -44,8 +44,8 @@ class ImageInfo:
 
     ``pinned`` is True for AWS-managed images (AWS controls the pull-
     through semantics), digest-pinned references, and empty refs (the
-    caller's pinning rule has nothing to score). Other tag-only refs —
-    even from a trusted registry — are not pinned; the trusted-registry
+    caller's pinning rule has nothing to score). Other tag-only refs,
+    even from a trusted registry, are not pinned; the trusted-registry
     flag is separate information the rule can use to downgrade severity
     if it chooses.
     """
@@ -62,7 +62,7 @@ class ImageInfo:
         if self.digest:
             return ""
         base = self.ref.split("@", 1)[0]
-        # Only split on ``:`` after the last ``/`` — a registry host with
+        # Only split on ``:`` after the last ``/``, a registry host with
         # a port (``registry:5000/repo:v1``) would otherwise mis-split.
         _, _, rest = base.rpartition("/")
         if ":" in rest:
@@ -75,7 +75,7 @@ class ImageInfo:
         if self.aws_managed:
             return ""
         host, sep, _ = self.ref.partition("/")
-        # A ref like ``python:3.11`` has no ``/`` — treat as Docker Hub
+        # A ref like ``python:3.11`` has no ``/``, treat as Docker Hub
         # short form with no explicit registry. ``public.ecr.aws/X/Y``
         # and ``ghcr.io/org/img`` both have a ``.`` in the first segment,
         # which is how Docker's own parser distinguishes the two cases.

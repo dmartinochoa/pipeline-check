@@ -1,4 +1,4 @@
-"""Compliance standards — data-driven mappings between checks and controls.
+"""Compliance standards, data-driven mappings between checks and controls.
 
 Each Standard declares its controls and a check_id → control_id mapping.
 The Scanner enriches every Finding with the ControlRefs that match it,

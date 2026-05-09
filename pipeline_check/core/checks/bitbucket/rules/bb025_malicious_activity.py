@@ -1,4 +1,4 @@
-"""BB-025 — pipeline contains evidence of malicious activity."""
+"""BB-025, pipeline contains evidence of malicious activity."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +23,7 @@ RULE = Rule(
         "Specific indicators only (reverse shells, base64-decoded "
         "execution, miner binaries, Discord/Telegram webhooks, "
         "credential-dump pipes, audit-erasure commands). Does not "
-        "replace BB-014 (TLS bypass) or BB-013 (Docker insecure) — "
+        "replace BB-014 (TLS bypass) or BB-013 (Docker insecure), "
         "those are hygiene; this is evidence."
     ),
 )

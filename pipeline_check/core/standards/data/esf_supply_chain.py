@@ -1,4 +1,4 @@
-"""NSA/CISA Enduring Security Framework — Securing the Software Supply Chain.
+"""NSA/CISA Enduring Security Framework. Securing the Software Supply Chain.
 
 Three-volume guidance published by the NSA/CISA/ODNI Enduring Security
 Framework working group (Developer 2022, Supplier 2022, Customer 2022).
@@ -17,11 +17,11 @@ from ..base import Standard
 
 STANDARD = Standard(
     name="esf_supply_chain",
-    title="NSA/CISA ESF — Securing the Software Supply Chain",
+    title="NSA/CISA ESF. Securing the Software Supply Chain",
     version="2022",
     url="https://www.cisa.gov/resources-tools/resources/securing-software-supply-chain-recommended-practices-guide-developers",
     controls={
-        # Developer guide — secure development & build
+        # Developer guide, secure development & build
         "ESF-D-BUILD-ENV":       "Harden the build environment (isolated, minimal, ephemeral workers)",
         "ESF-D-BUILD-LOGS":      "Generate and preserve build audit logs",
         "ESF-D-BUILD-TIMEOUT":   "Enforce bounded build execution (single-use, time-limited)",
@@ -30,15 +30,15 @@ STANDARD = Standard(
         "ESF-D-SIGN-ARTIFACTS":  "Sign build artifacts and verify signatures before release",
         "ESF-D-SBOM":            "Produce SBOM / provenance metadata with every build",
         "ESF-D-CODE-REVIEW":     "Require peer review of source and pipeline configuration",
-        "ESF-D-TOKEN-HYGIENE":   "Use short-lived, federated credentials (OIDC) — not long-lived tokens",
+        "ESF-D-TOKEN-HYGIENE":   "Use short-lived, federated credentials (OIDC), not long-lived tokens",
         "ESF-D-INJECTION":       "Prevent script / template injection from untrusted pipeline context",
-        # Supplier guide — verify and gate third-party inputs
+        # Supplier guide, verify and gate third-party inputs
         "ESF-S-VERIFY-DEPS":     "Verify third-party and open-source dependencies before use",
         "ESF-S-PIN-DEPS":        "Pin dependencies / actions / images to immutable digests",
         "ESF-S-TRUSTED-REG":     "Use only trusted, authenticated package and image registries",
         "ESF-S-VULN-MGMT":       "Scan inbound artifacts (images, packages) for known vulnerabilities",
         "ESF-S-IMMUTABLE":       "Enforce artifact / tag immutability to preserve provenance",
-        # Customer guide — deployment & runtime governance
+        # Customer guide, deployment & runtime governance
         "ESF-C-APPROVAL":        "Require explicit approval before production deployment",
         "ESF-C-ROLLBACK":        "Automated rollback on deployment failure or alarm",
         "ESF-C-DEPLOY-MON":      "Monitor deployments with alarms / health checks",

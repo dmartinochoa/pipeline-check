@@ -1,9 +1,9 @@
-"""CloudFormation provider checks — pre-deploy template scanning.
+"""CloudFormation provider checks, pre-deploy template scanning.
 
 Mirrors the Terraform provider's shape: static analysis over a
 declarative AWS-resource document. Where Terraform consumes the JSON
 produced by ``terraform show -json`` (all attributes already resolved),
-CloudFormation consumes the raw author-source template — so intrinsic
+CloudFormation consumes the raw author-source template, so intrinsic
 functions (``!Ref``, ``!Sub``, ``!GetAtt``, ...) stay unresolved.
 
 Rules therefore treat intrinsic expressions as *opaque*: a

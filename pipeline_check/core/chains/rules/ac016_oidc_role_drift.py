@@ -1,4 +1,4 @@
-"""AC-016 — OIDC role drift: ungated trust + over-broad permissions.
+"""AC-016. OIDC role drift: ungated trust + over-broad permissions.
 
 GitHub Actions OIDC federation lets a workflow assume an AWS IAM
 role without storing long-lived credentials. The trust is split
@@ -6,8 +6,8 @@ across two sides:
 
 - **GitHub side** decides *who* is allowed to request the OIDC
   token (the workflow file, the job, the environment, the branch).
-  The strongest gate is GitHub's environment protection — required
-  reviewers, deployment branches — which only fires for jobs that
+  The strongest gate is GitHub's environment protection, required
+  reviewers, deployment branches, which only fires for jobs that
   declare an ``environment:`` key.
 - **AWS side** decides *what* the assumed role can do. The trust
   policy's ``token.actions.githubusercontent.com:sub`` claim
@@ -40,8 +40,8 @@ RULE = ChainRule(
         "A GitHub Actions workflow requests an OIDC token without an "
         "``environment:`` gate (GHA-030) AND the AWS IAM role it "
         "assumes carries a wildcard ``Action`` (IAM-002). Together, "
-        "any branch — including a fork PR if the workflow is "
-        "fork-runnable — can mint a token that maps to a role with "
+        "any branch, including a fork PR if the workflow is "
+        "fork-runnable, can mint a token that maps to a role with "
         "broad authority over the account."
     ),
     mitre_attack=(
@@ -61,7 +61,7 @@ RULE = ChainRule(
         "``id-token: write``, and configure that environment with "
         "required reviewers + deployment-branch restrictions. On "
         "the AWS side: scope the role's policies to specific "
-        "actions and resources — replace ``Action: '*'`` with the "
+        "actions and resources, replace ``Action: '*'`` with the "
         "narrow set the workflow actually needs. Best is both: "
         "environment gate + least-privilege role + a "
         "``token.actions.githubusercontent.com:sub`` condition in "
@@ -87,8 +87,8 @@ def match(findings: list[Finding]) -> list[Chain]:
         "  1. A GitHub Actions job requests an OIDC token "
         "(``permissions: id-token: write``) without an "
         "``environment:`` key on the job (GHA-030). GitHub's "
-        "environment protection — required reviewers, deployment "
-        "branches — only enforces against jobs that declare an "
+        "environment protection, required reviewers, deployment "
+        "branches, only enforces against jobs that declare an "
         "environment, so this job's token-mint is reachable from "
         "any branch the workflow runs on, including fork PRs if "
         "the trigger allows.\n"
@@ -104,7 +104,7 @@ def match(findings: list[Finding]) -> list[Chain]:
         "the token-mint surface (from the ungated workflow) and "
         "the action authority (from the wildcard policy). The OIDC "
         "pattern was supposed to replace long-lived keys with "
-        "tightly-scoped, short-lived ones — this combination "
+        "tightly-scoped, short-lived ones. This combination "
         "preserves the short-lived part without the tight-scope "
         "part."
     )

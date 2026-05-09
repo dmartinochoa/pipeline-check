@@ -178,7 +178,7 @@ def workflow_triggers(workflow: dict[str, Any]) -> list[str]:
 
     GitHub's ``on:`` field can be a string, a list, or a mapping. Any boolean
     ``True`` yielded by ``safe_load`` for a bareword ``on`` key (which YAML
-    1.1 parses as a boolean) is also normalized here — ``workflow["on"]``
+    1.1 parses as a boolean) is also normalized here, ``workflow["on"]``
     becomes ``workflow[True]`` under YAML 1.1 semantics.
     """
     on = workflow.get("on")

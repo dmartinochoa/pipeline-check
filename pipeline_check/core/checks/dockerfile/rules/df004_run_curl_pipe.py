@@ -1,4 +1,4 @@
-"""DF-004 — ``RUN`` body contains curl-pipe / wget-pipe to interpreter."""
+"""DF-004, ``RUN`` body contains curl-pipe / wget-pipe to interpreter."""
 from __future__ import annotations
 
 from ..._primitives import remote_script_exec
@@ -40,7 +40,7 @@ def check(df: Dockerfile) -> Finding:
             line_offenders += 1
         if line_offenders:
             # One Location per RUN line that contained at least one hit
-            # — keeps reporters' "click to jump to line" experience
+            #, keeps reporters' "click to jump to line" experience
             # clean even when a single RUN piped two installers.
             locations.append(Location(
                 path=df.path, start_line=line_no, end_line=line_no,

@@ -1,4 +1,4 @@
-"""IAM-001 — CI/CD service role has AdministratorAccess attached."""
+"""IAM-001. CI/CD service role has AdministratorAccess attached."""
 from __future__ import annotations
 
 from ..._iam_policy import ADMIN_POLICY_ARN

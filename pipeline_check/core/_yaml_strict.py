@@ -2,7 +2,7 @@
 
 pyyaml's default mapping behavior keeps the *last* value when a key
 appears twice, silently discarding the earlier declaration. For the
-user-facing files this project loads — config files and ignore files —
+user-facing files this project loads, config files and ignore files —
 that's a trap: a duplicated ``pipeline:`` key or a repeated
 ``resource:`` under one ignore rule hides half the declared intent
 without a warning. We raise at load time instead so the typo surfaces.

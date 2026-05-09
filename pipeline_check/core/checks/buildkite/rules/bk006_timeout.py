@@ -1,4 +1,4 @@
-"""BK-006 — Steps must declare ``timeout_in_minutes``."""
+"""BK-006. Steps must declare ``timeout_in_minutes``."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,13 +25,13 @@ RULE = Rule(
     docs_note=(
         "Buildkite has no implicit timeout; agents will wait forever. "
         "Set ``timeout_in_minutes:`` per step. The pipeline-level "
-        "default counts — a global ``steps:`` block with "
+        "default counts, a global ``steps:`` block with "
         "``timeout_in_minutes:`` is fine, since Buildkite copies it "
         "to each step."
     ),
     known_fp=(
         "Steps that genuinely need >24h (rare; database migrations, "
-        "ML training jobs) — set ``timeout_in_minutes: 1440`` "
+        "ML training jobs), set ``timeout_in_minutes: 1440`` "
         "explicitly so the absence of a timeout is intentional.",
     ),
 )

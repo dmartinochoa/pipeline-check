@@ -27,7 +27,7 @@ supports named AWS CLI profiles via `--profile` and honours the
 | EventBridge | EB-001, EB-002 |
 | AWS Signer | SIGN-001, SIGN-002 |
 
-**Class-based vs rule-based.** The original seven-service checks (CB/CP/CD/ECR/IAM/PBAC/S3-001..) live as monolithic classes under `pipeline_check/core/checks/aws/*.py`. Everything added in later phases — CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*, SIGN-*, CW-*, plus the `CB-008+` / `CP-005+` / `ECR-006+` / `IAM-007+` / `PBAC-003+` series — lives as one-file-per-rule modules under `pipeline_check/core/checks/aws/rules/`, auto-discovered by `AWSRuleChecks` and sharing a cached `ResourceCatalog` so enumerations run once per scan.
+**Class-based vs rule-based.** The original seven-service checks (CB/CP/CD/ECR/IAM/PBAC/S3-001..) live as monolithic classes under `pipeline_check/core/checks/aws/*.py`. Everything added in later phases. CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*, SIGN-*, CW-*, plus the `CB-008+` / `CP-005+` / `ECR-006+` / `IAM-007+` / `PBAC-003+` series, lives as one-file-per-rule modules under `pipeline_check/core/checks/aws/rules/`, auto-discovered by `AWSRuleChecks` and sharing a cached `ResourceCatalog` so enumerations run once per scan.
 
 Per-check detail below is sourced from the rule metadata under
 `pipeline_check/core/checks/aws/rules/*.py` (or the class docstrings for the
@@ -55,8 +55,8 @@ AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
 ```
 
 Credentials are resolved through the standard
-[boto3 credential chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)
-— environment variables, `~/.aws/credentials`, IMDS on EC2, container
+[boto3 credential chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html). Environment variables, `~/.aws/credentials`, IMDS on EC2, container
+
 credentials on ECS/Fargate, EKS Pod Identity, or SSO. To scan a different
 account, assume the role first with `aws sts assume-role` (or
 `aws sso login` / `aws-vault`) and export the resulting credentials, then
@@ -76,12 +76,12 @@ reached through the same regional session.
 
 If you don't care about least-privilege, attach one of:
 
-- `arn:aws:iam::aws:policy/SecurityAudit` — covers everything below
+- `arn:aws:iam::aws:policy/SecurityAudit`: covers everything below
   except a few `Get*Policy` calls; produces the same findings minus
   `S3-005` (bucket policies), `LMB-004` (Lambda resource policy),
   `KMS-002` (key policy), `CA-003`/`CA-004` (CodeArtifact policies),
   `ECR-003` (repo policy), `SM-002` (secret resource policy).
-- `arn:aws:iam::aws:policy/ReadOnlyAccess` — covers every action the
+- `arn:aws:iam::aws:policy/ReadOnlyAccess`: covers every action the
   scanner uses, plus a great deal more. Convenient but broad.
 
 For least-privilege, use the policy below.
@@ -194,7 +194,7 @@ resource-level conditions.
 }
 ```
 
-The policy is **2.5 KB** — well inside the 6,144-byte limit for a
+The policy is **2.5 KB**, well inside the 6,144-byte limit for a
 customer-managed policy and the 10,240-byte limit for an inline role
 policy.
 
@@ -233,23 +233,23 @@ provider.
 The scanner does not fail closed when the principal lacks an action.
 Instead, the per-service enumeration records the error and the
 orchestrator emits one `<PREFIX>-000` finding (INFO severity) per
-degraded service — for example `CT-000`, `LMB-000`, `KMS-000`. Every
+degraded service, for example `CT-000`, `LMB-000`, `KMS-000`. Every
 rule that depends on that service is suppressed for the run. Operators
 can therefore see exactly which permission gaps are masking findings.
 
 Two exceptions are tolerated silently because their endpoints are
 optional:
 
-- `ecr:DescribePullThroughCacheRules` — not all regions/accounts have
+- `ecr:DescribePullThroughCacheRules`: not all regions/accounts have
   PTC; only ECR-006 is suppressed if it fails.
-- `inspector2:BatchGetAccountStatus` — only ECR-007 is suppressed if
+- `inspector2:BatchGetAccountStatus`: only ECR-007 is suppressed if
   Inspector v2 is not enabled in the region.
 
 ---
 
 ## CodeBuild
 
-### CB-001 — Secrets in plaintext environment variables
+### CB-001: Secrets in plaintext environment variables
 **Severity:** CRITICAL
 
 Checks for environment variables whose names match common secret patterns
@@ -262,7 +262,7 @@ build logs to anyone with read access.
 - Update the CodeBuild environment variable type to `SECRETS_MANAGER` or `PARAMETER_STORE`.
 - Rotate any credentials that may have been exposed in plaintext.
 
-### CB-002 — Privileged mode enabled
+### CB-002: Privileged mode enabled
 **Severity:** HIGH
 
 Checks whether the CodeBuild project runs with Docker privileged mode
@@ -276,7 +276,7 @@ compromised build.
 - If privileged mode is required, ensure the buildspec is peer-reviewed and sourced from a protected branch.
 - Consider using Kaniko or AWS CodeBuild's native Docker layer caching instead of DinD.
 
-### CB-003 — Build logging not enabled
+### CB-003: Build logging not enabled
 **Severity:** MEDIUM
 
 Checks whether the CodeBuild project sends build output logs to CloudWatch
@@ -289,7 +289,7 @@ undetected.
 - Alternatively, enable S3 logging to a protected bucket with restricted write access.
 - Set a log retention period appropriate for your compliance requirements.
 
-### CB-004 — No build timeout configured
+### CB-004: No build timeout configured
 **Severity:** LOW
 
 Checks whether the CodeBuild project has a build timeout below the AWS
@@ -301,7 +301,7 @@ pipeline stage.
 - Set a build timeout appropriate for your expected build duration (typically 15–60 minutes).
 - Use build phase reports and CloudWatch alarms to alert on builds that approach their timeout.
 
-### CB-005 — Outdated managed build image
+### CB-005: Outdated managed build image
 **Severity:** MEDIUM
 
 Checks whether projects using the AWS-managed CodeBuild standard image
@@ -314,7 +314,7 @@ supply-chain risk into every artifact produced by the pipeline.
 - Pin custom or third-party images to a specific digest rather than a mutable tag.
 - Subscribe to AWS CodeBuild release notifications to stay informed of new image versions.
 
-### CB-006 — Source auth uses long-lived token
+### CB-006: Source auth uses long-lived token
 **Severity:** HIGH
 
 Checks whether a CodeBuild project with an external source (GitHub, GitHub
@@ -331,12 +331,12 @@ project uses.
 - Delete stored source credentials of type `OAUTH`, `PERSONAL_ACCESS_TOKEN`, or `BASIC_AUTH` via `codebuild:DeleteSourceCredentials`.
 - Rotate any exposed tokens and revoke them in the upstream VCS.
 
-### CB-007 — CodeBuild webhook has no filter group
+### CB-007: CodeBuild webhook has no filter group
 **Severity:** MEDIUM
 
 Checks whether a CodeBuild webhook defines at least one filter group.
 A webhook without filter groups triggers a build on any push from any
-principal — including pull requests from forks of public repositories —
+principal, including pull requests from forks of public repositories,
 enabling poisoned-pipeline execution.
 
 **Recommended actions**
@@ -348,7 +348,7 @@ enabling poisoned-pipeline execution.
 
 ## CodePipeline
 
-### CP-001 — No approval action before deploy stages
+### CP-001: No approval action before deploy stages
 **Severity:** HIGH
 
 Checks whether every Deploy stage in the pipeline is preceded by at least
@@ -361,7 +361,7 @@ control principles.
 - Integrate approval notifications with your team's communication tool (e.g. Slack, email).
 - Consider using AWS CodePipeline approval rules for automated quality gates in addition to manual reviews.
 
-### CP-002 — Artifact store not encrypted with customer-managed KMS key
+### CP-002: Artifact store not encrypted with customer-managed KMS key
 **Severity:** MEDIUM
 
 Checks whether the pipeline artifact store (S3 bucket) uses a
@@ -374,7 +374,7 @@ pipeline artifacts.
 - Apply a key policy that restricts decrypt access to only the pipeline execution role.
 - Enable CloudTrail logging of KMS API calls to audit all artifact decryption events.
 
-### CP-003 — Source stage using polling instead of event-driven trigger
+### CP-003: Source stage using polling instead of event-driven trigger
 **Severity:** LOW
 
 Checks whether any Source action has `PollForSourceChanges=true`, meaning
@@ -387,7 +387,7 @@ rapid successive changes.
 - Configure an Amazon EventBridge rule or CodeCommit trigger to start the pipeline on change.
 - For GitHub sources, use a CodeStar connection with webhook-based triggering.
 
-### CP-004 — Legacy ThirdParty/GitHub source action (OAuth token)
+### CP-004: Legacy ThirdParty/GitHub source action (OAuth token)
 **Severity:** HIGH
 
 Flags Source actions using the deprecated `owner=ThirdParty`,
@@ -404,7 +404,7 @@ automatically and is visible to anyone with `codepipeline:GetPipeline`.
 
 ## CodeDeploy
 
-### CD-001 — Automatic rollback on failure not enabled
+### CD-001: Automatic rollback on failure not enabled
 **Severity:** MEDIUM
 
 Checks whether the CodeDeploy deployment group has
@@ -418,7 +418,7 @@ intervenes.
 - Consider also adding `DEPLOYMENT_STOP_ON_ALARM` to roll back when health metrics degrade.
 - Test rollback behavior in a non-production environment to validate the configuration.
 
-### CD-002 — AllAtOnce deployment config — no canary or rolling strategy
+### CD-002: AllAtOnce deployment config, no canary or rolling strategy
 **Severity:** HIGH
 
 Checks whether the deployment group uses an AllAtOnce configuration
@@ -432,7 +432,7 @@ validation window.
 - For EC2/on-premises workloads, use a rolling or half-at-a-time deployment config.
 - Pair the graduated deployment with CloudWatch alarms to trigger automatic rollback on error spikes.
 
-### CD-003 — No CloudWatch alarm monitoring on deployment group
+### CD-003: No CloudWatch alarm monitoring on deployment group
 **Severity:** MEDIUM
 
 Checks whether the CodeDeploy deployment group has at least one CloudWatch
@@ -449,7 +449,7 @@ deployment will not automatically halt or roll back the release.
 
 ## ECR
 
-### ECR-001 — Image scanning on push not enabled
+### ECR-001: Image scanning on push not enabled
 **Severity:** HIGH
 
 Checks whether the ECR repository has
@@ -463,7 +463,7 @@ production.
 - Consider enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 - Integrate scan results into your CI/CD pipeline and fail builds on HIGH or CRITICAL findings.
 
-### ECR-002 — Image tags are mutable
+### ECR-002: Image tags are mutable
 **Severity:** HIGH
 
 Checks whether the repository has `imageTagMutability` set to `IMMUTABLE`.
@@ -477,7 +477,7 @@ verifying a digest.
 - Reference container images by digest (`sha256:...`) in deployment manifests for the strongest immutability guarantees.
 - Enforce digest-pinning in your container admission controller or policy engine.
 
-### ECR-003 — Repository policy allows public access
+### ECR-003: Repository policy allows public access
 **Severity:** CRITICAL
 
 Checks whether the repository resource-based policy contains any Allow
@@ -490,7 +490,7 @@ potentially allowing unauthorised image pulls or pushes.
 - Grant pull access only to specific AWS account IDs or IAM principals that require it.
 - If cross-account access is needed, use explicit account principal ARNs with the minimum necessary actions.
 
-### ECR-004 — No lifecycle policy configured
+### ECR-004: No lifecycle policy configured
 **Severity:** LOW
 
 Checks whether the ECR repository has a lifecycle policy defined. Without
@@ -503,7 +503,7 @@ able to pull older tagged images.
 - Limit the number of tagged image versions retained (e.g. keep the last 10 tagged images).
 - Test the lifecycle policy in a non-production repository before applying it to critical repos.
 
-### ECR-005 — Repository encrypted with AES256 rather than KMS CMK
+### ECR-005: Repository encrypted with AES256 rather than KMS CMK
 **Severity:** MEDIUM
 
 Checks whether the repository uses `encryptionType=KMS` with a
@@ -520,7 +520,7 @@ restricted per-principal.
 
 ## IAM
 
-### IAM-001 — CI/CD role has AdministratorAccess policy attached
+### IAM-001: CI/CD role has AdministratorAccess policy attached
 **Severity:** CRITICAL
 
 Checks whether any IAM role with a CI/CD service trust (CodeBuild,
@@ -533,11 +533,11 @@ resources; a compromised pipeline can perform any action in the account.
 - Use IAM Access Analyzer to identify and remove unused permissions.
 - Apply Service Control Policies (SCPs) at the AWS Organizations level to further constrain CI/CD role capabilities.
 
-### IAM-002 — CI/CD role has wildcard Action in attached policy
+### IAM-002: CI/CD role has wildcard Action in attached policy
 **Severity:** HIGH
 
-Checks every reachable policy on a CI/CD service role — inline policies
-and the default version of attached customer-managed policies — for an
+Checks every reachable policy on a CI/CD service role, inline policies
+and the default version of attached customer-managed policies, for an
 Allow statement with `Action: '*'`. Wildcard actions grant unrestricted
 access to one or more AWS services, violating least-privilege and widening
 the blast radius of a compromised build or deployment. AWS-managed
@@ -549,7 +549,7 @@ policies are intentionally skipped here; IAM-001 handles
 - Use CloudTrail last-access data and IAM Access Analyzer to identify the minimal required action set.
 - Periodically review and tighten inline policies as pipeline requirements evolve.
 
-### IAM-003 — CI/CD role has no permission boundary
+### IAM-003: CI/CD role has no permission boundary
 **Severity:** MEDIUM
 
 Checks whether CI/CD service roles have a permissions boundary attached.
@@ -563,7 +563,7 @@ attacker.
 - Create a managed boundary policy that excludes sensitive actions (e.g. `iam:CreateRole`, `iam:AttachRolePolicy` without conditions).
 - Enforce boundary attachment through an SCP or IAM condition on role creation.
 
-### IAM-004 — CI/CD role can PassRole to any role
+### IAM-004: CI/CD role can PassRole to any role
 **Severity:** HIGH
 
 Checks whether any policy attached to the CI/CD role grants
@@ -576,7 +576,7 @@ trusts, which is a classic CI/CD privilege-escalation path.
 - Add a `Condition` with `iam:PassedToService` restricting the destination service.
 - Use IAM Access Analyzer to confirm the policy surface after tightening.
 
-### IAM-005 — CI/CD role trust policy missing sts:ExternalId
+### IAM-005: CI/CD role trust policy missing sts:ExternalId
 **Severity:** HIGH
 
 Checks whether the role's trust policy allows assumption by an AWS
@@ -589,11 +589,11 @@ described in the IAM Best Practices.
 - Prefer service-linked principals over AWS account principals wherever possible.
 - Rotate ExternalIds on a regular schedule and treat them as secrets.
 
-### IAM-006 — Sensitive actions granted with wildcard Resource
+### IAM-006: Sensitive actions granted with wildcard Resource
 **Severity:** MEDIUM
 
 Flags Allow statements that scope `Action` (not to `'*'`) but leave
-`Resource` as `'*'` for sensitive services — `s3`, `kms`, `secretsmanager`,
+`Resource` as `'*'` for sensitive services, `s3`, `kms`, `secretsmanager`,
 `ssm`, `iam`, `sts`, `dynamodb`, `lambda`, `ec2`. IAM-002 catches
 `Action:'*'`; this check catches the more common "scoped action, unscoped
 resource" pattern that evades it.
@@ -608,10 +608,10 @@ resource" pattern that evades it.
 ## PBAC (Pipeline-Based Access Control)
 
 PBAC checks target the boundary between the pipeline itself and the
-resources it can reach — network reachability and service-role sharing
+resources it can reach, network reachability and service-role sharing
 across projects.
 
-### PBAC-001 — CodeBuild project has no VPC configuration
+### PBAC-001: CodeBuild project has no VPC configuration
 **Severity:** HIGH
 
 Checks whether a CodeBuild project runs with an attached `vpcConfig`
@@ -624,12 +624,12 @@ exfiltrate secrets or artifacts to any destination on the public internet.
 - Route required traffic through VPC endpoints (S3, ECR, Secrets Manager, CloudWatch Logs) instead of public internet.
 - Deny `0.0.0.0/0` egress on the build security group unless strictly required.
 
-### PBAC-002 — CodeBuild service role shared across projects
+### PBAC-002: CodeBuild service role shared across projects
 **Severity:** MEDIUM
 
 Checks whether multiple CodeBuild projects reuse the same `serviceRole`.
 A shared role means any single project's compromise grants the attacker
-the combined permissions of every project that uses the role — the exact
+the combined permissions of every project that uses the role, the exact
 cross-pipeline escalation path PBAC is meant to prevent.
 
 **Recommended actions**
@@ -641,7 +641,7 @@ cross-pipeline escalation path PBAC is meant to prevent.
 
 ## S3
 
-### S3-001 — Artifact bucket public access block not fully enabled
+### S3-001: Artifact bucket public access block not fully enabled
 **Severity:** CRITICAL
 
 Checks whether all four S3 Block Public Access settings are enabled on
@@ -655,7 +655,7 @@ permissive.
 - Apply the same settings at the AWS account level as a catch-all default.
 - Use AWS Config rule `s3-bucket-public-read-prohibited` to continuously audit public access.
 
-### S3-002 — Artifact bucket server-side encryption not configured
+### S3-002: Artifact bucket server-side encryption not configured
 **Severity:** HIGH
 
 Checks whether the CodePipeline artifact bucket has a default server-side
@@ -668,7 +668,7 @@ unencrypted, increasing exposure if S3 access controls are misconfigured.
 - For stronger key control, use SSE-KMS with a customer-managed key.
 - Enforce encryption-in-transit by adding a bucket policy that denies requests without `aws:SecureTransport`.
 
-### S3-003 — Artifact bucket versioning not enabled
+### S3-003: Artifact bucket versioning not enabled
 **Severity:** MEDIUM
 
 Checks whether versioning is enabled on the CodePipeline artifact bucket.
@@ -681,7 +681,7 @@ incident or accidental overwrite.
 - Pair versioning with a lifecycle rule that expires non-current versions after your retention period.
 - Consider enabling MFA Delete for additional protection against accidental or malicious deletion.
 
-### S3-004 — Artifact bucket access logging not enabled
+### S3-004: Artifact bucket access logging not enabled
 **Severity:** LOW
 
 Checks whether S3 server access logging is enabled on CodePipeline
@@ -694,7 +694,7 @@ investigation.
 - Restrict write access to the logging bucket so log entries cannot be tampered with.
 - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
 
-### S3-005 — Artifact bucket missing aws:SecureTransport deny
+### S3-005: Artifact bucket missing aws:SecureTransport deny
 **Severity:** MEDIUM
 
 Checks whether the artifact bucket has a bucket policy that denies
@@ -813,7 +813,7 @@ and passes a shared `ResourceCatalog`.
 
 **Degraded findings.** When the caller's IAM principal can't list resources
 for a service, the orchestrator emits one `<PREFIX>-000` finding (INFO
-severity) per failed service — `CT-000`, `CA-000`, `LMB-000`, etc. —
+severity) per failed service, `CT-000`, `CA-000`, `LMB-000`, etc.,
 instead of every dependent rule emitting its own error copy.
 
 ---

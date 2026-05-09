@@ -1,4 +1,4 @@
-"""GL-009 — images should be pinned by sha256 digest (strictest tier)."""
+"""GL-009, images should be pinned by sha256 digest (strictest tier)."""
 from __future__ import annotations
 
 from typing import Any

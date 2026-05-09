@@ -1,4 +1,4 @@
-"""CB-011 — CodeBuild buildspec contains indicators of malicious activity."""
+"""CB-011. CodeBuild buildspec contains indicators of malicious activity."""
 from __future__ import annotations
 
 from ..._malicious import find_malicious_patterns
@@ -16,8 +16,8 @@ RULE = Rule(
         "Treat as a potential compromise. Identify which principal or "
         "pipeline ran the CodeBuild project recently, rotate its "
         "service role's credentials, audit CloudTrail for outbound "
-        "activity to the matched hosts, and — if an inline buildspec "
-        "is in use (CB-008) — enforce repo-sourced buildspecs under "
+        "activity to the matched hosts, and, if an inline buildspec "
+        "is in use (CB-008), enforce repo-sourced buildspecs under "
         "branch protection so the next malicious edit requires a PR."
     ),
     docs_note=(
@@ -25,7 +25,7 @@ RULE = Rule(
         "project for concrete attack indicators: reverse shells, "
         "base64-decoded execution, miner binaries/pools, Discord/"
         "Telegram webhooks, credential-dump pipes, audit-erasure "
-        "commands. CB-011 is CRITICAL by design — a true positive is "
+        "commands. CB-011 is CRITICAL by design, a true positive is "
         "evidence of compromise, not a hygiene improvement. Repo-"
         "sourced buildspecs (not inlined) return ``NOT APPLICABLE`` "
         "because the text isn't visible to the scanner; CB-008 "

@@ -7,7 +7,7 @@ A predicate is a recursive YAML structure built from leaf operators
 of one ``for_each`` iteration) and returns True when the rule should
 *pass* on this node.
 
-The DSL is "fail when assert is False" — if ``assert: { eq: ... }``
+The DSL is "fail when assert is False", if ``assert: { eq: ... }``
 evaluates to False on a node, that node is recorded as an offender
 and the finding fails. This keeps user rules readable: they describe
 the *correct* state and the engine surfaces violations.
@@ -195,7 +195,7 @@ def _ne_op(arg: Any, where: str) -> Predicate:
 
     def _eval(node: Any) -> bool:
         actual, ok = _first_match(path, node)
-        # Missing != value (vacuous truth choice — matches `eq` semantics).
+        # Missing != value (vacuous truth choice, matches `eq` semantics).
         return not ok or actual != expected
 
     return _eval
@@ -285,7 +285,7 @@ def _not_in_op(arg: Any, where: str) -> Predicate:
 
     def _eval(node: Any) -> bool:
         actual, ok = _first_match(path, node)
-        # Missing field is "not in" anything — matches `ne` semantics.
+        # Missing field is "not in" anything, matches `ne` semantics.
         return not ok or actual not in values
 
     return _eval
@@ -373,8 +373,8 @@ class CompiledTemplate:
         Bare-name precedence: ``{{ name }}`` resolves to the iterated
         node's ``$.name`` first, falling back to ``ambient["name"]``
         only if the node has no such field. The intuition is that the
-        rule author iterates *over the offender* — the container, the
-        step — so that node should win for any field it carries.
+        rule author iterates *over the offender*, the container, the
+        step, so that node should win for any field it carries.
         Ambient (``kind``, ``namespace``, the manifest-level ``name``)
         is the fallback for fields that don't exist on the iterated
         node.
@@ -411,7 +411,7 @@ def compile_template(text: str) -> CompiledTemplate:
 
     A template like ``"image {{ image }} not allowed"`` compiles to
     three parts: literal ``"image "``, path ``image``, literal
-    ``" not allowed"``. The parser is forgiving — unmatched ``{{``
+    ``" not allowed"``. The parser is forgiving, unmatched ``{{``
     or ``}}`` in the literal text are passed through.
     """
     parts: list[tuple[str, CompiledPath | None]] = []

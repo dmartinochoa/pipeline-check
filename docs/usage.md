@@ -15,7 +15,7 @@ keeps the CLI out of your project environment.
 
 ## First scan (auto-detect)
 
-Run with no flags in any supported repo — the working directory is
+Run with no flags in any supported repo, the working directory is
 inspected and the matching provider is selected:
 
 ```bash
@@ -84,7 +84,7 @@ pipeline_check --max-failures 10
 
 Gate details: [ci_gate.md](ci_gate.md).
 
-## AWS live scans — credentials
+## AWS live scans: credentials
 
 The AWS provider uses the standard boto3 credential chain. Any of these
 work:
@@ -215,7 +215,7 @@ Precedence: CLI > env > config file > defaults.
 
 ```bash
 pipeline_check -v       # debug logs to stderr (per-check timing, API calls)
-pipeline_check -q       # suppress all output — rely on the exit code
+pipeline_check -q       # suppress all output, rely on the exit code
 ```
 
 ## Extended manual pages
@@ -232,10 +232,10 @@ pipeline_check --man standards
 
 ## See also
 
-- [providers/](providers/README.md) — per-provider check reference
-- [standards/](standards/README.md) — compliance mappings
-- [config.md](config.md) — full config-file schema
-- [ci_gate.md](ci_gate.md) — gate logic and baselines
-- [output.md](output.md) — output format schemas
-- [attack_chains.md](attack_chains.md) — chain detection
-- [scoring_model.md](scoring_model.md) — how grades are computed
+- [providers/](providers/README.md): per-provider check reference
+- [standards/](standards/README.md): compliance mappings
+- [config.md](config.md): full config-file schema
+- [ci_gate.md](ci_gate.md): gate logic and baselines
+- [output.md](output.md): output format schemas
+- [attack_chains.md](attack_chains.md): chain detection
+- [scoring_model.md](scoring_model.md): how grades are computed

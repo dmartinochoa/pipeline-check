@@ -1,4 +1,4 @@
-"""CloudFormation S3 checks — scoped to CodePipeline artifact buckets.
+"""CloudFormation S3 checks, scoped to CodePipeline artifact buckets.
 
 CFN collapses most of Terraform's separate S3 resources into inline
 properties on ``AWS::S3::Bucket``:

@@ -1,8 +1,8 @@
-"""CircleCI provider — scans ``.circleci/config.yml``.
+"""CircleCI provider, scans ``.circleci/config.yml``.
 
     pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
 
-Only YAML parsing is required — no network calls, no CircleCI API token.
+Only YAML parsing is required, no network calls, no CircleCI API token.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import BaseProvider
 
 
 class CircleCIProvider(BaseProvider):
-    """CircleCI provider — parses config YAML from disk."""
+    """CircleCI provider, parses config YAML from disk."""
 
     NAME = "circleci"
 

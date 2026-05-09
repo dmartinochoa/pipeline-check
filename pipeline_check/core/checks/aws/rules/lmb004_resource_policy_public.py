@@ -1,4 +1,4 @@
-"""LMB-004 — Lambda function resource policy grants wildcard principal."""
+"""LMB-004. Lambda function resource policy grants wildcard principal."""
 from __future__ import annotations
 
 import json
@@ -21,13 +21,13 @@ RULE = Rule(
         "Lambda function resource policy, or scope them with a "
         "``SourceArn`` / ``SourceAccount`` condition. Service principals "
         "(e.g. ``apigateway.amazonaws.com``) are the common legitimate "
-        "case — ensure they carry a condition."
+        "case, ensure they carry a condition."
     ),
     docs_note=(
         "A wildcard-principal Allow on a Lambda function resource "
         "policy lets anyone invoke. The legitimate case is a "
         "service principal (API Gateway, S3 events) where AWS "
-        "fills in the SourceArn/SourceAccount at invoke time — "
+        "fills in the SourceArn/SourceAccount at invoke time, "
         "without those conditions, any account using that service "
         "can invoke."
     ),

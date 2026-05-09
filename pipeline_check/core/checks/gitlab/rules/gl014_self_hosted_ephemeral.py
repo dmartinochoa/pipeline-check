@@ -1,4 +1,4 @@
-"""GL-014 — self-managed runners should carry an ephemeral tag."""
+"""GL-014, self-managed runners should carry an ephemeral tag."""
 from __future__ import annotations
 
 from typing import Any
@@ -7,7 +7,7 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
 
-# GitLab SaaS shared runner tags — if a job uses ONLY these, it's
+# GitLab SaaS shared runner tags, if a job uses ONLY these, it's
 # not self-managed. Lowercase for comparison.
 _SAAS_TAGS = frozenset({
     "saas-linux-small-amd64", "saas-linux-medium-amd64",

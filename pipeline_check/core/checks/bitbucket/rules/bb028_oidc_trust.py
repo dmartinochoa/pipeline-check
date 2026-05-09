@@ -1,4 +1,4 @@
-"""BB-028 — `oidc: true` step without deployment-gated environment."""
+"""BB-028, `oidc: true` step without deployment-gated environment."""
 from __future__ import annotations
 
 from typing import Any
@@ -28,11 +28,11 @@ RULE = Rule(
         "``deployment:`` (production / staging / test). Bitbucket "
         "deployments enforce manual approvals, restricted variables, "
         "and audit logs that an ungated step bypasses. Steps reached "
-        "through ``pull-requests:`` should never request OIDC tokens — "
+        "through ``pull-requests:`` should never request OIDC tokens, "
         "any forked PR can drive the role assumption."
     ),
     docs_note=(
-        "Pairs with IAM-008 — IAM-008 verifies the cloud-side trust "
+        "Pairs with IAM-008. IAM-008 verifies the cloud-side trust "
         "policy pins audience + subject; this rule verifies the "
         "Bitbucket-side workflow can't request a token without a "
         "deployment gate. Bitbucket's ``pull-requests:`` triggers from "

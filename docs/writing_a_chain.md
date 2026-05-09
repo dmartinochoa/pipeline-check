@@ -4,7 +4,7 @@ How to add a new entry to the [attack-chain catalog](attack_chains.md).
 
 A chain correlates multiple findings into a higher-order narrative.
 [`AC-001`](attack_chains.md#ac-001) doesn't fire on `GHA-002` alone or
-`GHA-005` alone — it fires when both land on the *same workflow*,
+`GHA-005` alone. It fires when both land on the *same workflow*,
 because that combination is exactly how the PyTorch supply-chain
 compromise worked. Each chain ships with a short prose summary, a
 per-instance narrative, and MITRE ATT&CK technique IDs that downstream
@@ -16,7 +16,7 @@ A chain is one Python module under
 | Name    | Type         | Purpose                                                      |
 |---------|--------------|--------------------------------------------------------------|
 | `RULE`  | `ChainRule`  | Static metadata (id, title, severity, MITRE, prose, refs)    |
-| `match` | callable     | `match(findings) -> list[Chain]` — when the chain triggers   |
+| `match` | callable     | `match(findings) -> list[Chain]`, when the chain triggers   |
 
 The engine walks `rules/` at import time and runs every `(RULE, match)`
 pair against the full finding list. No registration call needed; dropping
@@ -39,7 +39,7 @@ name starts with `_` are skipped, so shared helpers can coexist.
 ## The minimal chain
 
 ```python
-"""AC-013 — Caller-Controlled Runner with Token Persistence (GitHub Actions)."""
+"""AC-013. Caller-Controlled Runner with Token Persistence (GitHub Actions)."""
 from __future__ import annotations
 
 from ...checks.base import Finding, Severity
@@ -97,7 +97,7 @@ def match(findings: list[Finding]) -> list[Chain]:
 ```
 
 Read any existing `chains/rules/<id>_<slug>.py` for the canonical
-shape — the catalog has 14 examples to crib from.
+shape, the catalog has 14 examples to crib from.
 
 ### `ChainRule` fields
 
@@ -105,7 +105,7 @@ shape — the catalog has 14 examples to crib from.
 |--------------------|----------|--------------------------------------------------------------------------|
 | `id`               | yes      | `AC-NNN`. Globally unique. Matches the filename's numeric portion.       |
 | `title`            | yes      | One short sentence. Appears in tables, SARIF, terminal output.           |
-| `severity`         | yes      | Composite severity. `CRITICAL` is typical — chains are always worse than their legs. |
+| `severity`         | yes      | Composite severity. `CRITICAL` is typical, chains are always worse than their legs. |
 | `summary`          | yes      | One paragraph. Surfaced as the SARIF rule `fullDescription`.             |
 | `mitre_attack`     | no       | Tuple of MITRE ATT&CK technique IDs (`"T1195.002"`). Surfaces as SARIF tags `mitre/T<NNNN>`. |
 | `kill_chain_phase` | no       | Free-form label, e.g. `"initial-access -> exfiltration"`.                |
@@ -121,7 +121,7 @@ shape — the catalog has 14 examples to crib from.
 firing in two different workflow files emits two `Chain` objects, one
 per resource.
 
-Always pull `confidence` from `min_confidence(triggers)` — a chain is
+Always pull `confidence` from `min_confidence(triggers)`, a chain is
 only as trustworthy as its weakest leg.
 
 ## Helpers
@@ -168,19 +168,19 @@ This is the most common design call. Two patterns:
 
 - **Same-resource pairing**: use `group_by_resource(findings, [...])`.
   The chain only fires when every leg lands on the *same* file / ARN.
-  AC-009 (Supply Chain Repo Poisoning) and AC-013 use this — a
+  AC-009 (Supply Chain Repo Poisoning) and AC-013 use this, a
   `secrets: inherit` in workflow A and an unpinned reusable in
   workflow B aren't the same call site.
 - **Cross-resource pairing**: walk `failing(findings, ...)` directly
   and accept any combination. AC-005 (Unsigned Artifact to Production)
-  uses this — the build-side and deploy-side findings live in
+  uses this, the build-side and deploy-side findings live in
   different files by definition.
 
 ## OR-of-legs
 
 Some chains fire on `A AND (B OR C)`. AC-010 is the canonical example:
 GHA-012 plus *either* GHA-016 *or* GHA-019. Don't try to express that
-with `group_by_resource` — write a small custom resource-walker:
+with `group_by_resource`, write a small custom resource-walker:
 
 ```python
 def match(findings):
@@ -207,7 +207,7 @@ canonical test set is six tests:
 
 ```python
 class TestChainAC013:
-    """AC-013 — Caller-Controlled Runner with Token Persistence."""
+    """AC-013. Caller-Controlled Runner with Token Persistence."""
 
     WF = ".github/workflows/release.yml"
 
@@ -255,7 +255,7 @@ def test_list_rules_discovers_all_chains(self):
 ```
 
 Add your new ID. The lock-set exists so adding a chain is an explicit
-decision — accidentally landing one without bumping this set fails
+decision, accidentally landing one without bumping this set fails
 the test.
 
 ## Doc generation
@@ -270,9 +270,9 @@ python scripts/gen_attack_chains_doc.py
 `tests/test_attack_chains_doc.py` fails until the regenerated doc is
 committed. Two checks enforce currency:
 
-- `test_chain_catalog_doc_in_sync` — the doc's chain catalog must
+- `test_chain_catalog_doc_in_sync`: the doc's chain catalog must
   match the live registry exactly.
-- `test_every_registered_chain_has_a_card` — every registered chain
+- `test_every_registered_chain_has_a_card`: every registered chain
   must have a section card with `{ #ac-NNN }` anchor markup.
 
 ## README count claim
@@ -293,7 +293,7 @@ Add a `[Unreleased]` `### Added` entry following the established style
 (see AC-013 / AC-014 for the latest examples). Include:
 
 - The trigger combination (`GHA-NNN + GHA-MMM` on the same workflow).
-- The threat in one sentence — what the combination unlocks beyond either
+- The threat in one sentence: what the combination unlocks beyond either
   finding alone.
 - A **Distinct from** call-out for any nearby chain so reviewers know
   why this isn't a duplicate (AC-013's narrative explicitly contrasts
@@ -308,7 +308,7 @@ canonical example: the same "caller picks runner + token written to
 disk" pattern, ported from GitHub (`GHA-036 + GHA-019`) to GitLab
 (`GL-032 + GL-020`). When the underlying rules already exist in
 multiple providers' catalogs, write one chain per provider rather
-than a single multi-provider chain — the narrative prose, MITRE
+than a single multi-provider chain, the narrative prose, MITRE
 references, and recommendation copy are provider-specific in
 practice (the GitHub chain talks about `GITHUB_TOKEN`; the GitLab
 chain talks about `CI_JOB_TOKEN` / `CI_DEPLOY_TOKEN`). One chain
@@ -329,5 +329,5 @@ not a chain-extension blocker. Add the rule first, then the chain.
   places (the registry was the whole point of `ChainRule`).
 - **Don't** silently swallow a `match` failure. The engine catches
   exceptions defensively (a buggy chain rule must not abort the
-  evaluation of others), but uncaught crashes are a real bug — the
+  evaluation of others), but uncaught crashes are a real bug, the
   test suite is where they should surface.

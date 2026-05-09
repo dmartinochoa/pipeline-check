@@ -1,4 +1,4 @@
-"""ADO-008 — whole-document credential-shaped literal scan."""
+"""ADO-008, whole-document credential-shaped literal scan."""
 from __future__ import annotations
 
 from typing import Any

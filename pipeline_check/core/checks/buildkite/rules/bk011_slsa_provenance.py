@@ -1,4 +1,4 @@
-"""BK-011 — pipeline should emit a SLSA provenance attestation."""
+"""BK-011, pipeline should emit a SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +26,7 @@ RULE = Rule(
         "artifact proves *who* published it; a provenance attestation "
         "proves *where / how* it was built. Without it, a leaked "
         "signing key forges identity but a leaked build environment "
-        "also forges provenance — you need both for the SLSA L3 non-"
+        "also forges provenance. You need both for the SLSA L3 non-"
         "falsifiability guarantee. Detection uses the shared "
         "provenance-token catalog (``slsa-framework``, ``cosign "
         "attest``, ``in-toto``, ``attest-build-provenance``)."

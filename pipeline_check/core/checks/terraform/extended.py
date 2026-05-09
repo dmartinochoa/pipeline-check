@@ -2,7 +2,7 @@
 
 Mirrors the runtime AWS rules under
 ``pipeline_check/core/checks/aws/rules/`` for shift-left (pre-apply)
-scanning. IAM-007 (access-key age) has no Terraform analogue — key
+scanning. IAM-007 (access-key age) has no Terraform analogue, key
 rotation state only exists at runtime.
 
 CB-008   Buildspec declared inline, not sourced from repo       HIGH    CICD-SEC-4
@@ -84,10 +84,10 @@ def _codebuild_checks(ctx: TerraformContext) -> list[Finding]:
 
 
 def _cb011(values: dict[str, Any], address: str) -> Finding:
-    """CB-011 — inline buildspec has indicators of malicious activity."""
+    """CB-011, inline buildspec has indicators of malicious activity."""
     source = _first(values.get("source"))
     buildspec = (source.get("buildspec") or "").strip()
-    # Skip repo-referenced buildspecs — the text isn't visible in the plan.
+    # Skip repo-referenced buildspecs, the text isn't visible in the plan.
     if (
         not buildspec
         or (
@@ -100,7 +100,7 @@ def _cb011(values: dict[str, Any], address: str) -> Finding:
             title="CodeBuild buildspec contains indicators of malicious activity",
             severity=Severity.CRITICAL,
             resource=address,
-            description="Buildspec is repo-sourced or absent — no inline text to scan.",
+            description="Buildspec is repo-sourced or absent, no inline text to scan.",
             recommendation="No action required.",
             passed=True,
         )
@@ -214,7 +214,7 @@ def _cb010(webhook: dict[str, Any], address: str) -> Finding:
         resource=address,
         description=(
             f"Filter group(s) {offenders} build PRs but have no "
-            "ACTOR_ACCOUNT_ID filter — any fork can trigger a build."
+            "ACTOR_ACCOUNT_ID filter, any fork can trigger a build."
             if offenders else
             "Webhook either does not build PRs or pins ACTOR_ACCOUNT_ID."
         ),
@@ -386,7 +386,7 @@ def _secretsmanager_checks(ctx: TerraformContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# IAM — OIDC
+# IAM. OIDC
 # ---------------------------------------------------------------------------
 
 def _iam_oidc_check(ctx: TerraformContext) -> list[Finding]:

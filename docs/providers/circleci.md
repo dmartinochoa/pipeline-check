@@ -1,6 +1,6 @@
 # CircleCI provider
 
-Parses `.circleci/config.yml` on disk — no CircleCI API token, no
+Parses `.circleci/config.yml` on disk, no CircleCI API token, no
 runner install.
 
 ## Producer workflow
@@ -21,10 +21,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 Several checks target CircleCI concepts that have no direct analogue
 in other providers:
 
-- **CC-001** — orb version pinning (`@volatile`, `@1` → `@5.1.0`)
-- **CC-009** — approval gate via `type: approval` predecessor job
-- **CC-012** — dynamic config generation via `setup: true`
-- **CC-019** — `add_ssh_keys` fingerprint restriction
+- **CC-001**, orb version pinning (`@volatile`, `@1` → `@5.1.0`)
+- **CC-009**, approval gate via `type: approval` predecessor job
+- **CC-012**, dynamic config generation via `setup: true`
+- **CC-019**, `add_ssh_keys` fingerprint restriction
 
 ## What it covers
 
@@ -68,7 +68,7 @@ in other providers:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-001 — Orb not pinned to exact semver { #cc-001 }
+## CC-001: Orb not pinned to exact semver { #cc-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -88,7 +88,7 @@ Pin every orb to an exact semver version (`circleci/node@5.1.0`). Floating refer
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-002 — Script injection via untrusted environment variable { #cc-002 }
+## CC-002: Script injection via untrusted environment variable { #cc-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -108,7 +108,7 @@ Do not interpolate attacker-controllable environment variables (CIRCLE_BRANCH, C
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-003 — Docker image not pinned by digest { #cc-003 }
+## CC-003: Docker image not pinned by digest { #cc-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -120,7 +120,7 @@ Docker images referenced in `docker:` blocks under jobs or executors must includ
 
 **Recommended action**
 
-Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Tags like `:latest` or `:18` are mutable — a registry compromise or upstream push silently replaces the image content.
+Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Tags like `:latest` or `:18` are mutable, a registry compromise or upstream push silently replaces the image content.
 
 </div>
 
@@ -128,13 +128,13 @@ Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Ta
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-004 — Secret-like environment variable not managed via context { #cc-004 }
+## CC-004: Secret-like environment variable not managed via context { #cc-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Jobs that declare environment variables with secret-looking names (containing PASSWORD, TOKEN, SECRET, or API_KEY) in inline `environment:` blocks bypass CircleCI's context restrictions — security groups, OIDC claims, and audit logs are only enforced when secrets live in contexts.
+Jobs that declare environment variables with secret-looking names (containing PASSWORD, TOKEN, SECRET, or API_KEY) in inline `environment:` blocks bypass CircleCI's context restrictions, security groups, OIDC claims, and audit logs are only enforced when secrets live in contexts.
 
 <div class="pg-rule__rec" markdown>
 
@@ -148,7 +148,7 @@ Move secret-like variables (PASSWORD, TOKEN, SECRET, API_KEY) into a CircleCI co
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-005 — AWS auth uses long-lived access keys in environment block { #cc-005 }
+## CC-005: AWS auth uses long-lived access keys in environment block { #cc-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
@@ -168,7 +168,7 @@ Remove AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from the job `environment:` blo
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-006 — Artifacts not signed (no cosign/sigstore step) { #cc-006 }
+## CC-006: Artifacts not signed (no cosign/sigstore step) { #cc-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -180,7 +180,7 @@ Unsigned artifacts cannot be verified downstream, so a tampered build is indisti
 
 **Recommended action**
 
-Add a signing step to the pipeline — e.g. install cosign and run `cosign sign`, or use the `sigstore` CLI. Publish the signature alongside the artifact and verify it at consumption time.
+Add a signing step to the pipeline, e.g. install cosign and run `cosign sign`, or use the `sigstore` CLI. Publish the signature alongside the artifact and verify it at consumption time.
 
 </div>
 
@@ -188,7 +188,7 @@ Add a signing step to the pipeline — e.g. install cosign and run `cosign sign`
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) { #cc-007 }
+## CC-007: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) { #cc-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -200,7 +200,7 @@ Without an SBOM, downstream consumers cannot audit the exact set of dependencies
 
 **Recommended action**
 
-Add an SBOM generation step — `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.
+Add an SBOM generation step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.
 
 </div>
 
@@ -208,13 +208,13 @@ Add an SBOM generation step — `syft . -o cyclonedx-json`, Trivy with `--format
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## CC-008 — Credential-shaped literal in config body { #cc-008 }
+## CC-008: Credential-shaped literal in config body { #cc-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Every string in the config is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc.). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.
+Every string in the config is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc.). A match means a secret was pasted into YAML, the value is visible in every fork and every build log and must be treated as compromised.
 
 <div class="pg-rule__rec" markdown>
 
@@ -228,7 +228,7 @@ Rotate the exposed credential immediately. Move the value to a CircleCI project 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-009 — Deploy job missing manual approval gate { #cc-009 }
+## CC-009: Deploy job missing manual approval gate { #cc-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -248,13 +248,13 @@ Add a `type: approval` job that precedes the deploy job in the workflow, and lis
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-010 — Self-hosted runner without ephemeral marker { #cc-010 }
+## CC-010: Self-hosted runner without ephemeral marker { #cc-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The check looks for `resource_class` values containing 'self-hosted' — if found, it checks for 'ephemeral' in the value. Also checks for `machine: true` combined with a self-hosted resource class.
+Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The check looks for `resource_class` values containing 'self-hosted', if found, it checks for 'ephemeral' in the value. Also checks for `machine: true` combined with a self-hosted resource class.
 
 <div class="pg-rule__rec" markdown>
 
@@ -268,7 +268,7 @@ Configure self-hosted runners to tear down between jobs. Use a `resource_class` 
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## CC-011 — No store_test_results step (test results not archived) { #cc-011 }
+## CC-011: No store_test_results step (test results not archived) { #cc-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-C-AUDIT</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
@@ -288,13 +288,13 @@ Add a `store_test_results` step to jobs that run tests. This archives test resul
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-012 — Dynamic config via `setup: true` enables code injection { #cc-012 }
+## CC-012: Dynamic config via `setup: true` enables code injection { #cc-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-When `setup: true` is set at the top level, the config becomes a setup workflow — it generates the real pipeline config dynamically (typically via the `circleci/continuation` orb). An attacker who controls the setup job (e.g. via a malicious PR in a fork) can inject arbitrary config for all subsequent jobs, including deploy steps with production secrets.
+When `setup: true` is set at the top level, the config becomes a setup workflow. It generates the real pipeline config dynamically (typically via the `circleci/continuation` orb). An attacker who controls the setup job (e.g. via a malicious PR in a fork) can inject arbitrary config for all subsequent jobs, including deploy steps with production secrets.
 
 <div class="pg-rule__rec" markdown>
 
@@ -308,7 +308,7 @@ If `setup: true` is required, restrict the setup job to a trusted branch filter 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-013 — Deploy job in workflow has no branch filter { #cc-013 }
+## CC-013: Deploy job in workflow has no branch filter { #cc-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -328,7 +328,7 @@ Add `filters.branches.only` to deploy-like workflow jobs so they only run on pro
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-014 — Job missing `resource_class` declaration { #cc-014 }
+## CC-014: Job missing `resource_class` declaration { #cc-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -348,7 +348,7 @@ Add `resource_class:` to every job to explicitly control the executor size and c
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-015 — No `no_output_timeout` configured { #cc-015 }
+## CC-015: No `no_output_timeout` configured { #cc-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-TIMEOUT</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -368,7 +368,7 @@ Add `no_output_timeout:` to long-running run steps, or set it at the job level. 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-016 — Remote script piped to shell interpreter { #cc-016 }
+## CC-016: Remote script piped to shell interpreter { #cc-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -388,7 +388,7 @@ Download the script to a file, verify its checksum, then execute it. Or vendor t
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## CC-017 — Docker run with insecure flags (privileged/host mount) { #cc-017 }
+## CC-017: Docker run with insecure flags (privileged/host mount) { #cc-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -408,7 +408,7 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-018 — Package install from insecure source { #cc-018 }
+## CC-018: Package install from insecure source { #cc-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -428,13 +428,13 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-019 — `add_ssh_keys` without fingerprint restriction { #cc-019 }
+## CC-019: `add_ssh_keys` without fingerprint restriction { #cc-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-C-SECRET-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
 </div>
 
-A bare `- add_ssh_keys` step (without `fingerprints:`) loads every SSH key configured on the project into the job. This violates least privilege — the job gains access to keys it does not need, increasing the blast radius if the job is compromised.
+A bare `- add_ssh_keys` step (without `fingerprints:`) loads every SSH key configured on the project into the job. This violates least privilege, the job gains access to keys it does not need, increasing the blast radius if the job is compromised.
 
 <div class="pg-rule__rec" markdown>
 
@@ -448,7 +448,7 @@ Always specify `fingerprints:` when using `add_ssh_keys` to restrict which SSH k
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-020 — No vulnerability scanning step { #cc-020 }
+## CC-020: No vulnerability scanning step { #cc-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -460,7 +460,7 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 
 **Recommended action**
 
-Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 </div>
 
@@ -468,13 +468,13 @@ Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-au
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-021 — Package install without lockfile enforcement { #cc-021 }
+## CC-021: Package install without lockfile enforcement { #cc-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest, exactly the window a supply-chain attacker exploits.
 
 <div class="pg-rule__rec" markdown>
 
@@ -488,7 +488,7 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-022 — Dependency update command bypasses lockfile pins { #cc-022 }
+## CC-022: Dependency update command bypasses lockfile pins { #cc-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -508,7 +508,7 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-023 — TLS / certificate verification bypass { #cc-023 }
+## CC-023: TLS / certificate verification bypass { #cc-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -528,7 +528,7 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-024 — No SLSA provenance attestation produced { #cc-024 }
+## CC-024: No SLSA provenance attestation produced { #cc-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -548,19 +548,19 @@ Add a ``run: cosign attest`` command against a ``provenance.intoto.jsonl`` state
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-025 — Cache key derives from attacker-controllable input { #cc-025 }
+## CC-025: Cache key derives from attacker-controllable input { #cc-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-CircleCI's ``restore_cache`` falls through each listed key until it finds a hit. When one of those keys is derived from ``CIRCLE_BRANCH``, ``CIRCLE_TAG``, or ``CIRCLE_PR_*`` — values an attacker can set by opening a PR — the attacker can plant a cache entry that a protected job later uses. Uses checksum-of-lockfile or a static version label instead.
+CircleCI's ``restore_cache`` falls through each listed key until it finds a hit. When one of those keys is derived from ``CIRCLE_BRANCH``, ``CIRCLE_TAG``, or ``CIRCLE_PR_*``, values an attacker can set by opening a PR, the attacker can plant a cache entry that a protected job later uses. Uses checksum-of-lockfile or a static version label instead.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Derive ``save_cache`` and ``restore_cache`` keys from values the attacker can't control — the lockfile checksum (``{{ checksum "package-lock.json" }}``) and the build variant, not ``{{ .Branch }}`` or ``${CIRCLE_PR_NUMBER}``. A PR-scoped branch can seed a poisoned cache entry that a later main-branch run restores as trusted.
+Derive ``save_cache`` and ``restore_cache`` keys from values the attacker can't control, the lockfile checksum (``{{ checksum "package-lock.json" }}``) and the build variant, not ``{{ .Branch }}`` or ``${CIRCLE_PR_NUMBER}``. A PR-scoped branch can seed a poisoned cache entry that a later main-branch run restores as trusted.
 
 </div>
 
@@ -568,7 +568,7 @@ Derive ``save_cache`` and ``restore_cache`` keys from values the attacker can't 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## CC-026 — Config contains indicators of malicious activity { #cc-026 }
+## CC-026: Config contains indicators of malicious activity { #cc-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
@@ -588,13 +588,13 @@ Treat as a potential compromise. Identify the PR that added the matching step(s)
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-027 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #cc-027 }
+## CC-027: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #cc-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
 </div>
 
-Complements CC-002 (script injection from untrusted context). Fires on intrinsically risky shell idioms — ``eval``, ``sh -c "$X"``, backtick exec — regardless of whether the input source is currently trusted.
+Complements CC-002 (script injection from untrusted context). Fires on intrinsically risky shell idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted.
 
 <div class="pg-rule__rec" markdown>
 
@@ -608,7 +608,7 @@ Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command i
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-028 — Package install bypasses registry integrity (git / path / tarball source) { #cc-028 }
+## CC-028: Package install bypasses registry integrity (git / path / tarball source) { #cc-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -628,19 +628,19 @@ Pin git dependencies to a commit SHA. Publish private packages to an internal re
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-029 — Machine executor image not pinned { #cc-029 }
+## CC-029: Machine executor image not pinned { #cc-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-CC-003 covers Docker images declared under ``docker:`` blocks — it does not reach the machine executor, where the image is on ``machine.image``. A rolling tag (``current``, ``edge``, ``default``) pulls a fresh image whenever CircleCI publishes one, reintroducing the same supply-chain risk Docker-image pinning is designed to eliminate.
+CC-003 covers Docker images declared under ``docker:`` blocks. It does not reach the machine executor, where the image is on ``machine.image``. A rolling tag (``current``, ``edge``, ``default``) pulls a fresh image whenever CircleCI publishes one, reintroducing the same supply-chain risk Docker-image pinning is designed to eliminate.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Pin every ``machine.image`` to a dated release tag — ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
+Pin every ``machine.image`` to a dated release tag, ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
 
 </div>
 
@@ -648,13 +648,13 @@ Pin every ``machine.image`` to a dated release tag — ``ubuntu-2204:2024.05.1``
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CC-030 — Workflow job uses context without branch filter or approval gate { #cc-030 }
+## CC-030: Workflow job uses context without branch filter or approval gate { #cc-030 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-CircleCI contexts are the recommended way to store shared secrets, but binding a context to a job is only half of least-privilege — the other half is controlling *when* the binding activates. Unrestricted workflow entries with ``context:`` turn every branch push into a secret-read event.
+CircleCI contexts are the recommended way to store shared secrets, but binding a context to a job is only half of least-privilege, the other half is controlling *when* the binding activates. Unrestricted workflow entries with ``context:`` turn every branch push into a secret-read event.
 
 <div class="pg-rule__rec" markdown>
 
@@ -668,13 +668,13 @@ Either add ``filters.branches.only: [<protected branches>]`` to restrict when th
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CC-031 — OIDC role assumption without branch filter or approval gate { #cc-031 }
+## CC-031: OIDC role assumption without branch filter or approval gate { #cc-031 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Pairs with IAM-008 — IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the CircleCI-side workflow can't drive the role assumption from any branch. Distinct from CC-030 (broad context binding, MEDIUM); CC-031 narrows to OIDC role assumption and is HIGH because role-bound credentials reach further than the project-scoped secrets in a context.
+Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the CircleCI-side workflow can't drive the role assumption from any branch. Distinct from CC-030 (broad context binding, MEDIUM); CC-031 narrows to OIDC role assumption and is HIGH because role-bound credentials reach further than the project-scoped secrets in a context.
 
 <div class="pg-rule__rec" markdown>
 

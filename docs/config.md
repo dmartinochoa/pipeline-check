@@ -6,11 +6,11 @@ and repo policy lives alongside the code. Both TOML (inside
 
 ## Precedence
 
-Highest wins — matches every standard tool (ruff, mypy, pytest):
+Highest wins, matches every standard tool (ruff, mypy, pytest):
 
-1. **CLI flags** — `--pipeline aws --fail-on HIGH`
-2. **Environment variables** — `PIPELINE_CHECK_PIPELINE=aws`, `PIPELINE_CHECK_GATE_FAIL_ON=HIGH`
-3. **Config file** — `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml`
+1. **CLI flags**: `--pipeline aws --fail-on HIGH`
+2. **Environment variables**: `PIPELINE_CHECK_PIPELINE=aws`, `PIPELINE_CHECK_GATE_FAIL_ON=HIGH`
+3. **Config file**: `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml`
 4. **Built-in defaults**
 
 ## File discovery
@@ -21,7 +21,7 @@ Without `--config`, the first file that exists wins:
 2. `pyproject.toml` at the cwd, `[tool.pipeline_check]` table
 
 Pass `--config PATH` to select an explicit file (a missing path raises
-a UsageError — no silent fallback).
+a UsageError, no silent fallback).
 
 ## Schema
 
@@ -125,7 +125,7 @@ Rules
   both work).
 - `severity` is the only sub-key today; values are `critical`, `high`,
   `medium`, `low`, or `info`.
-- Unknown check IDs are silently ignored — the override simply never
+- Unknown check IDs are silently ignored: the override simply never
   matches anything. Bad severities are dropped with a `[config]`
   warning at load time.
 - Overrides are applied **after** centralised confidence demotion, so
@@ -151,7 +151,7 @@ export PIPELINE_CHECK_GATE_MAX_FAILURES=5
 Multi-value flags (`standards`, `checks`, `fail_on_checks`,
 `secret_patterns`) are comma-separated in env vars.
 
-Env vars override config-file values for the same key — useful in CI
+Env vars override config-file values for the same key, useful in CI
 where the file encodes repo policy but a specific job (e.g. a nightly
 deep scan) needs to tighten a single setting.
 
@@ -167,14 +167,14 @@ rather than raising:
 Typos still surface, but a config written for a newer version keeps
 working on an older install.
 
-### `--config-check` — fail CI on typos
+### `--config-check`: fail CI on typos
 
 The warning is easy to miss in CI logs. Run the dedicated validator
 step to make unknown keys a hard failure:
 
 ```bash
 pipeline_check --config-check
-# [config] OK — no unknown keys.
+# [config] OK: no unknown keys.
 # exit 0
 ```
 
@@ -182,7 +182,7 @@ On a typo:
 
 ```bash
 pipeline_check --config-check
-# [config] pyproject.toml: 'max_faillures' — unknown key
+# [config] pyproject.toml: 'max_faillures': unknown key
 # [config] 1 unknown key(s) detected.
 # exit 3
 ```
@@ -203,7 +203,7 @@ on the cause:
   it's already the standard place to find `[tool.ruff]` / `[tool.mypy]`.
 - Use `.pipeline-check.yml` for non-Python repos (scanning a `.gitlab-ci.yml`
   from inside a Go or TypeScript project, for instance).
-- Commit the file — it encodes team policy; diffs to it are diffs to your
+- Commit the file: it encodes team policy; diffs to it are diffs to your
   security posture.
 - Use env vars sparingly: they make CI logs harder to reproduce locally.
   Reserve them for secrets (`--profile`) and per-job overrides.

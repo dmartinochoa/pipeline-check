@@ -1,4 +1,4 @@
-"""ARGO-012 — Argo workflow should run a vulnerability scan."""
+"""ARGO-012. Argo workflow should run a vulnerability scan."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_vuln_scanning
@@ -22,7 +22,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Vulnerability scanning sits at a different layer from "
-        "signing and SBOM — it answers *does this artifact ship a "
+        "signing and SBOM. It answers *does this artifact ship a "
         "known CVE?* rather than *can we verify what it is?*. "
         "Detection uses the shared vuln-scan-token catalog: trivy, "
         "grype, snyk, npm-audit, pip-audit, osv-scanner, "
@@ -45,7 +45,7 @@ def check(ctx: ArgoContext) -> Finding:
     desc = (
         "At least one Argo document invokes a vulnerability scanner."
         if passed else
-        "No Argo document invokes any vulnerability scanner — known "
+        "No Argo document invokes any vulnerability scanner, known "
         "CVEs in dependencies or container layers ship to production "
         "without a build-time signal."
     )

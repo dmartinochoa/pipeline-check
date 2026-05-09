@@ -1,4 +1,4 @@
-"""K8S-031 — Namespace missing the PSA ``warn`` label."""
+"""K8S-031. Namespace missing the PSA ``warn`` label."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +20,7 @@ RULE = Rule(
         "every Namespace, ideally one tier ahead of the enforce label "
         "(e.g. ``enforce: baseline`` + ``warn: restricted``). The warn "
         "level surfaces violations as ``kubectl apply`` warnings "
-        "without rejecting the resource — developers see what would "
+        "without rejecting the resource, developers see what would "
         "break before an enforcement upgrade lands."
     ),
     docs_note=(

@@ -1,4 +1,4 @@
-"""K8S-033 — Namespace lacks ResourceQuota or LimitRange."""
+"""K8S-033. Namespace lacks ResourceQuota or LimitRange."""
 from __future__ import annotations
 
 from typing import Any
@@ -27,12 +27,12 @@ RULE = Rule(
     ),
     docs_note=(
         "Without a ResourceQuota, a single namespace can consume "
-        "the cluster's entire scheduling capacity — a fork bomb in "
+        "the cluster's entire scheduling capacity, a fork bomb in "
         "a CronJob, a memory leak in a Deployment, or a "
         "cryptominer that landed via a fork-PR build can starve "
         "every other tenant. Without a LimitRange, individual pods "
         "without explicit ``resources:`` requests get a default of "
-        "zero — the scheduler treats them as best-effort and packs "
+        "zero, the scheduler treats them as best-effort and packs "
         "them on any node, including ones already at memory "
         "pressure. The two work together: quota caps the "
         "aggregate, range caps the per-workload baseline. Cross-doc "

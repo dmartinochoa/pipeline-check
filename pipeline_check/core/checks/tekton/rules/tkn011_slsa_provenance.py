@@ -1,4 +1,4 @@
-"""TKN-011 — Tekton Task should emit a SLSA provenance attestation."""
+"""TKN-011. Tekton Task should emit a SLSA provenance attestation."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_provenance, produces_artifacts
@@ -24,7 +24,7 @@ RULE = Rule(
         "Provenance generation is distinct from signing. A signed "
         "artifact proves *who* published it; a provenance attestation "
         "proves *where / how* it was built. Tekton Chains is the "
-        "Tekton-native answer — once enabled on the cluster, every "
+        "Tekton-native answer, once enabled on the cluster, every "
         "TaskRun's outputs are signed and attested without per-Task "
         "wiring. Detection uses the shared provenance-token catalog "
         "(``slsa-framework``, ``cosign attest``, ``in-toto``, "
@@ -53,7 +53,7 @@ def check(ctx: TektonContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="tekton",
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     no_prov = [d for d in artifact_producers if not has_provenance(d.data)]

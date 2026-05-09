@@ -1,4 +1,4 @@
-"""TKN-009 — Tekton Task should sign produced artifacts."""
+"""TKN-009. Tekton Task should sign produced artifacts."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_signing, produces_artifacts
@@ -13,7 +13,7 @@ RULE = Rule(
     esf=("ESF-D-SIGN-ARTIFACTS",),
     cwe=("CWE-345",),
     recommendation=(
-        "Add a signing step to the Task — either a dedicated "
+        "Add a signing step to the Task, either a dedicated "
         "``cosign sign`` step after the build, or use the official "
         "``cosign`` Tekton catalog Task as a referenced step. The "
         "Task should sign by digest (``cosign sign --yes "
@@ -21,7 +21,7 @@ RULE = Rule(
         "the signature."
     ),
     docs_note=(
-        "Detection mirrors GHA-006 / BK-009 / CC-006 — the shared "
+        "Detection mirrors GHA-006 / BK-009 / CC-006, the shared "
         "signing-token catalog (cosign, sigstore, slsa-github-"
         "generator, slsa-framework, notation-sign) is searched "
         "across every string in the Task / Pipeline document. The "
@@ -53,7 +53,7 @@ def check(ctx: TektonContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="tekton",
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     unsigned = [d for d in artifact_producers if not has_signing(d.data)]

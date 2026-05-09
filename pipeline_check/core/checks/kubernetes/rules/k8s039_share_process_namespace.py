@@ -1,4 +1,4 @@
-"""K8S-039 — Pod uses ``shareProcessNamespace: true``."""
+"""K8S-039. Pod uses ``shareProcessNamespace: true``."""
 from __future__ import annotations
 
 from ..._yaml_lines import line_of as _line_of
@@ -16,7 +16,7 @@ RULE = Rule(
     recommendation=(
         "Drop ``spec.shareProcessNamespace: true`` from the pod "
         "spec. Containers in the pod will go back to having "
-        "isolated PID namespaces — each sees only its own "
+        "isolated PID namespaces, each sees only its own "
         "processes, can't ``ptrace`` neighbors, and can't read "
         "their ``/proc/<pid>/environ`` for env-var-leaked secrets. "
         "If the requirement is sidecar-style log collection or "
@@ -31,14 +31,14 @@ RULE = Rule(
         "(``ps``), read their environment variables and CLI args "
         "from ``/proc/<pid>/``, send them signals, and (with the "
         "right capabilities) ``ptrace`` them. A compromised "
-        "sidecar — debug shell, logging agent, observability "
-        "exporter — gets a free pivot into every primary "
+        "sidecar, debug shell, logging agent, observability "
+        "exporter, gets a free pivot into every primary "
         "container's secrets. The default is ``false``; setting "
         "it explicitly to ``true`` is the failing shape."
     ),
     known_fp=(
         "Debug pods that explicitly need ``ps`` / ``strace`` "
-        "across container boundaries — but those are typically "
+        "across container boundaries, but those are typically "
         "ephemeralContainers attached to a running pod, not "
         "long-lived pod specs in a manifest. If a permanent "
         "workload genuinely requires it, ignore the rule with "

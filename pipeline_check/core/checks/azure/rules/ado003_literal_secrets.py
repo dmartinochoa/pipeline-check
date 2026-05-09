@@ -1,4 +1,4 @@
-"""ADO-003 — `variables:` must not hold literal credential values."""
+"""ADO-003, `variables:` must not hold literal credential values."""
 from __future__ import annotations
 
 from typing import Any

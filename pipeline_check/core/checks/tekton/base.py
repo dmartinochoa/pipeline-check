@@ -4,12 +4,12 @@ Parses multi-doc YAML files and keeps only documents whose
 ``apiVersion`` is ``tekton.dev/v1`` (or ``tekton.dev/v1beta1``,
 ``tekton.dev/v1alpha1``). Recognized kinds:
 
-  - ``Task`` / ``ClusterTask``       — define reusable steps
-  - ``Pipeline``                     — composes Tasks
-  - ``TaskRun`` / ``PipelineRun``    — concrete runtime instances
+  - ``Task`` / ``ClusterTask``      , define reusable steps
+  - ``Pipeline``                    , composes Tasks
+  - ``TaskRun`` / ``PipelineRun``   , concrete runtime instances
 
 Rules iterate ``self.ctx.docs`` and dispatch on ``.kind``. The shape
-each rule walks is the parsed Kubernetes-style API object — Tekton's
+each rule walks is the parsed Kubernetes-style API object. Tekton's
 schema is just CRDs, so the parsing layer is identical to the
 plain-Kubernetes provider but with a stricter API-group filter.
 """
@@ -147,7 +147,7 @@ def task_steps(doc: TektonDoc) -> list[dict[str, Any]]:
     """Return the ``spec.steps`` list of a Task / ClusterTask, or [].
 
     Works for ``Task`` and ``ClusterTask``. ``Pipeline`` and ``*Run``
-    kinds don't have steps directly — they reference Tasks.
+    kinds don't have steps directly. They reference Tasks.
     """
     if doc.kind not in ("Task", "ClusterTask"):
         return []

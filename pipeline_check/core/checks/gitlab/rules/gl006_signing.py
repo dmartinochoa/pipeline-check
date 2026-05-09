@@ -1,4 +1,4 @@
-"""GL-006 — artifact signing (cosign / sigstore / notation)."""
+"""GL-006, artifact signing (cosign / sigstore / notation)."""
 from __future__ import annotations
 
 from typing import Any
@@ -34,7 +34,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

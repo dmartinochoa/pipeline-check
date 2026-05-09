@@ -1,4 +1,4 @@
-"""GHA-014 — deploy jobs should bind a GitHub environment."""
+"""GHA-014, deploy jobs should bind a GitHub environment."""
 from __future__ import annotations
 
 import re

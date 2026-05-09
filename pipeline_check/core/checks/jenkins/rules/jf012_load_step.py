@@ -1,4 +1,4 @@
-"""JF-012 — `load` step must not be used for dynamic Groovy inclusion."""
+"""JF-012, `load` step must not be used for dynamic Groovy inclusion."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -15,13 +15,13 @@ RULE = Rule(
     cwe=("CWE-829",),
     recommendation=(
         "Move shared Groovy into a Jenkins shared library "
-        "(`@Library('name@<sha>')`) — those are version-pinned and "
+        "(`@Library('name@<sha>')`). Those are version-pinned and "
         "JF-001 audits them. Reserve `load` for one-off development "
         "experiments."
     ),
     docs_note=(
         "`load 'foo.groovy'` evaluates whatever exists at the path "
-        "when the build runs — there's no integrity check, so a "
+        "when the build runs, there's no integrity check, so a "
         "workspace mutation can swap the loaded code between runs."
     ),
 )

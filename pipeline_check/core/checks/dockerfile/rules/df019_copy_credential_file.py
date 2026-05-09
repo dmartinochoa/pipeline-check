@@ -1,4 +1,4 @@
-"""DF-019 — ``COPY`` / ``ADD`` source path looks like a credential file."""
+"""DF-019, ``COPY`` / ``ADD`` source path looks like a credential file."""
 from __future__ import annotations
 
 import re
@@ -9,7 +9,7 @@ from ..base import Dockerfile, iter_instructions
 
 #: Filenames that almost always carry a long-lived credential.
 #: Match is performed on the basename of each source path. Avoid bare
-#: ``config.json`` / ``credentials`` / ``config`` — those are too
+#: ``config.json`` / ``credentials`` / ``config``. Those are too
 #: ambiguous on their own; the path-tail set below catches the
 #: canonical credential locations for those names.
 _CREDENTIAL_BASENAMES: frozenset[str] = frozenset({
@@ -66,7 +66,7 @@ RULE = Rule(
         "tail matches a canonical credential location "
         "(``.aws/credentials``, ``.docker/config.json``, ``.kube/config``). "
         "Files with private-key extensions (``.pem``, ``.key``, ``.p12``, "
-        "``.pfx``, ``.jks``) are also flagged. Globs are not expanded — "
+        "``.pfx``, ``.jks``) are also flagged. Globs are not expanded, "
         "the rule reads the literal source token."
     ),
     known_fp=(

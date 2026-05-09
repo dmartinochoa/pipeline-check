@@ -1,4 +1,4 @@
-"""IAM-006 — Sensitive actions granted with wildcard Resource."""
+"""IAM-006. Sensitive actions granted with wildcard Resource."""
 from __future__ import annotations
 
 from ..._iam_policy import sensitive_wildcard

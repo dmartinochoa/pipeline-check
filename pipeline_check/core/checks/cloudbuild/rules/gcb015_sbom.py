@@ -1,4 +1,4 @@
-"""GCB-015 — Pipeline should produce a software bill of materials.
+"""GCB-015. Pipeline should produce a software bill of materials.
 
 Reuses the cross-provider ``has_sbom`` helper so the tool catalog
 (syft / CycloneDX / spdx-sbom-generator / Microsoft sbom-tool /
@@ -22,8 +22,8 @@ RULE = Rule(
     esf=("ESF-D-SBOM",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add an SBOM generation step — ``syft <image> -o cyclonedx-json``, "
-        "``trivy image --format cyclonedx`` — and publish the resulting "
+        "Add an SBOM generation step, ``syft <image> -o cyclonedx-json``, "
+        "``trivy image --format cyclonedx``, and publish the resulting "
         "document alongside the image (typically via a cosign attestation "
         "so the SBOM travels with the artifact)."
     ),
@@ -45,7 +45,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

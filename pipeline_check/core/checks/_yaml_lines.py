@@ -141,7 +141,7 @@ class _LineLoader(yaml.SafeLoader):
 # the recursion. The two special-case map / seq constructors below
 # need to use our overrides instead of the parent's because the
 # parent caches a plain dict in ``self.constructed_objects`` for
-# anchor reuse — we want the line-aware version cached.
+# anchor reuse. We want the line-aware version cached.
 def _construct_mapping_top(loader: _LineLoader, node: yaml.MappingNode) -> LineDict:
     return loader.construct_mapping(node, deep=True)
 

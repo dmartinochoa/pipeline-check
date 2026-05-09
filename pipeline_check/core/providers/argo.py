@@ -1,4 +1,4 @@
-"""Argo Workflows provider — scans ``Workflow`` / ``WorkflowTemplate`` YAML."""
+"""Argo Workflows provider, scans ``Workflow`` / ``WorkflowTemplate`` YAML."""
 from __future__ import annotations
 
 from typing import Any
@@ -11,7 +11,7 @@ from .base import BaseProvider
 
 
 class ArgoProvider(BaseProvider):
-    """Argo Workflows provider — multi-doc YAML, kinds under argoproj.io/*."""
+    """Argo Workflows provider, multi-doc YAML, kinds under argoproj.io/*."""
 
     NAME = "argo"
 

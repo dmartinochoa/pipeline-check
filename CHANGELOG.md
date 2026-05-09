@@ -713,6 +713,40 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   unchanged. Verified by running the full 3791-test suite plus
   strict mypy across all 573 source files; no regressions.
 
+### Changed
+
+- **Em-dash sweep across the docs surface.** CLAUDE.md asks
+  contributors to avoid em-dashes (``—``) as dramatic pauses and
+  use periods, commas, parentheses, or colons instead. The
+  convention had drifted, and the project carried over 3500
+  em-dashes across docs, README, source rule modules, and
+  generator templates. This sweep clears the docs surface
+  (``docs/``, README, all auto-generated provider docs, all 25
+  attack-chain reference cards) plus the source rule modules and
+  chain modules that drive the generated docs, plus the generator
+  scripts themselves. Heuristic: capital-letter follower → period,
+  pronoun follower (it / this / they / etc.) → period +
+  capitalize, lowercase follower → comma; list-bullet, heading,
+  YAML-frontmatter, and HTML-attribute em-dashes all become
+  colons; end-of-line wrapped em-dashes get the same treatment
+  using lookahead at the next line. Manual prose fixes for places
+  where mechanical replacement broke parenthetical-list grammar
+  (AC-021 / AC-022 / AC-024 / AC-025 narratives, a few helm rule
+  doc-notes). Also bumped both generator scripts'
+  ``## RULE-ID`` / ``### AC-NNN`` heading templates from
+  ``RULE-ID — title`` to ``RULE-ID: title`` so future regenerated
+  docs stay consistent. Out of scope (deliberately): ``autofix.py``
+  TODO markers (those ship into customer YAML / Dockerfile / Helm
+  files, separate UX call), ``CHANGELOG.md`` historical sections
+  (frozen prose), test-fixture narrative assertions (separate
+  scope, would create churn without user-visible benefit).
+  ~3450 sites cleaned across ~600 files; the remaining ~95 are
+  the explicitly out-of-scope surfaces listed above. Verified: zero
+  em-dashes in ``docs/``, README, scripts/, source rule modules
+  under ``pipeline_check/core/checks/*/rules/``, chain modules
+  under ``pipeline_check/core/chains/rules/``, and shared
+  ``_primitives``. 3964 tests passing.
+
 ### Fixed
 
 - **Doc-accuracy fixes from a documentation review.** Three

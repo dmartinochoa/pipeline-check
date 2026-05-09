@@ -1,4 +1,4 @@
-"""CC-001 — Orbs must be pinned to an exact semver (x.y.z)."""
+"""CC-001. Orbs must be pinned to an exact semver (x.y.z)."""
 from __future__ import annotations
 
 from typing import Any
@@ -41,7 +41,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
     for _alias, ref in orbs.items():
         if not isinstance(ref, str):
-            # Inline orb definitions (dict) are local — skip.
+            # Inline orb definitions (dict) are local, skip.
             continue
         if "@" not in ref:
             unpinned.append(ref)

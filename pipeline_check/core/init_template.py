@@ -1,7 +1,7 @@
 """Starter ``.pipeline-check.yml`` template used by ``pipeline_check init``.
 
 Keep the keys in sync with ``pipeline_check.core.config._TOPLEVEL_KEYS``
-and ``_GATE_KEYS`` — every key shown here is also a legal config-file
+and ``_GATE_KEYS``, every key shown here is also a legal config-file
 key. Values are commented out so the generated file is a no-op until
 the user edits it.
 """
@@ -19,7 +19,7 @@ def render(detected_pipeline: str | None = None) -> str:
             " | dockerfile | kubernetes"
         )
     )
-    return f"""# .pipeline-check.yml — configuration for pipeline_check
+    return f"""# .pipeline-check.yml, configuration for pipeline_check
 # Keys mirror CLI flags (hyphens -> underscores). Env vars
 # PIPELINE_CHECK_* override this file; CLI flags override both.
 # Run `pipeline_check --config-check` to validate after editing.

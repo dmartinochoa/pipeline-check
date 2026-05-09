@@ -2,7 +2,7 @@
 
 A **provider** binds a CI/CD platform to the scanner: it builds the API
 context (credentials, clients) and declares which check modules run against
-it. The scanner's core is provider-agnostic — adding a new platform never
+it. The scanner's core is provider-agnostic, adding a new platform never
 requires editing `Scanner`, `Reporter`, or the CLI.
 
 <div class="pg-doc-cards">

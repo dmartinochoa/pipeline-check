@@ -1,4 +1,4 @@
-"""ADO-016 — remote script piped to shell interpreter."""
+"""ADO-016, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from typing import Any

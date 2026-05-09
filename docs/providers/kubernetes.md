@@ -1,7 +1,7 @@
 # Kubernetes manifest provider
 
 Parses Kubernetes API documents (`apiVersion:` + `kind:`) from `.yaml`
-/ `.yml` files on disk — text-only static analysis. No `kubectl`, no
+/ `.yml` files on disk, text-only static analysis. No `kubectl`, no
 cluster access, no Helm or Kustomize rendering. Multi-document YAML
 (`---`-separated) is fully supported; each document is parsed into
 its own `Manifest` record.
@@ -32,10 +32,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 The walker recognises every kind that carries a pod spec:
 
-- `Pod` — pod spec at `spec`
+- `Pod`, pod spec at `spec`
 - `Deployment` / `StatefulSet` / `DaemonSet` / `ReplicaSet` / `Job`
-  — pod spec at `spec.template.spec`
-- `CronJob` — pod spec at `spec.jobTemplate.spec.template.spec`
+ , pod spec at `spec.template.spec`
+- `CronJob`, pod spec at `spec.jobTemplate.spec.template.spec`
 
 Container-level rules walk all three container lists (`containers`,
 `initContainers`, `ephemeralContainers`), so init-time and ephemeral
@@ -45,14 +45,14 @@ debug containers are covered along with the long-lived workload.
 
 Four rules target non-workload kinds:
 
-- **K8S-018** — `Kind: Secret` carrying credential-shaped literals
+- **K8S-018**, `Kind: Secret` carrying credential-shaped literals
   in `stringData` or `data`. Base64 values in `data:` are decoded
   and re-checked for AKIA-shaped AWS keys.
-- **K8S-020** — `ClusterRoleBinding` to `cluster-admin`, `admin`,
+- **K8S-020**, `ClusterRoleBinding` to `cluster-admin`, `admin`,
   or `system:masters`.
-- **K8S-021** — `Role` / `ClusterRole` granting wildcard verbs+
+- **K8S-021**, `Role` / `ClusterRole` granting wildcard verbs+
   resources (both `verbs: ["*"]` and `resources: ["*"]`).
-- **K8S-022** — `Service` exposing port 22 (SSH).
+- **K8S-022**, `Service` exposing port 22 (SSH).
 
 ## What it covers
 
@@ -105,13 +105,13 @@ Four rules target non-workload kinds:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-001 — Container image not pinned by sha256 digest { #k8s-001 }
+## K8S-001: Container image not pinned by sha256 digest { #k8s-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Reuses ``_primitives.image_pinning.classify`` so the floating-tag semantics match DF-001 / GL-001 / JF-009 / ADO-009 / CC-003. Even a ``PINNED_TAG`` like ``nginx:1.25.4`` is treated as unpinned — only an explicit ``@sha256:`` survives, since a tag is mutable on the registry side and Kubernetes will happily pull the new content on a node restart.
+Reuses ``_primitives.image_pinning.classify`` so the floating-tag semantics match DF-001 / GL-001 / JF-009 / ADO-009 / CC-003. Even a ``PINNED_TAG`` like ``nginx:1.25.4`` is treated as unpinned, only an explicit ``@sha256:`` survives, since a tag is mutable on the registry side and Kubernetes will happily pull the new content on a node restart.
 
 <div class="pg-rule__rec" markdown>
 
@@ -125,7 +125,7 @@ Resolve every workload container image to its current digest (``crane digest <re
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-002 — Pod hostNetwork: true { #k8s-002 }
+## K8S-002: Pod hostNetwork: true { #k8s-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
@@ -145,7 +145,7 @@ Set ``spec.hostNetwork: false`` (the default) on every workload. ``hostNetwork: 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-003 — Pod hostPID: true { #k8s-003 }
+## K8S-003: Pod hostPID: true { #k8s-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
@@ -165,7 +165,7 @@ Set ``spec.hostPID: false`` (the default) on every workload. ``hostPID: true`` m
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-004 — Pod hostIPC: true { #k8s-004 }
+## K8S-004: Pod hostIPC: true { #k8s-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
@@ -185,7 +185,7 @@ Set ``spec.hostIPC: false`` (the default) on every workload. ``hostIPC: true`` l
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-005 — Container securityContext.privileged: true { #k8s-005 }
+## K8S-005: Container securityContext.privileged: true { #k8s-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -197,7 +197,7 @@ Set ``spec.hostIPC: false`` (the default) on every workload. ``hostIPC: true`` l
 
 **Recommended action**
 
-Remove ``securityContext.privileged: true`` from every container. A privileged container has full access to the host's devices and capabilities — escape to the node is trivial. If the workload genuinely needs a kernel capability, grant only that capability via ``capabilities.add`` rather than enabling privileged mode.
+Remove ``securityContext.privileged: true`` from every container. A privileged container has full access to the host's devices and capabilities, escape to the node is trivial. If the workload genuinely needs a kernel capability, grant only that capability via ``capabilities.add`` rather than enabling privileged mode.
 
 </div>
 
@@ -205,7 +205,7 @@ Remove ``securityContext.privileged: true`` from every container. A privileged c
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-006 — Container allowPrivilegeEscalation not explicitly false { #k8s-006 }
+## K8S-006: Container allowPrivilegeEscalation not explicitly false { #k8s-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
@@ -217,7 +217,7 @@ The default for non-root containers is True (Pod Security Standard 'baseline' al
 
 **Recommended action**
 
-Set ``securityContext.allowPrivilegeEscalation: false`` on every container. The Linux ``no_new_privs`` flag stops setuid binaries and capabilities from gaining elevated privileges — without this, a compromised process can escape via setuid utilities still installed in many base images.
+Set ``securityContext.allowPrivilegeEscalation: false`` on every container. The Linux ``no_new_privs`` flag stops setuid binaries and capabilities from gaining elevated privileges, without this, a compromised process can escape via setuid utilities still installed in many base images.
 
 </div>
 
@@ -225,7 +225,7 @@ Set ``securityContext.allowPrivilegeEscalation: false`` on every container. The 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-007 — Container runAsNonRoot not true / runAsUser is 0 { #k8s-007 }
+## K8S-007: Container runAsNonRoot not true / runAsUser is 0 { #k8s-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -237,7 +237,7 @@ A container is considered safe when EITHER its own securityContext OR the pod-le
 
 **Recommended action**
 
-Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on every container, OR set the same fields at pod level so all containers inherit. Running as UID 0 inside a container makes container-escape exploits dramatically more dangerous — the attacker already has root inside the container, so any kernel CVE that matters becomes immediately exploitable.
+Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on every container, OR set the same fields at pod level so all containers inherit. Running as UID 0 inside a container makes container-escape exploits dramatically more dangerous, the attacker already has root inside the container, so any kernel CVE that matters becomes immediately exploitable.
 
 </div>
 
@@ -245,7 +245,7 @@ Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-008 — Container readOnlyRootFilesystem not true { #k8s-008 }
+## K8S-008: Container readOnlyRootFilesystem not true { #k8s-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -265,7 +265,7 @@ Set ``securityContext.readOnlyRootFilesystem: true`` on every container. A read-
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-009 — Container capabilities not dropping ALL / adding dangerous caps { #k8s-009 }
+## K8S-009: Container capabilities not dropping ALL / adding dangerous caps { #k8s-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-272</span>
@@ -292,19 +292,19 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-010 — Container seccompProfile not RuntimeDefault or Localhost { #k8s-010 }
+## K8S-010: Container seccompProfile not RuntimeDefault or Localhost { #k8s-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
 </div>
 
-Pod-level ``securityContext.seccompProfile`` covers all containers in the pod. Either path passes this rule. The default of ``Unconfined`` (or unset, which inherits the node default — usually Unconfined) fails.
+Pod-level ``securityContext.seccompProfile`` covers all containers in the pod. Either path passes this rule. The default of ``Unconfined`` (or unset, which inherits the node default, usually Unconfined) fails.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Set ``securityContext.seccompProfile.type: RuntimeDefault`` (or ``Localhost`` with a path to your tuned profile) at either pod or container level. Without seccomp, every syscall is reachable from the container — modern kernel CVEs (e.g. ``io_uring``) become trivially exploitable.
+Set ``securityContext.seccompProfile.type: RuntimeDefault`` (or ``Localhost`` with a path to your tuned profile) at either pod or container level. Without seccomp, every syscall is reachable from the container, modern kernel CVEs (e.g. ``io_uring``) become trivially exploitable.
 
 </div>
 
@@ -312,7 +312,7 @@ Set ``securityContext.seccompProfile.type: RuntimeDefault`` (or ``Localhost`` wi
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-011 — Pod serviceAccountName unset or 'default' { #k8s-011 }
+## K8S-011: Pod serviceAccountName unset or 'default' { #k8s-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -324,7 +324,7 @@ Both an unset ``serviceAccountName`` (which defaults to ``default``) and an expl
 
 **Recommended action**
 
-Bind every workload to a dedicated, narrow ``ServiceAccount``. The 'default' SA exists in every namespace and tends to accrete RoleBindings over time — using it gives the workload every privilege any other service in the namespace ever needed. Create a per-workload SA with the minimum RBAC needed and reference it via ``spec.serviceAccountName``.
+Bind every workload to a dedicated, narrow ``ServiceAccount``. The 'default' SA exists in every namespace and tends to accrete RoleBindings over time, using it gives the workload every privilege any other service in the namespace ever needed. Create a per-workload SA with the minimum RBAC needed and reference it via ``spec.serviceAccountName``.
 
 </div>
 
@@ -332,19 +332,19 @@ Bind every workload to a dedicated, narrow ``ServiceAccount``. The 'default' SA 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-012 — Pod automountServiceAccountToken not false { #k8s-012 }
+## K8S-012: Pod automountServiceAccountToken not false { #k8s-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-An unset value defaults to True in Kubernetes — this rule fails on unset because most application workloads do NOT need API access and the default exposes credentials by accident. Workloads that explicitly call the API should set the field to ``true`` so the choice is visible in code review.
+An unset value defaults to True in Kubernetes. This rule fails on unset because most application workloads do NOT need API access and the default exposes credentials by accident. Workloads that explicitly call the API should set the field to ``true`` so the choice is visible in code review.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Set ``spec.automountServiceAccountToken: false`` on every workload that doesn't need to talk to the Kubernetes API. Auto-mounted SA tokens are a free credential for an attacker who lands a shell — without explicit opt-out the token sits at ``/var/run/secrets/kubernetes.io/serviceaccount/token`` ready to be exfiltrated. If the workload needs API access, leave it true but pair with a tight, dedicated RBAC role.
+Set ``spec.automountServiceAccountToken: false`` on every workload that doesn't need to talk to the Kubernetes API. Auto-mounted SA tokens are a free credential for an attacker who lands a shell, without explicit opt-out the token sits at ``/var/run/secrets/kubernetes.io/serviceaccount/token`` ready to be exfiltrated. If the workload needs API access, leave it true but pair with a tight, dedicated RBAC role.
 
 </div>
 
@@ -352,7 +352,7 @@ Set ``spec.automountServiceAccountToken: false`` on every workload that doesn't 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-013 — Pod uses a hostPath volume { #k8s-013 }
+## K8S-013: Pod uses a hostPath volume { #k8s-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -372,7 +372,7 @@ Replace ``hostPath`` volumes with ``configMap``, ``secret``, ``emptyDir``, ``per
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-014 — Pod hostPath references a sensitive host directory { #k8s-014 }
+## K8S-014: Pod hostPath references a sensitive host directory { #k8s-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-552</span>
@@ -392,7 +392,7 @@ Never mount the container runtime socket (``/var/run/docker.sock``, ``containerd
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-015 — Container missing resources.limits.memory { #k8s-015 }
+## K8S-015: Container missing resources.limits.memory { #k8s-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
@@ -412,7 +412,7 @@ Set ``resources.limits.memory`` on every container. Without a memory limit, a le
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## K8S-016 — Container missing resources.limits.cpu { #k8s-016 }
+## K8S-016: Container missing resources.limits.cpu { #k8s-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
@@ -424,7 +424,7 @@ Lower severity than K8S-015 because CPU throttling is self-healing (workloads sl
 
 **Recommended action**
 
-Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbour consuming all node cycles — without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
+Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbour consuming all node cycles, without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
 
 </div>
 
@@ -432,19 +432,19 @@ Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-017 — Container env value carries a credential-shaped literal { #k8s-017 }
+## K8S-017: Container env value carries a credential-shaped literal { #k8s-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Reuses ``_primitives/secret_shapes`` — flags AKIA-prefixed AWS access keys outright, plus credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal. ``valueFrom`` entries are always safe (no inline value).
+Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS access keys outright, plus credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal. ``valueFrom`` entries are always safe (no inline value).
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML — it gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
+Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML. It gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
 
 </div>
 
@@ -452,19 +452,19 @@ Replace literal ``env[].value`` entries that hold credentials with ``env[].value
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-018 — Secret stringData/data carries a credential-shaped literal { #k8s-018 }
+## K8S-018: Secret stringData/data carries a credential-shaped literal { #k8s-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding — even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
+Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding, even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide — the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
+A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide, the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
 
 </div>
 
@@ -472,7 +472,7 @@ A ``Kind: Secret`` manifest committed to git defeats every secret-management sto
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## K8S-019 — Workload deployed in the 'default' namespace { #k8s-019 }
+## K8S-019: Workload deployed in the 'default' namespace { #k8s-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -492,19 +492,19 @@ Set ``metadata.namespace`` to a dedicated namespace per workload (or per environ
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-020 — ClusterRoleBinding grants cluster-admin or system:masters { #k8s-020 }
+## K8S-020: ClusterRoleBinding grants cluster-admin or system:masters { #k8s-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-The rule fires on a ``ClusterRoleBinding`` whose ``roleRef.name`` is ``cluster-admin``, ``admin``, or ``system:masters``. Subject type does not matter — even binding cluster-admin to a Group is a cluster-takeover risk.
+The rule fires on a ``ClusterRoleBinding`` whose ``roleRef.name`` is ``cluster-admin``, ``admin``, or ``system:masters``. Subject type does not matter, even binding cluster-admin to a Group is a cluster-takeover risk.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Replace cluster-admin / system:masters bindings with narrowly-scoped ClusterRoles or namespace-scoped Roles. Granting cluster-admin to a service account is equivalent to giving every pod that uses it root on every node — credential theft from any such pod becomes immediate cluster takeover. Audit-log every existing cluster-admin binding and replace each with the minimum verbs/resources the consumer actually needs.
+Replace cluster-admin / system:masters bindings with narrowly-scoped ClusterRoles or namespace-scoped Roles. Granting cluster-admin to a service account is equivalent to giving every pod that uses it root on every node, credential theft from any such pod becomes immediate cluster takeover. Audit-log every existing cluster-admin binding and replace each with the minimum verbs/resources the consumer actually needs.
 
 </div>
 
@@ -512,7 +512,7 @@ Replace cluster-admin / system:masters bindings with narrowly-scoped ClusterRole
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-021 — Role or ClusterRole grants wildcard verbs+resources { #k8s-021 }
+## K8S-021: Role or ClusterRole grants wildcard verbs+resources { #k8s-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -532,13 +532,13 @@ Replace ``verbs: ["*"]`` and ``resources: ["*"]`` with explicit lists. Wildcards
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-022 — Service exposes SSH (port 22) { #k8s-022 }
+## K8S-022: Service exposes SSH (port 22) { #k8s-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
 </div>
 
-Mirrors DF-013 (``EXPOSE 22`` in a Dockerfile) at the Service level. The check fires on Service ports whose ``port`` or ``targetPort`` is 22, regardless of Service type — a NodePort/LoadBalancer 22 is dramatically worse but a ClusterIP 22 still indicates an sshd container somewhere.
+Mirrors DF-013 (``EXPOSE 22`` in a Dockerfile) at the Service level. The check fires on Service ports whose ``port`` or ``targetPort`` is 22, regardless of Service type, a NodePort/LoadBalancer 22 is dramatically worse but a ClusterIP 22 still indicates an sshd container somewhere.
 
 <div class="pg-rule__rec" markdown>
 
@@ -552,7 +552,7 @@ Containers should not run sshd. If you need an interactive shell into a running 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-023 — Namespace missing Pod Security Admission enforcement label { #k8s-023 }
+## K8S-023: Namespace missing Pod Security Admission enforcement label { #k8s-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -572,13 +572,13 @@ Set ``metadata.labels.pod-security.kubernetes.io/enforce`` to ``baseline`` or ``
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-024 — Container missing both livenessProbe and readinessProbe { #k8s-024 }
+## K8S-024: Container missing both livenessProbe and readinessProbe { #k8s-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-MONITOR</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
-Init containers and ephemeral debug containers are exempt — neither makes sense to probe. Jobs and CronJobs are also exempt because Kubernetes treats them as one-shot work; completion is the lifecycle signal, not health.
+Init containers and ephemeral debug containers are exempt, neither makes sense to probe. Jobs and CronJobs are also exempt because Kubernetes treats them as one-shot work; completion is the lifecycle signal, not health.
 
 <div class="pg-rule__rec" markdown>
 
@@ -592,7 +592,7 @@ Define at least one of ``livenessProbe`` or ``readinessProbe`` on every long-run
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-025 — System priority class used outside kube-system { #k8s-025 }
+## K8S-025: System priority class used outside kube-system { #k8s-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
@@ -612,7 +612,7 @@ Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classe
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-026 — LoadBalancer Service has no loadBalancerSourceRanges { #k8s-026 }
+## K8S-026: LoadBalancer Service has no loadBalancerSourceRanges { #k8s-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -632,7 +632,7 @@ Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSou
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-027 — Ingress has no TLS configuration { #k8s-027 }
+## K8S-027: Ingress has no TLS configuration { #k8s-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
@@ -644,7 +644,7 @@ An Ingress with no ``spec.tls`` (or an empty list) terminates HTTP at the load b
 
 **Recommended action**
 
-Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entry pairs one or more hostnames with a Secret holding the certificate / key — the canonical pattern is to provision the Secret via cert-manager and a ClusterIssuer pointing at Let's Encrypt or an internal CA. Plaintext-only Ingress lets a network attacker downgrade the connection and read or rewrite request bodies, which matters for any path carrying credentials, session cookies, or PII.
+Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entry pairs one or more hostnames with a Secret holding the certificate / key, the canonical pattern is to provision the Secret via cert-manager and a ClusterIssuer pointing at Let's Encrypt or an internal CA. Plaintext-only Ingress lets a network attacker downgrade the connection and read or rewrite request bodies, which matters for any path carrying credentials, session cookies, or PII.
 
 </div>
 
@@ -652,13 +652,13 @@ Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entr
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-028 — Container declares hostPort { #k8s-028 }
+## K8S-028: Container declares hostPort { #k8s-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
 </div>
 
-``hostPort`` was the pre-Service way to publish a pod's port and survives in legacy manifests. Modern clusters use Services, which integrate with the kube-proxy, ingress controllers, and NetworkPolicies. ``hostPort`` is invisible to all of those — a port-scan from any other pod that knows the node IP reaches the workload directly. If a DaemonSet legitimately needs it (host-agent shape), suppress this rule with a brief ``.pipelinecheckignore`` rationale rather than leaving it open across the catalog.
+``hostPort`` was the pre-Service way to publish a pod's port and survives in legacy manifests. Modern clusters use Services, which integrate with the kube-proxy, ingress controllers, and NetworkPolicies. ``hostPort`` is invisible to all of those, a port-scan from any other pod that knows the node IP reaches the workload directly. If a DaemonSet legitimately needs it (host-agent shape), suppress this rule with a brief ``.pipelinecheckignore`` rationale rather than leaving it open across the catalog.
 
 <div class="pg-rule__rec" markdown>
 
@@ -672,7 +672,7 @@ Drop ``hostPort`` from container ports and use a Service (ClusterIP / NodePort /
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-029 — RoleBinding grants permissions to the default ServiceAccount { #k8s-029 }
+## K8S-029: RoleBinding grants permissions to the default ServiceAccount { #k8s-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -692,7 +692,7 @@ Bind permissions to a dedicated ServiceAccount, not to ``default``. Every pod th
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-030 — Workload schedules onto a control-plane node { #k8s-030 }
+## K8S-030: Workload schedules onto a control-plane node { #k8s-030 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-ISOLATION</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -704,7 +704,7 @@ Fires on a non-system workload whose ``spec.nodeSelector`` contains a control-pl
 
 **Recommended action**
 
-Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.kubernetes.io/control-plane`` (or the legacy ``master`` spelling) from non-system workloads. A pod scheduled on a control-plane node shares the kernel with the API server, etcd, and kubelet credentials — credential theft from any such pod yields cluster-wide takeover. Application workloads belong on dedicated worker nodes; system add-ons that legitimately need control-plane scheduling should run as a DaemonSet in ``kube-system``.
+Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.kubernetes.io/control-plane`` (or the legacy ``master`` spelling) from non-system workloads. A pod scheduled on a control-plane node shares the kernel with the API server, etcd, and kubelet credentials, credential theft from any such pod yields cluster-wide takeover. Application workloads belong on dedicated worker nodes; system add-ons that legitimately need control-plane scheduling should run as a DaemonSet in ``kube-system``.
 
 </div>
 
@@ -712,7 +712,7 @@ Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.ku
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## K8S-031 — Namespace missing PSA warn label { #k8s-031 }
+## K8S-031: Namespace missing PSA warn label { #k8s-031 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
@@ -724,7 +724,7 @@ Pod Security Admission supports three modes: ``enforce`` (reject), ``audit`` (lo
 
 **Recommended action**
 
-Set ``metadata.labels.pod-security.kubernetes.io/warn`` on every Namespace, ideally one tier ahead of the enforce label (e.g. ``enforce: baseline`` + ``warn: restricted``). The warn level surfaces violations as ``kubectl apply`` warnings without rejecting the resource — developers see what would break before an enforcement upgrade lands.
+Set ``metadata.labels.pod-security.kubernetes.io/warn`` on every Namespace, ideally one tier ahead of the enforce label (e.g. ``enforce: baseline`` + ``warn: restricted``). The warn level surfaces violations as ``kubectl apply`` warnings without rejecting the resource, developers see what would break before an enforcement upgrade lands.
 
 </div>
 
@@ -732,7 +732,7 @@ Set ``metadata.labels.pod-security.kubernetes.io/warn`` on every Namespace, idea
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-032 — Namespace lacks default-deny NetworkPolicy { #k8s-032 }
+## K8S-032: Namespace lacks default-deny NetworkPolicy { #k8s-032 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
@@ -744,7 +744,7 @@ Kubernetes' default network model is allow-everything: without any NetworkPolicy
 
 **Recommended action**
 
-Apply a default-deny NetworkPolicy in every namespace that carries workloads. The canonical shape is ``podSelector: {}`` (matches every pod) plus ``policyTypes: [Ingress, Egress]`` with no ``ingress:`` / ``egress:`` rules — every flow is denied unless a more permissive NetworkPolicy in the same namespace explicitly allows it. Pair with per-workload allow-list policies for the flows the application actually needs.
+Apply a default-deny NetworkPolicy in every namespace that carries workloads. The canonical shape is ``podSelector: {}`` (matches every pod) plus ``policyTypes: [Ingress, Egress]`` with no ``ingress:`` / ``egress:`` rules, every flow is denied unless a more permissive NetworkPolicy in the same namespace explicitly allows it. Pair with per-workload allow-list policies for the flows the application actually needs.
 
 </div>
 
@@ -752,13 +752,13 @@ Apply a default-deny NetworkPolicy in every namespace that carries workloads. Th
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-033 — Namespace lacks ResourceQuota or LimitRange { #k8s-033 }
+## K8S-033: Namespace lacks ResourceQuota or LimitRange { #k8s-033 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
 </div>
 
-Without a ResourceQuota, a single namespace can consume the cluster's entire scheduling capacity — a fork bomb in a CronJob, a memory leak in a Deployment, or a cryptominer that landed via a fork-PR build can starve every other tenant. Without a LimitRange, individual pods without explicit ``resources:`` requests get a default of zero — the scheduler treats them as best-effort and packs them on any node, including ones already at memory pressure. The two work together: quota caps the aggregate, range caps the per-workload baseline. Cross-doc correlation: walks the manifest stream to match Namespace / workload / ResourceQuota / LimitRange across files.
+Without a ResourceQuota, a single namespace can consume the cluster's entire scheduling capacity, a fork bomb in a CronJob, a memory leak in a Deployment, or a cryptominer that landed via a fork-PR build can starve every other tenant. Without a LimitRange, individual pods without explicit ``resources:`` requests get a default of zero, the scheduler treats them as best-effort and packs them on any node, including ones already at memory pressure. The two work together: quota caps the aggregate, range caps the per-workload baseline. Cross-doc correlation: walks the manifest stream to match Namespace / workload / ResourceQuota / LimitRange across files.
 
 <div class="pg-rule__rec" markdown>
 
@@ -772,13 +772,13 @@ Apply a ``ResourceQuota`` *and* a ``LimitRange`` to every namespace that hosts a
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-034 — ServiceAccount automountServiceAccountToken not explicitly false { #k8s-034 }
+## K8S-034: ServiceAccount automountServiceAccountToken not explicitly false { #k8s-034 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-K8S-012 covers the pod-level ``automountServiceAccountToken`` setting; this rule covers the same control at the ServiceAccount level. The two are complementary: the SA-level default flips the cluster-wide baseline (``true`` -> ``false``), the pod-level override re-enables only where needed. Without the SA-level disable, every pod that doesn't set its own override mounts a token that can call the K8s API as that SA — a useful credential for an attacker who lands code in any pod, regardless of the workload's own intent.
+K8S-012 covers the pod-level ``automountServiceAccountToken`` setting; this rule covers the same control at the ServiceAccount level. The two are complementary: the SA-level default flips the cluster-wide baseline (``true`` -> ``false``), the pod-level override re-enables only where needed. Without the SA-level disable, every pod that doesn't set its own override mounts a token that can call the K8s API as that SA, a useful credential for an attacker who lands code in any pod, regardless of the workload's own intent.
 
 <div class="pg-rule__rec" markdown>
 
@@ -792,19 +792,19 @@ Set ``automountServiceAccountToken: false`` at the ServiceAccount level for ever
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-035 — Container securityContext.runAsUser is 0 { #k8s-035 }
+## K8S-035: Container securityContext.runAsUser is 0 { #k8s-035 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-K8S-007 covers ``runAsNonRoot: false`` (the boolean form). This rule covers the explicit numeric form: a container that sets ``runAsUser: 0`` runs as root regardless of ``runAsNonRoot`` being declared elsewhere — Kubernetes won't reject the spec, it just runs the container as root. The two rules are paired so neither shape slips through alone. The pod-level ``securityContext.runAsUser`` inherits to every container that doesn't override it; this rule fires on the *effective* UID, walking pod-level first then per-container override.
+K8S-007 covers ``runAsNonRoot: false`` (the boolean form). This rule covers the explicit numeric form: a container that sets ``runAsUser: 0`` runs as root regardless of ``runAsNonRoot`` being declared elsewhere. Kubernetes won't reject the spec, it just runs the container as root. The two rules are paired so neither shape slips through alone. The pod-level ``securityContext.runAsUser`` inherits to every container that doesn't override it; this rule fires on the *effective* UID, walking pod-level first then per-container override.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation — a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
+Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation, a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
 
 </div>
 
@@ -812,19 +812,19 @@ Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any applicatio
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-036 — ServiceAccount imagePullSecrets references missing Secret { #k8s-036 }
+## K8S-036: ServiceAccount imagePullSecrets references missing Secret { #k8s-036 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-1188</span>
 </div>
 
-Cross-doc correlation: walks every ServiceAccount's ``imagePullSecrets`` and confirms the named Secret exists in the same namespace within the manifest set. Misses two cases: secrets created out-of-band (Sealed Secrets, External Secrets, or operator-applied ones) and SAs whose namespace is implicit / not declared in the manifest set. For those, the rule passes — false-negative-friendly.
+Cross-doc correlation: walks every ServiceAccount's ``imagePullSecrets`` and confirms the named Secret exists in the same namespace within the manifest set. Misses two cases: secrets created out-of-band (Sealed Secrets, External Secrets, or operator-applied ones) and SAs whose namespace is implicit / not declared in the manifest set. For those, the rule passes, false-negative-friendly.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Create the missing ``Kind: Secret`` of ``type: kubernetes.io/dockerconfigjson`` (or ``dockercfg``) in the same namespace before applying the ServiceAccount, or fix the ``imagePullSecrets`` reference name. A dangling reference doesn't fail apply — kubelet silently falls back to anonymous registry pulls on every image fetch. Workloads either pull a different image than the operator intended or fail at runtime with ``ImagePullBackOff`` after the registry rate-limits the unauthenticated client.
+Create the missing ``Kind: Secret`` of ``type: kubernetes.io/dockerconfigjson`` (or ``dockercfg``) in the same namespace before applying the ServiceAccount, or fix the ``imagePullSecrets`` reference name. A dangling reference doesn't fail apply, kubelet silently falls back to anonymous registry pulls on every image fetch. Workloads either pull a different image than the operator intended or fail at runtime with ``ImagePullBackOff`` after the registry rate-limits the unauthenticated client.
 
 </div>
 
@@ -832,19 +832,19 @@ Create the missing ``Kind: Secret`` of ``type: kubernetes.io/dockerconfigjson`` 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-037 — ConfigMap data carries a credential-shaped literal { #k8s-037 }
+## K8S-037: ConfigMap data carries a credential-shaped literal { #k8s-037 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Companion to K8S-018 (which scans Kind: Secret). Walks ConfigMap ``data`` and ``binaryData`` for AKIA-shaped AWS keys and credential-shaped key NAMES. Even when the value is a placeholder, having ``api_key: REPLACE_ME`` in a ConfigMap is a maintenance footgun — someone will fill it in and commit. RBAC scoping for ``configmaps`` is typically much broader than ``secrets``, so any credential leak via this path reaches a wider audience.
+Companion to K8S-018 (which scans Kind: Secret). Walks ConfigMap ``data`` and ``binaryData`` for AKIA-shaped AWS keys and credential-shaped key NAMES. Even when the value is a placeholder, having ``api_key: REPLACE_ME`` in a ConfigMap is a maintenance footgun, someone will fill it in and commit. RBAC scoping for ``configmaps`` is typically much broader than ``secrets``, so any credential leak via this path reaches a wider audience.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Move the value out of the ConfigMap. Secrets belong in ``Kind: Secret`` (better: SealedSecrets, ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection). ConfigMaps are intended for non-sensitive config and are mounted into pods without the access controls Secrets carry — the ``RoleBinding`` for ``configmaps:get`` is typically far broader than the one for ``secrets:get``. A credential in a ConfigMap is effectively unprotected once any pod can read the namespace's config.
+Move the value out of the ConfigMap. Secrets belong in ``Kind: Secret`` (better: SealedSecrets, ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection). ConfigMaps are intended for non-sensitive config and are mounted into pods without the access controls Secrets carry, the ``RoleBinding`` for ``configmaps:get`` is typically far broader than the one for ``secrets:get``. A credential in a ConfigMap is effectively unprotected once any pod can read the namespace's config.
 
 </div>
 
@@ -852,7 +852,7 @@ Move the value out of the ConfigMap. Secrets belong in ``Kind: Secret`` (better:
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-038 — NetworkPolicy ingress / egress allows all sources or destinations { #k8s-038 }
+## K8S-038: NetworkPolicy ingress / egress allows all sources or destinations { #k8s-038 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-NETWORK-SEG</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
@@ -864,7 +864,7 @@ K8S-032 covers the absence of a default-deny NetworkPolicy. This rule covers the
 
 **Recommended action**
 
-Replace the empty ``from: []`` / ``to: []`` rule with an explicit ``from: [{podSelector: {matchLabels: {…}}}]`` or ``from: [{namespaceSelector: {matchLabels: {…}}}]`` that names the legitimate peer. An empty ``from`` / ``to`` peers list means *every* source / destination — every pod in every namespace, plus every external IP. This is indistinguishable from having no NetworkPolicy at all for the targeted pod, but visually appears to enforce a policy (the false-sense-of-security failure mode is worse than no policy).
+Replace the empty ``from: []`` / ``to: []`` rule with an explicit ``from: [{podSelector: {matchLabels: {…}}}]`` or ``from: [{namespaceSelector: {matchLabels: {…}}}]`` that names the legitimate peer. An empty ``from`` / ``to`` peers list means *every* source / destination, every pod in every namespace, plus every external IP. This is indistinguishable from having no NetworkPolicy at all for the targeted pod, but visually appears to enforce a policy (the false-sense-of-security failure mode is worse than no policy).
 
 </div>
 
@@ -872,19 +872,19 @@ Replace the empty ``from: []`` / ``to: []`` rule with an explicit ``from: [{podS
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## K8S-039 — Pod uses shareProcessNamespace: true { #k8s-039 }
+## K8S-039: Pod uses shareProcessNamespace: true { #k8s-039 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
 </div>
 
-``shareProcessNamespace: true`` makes every container in the pod share a single PID namespace. Any container can then enumerate every other container's processes (``ps``), read their environment variables and CLI args from ``/proc/<pid>/``, send them signals, and (with the right capabilities) ``ptrace`` them. A compromised sidecar — debug shell, logging agent, observability exporter — gets a free pivot into every primary container's secrets. The default is ``false``; setting it explicitly to ``true`` is the failing shape.
+``shareProcessNamespace: true`` makes every container in the pod share a single PID namespace. Any container can then enumerate every other container's processes (``ps``), read their environment variables and CLI args from ``/proc/<pid>/``, send them signals, and (with the right capabilities) ``ptrace`` them. A compromised sidecar, debug shell, logging agent, observability exporter, gets a free pivot into every primary container's secrets. The default is ``false``; setting it explicitly to ``true`` is the failing shape.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Drop ``spec.shareProcessNamespace: true`` from the pod spec. Containers in the pod will go back to having isolated PID namespaces — each sees only its own processes, can't ``ptrace`` neighbors, and can't read their ``/proc/<pid>/environ`` for env-var-leaked secrets. If the requirement is sidecar-style log collection or process-level cooperation, prefer a sidecar pattern that exchanges data through a shared volume rather than collapsing the namespace.
+Drop ``spec.shareProcessNamespace: true`` from the pod spec. Containers in the pod will go back to having isolated PID namespaces, each sees only its own processes, can't ``ptrace`` neighbors, and can't read their ``/proc/<pid>/environ`` for env-var-leaked secrets. If the requirement is sidecar-style log collection or process-level cooperation, prefer a sidecar pattern that exchanges data through a shared volume rather than collapsing the namespace.
 
 </div>
 
@@ -892,19 +892,19 @@ Drop ``spec.shareProcessNamespace: true`` from the pod spec. Containers in the p
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## K8S-040 — Container securityContext.procMount: Unmasked { #k8s-040 }
+## K8S-040: Container securityContext.procMount: Unmasked { #k8s-040 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
 </div>
 
-``procMount: Unmasked`` is rarely needed in practice — it exists for nested-container / KubeVirt scenarios where the container itself runs an inner container runtime that needs to set up its own ``/proc`` masking. For an ordinary application container, ``Unmasked`` is a runtime-isolation regression that exposes kernel-information paths and writable ``/proc/sys`` entries to the workload. Pod Security Standards classify ``Unmasked`` as 'restricted'-violating; the rule fires when any container (``containers``, ``initContainers``, ``ephemeralContainers``) explicitly sets ``procMount: Unmasked``.
+``procMount: Unmasked`` is rarely needed in practice. It exists for nested-container / KubeVirt scenarios where the container itself runs an inner container runtime that needs to set up its own ``/proc`` masking. For an ordinary application container, ``Unmasked`` is a runtime-isolation regression that exposes kernel-information paths and writable ``/proc/sys`` entries to the workload. Pod Security Standards classify ``Unmasked`` as 'restricted'-violating; the rule fires when any container (``containers``, ``initContainers``, ``ephemeralContainers``) explicitly sets ``procMount: Unmasked``.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only — these maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
+Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
 
 </div>
 

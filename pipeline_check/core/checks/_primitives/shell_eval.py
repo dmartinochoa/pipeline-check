@@ -4,7 +4,7 @@ Complementary to the provider-specific script-injection rules
 (GHA-003, GL-002, BB-002, ADO-002, CC-002, JF-002) which track
 taint from known-attacker-controllable sources into ``run:`` /
 ``script:`` blocks. This primitive fires on idioms that are unsafe
-regardless of where the variable's value comes from — if an
+regardless of where the variable's value comes from, if an
 ``eval`` or ``sh -c`` receives a variable expansion, the content of
 that variable determines whether the shell invocation escapes the
 current process. That decision belongs at the data boundary (input
@@ -13,24 +13,24 @@ should flag the pattern category itself.
 
 Idioms detected:
 
-1. ``eval "$VAR"`` / ``eval $VAR`` / ``eval "${VAR}"`` — evaluates the
+1. ``eval "$VAR"`` / ``eval $VAR`` / ``eval "${VAR}"``, evaluates the
    *value* of ``$VAR`` as shell. CWE-95.
-2. ``sh -c "$VAR"`` / ``bash -c "$VAR"`` — re-invokes the shell on a
+2. ``sh -c "$VAR"`` / ``bash -c "$VAR"``, re-invokes the shell on a
    variable. Effectively the same risk as ``eval``.
 3. Backtick exec referencing a variable: `` `$VAR` `` or
    `` `...$VAR...` ``. Command substitution over untrusted content.
-4. ``$( $VAR ... )`` — command substitution where the *command* is a
+4. ``$( $VAR ... )``, command substitution where the *command* is a
    variable. Same shape as the backtick form but POSIX-preferred.
 
 Known non-issues not flagged (false-positive management):
 
-- ``eval "$(ssh-agent -s)"`` — the ``$(...)`` wraps a *command*
+- ``eval "$(ssh-agent -s)"``, the ``$(...)`` wraps a *command*
   whose output is then eval'd. The command itself is a literal
   ``ssh-agent``; the pattern is idiomatic for tooling-output
   bootstrapping. Detected separately with a stricter sub-rule that
   requires the outer command to be literal.
-- ``"$@"`` / ``"$#"`` — positional parameter expansion. Safe.
-- ``sh -c 'literal command'`` single-quoted literal — no variable
+- ``"$@"`` / ``"$#"``, positional parameter expansion. Safe.
+- ``sh -c 'literal command'`` single-quoted literal, no variable
   interpolation, not a taint path.
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ from dataclasses import dataclass
 
 # ``eval`` followed by any variable expansion (``$X``, ``${X}``,
 # ``"$X"``, ``"${X}"``). Matches the variable form even if wrapped
-# in double quotes — double quotes do not suppress expansion.
+# in double quotes, double quotes do not suppress expansion.
 # Single-quoted args are ALSO risky: the outer shell doesn't expand
 # ``$X`` through single quotes, but eval then re-parses the literal
 # string it received and expansion happens on the re-parse.
@@ -56,16 +56,16 @@ _EVAL_VAR_RE = re.compile(
     r"|\$\{\w+\})"                           # ${X}
 )
 
-# ``eval $(...)`` — command-substitution whose output is eval'd.
+# ``eval $(...)``, command-substitution whose output is eval'd.
 # Covers both quoted (``eval "$(curl $URL)"``) and unquoted
 # (``eval $(curl $URL)``) forms where the inner command references
-# a variable. The literal form ``eval "$(ssh-agent -s)"`` — no ``$``
-# inside the substitution — is not flagged.
+# a variable. The literal form ``eval "$(ssh-agent -s)"``, no ``$``
+# inside the substitution, is not flagged.
 _EVAL_CMDSUB_VAR_RE = re.compile(
     r"\beval\s+\"?\$\([^)]*\$(?!\()[^)]*\)\"?"
 )
 
-# ``sh -c "$X"`` / ``bash -c "$X"`` / ``sh -c $X`` — re-invoke shell
+# ``sh -c "$X"`` / ``bash -c "$X"`` / ``sh -c $X``, re-invoke shell
 # on a variable. Same risk category as eval.
 _SHELL_DASH_C_VAR_RE = re.compile(
     r"\b(?:ba)?sh\s+-c\s+"
@@ -83,7 +83,7 @@ _BACKTICK_VAR_RE = re.compile(
     r"|`[^`]*\$\{\w+\}[^`]*`"
 )
 
-# ``$( $VAR … )`` — command substitution where the *command itself*
+# ``$( $VAR … )``, command substitution where the *command itself*
 # is a variable expansion. Distinct from ``$(command $ARG)`` where
 # the command is literal; we match only when ``$`` immediately
 # follows the opening paren (after optional whitespace).
@@ -104,7 +104,7 @@ class ShellEvalFinding:
 def scan(text: str) -> list[ShellEvalFinding]:
     """Return one entry per dangerous-idiom occurrence in *text*.
 
-    *text* is the raw command blob — typically a ``run:`` body, a
+    *text* is the raw command blob, typically a ``run:`` body, a
     CircleCI ``command:`` value, or a Jenkinsfile's stripped
     ``sh '…'`` block. Callers concatenate multiple shell fragments
     before passing in; duplicate matches across fragments are

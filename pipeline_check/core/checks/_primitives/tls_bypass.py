@@ -14,15 +14,15 @@ turn verification off across the tooling commonly found in CI:
   ``PYTHONHTTPSVERIFY=0``, ``GOINSECURE``.
 * **curl / wget**: ``-k`` / ``--insecure`` / ``--no-check-certificate``.
 * **Kubernetes tooling**: ``helm`` and ``kubectl`` with
-  ``--insecure-skip-tls-verify`` — frequently slipped into CI
+  ``--insecure-skip-tls-verify``, frequently slipped into CI
   dry-run steps as a "just make it work" shortcut.
 * **SSH**: ``-o StrictHostKeyChecking=no`` /
-  ``-o UserKnownHostsFile=/dev/null`` — TOFU on every connection,
+  ``-o UserKnownHostsFile=/dev/null``. TOFU on every connection,
   which for an unattended CI runner is effectively no verification.
 
 The primitive is intentionally word-boundary-strict so natural-text
 strings like ``"sslverify is currently false in the docs"`` don't
-false-positive — it looks for the tool's invocation shape, not for
+false-positive. It looks for the tool's invocation shape, not for
 any mention of the bypass token.
 """
 from __future__ import annotations

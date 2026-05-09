@@ -1,4 +1,4 @@
-"""GCB-008 — No vulnerability scanning step anywhere in the pipeline.
+"""GCB-008. No vulnerability scanning step anywhere in the pipeline.
 
 Reuses the cross-provider ``has_vuln_scanning`` helper so the
 scanner-name catalog (trivy / grype / snyk / osv-scanner / pip-audit
@@ -20,14 +20,14 @@ RULE = Rule(
     esf=("ESF-S-VULN-SCAN",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add a step that runs a vulnerability scanner — trivy, grype, "
+        "Add a step that runs a vulnerability scanner, trivy, grype, "
         "snyk test, npm audit, pip-audit, osv-scanner, or govulncheck. "
         "In Cloud Build this typically looks like a step with "
         "``name: aquasec/trivy`` or an ``entrypoint: bash`` step that "
         "invokes ``trivy image`` / ``grype <ref>`` on the built image."
     ),
     docs_note=(
-        "The detector matches tool names anywhere in the document — "
+        "The detector matches tool names anywhere in the document, "
         "step images, ``args``, or ``entrypoint`` strings. Container "
         "Analysis API scanning configured at the project level counts "
         "as compensating control but is out of scope for this YAML-only "

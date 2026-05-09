@@ -1,4 +1,4 @@
-"""GL-008 — whole-document credential-shaped literal scan."""
+"""GL-008, whole-document credential-shaped literal scan."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Complements GL-003 (which looks at `variables:` block keys). "
         "GL-008 scans every string in the pipeline against the "
-        "cross-provider credential-pattern catalog — catches "
+        "cross-provider credential-pattern catalog, catches "
         "secrets pasted into `script:` bodies or environment blocks "
         "where the name-based detector can't see them."
     ),

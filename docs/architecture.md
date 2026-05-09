@@ -44,7 +44,7 @@ The package is organized in three concentric rings.
 
 `pipeline_check/cli.py` is a Click command. Almost all of it parses
 flags, validates them, and passes a kwarg dict to the scanner.
-`pipeline_check/lambda_handler.py` is the AWS Lambda equivalent — it
+`pipeline_check/lambda_handler.py` is the AWS Lambda equivalent. It
 calls into the same scanner.
 
 ### Middle: Scanner, scorer, gate, reporters
@@ -109,16 +109,16 @@ data shows the cache cost is dwarfed by YAML parsing.
 
 ## Adding things
 
-- **A rule** for an existing provider — one file under
+- **A rule** for an existing provider: one file under
   `core/checks/<provider>/rules/`. See [Adding a rule](writing_a_rule.md).
-- **A provider** — one file under `core/providers/`, one package under
+- **A provider**: one file under `core/providers/`, one package under
   `core/checks/`. See [Adding a provider](writing_a_provider.md).
-- **A standard** — one file under `core/standards/data/`, register in
+- **A standard**: one file under `core/standards/data/`, register in
   `core/standards/__init__.py`. The mapping is a `dict[check_id,
   list[control_id]]`.
-- **A reporter** — one module that consumes `list[Finding]` + score
+- **A reporter**: one module that consumes `list[Finding]` + score
   and emits whatever format you need. Wire it into the CLI's
   `--output` option.
-- **An attack chain** — one file under `core/chains/rules/` that
+- **An attack chain**: one file under `core/chains/rules/` that
   declares which check IDs co-firing on the same target signal a
   multi-step attack chain.

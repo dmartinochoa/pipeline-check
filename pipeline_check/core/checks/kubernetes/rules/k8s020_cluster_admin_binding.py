@@ -1,4 +1,4 @@
-"""K8S-020 — ClusterRoleBinding grants ``cluster-admin`` or ``system:masters``."""
+"""K8S-020. ClusterRoleBinding grants ``cluster-admin`` or ``system:masters``."""
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +26,7 @@ RULE = Rule(
         "Replace cluster-admin / system:masters bindings with "
         "narrowly-scoped ClusterRoles or namespace-scoped Roles. "
         "Granting cluster-admin to a service account is equivalent "
-        "to giving every pod that uses it root on every node — "
+        "to giving every pod that uses it root on every node, "
         "credential theft from any such pod becomes immediate "
         "cluster takeover. Audit-log every existing cluster-admin "
         "binding and replace each with the minimum verbs/resources "
@@ -35,7 +35,7 @@ RULE = Rule(
     docs_note=(
         "The rule fires on a ``ClusterRoleBinding`` whose "
         "``roleRef.name`` is ``cluster-admin``, ``admin``, or "
-        "``system:masters``. Subject type does not matter — even "
+        "``system:masters``. Subject type does not matter, even "
         "binding cluster-admin to a Group is a cluster-takeover "
         "risk."
     ),
@@ -77,7 +77,7 @@ def check(ctx: KubernetesContext) -> Finding:
             f"ClusterRoleBinding/{m.name} → {roleref_name} "
             f"[{subjects_disp}]"
         )
-        # Anchor on the roleRef block — that's where the offending
+        # Anchor on the roleRef block, that's where the offending
         # cluster-admin name lives. Falls back to the manifest's
         # top line when the loader didn't preserve nested marks.
         line = _line_of(roleref) if isinstance(roleref, dict) else None

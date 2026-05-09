@@ -1,4 +1,4 @@
-"""JF-010 — environment block must not expose long-lived AWS keys."""
+"""JF-010, environment block must not expose long-lived AWS keys."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

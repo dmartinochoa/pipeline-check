@@ -1,4 +1,4 @@
-"""BB-016 — self-hosted runners should use ephemeral or Docker-based images."""
+"""BB-016, self-hosted runners should use ephemeral or Docker-based images."""
 from __future__ import annotations
 
 from typing import Any

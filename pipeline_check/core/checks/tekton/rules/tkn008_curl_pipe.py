@@ -1,4 +1,4 @@
-"""TKN-008 — ``curl ... | sh`` and TLS bypass in step scripts."""
+"""TKN-008, ``curl ... | sh`` and TLS bypass in step scripts."""
 from __future__ import annotations
 
 from ...base import CURL_PIPE_RE, TLS_BYPASS_RE, Finding, Severity

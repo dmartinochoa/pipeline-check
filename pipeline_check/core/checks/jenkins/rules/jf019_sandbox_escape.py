@@ -1,4 +1,4 @@
-"""JF-019 — Groovy sandbox escape pattern detected."""
+"""JF-019. Groovy sandbox escape pattern detected."""
 from __future__ import annotations
 
 import re
@@ -27,13 +27,13 @@ RULE = Rule(
         "sandbox: `Runtime.getRuntime()`, `Class.forName()`, "
         "`.classLoader`, `ProcessBuilder`, and `@Grab`. These give the "
         "pipeline (or an attacker who controls its source) unrestricted "
-        "access to the Jenkins controller JVM — full RCE."
+        "access to the Jenkins controller JVM, full RCE."
     ),
 )
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    # Case-sensitive — Java/Groovy class names are case-sensitive.
+    # Case-sensitive. Java/Groovy class names are case-sensitive.
     matches = _SANDBOX_ESCAPE_RE.findall(jf.text)
     passed = not matches
     desc = (

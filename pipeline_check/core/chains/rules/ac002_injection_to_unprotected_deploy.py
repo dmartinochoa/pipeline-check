@@ -1,4 +1,4 @@
-"""AC-002 — Script Injection to Unprotected Production Deploy.
+"""AC-002. Script Injection to Unprotected Production Deploy.
 
 A workflow that interpolates untrusted PR/issue input into a shell
 step (script-injection) and deploys without a gated environment
@@ -47,7 +47,7 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"In `{resource}`:\n"
             "  1. A shell `run:` step interpolates "
-            "`${{ github.event.* }}` directly (GHA-003) — an attacker "
+            "`${{ github.event.* }}` directly (GHA-003), an attacker "
             "controls the value via PR title/body/branch name.\n"
             "  2. A deploy step in the same workflow has no `environment:` "
             "binding (GHA-014), so no required-reviewer gate fires.\n"

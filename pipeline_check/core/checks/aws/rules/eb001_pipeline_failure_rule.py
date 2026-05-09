@@ -1,4 +1,4 @@
-"""EB-001 — No EventBridge rule for CodePipeline failure notifications."""
+"""EB-001. No EventBridge rule for CodePipeline failure notifications."""
 from __future__ import annotations
 
 import json
@@ -25,7 +25,7 @@ RULE = Rule(
         "automatically; the missing piece is a rule that pipes them "
         "to somewhere a human reads (SNS, Slack, PagerDuty). "
         "Without it, failures only surface via the CodePipeline "
-        "console — which no one watches."
+        "console, which no one watches."
     ),
 )
 

@@ -1,7 +1,7 @@
 """Kubernetes manifest context and base check.
 
 Parses Kubernetes API documents from ``*.yaml`` / ``*.yml`` on disk.
-Each parsed document — single-doc or one slice of a multi-doc YAML —
+Each parsed document, single-doc or one slice of a multi-doc YAML —
 becomes a :class:`Manifest`. Checks subclass :class:`KubernetesBaseCheck`
 and iterate ``self.ctx.manifests``.
 
@@ -10,7 +10,7 @@ canonical ``apiVersion`` + ``kind`` shape are silently skipped, so a
 directory mixing K8s manifests with helm ``values.yaml`` /
 ``Chart.yaml`` / kustomization files won't trip the loader. Helm
 charts and kustomize bases are intentionally out of scope for this
-provider — they need rendering, which would require a `helm` or
+provider. They need rendering, which would require a `helm` or
 `kustomize` binary.
 
 Workload kinds (``Deployment``, ``StatefulSet``, ``DaemonSet``,

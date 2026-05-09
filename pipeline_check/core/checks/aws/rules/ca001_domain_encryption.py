@@ -1,4 +1,4 @@
-"""CA-001 — CodeArtifact domain not encrypted with a customer KMS key."""
+"""CA-001. CodeArtifact domain not encrypted with a customer KMS key."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

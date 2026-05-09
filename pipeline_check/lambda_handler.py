@@ -31,7 +31,7 @@ Event payload (optional)
 
 Return value
 ------------
-    // Single-scan shape (legacy path — one region, one provider):
+    // Single-scan shape (legacy path, one region, one provider):
     {
         "statusCode": 200,
         "grade": "B",
@@ -53,7 +53,7 @@ Failure handling
   ``null`` so downstream consumers can't reference a key that was never
   written. The function still returns 200 so Lambda does not retry.
 - SNS ``publish`` failures are logged but do not affect the return value.
-- Any error inside the scan itself propagates — Lambda retry behavior
+- Any error inside the scan itself propagates. Lambda retry behavior
   applies per the function's configured event source.
 """
 
@@ -96,7 +96,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         or os.environ.get("AWS_REGION")
         or "us-east-1"
     )
-    # ``provider`` on the legacy event defaults to ``aws`` — fan-out
+    # ``provider`` on the legacy event defaults to ``aws``, fan-out
     # sets this when iterating across providers. Forwarding it lets
     # a single handler scan multiple pipeline types per invocation
     # without silently collapsing everything to AWS.
@@ -133,9 +133,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     # Persist to S3. ``report_s3_status`` lets downstream consumers
     # distinguish three outcomes that a plain None can't express:
-    #   "ok"           — bucket configured, put_object succeeded
-    #   "unconfigured" — no PIPELINE_CHECK_RESULTS_BUCKET env var
-    #   "error"        — put_object failed; details in CloudWatch logs
+    #   "ok"          , bucket configured, put_object succeeded
+    #   "unconfigured", no PIPELINE_CHECK_RESULTS_BUCKET env var
+    #   "error"       , put_object failed; details in CloudWatch logs
     report_s3_status = "unconfigured"
     if results_bucket:
         try:

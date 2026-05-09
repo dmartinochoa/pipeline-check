@@ -2,7 +2,7 @@
 
 - **Version:** 1.10
 - **URL:** https://www.cisecurity.org/benchmark/kubernetes
-- **Scope:** Section 5 (Policies) — workload-manifest controls
+- **Scope:** Section 5 (Policies): workload-manifest controls
   evidenceable from `Deployment` / `Pod` / `RoleBinding` /
   `NetworkPolicy` / `Secret` / `ServiceAccount` / `ConfigMap` YAML.
   Sections 1–4 (control-plane components, etcd, control-plane
@@ -12,7 +12,7 @@
 - **Source of truth:** `pipeline_check/core/standards/data/cis_kubernetes.py`
 
 The benchmark's "manual investigation" prompts under Section 5 are
-the gaps this scanner closes — passing every mapped check satisfies
+the gaps this scanner closes, passing every mapped check satisfies
 the configuration substrate that a CIS K8s audit expects to see.
 The audit additionally requires documented runbooks and review
 processes that live outside the manifest layer.
@@ -71,8 +71,8 @@ processes that live outside the manifest layer.
 ## Mapped checks
 
 Every check below evidences one or more controls in the table
-above. The mapping is in `pipeline_check/core/standards/data/cis_kubernetes.py`
-— add a new row when you add or revise a K8s rule.
+above. The mapping is in `pipeline_check/core/standards/data/cis_kubernetes.py`. Add a new row when you add or revise a K8s rule.
+
 
 | Check    | Evidenced controls          |
 |----------|-----------------------------|
@@ -113,14 +113,14 @@ above. The mapping is in `pipeline_check/core/standards/data/cis_kubernetes.py`
 These benchmark sections require live-cluster evidence the scanner
 can't collect from manifests:
 
-- **5.1.6** (system:masters group) — RBAC subjects need API-server
+- **5.1.6** (system:masters group): RBAC subjects need API-server
   introspection.
-- **5.2.10** (allowed-capabilities allowlist) — admission-controller
+- **5.2.10** (allowed-capabilities allowlist): admission-controller
   policy, not workload spec.
-- **5.5.x** (extensible admission control) — controller config.
-- **5.6.x** (multi-tenancy beyond namespace) — admission policies +
+- **5.5.x** (extensible admission control): controller config.
+- **5.6.x** (multi-tenancy beyond namespace): admission policies +
   RBAC subjects.
-- **All of Sections 1–4** — kubelet, API server, etcd, scheduler.
+- **All of Sections 1–4**: kubelet, API server, etcd, scheduler.
 
 Run the benchmark's official `kube-bench` to evidence those at the
 node level.

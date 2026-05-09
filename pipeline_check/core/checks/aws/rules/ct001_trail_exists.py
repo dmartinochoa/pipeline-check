@@ -1,4 +1,4 @@
-"""CT-001 — No active CloudTrail trail exists in the region."""
+"""CT-001. No active CloudTrail trail exists in the region."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -14,7 +14,7 @@ RULE = Rule(
     recommendation=(
         "Create a CloudTrail trail that logs management events in this region "
         "and start logging. Without a trail, CodeBuild/CodePipeline/IAM API "
-        "activity — including credential changes during a compromise — has "
+        "activity, including credential changes during a compromise, has "
         "no durable audit record."
     ),
     docs_note=(
@@ -40,8 +40,8 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     else:
         desc = (
             "No CloudTrail trail is actively logging in this region. API "
-            "activity — including IAM and pipeline changes during an "
-            "incident — has no durable audit record."
+            "activity, including IAM and pipeline changes during an "
+            "incident, has no durable audit record."
         )
     return [Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

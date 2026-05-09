@@ -1,16 +1,16 @@
-"""GL-029 — Manual deploy jobs must set ``allow_failure: false``.
+"""GL-029. Manual deploy jobs must set ``allow_failure: false``.
 
 GitLab's default ``allow_failure`` for a ``when: manual`` job is
-``true`` — meaning the pipeline reports success even when the manual
+``true``, meaning the pipeline reports success even when the manual
 job was never clicked. A ``deploy: when: manual`` without
 ``allow_failure: false`` is therefore a *visual* gate only; any
 downstream job (and the pipeline overall) proceeds as though the
 human approved.
 
 This rule fires on the subset of jobs already classified as deploy-
-like by GL-004's heuristics — stage or name contains
+like by GL-004's heuristics, stage or name contains
 ``deploy``/``release``/``publish``/``promote``, or the script invokes
-a known deploy command — that also declare ``when: manual`` (directly
+a known deploy command. That also declare ``when: manual`` (directly
 or via ``rules:``) but leave ``allow_failure`` unset or ``true``.
 """
 from __future__ import annotations
@@ -50,7 +50,7 @@ RULE = Rule(
         "Add ``allow_failure: false`` to every deploy-like ``when: "
         "manual`` job. GitLab defaults ``allow_failure`` to *true* "
         "for manual jobs, which makes the pipeline report success "
-        "whether or not the operator clicks — exactly the opposite of "
+        "whether or not the operator clicks, exactly the opposite of "
         "the gate you meant to add."
     ),
     docs_note=(
@@ -85,7 +85,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not _is_manual(job):
             continue
-        # allow_failure must be explicitly False — unset or True both
+        # allow_failure must be explicitly False, unset or True both
         # default to "the pipeline proceeds regardless".
         if job.get("allow_failure") is not False:
             offenders.append(name)

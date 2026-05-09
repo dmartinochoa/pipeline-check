@@ -1,4 +1,4 @@
-"""GL-005 — `include:` must pin a project ref or skip remote URLs."""
+"""GL-005, `include:` must pin a project ref or skip remote URLs."""
 from __future__ import annotations
 
 from typing import Any

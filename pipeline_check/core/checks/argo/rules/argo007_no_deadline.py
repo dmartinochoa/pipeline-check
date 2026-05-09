@@ -1,4 +1,4 @@
-"""ARGO-007 — Workflow lacks ``activeDeadlineSeconds``."""
+"""ARGO-007. Workflow lacks ``activeDeadlineSeconds``."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

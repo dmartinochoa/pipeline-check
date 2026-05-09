@@ -1,4 +1,4 @@
-"""CP-004 — Legacy ThirdParty/GitHub (v1) source action, authenticated via OAuth token."""
+"""CP-004. Legacy ThirdParty/GitHub (v1) source action, authenticated via OAuth token."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

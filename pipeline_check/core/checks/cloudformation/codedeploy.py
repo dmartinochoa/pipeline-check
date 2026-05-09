@@ -1,4 +1,4 @@
-"""CloudFormation CodeDeploy checks — CD-001..003.
+"""CloudFormation CodeDeploy checks. CD-001..003.
 
 Runs over ``AWS::CodeDeploy::DeploymentGroup`` resources.
 """
@@ -63,11 +63,11 @@ def _cd002_all_at_once(properties: dict[str, Any], resource: str) -> Finding:
         f"Deployment uses a graduated config ({config_name!r})."
         if not is_all_at_once else
         f"Deployment is configured with '{config_name}', which routes all "
-        "traffic simultaneously — no canary validation window."
+        "traffic simultaneously, no canary validation window."
     )
     return Finding(
         check_id="CD-002",
-        title="AllAtOnce deployment config — no canary or rolling strategy",
+        title="AllAtOnce deployment config, no canary or rolling strategy",
         severity=Severity.HIGH,
         resource=resource,
         description=desc,

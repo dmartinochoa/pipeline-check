@@ -1,4 +1,4 @@
-"""DF-014 — ``WORKDIR`` set to a kernel- or system-critical path."""
+"""DF-014, ``WORKDIR`` set to a kernel- or system-critical path."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -16,7 +16,7 @@ RULE = Rule(
         "Move ``WORKDIR`` to a dedicated app directory (``/app``, "
         "``/srv/app``, ``/opt/<service>``). System paths like "
         "``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the "
-        "``root`` home are not application directories — pointing "
+        "``root`` home are not application directories, pointing "
         "the working dir at one means subsequent ``COPY`` / ``RUN`` "
         "writes target kernel-exposed namespaces or admin-only "
         "configuration."
@@ -26,7 +26,7 @@ RULE = Rule(
         "``RUN`` writes, ``ADD …``) resolve relative paths against "
         "the active ``WORKDIR``. A ``WORKDIR /sys`` followed by "
         "``COPY conf.txt config.txt`` writes into the kernel's "
-        "sysfs surface — at best a build-time error, at worst a "
+        "sysfs surface, at best a build-time error, at worst a "
         "container-escape primitive that lets a compromised step "
         "manipulate cgroups, devices, or kernel config."
     ),

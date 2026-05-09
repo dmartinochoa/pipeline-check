@@ -1,4 +1,4 @@
-"""JF-016 — remote script piped to shell interpreter."""
+"""JF-016, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from ..._primitives import remote_script_exec

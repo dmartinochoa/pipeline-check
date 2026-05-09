@@ -1,4 +1,4 @@
-"""GL-010 — multi-project artifact ingestion must verify upstream output."""
+"""GL-010, multi-project artifact ingestion must verify upstream output."""
 from __future__ import annotations
 
 from typing import Any

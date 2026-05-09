@@ -29,13 +29,13 @@ orchestrator's finding order and the doc generator's section order.
 Zero-pad to three digits (`001`, not `1`) so lexical sort matches
 numeric sort past `099`.
 
-Modules whose name starts with `_` are skipped — that's how shared
+Modules whose name starts with `_` are skipped, that's how shared
 helpers (`_helpers.py`, `_context.py`) coexist with rule modules.
 
 ## The minimal rule
 
 ```python
-"""K8S-029 — RoleBinding subjects include the namespace's ``default`` ServiceAccount."""
+"""K8S-029. RoleBinding subjects include the namespace's ``default`` ServiceAccount."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -73,7 +73,7 @@ def check(ctx: KubernetesContext) -> Finding:
     )
 ```
 
-Read any existing `rules/<id>_<slug>.py` for the canonical shape — the
+Read any existing `rules/<id>_<slug>.py` for the canonical shape, the
 codebase has 200+ examples to crib from.
 
 ### `Rule` fields
@@ -159,7 +159,7 @@ class TestK8S029DefaultSABinding:
 ```
 
 `tests/test_rule_test_coverage.py` enforces 100% per-rule test
-coverage on every CI provider — if you ship a rule without a
+coverage on every CI provider, if you ship a rule without a
 `Test<RULE_ID>` class, that meta-test fails.
 
 ## Fixtures
@@ -184,7 +184,7 @@ mappings={
 ```
 
 `tests/test_standards.py` enforces that every mapped control is
-defined in the standard's `controls={...}` table — drop a control
+defined in the standard's `controls={...}` table, drop a control
 that isn't listed there and the test fails. NIST 800-53 and OWASP
 CICD Top 10 are the two that most rules end up in.
 
@@ -200,7 +200,7 @@ python scripts/gen_provider_docs.py
 
 `tests/test_rule_framework.py` fails until the regenerated doc is
 committed. Hand edits to `docs/providers/<provider>.md` get
-overwritten on the next regeneration — change the rule's
+overwritten on the next regeneration, change the rule's
 `recommendation` / `title` / `docs_note` instead and re-run the
 generator.
 
@@ -226,7 +226,7 @@ ambiguous cases.
   generated.
 - **Don't** add the rule's metadata to multiple places (the registry
   was the whole point of the `Rule` framework).
-- **Don't** import from `core.checks.<other_provider>` — primitives
+- **Don't** import from `core.checks.<other_provider>`: primitives
   go in `_primitives/`, not in another provider's namespace.
 - **Don't** introduce a per-rule fixture YAML if you can extend the
   shared `insecure-*` / `secure-*` files instead. Per-rule fixtures

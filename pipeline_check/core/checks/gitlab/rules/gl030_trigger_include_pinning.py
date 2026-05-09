@@ -1,4 +1,4 @@
-"""GL-030 — ``trigger: include:`` pulls child pipelines from unpinned sources.
+"""GL-030, ``trigger: include:`` pulls child pipelines from unpinned sources.
 
 GL-005 audits top-level ``include:``; GL-030 extends the same
 pin/no-remote semantics to the ``trigger: include:`` form nested
@@ -46,7 +46,7 @@ def _inspect_include(includes: Any, where: str, offenders: list[str]) -> None:
     items = includes if isinstance(includes, list) else [includes]
     for entry in items:
         if isinstance(entry, str):
-            # String form is always treated as a project-local include —
+            # String form is always treated as a project-local include,
             # a remote URL under that key is written as a dict with
             # ``remote:``. A bare string that's actually an HTTP URL is
             # malformed GitLab and we flag it for good measure.

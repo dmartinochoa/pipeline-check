@@ -1,4 +1,4 @@
-"""CB-005 — CodeBuild project uses an outdated AWS-managed standard image."""
+"""CB-005. CodeBuild project uses an outdated AWS-managed standard image."""
 from __future__ import annotations
 
 from ..._patterns import LATEST_STANDARD_VERSION, MANAGED_IMAGE_RE
@@ -19,7 +19,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Only AWS-managed ``aws/codebuild/standard:N.0`` images are "
-        "version-checked. Custom or third-party images pass here — "
+        "version-checked. Custom or third-party images pass here, "
         "CB-009 handles the separate concern of tag vs digest pinning "
         "for custom images."
     ),

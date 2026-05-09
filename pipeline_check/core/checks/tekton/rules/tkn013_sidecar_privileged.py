@@ -1,4 +1,4 @@
-"""TKN-013 — Tekton sidecars must not run privileged or as UID 0."""
+"""TKN-013. Tekton sidecars must not run privileged or as UID 0."""
 from __future__ import annotations
 
 from typing import Any
@@ -18,7 +18,7 @@ RULE = Rule(
         "Set ``securityContext.privileged: false``, "
         "``runAsNonRoot: true``, and ``allowPrivilegeEscalation: "
         "false`` on every sidecar in ``spec.sidecars``. A privileged "
-        "sidecar is the same escape vector as a privileged step — "
+        "sidecar is the same escape vector as a privileged step, "
         "it shares the pod's network and kernel namespaces, and a "
         "compromised sidecar image owns the entire TaskRun's "
         "execution surface."
@@ -27,7 +27,7 @@ RULE = Rule(
         "TKN-002 hardens the ``spec.steps`` list. Tekton's "
         "``spec.sidecars`` list runs alongside the steps in the "
         "same pod, but a sidecar's container image and command "
-        "come from a separate place in the manifest — so a Task "
+        "come from a separate place in the manifest, so a Task "
         "with hardened steps and a privileged sidecar (a common "
         "pattern when wrapping ``docker:dind``) leaves the same "
         "kernel-namespace gap TKN-002 was meant to close. The "
@@ -37,7 +37,7 @@ RULE = Rule(
         "true``, or no ``securityContext`` block at all."
     ),
     known_fp=(
-        "Tasks that genuinely need ``docker:dind`` as a sidecar — "
+        "Tasks that genuinely need ``docker:dind`` as a sidecar, "
         "e.g. building images inside the cluster without giving the "
         "step itself host-Docker access. The replacement pattern is "
         "Kaniko or BuildKit running as the step itself, with no "
@@ -51,7 +51,7 @@ def task_sidecars(doc: TektonDoc) -> list[dict[str, Any]]:
     """Return the ``spec.sidecars`` list of a Task / ClusterTask, or [].
 
     Sidecars share the pod with steps and need the same securityContext
-    hardening — a privileged sidecar cancels the protection of every
+    hardening, a privileged sidecar cancels the protection of every
     hardened step in the same Task.
     """
     if doc.kind not in ("Task", "ClusterTask"):

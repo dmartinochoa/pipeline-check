@@ -101,7 +101,7 @@ class ResourceCatalog:
         One ``list_source_credentials`` call is enough for the whole
         account; memoize so CB-006 doesn't issue it once per project.
         ``AccessDeniedException`` returns an empty mapping rather than
-        erroring the whole service — the rule can still pass on inline
+        erroring the whole service, the rule can still pass on inline
         auth evaluation alone.
         """
         def _load() -> dict[str, set[str]]:
@@ -178,7 +178,7 @@ class ResourceCatalog:
 
         Centralises the discovery logic that used to live in both
         ``providers/aws.py``'s inventory pass and the legacy ``S3Checks``
-        module. ``CodePipeline`` inaccessibility is not fatal — S3 rules
+        module. ``CodePipeline`` inaccessibility is not fatal. S3 rules
         simply have no buckets to inspect.
         """
         def _load() -> list[str]:
@@ -204,7 +204,7 @@ class ResourceCatalog:
 
         ``docs`` is a list of ``(name_or_arn, parsed_document)`` pairs
         suitable for ``_iam_policy`` walkers. ``error`` is non-None when
-        *either* inline or attached listing failed — rules surface it so
+        *either* inline or attached listing failed, rules surface it so
         IAM-002 / IAM-004 / IAM-006 can emit "cannot verify" rather than
         false-positive "clean".
 
@@ -504,7 +504,7 @@ class ResourceCatalog:
     def ecr_pull_through_cache_rules(self) -> list[dict]:
         # Swallow ClientError locally so a PTC API failure (LocalStack
         # lacks this endpoint, or AccessDenied in prod) only costs ECR-006
-        # visibility — not the entire ECR rule family. Without this,
+        # visibility, not the entire ECR rule family. Without this,
         # self._memo would taint catalog.errors["ecr"] and the orchestrator
         # would suppress ECR-001..005 in favor of a single ECR-000.
         def _load() -> list[dict]:
@@ -564,7 +564,7 @@ class ResourceCatalog:
 class _ClientHost(AWSBaseCheck):
     """Minimal adapter so ResourceCatalog can reuse AWSBaseCheck.client().
 
-    The catalog isn't itself a check — it's a helper — but it needs the
+    The catalog isn't itself a check, it's a helper, but it needs the
     same retry-configured, per-session cached client construction.
     """
 
