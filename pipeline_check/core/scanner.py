@@ -61,6 +61,7 @@ class Scanner:
         profile: str | None = None,
         diff_base: str | None = None,
         secret_patterns: list[str] | tuple[str, ...] | None = None,
+        detect_entropy: bool = False,
         chains_enabled: bool = True,
         overrides: dict[str, dict[str, str]] | None = None,
         custom_rules: list[str] | tuple[str, ...] | None = None,
@@ -109,9 +110,13 @@ class Scanner:
         # prior scan (common in long-lived Lambda containers) don't
         # leak into the next invocation. Callers pass the patterns
         # they want applied to this scan via ``secret_patterns``.
+        # ``reset_patterns`` also clears the entropy-detection flag,
+        # so opting in for one scan doesn't carry into the next.
         _secret_registry.reset_patterns()
         for pat in secret_patterns or ():
             _secret_registry.register_pattern(pat)
+        if detect_entropy:
+            _secret_registry.enable_entropy_detection(True)
         self._context = self._build_context(
             provider, region, profile, diff_base, provider_kwargs,
         )

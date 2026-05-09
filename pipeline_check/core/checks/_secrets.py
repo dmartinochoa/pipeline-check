@@ -9,26 +9,39 @@ document and flags any value matching a known credential pattern from
 else a contributor might land them, places the name-based detector
 can't see.
 
-The detector catalog is shape-based, not entropy-based. False
-positives are cheap to suppress via the ignore file (and the
-``PLACEHOLDER_MARKER_RE`` filter handles obvious documentation
-placeholders before they ever reach the user); false negatives from
-entropy heuristics tend to surface as silently-missed real secrets,
-which is the wrong direction.
+The deterministic catalog is shape-based: a hit means the value
+matches a known token format (``AKIA``, ``ghp_``, ``sk-ant-api03-``,
+...). False positives are cheap to suppress via the ignore file
+(and the ``PLACEHOLDER_MARKER_RE`` filter handles obvious
+documentation placeholders before they ever reach the user); false
+negatives from prefix-shape detection tend to be custom org tokens
+that lack a publicly-documented shape.
 
-Three signal types fire:
+Four signal types can fire:
 
-  1. Token-shape match, a tokenised value matches a built-in or
-     user-registered credential regex. Hit label: ``<detector>:<token>``.
-  2. PEM private-key block, multi-line ``-----BEGIN PRIVATE KEY-----``
-     marker anywhere in the document. Hit label: ``private_key:<kind>``.
-  3. User-registered custom pattern (via ``register_pattern`` or
-     ``--secret-pattern``). Hit label: ``custom:<token>``.
+  1. **Token-shape match.** Tokenised value matches a built-in
+     credential regex. Hit label: ``<detector>:<token>``.
+  2. **PEM private-key block.** Multi-line ``-----BEGIN PRIVATE
+     KEY-----`` marker anywhere in the document. Hit label:
+     ``private_key:<kind>``.
+  3. **User-registered custom pattern** (via ``register_pattern``
+     or ``--secret-pattern``). Hit label: ``custom:<token>``.
+  4. **Shannon-entropy detector** (opt-in via
+     ``enable_entropy_detection`` / ``--detect-entropy``). Fires
+     when a high-entropy value (>= 3.5 bits/char, length >= 20)
+     appears in a YAML key-context that suggests a credential
+     (``API_KEY``, ``apiToken``, ``password``, ...) and the
+     deterministic catalog hasn't already flagged it. Hit label:
+     ``entropy:<token>``. Off by default to keep upgrades
+     backward-compatible — opting in introduces new findings on
+     existing scans.
 """
 from __future__ import annotations
 
+import math
 import re
-from collections.abc import Iterable
+from collections import Counter
+from collections.abc import Iterable, Iterator
 from re import Pattern
 from typing import Any
 
@@ -65,14 +78,224 @@ def reset_patterns() -> None:
 
     Exists for test isolation and for the long-lived Lambda container
     case where a prior invocation's patterns shouldn't leak into the
-    next one, see ``Scanner.__init__`` for the lifecycle hook.
+    next one, see ``Scanner.__init__`` for the lifecycle hook. Also
+    resets the entropy-detection flag so a Lambda container that
+    enabled it for one invocation doesn't carry the setting into the
+    next.
     """
     _USER_PATTERNS.clear()
+    enable_entropy_detection(False)
 
 
 # Backward-compat alias for tests that introspected the old internal
 # name. Keeps a stable surface even though the storage moved.
 _PATTERNS = _USER_PATTERNS
+
+
+# ── Entropy-based detector (opt-in) ─────────────────────────────────
+
+
+#: Minimum Shannon entropy (bits/char) required for a value to be
+#: classified as a high-entropy token candidate. 3.5 catches random
+#: hex (theoretical max 4.0; observed ~3.8-4.0 on 32-char hex) while
+#: letting natural-language values through (English is ~4.0 in
+#: theory but typical short strings land at 3.0-3.5 because of
+#: limited character variety).
+MIN_ENTROPY_BITS_PER_CHAR = 3.5
+
+#: Minimum value length before the entropy detector even tries.
+#: Real credential tokens are at least 16-20 characters (AWS access
+#: keys are 20, GitHub PATs are 40+). Tightening this knob is the
+#: easiest way to suppress noise on configuration values that
+#: happen to look random.
+MIN_ENTROPY_LENGTH = 20
+
+#: Character set a value must consist of to be considered a
+#: token-shaped candidate. Real tokens use base62 / base64 / hex
+#: alphabets plus a few separators; values containing whitespace,
+#: punctuation, or quote marks are almost certainly natural prose
+#: (or a templated config string), not a credential.
+_TOKEN_SHAPED_RE = re.compile(r"^[A-Za-z0-9+/=_\-.]+$")
+
+#: Substrings that, when they appear as a *whole word* in the YAML
+#: key name, signal that the value side carries a credential. Words
+#: are matched after a normalization pass that splits on ``-``, ``_``,
+#: whitespace, and camel-case boundaries (``apiKey`` -> ``api`` +
+#: ``key``), so all of ``API_KEY``, ``apiKey``, ``api-key``, and
+#: ``api key`` resolve to the same parts.
+_CRED_KEY_TOKENS: frozenset[str] = frozenset({
+    "key", "keys",
+    "token", "tokens",
+    "secret", "secrets",
+    "password", "passwd", "pwd",
+    "auth", "authorization",
+    "api",
+    "credential", "credentials",
+    "private",
+    "passkey",
+    # Cloud-vendor-specific shapes that don't fit the generic words.
+    "accesskey", "secretkey",
+})
+
+#: Splitter used by :func:`_key_suggests_credential`. Matches any of
+#: ``-``, ``_``, whitespace, OR a camel-case boundary
+#: (lowercase / uppercase pair).
+_KEY_PART_SPLIT_RE = re.compile(r"[-_\s]+|(?<=[a-z])(?=[A-Z])")
+
+
+_ENTROPY_ENABLED = False
+
+
+def enable_entropy_detection(enabled: bool = True) -> None:
+    """Toggle the opt-in Shannon-entropy secret detector.
+
+    Off by default. The deterministic prefix-shape detectors run
+    regardless. When enabled, :func:`find_secret_values` adds a
+    second pass that walks ``(key, value)`` pairs in the document
+    and emits an ``entropy:<redacted>`` hit when a value is
+    high-entropy AND token-shaped AND its enclosing YAML key name
+    suggests a credential AND no deterministic detector already
+    matched.
+
+    The flag is module-level for the same reason :func:`register_pattern`
+    is module-level: each :class:`~pipeline_check.core.scanner.Scanner`
+    invocation owns the registry for its scan. The Scanner constructor
+    calls :func:`reset_patterns` to clear lingering state from a
+    prior invocation; this flag rides the same reset.
+    """
+    global _ENTROPY_ENABLED
+    _ENTROPY_ENABLED = enabled
+
+
+def shannon_entropy(s: str) -> float:
+    """Return the Shannon entropy of *s* in bits per character.
+
+    Empty string returns 0.0. The result is the *expected* number of
+    bits a perfect compressor would need per character; random hex
+    over a 16-symbol alphabet caps at log2(16) = 4 bits/char, random
+    base64 caps at log2(64) = 6 bits/char, English prose tends to
+    sit around 4.0 bits/char on long passages but lower on short
+    snippets because the limited symbol set hasn't had room to vary.
+    """
+    if not s:
+        return 0.0
+    n = len(s)
+    counts = Counter(s)
+    return -sum((c / n) * math.log2(c / n) for c in counts.values())
+
+
+def _key_suggests_credential(key_name: str) -> bool:
+    """True when the YAML key name reads as a credential field.
+
+    Splits the name on ``_`` / ``-`` / whitespace AND camel-case
+    boundaries, then tests each part against
+    :data:`_CRED_KEY_TOKENS`. ``API_KEY``, ``apiKey``,
+    ``aws_access_key_id``, ``database-password``, and ``my secret``
+    all match; ``monkey``, ``api_version``, ``serviceaccount``, and
+    ``filekey`` do not (the parts are whole words).
+    """
+    if not key_name:
+        return False
+    parts = _KEY_PART_SPLIT_RE.split(key_name)
+    return any(part.lower() in _CRED_KEY_TOKENS for part in parts if part)
+
+
+def _walk_key_value_pairs(doc: Any) -> Iterator[tuple[str, str]]:
+    """Yield ``(effective_key, value)`` pairs for every string leaf.
+
+    Handles two shapes that matter for credential detection:
+
+    1. **Direct key-value mappings.** ``API_KEY: "AKIA..."`` yields
+       ``("API_KEY", "AKIA...")``.
+    2. **Kubernetes / CFN / Terraform env-list shape.** The
+       ``[{name: K, value: V}, ...]`` pattern yields
+       ``("K", "V")`` rather than the literal ``("value", "V")``,
+       since the *meaningful* key for a human reader is the sibling
+       ``name`` field. Same for ``{key: K, value: V}`` shapes.
+    3. **List values inherit their parent key** — a list of strings
+       under ``passwords:`` yields ``("passwords", item)`` for each
+       string item.
+
+    Skips dict keys that aren't strings (PyYAML 1.1 parses bare
+    ``yes`` / ``no`` as bools; we don't try to use those as key
+    contexts).
+    """
+    stack: list[tuple[str | None, dict[Any, Any] | None, Any]] = [(None, None, doc)]
+    while stack:
+        parent_key, parent_dict, item = stack.pop()
+        if isinstance(item, str):
+            effective = parent_key
+            # Env-list shape: bias toward the sibling ``name`` /
+            # ``key`` field as the credential-context label.
+            if parent_dict is not None and parent_key in (
+                "value", "Value", "stringValue",
+            ):
+                for sibling_key in ("name", "Name", "key", "Key"):
+                    sibling = parent_dict.get(sibling_key)
+                    if isinstance(sibling, str):
+                        effective = sibling
+                        break
+            if effective:
+                yield (effective, item)
+        elif isinstance(item, dict):
+            for k, v in item.items():
+                kname = k if isinstance(k, str) else None
+                stack.append((kname, item, v))
+        elif isinstance(item, list):
+            # Propagate the parent key so list items inherit context.
+            for child in item:
+                stack.append((parent_key, parent_dict, child))
+
+
+def _find_entropy_hits(doc: Any) -> list[str]:
+    """Return ``entropy:<redacted>`` hits for high-entropy values
+    appearing in credential-shaped YAML key contexts.
+
+    The detector deliberately layers four conditions before firing,
+    each one independently catching a class of false positive:
+
+    1. The enclosing key name must suggest a credential
+       (:func:`_key_suggests_credential`). Catches FPs on random-
+       looking values in non-credential contexts (commit SHAs in
+       ``version:`` fields, hash prefixes in ``id:`` fields).
+    2. The value must be at least :data:`MIN_ENTROPY_LENGTH` chars.
+       Catches FPs on short hex values (UUIDs are technically
+       high-entropy at 4.0 bits/char but short).
+    3. The value must consist only of token-shaped characters
+       (``[A-Za-z0-9+/=_-.]``). Catches FPs on encoded paths,
+       templated config strings, log lines.
+    4. No deterministic detector already classifies the value. Avoids
+       double-emitting the same value with two different labels.
+
+    The placeholder filter (``replaceme``, ``<your-key>``, etc.) is
+    applied last because the prefix-shape pass already does the same
+    thing; running it here keeps the entropy hit behavior consistent
+    with the deterministic side.
+    """
+    hits: list[str] = []
+    seen: set[str] = set()
+    for key_name, raw_value in _walk_key_value_pairs(doc):
+        if not _key_suggests_credential(key_name):
+            continue
+        candidate = raw_value.strip().strip("\"'")
+        if len(candidate) < MIN_ENTROPY_LENGTH:
+            continue
+        if not _TOKEN_SHAPED_RE.match(candidate):
+            continue
+        if PLACEHOLDER_MARKER_RE.search(candidate):
+            continue
+        # Skip if a deterministic detector already would catch this —
+        # the deterministic label is more useful to operators than a
+        # generic ``entropy:`` label.
+        if SECRET_VALUE_RE.fullmatch(candidate):
+            continue
+        if shannon_entropy(candidate) < MIN_ENTROPY_BITS_PER_CHAR:
+            continue
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        hits.append(f"entropy:{_redact(candidate)}")
+    return hits
 
 
 def find_secret_values(doc: Any) -> list[str]:
@@ -90,6 +313,14 @@ def find_secret_values(doc: Any) -> list[str]:
     Accepts either a parsed YAML dict/list (walks all string values)
     or a pre-collected list of strings (skips the walk). The latter is
     used by Jenkins checks that pass ``[jf.text]``.
+
+    When :func:`enable_entropy_detection` has been turned on, a
+    second pass adds ``entropy:<redacted>`` hits for high-entropy
+    values appearing in credential-shaped YAML key contexts that
+    the prefix-shape catalog didn't already catch. The entropy pass
+    needs the YAML key context, so it's skipped for the
+    pre-collected-string-list call shape (Jenkins). The
+    deterministic catalog still runs for those callers.
     """
     from .base import walk_strings
 
@@ -98,7 +329,8 @@ def find_secret_values(doc: Any) -> list[str]:
     seen_pem: set[str] = set()
 
     strings: Iterable[str]
-    if isinstance(doc, list) and doc and isinstance(doc[0], str):
+    pre_collected = isinstance(doc, list) and doc and isinstance(doc[0], str)
+    if pre_collected:
         strings = doc  # pre-collected string list
     else:
         strings = walk_strings(doc)
@@ -129,6 +361,11 @@ def find_secret_values(doc: Any) -> list[str]:
                 continue
             seen_tokens.add(token)
             hits.append(f"{token_label}:{_redact(token)}")
+
+    # Entropy pass: opt-in, additive, requires YAML key context (so
+    # pre-collected string lists skip it — there's no key for those).
+    if _ENTROPY_ENABLED and not pre_collected:
+        hits.extend(_find_entropy_hits(doc))
     return hits
 
 
@@ -242,9 +479,13 @@ def _redact(token: str) -> str:
 # Re-export for callers that historically did
 # ``from ._secrets import SECRET_VALUE_RE``.
 __all__ = [
+    "MIN_ENTROPY_BITS_PER_CHAR",
+    "MIN_ENTROPY_LENGTH",
+    "SECRET_DETECTORS",
+    "SECRET_VALUE_RE",
+    "enable_entropy_detection",
     "find_secret_values",
     "register_pattern",
     "reset_patterns",
-    "SECRET_VALUE_RE",
-    "SECRET_DETECTORS",
+    "shannon_entropy",
 ]

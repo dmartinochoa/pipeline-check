@@ -12,6 +12,93 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``--detect-entropy`` opt-in Shannon-entropy secret detector.**
+  Adds a second pass to ``find_secret_values`` that flags
+  high-entropy values (>= 3.5 bits/char, length >= 20) appearing
+  in YAML key contexts that suggest a credential
+  (``API_KEY``, ``apiToken``, ``database-password``, ...) and
+  that the deterministic prefix-shape catalog hasn't already
+  matched. Catches the "custom org token with no public prefix"
+  case: an internal Snowflake token, custom JWT issuer secret,
+  opaque session token, etc., that today only fires if the
+  operator pre-registers a regex via ``--secret-pattern``.
+  Layered FP suppression — four independent gates, each catching
+  a different class of false positive:
+  - **Key-context match**: the YAML key name (after splitting on
+    ``-`` / ``_`` / camel-case boundaries) must contain a part
+    matching the credential vocabulary
+    (``key`` / ``token`` / ``secret`` / ``password`` / ``auth``
+    / ``api`` / ``credential`` / ``private`` / ``passkey`` /
+    ``accesskey`` / ``secretkey``). Filters out random-looking
+    values in non-credential fields (commit SHAs in
+    ``version:``, hashes in ``id:``).
+  - **Length floor** (>= 20 chars). Filters out short hex IDs
+    even though they're technically high-entropy.
+  - **Token shape** (``[A-Za-z0-9+/=_\-.]+``). Filters out
+    encoded paths, templated config strings, log lines.
+  - **No deterministic-detector overlap**. If the value already
+    matches one of the 51 prefix-shape detectors, only the
+    deterministic label fires (the more useful one).
+  Plus the existing ``PLACEHOLDER_MARKER_RE`` suppression for
+  ``replaceme`` / ``<your-key>`` / etc.
+  Hits are labeled ``entropy:<redacted>`` so reporters can
+  distinguish them from prefix-matched hits and operators can
+  write targeted ``--ignore-file`` rules. Off by default —
+  turning it on can introduce new findings on previously-clean
+  scans, so the upgrade is opt-in only. The Kubernetes / CFN /
+  Terraform envvar shape (``[{name: K, value: V}, ...]``) gets
+  special handling: the walker biases toward the sibling
+  ``name`` field as the credential-context label, so
+  ``{name: DATABASE_PASSWORD, value: <token>}`` correctly reads
+  as ``DATABASE_PASSWORD: <token>`` for the heuristic. 52 new
+  tests in ``tests/test_entropy_detection.py`` cover the math,
+  the key heuristic (15 positive + 11 negative cases), the
+  layered FP suppression (7 cases), the off-by-default
+  contract, the K8s envvar-list shape, and the
+  ``reset_patterns`` lifecycle hook (so a Lambda container
+  doesn't leak the toggle across invocations).
+- **``--ai-explain CHECK_ID`` opt-in AI augmentation layer.**
+  First non-deterministic feature in the catalog, structured to
+  preserve the determinism the rest of the tool depends on.
+  Prints the existing ``--explain`` body unchanged, then appends
+  a clearly-framed ``[AI-generated, non-deterministic. Provider:
+  <provider>:<model>. Treat as a triage aid, not as audit
+  output.]`` section with project-specific remediation prose.
+  Three providers, all opt-in, none on by default:
+  - **Anthropic.** Default ``claude-sonnet-4-6``. Lazy-imports the
+    ``anthropic`` SDK; install via
+    ``pip install pipeline-check[ai-anthropic]``. Auth via
+    ``$ANTHROPIC_API_KEY``.
+  - **OpenAI.** Default ``gpt-4o-mini``. Lazy-imports ``openai``;
+    install via ``pip install pipeline-check[ai-openai]``. Auth
+    via ``$OPENAI_API_KEY``.
+  - **Ollama.** Default ``llama3.2``. Stdlib-only HTTP client
+    against ``$OLLAMA_HOST`` (defaults to
+    ``http://localhost:11434``); no extra Python dep, no API key,
+    no bytes leaving the host.
+  Provider selection is explicit (``--ai-model anthropic`` or
+  ``provider:model``) or implicit via
+  ``$PIPELINE_CHECK_AI_MODEL`` / whichever provider key happens
+  to be set. The prompt includes the rule's metadata, the first
+  60 lines of ``README.*``, and the first 200 lines of an optional
+  ``--ai-context-file PATH`` so the model can ground its
+  recommendation in the actual codebase. Context-file is
+  validated as an existing readable path before any AI call
+  fires. Failure modes (missing SDK, missing key, unknown
+  provider, request failure) all exit code 4 with a clear error
+  shaped for CI logs, distinct from the deterministic
+  ``--explain``'s exit code 3 for unknown IDs.
+  Determinism boundary: the ``--explain``, ``--list-checks``,
+  ``--list-standards``, JSON / SARIF / scoring / gating, and
+  attack-chain paths are unaffected — verified by
+  ``TestDeterminismContract`` in ``tests/test_ai_explain.py``,
+  which asserts ``--explain GHA-001`` output never carries the
+  AI banner and that no AI provider call fires unless
+  ``--ai-explain`` was passed. 40 new tests cover spec parsing,
+  default-provider resolution, prompt construction, README /
+  context-file grounding, all three error paths, the CLI
+  banner format, and the deterministic / AI-output separation.
+  No new runtime dependencies on the default install.
 - **AC-026 — Buildkite injection lands on auto-deploy step with no
   manual gate.** New cross-rule attack chain on the Buildkite
   surface, mirroring the AC-002 (GitHub) and AC-022 (GitLab)

@@ -44,6 +44,16 @@ dev = [
     "types-PyYAML>=6.0",
     "typing-extensions>=4.4.0",
 ]
+# Opt-in AI augmentation (``--ai-explain CHECK-ID``). Each provider
+# is its own extra so the default install carries no LLM SDKs.
+# ``ai`` is a meta-extra that pulls in both hosted-provider SDKs at
+# once for users who don't want to think about it.
+ai-anthropic = ["anthropic>=0.40.0"]
+ai-openai = ["openai>=1.0.0"]
+ai = [
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
+]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
