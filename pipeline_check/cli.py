@@ -124,7 +124,7 @@ class _GroupedCommand(click.Command):
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
             "--buildkite-path", "--tekton-path", "--argo-path",
-            "--helm-values", "--helm-set",
+            "--helm-values", "--helm-set", "--oci-manifest",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -676,7 +676,7 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path); "
+        "--argo-path, --oci-manifest); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -942,6 +942,19 @@ def _install_completion_callback(
         "Repeat for multiple overrides. Use the same syntax helm "
         "expects (``image.tag=v1`` or ``replicas=3``). Only "
         "meaningful with --pipeline helm."
+    ),
+)
+@click.option(
+    "--oci-manifest",
+    "oci_manifest",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an OCI image manifest / image-index JSON file (the "
+        "output of ``docker buildx imagetools inspect --raw <ref>`` "
+        "or ``oras manifest fetch``), or a directory containing one "
+        "(required when --pipeline oci). Pure parser, no registry "
+        "pull, no daemon access. Auto-detects ./index.json."
     ),
 )
 @click.option(
@@ -1383,6 +1396,7 @@ def scan(
     helm_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
+    oci_manifest: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1748,6 +1762,12 @@ def scan(
         for vf in helm_values:
             if not os.path.isfile(vf):
                 raise click.UsageError(f"--helm-values not found: {vf}")
+    elif pipeline_lc == "oci":
+        oci_manifest = _resolve_provider_path(
+            "oci", flag="oci-manifest", value=oci_manifest,
+            candidates=("index.json",),
+            detect_label="index.json",
+        )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1825,6 +1845,7 @@ def scan(
         helm_path=helm_path,
         helm_values=list(helm_values) or None,
         helm_set=list(helm_set) or None,
+        oci_manifest=oci_manifest,
     )
 
     if verbose:

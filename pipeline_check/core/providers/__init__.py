@@ -27,6 +27,7 @@ from .gitlab import GitLabProvider
 from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
+from .oci import OCIProvider
 from .tekton import TektonProvider
 from .terraform import TerraformProvider
 
@@ -67,3 +68,4 @@ register(ArgoProvider())
 register(DockerfileProvider())
 register(KubernetesProvider())
 register(HelmProvider())
+register(OCIProvider())

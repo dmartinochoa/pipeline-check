@@ -12,6 +12,45 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **OCI image manifest provider.** New ``--pipeline oci
+  --oci-manifest <file>`` reads an OCI image manifest /
+  image-index JSON document captured via
+  ``docker buildx imagetools inspect --raw <ref>`` (or the
+  equivalent ``oras manifest fetch`` / ``crane manifest``). Pure
+  parser, no registry pull, no daemon access; auto-detects
+  ``./index.json`` in a directory. Three checks: ``OCI-001``
+  flags missing ``org.opencontainers.image.source`` /
+  ``image.revision`` annotations on the manifest (mirrors DF-016
+  at the image-manifest layer so a build that overrides the
+  Dockerfile's ``LABEL`` lines via ``docker buildx --annotation``
+  is still scored); ``OCI-002`` flags an image index with no
+  BuildKit-style attestation-manifest sub-entry
+  (``vnd.docker.reference.type: attestation-manifest``), where
+  SLSA provenance and SBOM data live; ``OCI-003`` flags a missing
+  ``org.opencontainers.image.created`` timestamp (CVE triage
+  needs the build date, the lightest provenance signal that
+  doesn't require pulling the config blob). Recognizes both the
+  OCI 1.0 / 1.1 spec media types and the
+  ``application/vnd.docker.distribution.manifest.{,list.}v2+json``
+  shapes BuildKit still emits by default. Provider catalog: 16
+  to 17 (added 3 new OCI-* rules).
+- **Real performance benchmark gate.**
+  ``tests/perf/test_benchmark.py`` replaces the older smoke test
+  with a ``pytest-benchmark`` run on a 1000-line synthetic GHA
+  workflow and a 5000-line synthetic CFN template, asserting
+  absolute median ceilings (5s / 8s, sized for slow CI; locally
+  each scan completes in ~17ms / ~2ms). Measurement uses
+  ``benchmark.pedantic`` (warmup + multiple rounds + median) so
+  a CI-run failure includes ops/sec and median wall time, not
+  just a pass/fail. Developers can save a per-machine baseline
+  with ``pytest tests/perf/test_benchmark.py --benchmark-autosave``
+  and gate against it with ``pytest tests/perf/test_benchmark.py
+  --benchmark-compare --benchmark-compare-fail=median:25%`` to
+  detect regressions vs the saved JSON. CI doesn't save baselines
+  (they'd flap as GitHub-hosted runner hardware shifts) and
+  relies on the absolute ceilings instead. Adds
+  ``pytest-benchmark>=5.0`` to ``requirements-dev.in`` /
+  ``-dev.txt``.
 - **Entropy-detector vocabulary tightened after calibration.**
   Calibration sweep against the project's own fixture corpus
   surfaced 9 false positives on ``secure.yaml`` Kubernetes

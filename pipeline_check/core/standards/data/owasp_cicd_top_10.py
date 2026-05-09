@@ -471,5 +471,9 @@ STANDARD = Standard(
         "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
         "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
         "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
+        # OCI image manifests
+        "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
+        "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation
+        "OCI-003":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing image.created
     },
 )

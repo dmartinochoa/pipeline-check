@@ -70,6 +70,10 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Helm</h3>
     <p>Renders charts via <code>helm template</code> and runs the K8S-* rule pack on the result. Catches the bulk of real workloads, which ship as charts.</p>
   </a>
+  <a class="pg-doc-card" href="oci/">
+    <h3>OCI image manifest</h3>
+    <p>Parses <code>docker buildx imagetools inspect --raw</code> JSON. Provenance annotations, build attestations (SLSA / SBOM), <code>image.created</code> timestamp.</p>
+  </a>
 </div>
 
 ## Adding a new provider

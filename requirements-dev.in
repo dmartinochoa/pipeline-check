@@ -8,6 +8,7 @@ jsonschema>=4.0
 # PR that first added mypy to ``requirements-dev.txt``.
 mypy>=1.8.0,<2.0
 pytest>=7.4.0
+pytest-benchmark>=5.0.0
 pytest-cov>=4.1.0
 ruff>=0.8.0
 types-PyYAML>=6.0
