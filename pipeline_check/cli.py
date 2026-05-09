@@ -69,6 +69,7 @@ from .core.reporter import (
 from .core.sarif_reporter import report_sarif
 from .core.scanner import MultiScanner, Scanner
 from .core.scorer import score
+from .core.threatmodel_reporter import report_threatmodel
 
 
 def _tolerate_unencodable_stdio() -> None:
@@ -1035,7 +1036,10 @@ def _install_completion_callback(
     "--output",
     "-o",
     type=click.Choice(
-        ["terminal", "json", "html", "sarif", "junit", "markdown", "both"],
+        [
+            "terminal", "json", "html", "sarif", "junit",
+            "markdown", "threatmodel", "both",
+        ],
         case_sensitive=False,
     ),
     default="terminal",
@@ -1049,8 +1053,8 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Write the report to this file. Required for --output html. "
-        "Optional for --output sarif/junit/markdown (stdout is used if "
-        "unset)."
+        "Optional for --output sarif/junit/markdown/threatmodel "
+        "(stdout is used if unset)."
     ),
 )
 @click.option(
@@ -1976,8 +1980,17 @@ def scan(
             _debug(f"loaded {meta.files_scanned} file(s), {meta.files_skipped} skipped")
         _debug(f"checks to run: {len(scanner._check_classes)} check class(es)")
 
-    # ``--inventory-only``, ``--inventory-type`` both imply ``--inventory``.
-    want_inventory = inventory_flag or inventory_only or bool(inventory_types)
+    # ``--inventory-only``, ``--inventory-type``, and ``--output
+    # threatmodel`` all imply ``--inventory``. Threat-model generation
+    # populates its Assets and trust-boundary sections from the
+    # inventory, so a run with ``--output threatmodel`` and no
+    # explicit ``--inventory`` flag transparently turns it on.
+    want_inventory = (
+        inventory_flag
+        or inventory_only
+        or bool(inventory_types)
+        or output == "threatmodel"
+    )
 
     findings: list[Any] = []
     if not inventory_only:
@@ -2089,6 +2102,23 @@ def scan(
                 click.echo(f"Markdown report written to {output_file}", err=True)
             else:
                 click.echo(md_text)
+
+        if output == "threatmodel":
+            tm_text = report_threatmodel(
+                findings, score_result,
+                inventory=components, chains=chains,
+                tool_version=__version__,
+                region=region or "", target=target or "",
+            )
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(tm_text)
+                click.echo(
+                    f"Threat-model report written to {output_file}",
+                    err=True,
+                )
+            else:
+                click.echo(tm_text)
 
         if fix:
             if apply_fixes:

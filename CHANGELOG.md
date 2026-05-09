@@ -12,6 +12,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **STRIDE threat-model generator (``--output threatmodel``).**
+  New output format that emits a self-contained Markdown
+  threat-model document populated from the same scan output
+  the JSON / HTML / SARIF reporters consume: findings,
+  optional inventory components, optional attack chains.
+  Document sections: Scope, Trust boundaries (heuristics keyed
+  on the provider mix in inventory), Assets (the inventory
+  itself), STRIDE analysis (failing findings grouped by
+  category), Implemented controls (passing-check counts per
+  STRIDE bucket), Risk register (top 25 failures), and a
+  Methodology footer. Selecting ``--output threatmodel``
+  auto-runs the inventory pass so a one-flag invocation
+  produces a populated document.
+
+  The OWASP CICD Top 10 -> STRIDE mapping is policy in
+  ``threatmodel_reporter.py``: each OWASP control maps to one
+  or more STRIDE codes (e.g. CICD-SEC-6 -> Information
+  Disclosure + Spoofing), and a small CWE prepend table
+  refines the head when an exact CWE is more specific than
+  the OWASP fallback (CWE-200 -> Information Disclosure;
+  CWE-269 -> Elevation of Privilege; CWE-778 -> Repudiation).
+  No rule registry changes. Re-policing is a pure-function
+  swap.
+
+  Output is shaped for SOC 2 / PCI / NIST SSDF evidence
+  packages and architecture-review docs; the risk register
+  caps at 25 rows so the document stays printable, while the
+  JSON output remains unbounded for downstream tooling.
+
 - **GL-033 global before_script / after_script taint
   propagation.** New rule. ``iter_jobs`` deliberately skips
   top-level keywords (``before_script``, ``after_script``,
