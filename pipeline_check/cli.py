@@ -124,11 +124,11 @@ class _GroupedCommand(click.Command):
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
             "--buildkite-path", "--tekton-path", "--argo-path",
-            "--helm-values", "--helm-set",
+            "--helm-values", "--helm-set", "--oci-manifest",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
-            "--secret-pattern", "--custom-rules",
+            "--secret-pattern", "--detect-entropy", "--custom-rules",
         })),
         ("Output", frozenset({
             "--output", "--output-file", "--standard",
@@ -149,6 +149,9 @@ class _GroupedCommand(click.Command):
             "--explain", "--man", "--config-check",
             "--install-completion", "--config", "--version",
             "--help", "--verbose", "--quiet",
+        })),
+        ("AI augmentation (opt-in)", frozenset({
+            "--ai-explain", "--ai-model", "--ai-context-file",
         })),
     )
 
@@ -673,7 +676,7 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path); "
+        "--argo-path, --oci-manifest); "
         "AWS scans the live account via boto3."
     ),
 )
@@ -942,6 +945,19 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--oci-manifest",
+    "oci_manifest",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an OCI image manifest / image-index JSON file (the "
+        "output of ``docker buildx imagetools inspect --raw <ref>`` "
+        "or ``oras manifest fetch``), or a directory containing one "
+        "(required when --pipeline oci). Pure parser, no registry "
+        "pull, no daemon access. Auto-detects ./index.json."
+    ),
+)
+@click.option(
     "--inventory",
     "inventory_flag",
     is_flag=True,
@@ -1069,6 +1085,51 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--ai-explain",
+    "ai_explain_id",
+    default=None,
+    metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
+    help=(
+        "Augment ``--explain CHECK_ID`` with an AI-generated, project-"
+        "specific remediation grounded in your README and (optionally) "
+        "an offending file (``--ai-context-file PATH``). Opt-in. "
+        "Bring your own key via ``ANTHROPIC_API_KEY`` / "
+        "``OPENAI_API_KEY`` or run ``ollama serve`` locally. Output "
+        "is clearly framed as ``[AI-generated, non-deterministic]`` "
+        "and never affects the score / gate / SARIF output. Pick a "
+        "provider with ``--ai-model anthropic`` / ``openai`` / "
+        "``ollama`` (or a fully-qualified ``provider:model`` like "
+        "``anthropic:claude-opus-4-7``)."
+    ),
+)
+@click.option(
+    "--ai-model",
+    "ai_model_spec",
+    default=None,
+    metavar="SPEC",
+    help=(
+        "Provider for ``--ai-explain``. ``anthropic`` / ``openai`` / "
+        "``ollama`` (default model) or ``provider:model`` (e.g. "
+        "``anthropic:claude-opus-4-7``, ``ollama:llama3.2``). "
+        "Falls back to ``$PIPELINE_CHECK_AI_MODEL`` and then to "
+        "whichever provider has credentials in the environment."
+    ),
+)
+@click.option(
+    "--ai-context-file",
+    "ai_context_file",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    metavar="PATH",
+    help=(
+        "Optional file whose contents (first ~200 lines) get sent to "
+        "the AI provider alongside the rule metadata so the response "
+        "can be grounded in your actual code. Only used by "
+        "``--ai-explain``."
+    ),
+)
+@click.option(
     "--config-check",
     is_flag=True,
     help=(
@@ -1142,6 +1203,24 @@ def _install_completion_callback(
         "string token. Repeat for multiple. Anchor with ^...$ for "
         "whole-token match. Also configurable via "
         "`secret_patterns: [...]` in the config file."
+    ),
+)
+@click.option(
+    "--detect-entropy",
+    "detect_entropy",
+    is_flag=True,
+    default=False,
+    help=(
+        "Opt in to the Shannon-entropy secret detector. When enabled, "
+        "the ``*-008`` literal-secret rules add an additional pass "
+        "that flags high-entropy values (>= 3.5 bits/char, length "
+        ">= 20) appearing in YAML key contexts that suggest a "
+        "credential (``API_KEY``, ``apiToken``, ``password``, ...) "
+        "and that the prefix-shape catalog hasn't already matched. "
+        "Hits are labeled ``entropy:<redacted>``. Off by default "
+        "because turning it on can introduce new findings on "
+        "previously-clean scans, suppress per-resource via "
+        "``--ignore-file`` once you've validated the heuristic."
     ),
 )
 @click.option(
@@ -1317,6 +1396,7 @@ def scan(
     helm_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
+    oci_manifest: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -1328,6 +1408,9 @@ def scan(
     standard_report: str | None,
     list_checks: bool,
     explain_id: str | None,
+    ai_explain_id: str | None,
+    ai_model_spec: str | None,
+    ai_context_file: str | None,
     config_check: bool,
     severity_threshold: str,
     min_confidence: str,
@@ -1336,6 +1419,7 @@ def scan(
     max_failures: int | None,
     fail_on_checks: tuple[str, ...],
     secret_patterns: tuple[str, ...],
+    detect_entropy: bool,
     fix: bool,
     apply_fixes: bool,
     baseline_from_git: str | None,
@@ -1442,9 +1526,28 @@ def scan(
                 click.echo(f"  - {ref}")
         return
 
+    if explain_id and ai_explain_id:
+        # ``--ai-explain`` already runs the deterministic body before
+        # the AI section, so passing both flags is always a mistake.
+        # Reject it explicitly instead of silently letting ``--explain``
+        # win (which used to drop the AI section without any signal).
+        raise click.UsageError(
+            "--explain and --ai-explain are mutually exclusive. "
+            "Use --ai-explain CHECK_ID for the deterministic body "
+            "plus the AI-generated section, or --explain CHECK_ID "
+            "for the deterministic body alone."
+        )
+
     if explain_id:
         from .core.explain import print_explain
         sys.exit(print_explain(explain_id))
+
+    if ai_explain_id:
+        sys.exit(_run_ai_explain(
+            ai_explain_id,
+            model_spec=ai_model_spec,
+            context_file=ai_context_file,
+        ))
 
     if standard_report:
         # Distinct name from the ``std`` loop variable above (line 1099)
@@ -1659,6 +1762,12 @@ def scan(
         for vf in helm_values:
             if not os.path.isfile(vf):
                 raise click.UsageError(f"--helm-values not found: {vf}")
+    elif pipeline_lc == "oci":
+        oci_manifest = _resolve_provider_path(
+            "oci", flag="oci-manifest", value=oci_manifest,
+            candidates=("index.json",),
+            detect_label="index.json",
+        )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1709,6 +1818,7 @@ def scan(
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
+        detect_entropy=detect_entropy,
         chains_enabled=not no_chains,
         overrides=cli_overrides or None,
         custom_rules=list(custom_rules) or None,
@@ -1735,6 +1845,7 @@ def scan(
         helm_path=helm_path,
         helm_values=list(helm_values) or None,
         helm_set=list(helm_set) or None,
+        oci_manifest=oci_manifest,
     )
 
     if verbose:
@@ -1925,6 +2036,105 @@ def scan(
 
     if not gate.passed:
         sys.exit(1)
+
+
+def _run_ai_explain(
+    check_id: str,
+    *,
+    model_spec: str | None,
+    context_file: str | None,
+) -> int:
+    """Print the deterministic explain body, then an AI-augmented section.
+
+    Returns the exit code: 0 on success, 3 for an unknown check ID
+    (matching the deterministic ``--explain`` contract), 4 for an
+    AI-side configuration / dependency / network failure (so CI
+    can distinguish "your scan is broken" from "the AI provider is").
+    """
+    # Always print the deterministic body first. If the ID is bad, the
+    # deterministic path already exits 3 with a near-match suggestion;
+    # the AI side never gets called for an unknown ID.
+    from .core.explain import (
+        _build_index,  # noqa: PLC2701 (intentional)
+        print_explain,
+    )
+    body_code = print_explain(check_id)
+    # Flush so the deterministic body lands on screen before any AI-
+    # side error / output. Without this, an unbuffered stderr message
+    # ("no AI provider configured") prints before the still-buffered
+    # stdout body when the caller redirects 2>&1.
+    sys.stdout.flush()
+    if body_code != 0:
+        return body_code
+
+    # Resolve the rule (we already know it exists since print_explain
+    # returned 0). The deterministic explain renders by ``_CheckMeta``
+    # which carries the rule for rule-based packs; class-based packs
+    # only have ``id`` / ``title`` / ``severity``, in which case we
+    # synthesise a minimal Rule for the prompt.
+    from .core.ai_explain import (
+        AIAuthError,
+        AIDependencyError,
+        AIRequestError,
+        default_spec_from_env,
+        explain_check,
+        render_section,
+        select_client,
+    )
+    from .core.checks.rule import Rule as _Rule
+
+    cid = check_id.strip().upper()
+    meta = _build_index().get(cid)
+    if meta is None:
+        # Belt and suspenders: print_explain already returned 0, so
+        # the index lookup should succeed; this guards against drift.
+        click.echo(
+            f"\n[ai-explain] internal: rule {cid!r} not in index", err=True,
+        )
+        return 4
+
+    if meta.rule is not None:
+        rule = meta.rule
+    else:
+        # Class-based pack — synthesise a minimal Rule so the prompt
+        # builder still has a stable shape.
+        rule = _Rule(
+            id=meta.id,
+            title=meta.title,
+            severity=meta.severity,
+            recommendation="(class-based check; no rule-level prose)",
+            docs_note=meta.docstring or "",
+        )
+
+    spec = model_spec or default_spec_from_env()
+    if not spec:
+        click.echo(
+            "\n[ai-explain] no AI provider configured. Set "
+            "ANTHROPIC_API_KEY / OPENAI_API_KEY, or pass "
+            "``--ai-model ollama`` to use a local Ollama daemon.",
+            err=True,
+        )
+        return 4
+
+    try:
+        client = select_client(spec)
+    except (ValueError, AIDependencyError, AIAuthError) as exc:
+        click.echo(f"\n[ai-explain] {exc}", err=True)
+        return 4
+
+    try:
+        response = explain_check(
+            rule, client=client, context_file=context_file,
+        )
+    except AIRequestError as exc:
+        click.echo(f"\n[ai-explain] {exc}", err=True)
+        return 4
+
+    # Extra blank line so the AI section visually separates from the
+    # deterministic body above.
+    click.echo("")
+    click.echo(render_section(client.name, response))
+    return 0
 
 
 def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:

@@ -12,6 +12,167 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Three more OCI manifest rules.** ``OCI-004`` flags layers
+  that declare a ``urls:`` field or use a foreign-layer media
+  type (``vnd.docker.image.rootfs.foreign.diff.tar.gzip``,
+  ``vnd.oci.image.layer.nondistributable.v1.tar+gzip``).
+  Foreign-layer references pull blobs from arbitrary HTTP
+  endpoints at image-pull time, bypassing the registry's
+  content-addressed store; HIGH severity since an attacker who
+  controls the URL endpoint can cloak content per-client or
+  break image pulls. ``OCI-005`` flags missing
+  ``org.opencontainers.image.licenses`` annotations (LOW; SBOM
+  / registry-UI hygiene). ``OCI-006`` flags single-image
+  manifests with more than 40 layers (LOW; flags Dockerfile
+  RUN-step sprawl, indexes pass-by-default since they have no
+  layers themselves). OCI catalog: 3 to 6.
+- **OCI image manifest provider.** New ``--pipeline oci
+  --oci-manifest <file>`` reads an OCI image manifest /
+  image-index JSON document captured via
+  ``docker buildx imagetools inspect --raw <ref>`` (or the
+  equivalent ``oras manifest fetch`` / ``crane manifest``). Pure
+  parser, no registry pull, no daemon access; auto-detects
+  ``./index.json`` in a directory. Three checks: ``OCI-001``
+  flags missing ``org.opencontainers.image.source`` /
+  ``image.revision`` annotations on the manifest (mirrors DF-016
+  at the image-manifest layer so a build that overrides the
+  Dockerfile's ``LABEL`` lines via ``docker buildx --annotation``
+  is still scored); ``OCI-002`` flags an image index with no
+  BuildKit-style attestation-manifest sub-entry
+  (``vnd.docker.reference.type: attestation-manifest``), where
+  SLSA provenance and SBOM data live; ``OCI-003`` flags a missing
+  ``org.opencontainers.image.created`` timestamp (CVE triage
+  needs the build date, the lightest provenance signal that
+  doesn't require pulling the config blob). Recognizes both the
+  OCI 1.0 / 1.1 spec media types and the
+  ``application/vnd.docker.distribution.manifest.{,list.}v2+json``
+  shapes BuildKit still emits by default. Provider catalog: 16
+  to 17 (added 3 new OCI-* rules).
+- **Real performance benchmark gate.**
+  ``tests/perf/test_benchmark.py`` replaces the older smoke test
+  with a ``pytest-benchmark`` run on a 1000-line synthetic GHA
+  workflow and a 5000-line synthetic CFN template, asserting
+  absolute median ceilings (5s / 8s, sized for slow CI; locally
+  each scan completes in ~17ms / ~2ms). Measurement uses
+  ``benchmark.pedantic`` (warmup + multiple rounds + median) so
+  a CI-run failure includes ops/sec and median wall time, not
+  just a pass/fail. Developers can save a per-machine baseline
+  with ``pytest tests/perf/test_benchmark.py --benchmark-autosave``
+  and gate against it with ``pytest tests/perf/test_benchmark.py
+  --benchmark-compare --benchmark-compare-fail=median:25%`` to
+  detect regressions vs the saved JSON. CI doesn't save baselines
+  (they'd flap as GitHub-hosted runner hardware shifts) and
+  relies on the absolute ceilings instead. Adds
+  ``pytest-benchmark>=5.0`` to ``requirements-dev.in`` /
+  ``-dev.txt``.
+- **Entropy-detector vocabulary tightened after calibration.**
+  Calibration sweep against the project's own fixture corpus
+  surfaced 9 false positives on ``secure.yaml`` Kubernetes
+  manifests, all from the heuristic matching ``api`` standalone
+  inside ``apiVersion`` / ``apiGroups`` and ``private`` standalone
+  inside ``private_subnet`` / ``private_dns_zone`` /
+  ``privateLink``. The K8s / Argo / Tekton manifest schemas use
+  ``apiVersion`` and ``apiGroups`` as ubiquitous structural
+  fields, and cloud networking configs use ``private_*`` as a
+  prefix for non-credential infrastructure. Both standalone
+  tokens get dropped from ``_CRED_KEY_TOKENS`` while real
+  credential-named fields (``api_key``, ``apiSecret``,
+  ``private_key``, ``private_token``) still fire because their
+  OTHER part (``key``, ``secret``, ``token``) carries the
+  heuristic. Calibration after the fix: synthetic
+  ground-truth set holds at 100% recall + 100% precision; the
+  fixture corpus drops from 9 false positives to 0; the repo's
+  own configs drop from 21 entropy hits to 4 (all true positives:
+  the existing AWS canonical example secret + the three
+  intentionally-bad fixtures). 9 new negative test cases lock
+  the contract.
+- **``--detect-entropy`` opt-in Shannon-entropy secret detector.**
+  Adds a second pass to ``find_secret_values`` that flags
+  high-entropy values (>= 3.5 bits/char, length >= 20) appearing
+  in YAML key contexts that suggest a credential
+  (``API_KEY``, ``apiToken``, ``database-password``, ...) and
+  that the deterministic prefix-shape catalog hasn't already
+  matched. Catches the "custom org token with no public prefix"
+  case: an internal Snowflake token, custom JWT issuer secret,
+  opaque session token, etc., that today only fires if the
+  operator pre-registers a regex via ``--secret-pattern``.
+  Layered FP suppression — four independent gates, each catching
+  a different class of false positive:
+  - **Key-context match**: the YAML key name (after splitting on
+    ``-`` / ``_`` / camel-case boundaries) must contain a part
+    matching the credential vocabulary
+    (``key`` / ``token`` / ``secret`` / ``password`` / ``auth``
+    / ``api`` / ``credential`` / ``private`` / ``passkey`` /
+    ``accesskey`` / ``secretkey``). Filters out random-looking
+    values in non-credential fields (commit SHAs in
+    ``version:``, hashes in ``id:``).
+  - **Length floor** (>= 20 chars). Filters out short hex IDs
+    even though they're technically high-entropy.
+  - **Token shape** (``[A-Za-z0-9+/=_\-.]+``). Filters out
+    encoded paths, templated config strings, log lines.
+  - **No deterministic-detector overlap**. If the value already
+    matches one of the 51 prefix-shape detectors, only the
+    deterministic label fires (the more useful one).
+  Plus the existing ``PLACEHOLDER_MARKER_RE`` suppression for
+  ``replaceme`` / ``<your-key>`` / etc.
+  Hits are labeled ``entropy:<redacted>`` so reporters can
+  distinguish them from prefix-matched hits and operators can
+  write targeted ``--ignore-file`` rules. Off by default —
+  turning it on can introduce new findings on previously-clean
+  scans, so the upgrade is opt-in only. The Kubernetes / CFN /
+  Terraform envvar shape (``[{name: K, value: V}, ...]``) gets
+  special handling: the walker biases toward the sibling
+  ``name`` field as the credential-context label, so
+  ``{name: DATABASE_PASSWORD, value: <token>}`` correctly reads
+  as ``DATABASE_PASSWORD: <token>`` for the heuristic. 52 new
+  tests in ``tests/test_entropy_detection.py`` cover the math,
+  the key heuristic (15 positive + 11 negative cases), the
+  layered FP suppression (7 cases), the off-by-default
+  contract, the K8s envvar-list shape, and the
+  ``reset_patterns`` lifecycle hook (so a Lambda container
+  doesn't leak the toggle across invocations).
+- **``--ai-explain CHECK_ID`` opt-in AI augmentation layer.**
+  First non-deterministic feature in the catalog, structured to
+  preserve the determinism the rest of the tool depends on.
+  Prints the existing ``--explain`` body unchanged, then appends
+  a clearly-framed ``[AI-generated, non-deterministic. Provider:
+  <provider>:<model>. Treat as a triage aid, not as audit
+  output.]`` section with project-specific remediation prose.
+  Three providers, all opt-in, none on by default:
+  - **Anthropic.** Default ``claude-sonnet-4-6``. Lazy-imports the
+    ``anthropic`` SDK; install via
+    ``pip install pipeline-check[ai-anthropic]``. Auth via
+    ``$ANTHROPIC_API_KEY``.
+  - **OpenAI.** Default ``gpt-4o-mini``. Lazy-imports ``openai``;
+    install via ``pip install pipeline-check[ai-openai]``. Auth
+    via ``$OPENAI_API_KEY``.
+  - **Ollama.** Default ``llama3.2``. Stdlib-only HTTP client
+    against ``$OLLAMA_HOST`` (defaults to
+    ``http://localhost:11434``); no extra Python dep, no API key,
+    no bytes leaving the host.
+  Provider selection is explicit (``--ai-model anthropic`` or
+  ``provider:model``) or implicit via
+  ``$PIPELINE_CHECK_AI_MODEL`` / whichever provider key happens
+  to be set. The prompt includes the rule's metadata, the first
+  60 lines of ``README.*``, and the first 200 lines of an optional
+  ``--ai-context-file PATH`` so the model can ground its
+  recommendation in the actual codebase. Context-file is
+  validated as an existing readable path before any AI call
+  fires. Failure modes (missing SDK, missing key, unknown
+  provider, request failure) all exit code 4 with a clear error
+  shaped for CI logs, distinct from the deterministic
+  ``--explain``'s exit code 3 for unknown IDs.
+  Determinism boundary: the ``--explain``, ``--list-checks``,
+  ``--list-standards``, JSON / SARIF / scoring / gating, and
+  attack-chain paths are unaffected — verified by
+  ``TestDeterminismContract`` in ``tests/test_ai_explain.py``,
+  which asserts ``--explain GHA-001`` output never carries the
+  AI banner and that no AI provider call fires unless
+  ``--ai-explain`` was passed. 40 new tests cover spec parsing,
+  default-provider resolution, prompt construction, README /
+  context-file grounding, all three error paths, the CLI
+  banner format, and the deterministic / AI-output separation.
+  No new runtime dependencies on the default install.
 - **AC-026 — Buildkite injection lands on auto-deploy step with no
   manual gate.** New cross-rule attack chain on the Buildkite
   surface, mirroring the AC-002 (GitHub) and AC-022 (GitLab)

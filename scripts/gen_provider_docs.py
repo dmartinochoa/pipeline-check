@@ -486,6 +486,70 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
   `default`.
 """,
     ),
+    "oci": (
+        "OCI image manifest",
+        "pipeline_check.core.checks.oci.rules",
+        _REPO_ROOT / "docs" / "providers" / "oci.md",
+        """\
+# OCI image manifest provider
+
+Parses OCI image manifests / image-indexes from disk, pure JSON, no
+registry pull, no image build, no daemon access. The user captures
+the manifest with ``docker buildx imagetools inspect --raw <ref>``
+(or the equivalent ``oras manifest fetch`` / ``crane manifest``)
+and points the scanner at the resulting JSON. Recognized media
+types: the OCI 1.0 / 1.1 spec types
+(``application/vnd.oci.image.{index,manifest}.v1+json``) and the
+Docker-distribution-v2 equivalents BuildKit still emits by default.
+
+## Producer workflow
+
+```bash
+# Capture the index from a registry into a JSON file.
+docker buildx imagetools inspect --raw \\
+    ghcr.io/example/app:1.0.0 > image.json
+
+# Run the scanner.
+pipeline_check --pipeline oci --oci-manifest image.json
+
+# Or point at a directory; ./index.json is auto-detected.
+pipeline_check --pipeline oci --oci-manifest ./oci-layout/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### What the rules expect
+
+OCI rules operate on the manifest *shape* alone, the scanner never
+fetches the config blob or layer contents. That keeps the provider
+read-from-disk-only and avoids taking on a registry-credential
+surface, but it also bounds what's detectable: anything that
+requires the config (entrypoint, labels written via
+``--label`` rather than ``--annotation``, layer history) is out
+of scope. Use the Dockerfile provider in tandem to catch
+authoring-time gaps that don't survive into the manifest.
+
+### OCI-specific checks
+
+- **OCI-001**, image manifest must carry
+  ``org.opencontainers.image.source`` and
+  ``org.opencontainers.image.revision`` annotations. Mirrors
+  DF-016 (Dockerfile-time) at the image-manifest layer so a build
+  that overrides annotations via ``docker buildx --annotation``
+  is still scored.
+- **OCI-002**, image index must include at least one attestation
+  manifest (BuildKit-style sub-manifest annotated with
+  ``vnd.docker.reference.type: attestation-manifest``). This is
+  where ``--attest=type=provenance`` and ``--attest=type=sbom``
+  land their data; without one, neither SLSA provenance nor an
+  SBOM is reachable from the image.
+- **OCI-003**, image manifest must carry
+  ``org.opencontainers.image.created``. CVE triage uses this to
+  determine the image's build date without pulling the config
+  blob.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -593,6 +657,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     },
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
+    "oci": {
+        "prefix": "OCI", "prefix_lc": "oci", "pkg": "oci",
+        "signature": "check(manifest: OCIManifest) -> Finding",
+        "arg_kind": "``OCIManifest``",
+    },
 }
 
 

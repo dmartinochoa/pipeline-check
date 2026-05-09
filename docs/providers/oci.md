@@ -1,0 +1,240 @@
+# OCI image manifest provider
+
+Parses OCI image manifests / image-indexes from disk, pure JSON, no
+registry pull, no image build, no daemon access. The user captures
+the manifest with ``docker buildx imagetools inspect --raw <ref>``
+(or the equivalent ``oras manifest fetch`` / ``crane manifest``)
+and points the scanner at the resulting JSON. Recognized media
+types: the OCI 1.0 / 1.1 spec types
+(``application/vnd.oci.image.{index,manifest}.v1+json``) and the
+Docker-distribution-v2 equivalents BuildKit still emits by default.
+
+## Producer workflow
+
+```bash
+# Capture the index from a registry into a JSON file.
+docker buildx imagetools inspect --raw \
+    ghcr.io/example/app:1.0.0 > image.json
+
+# Run the scanner.
+pipeline_check --pipeline oci --oci-manifest image.json
+
+# Or point at a directory; ./index.json is auto-detected.
+pipeline_check --pipeline oci --oci-manifest ./oci-layout/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### What the rules expect
+
+OCI rules operate on the manifest *shape* alone, the scanner never
+fetches the config blob or layer contents. That keeps the provider
+read-from-disk-only and avoids taking on a registry-credential
+surface, but it also bounds what's detectable: anything that
+requires the config (entrypoint, labels written via
+``--label`` rather than ``--annotation``, layer history) is out
+of scope. Use the Dockerfile provider in tandem to catch
+authoring-time gaps that don't survive into the manifest.
+
+### OCI-specific checks
+
+- **OCI-001**, image manifest must carry
+  ``org.opencontainers.image.source`` and
+  ``org.opencontainers.image.revision`` annotations. Mirrors
+  DF-016 (Dockerfile-time) at the image-manifest layer so a build
+  that overrides annotations via ``docker buildx --annotation``
+  is still scored.
+- **OCI-002**, image index must include at least one attestation
+  manifest (BuildKit-style sub-manifest annotated with
+  ``vnd.docker.reference.type: attestation-manifest``). This is
+  where ``--attest=type=provenance`` and ``--attest=type=sbom``
+  land their data; without one, neither SLSA provenance nor an
+  SBOM is reachable from the image.
+- **OCI-003**, image manifest must carry
+  ``org.opencontainers.image.created``. CVE triage uses this to
+  determine the image's build date without pulling the config
+  blob.
+
+## What it covers
+
+6 checks · 0 have an autofix patch (``--fix``).
+
+| Check | Title | Severity | Fix |
+|-------|-------|----------|-----|
+| [OCI-001](#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [OCI-002](#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [OCI-003](#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [OCI-004](#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [OCI-005](#oci-005) | Image manifest is missing the ``image.licenses`` annotation | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [OCI-006](#oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> |  |
+
+---
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## OCI-001: Image manifest is missing OCI provenance annotations { #oci-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Without these two annotations a pulled image can't be traced back to a source revision, so an incident-response team has no way to reach the build that produced it. The rule fires on whichever layer the manifest carries (top-level for an index, sub-manifest for a per-platform image); DF-016 catches the same gap at Dockerfile authoring time, OCI-001 catches it once the image has been built and any later ``docker buildx --annotation`` overrides have already been applied.
+
+**Known false-positive modes**
+
+- Throwaway / scratch images that never leave a developer's machine (e.g. ``image inspect`` of an intermediate build stage) don't need provenance annotations. Suppress via ignore-file rather than removing the rule.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Stamp the image with at least ``org.opencontainers.image.source`` (the URL of the source repo) and ``org.opencontainers.image.revision`` (the commit SHA built into the image). With ``docker buildx`` this is ``--label org.opencontainers.image.source=...`` plus ``--label org.opencontainers.image.revision=...`` at build time, or set them as image annotations through ``--annotation`` so they appear on the manifest itself (``manifest.annotations`` is what registries surface to ``manifest inspect``).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## OCI-002: Image is missing a build attestation manifest { #oci-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Build attestations are the canonical place for SLSA provenance and SBOM data on an OCI image. A multi-platform image index that ships per-architecture manifests but no attestation-manifest sibling means there's no signed record of how the image was built or what's inside it, so consumers can't enforce SLSA Build-L2+ or feed an SBOM into vulnerability triage. A single-platform manifest (no image index) also fails this rule, attestations require the index-of-manifests shape that BuildKit produces by default.
+
+**Known false-positive modes**
+
+- Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
+- Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Build the image with ``docker buildx build --attest=type=provenance,mode=max --attest=type=sbom`` (or the equivalent BuildKit frontend flags). Both attestations land as sibling sub-manifests inside the image index, annotated with ``vnd.docker.reference.type: attestation-manifest`` and linked to their target manifest via ``vnd.docker.reference.digest``. Verify after pushing with ``docker buildx imagetools inspect <ref>``, the ``Attestations`` section should list both predicate types.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## OCI-003: Image manifest is missing the ``image.created`` annotation { #oci-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Image age isn't a security boundary on its own, but a missing ``image.created`` annotation makes routine triage questions ("is this image stale enough to warrant a rebuild?", "was this image built before or after the CVE-2024-XXXX advisory?") much harder to answer automatically. Surfacing the gap as LOW-severity catches the omission early without overwhelming reports for an otherwise-well-formed image.
+
+**Known false-positive modes**
+
+- Reproducible-build pipelines deliberately omit ``image.created`` (or pin it to ``SOURCE_DATE_EPOCH``) so the same source produces a byte-identical image. Suppress via ignore-file when reproducibility is the goal.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Stamp ``org.opencontainers.image.created`` with the build timestamp (RFC 3339 / ISO 8601, e.g. ``2025-01-30T18:00:00Z``). With ``docker buildx`` either pass ``--label org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)`` at build time, or rely on the BuildKit frontend default which does it automatically when ``SOURCE_DATE_EPOCH`` is unset. The annotation lets downstream vuln scanners and registries surface image age, which is the lightest-weight CVE-triage signal available without pulling the config blob.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## OCI-004: Image layer references an arbitrary URL (foreign layer) { #oci-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+A layer with a ``urls:`` field is fetched from whatever URL the manifest declares, not from the registry the image was pulled from. The digest is still verified after the fetch, so a passive attacker can't substitute a different blob, but an attacker who controls the URL endpoint can serve different content depending on the client (server-side cloaking) or simply take the endpoint offline to break image pulls. The rule fires on any layer whose descriptor includes a non-empty ``urls:`` array; it doesn't try to validate URL hygiene (HTTPS, allow-list of hosts) since the existence of the field alone is the policy violation.
+
+**Known false-positive modes**
+
+- Legacy Windows Server base images (pre-Windows 11 / Server 2022) ship layers from ``mcr.microsoft.com`` with this mechanism. Suppress via ignore-file when the Windows image is intentional, the rule has no way to distinguish a Microsoft-blessed URL from any other.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Rebuild the image without foreign-layer references. The OCI / Docker spec lets a layer descriptor carry a ``urls:`` field that tells the client to pull the layer blob from an arbitrary HTTP location at image-pull time, bypassing the registry's content-addressed store. The mechanism exists for proprietary base layers (notably Windows Server base images that ship from ``mcr.microsoft.com``) but is increasingly deprecated, modern Windows images at ``mcr.microsoft.com/windows/servercore:ltsc2022`` no longer use it. If the foreign URL is genuinely required, host the blob inside your own registry and pin it by digest the same as any other layer.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## OCI-005: Image manifest is missing the ``image.licenses`` annotation { #oci-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Without ``image.licenses`` an SBOM tool either has to fall back to scanning the layer contents (slow, best-effort) or simply mark the image as ``license: unknown`` in compliance reports. The same field is what container registries surface to the operator UI, so its absence also makes manual license review harder. The rule is LOW severity because a missing license is a hygiene gap rather than a security boundary, but it ratchets up SBOM quality enough that it's worth catching at scan time.
+
+**Known false-positive modes**
+
+- Internal images that never leave a private registry and aren't subject to OSS license compliance audits may legitimately omit the annotation. Suppress via ignore-file when this is the deliberate stance.
+- Multi-license images with ambiguous coverage (e.g. a base image plus mixed-license app code) sometimes skip the annotation rather than emit a misleading single-license value. In that case, the correct fix is to emit the SPDX compound expression (``MIT AND Apache-2.0``); suppression is the wrong answer.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Stamp ``org.opencontainers.image.licenses`` with the SPDX expression for the image's contents (e.g. ``Apache-2.0``, ``MIT AND Apache-2.0``, ``Apache-2.0 WITH LLVM-exception``). With ``docker buildx`` the simplest path is to add ``--label org.opencontainers.image.licenses=Apache-2.0`` (or, for annotation-based propagation onto the manifest, ``--annotation manifest:org.opencontainers.image.licenses=Apache-2.0``). The OCI image-spec annotation is a well-known SPDX expression carrier, downstream SBOM generators and registry UIs read it directly without needing per-tool configuration.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## OCI-006: Image has an excessive layer count { #oci-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-1037</span>
+</div>
+
+Each layer is a content-addressed blob with its own registry round-trip on pull, its own caching decision, and its own potential for credential leakage (a ``RUN`` step that touched a secret leaves the secret in that layer's tar archive even if a later layer deletes it). The rule fires above 40 layers, which empirically captures the ``docker history`` blowout that happens when a Dockerfile's ``RUN`` lines don't collapse (``RUN apt-get update`` followed by ``RUN apt-get install`` followed by ``RUN apt-get clean`` is three layers where one would do). Indexes don't have layers of their own, the rule passes on them and applies instead to each per-platform image manifest a downstream scan loads.
+
+**Known false-positive modes**
+
+- Some legitimately large base images (CUDA / ML toolchains, fully-built distros) ship with 30-50 layers by design. Suppress via ignore-file when the layer count reflects a deliberate base-image choice rather than Dockerfile RUN-step sprawl.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Squash the image's layer count by collapsing adjacent ``RUN`` directives in the Dockerfile (``RUN apt-get update && apt-get install ... && rm -rf /var/lib/apt/lists/*`` is the canonical pattern), ordering ``COPY`` lines so cache invalidation moves them as a unit, and using multi-stage builds to drop build-time-only artifacts before the final ``FROM``. BuildKit's ``--squash`` flag flattens the result if the Dockerfile shape can't be restructured. Most well-tuned production images sit between 5 and 20 layers; anything past 40 is almost always accidental Dockerfile sprawl, not intentional layering.
+
+</div>
+
+</div>
+
+---
+
+## Adding a new OCI image manifest check
+
+1. Create a new module at
+   `pipeline_check/core/checks/oci/rules/ociNNN_<name>.py`
+   exporting a top-level `RULE = Rule(...)` and a `check(manifest: OCIManifest) -> Finding`
+   function. The orchestrator auto-discovers `RULE` and calls `check`
+   with the ``OCIManifest``.
+2. Add a mapping for the new ID in
+   `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
+   other standard that applies).
+3. Drop unsafe/safe snippets at
+   `tests/fixtures/per_check/oci/OCI-NNN.{unsafe,safe}.yml`
+   and add a `CheckCase` entry in
+   `tests/test_per_check_real_examples.py::CASES`.
+4. Regenerate this doc:
+
+   ```bash
+   python scripts/gen_provider_docs.py oci
+   ```
