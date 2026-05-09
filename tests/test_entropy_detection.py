@@ -282,8 +282,13 @@ class TestPreCollectedListShape:
         # The Jenkins check passes ``[jf.text]``: a flat list of
         # strings without YAML key context. The entropy pass needs
         # that key context, so it's skipped for the shape; only the
-        # deterministic detectors run.
+        # deterministic detectors run. Use an AWS canonical example
+        # access key so the assertion can also lock the positive
+        # "deterministic catalog still fires" guarantee — without
+        # it the test would still pass if list input silently
+        # skipped every detector.
         enable_entropy_detection(True)
-        text = "API_KEY=f8e3a921bc5d7e4f0a9b8c1d2e3f4a5b6c7d8e9f\n"
+        text = "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n"
         hits = find_secret_values([text])
+        assert any(h.startswith("aws_access_key:") for h in hits), hits
         assert all(not h.startswith("entropy:") for h in hits)
