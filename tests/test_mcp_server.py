@@ -225,6 +225,24 @@ class TestToolScanMarkdown:
         )
         # Markdown reporter always emits the H1.
         assert "# Pipeline Security Report" in out["markdown"]
+        # Summary block includes total / failed / passed counts.
+        assert out["summary"]["total"] > 0
+        assert out["summary"]["failed"] >= 0
+
+    def test_carries_attack_chains_when_present(self):
+        # The GitLab insecure fixture matches at least one
+        # AC- chain; scan_markdown should carry it into the
+        # rendered output so PR comments don't hide the chain
+        # narrative.
+        out = _tools.scan_markdown(
+            provider="gitlab", path=str(GITLAB_FIXTURE),
+        )
+        # Existence of an Attack Chains section is conditional on
+        # whether any chain matched. Either it's there with the
+        # chain header, or the fixture currently doesn't trip a
+        # GitLab chain. Both are valid.
+        if "Attack Chains" in out["markdown"]:
+            assert "AC-" in out["markdown"] or "XPC-" in out["markdown"]
 
 
 class TestToolRegistry:

@@ -32,7 +32,7 @@ The server exposes the following tools. Schemas are advertised through `tools/li
 | `list_standards` | Every registered compliance standard with control counts. |
 | `scan` | Run a scan and return findings + score + chains. STRIDE codes attached to each finding. |
 | `inventory` | Component inventory for a provider + path. |
-| `threat_model` | Run a scan and return the STRIDE-mapped Markdown threat-model document. |
+| `threat_model` | Run a scan and return the STRIDE-mapped Markdown threat-model document. See [threatmodel.md](threatmodel.md) for what's in the document. |
 | `scan_markdown` | Run a scan and return the GitHub-Flavored Markdown summary (PR-comment shape). |
 
 Every tool returns JSON-serializable data. Errors come back as `{"error": "..."}` payloads, never as raw stack traces.

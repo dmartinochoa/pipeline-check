@@ -18,6 +18,40 @@ of v0.2.x to v0.3.x left behind.
 
 ### Landed on `dev`
 
+- **STRIDE threat-model generator (`--output threatmodel`).** New
+  output format that emits a self-contained Markdown threat model
+  from the same scan output the JSON / HTML / SARIF reporters
+  consume. Sections: Scope, Trust boundaries (heuristics), Assets
+  (the inventory), STRIDE analysis (failing findings grouped),
+  Implemented controls (passing-check counts per STRIDE bucket),
+  Risk register (top 25), Methodology footer. OWASP-to-STRIDE
+  mapping plus a CWE prepend table for finer-grained
+  classification. Selecting `--output threatmodel` auto-runs the
+  inventory pass. Output shaped for SOC 2 / PCI / NIST SSDF
+  evidence packages and architecture-review docs. No rule
+  registry changes; STRIDE classification is a pure function of
+  each finding's existing OWASP / CWE tags. See
+  [docs/output.md#threat-model](docs/output.md).
+- **MCP (Model Context Protocol) server (`--serve`).** Locally-
+  running MCP server lets AI clients (Claude Desktop, Claude
+  Code, Cursor, Continue, Zed) drive scans and introspect the
+  catalog directly. Stdio transport, ten tools advertised:
+  `scan`, `inventory`, `explain_check`, `list_chains`,
+  `threat_model`, etc. The `mcp` SDK is an optional `[mcp]` extra
+  so the default install stays slim. Architecture splits
+  `tools.py` (pure functions, no SDK import) from `server.py`
+  (binds to MCP types, runs asyncio loop) so future transports
+  (HTTP+SSE, streamable-http) reuse the same tool surface. See
+  [docs/mcp.md](docs/mcp.md).
+- **Peer-tool gap closure** — audited Zizmor / Checkov /
+  StepSecurity / Poutine / KICS rule packs against
+  pipeline-check's catalog and shipped the four highest-value
+  gaps: `GHA-037` Artipacked (`actions/checkout`
+  persist-credentials), `GHA-038` `ACTIONS_ALLOW_UNSECURE_COMMANDS`
+  override, `GHA-039` hardcoded services / container credentials,
+  `GL-033` global `before_script` taint propagation. Plus
+  cross-provider parity adds: `DR-008/009/010/011`,
+  `BK-014/015`, `TKN-014/015`, `ARGO-014/015`, `OCI-007/008`.
 - **Three new attack chains** — `AC-009` Supply Chain Repo Poisoning
   (GHA-001 + GHA-002 + GHA-008 on the same workflow), `AC-010`
   Self-Hosted Runner Environment Exfiltration (GHA-012 plus GHA-016

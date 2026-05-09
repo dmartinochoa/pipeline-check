@@ -26,7 +26,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ..core.checks.base import Confidence, Finding, Severity
+from ..core.checks.base import (
+    Confidence,
+    Finding,
+    Severity,
+)
+from ..core.checks.base import (
+    severity_rank as _severity_rank,
+)
 from ..core.markdown_reporter import report_markdown
 from ..core.scanner import Scanner
 from ..core.scorer import score
@@ -298,6 +305,62 @@ def _finding_to_dict(f: Finding) -> dict[str, Any]:
     return out
 
 
+# Confidence rank shared by every tool. Mirrors ``confidence_rank``
+# from the CLI but inlined to keep ``tools.py`` decoupled from
+# ``cli.py``.
+_CONFIDENCE_ORDER: dict[Confidence, int] = {
+    Confidence.LOW: 0,
+    Confidence.MEDIUM: 1,
+    Confidence.HIGH: 2,
+}
+
+
+def _run_scan(
+    provider: str,
+    path: str | None,
+    *,
+    region: str = "us-east-1",
+    profile: str | None = None,
+    chains_enabled: bool = True,
+    checks: list[str] | None = None,
+    standards: list[str] | None = None,
+    min_confidence: str = "LOW",
+    severity_threshold: str | None = None,
+) -> tuple[Scanner, list[Finding]]:
+    """Build a Scanner, run it, apply CLI-equivalent filters.
+
+    Returns the Scanner and the (filtered) list of Finding
+    dataclass instances so callers can both render findings as
+    JSON and pass them through to the markdown / threat-model
+    reporters without a serialize / re-hydrate round trip.
+    """
+    kwargs = _provider_kwarg(provider, path)
+    threshold_rank = _CONFIDENCE_ORDER[Confidence(min_confidence.upper())]
+
+    scanner = Scanner(
+        pipeline=provider,
+        region=region,
+        profile=profile,
+        chains_enabled=chains_enabled,
+        **kwargs,
+    )
+    findings = scanner.run(
+        checks=list(checks) if checks else None,
+        standards=list(standards) if standards else None,
+    )
+    findings = [
+        f for f in findings
+        if _CONFIDENCE_ORDER[f.confidence] >= threshold_rank
+    ]
+    if severity_threshold:
+        sev_rank = _severity_rank(Severity(severity_threshold.upper()))
+        findings = [
+            f for f in findings
+            if _severity_rank(f.severity) >= sev_rank
+        ]
+    return scanner, findings
+
+
 def scan(
     provider: str,
     path: str | None = None,
@@ -317,43 +380,14 @@ def scan(
     invocation. Confidence and severity filters are applied here so
     the agent sees the same trimmed set the CLI gate would.
     """
-    kwargs = _provider_kwarg(provider, path)
-
-    # Confidence filter rank. Mirrors ``confidence_rank`` from the
-    # CLI but inlined to keep ``tools.py`` decoupled from ``cli.py``.
-    conf_order = {
-        Confidence.LOW: 0,
-        Confidence.MEDIUM: 1,
-        Confidence.HIGH: 2,
-    }
-    threshold_conf = Confidence(min_confidence.upper())
-    threshold_rank = conf_order[threshold_conf]
-
-    severity_min: Severity | None = None
-    if severity_threshold:
-        severity_min = Severity(severity_threshold.upper())
-
-    scanner = Scanner(
-        pipeline=provider,
-        region=region,
-        profile=profile,
+    scanner, findings = _run_scan(
+        provider, path,
+        region=region, profile=profile,
         chains_enabled=not no_chains,
-        **kwargs,
+        checks=checks, standards=standards,
+        min_confidence=min_confidence,
+        severity_threshold=severity_threshold,
     )
-    findings = scanner.run(
-        checks=list(checks) if checks else None,
-        standards=list(standards) if standards else None,
-    )
-    findings = [
-        f for f in findings
-        if conf_order[f.confidence] >= threshold_rank
-    ]
-    if severity_min is not None:
-        from ..core.checks.base import severity_rank as _rank
-        threshold = _rank(severity_min)
-        findings = [
-            f for f in findings if _rank(f.severity) >= threshold
-        ]
     score_result = score(findings)
     chains_out: list[dict[str, Any]] = []
     for c in getattr(scanner, "chains", []) or []:
@@ -445,16 +479,11 @@ def threat_model(
     ``threatmodel_reporter``. Lets an agent ask one tool for the
     document instead of stitching the three together.
     """
-    kwargs = _provider_kwarg(provider, path)
-    scanner = Scanner(
-        pipeline=provider,
-        region=region,
-        profile=profile,
+    scanner, findings = _run_scan(
+        provider, path,
+        region=region, profile=profile,
         chains_enabled=True,
-        **kwargs,
-    )
-    findings = scanner.run(
-        standards=list(standards) if standards else None,
+        standards=standards,
     )
     score_result = score(findings)
     components = scanner.inventory()
@@ -491,27 +520,21 @@ def scan_markdown(
     Useful when the agent wants a human-shaped summary to paste
     into a PR comment without re-rendering the JSON itself.
     """
-    payload = scan(provider, path, region=region, profile=profile)
-    # Re-hydrate Finding objects from the dicts so the markdown
-    # reporter (which expects the dataclass) can render them.
-    findings = []
-    for d in payload["findings"]:
-        findings.append(Finding(
-            check_id=d["check_id"],
-            title=d["title"],
-            severity=Severity(d["severity"]),
-            resource=d["resource"],
-            description=d["description"],
-            recommendation=d["recommendation"],
-            passed=d["passed"],
-            confidence=Confidence(d["confidence"]),
-        ))
-    md = report_markdown(findings, payload["score"])
+    scanner, findings = _run_scan(
+        provider, path, region=region, profile=profile,
+    )
+    score_result = score(findings)
+    chains = list(getattr(scanner, "chains", []) or [])
+    md = report_markdown(findings, score_result, chains=chains)
     return {
         "provider": provider,
         "path":     path or "",
         "markdown": md,
-        "summary":  payload["summary"],
+        "summary": {
+            "total":  len(findings),
+            "failed": sum(1 for f in findings if not f.passed),
+            "passed": sum(1 for f in findings if f.passed),
+        },
     }
 
 

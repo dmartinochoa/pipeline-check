@@ -158,6 +158,8 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
 | **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
+| **STRIDE threat model** | `--output threatmodel` emits a self-contained Markdown threat-model document populated from the scan + inventory: assets, trust boundaries, findings grouped by STRIDE category, implemented controls, top-25 risk register. Mapping is derived from each rule's existing OWASP / CWE tags so re-policing is one table swap. Shaped for SOC 2 / PCI / NIST SSDF evidence packages. |
+| **MCP server** | `pipeline_check --serve` runs as a Model Context Protocol server on stdio so AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) can drive scans and introspect the rule catalog directly. Ten tools advertised: scan / inventory / explain_check / list_chains / threat_model / etc. The `mcp` SDK is an optional `[mcp]` extra so the default install stays slim. See [docs/mcp.md](docs/mcp.md). |
 
 ---
 
@@ -166,8 +168,10 @@ standards, so a single scan satisfies multiple audit frameworks.
 ```bash
 pipeline_check --output terminal            # rich table to stdout (default)
 pipeline_check --output json                # machine-readable JSON
-pipeline_check --output html --output-file report.html  # self-contained HTML
-pipeline_check --output sarif --output-file scan.sarif  # SARIF 2.1.0 for GitHub/GitLab
+pipeline_check --output html --output-file report.html       # self-contained HTML
+pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
+pipeline_check --output markdown            # PR-comment shape (GFM)
+pipeline_check --output threatmodel --output-file threats.md # STRIDE threat model
 pipeline_check --output both                # terminal on stderr + JSON on stdout
 ```
 
