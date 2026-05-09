@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
+from ..._primitives.local_mock import env_targets_local_mock
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -42,11 +43,45 @@ RULE = Rule(
         "or wait timers. Any push to the triggering branch will "
         "deploy immediately."
     ),
+    known_fp=(
+        "Integration-test jobs that run ``terraform apply`` or "
+        "``kubectl apply`` against a local mock (LocalStack, Moto, "
+        "kind, k3d) aren't real deploys. The rule auto-suppresses a "
+        "step whose env carries ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` "
+        "pointing at a localhost address.",
+    ),
 )
 
 
+def _job_targets_local_mock(job: dict[str, Any]) -> bool:
+    """True when this job's deploy commands all run against a local mock.
+
+    The signal is an ``AWS_ENDPOINT_URL`` (or sibling) pointing at a
+    localhost address anywhere in the job: the job-level ``env``, or
+    *any* step's ``env``. Workflow authors typically set the endpoint
+    on a downstream verification step (the actual ``terraform apply``
+    inherits the endpoint from a hardcoded provider config or a
+    previously-set env) rather than re-pasting it on every step, so
+    a job-wide scan is what matches real-world workflow shape.
+    """
+    if env_targets_local_mock(job.get("env")):
+        return True
+    for step in iter_steps(job):
+        if env_targets_local_mock(step.get("env")):
+            return True
+    return False
+
+
 def _job_has_deploy_commands(job: dict[str, Any]) -> bool:
-    """Return True if any step runs a deploy-like command."""
+    """Return True if any step runs a deploy-like command against a real target.
+
+    Skips the whole job if any of its envs (job-level or any step's)
+    pointed at a localhost mock. See :func:`_job_targets_local_mock`
+    for the rationale; in practice the env is set on a verification
+    step downstream of the ``terraform apply``, which is enough signal.
+    """
+    if _job_targets_local_mock(job):
+        return False
     for step in iter_steps(job):
         run = step.get("run")
         if isinstance(run, str) and _DEPLOY_CMD_RE.search(run):

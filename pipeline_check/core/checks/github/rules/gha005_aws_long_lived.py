@@ -4,6 +4,7 @@ from __future__ import annotations
 import re as _re
 from typing import Any
 
+from ..._primitives.local_mock import env_has_localstack_sentinel
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -29,6 +30,14 @@ RULE = Rule(
         "OIDC with `role-to-assume` yields short-lived credentials "
         "per workflow run."
     ),
+    known_fp=(
+        "LocalStack and Moto integration tests set "
+        "``AWS_ENDPOINT_URL`` to a localhost address and use the "
+        "sentinel ``test`` / ``test`` access keys (the LocalStack "
+        "convention). Those values can't authenticate against real "
+        "AWS, so the rule auto-suppresses an env block that pairs a "
+        "localhost endpoint with sentinel keys.",
+    ),
 )
 
 
@@ -43,6 +52,8 @@ _SECRETS_REF_RE = _re.compile(r"\$\{\{\s*secrets\.")
 def _env_has_static_key(env: Any) -> bool:
     """True if an env block sets AWS key vars to non-secrets references."""
     if not isinstance(env, dict):
+        return False
+    if env_has_localstack_sentinel(env):
         return False
     for key, value in env.items():
         key_s = str(key).upper()

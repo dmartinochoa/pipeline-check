@@ -354,6 +354,45 @@ class TestGHA014DeployEnvironment:
         f = run_check(wf, "GHA-014")
         assert f.passed
 
+    def test_passes_for_localstack_terraform_apply(self):
+        # Integration-test job that runs ``terraform apply`` against
+        # LocalStack (AWS_ENDPOINT_URL pointed at localhost). The rule
+        # must not flag it as a deploy-without-environment.
+        wf = """
+        name: integration
+        on: workflow_dispatch
+        permissions: { contents: read }
+        jobs:
+          terraform-fixture:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - env:
+                  AWS_ACCESS_KEY_ID: test
+                  AWS_SECRET_ACCESS_KEY: test
+                  AWS_ENDPOINT_URL: http://localhost:4566
+                run: terraform apply -auto-approve
+        """
+        f = run_check(wf, "GHA-014")
+        assert f.passed, "terraform apply against LocalStack should not need an environment gate"
+
+    def test_real_terraform_apply_still_flags(self):
+        # Same shape as above but no localhost endpoint -> real deploy.
+        wf = """
+        name: deploy
+        on: push
+        permissions: { contents: read }
+        jobs:
+          provision:
+            runs-on: ubuntu-latest
+            steps:
+              - env:
+                  AWS_REGION: us-east-1
+                run: terraform apply -auto-approve
+        """
+        f = run_check(wf, "GHA-014")
+        assert not f.passed
+
 
 # ── GHA-036 runs-on injection ───────────────────────────────────────
 

@@ -66,6 +66,20 @@ _ARTIFACT_TOKENS = (
 )
 
 
+# Substrings the artifact heuristic must ignore: GitHub Pages
+# deployments embed the verbs ``deploy`` / ``publish`` in canonical
+# action names (``actions/deploy-pages``, ``actions/upload-pages-
+# artifact``) but ship a static site, not a software artifact, and
+# don't need cosign / SBOM / SLSA-attest. Pre-strip these zones from
+# the blob before the bare-token match runs so the catch-all tokens
+# above don't bleed into Pages-only workflows.
+_ARTIFACT_TOKEN_EXCLUDE_ZONES = (
+    "actions/deploy-pages",
+    "actions/upload-pages-artifact",
+    "actions/configure-pages",
+)
+
+
 #: Vulnerability scanning tool tokens, same detection pattern as
 #: ``has_signing`` / ``has_sbom``.
 VULN_SCAN_TOKENS = (
@@ -83,8 +97,27 @@ def produces_artifacts(doc: Any) -> bool:
     Heuristic: if no artifact-production token appears anywhere in the
     workflow's string content, the workflow is likely lint/test-only and
     the signing/SBOM/vulnerability-scanning checks should not fire.
+
+    Pages-only workflows are recognized structurally and return False
+    even when the blob contains the substring ``deploy`` (which would
+    otherwise match via step names like "Deploy to GitHub Pages" or
+    step ids like ``id: deployment``). The presence of
+    ``actions/deploy-pages`` is the unambiguous signal: that action
+    can only deploy a static GitHub Pages site, never a software
+    artifact, and the rest of the workflow's verbiage about
+    "deployment" is incidental to that.
+
+    The substring zones are also pre-stripped so a workflow that
+    *also* has a real artifact-producing step (e.g. publishes a
+    package AND has Pages docs) still returns True via the genuine
+    artifact token while the Pages action's own substrings can't
+    contribute.
     """
     blob = blob_lower(doc)
+    if "actions/deploy-pages" in blob:
+        return False
+    for zone in _ARTIFACT_TOKEN_EXCLUDE_ZONES:
+        blob = blob.replace(zone, "")
     return any(tok in blob for tok in _ARTIFACT_TOKENS)
 
 

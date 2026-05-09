@@ -2,32 +2,24 @@
 #
 # Format: CHECK_ID:RESOURCE per line. Comments start with ``#``.
 # Auto-discovery picks this file up at cwd; no flag needed.
+#
+# Most prior entries here became redundant once the catalog gained
+# structural detection: ``actions/deploy-pages`` (docs.yml) marks
+# Pages-only workflows that the artifact heuristic now skips, and a
+# job-level ``AWS_ENDPOINT_URL`` pointing at localhost (LocalStack)
+# now exempts the affected jobs from GHA-005 and GHA-014. Only the
+# residual cases that the catalog can't see structurally remain.
 
-# ── docs.yml — Pages site, not a software supply-chain artifact ─────
-# docs.yml builds and publishes a documentation site (mkdocs ->
-# actions/deploy-pages). Cosign / SBOM / vuln-scan / SLSA all assume
-# a downstream consumer of installable software. There is no such
-# consumer for a static documentation site.
-GHA-006:.github\workflows\docs.yml
-GHA-007:.github\workflows\docs.yml
-GHA-020:.github\workflows\docs.yml
-GHA-024:.github\workflows\docs.yml
-
-# ── localstack-test.yml — integration test runner against LocalStack ─
-# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY = "test" are LocalStack's
-# documented placeholder credentials.
-GHA-005:.github\workflows\localstack-test.yml
-# Workflow uploads HTML test reports as run artifacts. Same reasoning
-# as docs.yml: no downstream software consumer to sign / SBOM / scan
-# / attest for.
+# ── localstack-test.yml — HTML report uploads, not software builds ──
+# The terraform-fixture job uploads HTML pipeline-check reports via
+# ``actions/upload-artifact@``. The signing / SBOM / vuln-scan /
+# SLSA-attest checks treat any upload-artifact use as a software
+# release; there's no further structural signal to distinguish "test
+# report" uploads from real builds, so we suppress per-resource here.
 GHA-006:.github\workflows\localstack-test.yml
 GHA-007:.github\workflows\localstack-test.yml
 GHA-020:.github\workflows\localstack-test.yml
 GHA-024:.github\workflows\localstack-test.yml
-# terraform-fixture job runs ``terraform apply`` against a LocalStack
-# docker container, not real cloud infrastructure. No GitHub
-# environment binding because there is nothing to gate deployment to.
-GHA-014:.github\workflows\localstack-test.yml
 # Inline ``pip install pyyaml`` and ``pip install -e .`` in the test
 # setup install the package being tested. The hash-locked install
 # (``pip install --require-hashes -r requirements-dev.txt``) runs
@@ -36,8 +28,7 @@ GHA-021:.github\workflows\localstack-test.yml
 
 # ── python-app.yml — lint / type-check / test runner ────────────────
 # The hash-locked ``--require-hashes -r requirements-dev.txt`` install
-# covers the actual dependency surface. The two inline ``pip install
-# ruff`` / ``pip install mypy`` lines are the lint/type-check tools
-# themselves, deliberately not in requirements-dev.txt so the lint
-# version can move independently of test deps.
+# covers the actual dependency surface; ruff / mypy ride that
+# lockfile too. The remaining ``pip install -e .`` of this package
+# is what the suite tests against.
 GHA-021:.github\workflows\python-app.yml
