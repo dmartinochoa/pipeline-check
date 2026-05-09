@@ -471,6 +471,15 @@ STANDARD = Standard(
         "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
         "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
         "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
+        # Cross-cutting dataflow / taint engine (provider-spanning,
+        # currently GHA-only in v1)
+        "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT
+        "TAINT-002": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-job taint via jobs.<id>.outputs:
+        "TAINT-003": ["CICD-SEC-4", "CICD-SEC-1"],  # tainted with: forward into reusable workflow
+        "TAINT-004": ["CICD-SEC-4", "CICD-SEC-1"],  # GitLab dotenv cross-job taint flow
+        "TAINT-005": ["CICD-SEC-4", "CICD-SEC-1"],  # Buildkite meta-data cross-step taint flow
+        "TAINT-006": ["CICD-SEC-4", "CICD-SEC-1"],  # Tekton results cross-task taint flow
+        "TAINT-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Argo outputs.parameters cross-template
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged

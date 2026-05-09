@@ -40,3 +40,18 @@ steps:
     command: |
       kubectl apply -f deploy/prod
       aws ecs update-service --cluster prod --service web
+
+  # TAINT-005: meta-data cross-step taint flow. Producer step
+  # below pipes ``$BUILDKITE_PULL_REQUEST`` into the build's
+  # per-build meta-data store; the downstream consumer reads it
+  # back via meta-data get and uses the result in a shell
+  # command. BK-003 catches the producer's inner interpolation;
+  # TAINT-005 catches the cross-step injection at the consumer.
+  - label: ":mag: Capture PR title"
+    command: |
+      buildkite-agent meta-data set "title" "$BUILDKITE_PULL_REQUEST"
+  - wait
+  - label: ":wrench: Use captured title"
+    command: |
+      TITLE=$(buildkite-agent meta-data get title)
+      echo Building tagged $TITLE

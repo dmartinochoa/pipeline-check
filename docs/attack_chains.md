@@ -41,6 +41,17 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-023`](#ac-023) | Tekton param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton | [`TKN-002`](providers/tekton.md#tkn-002) + [`TKN-003`](providers/tekton.md#tkn-003) |
 | [`AC-024`](#ac-024) | OIDC trust drift lands on a mutable ECR tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`ECR-002`](providers/aws.md) |
 | [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
+| [`AC-026`](#ac-026) | Buildkite injection lands on auto-deploy step with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | buildkite | [`BK-003`](providers/buildkite.md#bk-003) + [`BK-007`](providers/buildkite.md#bk-007) |
+| [`AC-027`](#ac-027) | Image bakes a credential file AND exposes a remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | dockerfile | [`DF-013`](providers/dockerfile.md#df-013) + [`DF-019`](providers/dockerfile.md#df-019) |
+| [`XPC-001`](#xpc-001) | Deploy without verifiable provenance (workflow + image) | <span class="pg-sev pg-sev--high">HIGH</span> | github / oci | [`GHA-006`](providers/github.md#gha-006) + [`OCI-002`](providers/oci.md#oci-002) |
+| [`XPC-002`](#xpc-002) | Tag mutability across pipeline + runtime (Dockerfile + K8s) | <span class="pg-sev pg-sev--high">HIGH</span> | dockerfile / kubernetes | [`DF-001`](providers/dockerfile.md#df-001) + [`K8S-001`](providers/kubernetes.md#k8s-001) |
+| [`XPC-003`](#xpc-003) | Unverified Helm release flow (chart + image) | <span class="pg-sev pg-sev--high">HIGH</span> | helm / oci | [`HELM-002`](providers/helm.md#helm-002) + [`OCI-002`](providers/oci.md#oci-002) |
+
+The `XPC-NNN` family is **cross-provider**. It only fires when the chain
+engine sees findings from multiple providers in the same scan, which
+happens when you pass `--pipelines github,oci` (plural, comma-separated)
+instead of single-valued `--pipeline`. Single-provider runs never see
+both check IDs and these chains stay quiet.
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
@@ -809,6 +820,81 @@ A ``Dockerfile`` ``COPY`` / ``ADD`` source path names a credential file (``id_rs
 **Recommended action**
 
 Move the credential out of the image. Mount it at runtime: a Kubernetes secret (or projected SA token), AWS Secrets Manager / GCP Secret Manager / Vault for cloud creds, or a container-level env var sourced from the orchestrator. The image stops being a leak surface the moment the credential isn't baked in. Drop the ``EXPOSE`` for the remote-access daemon: the container runtime's exec path (``docker exec`` / ``kubectl exec``) covers every legitimate debugging use without opening a port or shipping an extra daemon. Either fix breaks the chain on its own. Add a ``.dockerignore`` rule to keep credential files out of build context as a third layer; the COPY can't bake in what the build never sees.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-001: Deploy without verifiable provenance (workflow + image) { #xpc-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">build -> distribution (no provenance link between them)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">oci</span>
+</div>
+
+The CI workflow doesn't emit SLSA provenance and the image it deploys ships without a build-attestation manifest. The verifier-side contract is broken on both ends, so a downstream consumer pulling the image has no way to prove it came from this workflow's build.
+
+**References**
+
+- <https://slsa.dev/spec/v1.0/levels#build-l2>
+- <https://docs.docker.com/build/attestations/slsa-provenance/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close the verifier loop on both ends. In the workflow, add a provenance-emitting step (``actions/attest-build-provenance`` or the SLSA generic-generator). In the image build, pass ``--attest=type=provenance,mode=max`` to ``docker buildx build`` so the manifest carries a BuildKit attestation manifest. Verify post-deploy with ``cosign verify-attestation`` against the workflow's OIDC identity.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-002: Tag mutability across pipeline + runtime (Dockerfile + K8s) { #xpc-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">build -> deploy (tag mutation propagates through both)</span> <span class="pg-tag pg-tag--owasp">dockerfile</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
+</div>
+
+Both the Dockerfile's ``FROM`` line and the Kubernetes workload manifest reference floating image tags. An attacker who pushes a malicious blob under a known tag (stolen registry credentials, compromised upstream CI) affects the build artifact AND the running workload at the same time, with no separate fix-once-and-it's-done place to break the chain.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3>
+- <https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin both ends to ``@sha256:<digest>``. In the Dockerfile, rewrite ``FROM python:3.12`` to ``FROM python:3.12@sha256:<digest>``. In the Kubernetes manifest, rewrite ``image: my-org/app:1`` to ``image: my-org/app:1@sha256:<digest>`` (and configure ``imagePullPolicy: IfNotPresent`` so the kubelet doesn't re-resolve on every pod restart). Capture the digest with ``crane digest`` or ``docker buildx imagetools inspect`` and update the digest deliberately in version control when the upstream version moves.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-003: Unverified Helm release flow (chart + image) { #xpc-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">package -> distribution -> deploy (no provenance link at any of the three boundaries)</span> <span class="pg-tag pg-tag--owasp">helm</span> <span class="pg-tag pg-tag--owasp">oci</span>
+</div>
+
+The Helm chart's ``Chart.lock`` doesn't pin per-dependency digests AND the image the chart deploys lacks a build attestation manifest. Neither the chart contents nor the image bytes are independently verifiable, so a downstream consumer running ``helm install`` has no signed chain of custody between chart authoring and image runtime.
+
+**References**
+
+- <https://helm.sh/docs/topics/chart_repository/#provenance-and-integrity>
+- <https://slsa.dev/spec/v1.0/levels#build-l2>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin both ends of the release flow. In the Helm chart, regenerate ``Chart.lock`` after every dependency update so every entry carries a digest, and gate consumers behind ``helm install --verify`` to enforce the lock at install time. In the image build, pass ``--attest=type=provenance,mode=max`` to ``docker buildx build`` so the manifest carries a BuildKit attestation manifest. Verify post-deploy with ``cosign verify-attestation`` against the workflow's OIDC identity. Both legs together close the producer-to-verifier loop the chart-image pipeline currently has open at every step.
 
 </div>
 

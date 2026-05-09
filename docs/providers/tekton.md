@@ -32,10 +32,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-13 checks · 2 have an autofix patch (``--fix``).
+14 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
+| [TAINT-006](#taint-006) | Untrusted input flows across tasks via Tekton ``results`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-001](#tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-002](#tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-003](#tkn-003) | Tekton param interpolated unsafely in step script | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
@@ -51,6 +52,32 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [TKN-013](#tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TAINT-006: Untrusted input flows across tasks via Tekton ``results`` { #taint-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Detection walks every ``Pipeline`` document. Pass 1 looks for tasks whose inline ``taskSpec.steps[*].script`` writes to ``$(results.<X>.path)`` AND interpolates a ``$(params.<Y>)`` reference, recording ``X`` as a tainted result for that producer task. Pass 2 walks every task for ``params:`` whose ``value:`` is ``$(tasks.<producer>.results.<X>)`` — when ``(producer, X)`` matches a tainted result and the consumer's ``taskSpec.steps[*].script`` references ``$(params.<consumer-name>)`` (where consumer-name is the param the result was forwarded into), TAINT-006 fires.
+
+v1 limitations: only inline ``taskSpec:`` is walked. ``taskRef:`` references to externally-defined Tasks aren't resolved (would need the same cross-document machinery as the GHA ``--resolve-remote`` flow). ``finally:`` blocks aren't walked yet.
+
+**Known false-positive modes**
+
+- If the producer task runs a sanitiser between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitiser is then load-bearing.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Sanitise the value at the producer task before it lands in ``$(results.<name>.path)``. The canonical safe pattern is to copy the ``$(params.<name>)`` source into an intermediate shell variable, run a sanitiser (``tr -dc 'a-zA-Z0-9 '`` for a freeform title), and only then write the cleaned value to the result file. The consumer task should still treat its own param as tainted: surface ``$(params.<name>)`` into a quoted shell variable (``TITLE="$(params.title)"``) before interpolating elsewhere. Removing the cross-task results forwarding is the strongest fix; if the value genuinely needs to flow downstream, validate the sanitiser is doing what you think before relying on it.
+
+</div>
+
+</div>
 
 <div class="pg-rule pg-rule--high" markdown>
 

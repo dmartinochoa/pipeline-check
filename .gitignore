@@ -35,6 +35,7 @@ _site_test/
 
 # ─── Testing & coverage ────────────────────────────────────────────────
 .pytest_cache/
+.benchmarks/
 .coverage
 .coverage.*
 coverage.xml

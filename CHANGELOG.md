@@ -12,6 +12,194 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-007 Argo cross-template ``outputs.parameters`` taint flow.**
+  Fifth TAINT-engine port. New
+  ``pipeline_check.core.checks.argo._taint_graph`` follows
+  Argo's canonical cross-template channel:
+  ``{{tasks.<task>.outputs.parameters.<output>}}`` substitution
+  inside DAG / Steps orchestrators. A producer template's
+  ``script.source`` interpolates ``{{inputs.parameters.<X>}}``
+  and writes the value to an output parameter; a downstream
+  task references the output via the cross-task substitution;
+  the consumer template's script interpolates the value back
+  into shell. ARGO-005 catches the producer's inner
+  interpolation; TAINT-007 catches the actual cross-template
+  injection at the consumer. Three-pass walk: producer
+  classification, task-to-template forwarding resolution,
+  consumer-side script reference matching. Both ``dag.tasks``
+  and ``steps:`` orchestrator shapes are covered.
+  v1 limitations: ``workflowTemplateRef:`` cross-document
+  references aren't resolved; ``onExit:`` exit handlers
+  aren't yet walked; artifact-based propagation
+  (``artifacts.parameters``) is out of scope. The
+  ``TAINT-NNN`` family now spans GHA (TAINT-001..003), GitLab
+  CI (TAINT-004), Buildkite (TAINT-005), Tekton (TAINT-006),
+  and Argo (TAINT-007), 5 distinct providers and 5 distinct
+  propagation channels sharing one engine shape.
+- **TAINT-006 Tekton results cross-task taint flow.** Fourth
+  TAINT-engine port. New
+  ``pipeline_check.core.checks.tekton._taint_graph`` follows
+  Tekton's canonical inter-task channel:
+  ``$(tasks.<task>.results.<output>)`` substitution. A producer
+  task's inline ``taskSpec.steps[*].script`` writes to
+  ``$(results.<X>.path)`` from a ``$(params.<Y>)`` reference;
+  the Pipeline forward the result to a downstream task's
+  ``params:`` via ``$(tasks.<producer>.results.<X>)``; the
+  downstream task's script references its own param unquoted.
+  TKN-003 catches the producer's inner interpolation; TAINT-006
+  catches the cross-task injection at the consumer.
+  v1 limitations: only inline ``taskSpec:`` is walked
+  (``taskRef:`` cross-document resolution would need the same
+  machinery as the GHA ``--resolve-remote`` flow); ``finally:``
+  blocks aren't walked yet. The ``TAINT-NNN`` family now spans
+  GHA (TAINT-001..003), GitLab CI (TAINT-004), Buildkite
+  (TAINT-005), and Tekton (TAINT-006), four distinct
+  propagation channels sharing the same producer-consumer
+  engine shape.
+- **TAINT-005 Buildkite meta-data cross-step taint flow.** Third
+  TAINT-engine port. New
+  ``pipeline_check.core.checks.buildkite._taint_graph`` follows
+  Buildkite's per-build meta-data store: a producer step writes
+  ``buildkite-agent meta-data set "K" "$BUILDKITE_PULL_REQUEST"``
+  (or any tainted ``BUILDKITE_*`` source from BK-003's
+  vocabulary) and a downstream step's
+  ``buildkite-agent meta-data get K`` reads it back. BK-003
+  catches the producer's inner ``$BUILDKITE_*`` interpolation;
+  TAINT-005 catches the cross-step injection at the consumer
+  (the ``$(buildkite-agent meta-data get ...)`` capture looks
+  like an ordinary shell variable until the meta-data round-
+  trip is traced). Buildkite meta-data is per-build, not
+  per-step; the engine doesn't model temporal ordering and
+  fires when a tainted set + a get on the same key both exist
+  in the pipeline. The TAINT-NNN family now spans GHA
+  (TAINT-001..003), GitLab CI (TAINT-004), and Buildkite
+  (TAINT-005), all sharing the same producer-consumer engine
+  shape across distinct provider channels (``$GITHUB_OUTPUT``,
+  dotenv artifact, meta-data store).
+- **TAINT-004 GitLab dotenv cross-job taint flow.** First v0.6.0
+  taint-engine port to a second provider. New
+  ``pipeline_check.core.checks.gitlab._taint_graph`` mirrors the
+  GHA shape but follows GitLab's canonical cross-job channel:
+  ``artifacts.reports.dotenv``. A producer job that writes
+  ``KEY=$CI_COMMIT_TITLE`` (or any ``$CI_COMMIT_*`` /
+  ``$CI_MERGE_REQUEST_*`` source) to a file declared as a
+  dotenv artifact leaks the variable into every downstream job
+  that ``needs:`` (or ``dependencies:``) the producer. The
+  consumer's ``$KEY`` reference looks like an ordinary shell
+  variable until the artifact path is traced; ``GL-002`` only
+  catches the inner ``$CI_COMMIT_*`` interpolation in the
+  producer, ``TAINT-004`` catches the actual injection at the
+  consumer. Quote-state aware: a quoted ``"$KEY"`` consumer
+  passes; only unquoted references fire. v1 limitations:
+  ``extends:`` job-template inheritance and ``include:``
+  cross-pipeline references aren't tracked yet, ``trigger:``
+  parent-child pipelines aren't either, and the dotenv path
+  match is literal (no glob expansion). The ``TAINT-NNN``
+  family now spans GHA (TAINT-001..003) and GitLab CI
+  (TAINT-004), validating the engine's portability across
+  provider shapes.
+- **TAINT-003 reusable-workflow input forwarding.** The GHA
+  dataflow engine now flags caller workflows that pipe an
+  attacker-controllable source into a reusable workflow's
+  ``with:`` block. ``jobs.<id>.uses: <callee>`` references with
+  tainted ``with:`` values (direct ``${{ github.event.* }}``
+  interpolation, or a forwarded tainted step output / cross-job
+  ``needs.<id>.outputs.<name>``) emit one ``TAINT-003`` finding
+  per tainted input, naming the callee so the operator can
+  audit the matching ``inputs.<name>`` consumer. Caller-side
+  detection only in v1; coupling to the callee body's actual
+  consumption sites is the next engine extension. The three
+  TAINT rules are mutually exclusive on a given path: TAINT-001
+  for same-job step-output flow, TAINT-002 for cross-job
+  ``jobs.<id>.outputs:`` propagation, TAINT-003 for tainted
+  ``with:`` forward into reusable workflows.
+- **XPC-003 unverified Helm release flow.** Third XPC chain.
+  Fires when ``HELM-002`` (Chart.lock missing per-dependency
+  digests) and ``OCI-002`` (image manifest lacks attestation
+  manifest) both fail in the same scan run. Composite says:
+  chart contents AND image bytes are independently mutable;
+  consumers running ``helm install`` have no signed chain of
+  custody at either boundary. One chain entry per ``(chart,
+  manifest)`` cross-product pair. Roadmap originally proposed
+  pairing HELM-002 with a "helm-upgrade step" rule that doesn't
+  exist; OCI-002 ended up the cleaner second leg because both
+  rules are squarely about provenance gaps.
+- **TAINT-002 cross-job output propagation.** The GHA dataflow
+  engine now follows ``jobs.<id>.outputs:`` declarations so a
+  step output that surfaces as a job output and is consumed in a
+  downstream job via ``${{ needs.<id>.outputs.<name> }}`` is
+  detected as a separate ``TAINT-002`` finding. ``TAINT-001``
+  stays scoped to same-job step-output flow; the rules are
+  mutually exclusive on a given path so they don't double-fire.
+  Engine adds a third pass tracking job-output taint with two
+  inheritance channels: a ``${{ steps.<id>.outputs.<name> }}``
+  reference picks up the producing step's taint, and a direct
+  ``${{ github.event.* }}`` interpolation in the job-output
+  declaration is also tracked. Same source vocabulary,
+  ``UNTRUSTED_CONTEXT_RE``, that GHA-003 / TAINT-001 use.
+- **XPC-002 tag-mutability cross-provider chain.** Second
+  cross-provider chain (``XPC-NNN`` family). Fires when a
+  multi-provider run carries both ``DF-001`` (Dockerfile
+  floating ``FROM`` tag) and ``K8S-001`` (Kubernetes workload
+  uses a floating-tag image) failures. The composite says: tag
+  mutability spans build- and runtime layers, an attacker who
+  pushes malicious bytes under a known tag affects both the
+  build artifact and the running cluster with no separate
+  compensating control. One chain entry per
+  ``(dockerfile, manifest)`` cross-product pair.
+- **Multi-provider scan mode.** New ``--pipelines github,oci``
+  CLI flag (plural, comma-separated, mutually exclusive with the
+  single-valued ``--pipeline``) scans every named provider in one
+  invocation and evaluates the chain engine once over the union
+  of all sub-scan findings. That's what activates the
+  cross-provider attack-chain family ``XPC-NNN``, single-provider
+  runs of ``--pipeline github`` or ``--pipeline oci`` alone never
+  see both check IDs in the chain engine's input. Each provider's
+  path flag is auto-detected the same way as in single-provider
+  mode; the per-provider auto-detection runs once per name in
+  the list. Implementation: new ``MultiScanner`` in
+  ``pipeline_check.core.scanner`` that delegates each sub-scan
+  to :class:`Scanner` with chain evaluation suppressed, then
+  evaluates chains once over the unified findings. Aggregate
+  ``ScanMetadata`` and ``inventory()`` are exposed on the
+  multi-scanner so reporters consume the same shape regardless
+  of single- vs multi-mode. Backward-compatible: every existing
+  ``--pipeline X`` invocation behaves unchanged.
+- **TAINT-001 / dataflow taint engine for GHA.** First v0.6.0
+  vision item, *landed early on dev*. New per-workflow taint
+  graph (``pipeline_check.core.checks.github._taint_graph``)
+  generalises the existing GHA-003 single-step interpolation
+  detector to a workflow-wide reachability problem: track
+  ``${{ github.event.* }}`` source expressions through
+  ``$GITHUB_OUTPUT`` writes (and the legacy ``::set-output``
+  workflow-command shape), find downstream consumer steps that
+  reference ``${{ steps.<id>.outputs.<name> }}``, emit one
+  ``TAINT-001`` finding per source-to-sink path. Self-step
+  references stay GHA-003 territory; the engine's contribution
+  is the cross-step gap. v1 covers ``run:`` and ``with:`` sinks
+  on same-job step outputs; cross-job ``jobs.<id>.outputs.*``
+  forwarding and reusable-workflow input/output propagation are
+  roadmapped under v0.6.0 vision.
+- **XPC-001 cross-provider attack-chain rule.** Second v0.6.0
+  vision item. A new chain rule under
+  ``pipeline_check.core.chains.rules.xpc001_*`` fires when both
+  GHA-006 (workflow doesn't emit SLSA provenance) and OCI-002
+  (image manifest lacks attestation manifest) fail in the same
+  scan. Composite "deploy without verifiable provenance" with
+  HIGH severity. Currently only fires when the user feeds
+  findings from both providers into the chain engine; the
+  multi-provider scan mode that activates this in the default
+  CLI flow is on the v0.6.0 roadmap.
+- **HTML report blast-radius heatmap.** Third v0.6.0 vision
+  item, v1 *landed*. Inserts a per-resource SVG heatmap
+  between the attack-chains panel and the findings table. One
+  tile per resource with a failing finding, color-coded by
+  worst severity, sized by failing-finding count
+  (sqrt-scaled), tooltip on hover shows the per-severity
+  breakdown. Pure inline SVG so the report stays a single
+  offline HTML file. The v2 step-level pipeline DAG (steps as
+  nodes, ``needs:`` / ``depends_on`` as edges) is roadmapped;
+  v1 keeps the Scanner-to-reporter API unchanged.
 - **Drone CI provider.** New ``--pipeline drone --drone-path
   <file>`` reads ``.drone.yml`` / ``.drone.yaml`` documents on
   disk. Drone pipelines are multi-document YAML; each document

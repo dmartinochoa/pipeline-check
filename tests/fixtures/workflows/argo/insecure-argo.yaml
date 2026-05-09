@@ -51,3 +51,59 @@ spec:
           curl https://example.com/install.sh | bash
           docker build -t internal/app:latest .
           docker push internal/app:latest
+---
+# TAINT-007: cross-template outputs.parameters propagation. The
+# extract-tpl below pipes ``{{inputs.parameters.title}}`` into
+# an output path; the build template's task receives the
+# forwarded value via ``{{tasks.extract.outputs.parameters.clean}}``
+# and the consumer template's script interpolates it back into
+# shell. ARGO-005 catches the producer's inner interpolation;
+# TAINT-007 catches the actual cross-template injection.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cross-template-taint
+  namespace: argo
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: pr-title
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: extract
+            template: extract-tpl
+            arguments:
+              parameters:
+                - name: title
+                  value: "{{workflow.parameters.pr-title}}"
+          - name: build
+            depends: extract
+            template: build-tpl
+            arguments:
+              parameters:
+                - name: title
+                  value: "{{tasks.extract.outputs.parameters.clean}}"
+    - name: extract-tpl
+      inputs:
+        parameters:
+          - name: title
+      outputs:
+        parameters:
+          - name: clean
+            valueFrom:
+              path: /tmp/clean
+      script:
+        image: alpine:3.18@sha256:0000000000000000000000000000000000000000000000000000000000000001
+        source: |
+          echo "{{inputs.parameters.title}}" > /tmp/clean
+    - name: build-tpl
+      inputs:
+        parameters:
+          - name: title
+      script:
+        image: alpine:3.18@sha256:0000000000000000000000000000000000000000000000000000000000000002
+        source: |
+          echo Tagged release {{inputs.parameters.title}}

@@ -1,5 +1,5 @@
 ---
-title: Pipeline-Check: CI/CD Security Posture Scanner
+title: "Pipeline-Check: CI/CD Security Posture Scanner"
 template: home.html
 hide:
   - navigation
@@ -111,8 +111,13 @@ the default; turning it off is opt-in.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-Multi-finding chains mapped to MITRE ATT&CK. See the kill chain, token leak →
-artifact poisoning → production push, instead of three disconnected findings.
+30 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+`XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
+findings line up in one scan. The `TAINT-NNN` dataflow engine follows
+attacker-controllable input across cross-step boundaries on five providers
+(GitHub Actions, GitLab CI, Buildkite, Tekton, Argo Workflows), each routed
+through that host's native channel — `$GITHUB_OUTPUT`, dotenv artifact,
+`buildkite-agent meta-data`, Tekton results, Argo `outputs.parameters`.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a>
 </div>
 
@@ -121,8 +126,10 @@ artifact poisoning → production push, instead of three disconnected findings.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 ### Output that integrates
-Rich terminal table for humans, JSON for scripts, HTML report with client-side
-filters for sharing, SARIF 2.1.0 for GitHub code scanning and Defender for DevOps.
+Rich terminal table for humans, JSON for scripts, HTML report (with a
+per-resource blast-radius heatmap and an attack-chains panel) for sharing,
+SARIF 2.1.0 for GitHub code scanning and Defender for DevOps, plus
+markdown for PR comments and JUnit XML for test-runner UIs.
 <a class="pg-feature__link" href="output/">Output formats</a>
 </div>
 

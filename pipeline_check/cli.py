@@ -67,7 +67,7 @@ from .core.reporter import (
     report_terminal,
 )
 from .core.sarif_reporter import report_sarif
-from .core.scanner import Scanner
+from .core.scanner import MultiScanner, Scanner
 from .core.scorer import score
 
 
@@ -681,7 +681,27 @@ def _install_completion_callback(
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
         "--argo-path, --oci-manifest, --drone-path); "
-        "AWS scans the live account via boto3."
+        "AWS scans the live account via boto3. For multi-provider "
+        "scans (so cross-provider attack chains like XPC-001 fire) "
+        "use ``--pipelines github,oci`` instead."
+    ),
+)
+@click.option(
+    "--pipelines",
+    "pipelines_csv",
+    default="",
+    metavar="LIST",
+    help=(
+        "Comma-separated list of providers to scan in one run "
+        "(``--pipelines github,oci``). Mutually exclusive with "
+        "``--pipeline``. Each name must be a registered provider "
+        "(same vocabulary as ``--pipeline`` minus ``auto``). "
+        "Findings from every provider are unified before the chain "
+        "engine evaluates, which is what activates cross-provider "
+        "attack chains (the ``XPC-NNN`` family). Each provider's "
+        "input path is taken from the corresponding flag (``--gha-"
+        "path``, ``--oci-manifest``, etc.) and auto-detection runs "
+        "the same way it does for the single-provider flow."
     ),
 )
 @click.option(
@@ -1390,6 +1410,7 @@ def _install_completion_callback(
 )
 def scan(
     pipeline: str,
+    pipelines_csv: str,
     target: str | None,
     checks: tuple[str, ...],
     region: str,
@@ -1640,8 +1661,42 @@ def scan(
     if baseline and not os.path.isfile(baseline):
         raise click.UsageError(f"--baseline file not found: {baseline}")
 
+    # Parse --pipelines (multi-provider mode). Mutually exclusive
+    # with the single-valued --pipeline flag, the user picks one or
+    # the other, never both. When --pipelines is set, every provider
+    # in the list runs in one scan and the chain engine evaluates
+    # over the union of every sub-scan's findings, which is what
+    # activates cross-provider attack chains (the XPC-NNN family).
+    pipelines_list: list[str] = []
+    if pipelines_csv:
+        if pipeline.lower() != "auto":
+            raise click.UsageError(
+                "--pipelines is mutually exclusive with --pipeline; "
+                "drop --pipeline (it defaults to ``auto`` and is "
+                "ignored when --pipelines is set)."
+            )
+        seen: set[str] = set()
+        for raw in pipelines_csv.split(","):
+            name = raw.strip().lower()
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            pipelines_list.append(name)
+        if not pipelines_list:
+            raise click.UsageError(
+                "--pipelines parsed empty after splitting on commas."
+            )
+        valid = set(_providers.available())
+        invalid = [p for p in pipelines_list if p not in valid]
+        if invalid:
+            raise click.UsageError(
+                f"unknown provider(s) in --pipelines: "
+                f"{', '.join(invalid)}. Valid: "
+                f"{', '.join(sorted(valid))}"
+            )
+
     pipeline_lc = pipeline.lower()
-    if pipeline_lc == "auto":
+    if not pipelines_list and pipeline_lc == "auto":
         detected = _detect_pipeline_from_cwd()
         if detected:
             click.echo(f"[auto] detected --pipeline {detected}", err=True)
@@ -1652,144 +1707,163 @@ def scan(
                 err=True,
             )
             pipeline_lc = "aws"
-    if pipeline_lc == "terraform":
-        tf_plan = _resolve_provider_path(
-            "terraform", flag="tf-plan", value=tf_plan,
-            validate_kind="file", not_found_label="path",
-        )
-    elif pipeline_lc == "github":
-        gha_path = _resolve_provider_path(
-            "github", flag="gha-path", value=gha_path,
-            candidates=(".github/workflows",), candidate_kind="dir",
-            validate_kind="dir", detect_label=".github/workflows",
-            not_found_label="directory",
-        )
-    elif pipeline_lc == "gitlab":
-        gitlab_path = _resolve_provider_path(
-            "gitlab", flag="gitlab-path", value=gitlab_path,
-            candidates=(".gitlab-ci.yml",),
-            detect_label=".gitlab-ci.yml",
-        )
-    elif pipeline_lc == "bitbucket":
-        bitbucket_path = _resolve_provider_path(
-            "bitbucket", flag="bitbucket-path", value=bitbucket_path,
-            candidates=("bitbucket-pipelines.yml",),
-            detect_label="bitbucket-pipelines.yml",
-        )
-    elif pipeline_lc == "azure":
-        azure_path = _resolve_provider_path(
-            "azure", flag="azure-path", value=azure_path,
-            candidates=("azure-pipelines.yml",),
-            detect_label="azure-pipelines.yml",
-        )
-    elif pipeline_lc == "jenkins":
-        jenkinsfile_path = _resolve_provider_path(
-            "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
-            candidates=("Jenkinsfile",),
-            detect_label="Jenkinsfile",
-        )
-    elif pipeline_lc == "circleci":
-        circleci_path = _resolve_provider_path(
-            "circleci", flag="circleci-path", value=circleci_path,
-            candidates=(".circleci/config.yml",),
-            detect_label=".circleci/config.yml",
-        )
-    elif pipeline_lc == "cloudformation":
-        if not cfn_template:
-            for _candidate in (
-                "template.yml", "template.yaml", "template.json",
-                "cloudformation.yml", "cloudformation.yaml",
-                "cfn.yml", "cfn.yaml",
-            ):
-                if os.path.isfile(_candidate):
-                    cfn_template = _candidate
-                    click.echo(f"[auto] using --cfn-template {cfn_template}", err=True)
-                    break
-        if not cfn_template:
-            raise click.UsageError(
-                "--cfn-template PATH is required when --pipeline cloudformation "
-                "(no template.yml / template.json / cloudformation.yml / "
-                "cfn.yaml found in the current directory)."
+
+    # Per-provider path resolution. In single-pipeline mode the
+    # if/elif chain below runs once for ``pipeline_lc``; in
+    # multi-pipeline mode it runs once per provider so each
+    # provider's path flag (--gha-path, --oci-manifest, etc.) is
+    # resolved + auto-detected the same way as a single-pipeline
+    # invocation.
+    pipelines_to_resolve = pipelines_list or [pipeline_lc]
+    for pipeline_lc in pipelines_to_resolve:
+        if pipeline_lc == "terraform":
+            tf_plan = _resolve_provider_path(
+                "terraform", flag="tf-plan", value=tf_plan,
+                validate_kind="file", not_found_label="path",
             )
-        if not os.path.exists(cfn_template):
-            raise click.UsageError(f"--cfn-template not found: {cfn_template}")
-        # Distinguish "directory but no templates" from "file not found" —
-        # the former is a common mistake when someone points the flag at
-        # their project root instead of an infrastructure subdirectory.
-        if os.path.isdir(cfn_template):
-            _exts = (".yml", ".yaml", ".json", ".template")
-            has_templates = any(
-                _ent.is_file() and _ent.name.lower().endswith(_exts)
-                for _ent in os.scandir(cfn_template)
+        elif pipeline_lc == "github":
+            gha_path = _resolve_provider_path(
+                "github", flag="gha-path", value=gha_path,
+                candidates=(".github/workflows",), candidate_kind="dir",
+                validate_kind="dir", detect_label=".github/workflows",
+                not_found_label="directory",
             )
-            if not has_templates:
+        elif pipeline_lc == "gitlab":
+            gitlab_path = _resolve_provider_path(
+                "gitlab", flag="gitlab-path", value=gitlab_path,
+                candidates=(".gitlab-ci.yml",),
+                detect_label=".gitlab-ci.yml",
+            )
+        elif pipeline_lc == "bitbucket":
+            bitbucket_path = _resolve_provider_path(
+                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
+                candidates=("bitbucket-pipelines.yml",),
+                detect_label="bitbucket-pipelines.yml",
+            )
+        elif pipeline_lc == "azure":
+            azure_path = _resolve_provider_path(
+                "azure", flag="azure-path", value=azure_path,
+                candidates=("azure-pipelines.yml",),
+                detect_label="azure-pipelines.yml",
+            )
+        elif pipeline_lc == "jenkins":
+            jenkinsfile_path = _resolve_provider_path(
+                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
+                candidates=("Jenkinsfile",),
+                detect_label="Jenkinsfile",
+            )
+        elif pipeline_lc == "circleci":
+            circleci_path = _resolve_provider_path(
+                "circleci", flag="circleci-path", value=circleci_path,
+                candidates=(".circleci/config.yml",),
+                detect_label=".circleci/config.yml",
+            )
+        elif pipeline_lc == "cloudformation":
+            if not cfn_template:
+                for _candidate in (
+                    "template.yml", "template.yaml", "template.json",
+                    "cloudformation.yml", "cloudformation.yaml",
+                    "cfn.yml", "cfn.yaml",
+                ):
+                    if os.path.isfile(_candidate):
+                        cfn_template = _candidate
+                        click.echo(
+                            f"[auto] using --cfn-template {cfn_template}",
+                            err=True,
+                        )
+                        break
+            if not cfn_template:
                 raise click.UsageError(
-                    f"--cfn-template directory {cfn_template!r} contains no "
-                    ".yml / .yaml / .json / .template files."
+                    "--cfn-template PATH is required when --pipeline "
+                    "cloudformation (no template.yml / template.json / "
+                    "cloudformation.yml / cfn.yaml found in the current "
+                    "directory)."
                 )
-    elif pipeline_lc == "cloudbuild":
-        cloudbuild_path = _resolve_provider_path(
-            "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
-            candidates=("cloudbuild.yaml", "cloudbuild.yml"),
-            detect_label="cloudbuild.yaml/cloudbuild.yml",
-        )
-    elif pipeline_lc == "buildkite":
-        buildkite_path = _resolve_provider_path(
-            "buildkite", flag="buildkite-path", value=buildkite_path,
-            candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
-            detect_label=".buildkite/pipeline.yml",
-        )
-    elif pipeline_lc == "tekton":
-        tekton_path = _resolve_provider_path(
-            "tekton", flag="tekton-path", value=tekton_path,
-        )
-    elif pipeline_lc == "argo":
-        argo_path = _resolve_provider_path(
-            "argo", flag="argo-path", value=argo_path,
-        )
-    elif pipeline_lc == "dockerfile":
-        dockerfile_path = _resolve_provider_path(
-            "dockerfile", flag="dockerfile-path", value=dockerfile_path,
-            candidates=("Dockerfile", "Containerfile"),
-            detect_label="Dockerfile/Containerfile",
-        )
-    elif pipeline_lc == "kubernetes":
-        k8s_path = _resolve_provider_path(
-            "kubernetes", flag="k8s-path", value=k8s_path,
-            candidates=("kubernetes", "k8s", "manifests"),
-            candidate_kind="dir",
-            detect_label="kubernetes/, k8s/, or manifests/ directory",
-        )
-    elif pipeline_lc == "helm":
-        if not helm_path:
-            if os.path.isfile("Chart.yaml"):
-                helm_path = "."
-                click.echo("[auto] using --helm-path .", err=True)
-            elif os.path.isdir("charts"):
-                helm_path = "charts"
-                click.echo("[auto] using --helm-path charts", err=True)
-        if not helm_path:
-            raise click.UsageError(
-                "--helm-path PATH is required when --pipeline helm "
-                "(no Chart.yaml or charts/ directory found in cwd)."
+            if not os.path.exists(cfn_template):
+                raise click.UsageError(
+                    f"--cfn-template not found: {cfn_template}"
+                )
+            # Distinguish "directory but no templates" from "file not found" —
+            # the former is a common mistake when someone points the flag at
+            # their project root instead of an infrastructure subdirectory.
+            if os.path.isdir(cfn_template):
+                _exts = (".yml", ".yaml", ".json", ".template")
+                has_templates = any(
+                    _ent.is_file() and _ent.name.lower().endswith(_exts)
+                    for _ent in os.scandir(cfn_template)
+                )
+                if not has_templates:
+                    raise click.UsageError(
+                        f"--cfn-template directory {cfn_template!r} contains "
+                        f"no .yml / .yaml / .json / .template files."
+                    )
+        elif pipeline_lc == "cloudbuild":
+            cloudbuild_path = _resolve_provider_path(
+                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
+                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
+                detect_label="cloudbuild.yaml/cloudbuild.yml",
             )
-        if not os.path.exists(helm_path):
-            raise click.UsageError(f"--helm-path not found: {helm_path}")
-        for vf in helm_values:
-            if not os.path.isfile(vf):
-                raise click.UsageError(f"--helm-values not found: {vf}")
-    elif pipeline_lc == "oci":
-        oci_manifest = _resolve_provider_path(
-            "oci", flag="oci-manifest", value=oci_manifest,
-            candidates=("index.json",),
-            detect_label="index.json",
-        )
-    elif pipeline_lc == "drone":
-        drone_path = _resolve_provider_path(
-            "drone", flag="drone-path", value=drone_path,
-            candidates=(".drone.yml", ".drone.yaml"),
-            detect_label=".drone.yml/.drone.yaml",
-        )
+        elif pipeline_lc == "buildkite":
+            buildkite_path = _resolve_provider_path(
+                "buildkite", flag="buildkite-path", value=buildkite_path,
+                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+                detect_label=".buildkite/pipeline.yml",
+            )
+        elif pipeline_lc == "tekton":
+            tekton_path = _resolve_provider_path(
+                "tekton", flag="tekton-path", value=tekton_path,
+            )
+        elif pipeline_lc == "argo":
+            argo_path = _resolve_provider_path(
+                "argo", flag="argo-path", value=argo_path,
+            )
+        elif pipeline_lc == "dockerfile":
+            dockerfile_path = _resolve_provider_path(
+                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
+                candidates=("Dockerfile", "Containerfile"),
+                detect_label="Dockerfile/Containerfile",
+            )
+        elif pipeline_lc == "kubernetes":
+            k8s_path = _resolve_provider_path(
+                "kubernetes", flag="k8s-path", value=k8s_path,
+                candidates=("kubernetes", "k8s", "manifests"),
+                candidate_kind="dir",
+                detect_label="kubernetes/, k8s/, or manifests/ directory",
+            )
+        elif pipeline_lc == "helm":
+            if not helm_path:
+                if os.path.isfile("Chart.yaml"):
+                    helm_path = "."
+                    click.echo("[auto] using --helm-path .", err=True)
+                elif os.path.isdir("charts"):
+                    helm_path = "charts"
+                    click.echo("[auto] using --helm-path charts", err=True)
+            if not helm_path:
+                raise click.UsageError(
+                    "--helm-path PATH is required when --pipeline helm "
+                    "(no Chart.yaml or charts/ directory found in cwd)."
+                )
+            if not os.path.exists(helm_path):
+                raise click.UsageError(
+                    f"--helm-path not found: {helm_path}"
+                )
+            for vf in helm_values:
+                if not os.path.isfile(vf):
+                    raise click.UsageError(
+                        f"--helm-values not found: {vf}"
+                    )
+        elif pipeline_lc == "oci":
+            oci_manifest = _resolve_provider_path(
+                "oci", flag="oci-manifest", value=oci_manifest,
+                candidates=("index.json",),
+                detect_label="index.json",
+            )
+        elif pipeline_lc == "drone":
+            drone_path = _resolve_provider_path(
+                "drone", flag="drone-path", value=drone_path,
+                candidates=(".drone.yml", ".drone.yaml"),
+                detect_label=".drone.yml/.drone.yaml",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -1832,16 +1906,20 @@ def scan(
     from .core.config import last_overrides as _config_overrides
     cli_overrides = _config_overrides()
 
-    _debug(f"provider: {pipeline_lc}")
+    if pipelines_list:
+        _debug(f"providers: {', '.join(pipelines_list)}")
+    else:
+        _debug(f"provider: {pipeline_lc}")
 
-    scanner = Scanner(
-        pipeline=pipeline_lc,
+    # Shared kwargs forwarded to every (Multi)Scanner sub-scan.
+    # Each provider's path flag is in here; the providers that
+    # don't recognize a given flag silently ignore it.
+    _scanner_kwargs: dict[str, Any] = dict(
         region=region,
         profile=profile,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
         detect_entropy=detect_entropy,
-        chains_enabled=not no_chains,
         overrides=cli_overrides or None,
         custom_rules=list(custom_rules) or None,
         log=_debug if verbose else None,
@@ -1870,6 +1948,27 @@ def scan(
         oci_manifest=oci_manifest,
         drone_path=drone_path,
     )
+
+    scanner: Scanner | MultiScanner
+    if pipelines_list:
+        # Multi-provider mode. Each sub-scanner's chain pass is
+        # suppressed regardless; ``MultiScanner.run`` evaluates
+        # chains once over the union (when ``chains_enabled=True``)
+        # so cross-provider chains (XPC-NNN) fire. Single-provider
+        # chains still match in that union pass, so AC-NNN coverage
+        # carries through. ``--no-chains`` disables the union pass
+        # too.
+        scanner = MultiScanner(
+            pipelines=pipelines_list,
+            chains_enabled=not no_chains,
+            **_scanner_kwargs,
+        )
+    else:
+        scanner = Scanner(
+            pipeline=pipeline_lc,
+            chains_enabled=not no_chains,
+            **_scanner_kwargs,
+        )
 
     if verbose:
         meta = scanner.metadata
