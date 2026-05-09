@@ -207,3 +207,217 @@ class TestGHA033SecretEchoed:
         """
         f = run_check(wf, "GHA-033")
         assert f.passed
+
+
+# ── GHA-037 actions/checkout persist-credentials ────────────────────
+
+
+class TestGHA037PersistCredentials:
+    def test_fails_on_default_v4_checkout(self):
+        # No ``with:`` block at all means the default
+        # ``persist-credentials: true`` applies.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v4
+              - run: make test
+        """
+        f = run_check(wf, "GHA-037")
+        assert not f.passed
+        assert "default" in f.description.lower()
+
+    def test_fails_on_explicit_persist_true(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  persist-credentials: true
+              - run: make test
+        """
+        f = run_check(wf, "GHA-037")
+        assert not f.passed
+        assert "persist-credentials: true" in f.description
+
+    def test_passes_when_persist_credentials_false(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  persist-credentials: false
+              - run: make test
+        """
+        f = run_check(wf, "GHA-037")
+        assert f.passed
+
+    def test_passes_when_no_checkout_step(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: echo hello
+        """
+        f = run_check(wf, "GHA-037")
+        assert f.passed
+
+    def test_fires_per_unsafe_step_on_multi_job_workflow(self):
+        # Two jobs, each with an unsafe checkout. Both surface in
+        # the description (or at least the count is 2).
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v4
+              - run: make a
+          b:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  persist-credentials: true
+              - run: make b
+        """
+        f = run_check(wf, "GHA-037")
+        assert not f.passed
+        assert "2 actions/checkout step(s)" in f.description
+
+
+# ── GHA-038 ACTIONS_ALLOW_UNSECURE_COMMANDS ─────────────────────────
+
+
+class TestGHA038AllowUnsecureCommands:
+    def test_passes_when_flag_absent(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: make test
+        """
+        f = run_check(wf, "GHA-038")
+        assert f.passed
+
+    def test_fails_at_workflow_env(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: make test
+        """
+        f = run_check(wf, "GHA-038")
+        assert not f.passed
+        assert "workflow.env" in f.description
+
+    def test_fails_at_job_env(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            env:
+              ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+            steps:
+              - run: make test
+        """
+        f = run_check(wf, "GHA-038")
+        assert not f.passed
+        assert "jobs.build.env" in f.description
+
+    def test_fails_at_step_env(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - name: legacy install
+                env:
+                  ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+                run: legacy-installer.sh
+        """
+        f = run_check(wf, "GHA-038")
+        assert not f.passed
+        assert "legacy install" in f.description
+
+    def test_fails_on_native_yaml_true(self):
+        # YAML loaders sometimes preserve ``true`` as a real bool;
+        # the rule normalises both forms.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-038")
+        assert not f.passed
+
+    def test_passes_when_flag_set_to_false_string(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: "false"
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-038")
+        assert f.passed

@@ -12,6 +12,40 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-037 / GHA-038. Peer-tool gap closure.** Two new GHA
+  rules covering exploit classes that Zizmor / Checkov /
+  StepSecurity audit but pipeline-check missed.
+
+  - **GHA-037 actions/checkout persist-credentials.** Flags
+    ``actions/checkout`` steps that omit ``persist-credentials:
+    false`` (the v3 / v4 default of ``true``) or set it to
+    ``true`` explicitly. The default writes the GITHUB_TOKEN
+    into ``.git/config`` as an
+    ``http.https://github.com/.extraheader`` line, where any
+    subsequent ``run:`` step in the same job can read it via
+    ``git config --get http.https://github.com/.extraheader``
+    and exfiltrate. Real-world exploit chains (Ultralytics
+    2024 RCE, multiple Mend / Snyk advisories) leverage
+    exactly this primitive. Sister rule GHA-019 catches the
+    explicit ``echo $GITHUB_TOKEN > file`` shape; GHA-037
+    catches the implicit checkout-default that doesn't go
+    through a ``run:`` line at all. Zizmor calls this
+    failure pattern *Artipacked*.
+  - **GHA-038 ACTIONS_ALLOW_UNSECURE_COMMANDS.** Flags
+    workflows that set ``ACTIONS_ALLOW_UNSECURE_COMMANDS=true``
+    at the workflow / job / step env level. The flag re-
+    enables the retired ``::set-env::`` / ``::add-path::``
+    workflow commands which inject through the runner's
+    stdout, any tool's diagnostic line starting with ``::``
+    becomes an injection vector. Sister rule GHA-031
+    catches direct uses of ``::set-output::`` /
+    ``::save-state::`` in step scripts; GHA-038 catches the
+    explicit re-enable flag, which is strictly worse because
+    it accepts every ``::set-env::`` line on stdout, not just
+    the workflow author's own ``echo`` commands.
+
+  GHA catalog: 36 -> 38.
+
 - **DR-011 Drone node-map runner targeting.** New rule.
   Flags Drone pipelines whose ``node:`` map (the runner-
   selection block) interpolates a pusher-controllable Drone

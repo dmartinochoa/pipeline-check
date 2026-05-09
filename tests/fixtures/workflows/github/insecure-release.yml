@@ -29,6 +29,10 @@ jobs:
     # GHA-012: self-hosted runner with no `ephemeral` label. State
     # leaks across jobs (PR -> deploy).
     runs-on: self-hosted
+    # GHA-038: re-enables retired ::set-env / ::add-path workflow
+    # commands across every step in the job.
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
     steps:
       - name: Checkout PR head (unsafe)
         uses: actions/checkout@v4

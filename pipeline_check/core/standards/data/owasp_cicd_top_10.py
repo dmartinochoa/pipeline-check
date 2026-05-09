@@ -170,6 +170,8 @@ STANDARD = Standard(
         "GHA-034":  ["CICD-SEC-2", "CICD-SEC-6"],  # secrets: inherit
         "GHA-035":  ["CICD-SEC-4"],   # github-script injection
         "GHA-036":  ["CICD-SEC-7"],   # runs-on interpolates untrusted context
+        "GHA-037":  ["CICD-SEC-6", "CICD-SEC-4"],  # checkout persists token (Artipacked)
+        "GHA-038":  ["CICD-SEC-4", "CICD-SEC-7"],  # ACTIONS_ALLOW_UNSECURE_COMMANDS
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

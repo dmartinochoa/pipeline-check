@@ -110,6 +110,7 @@ STANDARD = Standard(
         "GHA-026":  ["Dangerous-Workflow"],
         "GHA-027":  ["Dangerous-Workflow"],
         "GHA-028":  ["Dangerous-Workflow"],
+        "GHA-038":  ["Dangerous-Workflow"],                            # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GL-002":   ["Dangerous-Workflow"],
         "GL-011":   ["Dangerous-Workflow"],
         "GL-012":   ["Dangerous-Workflow"],
@@ -159,6 +160,7 @@ STANDARD = Standard(
         "GHA-005":  ["Token-Permissions"],
         "GHA-008":  ["Token-Permissions"],
         "GHA-019":  ["Token-Permissions"],
+        "GHA-037":  ["Token-Permissions"],          # actions/checkout persist-credentials
         "GL-003":   ["Token-Permissions"],
         "GL-008":   ["Token-Permissions"],
         "GL-013":   ["Token-Permissions"],
