@@ -216,6 +216,25 @@ class _FuzzyChoice(click.Choice[str]):
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _completion_debug(source: str, exc: BaseException) -> None:
+    """Log a completion-helper exception to stderr when ``$PIPELINE_CHECK_DEBUG``
+    is truthy.
+
+    Tab-completion runs in the user's interactive shell, where stderr
+    output during a Tab press is invisible (the shell renders the
+    candidate list, not stderr). Silent ``except`` is therefore the
+    only reasonable production behavior: a broken helper must not eat
+    the keypress with a traceback. But debugging "why does my Tab
+    show no candidates" requires *some* breadcrumb, so we honor an
+    opt-in env var. Default off to keep the live path quiet.
+    """
+    if os.environ.get("PIPELINE_CHECK_DEBUG"):
+        click.echo(
+            f"[completion] {source}: {type(exc).__name__}: {exc}",
+            err=True,
+        )
+
+
 def _complete_check_ids(
     ctx: click.Context, param: click.Parameter, incomplete: str,
 ) -> list[Any]:
@@ -223,7 +242,8 @@ def _complete_check_ids(
     from click.shell_completion import CompletionItem
     try:
         ids = _all_check_ids()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("check-ids", exc)
         return []
     return [
         CompletionItem(cid)
@@ -239,7 +259,8 @@ def _complete_standards(
     from click.shell_completion import CompletionItem
     try:
         names = _standards.available()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("standards", exc)
         return []
     return [
         CompletionItem(n)
@@ -256,7 +277,8 @@ def _complete_man_topics(
     try:
         from .core.manual import topics
         names = topics()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("man-topics", exc)
         return []
     return [
         CompletionItem(t)
@@ -352,6 +374,64 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
 
 
+def _resolve_provider_path(
+    provider_lc: str,
+    *,
+    flag: str,
+    value: str | None,
+    candidates: tuple[str, ...] = (),
+    candidate_kind: str = "file",
+    validate_kind: str = "exists",
+    detect_label: str = "",
+    not_found_label: str = "",
+) -> str:
+    """Auto-detect, validate, and return a per-provider input path.
+
+    Replaces the per-provider elif ladder that ``main()`` used to
+    carry. Cloudformation and helm have edge cases (template-folder
+    detection, ``--helm-values`` validation) so they stay inline;
+    every other provider's contract is exactly:
+
+      1. If the user didn't pass ``--<flag>``, walk *candidates*
+         and pick the first one that exists. ``candidate_kind`` is
+         ``file`` for canonical files (``.gitlab-ci.yml``) or
+         ``dir`` for canonical directories (``.github/workflows``).
+      2. If still empty, raise ``UsageError`` with a hint that names
+         the canonical files we looked for (*detect_label*).
+      3. Validate that the resolved path exists. ``validate_kind``
+         is ``exists`` (default; file or dir), ``file``, or ``dir``.
+         ``not_found_label`` ("directory" / "path") inserts a noun
+         into the error message when the validation kind is stricter
+         than ``exists``.
+    """
+    if not value:
+        check = os.path.isdir if candidate_kind == "dir" else os.path.isfile
+        for cand in candidates:
+            if check(cand):
+                value = cand
+                click.echo(f"[auto] using --{flag} {value}", err=True)
+                break
+    if not value:
+        suffix = (
+            f" (no {detect_label} found in the current directory)."
+            if detect_label else "."
+        )
+        raise click.UsageError(
+            f"--{flag} PATH is required when --pipeline {provider_lc}{suffix}"
+        )
+    validators = {
+        "exists": os.path.exists,
+        "file": os.path.isfile,
+        "dir": os.path.isdir,
+    }
+    if not validators[validate_kind](value):
+        kind_word = (not_found_label + " ") if not_found_label else ""
+        raise click.UsageError(
+            f"--{flag} {kind_word}not found: {value}"
+        )
+    return value
+
+
 def _detect_pipeline_from_cwd() -> str | None:
     """Return the best-guess pipeline name based on files present at cwd.
 
@@ -431,8 +511,8 @@ def _all_check_ids() -> list[str]:
             from .core.checks.rule import discover_rules
             for rule, _ in discover_rules(pkg):
                 ids.append(rule.id)
-        except Exception:
-            pass
+        except Exception as exc:
+            _completion_debug(f"rule-discover {pkg}", exc)
     # AWS / Terraform, class-based checks with hardcoded check_id strings.
     _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
     for provider_pkg_name in (
@@ -451,8 +531,8 @@ def _all_check_ids() -> list[str]:
                 if mod.__file__:
                     with open(mod.__file__, encoding="utf-8") as fh:
                         ids.extend(_id_re.findall(fh.read()))
-        except Exception:
-            pass
+        except Exception as exc:
+            _completion_debug(f"id-scan {provider_pkg_name}", exc)
     ids = sorted(set(ids))
     _CHECK_IDS_CACHE = ids
     return ids
@@ -1454,78 +1534,47 @@ def scan(
             )
             pipeline_lc = "aws"
     if pipeline_lc == "terraform":
-        if not tf_plan:
-            raise click.UsageError(
-                "--tf-plan PATH is required when --pipeline terraform."
-            )
-        if not os.path.isfile(tf_plan):
-            raise click.UsageError(f"--tf-plan path not found: {tf_plan}")
+        tf_plan = _resolve_provider_path(
+            "terraform", flag="tf-plan", value=tf_plan,
+            validate_kind="file", not_found_label="path",
+        )
     elif pipeline_lc == "github":
-        if not gha_path and os.path.isdir(".github/workflows"):
-            gha_path = ".github/workflows"
-            click.echo(f"[auto] using --gha-path {gha_path}", err=True)
-        if not gha_path:
-            raise click.UsageError(
-                "--gha-path PATH is required when --pipeline github "
-                "(no .github/workflows found in the current directory)."
-            )
-        if not os.path.isdir(gha_path):
-            raise click.UsageError(f"--gha-path directory not found: {gha_path}")
+        gha_path = _resolve_provider_path(
+            "github", flag="gha-path", value=gha_path,
+            candidates=(".github/workflows",), candidate_kind="dir",
+            validate_kind="dir", detect_label=".github/workflows",
+            not_found_label="directory",
+        )
     elif pipeline_lc == "gitlab":
-        if not gitlab_path and os.path.isfile(".gitlab-ci.yml"):
-            gitlab_path = ".gitlab-ci.yml"
-            click.echo(f"[auto] using --gitlab-path {gitlab_path}", err=True)
-        if not gitlab_path:
-            raise click.UsageError(
-                "--gitlab-path PATH is required when --pipeline gitlab "
-                "(no .gitlab-ci.yml found in the current directory)."
-            )
-        if not os.path.exists(gitlab_path):
-            raise click.UsageError(f"--gitlab-path not found: {gitlab_path}")
+        gitlab_path = _resolve_provider_path(
+            "gitlab", flag="gitlab-path", value=gitlab_path,
+            candidates=(".gitlab-ci.yml",),
+            detect_label=".gitlab-ci.yml",
+        )
     elif pipeline_lc == "bitbucket":
-        if not bitbucket_path and os.path.isfile("bitbucket-pipelines.yml"):
-            bitbucket_path = "bitbucket-pipelines.yml"
-            click.echo(f"[auto] using --bitbucket-path {bitbucket_path}", err=True)
-        if not bitbucket_path:
-            raise click.UsageError(
-                "--bitbucket-path PATH is required when --pipeline bitbucket "
-                "(no bitbucket-pipelines.yml found in the current directory)."
-            )
-        if not os.path.exists(bitbucket_path):
-            raise click.UsageError(f"--bitbucket-path not found: {bitbucket_path}")
+        bitbucket_path = _resolve_provider_path(
+            "bitbucket", flag="bitbucket-path", value=bitbucket_path,
+            candidates=("bitbucket-pipelines.yml",),
+            detect_label="bitbucket-pipelines.yml",
+        )
     elif pipeline_lc == "azure":
-        if not azure_path and os.path.isfile("azure-pipelines.yml"):
-            azure_path = "azure-pipelines.yml"
-            click.echo(f"[auto] using --azure-path {azure_path}", err=True)
-        if not azure_path:
-            raise click.UsageError(
-                "--azure-path PATH is required when --pipeline azure "
-                "(no azure-pipelines.yml found in the current directory)."
-            )
-        if not os.path.exists(azure_path):
-            raise click.UsageError(f"--azure-path not found: {azure_path}")
+        azure_path = _resolve_provider_path(
+            "azure", flag="azure-path", value=azure_path,
+            candidates=("azure-pipelines.yml",),
+            detect_label="azure-pipelines.yml",
+        )
     elif pipeline_lc == "jenkins":
-        if not jenkinsfile_path and os.path.isfile("Jenkinsfile"):
-            jenkinsfile_path = "Jenkinsfile"
-            click.echo(f"[auto] using --jenkinsfile-path {jenkinsfile_path}", err=True)
-        if not jenkinsfile_path:
-            raise click.UsageError(
-                "--jenkinsfile-path PATH is required when --pipeline jenkins "
-                "(no Jenkinsfile found in the current directory)."
-            )
-        if not os.path.exists(jenkinsfile_path):
-            raise click.UsageError(f"--jenkinsfile-path not found: {jenkinsfile_path}")
+        jenkinsfile_path = _resolve_provider_path(
+            "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
+            candidates=("Jenkinsfile",),
+            detect_label="Jenkinsfile",
+        )
     elif pipeline_lc == "circleci":
-        if not circleci_path and os.path.isfile(".circleci/config.yml"):
-            circleci_path = ".circleci/config.yml"
-            click.echo(f"[auto] using --circleci-path {circleci_path}", err=True)
-        if not circleci_path:
-            raise click.UsageError(
-                "--circleci-path PATH is required when --pipeline circleci "
-                "(no .circleci/config.yml found in the current directory)."
-            )
-        if not os.path.exists(circleci_path):
-            raise click.UsageError(f"--circleci-path not found: {circleci_path}")
+        circleci_path = _resolve_provider_path(
+            "circleci", flag="circleci-path", value=circleci_path,
+            candidates=(".circleci/config.yml",),
+            detect_label=".circleci/config.yml",
+        )
     elif pipeline_lc == "cloudformation":
         if not cfn_template:
             for _candidate in (
@@ -1560,89 +1609,38 @@ def scan(
                     ".yml / .yaml / .json / .template files."
                 )
     elif pipeline_lc == "cloudbuild":
-        if not cloudbuild_path:
-            for _candidate in ("cloudbuild.yaml", "cloudbuild.yml"):
-                if os.path.isfile(_candidate):
-                    cloudbuild_path = _candidate
-                    click.echo(
-                        f"[auto] using --cloudbuild-path {cloudbuild_path}",
-                        err=True,
-                    )
-                    break
-        if not cloudbuild_path:
-            raise click.UsageError(
-                "--cloudbuild-path PATH is required when --pipeline cloudbuild "
-                "(no cloudbuild.yaml/cloudbuild.yml found in the current directory)."
-            )
-        if not os.path.exists(cloudbuild_path):
-            raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
+        cloudbuild_path = _resolve_provider_path(
+            "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
+            candidates=("cloudbuild.yaml", "cloudbuild.yml"),
+            detect_label="cloudbuild.yaml/cloudbuild.yml",
+        )
     elif pipeline_lc == "buildkite":
-        if not buildkite_path:
-            for _candidate in (
-                ".buildkite/pipeline.yml", ".buildkite/pipeline.yaml",
-            ):
-                if os.path.isfile(_candidate):
-                    buildkite_path = _candidate
-                    click.echo(
-                        f"[auto] using --buildkite-path {buildkite_path}",
-                        err=True,
-                    )
-                    break
-        if not buildkite_path:
-            raise click.UsageError(
-                "--buildkite-path PATH is required when --pipeline buildkite "
-                "(no .buildkite/pipeline.yml found in the current directory)."
-            )
-        if not os.path.exists(buildkite_path):
-            raise click.UsageError(f"--buildkite-path not found: {buildkite_path}")
+        buildkite_path = _resolve_provider_path(
+            "buildkite", flag="buildkite-path", value=buildkite_path,
+            candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+            detect_label=".buildkite/pipeline.yml",
+        )
     elif pipeline_lc == "tekton":
-        if not tekton_path:
-            raise click.UsageError(
-                "--tekton-path PATH is required when --pipeline tekton."
-            )
-        if not os.path.exists(tekton_path):
-            raise click.UsageError(f"--tekton-path not found: {tekton_path}")
+        tekton_path = _resolve_provider_path(
+            "tekton", flag="tekton-path", value=tekton_path,
+        )
     elif pipeline_lc == "argo":
-        if not argo_path:
-            raise click.UsageError(
-                "--argo-path PATH is required when --pipeline argo."
-            )
-        if not os.path.exists(argo_path):
-            raise click.UsageError(f"--argo-path not found: {argo_path}")
+        argo_path = _resolve_provider_path(
+            "argo", flag="argo-path", value=argo_path,
+        )
     elif pipeline_lc == "dockerfile":
-        if not dockerfile_path:
-            for _candidate in ("Dockerfile", "Containerfile"):
-                if os.path.isfile(_candidate):
-                    dockerfile_path = _candidate
-                    click.echo(
-                        f"[auto] using --dockerfile-path {dockerfile_path}",
-                        err=True,
-                    )
-                    break
-        if not dockerfile_path:
-            raise click.UsageError(
-                "--dockerfile-path PATH is required when --pipeline dockerfile "
-                "(no Dockerfile/Containerfile found in the current directory)."
-            )
-        if not os.path.exists(dockerfile_path):
-            raise click.UsageError(f"--dockerfile-path not found: {dockerfile_path}")
+        dockerfile_path = _resolve_provider_path(
+            "dockerfile", flag="dockerfile-path", value=dockerfile_path,
+            candidates=("Dockerfile", "Containerfile"),
+            detect_label="Dockerfile/Containerfile",
+        )
     elif pipeline_lc == "kubernetes":
-        if not k8s_path:
-            for _candidate in ("kubernetes", "k8s", "manifests"):
-                if os.path.isdir(_candidate):
-                    k8s_path = _candidate
-                    click.echo(
-                        f"[auto] using --k8s-path {k8s_path}",
-                        err=True,
-                    )
-                    break
-        if not k8s_path:
-            raise click.UsageError(
-                "--k8s-path PATH is required when --pipeline kubernetes "
-                "(no kubernetes/, k8s/, or manifests/ directory found in cwd)."
-            )
-        if not os.path.exists(k8s_path):
-            raise click.UsageError(f"--k8s-path not found: {k8s_path}")
+        k8s_path = _resolve_provider_path(
+            "kubernetes", flag="k8s-path", value=k8s_path,
+            candidates=("kubernetes", "k8s", "manifests"),
+            candidate_kind="dir",
+            detect_label="kubernetes/, k8s/, or manifests/ directory",
+        )
     elif pipeline_lc == "helm":
         if not helm_path:
             if os.path.isfile("Chart.yaml"):

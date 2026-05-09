@@ -1,100 +1,26 @@
-"""Suggest concrete source edits to remediate a finding.
+"""Implementation of the 100+ pipeline-check autofixers.
 
-Each fixer takes the raw YAML text of a workflow file plus the relevant
-finding and returns the edited text, or ``None`` if the fixer can't
-safely generate a patch (e.g. the file has already been fixed by hand,
-or the issue requires data the scanner doesn't have).
+Imported as a side effect from ``pipeline_check.core.autofix.__init__``
+so every ``@register(...)`` decorator runs at package import time.
+External callers should import names from ``pipeline_check.core.autofix``
+(the package), not from here.
 
-Design rules:
-
-- Fixers never touch the filesystem. ``render_patch`` converts the
-  before/after pair into a unified diff; the CLI writes the patch to
-  stdout and the user decides whether to apply it.
-- Fixers must be *idempotent* — running one whose output is already
-  present returns ``None``, never a no-op patch.
-- Fixers operate on text, not the parsed YAML AST. Parsing and
-  re-serialising destroys comments, blank lines, and YAML style that
-  maintainers rely on; text patches preserve them.
-
-81 registered fixers covering 8 CI/CD providers plus Kubernetes
-manifests and Cloud Build. Key categories:
-
-- **Permissions** — ``GHA-004`` (contents: read), ``GHA-002``
-  (persist-credentials: false).
-- **Script injection** — ``GHA-003`` (env-var indirection for
-  untrusted GitHub context expressions in ``run:`` blocks).
-- **Secret redaction** — ``*-008`` across all 6 CI providers plus
-  ``JF-008`` (Groovy syntax).
-- **AWS key removal** — ``GHA-005`` / ``GL-013`` / ``BB-011`` /
-  ``ADO-014`` / ``CC-005`` / ``JF-004`` / ``JF-010``.
-- **Timeouts** — ``GHA-015``, ``GL-015``, ``ADO-015``, ``BB-005``,
-  ``JF-015``, ``CC-015``.
-- **Curl-pipe** — ``*-016`` across all 6 CI providers.
-- **Docker insecure** — ``*-017`` across all 6 CI providers.
-- **Package insecure** — ``*-018`` across all 6 CI providers.
-- **Token persistence** — ``GHA-019``, ``GL-020``, ``BB-017``.
-- **Deploy environment** — ``GHA-014`` (environment: stub).
-- **Lockfile** — ``*-021`` npm install → npm ci across all providers.
-- **Dep update** — ``*-022`` comment-out across all providers.
-- **TLS bypass** — ``*-023`` comment-out across all providers.
-- **Pinning TODOs** — ``GHA-001``, ``GL-001``, ``BB-001``,
-  ``ADO-001``, ``CC-001``, ``JF-011`` (buildDiscarder).
+This module's split is mechanical at the moment . one container for
+every fixer the scanner ships. Future hygiene work can break it apart
+by category (one module per provider, plus shared regex helpers); the
+package facade in ``__init__.py`` already supports that pattern.
 """
 from __future__ import annotations
 
-import difflib
 import re
-from collections.abc import Callable
 
-from .checks.base import Finding
+from ..checks.base import Finding
+from . import _FIXERS, register
 
-Fixer = Callable[[str, Finding], "str | None"]
-
-_FIXERS: dict[str, Fixer] = {}
-
-
-def register(check_id: str) -> Callable[[Fixer], Fixer]:
-    """Decorator used by fixers to register themselves under a check ID."""
-    def _wrap(fn: Fixer) -> Fixer:
-        _FIXERS[check_id.upper()] = fn
-        return fn
-    return _wrap
-
-
-def available_fixers() -> list[str]:
-    return sorted(_FIXERS.keys())
-
-
-def generate_fix(finding: Finding, content: str) -> str | None:
-    """Run the registered fixer for ``finding.check_id`` against ``content``.
-
-    Returns the edited text, or ``None`` if no fixer is registered or
-    the fixer decided the content already satisfies the check.
-
-    Fixer exceptions propagate — the CLI catches at the call site so a
-    single broken fixer doesn't abort a batch run, but a bug in a
-    fixer surfaces instead of being silently swallowed.
-    """
-    fn = _FIXERS.get(finding.check_id.upper())
-    if fn is None:
-        return None
-    out = fn(content, finding)
-    if out is None or out == content:
-        return None
-    return out
-
-
-def render_patch(path: str, before: str, after: str) -> str:
-    """Unified diff between ``before`` and ``after`` for *path*."""
-    return "".join(
-        difflib.unified_diff(
-            before.splitlines(keepends=True),
-            after.splitlines(keepends=True),
-            fromfile=f"a/{path}",
-            tofile=f"b/{path}",
-        )
-    )
-
+# Used by helpers below that bind their callable into ``_FIXERS`` for
+# multiple check IDs in a single ``for`` loop. ``Finding`` is referenced
+# in fixer signatures.
+_ = (_FIXERS, Finding)
 
 # ── Fixers ────────────────────────────────────────────────────────────────
 
@@ -217,7 +143,7 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
     YAML dialects. Jenkins (JF-008) is excluded — Groovy syntax
     needs a different approach.
     """
-    from .checks._patterns import SECRET_VALUE_RE
+    from ..checks._patterns import SECRET_VALUE_RE
     out_lines: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -577,7 +503,7 @@ def _fix_jf008(content: str, finding: Finding) -> str | None:
 
     Handles ``VAR = "AKIA..."`` and ``def x = "ghp_..."`` patterns.
     """
-    from .checks._patterns import SECRET_VALUE_RE
+    from ..checks._patterns import SECRET_VALUE_RE
 
     out: list[str] = []
     changed = False
@@ -830,7 +756,7 @@ def _fix_gha003(content: str, finding: Finding) -> str | None:
     environment variable binding (safe — GitHub sets the env var as a
     single string, not subject to shell parsing).
     """
-    from .checks.github.rules._helpers import UNTRUSTED_CONTEXT_RE
+    from ..checks.github.rules._helpers import UNTRUSTED_CONTEXT_RE
 
     _RUN_RE = re.compile(r"^(\s*-?\s*run:\s*[|>]?\s*)$|^(\s*-?\s*run:\s+)(\S.*)$")
     _TODO_INJECT = "TODO(pipeline-check): moved untrusted expression to env var"
@@ -965,9 +891,9 @@ _TODO_TOKEN = "WARNING(pipeline-check): token written to persistent storage — 
 
 def _comment_token_persist(content: str, finding: Finding) -> str | None:
     """Comment out lines that persist tokens to files/env."""
-    from .checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
-    from .checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
-    from .checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
+    from ..checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
+    from ..checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
+    from ..checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
 
     persist_re = {"GHA-019": GHA_RE, "GL-020": GL_RE, "BB-017": BB_RE}
     pattern = persist_re.get(finding.check_id.upper())
@@ -1113,7 +1039,7 @@ _TODO_DEP_UPDATE = "TODO(pipeline-check): remove dependency update command; use 
 
 def _comment_dep_update(content: str, finding: Finding) -> str | None:
     """Comment out dependency-update commands."""
-    from .checks.base import _DEP_UPDATE_TOOL_EXEMPT_RE, DEP_UPDATE_RE
+    from ..checks.base import _DEP_UPDATE_TOOL_EXEMPT_RE, DEP_UPDATE_RE
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -1146,7 +1072,7 @@ _TODO_TLS = "TODO(pipeline-check): remove TLS/SSL verification bypass"
 
 def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     """Comment out TLS verification bypass lines."""
-    from .checks.base import TLS_BYPASS_RE
+    from ..checks.base import TLS_BYPASS_RE
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):

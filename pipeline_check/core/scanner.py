@@ -8,6 +8,7 @@ See the relevant provider module for instructions:
 """
 from __future__ import annotations
 
+import fnmatch
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -111,32 +112,51 @@ class Scanner:
         _secret_registry.reset_patterns()
         for pat in secret_patterns or ():
             _secret_registry.register_pattern(pat)
-        self._context: Any = provider.build_context(
-            region=region, profile=profile, **provider_kwargs
+        self._context = self._build_context(
+            provider, region, profile, diff_base, provider_kwargs,
         )
-        if diff_base:
-            _filter_context_by_diff(self._context, diff_base, self.pipeline)
-
-        # ``post_filter`` runs after the diff filter so resolver-driven
-        # provider extensions (GHA reusable workflow resolution) don't
-        # waste fetches on callers that the diff filter already pruned.
-        try:
-            provider.post_filter(self._context, **provider_kwargs)
-        except Exception as exc:
-            # Defensive: a misbehaving provider hook must not crash the
-            # whole scan. Surface it as a context warning instead.
-            warnings_list = getattr(self._context, "warnings", None)
-            if isinstance(warnings_list, list):
-                warnings_list.append(
-                    f"[{self.pipeline}] post_filter hook raised: {exc}"
-                )
-
         self.metadata = ScanMetadata(
             provider=self.pipeline,
             files_scanned=getattr(self._context, "files_scanned", 0),
             files_skipped=getattr(self._context, "files_skipped", 0),
             warnings=list(getattr(self._context, "warnings", [])),
         )
+
+    def _build_context(
+        self,
+        provider: Any,
+        region: str,
+        profile: str | None,
+        diff_base: str | None,
+        provider_kwargs: dict[str, Any],
+    ) -> Any:
+        """Construct the provider context, apply the diff filter, run
+        ``post_filter``.
+
+        Pulled out of ``__init__`` so tests can substitute their own
+        context-building strategy without re-implementing the rest of
+        Scanner construction. ``post_filter`` exceptions never abort
+        the scan, they're surfaced as a context warning so the
+        operator sees the breakage in the report's metadata block.
+        """
+        ctx: Any = provider.build_context(
+            region=region, profile=profile, **provider_kwargs,
+        )
+        if diff_base:
+            _filter_context_by_diff(ctx, diff_base, self.pipeline)
+
+        # ``post_filter`` runs after the diff filter so resolver-driven
+        # provider extensions (GHA reusable workflow resolution) don't
+        # waste fetches on callers that the diff filter already pruned.
+        try:
+            provider.post_filter(ctx, **provider_kwargs)
+        except Exception as exc:
+            warnings_list = getattr(ctx, "warnings", None)
+            if isinstance(warnings_list, list):
+                warnings_list.append(
+                    f"[{self.pipeline}] post_filter hook raised: {exc}"
+                )
+        return ctx
 
     @staticmethod
     def _load_custom_rules(
@@ -153,21 +173,19 @@ class Scanner:
         if not paths:
             return LoadedCustomRules()
         builtin_ids: set[str] = set()
-        # Built-in YAML providers expose their IDs through the same
-        # ``discover_rules`` helper the orchestrators use. We import
-        # lazily to avoid pulling in every rule module when no custom
-        # rules were configured.
+        # Discover rule packages from the filesystem. Adding a new
+        # provider under ``pipeline_check/core/checks/<name>/rules/``
+        # automatically participates in collision detection, no
+        # registry edit required. The same import is also used by the
+        # CLI's ``--list-checks`` / completion path, so the source of
+        # truth stays singular.
+        from pathlib import Path as _Path
+
         from .checks.rule import discover_rules
-        builtin_packages = (
-            "pipeline_check.core.checks.github.rules",
-            "pipeline_check.core.checks.gitlab.rules",
-            "pipeline_check.core.checks.bitbucket.rules",
-            "pipeline_check.core.checks.azure.rules",
-            "pipeline_check.core.checks.jenkins.rules",
-            "pipeline_check.core.checks.circleci.rules",
-            "pipeline_check.core.checks.cloudbuild.rules",
-            "pipeline_check.core.checks.kubernetes.rules",
-            "pipeline_check.core.checks.dockerfile.rules",
+        checks_root = _Path(__file__).parent / "checks"
+        builtin_packages = sorted(
+            f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
+            for p in checks_root.glob("*/rules/__init__.py")
         )
         for pkg in builtin_packages:
             try:
@@ -216,7 +234,6 @@ class Scanner:
             return []
         components = provider.inventory(self._context)
         if type_patterns:
-            import fnmatch
             components = [
                 c for c in components
                 if any(fnmatch.fnmatchcase(c.type, p) for p in type_patterns)
@@ -269,7 +286,6 @@ class Scanner:
             # Support glob patterns (``GHA-*``, ``*-008``) alongside
             # exact IDs. fnmatch semantics: ``*`` matches any run of
             # chars, ``?`` matches one, ``[abc]`` matches a set.
-            import fnmatch
             patterns = [c.upper() for c in checks]
             findings = [
                 f for f in findings
