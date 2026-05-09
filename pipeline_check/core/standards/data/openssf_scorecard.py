@@ -90,6 +90,10 @@ STANDARD = Standard(
         "JF-031":   ["Pinned-Dependencies"],
         "CC-021":   ["Pinned-Dependencies"],
         "CC-028":   ["Pinned-Dependencies"],
+        "BK-014":   ["Pinned-Dependencies"],                           # bk lockfile-bypass / insecure pkg install
+        "TKN-014":  ["Pinned-Dependencies"],                           # tkn lockfile-bypass / insecure pkg install
+        "ARGO-014": ["Pinned-Dependencies"],                           # argo lockfile-bypass / insecure pkg install
+        "DR-010":   ["Pinned-Dependencies"],                           # drone lockfile-bypass / insecure pkg install
 
         # ── Dangerous-Workflow ───────────────────────────────────────
         "CB-010":   ["Dangerous-Workflow"],                            # fork PR builds without actor filter
@@ -299,6 +303,21 @@ STANDARD = Standard(
         "ARGO-010": ["SBOM"],                                          # SBOM
         "ARGO-011": ["Signed-Releases", "SBOM"],                       # SLSA provenance
         "ARGO-012": ["Vulnerabilities", "SAST"],                       # vuln scanning
+        # ── Drone CI ─────────────────────────────────────────────────
+        "DR-001":   ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "DR-002":   ["Dangerous-Workflow"],                            # privileged step
+        "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
+        "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag
+        "DR-006":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # TLS bypass in commands
+        "DR-007":   ["Dangerous-Workflow"],                            # sensitive host-path mount
+        "DR-008":   ["Pinned-Dependencies"],                           # ``pull: never`` skips registry verify
+        "DR-009":   ["Dangerous-Workflow"],                            # tainted cache key
+        # ── OCI image manifest ───────────────────────────────────────
+        "OCI-001":  ["SBOM"],                                          # provenance annotations
+        "OCI-002":  ["Signed-Releases", "SBOM"],                       # build attestation manifest
+        "OCI-004":  ["Pinned-Dependencies"],                           # foreign-URL layer = no content pin
+        "OCI-007":  ["Pinned-Dependencies"],                           # legacy schemaVersion 1
+        "OCI-008":  ["Pinned-Dependencies"],                           # non-sha256 digest
         # ── Helm chart-supply-chain ──────────────────────────────────
         # Chart deps ARE pinned dependencies in the Scorecard sense —
         # an unlocked Chart.lock is a Pinned-Dependencies failure.

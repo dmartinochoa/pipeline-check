@@ -338,11 +338,15 @@ MEDIUM accordingly. The orchestrator gained a 4-arg rule
 signature so future rules needing cross-workflow analysis can
 opt in the same way.
 
-Remaining gaps: GitLab ``extends:`` job-template inheritance
-and ``include:`` cross-pipeline taint. The TAINT engine has
-been ported to GitLab, GHA, Buildkite, Tekton, and Argo
-(producer/consumer shapes); Drone CI's cross-step plumbing is
-artifact-based and a thinner port.
+GitLab ``extends:`` job-template inheritance *landed on dev*
+as ``TAINT-008``. The rule resolves each non-hidden job's
+extends chain (transitive, cycle-safe), gathers tainted
+variables from every link's ``variables:`` block, and walks
+the consuming job's scripts for unquoted references. Quote-
+state aware. Remaining gaps: GitLab ``include:`` cross-
+pipeline file inclusion isn't tracked yet (would need cross-
+document machinery similar to the GHA ``--resolve-remote``
+flow). The TAINT engine spans 8 rules across 5 providers.
 
 This is the move that distinguishes pipeline-check from the
 common per-rule local matching that mainstream commercial CI/CD

@@ -112,6 +112,7 @@ class TestOCIManifestChecksOrchestrator:
         assert ids == [
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
+            "OCI-007", "OCI-008",
         ]
         # Every rule passes on this fully-stamped index (foreign-layer
         # / layer-count rules pass-by-default on indexes since they
@@ -181,6 +182,7 @@ class TestScannerWiring:
         assert ids == [
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
+            "OCI-007", "OCI-008",
         ]
         # OCI-001..003 + OCI-005 fire on a bare index (no
         # provenance / attestation / created / licenses annotations).

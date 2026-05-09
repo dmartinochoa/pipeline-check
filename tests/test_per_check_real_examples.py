@@ -380,10 +380,12 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     "TAINT-002",
     "TAINT-003",
     "TAINT-004",
-    # TAINT-005 lives under ``buildkite.rules``; the meta-test
-    # only tracks providers in ``_PROVIDER_BY_PREFIX`` (GHA / GL /
-    # BB / ADO / JF / CC) so it never enters ``expected_ids`` and
-    # doesn't need a KNOWN_UNCOVERED entry.
+    "TAINT-008",
+    # TAINT-005..007 live under buildkite.rules / tekton.rules /
+    # argo.rules; the meta-test only tracks providers in
+    # ``_PROVIDER_BY_PREFIX`` (GHA / GL / BB / ADO / JF / CC) so
+    # they never enter ``expected_ids`` and don't need a
+    # KNOWN_UNCOVERED entry.
 })
 
 

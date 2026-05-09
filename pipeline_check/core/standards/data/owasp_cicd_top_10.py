@@ -443,6 +443,8 @@ STANDARD = Standard(
         "BK-011":   ["CICD-SEC-9"],   # SLSA provenance not produced
         "BK-012":   ["CICD-SEC-9"],   # no vulnerability scanning
         "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
+        "BK-014":   ["CICD-SEC-3"],   # unpinned package install
+        "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation
         # Tekton
         "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
         "TKN-002":  ["CICD-SEC-5"],   # step runs privileged / as root
@@ -457,6 +459,8 @@ STANDARD = Standard(
         "TKN-011":  ["CICD-SEC-9"],   # SLSA provenance not produced
         "TKN-012":  ["CICD-SEC-9"],   # no vulnerability scanning
         "TKN-013":  ["CICD-SEC-5"],   # sidecar privileged / root
+        "TKN-014":  ["CICD-SEC-3"],   # unpinned package install
+        "TKN-015":  ["CICD-SEC-4", "CICD-SEC-5"],  # workspace subPath param injection
         # Argo Workflows
         "ARGO-001": ["CICD-SEC-3"],   # template image not digest-pinned
         "ARGO-002": ["CICD-SEC-5"],   # template privileged / root
@@ -471,6 +475,8 @@ STANDARD = Standard(
         "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
         "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
         "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
+        "ARGO-014": ["CICD-SEC-3"],   # unpinned package install
+        "ARGO-015": ["CICD-SEC-3", "CICD-SEC-9"],  # insecure artifact URL
         # Cross-cutting dataflow / taint engine (provider-spanning,
         # currently GHA-only in v1)
         "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT
@@ -480,6 +486,7 @@ STANDARD = Standard(
         "TAINT-005": ["CICD-SEC-4", "CICD-SEC-1"],  # Buildkite meta-data cross-step taint flow
         "TAINT-006": ["CICD-SEC-4", "CICD-SEC-1"],  # Tekton results cross-task taint flow
         "TAINT-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Argo outputs.parameters cross-template
+        "TAINT-008": ["CICD-SEC-4", "CICD-SEC-1"],  # GitLab extends-chain inheritance
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
@@ -488,6 +495,9 @@ STANDARD = Standard(
         "DR-005":   ["CICD-SEC-3"],                 # plugin floating tag
         "DR-006":   ["CICD-SEC-3", "CICD-SEC-1"],   # TLS bypass in commands
         "DR-007":   ["CICD-SEC-5"],                 # sensitive host-path mount
+        "DR-008":   ["CICD-SEC-3"],                 # pull: never policy
+        "DR-009":   ["CICD-SEC-1", "CICD-SEC-3"],   # cache key tainted
+        "DR-010":   ["CICD-SEC-3"],                 # unpinned package install
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation
@@ -495,5 +505,7 @@ STANDARD = Standard(
         "OCI-004":  ["CICD-SEC-3", "CICD-SEC-9"],   # foreign-layer URL reference
         "OCI-005":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing image.licenses annotation
         "OCI-006":  ["CICD-SEC-3"],                 # excessive layer count
+        "OCI-007":  ["CICD-SEC-3", "CICD-SEC-9"],   # legacy schemaVersion 1
+        "OCI-008":  ["CICD-SEC-3", "CICD-SEC-9"],   # weak digest algorithm
     },
 )

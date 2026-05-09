@@ -13,10 +13,14 @@ from __future__ import annotations
 import yaml
 
 from pipeline_check.core.checks.gitlab._taint_graph import (
+    analyze_extends_taint,
     analyze_pipeline,
 )
 from pipeline_check.core.checks.gitlab.rules import (
     taint004_dotenv_artifact_taint as t4,
+)
+from pipeline_check.core.checks.gitlab.rules import (
+    taint008_extends_chain_taint as t8,
 )
 
 
@@ -302,3 +306,149 @@ build:
         assert not f.passed
         assert "4 cross-job taint path" in f.description
         assert "..." in f.description
+
+
+# ── Engine: analyze_extends_taint ─────────────────────────────────
+
+
+class TestExtendsEngine:
+    def test_detects_inherited_tainted_var(self) -> None:
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo Building $TITLE
+""")
+        paths = analyze_extends_taint(doc)
+        assert len(paths) == 1
+        assert paths[0].source.expr == "CI_COMMIT_TITLE"
+        assert "$TITLE" in paths[0].sink_consumer
+
+    def test_resolves_multi_level_chain(self) -> None:
+        # ``.real -> .middle -> .base`` chain. Taint declared in
+        # the deepest link should still propagate.
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+.middle:
+  extends: .base
+build:
+  extends: .middle
+  script:
+    - echo Building $TITLE
+""")
+        paths = analyze_extends_taint(doc)
+        assert len(paths) == 1
+
+    def test_handles_extends_list_form(self) -> None:
+        # ``extends: [a, b]`` is the multi-template form. We
+        # union variables from both.
+        doc = _doc("""
+.base:
+  variables:
+    A: $CI_COMMIT_TITLE
+.helper:
+  variables:
+    B: $CI_COMMIT_BRANCH
+build:
+  extends:
+    - .base
+    - .helper
+  script:
+    - echo $A $B
+""")
+        paths = analyze_extends_taint(doc)
+        assert len(paths) == 2
+
+    def test_zero_paths_when_no_extends(self) -> None:
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  script:
+    - echo $TITLE
+""")
+        # Job doesn't extend, so it doesn't inherit.
+        assert analyze_extends_taint(doc) == []
+
+    def test_zero_paths_when_consumer_quotes_var(self) -> None:
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo "$TITLE"
+""")
+        # Quoted reference is safe.
+        assert analyze_extends_taint(doc) == []
+
+    def test_zero_paths_when_inherited_var_not_referenced(self) -> None:
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo unrelated
+""")
+        assert analyze_extends_taint(doc) == []
+
+    def test_breaks_extends_cycles(self) -> None:
+        # Pathological YAML with a self-referential cycle. The
+        # walker shouldn't infinite-loop.
+        doc = _doc("""
+.base:
+  extends: .base
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo $TITLE
+""")
+        paths = analyze_extends_taint(doc)
+        # Detection still works, cycle is just bounded.
+        assert len(paths) == 1
+
+    def test_returns_empty_on_non_dict_doc(self) -> None:
+        assert analyze_extends_taint("not a dict") == []  # type: ignore[arg-type]
+        assert analyze_extends_taint({}) == []
+
+
+# ── TAINT-008 rule wrapper ─────────────────────────────────────────
+
+
+class TestTAINT008:
+    def test_passes_when_no_extends_taint(self) -> None:
+        doc = _doc("""
+build:
+  script:
+    - echo hello
+""")
+        f = t8.check("ci.yml", doc)
+        assert f.passed
+        assert "No tainted variable inherited" in f.description
+
+    def test_fails_with_path_in_description(self) -> None:
+        doc = _doc("""
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo Building $TITLE
+""")
+        f = t8.check("ci.yml", doc)
+        assert not f.passed
+        assert "CI_COMMIT_TITLE" in f.description
+        assert ".base.variables.TITLE" in f.description
+        assert "1 extends-inheritance taint path" in f.description

@@ -680,3 +680,199 @@ class TestTKN013SidecarPrivileged:
         """
         f = run_check(cfg, "TKN-013")
         assert f.passed
+
+
+# ── TKN-014 unpinned package install ───────────────────────────────────
+
+
+class TestTKN014PkgUnpinned:
+    def test_passes_with_npm_ci(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: build
+        spec:
+          steps:
+            - name: build
+              image: alpine:3
+              script: |
+                npm ci
+                npm test
+        """
+        f = run_check(cfg, "TKN-014")
+        assert f.passed
+
+    def test_fails_on_bare_npm_install(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: build
+        spec:
+          steps:
+            - name: build
+              image: alpine:3
+              script: npm install
+        """
+        f = run_check(cfg, "TKN-014")
+        assert not f.passed
+        assert "unpinned" in f.description
+
+    def test_fails_on_pip_trusted_host(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: build
+        spec:
+          steps:
+            - name: build
+              image: alpine:3
+              script: pip install --trusted-host pypi.local pkg
+        """
+        f = run_check(cfg, "TKN-014")
+        assert not f.passed
+
+    def test_passes_with_pip_lockfile(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: build
+        spec:
+          steps:
+            - name: build
+              image: alpine:3
+              script: pip install -r requirements.txt
+        """
+        f = run_check(cfg, "TKN-014")
+        assert f.passed
+
+    def test_passes_when_no_task_documents(self):
+        # PipelineRun-only doc has no Task / ClusterTask, so TKN-014
+        # has nothing to scan.
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: PipelineRun
+        metadata:
+          name: r
+        spec:
+          pipelineRef:
+            name: p
+        """
+        f = run_check(cfg, "TKN-014")
+        assert f.passed
+
+
+# ── TKN-015 workspace subPath param injection ──────────────────────────
+
+
+class TestTKN015WorkspaceSubpathInjection:
+    def test_passes_with_static_subpath(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          steps:
+            - name: build
+              image: alpine
+              workspaces:
+                - name: source
+                  subPath: build/output
+              script: echo ok
+        """
+        f = run_check(cfg, "TKN-015")
+        assert f.passed
+
+    def test_fails_when_subpath_uses_params(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          params:
+            - name: target
+          steps:
+            - name: build
+              image: alpine
+              workspaces:
+                - name: source
+                  subPath: $(params.target)
+              script: echo ok
+        """
+        f = run_check(cfg, "TKN-015")
+        assert not f.passed
+        assert "params.target" in f.description
+
+    def test_fails_when_subpath_concats_param(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          params:
+            - name: ref
+          steps:
+            - name: build
+              image: alpine
+              workspaces:
+                - name: source
+                  subPath: build/$(params.ref)
+              script: echo ok
+        """
+        f = run_check(cfg, "TKN-015")
+        assert not f.passed
+        assert "params.ref" in f.description
+
+    def test_passes_when_subpath_uses_workspace_path(self):
+        # ``$(workspaces.X.path)`` is server-controlled; not on the
+        # tainted list. Only ``$(params.X)`` references fire.
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          steps:
+            - name: build
+              image: alpine
+              workspaces:
+                - name: source
+                  subPath: $(workspaces.source.path)/build
+              script: echo ok
+        """
+        f = run_check(cfg, "TKN-015")
+        assert f.passed
+
+    def test_passes_when_no_workspaces_block(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          steps:
+            - name: build
+              image: alpine
+              script: echo ok
+        """
+        f = run_check(cfg, "TKN-015")
+        assert f.passed
+
+    def test_passes_on_pipelinerun_only_doc(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: PipelineRun
+        metadata:
+          name: r
+        spec:
+          pipelineRef:
+            name: p
+        """
+        f = run_check(cfg, "TKN-015")
+        assert f.passed

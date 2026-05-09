@@ -353,8 +353,203 @@ def _job_dependencies(job: dict[str, Any]) -> list[str]:
     return deps
 
 
+# ── Extends-chain taint analyzer ──────────────────────────────────
+
+
+# Match ``$VAR`` / ``${VAR}`` references in a script line. Used by
+# the extends-chain consumer pass below to detect unquoted shell
+# references to inherited tainted variables.
+_NAME_BOUNDARY = re.compile(
+    r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?(?![A-Za-z0-9_])"
+)
+
+
+def _resolve_extends_chain(
+    extends: Any,
+    all_jobs: dict[str, dict[str, Any]],
+    seen: set[str] | None = None,
+) -> list[str]:
+    """Return the resolved chain of template names *extends* points at.
+
+    GitLab ``extends:`` accepts either a single string or a list
+    of strings; each entry can itself reference another template,
+    so we walk transitively. Cycles are broken via a visited set;
+    unresolvable entries are silently dropped.
+    """
+    if seen is None:
+        seen = set()
+    if isinstance(extends, str):
+        extends = [extends]
+    if not isinstance(extends, list):
+        return []
+    out: list[str] = []
+    for name in extends:
+        if not isinstance(name, str) or name in seen:
+            continue
+        seen.add(name)
+        if name in all_jobs:
+            out.append(name)
+            parent_extends = all_jobs[name].get("extends")
+            out.extend(_resolve_extends_chain(
+                parent_extends, all_jobs, seen,
+            ))
+    return out
+
+
+def _gather_inherited_taint(
+    chain: list[str],
+    all_jobs: dict[str, dict[str, Any]],
+) -> dict[str, TaintSource]:
+    """Return ``{var_name: source, ...}`` for every tainted
+    ``variables:`` entry across *chain*.
+
+    GitLab merges variables across an extends chain (later links
+    don't override earlier ones the way ``script:`` does), so we
+    union every tainted entry. The first source seen wins for
+    description rendering — the consumer just needs to know that
+    the variable carries taint, not which specific link declared
+    it.
+    """
+    out: dict[str, TaintSource] = {}
+    for tpl_name in chain:
+        tpl = all_jobs.get(tpl_name)
+        if not isinstance(tpl, dict):
+            continue
+        variables = tpl.get("variables")
+        if not isinstance(variables, dict):
+            continue
+        for var_name, value in variables.items():
+            raw = (
+                value.get("value") if isinstance(value, dict) else value
+            )
+            if not isinstance(raw, str):
+                continue
+            for m in UNTRUSTED_VAR_RE.finditer(raw):
+                expr = m.group(0).lstrip("$").strip("{}")
+                key = str(var_name)
+                if key not in out:
+                    out[key] = TaintSource(
+                        expr=expr,
+                        location=f"{tpl_name}.variables.{var_name}",
+                    )
+                break
+    return out
+
+
+def _references_unquoted_var(text: str, var_name: str) -> bool:
+    """True when *text* references ``$<var_name>`` outside a
+    quoted token.
+
+    Mirrors the quote-state walker used by the dotenv consumer
+    pass: a reference inside ``"..."`` is treated as safe
+    (single-token expansion); single quotes neutralise entirely.
+    """
+    in_single = False
+    in_double = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            i += 1
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            i += 1
+            continue
+        if ch == "$" and not (in_single or in_double):
+            m = _NAME_BOUNDARY.match(text, i)
+            if m and m.group("name") == var_name:
+                return True
+        i += 1
+    return False
+
+
+# Top-level GitLab CI keywords that aren't jobs. Mirrors the set
+# ``iter_jobs`` filters; we apply the same rule when building the
+# extends-chain universe so non-job entries (workflow, default,
+# include, etc.) don't get pulled in.
+_NON_JOB_KEYS: frozenset[str] = frozenset({
+    "variables", "default", "stages", "include", "workflow",
+    "image", "services", "before_script", "after_script",
+    "script", "cache",
+})
+
+
+def analyze_extends_taint(doc: dict[str, Any]) -> list[TaintPath]:
+    """Find tainted variables propagated via ``extends:`` chains.
+
+    GL-002 catches direct interpolation when the tainted variable
+    is declared on the consuming job (or globally). The
+    inheritance pattern this analyzer covers:
+
+      .base:
+        variables:
+          TITLE: $CI_COMMIT_TITLE         # tainted, hidden template
+
+      build:
+        extends: .base
+        script:
+          - echo Building $TITLE          # GL-002 misses this — TITLE
+                                          # isn't in this job's
+                                          # variables block
+
+    ``iter_jobs`` skips hidden templates (the GitLab convention),
+    so the tainted ``variables:`` block in ``.base`` is invisible
+    to single-job rules. Two-pass walk:
+
+      1. Build a universe of every job-shaped entry (hidden
+         templates included). Resolve each non-hidden job's
+         ``extends:`` chain transitively, breaking cycles via a
+         visited set.
+      2. For every link in the chain, gather tainted variable
+         names from its ``variables:`` block. Walk the consuming
+         job's ``before_script:`` / ``script:`` / ``after_script:``
+         lines for unquoted references to those names. Each match
+         emits a :class:`TaintPath`.
+    """
+    if not isinstance(doc, dict):
+        return []
+
+    all_jobs: dict[str, dict[str, Any]] = {}
+    for name, value in doc.items():
+        if not isinstance(name, str) or not isinstance(value, dict):
+            continue
+        if name in _NON_JOB_KEYS:
+            continue
+        all_jobs[name] = value
+
+    paths: list[TaintPath] = []
+    for job_name, job in iter_jobs(doc):
+        extends = job.get("extends")
+        if extends is None:
+            continue
+        chain = _resolve_extends_chain(extends, all_jobs)
+        if not chain:
+            continue
+        inherited = _gather_inherited_taint(chain, all_jobs)
+        if not inherited:
+            continue
+        for line_idx, line in enumerate(job_scripts(job)):
+            for var_name, src in inherited.items():
+                if _references_unquoted_var(line, var_name):
+                    paths.append(TaintPath(
+                        source=src,
+                        hops=(
+                            "extends.<chain>",
+                            f"${var_name}",
+                        ),
+                        sink_location=(
+                            f"{job_name}:script[{line_idx}]"
+                        ),
+                        sink_consumer=f"${var_name}",
+                    ))
+    return paths
+
+
 __all__ = [
     "TaintPath",
     "TaintSource",
+    "analyze_extends_taint",
     "analyze_pipeline",
 ]

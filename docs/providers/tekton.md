@@ -32,7 +32,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-14 checks · 2 have an autofix patch (``--fix``).
+16 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [TKN-011](#tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TKN-012](#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TKN-013](#tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [TKN-014](#tkn-014) | Tekton step script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [TKN-015](#tkn-015) | Workspace subPath interpolates a Task parameter (path traversal) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -338,6 +340,56 @@ TKN-002 hardens the ``spec.steps`` list. Tekton's ``spec.sidecars`` list runs al
 **Recommended action**
 
 Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every sidecar in ``spec.sidecars``. A privileged sidecar is the same escape vector as a privileged step, it shares the pod's network and kernel namespaces, and a compromised sidecar image owns the entire TaskRun's execution surface.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## TKN-014: Tekton step script runs unpinned package install { #tkn-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Detection reuses the cross-provider primitives ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE`` from ``checks/base.py``. Same rule pack already exists for GHA (``GHA-021`` / ``GHA-022``), GitLab (``GL-021`` / ``GL-022``), Bitbucket / Azure DevOps / Jenkins / CircleCI / Cloud Build / Buildkite / Drone. Tekton was a gap; this closes it. Only ``Task`` and ``ClusterTask`` documents are scanned because that's where Tekton step scripts live.
+
+**Known false-positive modes**
+
+- Bootstrap-stage installs that intentionally pull latest (``apt-get install -y curl`` for a tooling image rebuild) sometimes legitimately bypass the lockfile. Suppress via ignore-file scoped to the specific step name.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every package install to a lockfile or a checksum-verified version. ``npm ci`` (not ``npm install``), ``yarn install --frozen-lockfile``, ``pip install -r requirements.txt --require-hashes``, ``bundle install --frozen``. Don't use ``--trusted-host`` / ``--no-verify`` / a non-HTTPS index URL — those bypass TLS or trust validation entirely (TKN-008 covers the TLS subset; this rule covers the lockfile subset).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TKN-015: Workspace subPath interpolates a Task parameter (path traversal) { #tkn-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-22</span> <span class="pg-tag pg-tag--cwe">CWE-73</span>
+</div>
+
+Tekton's ``$(params.x)`` substitution is performed on every string field of the resolved ``TaskRun`` body, including a step-level workspace binding's ``subPath``. TKN-003 catches the same parameter being interpolated into a step's script body; TKN-015 catches the complementary file-system breakout vector that script-only detection misses, the value never appears in a shell command, only in the volume-mount config.
+
+The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspaces[*].subPath``) for any ``$(params.<name>)`` reference. ``$(workspaces.x.path)`` expansions are unaffected because those are not pusher-controlled.
+
+**Known false-positive modes**
+
+- Some teams use a parameter to select between a small set of allowed sub-paths and rely on a step pre-check to reject anything off-list. The rule has no way to see that pre-check; suppress on the specific step name when this is the deliberate shape.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every workspace ``subPath:`` to a static literal that your team controls. ``subPath: build/output`` is fine; ``subPath: $(params.target_dir)`` is not, because a parameter-driven sub-path lets an attacker break out of the workspace and write into a sibling directory of the shared volume. Tekton resolves ``$(params.x)`` substitution in workspace bindings before the volume mount happens, so ``../../../etc`` lands as a real path. If you genuinely need a runtime-chosen sub-path, sanitise the parameter with a step-level pre-check (``case`` against an allow-list, reject anything containing ``..``) and pass the validated value through a result rather than the raw parameter.
 
 </div>
 

@@ -138,3 +138,19 @@ taint-build:
   needs: [taint-extract]
   script:
     - echo Building tagged $TITLE
+
+# TAINT-008: extends-chain taint propagation. ``.tainted-base``
+# is a hidden template that pipes ``$CI_COMMIT_REF_NAME`` into a
+# variables: entry; ``deploy-from-extends`` extends it and
+# references ``$BRANCH`` unquoted in its script. GL-002 misses
+# this because its iter_jobs skips hidden templates; TAINT-008
+# walks the extends chain to surface the inherited taint.
+.tainted-base:
+  variables:
+    BRANCH: $CI_COMMIT_REF_NAME
+
+deploy-from-extends:
+  stage: test
+  extends: .tainted-base
+  script:
+    - echo Deploying branch $BRANCH

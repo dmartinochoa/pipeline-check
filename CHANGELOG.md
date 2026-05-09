@@ -12,6 +12,142 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BK-015 / TKN-015 / ARGO-015.** Three follow-on rules
+  closing distinct gaps:
+
+  - **BK-015 agents-map interpolation.** Flags Buildkite
+    pipelines whose top-level ``agents:`` map or per-step
+    ``agents:`` override interpolates a pusher-controllable
+    Buildkite variable (``$BUILDKITE_BRANCH`` /
+    ``$BUILDKITE_TAG`` / ``$BUILDKITE_PULL_REQUEST_*`` /
+    ``$BUILDKITE_BUILD_AUTHOR`` etc.). The pusher gets to
+    pick which runner pool runs the build; closes parity
+    with GHA-036, GL-032, JF-032, ADO-030, CC-031.
+  - **TKN-015 workspace subPath param injection.** Flags
+    Tekton steps that interpolate ``$(params.x)`` into a
+    workspace ``subPath:``. A parameter-driven sub-path lets
+    a pusher traverse outside the shared workspace mount
+    (``../../../etc`` substitutes literally before the
+    volume mount happens). TKN-003 catches the same param
+    in script bodies; TKN-015 covers the file-system
+    breakout vector that script-only detection misses.
+  - **ARGO-015 insecure artifact URL.** Flags Argo template
+    inputs that pull artifacts over plain HTTP, the legacy
+    git:// protocol, or S3 with ``insecure: true``. Argo
+    runs whatever bytes arrive without an integrity check
+    unless the source provides one, so cleartext fetches
+    let an on-path attacker swap the payload.
+
+  Catalog: Buildkite 14 -> 15, Tekton 14 -> 15, Argo 14 -> 15.
+
+- **OCI manifest coverage 6 -> 8.** Two new manifest-only
+  rules:
+
+  - **OCI-007 legacy schemaVersion 1.** Flags Docker
+    Distribution v1 manifests (anything with
+    ``schemaVersion`` not equal to 2). v1 manifests predate
+    content-addressed layer descriptors, so a pull has no
+    way to detect tampering between the registry and the
+    runtime. Registries have been refusing v1 pushes for
+    years, but a pre-existing v1 image can still sit in a
+    private registry and get promoted; this catches it.
+  - **OCI-008 weak digest algorithm.** Flags any descriptor
+    (config / layer / sub-manifest) whose ``digest:`` uses
+    something other than ``sha256:`` or ``sha512:``. ``sha1:``
+    and ``md5:`` were never permitted by the OCI spec but
+    occasionally show up in mirror exports and forensic JSON;
+    a manifest that pins a layer by sha1 lets a colliding
+    blob be substituted without changing the manifest.
+
+- **Cross-provider lockfile-bypass parity (BK-014, TKN-014,
+  ARGO-014).** Three new rules port the unpinned-package-
+  install detection (already shipping for GHA / GitLab /
+  Bitbucket / Azure / Jenkins / CircleCI / Cloud Build /
+  Drone) to the three remaining container-flavored
+  providers. All three reuse the cross-provider primitives
+  ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE`` from
+  ``checks/base.py`` so detection stays consistent: bare
+  ``npm install`` (should be ``npm ci``), ``pip install
+  --trusted-host``, ``yarn install`` without ``--frozen-
+  lockfile``, ``cargo install`` / ``go install`` without a
+  pin, etc. Buildkite walks command steps, Tekton walks
+  step scripts on Task / ClusterTask docs only, and Argo
+  walks ``script.source`` plus joined ``container.args`` /
+  ``container.command`` per template.
+
+  Catalog: Buildkite 13 -> 14, Tekton 13 -> 14, Argo 13 -> 14.
+  OpenSSF Scorecard ``Pinned-Dependencies`` coverage now
+  includes every provider's lockfile-bypass rule (was a
+  60% gap before, hits 100% with this).
+
+- **Drone CI coverage 7 -> 10.** Three new rules close
+  long-standing gaps relative to the GHA / GitLab packs:
+
+  - **DR-008 pull: never policy.** Flags steps and services
+    declaring ``pull: never`` (or the deprecated boolean
+    ``pull: false`` synonym Drone treats as ``never``). The
+    policy tells the Drone agent to skip the registry round-
+    trip and run cached image bytes without re-verifying the
+    digest, so any image that ever landed in the local cache
+    keeps running until manual intervention. ``pull: always``
+    (the Drone default) and ``pull: if-not-exists`` are
+    treated as acceptable; the latter pairs naturally with
+    DR-001's digest pinning.
+  - **DR-009 tainted cache key.** Flags cache-plugin steps
+    (``meltwater/drone-cache``, ``drillster/drone-volume-
+    cache``, etc.) whose ``settings.cache_key`` /
+    ``restore_keys`` interpolate attacker-controllable Drone
+    variables (``$DRONE_BRANCH``, ``$DRONE_PULL_REQUEST_*``,
+    ``$DRONE_COMMIT_MESSAGE``, ``$DRONE_TAG``, …). A pusher
+    that controls the cache key controls which cache slot
+    they read from, enabling cache poisoning. Trusted vars
+    (``DRONE_BUILD_NUMBER``, ``DRONE_REPO_*``) are allow-
+    listed; static keys pass.
+  - **DR-010 unpinned package install.** Reuses the cross-
+    provider ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE``
+    primitives to flag bare ``npm install`` (should be
+    ``npm ci``), ``pip install --trusted-host`` /
+    ``--index-url http://``, ``yarn install`` without
+    ``--frozen-lockfile``, ``bundle install`` without
+    ``--frozen``, ``cargo install`` / ``go install`` without
+    a tag/commit pin, and similar shapes. Closes parity with
+    GHA-021/022, GL-021/022 (and the same pack across
+    Bitbucket / Azure / Jenkins / CircleCI / Cloud Build /
+    Buildkite / Tekton / Argo).
+
+- **TAINT-008 GitLab extends-chain taint.** New rule. GL-002
+  catches direct interpolation when the tainted variable is
+  declared on the consuming job (or globally), but it doesn't
+  follow GitLab's ``extends:`` template-inheritance channel.
+  Pattern this rule covers:
+
+      .base:
+        variables:
+          TITLE: $CI_COMMIT_TITLE         # tainted, hidden template
+
+      build:
+        extends: .base
+        script:
+          - echo Building $TITLE          # GL-002 misses; TITLE
+                                          # not in this job's
+                                          # variables block
+
+  ``iter_jobs`` skips hidden templates (the ``.``-prefix
+  convention), so the tainted ``variables:`` block in
+  ``.base`` is invisible to single-job rules. TAINT-008
+  resolves each non-hidden job's ``extends:`` chain
+  transitively (handling list-form ``extends: [a, b]``,
+  multi-level chains, and pathological cycles via a visited
+  set), gathers tainted variables from every link, and walks
+  the consuming job's ``before_script:`` / ``script:`` /
+  ``after_script:`` for unquoted references. Quote-state
+  aware: ``"$TITLE"`` consumers pass; only unquoted
+  references fire. v1 limitations: ``include:`` cross-
+  pipeline file inclusion isn't tracked yet.
+
+  GitLab provider catalog: 33 -> 34. The TAINT-NNN family
+  now spans 8 rules across 5 providers (GHA: 1/2/3, GitLab:
+  4/8, Buildkite: 5, Tekton: 6, Argo: 7).
 - **TAINT-003 resolver-coupled callee analysis.** TAINT-003
   now does cross-workflow analysis when the callee body is
   loaded into the same scan (local references via

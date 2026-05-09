@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**530+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
+**550+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -90,14 +90,14 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 13 checks (`BK-001`--`013`) |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 7 checks (`DR-001`--`007`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 13 checks (`TKN-001`--`013`) |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 13 checks (`ARGO-001`--`013`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 15 checks (`BK-001`--`015`) |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 10 checks (`DR-001`--`010`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 15 checks (`TKN-001`--`015`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 15 checks (`ARGO-001`--`015`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
-| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 6 checks (`OCI-001`--`006`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene |
+| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 8 checks (`OCI-001`--`008`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -119,7 +119,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   530+ checks across 18 providers
+  Config files   |  Scanner  |   550+ checks across 18 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |

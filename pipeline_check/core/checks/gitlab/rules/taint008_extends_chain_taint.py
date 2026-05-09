@@ -1,0 +1,113 @@
+"""TAINT-008. Untrusted input flows via GitLab ``extends:`` inheritance.
+
+The companion to TAINT-004. Where TAINT-004 follows the
+``artifacts.reports.dotenv`` cross-job channel, TAINT-008
+follows GitLab's ``extends:`` template-inheritance channel:
+
+  .base:
+    variables:
+      TITLE: $CI_COMMIT_TITLE        # tainted, declared in a hidden template
+
+  build:
+    extends: .base
+    script:
+      - echo Building $TITLE         # TAINT-008 fires — TITLE is inherited
+
+GL-002 doesn't catch this because it only walks non-hidden
+jobs (its ``iter_jobs`` skips names starting with ``.``), so
+the tainted ``variables:`` block in ``.base`` is invisible.
+TAINT-008 closes that gap by resolving every non-hidden
+job's ``extends:`` chain transitively, gathering tainted
+``variables:`` from every link in the chain, and walking the
+consuming job's scripts for unquoted references to each
+inherited tainted name.
+"""
+from __future__ import annotations
+
+from typing import Any
+
+from ...base import Finding, Severity
+from ...rule import Rule
+from .._taint_graph import analyze_extends_taint
+
+RULE = Rule(
+    id="TAINT-008",
+    title=(
+        "Untrusted input flows via GitLab ``extends:`` template "
+        "inheritance"
+    ),
+    severity=Severity.HIGH,
+    owasp=("CICD-SEC-4", "CICD-SEC-1"),
+    esf=("ESF-D-INJECTION",),
+    cwe=("CWE-78", "CWE-829"),
+    recommendation=(
+        "Move the tainted-source interpolation out of the "
+        "template's ``variables:`` block. The canonical safe "
+        "pattern is to receive the source value through "
+        "``$CI_*`` directly in the consuming job's script (or a "
+        "dedicated sanitiser step) and never copy it into a "
+        "shared variable a downstream job can interpolate "
+        "unquoted. If the inheritance is genuinely needed, "
+        "sanitise at the boundary (``TITLE_SAFE: '$(echo "
+        "\"$CI_COMMIT_TITLE\" | tr -dc \"a-zA-Z0-9 \")'``) and "
+        "have the extending job reference the cleaned variable. "
+        "Removing the ``extends:`` propagation is the strongest "
+        "fix; if the value genuinely needs to flow downstream, "
+        "validate the sanitiser is doing what you think before "
+        "relying on it."
+    ),
+    docs_note=(
+        "Two-pass walk over the pipeline doc. Pass 1 builds a "
+        "universe of every job-shaped entry (hidden templates "
+        "included, top-level keywords excluded), resolves each "
+        "non-hidden job's ``extends:`` chain transitively, and "
+        "gathers tainted variables (any ``$CI_COMMIT_*`` / "
+        "``$CI_MERGE_REQUEST_*`` interpolation in the link's "
+        "``variables:`` block). Pass 2 walks the consuming "
+        "job's ``before_script:`` / ``script:`` / "
+        "``after_script:`` for unquoted ``$<name>`` references "
+        "matching an inherited tainted variable. Cycles in the "
+        "extends chain are broken via a visited set; "
+        "unresolvable extends entries are silently dropped.\n\n"
+        "v1 limitations: ``include:`` cross-pipeline file "
+        "inclusion isn't tracked yet (would need cross-document "
+        "analysis like the GHA ``--resolve-remote`` flow). "
+        "``extends:`` chains that pull templates from "
+        "include-d files are partial: in-doc links resolve, "
+        "external links are treated as missing."
+    ),
+    known_fp=(
+        "If the consuming job sanitises the inherited variable "
+        "before referencing it (``CLEAN=$(echo \"$TITLE\" | tr "
+        "-dc 'a-zA-Z0-9 '); echo $CLEAN``), the rule still "
+        "fires on the original ``$TITLE`` reference even though "
+        "the sanitised value is what reaches the shell. "
+        "Suppress via ignore-file scoped to the consuming job's "
+        "name when the sanitiser is audited and load-bearing.",
+    ),
+)
+
+
+def check(path: str, doc: dict[str, Any]) -> Finding:
+    paths = analyze_extends_taint(doc)
+    if not paths:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=path,
+            description=(
+                "No tainted variable inherited via ``extends:`` "
+                "and consumed unquoted in a job script."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    rendered = [p.render() for p in paths]
+    desc = (
+        f"{len(paths)} extends-inheritance taint path(s) reach a "
+        f"job script: {'; '.join(rendered[:3])}"
+        f"{'...' if len(rendered) > 3 else ''}."
+    )
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=path, description=desc,
+        recommendation=RULE.recommendation, passed=False,
+    )
