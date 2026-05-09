@@ -479,6 +479,7 @@ STANDARD = Standard(
         "TAINT-004": ["CICD-SEC-4", "CICD-SEC-1"],  # GitLab dotenv cross-job taint flow
         "TAINT-005": ["CICD-SEC-4", "CICD-SEC-1"],  # Buildkite meta-data cross-step taint flow
         "TAINT-006": ["CICD-SEC-4", "CICD-SEC-1"],  # Tekton results cross-task taint flow
+        "TAINT-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Argo outputs.parameters cross-template
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged

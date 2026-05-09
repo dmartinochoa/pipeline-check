@@ -408,7 +408,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 14)}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 14)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)
@@ -462,7 +462,7 @@ class TestArgoFixtures:
      {f"TKN-{i:03d}" for i in range(1, 14)} | {"TAINT-006"}),
     ("argo", "argo/insecure-argo.yaml",
      ArgoContext, ArgoChecks,
-     {f"ARGO-{i:03d}" for i in range(1, 14)}),
+     {f"ARGO-{i:03d}" for i in range(1, 14)} | {"TAINT-007"}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
      {f"GCB-{i:03d}" for i in range(1, 27)}),

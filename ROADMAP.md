@@ -315,6 +315,16 @@ Pilot scope: GitHub Actions and GitLab CI.
     ``$(tasks.<producer>.results.Y)`` and references the param
     unquoted in its script. Inline ``taskSpec:`` only;
     ``taskRef:`` cross-document resolution is the next gap.
+  * ``TAINT-007`` (Argo Workflows, *landed*) — cross-template
+    flow via ``{{tasks.<task>.outputs.parameters.<output>}}``.
+    Producer template interpolates ``{{inputs.parameters.X}}``
+    into an output path; downstream task forwards the output
+    via the cross-task substitution; consumer template
+    references the value unquoted. Both ``dag:`` and
+    ``steps:`` orchestrators covered. The ``TAINT-NNN`` family
+    now spans 5 providers and 5 distinct cross-step
+    propagation channels — engine portability fully
+    validated.
 
 Next gaps: end-to-end coupling between the
 ``--resolve-remote`` resolver and the GHA pass-4 forward

@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-007 Argo cross-template ``outputs.parameters`` taint flow.**
+  Fifth TAINT-engine port. New
+  ``pipeline_check.core.checks.argo._taint_graph`` follows
+  Argo's canonical cross-template channel:
+  ``{{tasks.<task>.outputs.parameters.<output>}}`` substitution
+  inside DAG / Steps orchestrators. A producer template's
+  ``script.source`` interpolates ``{{inputs.parameters.<X>}}``
+  and writes the value to an output parameter; a downstream
+  task references the output via the cross-task substitution;
+  the consumer template's script interpolates the value back
+  into shell. ARGO-005 catches the producer's inner
+  interpolation; TAINT-007 catches the actual cross-template
+  injection at the consumer. Three-pass walk: producer
+  classification, task-to-template forwarding resolution,
+  consumer-side script reference matching. Both ``dag.tasks``
+  and ``steps:`` orchestrator shapes are covered.
+  v1 limitations: ``workflowTemplateRef:`` cross-document
+  references aren't resolved; ``onExit:`` exit handlers
+  aren't yet walked; artifact-based propagation
+  (``artifacts.parameters``) is out of scope. The
+  ``TAINT-NNN`` family now spans GHA (TAINT-001..003), GitLab
+  CI (TAINT-004), Buildkite (TAINT-005), Tekton (TAINT-006),
+  and Argo (TAINT-007), 5 distinct providers and 5 distinct
+  propagation channels sharing one engine shape.
 - **TAINT-006 Tekton results cross-task taint flow.** Fourth
   TAINT-engine port. New
   ``pipeline_check.core.checks.tekton._taint_graph`` follows
@@ -19,7 +43,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``$(tasks.<task>.results.<output>)`` substitution. A producer
   task's inline ``taskSpec.steps[*].script`` writes to
   ``$(results.<X>.path)`` from a ``$(params.<Y>)`` reference;
-  the Pipeline forwards the result to a downstream task's
+  the Pipeline forward the result to a downstream task's
   ``params:`` via ``$(tasks.<producer>.results.<X>)``; the
   downstream task's script references its own param unquoted.
   TKN-003 catches the producer's inner interpolation; TAINT-006
