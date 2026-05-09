@@ -110,6 +110,23 @@ class TestKeyHeuristic:
         "url",
         "path",
         "",
+        # Vocab tightened during calibration: ``api`` and ``private``
+        # standalones used to fire here and produced 9 FPs across
+        # the K8s / Argo / Tekton fixture corpus on ``apiVersion``,
+        # ``apiGroups``, and ``private_*`` cloud-networking keys.
+        # The credential vocabulary was tightened so a real cred
+        # field like ``api_key`` / ``apiSecret`` / ``private_key``
+        # still matches via the OTHER part (key / secret), while
+        # the polysemic-only forms below are correctly rejected.
+        "apiVersion",
+        "apiGroups",
+        "apiVersions",
+        "apiServer",
+        "private_subnet",
+        "private_dns_zone",
+        "privateLinkConfig",
+        "private_ip",
+        "privateNetwork",
     ])
     def test_non_credential_keys_do_not_fire(self, key):
         assert not key_suggests_credential(key), key

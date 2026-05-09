@@ -12,6 +12,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Entropy-detector vocabulary tightened after calibration.**
+  Calibration sweep against the project's own fixture corpus
+  surfaced 9 false positives on ``secure.yaml`` Kubernetes
+  manifests, all from the heuristic matching ``api`` standalone
+  inside ``apiVersion`` / ``apiGroups`` and ``private`` standalone
+  inside ``private_subnet`` / ``private_dns_zone`` /
+  ``privateLink``. The K8s / Argo / Tekton manifest schemas use
+  ``apiVersion`` and ``apiGroups`` as ubiquitous structural
+  fields, and cloud networking configs use ``private_*`` as a
+  prefix for non-credential infrastructure. Both standalone
+  tokens get dropped from ``_CRED_KEY_TOKENS`` while real
+  credential-named fields (``api_key``, ``apiSecret``,
+  ``private_key``, ``private_token``) still fire because their
+  OTHER part (``key``, ``secret``, ``token``) carries the
+  heuristic. Calibration after the fix: synthetic
+  ground-truth set holds at 100% recall + 100% precision; the
+  fixture corpus drops from 9 false positives to 0; the repo's
+  own configs drop from 21 entropy hits to 4 (all true positives:
+  the existing AWS canonical example secret + the three
+  intentionally-bad fixtures). 9 new negative test cases lock
+  the contract.
 - **``--detect-entropy`` opt-in Shannon-entropy secret detector.**
   Adds a second pass to ``find_secret_values`` that flags
   high-entropy values (>= 3.5 bits/char, length >= 20) appearing

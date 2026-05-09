@@ -123,18 +123,31 @@ _TOKEN_SHAPED_RE = re.compile(r"^[A-Za-z0-9+/=_\-.]+$")
 #: whitespace, and camel-case boundaries (``apiKey`` -> ``api`` +
 #: ``key``), so all of ``API_KEY``, ``apiKey``, ``api-key``, and
 #: ``api key`` resolve to the same parts.
+#:
+#: ``api`` and ``private`` are deliberately NOT included as
+#: standalone words because they collide with non-credential
+#: fields that are very common in YAML configs: ``apiVersion`` /
+#: ``apiGroups`` (Kubernetes / Argo / Tekton manifest schemas) and
+#: ``private_subnet`` / ``private_dns_zone`` / ``private_link``
+#: (cloud networking config). A real credential field that wants
+#: to use ``api`` always pairs it with another word
+#: (``api_key``, ``apiSecret``), and the multi-part match still
+#: fires on the paired form because ``key`` / ``secret`` carry the
+#: heuristic on their own.
 _CRED_KEY_TOKENS: frozenset[str] = frozenset({
     "key", "keys",
     "token", "tokens",
     "secret", "secrets",
     "password", "passwd", "pwd",
     "auth", "authorization",
-    "api",
     "credential", "credentials",
-    "private",
     "passkey",
     # Cloud-vendor-specific shapes that don't fit the generic words.
     "accesskey", "secretkey",
+    # ``apikey`` is a single-word spelling some vendors use; matches
+    # only when the whole key is literally ``apikey`` (not when a
+    # camel-case split produces ``api`` + something).
+    "apikey",
 })
 
 #: Splitter used by :func:`_key_suggests_credential`. Matches any of
