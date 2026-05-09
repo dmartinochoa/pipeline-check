@@ -12,6 +12,41 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-001 / dataflow taint engine for GHA.** First v0.6.0
+  vision item, *landed early on dev*. New per-workflow taint
+  graph (``pipeline_check.core.checks.github._taint_graph``)
+  generalises the existing GHA-003 single-step interpolation
+  detector to a workflow-wide reachability problem: track
+  ``${{ github.event.* }}`` source expressions through
+  ``$GITHUB_OUTPUT`` writes (and the legacy ``::set-output``
+  workflow-command shape), find downstream consumer steps that
+  reference ``${{ steps.<id>.outputs.<name> }}``, emit one
+  ``TAINT-001`` finding per source-to-sink path. Self-step
+  references stay GHA-003 territory; the engine's contribution
+  is the cross-step gap. v1 covers ``run:`` and ``with:`` sinks
+  on same-job step outputs; cross-job ``jobs.<id>.outputs.*``
+  forwarding and reusable-workflow input/output propagation are
+  roadmapped under v0.6.0 vision.
+- **XPC-001 cross-provider attack-chain rule.** Second v0.6.0
+  vision item. A new chain rule under
+  ``pipeline_check.core.chains.rules.xpc001_*`` fires when both
+  GHA-006 (workflow doesn't emit SLSA provenance) and OCI-002
+  (image manifest lacks attestation manifest) fail in the same
+  scan. Composite "deploy without verifiable provenance" with
+  HIGH severity. Currently only fires when the user feeds
+  findings from both providers into the chain engine; the
+  multi-provider scan mode that activates this in the default
+  CLI flow is on the v0.6.0 roadmap.
+- **HTML report blast-radius heatmap.** Third v0.6.0 vision
+  item, v1 *landed*. Inserts a per-resource SVG heatmap
+  between the attack-chains panel and the findings table. One
+  tile per resource with a failing finding, color-coded by
+  worst severity, sized by failing-finding count
+  (sqrt-scaled), tooltip on hover shows the per-severity
+  breakdown. Pure inline SVG so the report stays a single
+  offline HTML file. The v2 step-level pipeline DAG (steps as
+  nodes, ``needs:`` / ``depends_on`` as edges) is roadmapped;
+  v1 keeps the Scanner-to-reporter API unchanged.
 - **Drone CI provider.** New ``--pipeline drone --drone-path
   <file>`` reads ``.drone.yml`` / ``.drone.yaml`` documents on
   disk. Drone pipelines are multi-document YAML; each document

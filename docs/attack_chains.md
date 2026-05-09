@@ -814,5 +814,30 @@ Move the credential out of the image. Mount it at runtime: a Kubernetes secret (
 
 </div>
 
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-001: Deploy without verifiable provenance (workflow + image) { #xpc-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">build -> distribution (no provenance link between them)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">oci</span>
+</div>
+
+The CI workflow doesn't emit SLSA provenance and the image it deploys ships without a build-attestation manifest. The verifier-side contract is broken on both ends, so a downstream consumer pulling the image has no way to prove it came from this workflow's build.
+
+**References**
+
+- <https://slsa.dev/spec/v1.0/levels#build-l2>
+- <https://docs.docker.com/build/attestations/slsa-provenance/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Close the verifier loop on both ends. In the workflow, add a provenance-emitting step (``actions/attest-build-provenance`` or the SLSA generic-generator). In the image build, pass ``--attest=type=provenance,mode=max`` to ``docker buildx build`` so the manifest carries a BuildKit attestation manifest. Verify post-deploy with ``cosign verify-attestation`` against the workflow's OIDC identity.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

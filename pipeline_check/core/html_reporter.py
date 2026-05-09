@@ -644,6 +644,149 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     )
 
 
+def _blast_radius_section_html(findings: list[Finding]) -> str:
+    """Render the resource-level blast-radius heatmap.
+
+    A grid of tiles, one per resource (workflow file, image manifest,
+    Terraform plan path, etc.). Tile color reflects the worst-severity
+    finding on the resource; tile size scales with the number of
+    failing findings (sqrt-scaled so a 50-finding resource doesn't
+    dwarf a 5-finding one). Each tile carries a ``title`` attribute
+    listing the per-severity counts so hovering shows the breakdown
+    without clicking through to the table.
+
+    The chart is pure inline SVG so the report stays a single
+    self-contained HTML file (no CDN, no JS framework). Sits between
+    the chains panel and the findings table, the position that makes
+    sense for "which resources hurt most" triage.
+
+    A future v2 will lift this to a true pipeline DAG (steps as
+    nodes, ``needs:`` / ``depends_on`` as edges) once the Scanner
+    can pass parsed pipeline structure to the reporter; for now the
+    heatmap is the strongest visual signal we can render from the
+    findings list alone.
+    """
+    by_resource: dict[str, list[Finding]] = {}
+    for f in findings:
+        if f.passed:
+            continue
+        by_resource.setdefault(f.resource or "(unknown)", []).append(f)
+
+    if not by_resource:
+        return ""
+
+    # Per-tile metadata: worst severity, count, severity breakdown.
+    tiles: list[tuple[str, Severity, int, dict[str, int]]] = []
+    for resource, group in by_resource.items():
+        worst = max(group, key=lambda f: severity_rank(f.severity)).severity
+        breakdown: dict[str, int] = {}
+        for f in group:
+            breakdown[f.severity.value] = (
+                breakdown.get(f.severity.value, 0) + 1
+            )
+        tiles.append((resource, worst, len(group), breakdown))
+
+    # Sort by worst severity (CRITICAL first), then count desc, then
+    # name. Stable so equal entries land in a predictable order.
+    tiles.sort(
+        key=lambda t: (-severity_rank(t[1]), -t[2], t[0]),
+    )
+
+    # Grid layout: pack tiles into 6 columns (responsive layout
+    # could lift this; 6 is the breakpoint that fits the report's
+    # 1100px max-width comfortably). Tile height scales with sqrt
+    # of finding count so 50 findings don't crowd out 5 findings.
+    import math
+    cols = 6
+    cell_w = 170
+    cell_pad = 8
+    base_h = 56
+    max_h = 130
+    rows: list[list[tuple[str, Severity, int, dict[str, int]]]] = []
+    for i in range(0, len(tiles), cols):
+        rows.append(tiles[i:i + cols])
+
+    max_count = max((t[2] for t in tiles), default=1)
+
+    svg_parts: list[str] = []
+    canvas_w = cols * (cell_w + cell_pad) + cell_pad
+    canvas_h = 0
+    y = cell_pad
+    for row in rows:
+        # Each row's tile heights are independent; the row's height
+        # is the max of any tile in it.
+        row_heights = [
+            int(base_h + (max_h - base_h) * math.sqrt(t[2] / max_count))
+            for t in row
+        ]
+        row_h = max(row_heights)
+        for col_idx, (resource, sev, count, breakdown) in enumerate(row):
+            tile_h = row_heights[col_idx]
+            x = cell_pad + col_idx * (cell_w + cell_pad)
+            tile_y = y + (row_h - tile_h)  # bottom-aligned tiles
+            color = _SEVERITY_COLOR.get(sev, "#6c757d")
+            label = resource.split("/")[-1] if "/" in resource else resource
+            tooltip = " | ".join(
+                f"{k}: {v}" for k, v in sorted(
+                    breakdown.items(),
+                    key=lambda kv: -severity_rank(Severity(kv[0])),
+                )
+            )
+            svg_parts.append(
+                f'<g><title>{_e(resource)} | {_e(tooltip)}</title>'
+                f'<rect x="{x}" y="{tile_y}" width="{cell_w}" '
+                f'height="{tile_h}" fill="{color}" rx="4" '
+                f'fill-opacity="0.85"/>'
+                f'<text x="{x + cell_w / 2}" y="{tile_y + 22}" '
+                f'fill="#ffffff" font-size="13" font-weight="600" '
+                f'text-anchor="middle" '
+                f'style="pointer-events:none">'
+                f'{_e(label[:22])}{_e("..." if len(label) > 22 else "")}</text>'
+                f'<text x="{x + cell_w / 2}" y="{tile_y + tile_h - 10}" '
+                f'fill="#ffffff" font-size="11" font-weight="500" '
+                f'text-anchor="middle" fill-opacity="0.9" '
+                f'style="pointer-events:none">'
+                f'{count} finding{"s" if count != 1 else ""}</text>'
+                f'</g>'
+            )
+        y += row_h + cell_pad
+        canvas_h = y
+    canvas_h = canvas_h or cell_pad * 2
+
+    legend = " ".join(
+        f'<span style="display:inline-flex;align-items:center;gap:6px">'
+        f'<span style="width:14px;height:14px;background:'
+        f'{_SEVERITY_COLOR[sev]};border-radius:2px;display:inline-block">'
+        f'</span>{_e(sev.value)}</span>'
+        for sev in (
+            Severity.CRITICAL, Severity.HIGH,
+            Severity.MEDIUM, Severity.LOW, Severity.INFO,
+        )
+    )
+
+    return (
+        '<section class="blast-radius" style="margin:24px 0">'
+        '<h2 style="margin:0 0 4px;color:var(--light-fg)">'
+        f'Blast radius ({len(tiles)} resource'
+        f'{"s" if len(tiles) != 1 else ""})</h2>'
+        '<p style="color:var(--light-muted);margin:0 0 8px;font-size:13px">'
+        'Each tile is one resource with at least one failing '
+        'finding. Color = worst severity. Size = total failing '
+        'findings. Hover for the per-severity breakdown.</p>'
+        f'<div style="background:var(--light-card);padding:10px;'
+        f'border-radius:4px;overflow-x:auto">'
+        f'<svg width="{canvas_w}" height="{canvas_h}" '
+        f'viewBox="0 0 {canvas_w} {canvas_h}" '
+        f'role="img" aria-label="Blast radius chart">'
+        + "".join(svg_parts) +
+        '</svg></div>'
+        f'<div style="margin-top:8px;display:flex;gap:14px;'
+        f'flex-wrap:wrap;font-size:12px;color:var(--light-muted)">'
+        f'{legend}</div>'
+        '</section>'
+    )
+
+
 def _chains_section_html(chains: list[Chain]) -> str:
     """Render the Attack Chains panel.
 
@@ -806,6 +949,7 @@ def report_html(
     summary_html = _severity_summary_html(summary)
     filter_bar_html = _filter_bar_html(findings)
     chains_html = _chains_section_html(chains) if chains else ""
+    blast_radius_html = _blast_radius_section_html(findings)
 
     content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -850,6 +994,8 @@ def report_html(
   </div>
 
   {chains_html}
+
+  {blast_radius_html}
 
   {filter_bar_html}
 
