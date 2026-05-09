@@ -12,6 +12,92 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-025 — Argo param injection lands in a privileged or root
+  step.** New cross-rule attack chain on the Argo Workflows
+  surface, mirroring the AC-023 shape (Tekton). Fires when the
+  same Argo Workflow / WorkflowTemplate /
+  ClusterWorkflowTemplate carries ARGO-005 (a template's
+  ``script.source`` or container ``command`` / ``args``
+  interpolates ``{{inputs.parameters.<name>}}`` /
+  ``{{workflow.parameters.<name>}}`` into the shell body without
+  quoting) AND ARGO-002 (the same template runs ``privileged:
+  true``, ``runAsUser: 0``, or with node-level
+  ``capabilities.add``). The combination converts an Argo trigger
+  surface — Argo Events Sensor webhook, CronWorkflow trigger,
+  WorkflowEventBinding fork-PR path, direct ``argo submit`` — into
+  in-pod shell execution inside a kernel-privileged container.
+  Distinct from AC-021 (default-SA + K8S-029 RoleBinding lateral-
+  movement shape); AC-025 is the *trigger-to-execution* shape on
+  the Argo side, and is independent of ServiceAccount /
+  RoleBinding configuration since the escape route is the node
+  rather than the K8s API. Severity CRITICAL, MITRE ``T1059`` /
+  ``T1068`` / ``T1611``, kill-chain ``initial-access -> execution
+  -> privilege-escalation``. Auto-discovered; ``--list-chains``
+  and ``--explain-chain AC-025`` pick it up; ``--explain
+  ARGO-002`` and ``--explain ARGO-005`` now list AC-025 under
+  "Triggers attack chains". Catalog 24 -> 25. Argo chain
+  coverage 1 -> 2 (AC-021 + AC-025), with the two chains on the
+  Argo surface now spanning two genuinely distinct attack stages.
+- **AC-024 — OIDC trust drift lands on a mutable ECR tag.** New
+  cross-provider attack chain (github / aws). Fires when a scan
+  carries GHA-030 (a workflow requests an OIDC token without an
+  ``environment:`` binding on the requesting job, so any branch
+  or fork PR can redeem the role with no required-reviewer gate)
+  AND ECR-002 (an ECR repository allows mutable image tags). Any
+  branch or fork PR that triggers the workflow obtains short-
+  lived AWS credentials; if those credentials reach an ECR push
+  role, the mutable-tag policy lets the workflow overwrite an
+  existing tag and the substituted image propagates to every
+  consumer that pulls by name (``imagePullPolicy: Always``,
+  digest-less manifests). Distinct attack vector from the existing
+  GHA-030 / ECR-002 chains: AC-016 = GHA-030 + IAM-002 (drift
+  meets *wildcard authority*), AC-017 = GHA-011 + ECR-002 (cache
+  poisoning meets writable surface), AC-024 = drift meets
+  writable surface — narrow authority but a supply-chain blast
+  radius. Severity CRITICAL, MITRE ``T1078.004`` / ``T1195.002``
+  / ``T1525``, kill-chain ``initial-access -> credential-access
+  -> impact``. Auto-discovered; ``--explain GHA-030`` and
+  ``--explain ECR-002`` now list AC-024 alongside their existing
+  chain references. Catalog 23 -> 24.
+- **AC-023 — Tekton param injection lands in a privileged or root
+  step.** New cross-rule attack chain. Fires when the same Tekton
+  ``Task`` / ``ClusterTask`` carries TKN-003 (a step's ``script:``
+  interpolates ``$(params.<name>)`` into the shell body without
+  quoting) AND TKN-002 (the same step runs ``privileged: true``,
+  ``runAsUser: 0``, or with node-level ``capabilities.add``). The
+  combination converts a PipelineRun trigger surface — webhook
+  payload routed through a Tekton EventListener, GitOps merge,
+  fork-PR-triggered CEL Trigger filter — into in-pod shell
+  execution inside a kernel-privileged container, the two
+  ingredients for a Kubernetes node escape. Distinct from AC-020
+  which captures the *static-RBAC* lateral-movement shape; AC-023
+  captures the *trigger-to-execution* shape on the Tekton side
+  alone. Severity CRITICAL, MITRE ``T1059`` / ``T1068`` / ``T1611``,
+  kill-chain ``initial-access -> execution -> privilege-
+  escalation``. Auto-discovered; ``--list-chains`` and
+  ``--explain-chain AC-023`` pick it up, ``--explain TKN-002`` and
+  ``--explain TKN-003`` now list AC-023 under "Triggers attack
+  chains". Catalog 22 -> 23. Tekton chain coverage 1 -> 2.
+- **AC-022 — GitLab script injection lands on deploy job with no
+  manual gate.** New cross-rule attack chain. Fires when the same
+  ``.gitlab-ci.yml`` carries GL-002 (a job's ``script:``
+  interpolates an attacker-controlled context field — commit
+  title, MR description, branch / tag name) AND GL-004 (a deploy
+  job has no ``when: manual`` and no protected ``environment:``
+  binding). The combination converts a fork-MR-controllable
+  injection point into an unattended production push, which is
+  the GitLab analog of AC-002 (``GHA-003`` + ``GHA-014``) — every
+  CI provider with a script-injection primitive and a deploy-gate
+  primitive can compose this same shape, but until now the chain
+  catalog had AC-002 for GitHub and nothing for GitLab. Severity
+  CRITICAL, MITRE ``T1059`` / ``T1078`` / ``T1556``, kill-chain
+  ``initial-access -> execution -> impact``. Closes a real
+  coverage gap: of the catalog's 22 chains, GitLab now has two
+  (AC-014 covered the runner-token persistence shape; AC-022
+  covers the injection-to-deploy shape). Auto-discovered;
+  ``--list-chains`` and ``--explain-chain AC-022`` pick it up,
+  ``--explain GL-002`` and ``--explain GL-004`` now list AC-022
+  under "Triggers attack chains". Catalog 21 -> 22.
 - **CIS Kubernetes Benchmark v1.10 — new compliance standard.**
   Adds the 14th registered standard. Covers Section 5 (Policies)
   of the benchmark — the workload-manifest controls a posture-

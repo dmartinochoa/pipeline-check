@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**500+ checks** across **16 providers**, mapped to **14 compliance standards**, with **103 autofixers**, plus **21 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**500+ checks** across **16 providers**, mapped to **14 compliance standards**, with **103 autofixers**, plus **25 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |

@@ -37,6 +37,10 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
 | [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | [`TKN-004`](providers/tekton.md#tkn-004) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
 | [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | [`ARGO-003`](providers/argo.md#argo-003) + [`K8S-029`](providers/kubernetes.md#k8s-029) |
+| [`AC-022`](#ac-022) | GitLab script injection lands on deploy job with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | gitlab | [`GL-002`](providers/gitlab.md#gl-002) + [`GL-004`](providers/gitlab.md#gl-004) |
+| [`AC-023`](#ac-023) | Tekton param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton | [`TKN-002`](providers/tekton.md#tkn-002) + [`TKN-003`](providers/tekton.md#tkn-003) |
+| [`AC-024`](#ac-024) | OIDC trust drift lands on a mutable ECR tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`ECR-002`](providers/aws.md) |
+| [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
@@ -630,7 +634,7 @@ Replace the Task's ``hostPath`` volume with a Workspace (``workspaces`` declarat
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">argo</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
 </div>
 
-An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a RoleBinding grants permissions to that default SA (K8S-029). Anyone who can submit a Workflow into the namespace runs code under whatever verbs the binding grants — turning ARGO-003 from a hygiene gap into a concrete privilege-escalation primitive.
+An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a RoleBinding grants permissions to that default SA (K8S-029). Anyone who can submit a Workflow into the namespace runs code under whatever verbs the binding grants, turning ARGO-003 from a hygiene gap into a concrete privilege-escalation primitive.
 
 **References**
 
@@ -642,7 +646,116 @@ An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a R
 
 **Recommended action**
 
-On the Argo side: set ``spec.serviceAccountName: <workflow-runner>`` on every Workflow / WorkflowTemplate and bind that SA to a least-privilege Role. On the Kubernetes side: never grant verbs to ``default`` — every RoleBinding's ``subjects`` should name a workflow-specific SA. The fix on either side breaks the chain. Best is both: explicit per-workflow SAs across every namespace, plus deny rules / OPA policies that block any RoleBinding subject named ``default`` at admission time.
+On the Argo side: set ``spec.serviceAccountName: <workflow-runner>`` on every Workflow / WorkflowTemplate and bind that SA to a least-privilege Role. On the Kubernetes side: never grant verbs to ``default``, every RoleBinding's ``subjects`` should name a workflow-specific SA. The fix on either side breaks the chain. Best is both: explicit per-workflow SAs across every namespace, plus deny rules / OPA policies that block any RoleBinding subject named ``default`` at admission time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-022 — GitLab script injection lands on deploy job with no manual gate { #ac-022 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">gitlab</span>
+</div>
+
+A ``.gitlab-ci.yml`` job interpolates an attacker-controlled context field directly into its ``script:`` (GL-002) AND a deploy job in the same file lacks a manual approval / protected ``environment:`` gate (GL-004). A crafted commit title or MR description from any branch the pipeline runs on injects a shell command into the build stage; the deploy stage then ships the resulting artifacts to production unattended.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+- <https://docs.gitlab.com/ee/ci/environments/protected_environments.html>
+- <https://docs.gitlab.com/ee/ci/yaml/#whenmanual>
+- <https://docs.gitlab.com/ee/ci/variables/predefined_variables.html>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: never interpolate ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` directly into a shell command. Bind the field to a job-scoped ``variables:`` entry and reference the variable inside double quotes (``echo "$TITLE"``), so the shell sees one literal argument rather than interpreted syntax. On the deploy side: gate every job that publishes artifacts, applies infrastructure, or pushes to a registry behind ``when: manual`` plus an ``environment:`` mapped to a *protected* environment in GitLab settings, and use ``rules:``/``only:`` to limit the job to the default branch. Either fix breaks the chain; doing both also closes off the same primitive against future rule additions.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-023 — Tekton param injection lands in a privileged or root step { #ac-023 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1068</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">tekton</span>
+</div>
+
+A Tekton Task interpolates ``$(params.<name>)`` directly into a step's ``script:`` body without quoting (TKN-003) AND the same step runs ``privileged: true`` / ``runAsUser: 0`` / with node-level ``capabilities.add`` (TKN-002). A crafted PipelineRun param value, supplied via a webhook payload, GitOps merge, or fork-PR-triggered EventListener, injects a shell command that executes inside a kernel-privileged container, the two ingredients for a Kubernetes node escape.
+
+**References**
+
+- <https://tekton.dev/docs/pipelines/tasks/#using-variable-substitution>
+- <https://tekton.dev/docs/triggers/eventlisteners/>
+- <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating ``$(params.<name>)`` directly into a step's shell body. Pass the param through ``env:``. Tekton substitutes the param into the env value at run time, and the shell then sees a quoted variable (``"$FOO"``) rather than syntax it can interpret. On the privilege side: drop ``securityContext.privileged: true``, set ``runAsNonRoot: true`` + a non-zero ``runAsUser``, and list only the specific Linux capabilities the step needs (most build tooling needs none). Either fix breaks the chain, a non-privileged container makes the injection a hygiene smell rather than a node-escape primitive, and a quoted param removes the injection regardless of container capabilities. Best is both, plus a Pod Security Admission ``restricted`` label on the namespace to enforce the privilege side at admission time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-024 — OIDC trust drift lands on a mutable ECR tag { #ac-024 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> impact</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow requests an OIDC token without an environment-protected job (GHA-030) AND an ECR repository has mutable image tags (ECR-002). Any branch or fork PR that triggers the workflow obtains short-lived AWS credentials with no required-reviewer gate; if those credentials reach an ECR push role, the mutable-tag policy lets the workflow overwrite an existing tag (``:latest``, ``:v1.2.3``) and the substituted image propagates to every downstream consumer that pulls by name.
+
+**References**
+
+- <https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect>
+- <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-09-Improper-Artifact-Integrity-Validation>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Either fix breaks the chain. On the GitHub side: bind any job that requests ``id-token: write`` to a GitHub Environment with required-reviewer protection, and pin the IAM trust policy's ``token.actions.githubusercontent.com:sub`` claim to a specific repo + ref pattern (``repo:owner/repo:ref:refs/heads/main``) so a fork PR can't redeem the role. On the AWS side: set ``imageTagMutability=IMMUTABLE`` on every ECR repository consumed in production, and reference images by digest (``@sha256:...``) in deployment manifests so tag substitution can't propagate even if a push slips through. Best is both: gated OIDC + immutable tags + digest-pinned consumers.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-025 — Argo param injection lands in a privileged or root step { #ac-025 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1068</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">argo</span>
+</div>
+
+An Argo Workflow / WorkflowTemplate interpolates ``{{inputs.parameters.<name>}}`` / ``{{workflow.parameters.<name>}}`` directly into a template's ``script.source`` or container ``command``/``args`` without quoting (ARGO-005) AND the same template runs ``privileged: true`` / ``runAsUser: 0`` / with node-level ``capabilities.add`` (ARGO-002). A crafted param value supplied via an Argo Events Sensor webhook, a CronWorkflow trigger, or a WorkflowEventBinding fork-PR path injects a shell command that executes inside a kernel-privileged container, the two ingredients for a Kubernetes node escape, regardless of what the workflow's ServiceAccount can reach via the API.
+
+**References**
+
+- <https://argo-workflows.readthedocs.io/en/latest/walk-through/parameters/>
+- <https://argoproj.github.io/argo-events/sensors/sensor/>
+- <https://argo-workflows.readthedocs.io/en/latest/workflow-of-workflows/>
+- <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating ``{{inputs.parameters.<name>}}`` / ``{{workflow.parameters.<name>}}`` directly into a template's shell body. Bind the param to a template ``env:`` entry (``env: [{name: FOO, value: '{{inputs.parameters.foo}}'}]``) and reference the env var inside double quotes (``echo "$FOO"``). Argo substitutes into env values, the shell then sees one literal argument rather than interpreted syntax. On the privilege side: drop ``securityContext.privileged: true``, set ``runAsNonRoot: true`` + a non-zero ``runAsUser``, and list only the specific Linux capabilities the step needs. Either fix breaks the chain, a non-privileged container makes the injection a hygiene smell rather than a node-escape primitive, and a quoted param removes the injection regardless of container capabilities. Best is both, plus a Pod Security Admission ``restricted`` label on the namespace to enforce the privilege side at admission time.
 
 </div>
 
