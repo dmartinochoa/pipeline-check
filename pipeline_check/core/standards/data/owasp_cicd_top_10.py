@@ -471,6 +471,13 @@ STANDARD = Standard(
         "ARGO-011": ["CICD-SEC-9"],   # SLSA provenance not produced
         "ARGO-012": ["CICD-SEC-9"],   # no vulnerability scanning
         "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
+        # Drone CI
+        "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
+        "DR-002":   ["CICD-SEC-5"],                 # step privileged
+        "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
+        "DR-004":   ["CICD-SEC-6", "CICD-SEC-7"],   # literal secret
+        "DR-005":   ["CICD-SEC-3"],                 # plugin floating tag
+        "DR-006":   ["CICD-SEC-3", "CICD-SEC-1"],   # TLS bypass in commands
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation

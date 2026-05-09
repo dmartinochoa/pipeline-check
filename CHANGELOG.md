@@ -12,6 +12,39 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Drone CI provider.** New ``--pipeline drone --drone-path
+  <file>`` reads ``.drone.yml`` / ``.drone.yaml`` documents on
+  disk. Drone pipelines are multi-document YAML; each document
+  is gated by ``kind: pipeline`` and a ``type:`` discriminator.
+  Auto-detects ``./.drone.yml`` so a no-args ``pipeline_check``
+  in a Drone repo picks the provider without manual flagging.
+  Six checks:
+
+    * ``DR-001`` step image not pinned to ``@sha256:<digest>``
+      (HIGH; covers steps and services).
+    * ``DR-002`` ``privileged: true`` on a step or service
+      (HIGH; container escape primitive).
+    * ``DR-003`` author-controllable Drone template variable
+      interpolated unquoted in a shell command (HIGH;
+      ``${DRONE_PULL_REQUEST_TITLE}``, ``DRONE_COMMIT_*``,
+      branch / repo names in fork PRs, tag annotations). Same
+      injection model as TKN-003 / ARGO-005 / BK-003.
+    * ``DR-004`` literal credential in step ``environment:`` /
+      plugin ``settings:`` / pipeline-level ``environment:``
+      (CRITICAL; vocabulary match plus AKIA-prefixed AWS keys).
+    * ``DR-005`` plugin step (one with a ``settings:`` block)
+      uses a floating image tag (HIGH; plugin steps receive
+      every ``settings:`` key as an env var, so a swapped
+      plugin image can exfiltrate the entire credential set).
+    * ``DR-006`` TLS verification disabled in step commands
+      (HIGH; ``curl -k``, ``--no-check-certificate``,
+      ``GIT_SSL_NO_VERIFY``, ``NODE_TLS_REJECT_UNAUTHORIZED``,
+      etc., reuses the cross-provider ``TLS_BYPASS_RE``).
+
+  ``ssh`` / ``exec`` / ``digitalocean`` pipelines have no
+  container surface; rules that target ``image:`` / commands
+  pass-by-default on those types so a non-container Drone
+  pipeline doesn't generate noise. Provider catalog: 17 to 18.
 - **Three more OCI manifest rules.** ``OCI-004`` flags layers
   that declare a ``urls:`` field or use a foreign-layer media
   type (``vnd.docker.image.rootfs.foreign.diff.tar.gzip``,

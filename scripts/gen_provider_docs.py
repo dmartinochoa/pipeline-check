@@ -486,6 +486,62 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
   `default`.
 """,
     ),
+    "drone": (
+        "Drone CI",
+        "pipeline_check.core.checks.drone.rules",
+        _REPO_ROOT / "docs" / "providers" / "drone.md",
+        """\
+# Drone CI provider
+
+Parses ``.drone.yml`` / ``.drone.yaml`` documents on disk. Drone
+pipelines are multi-document YAML; each document is a top-level
+pipeline gated by a ``kind: pipeline`` discriminator and a ``type:``
+(``docker``, ``kubernetes``, ``ssh``, ``exec``, ``digitalocean``).
+The rule pack focuses on the container-flavored types
+(``docker`` / ``kubernetes``); ``ssh`` / ``exec`` / ``digitalocean``
+pipelines have no container surface and most rules pass-by-default
+on them.
+
+## Producer workflow
+
+```bash
+# --drone-path is auto-detected when .drone.yml exists at cwd.
+pipeline_check --pipeline drone
+
+# ...or pass it explicitly.
+pipeline_check --pipeline drone --drone-path .drone.yml
+
+# A directory of services with one .drone.yml each.
+pipeline_check --pipeline drone --drone-path services/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, ...) behave the same as with the other providers.
+
+### Drone-specific checks
+
+- **DR-002**, ``privileged: true`` is a step-scoped switch that
+  removes the container's syscall and capability boundary,
+  giving the step kernel-level access to the agent host. Most
+  workloads reaching for it can use a rootless alternative
+  (``buildx``, ``kaniko``, ``buildah``); when DR-002 fires,
+  treat it as a build-system review item rather than a quick
+  fix.
+- **DR-003**, Drone substitutes ``${DRONE_*}`` template
+  variables *before* the shell parses the script. Author-
+  controllable variables (``DRONE_COMMIT_MESSAGE``,
+  ``DRONE_PULL_REQUEST_TITLE``, branch / repo names in fork
+  PRs, tag annotations) are tainted; an unquoted use is a
+  command-injection primitive. Same model as TKN-003 / ARGO-005
+  / BK-003 in this catalog.
+- **DR-005**, plugin steps (steps with a ``settings:`` block)
+  are a sharper attack surface than ordinary steps because
+  Drone passes every ``settings:`` key to the plugin as an env
+  var, including any secret references. The rule fires
+  specifically on plugin steps using a floating image tag, so
+  a maintainer can ratchet plugin pinning up first.
+""",
+    ),
     "oci": (
         "OCI image manifest",
         "pipeline_check.core.checks.oci.rules",
@@ -661,6 +717,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "OCI", "prefix_lc": "oci", "pkg": "oci",
         "signature": "check(manifest: OCIManifest) -> Finding",
         "arg_kind": "``OCIManifest``",
+    },
+    "drone": {
+        "prefix": "DR", "prefix_lc": "dr", "pkg": "drone",
+        "signature": "check(pipeline: Pipeline) -> Finding",
+        "arg_kind": "``Pipeline``",
     },
 }
 

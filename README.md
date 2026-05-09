@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**520+ checks** across **17 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **27 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**530+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **27 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -91,6 +91,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 13 checks (`BK-001`--`013`) |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 6 checks (`DR-001`--`006`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 13 checks (`TKN-001`--`013`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 13 checks (`ARGO-001`--`013`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
@@ -118,7 +119,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   520+ checks across 17 providers
+  Config files   |  Scanner  |   530+ checks across 18 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |

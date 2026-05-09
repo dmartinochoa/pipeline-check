@@ -50,6 +50,10 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Buildkite</h3>
     <p>Parses <code>.buildkite/pipeline.yml</code>. Plugin pinning, agent-tag injection, command-step posture, TLS bypass.</p>
   </a>
+  <a class="pg-doc-card" href="drone/">
+    <h3>Drone CI</h3>
+    <p>Parses <code>.drone.yml</code> / <code>.drone.yaml</code>. Image / plugin pinning, privileged steps, Drone-template-variable injection, literal secrets, TLS bypass.</p>
+  </a>
   <a class="pg-doc-card" href="tekton/">
     <h3>Tekton</h3>
     <p>Parses <code>Task</code>, <code>Pipeline</code>, and <code>*Run</code> CRDs. Step image pinning, parameter injection, workspace hygiene.</p>

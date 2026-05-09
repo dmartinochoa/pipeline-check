@@ -49,6 +49,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "argo":       13,
     "dockerfile": 20,
     "oci":        6,
+    "drone":      6,
 }
 
 
