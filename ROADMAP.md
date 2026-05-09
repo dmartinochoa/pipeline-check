@@ -285,14 +285,29 @@ to an emergent path-finder over a per-pipeline dataflow graph.
   description carries the *concrete* path detected on this
   scan.
 
-Pilot scope: GitHub Actions. ``TAINT-001`` covers same-job
-step-output flow (*landed*); ``TAINT-002`` covers cross-job
-flow via ``jobs.<id>.outputs:`` (*landed on dev*). Reusable-
-workflow input/output forwarding is the next gap inside GHA.
-After that the engine extends to GitLab CI, Drone, Tekton,
-Argo, Buildkite — every provider with the same producer/
-consumer shape (a structured way to surface a step value to
-a downstream stage).
+Pilot scope: GitHub Actions and GitLab CI.
+
+  * ``TAINT-001`` (GHA, *landed*) — same-job step-output flow
+    via ``$GITHUB_OUTPUT``.
+  * ``TAINT-002`` (GHA, *landed*) — cross-job flow via
+    ``jobs.<id>.outputs:`` declarations.
+  * ``TAINT-003`` (GHA, *landed*) — caller-side reusable-
+    workflow input forwarding via ``jobs.<id>.uses:`` +
+    ``with:``.
+  * ``TAINT-004`` (GitLab, *landed*) — cross-job flow via
+    ``artifacts.reports.dotenv`` auto-import. Validates the
+    engine's portability across provider shapes; the
+    producer/consumer pattern is identical, only the
+    propagation channel differs.
+
+Next gaps: end-to-end coupling between the
+``--resolve-remote`` resolver and the GHA pass-4 forward
+detection (so a tainted ``with:`` paired with a callee whose
+``inputs.<name>`` actually lands in a sink emits a
+high-confidence finding); GitLab ``extends:`` job-template
+inheritance and ``include:`` cross-pipeline taint; then the
+engine extends to Drone, Tekton, Argo, Buildkite — every
+provider with the same producer/consumer shape.
 
 This is the move that distinguishes pipeline-check from the
 common per-rule local matching that mainstream commercial CI/CD

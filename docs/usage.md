@@ -25,11 +25,13 @@ pipeline_check
 
 Auto-detect looks for, in order: `.github/workflows/`, `.gitlab-ci.yml`,
 `bitbucket-pipelines.yml`, `azure-pipelines.yml`, `Jenkinsfile`,
-`.circleci/config.yml`, `cloudbuild.yaml`, `Dockerfile`/`Containerfile`,
+`.circleci/config.yml`, `cloudbuild.yaml`, `.buildkite/pipeline.yml`,
+`.drone.yml` / `.drone.yaml`, `Dockerfile`/`Containerfile`,
 CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
 a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
-Terraform plan JSON, and falls back to `aws` (live account scan)
-when nothing matches.
+Tekton / Argo manifests, Helm `Chart.yaml`, an OCI image manifest
+(`index.json`), Terraform plan JSON, and falls back to `aws` (live
+account scan) when nothing matches.
 
 ## Scan a specific provider
 
@@ -50,12 +52,35 @@ pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 
+pipeline_check --pipeline drone --drone-path .drone.yml
+pipeline_check --pipeline oci --oci-manifest index.json
+
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
 ```
 
 Full per-provider reference: [providers/](providers/README.md).
+
+## Scan multiple providers in one run
+
+Cross-provider attack chains (the `XPC-NNN` family) only fire when the
+engine sees findings from more than one provider in the same scan. Use
+`--pipelines` (plural, comma-separated) to opt in:
+
+```bash
+# Pull GitHub Actions + OCI manifest into one report; XPC-001 (deploy
+# without verifiable provenance) fires when both legs are missing.
+pipeline_check --pipelines github,oci
+
+# Per-provider auto-detection still applies; override any single
+# provider's path with its companion flag the same way as in
+# single-provider mode.
+pipeline_check --pipelines dockerfile,kubernetes \
+    --dockerfile-path Dockerfile --k8s-path manifests/
+```
+
+`--pipelines` is mutually exclusive with the single-valued `--pipeline`.
 
 ## Scaffold a config file
 
@@ -180,7 +205,72 @@ kill chains (e.g. "unpinned action + overpermissive token + no approval
 gate = full-pipeline takeover"). Chains are on by default and print
 after the findings section.
 
+```bash
+pipeline_check --list-chains              # one line per registered chain
+pipeline_check --explain-chain AC-001     # full reference card
+
+pipeline_check --fail-on-chain AC-001     # gate on a named chain
+pipeline_check --fail-on-any-chain        # gate on any matched chain
+pipeline_check --no-chains                # disable correlation entirely
+```
+
+Chain gates **bypass baseline and ignore-file filtering**, a correlated
+attack path is intrinsically a new finding even when its constituent
+legs were baselined separately.
+
 Chain reference: [attack_chains.md](attack_chains.md).
+
+## GitHub Actions dataflow taint analysis
+
+The GitHub provider ships a workflow-wide taint engine that follows
+attacker-controllable input across step, job, and reusable-workflow
+boundaries:
+
+| Rule       | Tracks                                                                |
+|------------|-----------------------------------------------------------------------|
+| `TAINT-001` | `${{ github.event.* }}` flowing through `$GITHUB_OUTPUT` to a downstream same-job step |
+| `TAINT-002` | The same flow crossing a `jobs.<id>.outputs.*` boundary into another job |
+| `TAINT-003` | Untrusted input forwarded into a reusable-workflow `with:` input     |
+
+Each finding carries the full source-to-sink chain in its description.
+Single-rule scanners stop at the producer's GHA-003 finding and miss
+the actual injection sink one step (or one job) later.
+
+## Dataflow secret detection
+
+`--detect-entropy` adds a Shannon-entropy pass to the secret detector.
+It catches custom org tokens with no public prefix (an internal
+Snowflake token, a custom JWT issuer secret, an opaque session token)
+that the deterministic prefix-shape catalog can't match:
+
+```bash
+pipeline_check --detect-entropy
+```
+
+Off by default, turning it on can introduce new findings on
+previously-clean scans. Layered FP suppression (key-context match,
+length floor, token shape, deterministic-detector overlap, placeholder
+markers) keeps signal high; hits are labeled `entropy:<redacted>` so
+operators can write targeted ignore rules per-class.
+
+## AI-augmented `--explain`
+
+`--ai-explain CHECK_ID` prints the deterministic `--explain` body and
+appends a clearly-banner-framed AI-generated remediation paragraph
+grounded in the project's README and an optional context file. Three
+providers supported, all opt-in:
+
+```bash
+pip install pipeline-check[ai-anthropic]   # or [ai-openai]
+ANTHROPIC_API_KEY=... pipeline_check --ai-explain GHA-016 \
+    --ai-context-file docs/security-model.md
+```
+
+Default models: `claude-sonnet-4-6` (Anthropic), `gpt-4o-mini`
+(OpenAI), `llama3.2` (Ollama, stdlib HTTP, no Python dep). The
+deterministic surfaces (`--explain`, `--list-checks`,
+`--list-standards`, JSON / SARIF / scoring / gating, attack chains)
+are unaffected, no AI call fires unless `--ai-explain` is passed.
 
 ## Inventory
 
@@ -214,6 +304,7 @@ Precedence: CLI > env > config file > defaults.
 | 1    | Gate failed |
 | 2    | Scanner error (e.g. AWS API failure, malformed config file) |
 | 3    | Usage / config error (unknown flag, missing required path, bad YAML) |
+| 4    | `--ai-explain` request failure (missing SDK, missing key, unknown provider, request error) |
 
 ## Verbose and quiet modes
 

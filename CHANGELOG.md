@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-004 GitLab dotenv cross-job taint flow.** First v0.6.0
+  taint-engine port to a second provider. New
+  ``pipeline_check.core.checks.gitlab._taint_graph`` mirrors the
+  GHA shape but follows GitLab's canonical cross-job channel:
+  ``artifacts.reports.dotenv``. A producer job that writes
+  ``KEY=$CI_COMMIT_TITLE`` (or any ``$CI_COMMIT_*`` /
+  ``$CI_MERGE_REQUEST_*`` source) to a file declared as a
+  dotenv artifact leaks the variable into every downstream job
+  that ``needs:`` (or ``dependencies:``) the producer. The
+  consumer's ``$KEY`` reference looks like an ordinary shell
+  variable until the artifact path is traced; ``GL-002`` only
+  catches the inner ``$CI_COMMIT_*`` interpolation in the
+  producer, ``TAINT-004`` catches the actual injection at the
+  consumer. Quote-state aware: a quoted ``"$KEY"`` consumer
+  passes; only unquoted references fire. v1 limitations:
+  ``extends:`` job-template inheritance and ``include:``
+  cross-pipeline references aren't tracked yet, ``trigger:``
+  parent-child pipelines aren't either, and the dotenv path
+  match is literal (no glob expansion). The ``TAINT-NNN``
+  family now spans GHA (TAINT-001..003) and GitLab CI
+  (TAINT-004), validating the engine's portability across
+  provider shapes.
 - **TAINT-003 reusable-workflow input forwarding.** The GHA
   dataflow engine now flags caller workflows that pipe an
   attacker-controllable source into a reusable workflow's
@@ -26,7 +48,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   TAINT rules are mutually exclusive on a given path: TAINT-001
   for same-job step-output flow, TAINT-002 for cross-job
   ``jobs.<id>.outputs:`` propagation, TAINT-003 for tainted
-  ``with:`` forwards into reusable workflows.
+  ``with:`` forward into reusable workflows.
 - **XPC-003 unverified Helm release flow.** Third XPC chain.
   Fires when ``HELM-002`` (Chart.lock missing per-dependency
   digests) and ``OCI-002`` (image manifest lacks attestation

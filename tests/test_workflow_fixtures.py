@@ -87,7 +87,7 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 33)}
+    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -443,7 +443,7 @@ class TestArgoFixtures:
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
      {f"GHA-{i:03d}" for i in range(1, 37)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 33)}),
+     {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 30)}),

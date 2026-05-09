@@ -12,6 +12,8 @@ run before the conditions are evaluated.
 | Grade            | `--min-grade A\|B\|C\|D`  | overall grade is worse than the bar                     |
 | Count cap        | `--max-failures N`        | more than `N` effective failing findings                |
 | Specific check   | `--fail-on-check ID`      | a named check is in the effective set (repeat for many) |
+| Named chain      | `--fail-on-chain ID`      | a named attack chain matched (repeat for many)          |
+| Any chain        | `--fail-on-any-chain`     | any attack chain matched at all                         |
 
 **Default gate** when no flag is set: equivalent to `--fail-on CRITICAL`. A single CRITICAL finding fails the gate, everything else passes.
 
@@ -56,6 +58,22 @@ pipeline_check --pipeline github --gha-path .github/workflows \
 ```bash
 pipeline_check --pipeline aws --max-failures 5
 ```
+
+### Block on named attack chains regardless of severity
+
+```bash
+# Fail only on a named subset (the team has explicitly opted in to
+# blocking these patterns).
+pipeline_check --fail-on-chain AC-001 --fail-on-chain AC-007
+
+# Blanket guard: fail if any chain matched at all.
+pipeline_check --fail-on-any-chain
+```
+
+Chain gates **bypass baseline and ignore-file filtering**: a correlated
+attack path is intrinsically a new finding even when its individual
+legs were each baselined separately. See
+[attack_chains.md](attack_chains.md) for the registered chain catalog.
 
 ### Only block on *new* regressions (baseline diff)
 
@@ -212,13 +230,23 @@ pipeline_check --pipeline github --fix | git apply
 ```
 
 The tool never modifies files directly by default, review the patch,
-apply or discard. Currently registered fixers:
+apply or discard. **111 fixers** are registered across every provider
+covering pinning, credential redaction, timeouts, TLS-bypass commenting,
+script-injection env-binding, Docker insecure flags, Kubernetes
+`securityContext`, and curl-pipe commenting. The full per-check matrix
+(which rule has a fixer) is rendered as a 🔧 chip in the rules table on
+each provider's reference page under [providers/](providers/README.md).
 
-| Check    | Fix                                                                  |
-|----------|----------------------------------------------------------------------|
-| GHA-002  | Adds `persist-credentials: false` under every `actions/checkout` step; handles both `- uses: ...` and named (`- name: ... / uses: ...`) forms. |
-| GHA-004  | Inserts `permissions: contents: read` at the top of the workflow.    |
-| GHA-008  | Replaces credential-shaped literals with `"<REDACTED>"` and a `TODO(pipeline-check)` marker. Preserves any operator comment on the line. |
+A few representative entries:
+
+| Check                    | Fix                                                                  |
+|--------------------------|----------------------------------------------------------------------|
+| GHA-002 / GL-002 / BB-002 / ADO-002 | Adds `persist-credentials: false` under every `actions/checkout` step. |
+| GHA-004                  | Inserts `permissions: contents: read` at the top of the workflow.    |
+| `*-008` (cred literals)  | Replaces credential-shaped literals with `"<REDACTED>"` and a `TODO(pipeline-check)` marker. Same fixer wired across GHA / GL / BB / ADO / CC / JF / BK / TKN / ARGO. |
+| `*-016` (curl-pipe)      | Comments out the offending `curl ... \| sh` line and leaves a sibling note. |
+| `*-023` (TLS bypass)     | Comments out `--insecure` / `-k` / `--no-check-certificate` invocations across Docker / Maven / Gradle / AWS CLI. |
+| K8S `securityContext`    | Backfills `runAsNonRoot`, `readOnlyRootFilesystem`, drops `ALL` capabilities. |
 
 Fixers are idempotent, re-running against already-remediated content
 emits nothing for that finding. A broken fixer logs to stderr and is
@@ -262,7 +290,8 @@ Exact IDs (`--checks GHA-001`) still work unchanged.
 ## Custom secret patterns
 
 The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
-`JF-008`) ship with named detectors for **16 vendor token shapes**:
+`JF-008`, `CC-008`, `DR-004`, …) ship with **46 named vendor-token
+detectors**. Sample of the catalog:
 
 | Detector              | Matches                                                          |
 |-----------------------|------------------------------------------------------------------|
@@ -271,20 +300,26 @@ The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
 | `slack_token`         | `xoxa-` / `xoxb-` / `xoxp-` / `xoxr-` / `xoxs-`                  |
 | `jwt`                 | `eyJ…` three-segment header.payload.signature                    |
 | `stripe_secret`       | `sk_live_` / `sk_test_` / `rk_live_` / `rk_test_` (24+ payload)  |
-| `stripe_publishable`  | `pk_live_` / `pk_test_` (24+ payload)                            |
 | `google_api_key`      | `AIza…` (35 trailing chars)                                      |
-| `npm_token`           | `npm_…` (36 chars)                                               |
 | `pypi_token`          | `pypi-AgEIcHlwaS5vcmc…` (50+ trailing)                           |
 | `docker_hub_pat`      | `dckr_pat_…` (20+ trailing)                                      |
 | `gitlab_pat`          | `glpat-…` (20 trailing)                                          |
-| `gitlab_deploy_token` | `gldt-…` (20+ trailing)                                          |
-| `sendgrid`            | `SG.<22>.<43>`                                                   |
 | `anthropic_api_key`   | `sk-ant-api03-…` (90+ trailing)                                  |
+| `openai_api_key`      | `sk-…` / `sk-proj-…` (40+ trailing)                              |
 | `digitalocean_token`  | `dop_v1_…` (64 hex)                                              |
 | `hashicorp_vault`     | `hvs.…` (24+ trailing)                                           |
+| `terraform_cloud_token` | `<14-alnum>.atlasv1.<60+>`                                     |
+| `cohere_api_key`      | `co_pat_…` (40+ trailing)                                        |
+| `replicate_token`     | `r8_…` (40 trailing)                                             |
+| `asana_pat`           | `1/<account-id>:<32-hex>`                                        |
+| `square_access_token` | `sq0(atp\|csp)-…`                                                |
+| `…`                   | plus 28 more (Twilio, Mailchimp, Shopify, Databricks, HuggingFace, Linear, PlanetScale, New Relic, Grafana, Telegram, Atlassian, GitLab Runner / CI, Supabase, Fly, Pulumi, Doppler, Netlify, Railway, Render, Prefect, Neon, age, …) |
 
 Plus a multi-line `private_key` detector that fires on any
-`-----BEGIN PRIVATE KEY-----` block (RSA, EC, OPENSSH, PGP).
+`-----BEGIN PRIVATE KEY-----` block (RSA, DSA, EC, OPENSSH, PGP, and
+the **PKCS#8 `ENCRYPTED PRIVATE KEY`** form, still a leak even when
+the body is password-protected: offline brute-force is cheap once the
+file has left the perimeter).
 
 Each hit is labeled with the matched detector, finding descriptions
 read like ``aws_access_key:AKIA…LE, stripe_secret:sk_l…23`` so
@@ -312,3 +347,23 @@ Patterns are Python regex syntax; anchor with `^...$` to whole-token
 match. Tokens are extracted from every string in the workflow, split
 on whitespace and common shell separators. See
 [config.md](config.md#schema) for the config-file form.
+
+### Shannon-entropy fallback (`--detect-entropy`)
+
+For credentials with no public prefix (an internal Snowflake token, a
+custom JWT issuer secret, an opaque session token), opt in to a
+second pass that flags high-entropy values (>= 3.5 bits/char,
+length >= 20) appearing in YAML key contexts that suggest a credential
+(`API_KEY`, `apiToken`, `database-password`, …) and that the
+deterministic detectors haven't already matched:
+
+```bash
+pipeline_check --detect-entropy
+```
+
+Off by default, turning it on can introduce new findings on
+previously-clean scans, so the upgrade is opt-in only. Layered
+false-positive suppression keeps signal high (key-context vocabulary
+match, length floor, token-shape filter, deterministic-detector
+overlap, placeholder markers). Hits are labeled `entropy:<redacted>`
+so operators can write targeted ignore rules per-class.

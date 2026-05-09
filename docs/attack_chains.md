@@ -41,6 +41,17 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-023`](#ac-023) | Tekton param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton | [`TKN-002`](providers/tekton.md#tkn-002) + [`TKN-003`](providers/tekton.md#tkn-003) |
 | [`AC-024`](#ac-024) | OIDC trust drift lands on a mutable ECR tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`ECR-002`](providers/aws.md) |
 | [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
+| [`AC-026`](#ac-026) | Buildkite injection lands on auto-deploy step with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | buildkite | [`BK-003`](providers/buildkite.md#bk-003) + [`BK-007`](providers/buildkite.md#bk-007) |
+| [`AC-027`](#ac-027) | Image bakes a credential file AND exposes a remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | dockerfile | [`DF-013`](providers/dockerfile.md#df-013) + [`DF-019`](providers/dockerfile.md#df-019) |
+| [`XPC-001`](#xpc-001) | Deploy without verifiable provenance (workflow + image) | <span class="pg-sev pg-sev--high">HIGH</span> | github / oci | [`GHA-006`](providers/github.md#gha-006) + [`OCI-002`](providers/oci.md#oci-002) |
+| [`XPC-002`](#xpc-002) | Tag mutability across pipeline + runtime (Dockerfile + K8s) | <span class="pg-sev pg-sev--high">HIGH</span> | dockerfile / kubernetes | [`DF-001`](providers/dockerfile.md#df-001) + [`K8S-001`](providers/kubernetes.md#k8s-001) |
+| [`XPC-003`](#xpc-003) | Unverified Helm release flow (chart + image) | <span class="pg-sev pg-sev--high">HIGH</span> | helm / oci | [`HELM-002`](providers/helm.md#helm-002) + [`OCI-002`](providers/oci.md#oci-002) |
+
+The `XPC-NNN` family is **cross-provider**. It only fires when the chain
+engine sees findings from multiple providers in the same scan, which
+happens when you pass `--pipelines github,oci` (plural, comma-separated)
+instead of single-valued `--pipeline`. Single-provider runs never see
+both check IDs and these chains stay quiet.
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference

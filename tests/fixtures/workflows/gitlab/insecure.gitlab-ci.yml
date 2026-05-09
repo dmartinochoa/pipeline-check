@@ -118,3 +118,23 @@ insecure-setup:
     - eval "$CI_CUSTOM_CMD"
     # GL-027: pip install from an unpinned git URL.
     - pip install git+https://example.com/internal/helper.git
+
+# TAINT-004: dotenv-artifact cross-job taint flow. The producer
+# job below pipes ``$CI_COMMIT_TITLE`` into a dotenv file; the
+# consumer needs:-imports the var as ``$TITLE`` and unquotes it
+# back into a shell command. GL-002 catches the producer's
+# inner interpolation; TAINT-004 catches the actual injection
+# at the consumer that the single-rule scanner can't see.
+taint-extract:
+  stage: test
+  script:
+    - echo "TITLE=$CI_COMMIT_TITLE" > taint.env
+  artifacts:
+    reports:
+      dotenv: taint.env
+
+taint-build:
+  stage: test
+  needs: [taint-extract]
+  script:
+    - echo Building tagged $TITLE

@@ -9,6 +9,8 @@ format carries the same finding set, only the rendering differs.
 | `json`     | stdout                       | Machine parsing (`jq`, artifact archival)            |
 | `html`     | `--output-file` (required)   | Emailed / attached reports, screenshots              |
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
+| `markdown` | stdout                       | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
+| `junit`    | `--output-file` (required)   | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
 ## JSON
@@ -37,9 +39,28 @@ Shape:
         {"standard": "owasp_cicd_top_10", "control_id": "CICD-SEC-3", …}
       ]
     }
+  ],
+  "chains": [
+    {
+      "id": "AC-001",
+      "title": "Fork-PR Credential Theft (pull_request_target)",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "mitre_techniques": ["T1078", "T1552.004"],
+      "kill_chain_phase": "initial-access -> credential-access",
+      "triggering_findings": [
+        {"check_id": "GHA-002", "resource": ".github/workflows/release.yml"},
+        {"check_id": "GHA-005", "resource": ".github/workflows/release.yml"}
+      ]
+    }
   ]
 }
 ```
+
+The `chains` array is omitted (not empty) when the run was invoked with
+`--no-chains`, so consumers can distinguish "nothing matched" from "not
+asked for". See [attack_chains.md](attack_chains.md) for the full
+chain-output contract.
 
 - **`schema_version`** is bumped on breaking format changes. Adding a
   new optional field does not require a bump; renaming or removing one
@@ -128,6 +149,17 @@ pipeline_check --output html --output-file report.html
 Standalone HTML, embedded CSS and JavaScript, no external CDN calls.
 The report ships with:
 
+- **Score card** at the top (overall grade, severity breakdown).
+- **Attack Chains panel** between the score card and the heatmap.
+  Each matched chain renders as a bordered card with severity,
+  confidence, narrative, triggering checks, MITRE techniques, and
+  references.
+- **Blast-radius heatmap** between the chains panel and the findings
+  table. One inline-SVG tile per resource with at least one failing
+  finding, color-coded by worst severity, sized by failing-finding
+  count (sqrt-scaled), tooltip on hover shows the per-severity
+  breakdown. Pure inline SVG so the report stays a single offline
+  file.
 - **Filter bar** (severity / standard / provider / status / free-text)
   that hides rows client-side. Dropdowns auto-populate from the values
   actually present in the result set, so an all-AWS scan doesn't show

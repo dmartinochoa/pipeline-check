@@ -379,6 +379,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     "TAINT-001",
     "TAINT-002",
     "TAINT-003",
+    "TAINT-004",
 })
 
 
