@@ -180,11 +180,11 @@ under the Providers section.
 
 ## Step 8 — README + index claims
 
-`README.md` and `docs/index.md` carry numerical claims (`16
-providers`, `13 standards`). `tests/test_doc_claims.py` derives the
-expected values from the registries, so adding a new provider
-auto-bumps the expected count — the test fails until the doc
-claims match.
+`README.md` and `docs/index.md` carry numerical claims (provider
+count, standards count, autofixer count, attack-chain count).
+`tests/test_doc_claims.py` derives the expected values from the
+registries, so adding a new provider auto-bumps the expected count.
+The test fails until the doc claims match the live values.
 
 The provider table in `README.md` (under `## Supported providers`)
 is hand-maintained — add a row for the new provider with its rule

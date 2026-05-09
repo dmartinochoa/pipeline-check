@@ -22,7 +22,7 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 16 providers, graded against 13 compliance frameworks. 
+A read-only scanner for 16 providers, graded against 14 compliance frameworks. 
 103 of the 500+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 

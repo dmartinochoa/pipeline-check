@@ -715,6 +715,34 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Doc-accuracy fixes from a documentation review.** Three
+  numerical / structural drifts and one broken link, all
+  user-visible:
+  (1) `README.md` ASCII tree showed the kubernetes pack as
+  `K8S-001 .. K8S-035` while the table on the same page (and the
+  registry) had grown to `K8S-001 .. K8S-040`; the tree was
+  stale across the K8S-027 / -030 / -035 / -040 expansion waves.
+  Bumped to 040.
+  (2) `docs/index.md:25` lede claimed "graded against 13
+  compliance frameworks"; current count is 14 (CIS Kubernetes
+  Benchmark v1.10 was added in the previous wave).
+  `tests/test_doc_claims.py` happens not to lock this exact
+  string format so the drift wasn't caught by the existing
+  guard. README:13 already said "14".
+  (3) `docs/writing_a_provider.md:184` told future contributors
+  that `README.md` and `docs/index.md` carry claims of "`16
+  providers`, `13 standards`". The literal "13" would have
+  copied forward into the next provider's PR description.
+  Rephrased to be format-agnostic so the contributor doc can't
+  rot the same way.
+  (4) `README.md:415` had a broken link `[docs/lambda.md](docs/)`
+  for the Lambda deployment section; the file `docs/lambda.md`
+  does not exist and the link target is the directory itself.
+  The actual canonical Lambda docs are inside
+  `pipeline_check --man lambda` (verified comprehensive: build
+  steps, env vars, IAM permissions, event payload shapes, SNS
+  alerting). Replaced the broken link with a pointer to the
+  `--man` topic.
 - **Rebrand: removed leaked `pipelineguard` codename from autofix
   output, docs, and tests.** The published name has always been
   `pipeline-check` (per `pyproject.toml`), but 91 instances of an

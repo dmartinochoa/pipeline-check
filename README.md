@@ -370,7 +370,7 @@ pipeline_check/
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── dockerfile/rules/  # DF-001 .. DF-020
-        ├── kubernetes/rules/  # K8S-001 .. K8S-035
+        ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack
         └── custom/            # YAML rule loader + predicate engine
 ```
@@ -412,8 +412,8 @@ Public surface: `Scanner`, `Finding`, `Severity`, `Confidence`,
 ## Lambda deployment
 
 Pipeline-Check can run as an AWS Lambda for scheduled scans.
-See [docs/lambda.md](docs/) for packaging, IAM permissions, event payload
-shapes, and SNS alerting.
+Run `pipeline_check --man lambda` for packaging, IAM permissions, event
+payload shapes, and SNS alerting.
 
 ---
 
