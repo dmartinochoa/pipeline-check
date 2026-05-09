@@ -280,7 +280,7 @@ class TestCloudBuildFixtures:
 
 
 class TestBuildkiteFixtures:
-    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 14)}
+    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 14)} | {"TAINT-005"}
 
     def _scan(self, filename: str):
         ctx = BuildkiteContext.from_path(FIXTURES / "buildkite" / filename)
@@ -456,7 +456,7 @@ class TestArgoFixtures:
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("buildkite", "buildkite/insecure-pipeline.yml",
      BuildkiteContext, BuildkitePipelineChecks,
-     {f"BK-{i:03d}" for i in range(1, 14)}),
+     {f"BK-{i:03d}" for i in range(1, 14)} | {"TAINT-005"}),
     ("tekton", "tekton/insecure-tekton.yaml",
      TektonContext, TektonChecks,
      {f"TKN-{i:03d}" for i in range(1, 14)}),

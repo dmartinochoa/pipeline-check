@@ -12,6 +12,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-005 Buildkite meta-data cross-step taint flow.** Third
+  TAINT-engine port. New
+  ``pipeline_check.core.checks.buildkite._taint_graph`` follows
+  Buildkite's per-build meta-data store: a producer step writes
+  ``buildkite-agent meta-data set "K" "$BUILDKITE_PULL_REQUEST"``
+  (or any tainted ``BUILDKITE_*`` source from BK-003's
+  vocabulary) and a downstream step's
+  ``buildkite-agent meta-data get K`` reads it back. BK-003
+  catches the producer's inner ``$BUILDKITE_*`` interpolation;
+  TAINT-005 catches the cross-step injection at the consumer
+  (the ``$(buildkite-agent meta-data get ...)`` capture looks
+  like an ordinary shell variable until the meta-data round-
+  trip is traced). Buildkite meta-data is per-build, not
+  per-step; the engine doesn't model temporal ordering and
+  fires when a tainted set + a get on the same key both exist
+  in the pipeline. The TAINT-NNN family now spans GHA
+  (TAINT-001..003), GitLab CI (TAINT-004), and Buildkite
+  (TAINT-005), all sharing the same producer-consumer engine
+  shape across distinct provider channels (``$GITHUB_OUTPUT``,
+  dotenv artifact, meta-data store).
 - **TAINT-004 GitLab dotenv cross-job taint flow.** First v0.6.0
   taint-engine port to a second provider. New
   ``pipeline_check.core.checks.gitlab._taint_graph`` mirrors the

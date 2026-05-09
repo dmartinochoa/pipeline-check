@@ -299,6 +299,14 @@ Pilot scope: GitHub Actions and GitLab CI.
     engine's portability across provider shapes; the
     producer/consumer pattern is identical, only the
     propagation channel differs.
+  * ``TAINT-005`` (Buildkite, *landed*) — cross-step flow via
+    ``buildkite-agent meta-data set / get`` per-build store.
+    Confirms the engine extends to non-file-based propagation
+    channels, the meta-data CLI talks to a server-side key/
+    value store rather than an artifact path. Buildkite's
+    meta-data is per-build (not per-step) so the engine
+    skips temporal ordering and fires on any pipeline that
+    contains both a tainted set and a get on the same key.
 
 Next gaps: end-to-end coupling between the
 ``--resolve-remote`` resolver and the GHA pass-4 forward

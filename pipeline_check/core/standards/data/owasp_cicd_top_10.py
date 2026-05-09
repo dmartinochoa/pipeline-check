@@ -477,6 +477,7 @@ STANDARD = Standard(
         "TAINT-002": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-job taint via jobs.<id>.outputs:
         "TAINT-003": ["CICD-SEC-4", "CICD-SEC-1"],  # tainted with: forward into reusable workflow
         "TAINT-004": ["CICD-SEC-4", "CICD-SEC-1"],  # GitLab dotenv cross-job taint flow
+        "TAINT-005": ["CICD-SEC-4", "CICD-SEC-1"],  # Buildkite meta-data cross-step taint flow
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
