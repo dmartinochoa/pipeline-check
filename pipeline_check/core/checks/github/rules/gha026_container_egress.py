@@ -1,4 +1,4 @@
-"""GHA-026 — container-job ``options:`` must not disable isolation."""
+"""GHA-026, container-job ``options:`` must not disable isolation."""
 from __future__ import annotations
 
 import re
@@ -25,7 +25,7 @@ RULE = Rule(
     ),
     docs_note=(
         "GitHub-hosted runners execute ``container:`` jobs inside a "
-        "Docker container the runner itself manages — normally a "
+        "Docker container the runner itself manages, normally a "
         "hardened, network-namespaced sandbox. ``options:`` is a "
         "free-text passthrough to ``docker run``; a flag that breaks "
         "the sandbox (shares host network/PID, runs privileged, "

@@ -1,4 +1,4 @@
-"""GHA-001 — Actions must be pinned to a 40-char commit SHA."""
+"""GHA-001. Actions must be pinned to a 40-char commit SHA."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
         "Every `uses:` reference should pin a specific 40-char commit "
         "SHA. Tag and branch refs (`@v4`, `@main`) can be silently "
         "moved to malicious commits by whoever controls the upstream "
-        "repository — a third-party action compromise will propagate "
+        "repository, a third-party action compromise will propagate "
         "into the pipeline on the next run."
     ),
 )

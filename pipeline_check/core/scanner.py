@@ -1,4 +1,4 @@
-"""Scanner — orchestrates check classes via the provider registry.
+"""Scanner, orchestrates check classes via the provider registry.
 
 Adding a new provider or check module never requires editing this file.
 See the relevant provider module for instructions:
@@ -8,6 +8,7 @@ See the relevant provider module for instructions:
 """
 from __future__ import annotations
 
+import fnmatch
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -78,7 +79,7 @@ class Scanner:
             for k, v in (overrides or {}).items()
         }
         #: Attack-chains detected by the most recent ``run()``. Populated
-        #: as a side effect — chains derive from findings 1:1 with the
+        #: as a side effect, chains derive from findings 1:1 with the
         #: run, so consumers always want both together. Empty list when
         #: chains are disabled or no chains matched.
         self.chains: list[Chain] = []
@@ -111,32 +112,51 @@ class Scanner:
         _secret_registry.reset_patterns()
         for pat in secret_patterns or ():
             _secret_registry.register_pattern(pat)
-        self._context: Any = provider.build_context(
-            region=region, profile=profile, **provider_kwargs
+        self._context = self._build_context(
+            provider, region, profile, diff_base, provider_kwargs,
         )
-        if diff_base:
-            _filter_context_by_diff(self._context, diff_base, self.pipeline)
-
-        # ``post_filter`` runs after the diff filter so resolver-driven
-        # provider extensions (GHA reusable workflow resolution) don't
-        # waste fetches on callers that the diff filter already pruned.
-        try:
-            provider.post_filter(self._context, **provider_kwargs)
-        except Exception as exc:
-            # Defensive: a misbehaving provider hook must not crash the
-            # whole scan. Surface it as a context warning instead.
-            warnings_list = getattr(self._context, "warnings", None)
-            if isinstance(warnings_list, list):
-                warnings_list.append(
-                    f"[{self.pipeline}] post_filter hook raised: {exc}"
-                )
-
         self.metadata = ScanMetadata(
             provider=self.pipeline,
             files_scanned=getattr(self._context, "files_scanned", 0),
             files_skipped=getattr(self._context, "files_skipped", 0),
             warnings=list(getattr(self._context, "warnings", [])),
         )
+
+    def _build_context(
+        self,
+        provider: Any,
+        region: str,
+        profile: str | None,
+        diff_base: str | None,
+        provider_kwargs: dict[str, Any],
+    ) -> Any:
+        """Construct the provider context, apply the diff filter, run
+        ``post_filter``.
+
+        Pulled out of ``__init__`` so tests can substitute their own
+        context-building strategy without re-implementing the rest of
+        Scanner construction. ``post_filter`` exceptions never abort
+        the scan, they're surfaced as a context warning so the
+        operator sees the breakage in the report's metadata block.
+        """
+        ctx: Any = provider.build_context(
+            region=region, profile=profile, **provider_kwargs,
+        )
+        if diff_base:
+            _filter_context_by_diff(ctx, diff_base, self.pipeline)
+
+        # ``post_filter`` runs after the diff filter so resolver-driven
+        # provider extensions (GHA reusable workflow resolution) don't
+        # waste fetches on callers that the diff filter already pruned.
+        try:
+            provider.post_filter(ctx, **provider_kwargs)
+        except Exception as exc:
+            warnings_list = getattr(ctx, "warnings", None)
+            if isinstance(warnings_list, list):
+                warnings_list.append(
+                    f"[{self.pipeline}] post_filter hook raised: {exc}"
+                )
+        return ctx
 
     @staticmethod
     def _load_custom_rules(
@@ -146,28 +166,26 @@ class Scanner:
 
         Built-in IDs come from the union of every provider's rule
         registry. We deliberately don't filter by the active pipeline
-        — a custom rule with id ``GHA-001`` is rejected even when the
+       , a custom rule with id ``GHA-001`` is rejected even when the
         current scan is ``--pipeline kubernetes``, because the same
         rule file should round-trip across providers without surprise.
         """
         if not paths:
             return LoadedCustomRules()
         builtin_ids: set[str] = set()
-        # Built-in YAML providers expose their IDs through the same
-        # ``discover_rules`` helper the orchestrators use. We import
-        # lazily to avoid pulling in every rule module when no custom
-        # rules were configured.
+        # Discover rule packages from the filesystem. Adding a new
+        # provider under ``pipeline_check/core/checks/<name>/rules/``
+        # automatically participates in collision detection, no
+        # registry edit required. The same import is also used by the
+        # CLI's ``--list-checks`` / completion path, so the source of
+        # truth stays singular.
+        from pathlib import Path as _Path
+
         from .checks.rule import discover_rules
-        builtin_packages = (
-            "pipeline_check.core.checks.github.rules",
-            "pipeline_check.core.checks.gitlab.rules",
-            "pipeline_check.core.checks.bitbucket.rules",
-            "pipeline_check.core.checks.azure.rules",
-            "pipeline_check.core.checks.jenkins.rules",
-            "pipeline_check.core.checks.circleci.rules",
-            "pipeline_check.core.checks.cloudbuild.rules",
-            "pipeline_check.core.checks.kubernetes.rules",
-            "pipeline_check.core.checks.dockerfile.rules",
+        checks_root = _Path(__file__).parent / "checks"
+        builtin_packages = sorted(
+            f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
+            for p in checks_root.glob("*/rules/__init__.py")
         )
         for pkg in builtin_packages:
             try:
@@ -189,7 +207,7 @@ class Scanner:
         """Return the list of components the active provider discovered.
 
         Delegates to ``provider.inventory(context)``. Safe to call
-        independently of ``run()`` — shift-left providers answer from
+        independently of ``run()``, shift-left providers answer from
         the already-loaded context, the AWS provider performs a fresh
         enumeration pass (one extra round-trip per service). Either
         call order works:
@@ -205,7 +223,7 @@ class Scanner:
         type_patterns:
             Optional glob patterns (``aws_*``, ``AWS::IAM::*``,
             ``workflow``). A component is kept when its ``type`` matches
-            any pattern. Case-sensitive — CFN types are PascalCase,
+            any pattern. Case-sensitive. CFN types are PascalCase,
             Terraform types are snake_case; callers should match the
             casing of the provider they're slicing.
         """
@@ -216,7 +234,6 @@ class Scanner:
             return []
         components = provider.inventory(self._context)
         if type_patterns:
-            import fnmatch
             components = [
                 c for c in components
                 if any(fnmatch.fnmatchcase(c.type, p) for p in type_patterns)
@@ -269,7 +286,6 @@ class Scanner:
             # Support glob patterns (``GHA-*``, ``*-008``) alongside
             # exact IDs. fnmatch semantics: ``*`` matches any run of
             # chars, ``?`` matches one, ``[abc]`` matches a set.
-            import fnmatch
             patterns = [c.upper() for c in checks]
             findings = [
                 f for f in findings
@@ -289,7 +305,7 @@ class Scanner:
                 f.confidence = confidence_for(f.check_id)
             # Apply user-configured per-rule overrides last so they
             # win over both the rule-default severity and any rule-set
-            # confidence. Unknown check IDs are silently ignored — the
+            # confidence. Unknown check IDs are silently ignored, the
             # config loader already warned on the typo. ``getattr``
             # guards against callers that bypass ``__init__`` (older
             # AWS test fixtures construct the Scanner via ``__new__``
@@ -302,14 +318,14 @@ class Scanner:
                     try:
                         f.severity = Severity(sev_str.upper())
                     except ValueError:
-                        # Defensive — config loader filters bad values
+                        # Defensive, config loader filters bad values
                         # already, but a programmatic caller could
                         # pass anything.
                         pass
 
         # Attack-chain correlation runs after confidence is finalised so
         # ``min_confidence(triggers)`` reflects the post-demotion value.
-        # A chain rule that crashes never aborts the scan — chains are
+        # A chain rule that crashes never aborts the scan, chains are
         # an additive signal, not a gate. ``getattr`` guards against
         # callers that bypass ``__init__`` (older tests use ``__new__``
         # + manual attribute setting); default-on matches the CLI
@@ -333,7 +349,7 @@ def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
 
     Terraform provider: filter ``planned_values.root_module.resources``
     by whether any ``.tf`` file mentioning the resource address
-    changed. Coarse but correct — if nothing in the plan's source
+    changed. Coarse but correct, if nothing in the plan's source
     files changed, nothing in the plan can have changed.
 
     AWS provider: ``--diff-base`` has no natural analogue (live API
@@ -341,7 +357,7 @@ def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:
     silently ignoring the flag.
 
     ``changed_files`` returning ``None`` (git missing / base ref bad)
-    is treated as "no filter" — better to over-scan than to silently
+    is treated as "no filter", better to over-scan than to silently
     skip everything in CI.
     """
     if provider == "aws":
@@ -392,7 +408,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     module_dirs_changed = {
         _tf_dir(p) for p in tf_files_touched if _tf_dir(p)
     }
-    # Defensive nested-dict traversal — a malformed plan with a
+    # Defensive nested-dict traversal, a malformed plan with a
     # non-dict ``planned_values`` or ``root_module`` value would
     # otherwise raise AttributeError here. Missing/wrong shape → skip
     # the filter (safer to over-scan than to crash the CI run).
@@ -407,7 +423,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
         return
 
     def _keep(res: Any) -> bool:
-        # Fail open on shape errors — a malformed plan with a non-dict
+        # Fail open on shape errors, a malformed plan with a non-dict
         # resource entry shouldn't crash the diff filter. The
         # surrounding helpers already chose "skip the filter, scan
         # everything" over raising on bad shape; this preserves that
@@ -419,7 +435,7 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
             return True
         if not addr.startswith("module."):
             return root_changed
-        # module.<name>.<type>.<...> — use <name> as a directory hint.
+        # module.<name>.<type>.<...>, use <name> as a directory hint.
         parts = addr.split(".")
         if len(parts) < 2:
             return root_changed

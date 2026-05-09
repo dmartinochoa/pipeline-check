@@ -1,6 +1,6 @@
 # Terraform provider
 
-Scans a parsed **`terraform show -json`** plan document — no live AWS
+Scans a parsed **`terraform show -json`** plan document, no live AWS
 credentials required. The provider reads the resolved, typed resource
 representation Terraform emits post-`plan`, so checks never parse raw HCL.
 
@@ -47,29 +47,29 @@ actually reads are listed below.
 
 | Check   | Attribute(s) read                                                                    |
 |---------|--------------------------------------------------------------------------------------|
-| CB-001  | `environment[0].environment_variable[*].{name,type}` — `type` defaults to PLAINTEXT  |
+| CB-001  | `environment[0].environment_variable[*].{name,type}`, `type` defaults to PLAINTEXT  |
 | CB-002  | `environment[0].privileged_mode`                                                     |
 | CB-003  | `logs_config[0].cloudwatch_logs[0].status`, `logs_config[0].s3_logs[0].status`       |
 | CB-004  | `build_timeout` (minutes)                                                            |
 | CB-005  | `environment[0].image` (matched against `aws/codebuild/standard:<major>.<minor>`)    |
-| CB-006  | `source[0].{type, auth[0].type}` + `aws_codebuild_source_credential.{server_type, auth_type}` — external VCS with OAUTH/PAT/BASIC_AUTH fails |
-| CB-007  | `aws_codebuild_webhook.{project_name, filter_group[*]}` — no filter group fails      |
+| CB-006  | `source[0].{type, auth[0].type}` + `aws_codebuild_source_credential.{server_type, auth_type}`, external VCS with OAUTH/PAT/BASIC_AUTH fails |
+| CB-007  | `aws_codebuild_webhook.{project_name, filter_group[*]}`, no filter group fails      |
 
 ### CodePipeline (`aws_codepipeline`)
 
 | Check   | Attribute(s) read                                                                              |
 |---------|------------------------------------------------------------------------------------------------|
-| CP-001  | `stage[*].action[*].category` — fails if any `Deploy` action precedes any `Approval`           |
-| CP-002  | `artifact_store[*].encryption_key[*]` — non-empty means customer-managed KMS                   |
-| CP-003  | `stage[*].action[*]` where `category="Source"` — fails on `configuration.PollForSourceChanges=true` |
-| CP-004  | `stage[*].action[*]` where `category="Source"` — fails on `owner="ThirdParty"` + `provider="GitHub"` |
+| CP-001  | `stage[*].action[*].category`, fails if any `Deploy` action precedes any `Approval`           |
+| CP-002  | `artifact_store[*].encryption_key[*]`, non-empty means customer-managed KMS                   |
+| CP-003  | `stage[*].action[*]` where `category="Source"`, fails on `configuration.PollForSourceChanges=true` |
+| CP-004  | `stage[*].action[*]` where `category="Source"`, fails on `owner="ThirdParty"` + `provider="GitHub"` |
 
 ### CodeDeploy (`aws_codedeploy_deployment_group`)
 
 | Check   | Attribute(s) read                                                                  |
 |---------|------------------------------------------------------------------------------------|
-| CD-001  | `auto_rollback_configuration[0].{enabled, events}` — requires `DEPLOYMENT_FAILURE` |
-| CD-002  | `deployment_config_name` — fails when in `CodeDeployDefault.*AllAtOnce`            |
+| CD-001  | `auto_rollback_configuration[0].{enabled, events}`, requires `DEPLOYMENT_FAILURE` |
+| CD-002  | `deployment_config_name`, fails when in `CodeDeployDefault.*AllAtOnce`            |
 | CD-003  | `alarm_configuration[0].{enabled, alarms}`                                         |
 
 ### ECR
@@ -78,9 +78,9 @@ actually reads are listed below.
 |---------|------------------------------------------------------------------------------------|
 | ECR-001 | `aws_ecr_repository.image_scanning_configuration[0].scan_on_push`                  |
 | ECR-002 | `aws_ecr_repository.image_tag_mutability`                                          |
-| ECR-003 | `aws_ecr_repository_policy.policy` (JSON) joined on `repository` — fails on `Principal: "*"` |
+| ECR-003 | `aws_ecr_repository_policy.policy` (JSON) joined on `repository`, fails on `Principal: "*"` |
 | ECR-004 | Presence of an `aws_ecr_lifecycle_policy` joined on `repository`                   |
-| ECR-005 | `aws_ecr_repository.encryption_configuration[0].{encryption_type, kms_key}` — requires KMS + CMK ARN |
+| ECR-005 | `aws_ecr_repository.encryption_configuration[0].{encryption_type, kms_key}`, requires KMS + CMK ARN |
 
 ### IAM (only roles trusted by CodeBuild/Pipeline/Deploy)
 
@@ -90,19 +90,19 @@ Scope filter: `aws_iam_role.assume_role_policy` includes
 
 | Check   | Attribute(s) read                                                                                 |
 |---------|---------------------------------------------------------------------------------------------------|
-| IAM-001 | `managed_policy_arns` + `aws_iam_role_policy_attachment.policy_arn` — fails on `AdministratorAccess` |
-| IAM-002 | `aws_iam_role_policy.policy` + `aws_iam_role.inline_policy[*].policy` — fails on `Action: "*"`    |
+| IAM-001 | `managed_policy_arns` + `aws_iam_role_policy_attachment.policy_arn`, fails on `AdministratorAccess` |
+| IAM-002 | `aws_iam_role_policy.policy` + `aws_iam_role.inline_policy[*].policy`, fails on `Action: "*"`    |
 | IAM-003 | `aws_iam_role.permissions_boundary`                                                               |
-| IAM-004 | Same policy sources as IAM-002 — fails on `iam:PassRole` / `iam:*` / `*` with `Resource: "*"`    |
-| IAM-005 | `aws_iam_role.assume_role_policy` — external AWS principal without `sts:ExternalId` condition     |
-| IAM-006 | Same policy sources as IAM-002 — fails on sensitive-service actions (s3/kms/secretsmanager/ssm/iam/sts/dynamodb/lambda/ec2) with `Resource: "*"` |
+| IAM-004 | Same policy sources as IAM-002, fails on `iam:PassRole` / `iam:*` / `*` with `Resource: "*"`    |
+| IAM-005 | `aws_iam_role.assume_role_policy`, external AWS principal without `sts:ExternalId` condition     |
+| IAM-006 | Same policy sources as IAM-002, fails on sensitive-service actions (s3/kms/secretsmanager/ssm/iam/sts/dynamodb/lambda/ec2) with `Resource: "*"` |
 
 ### PBAC (`aws_codebuild_project`)
 
 | Check    | Attribute(s) read                                                                     |
 |----------|---------------------------------------------------------------------------------------|
-| PBAC-001 | `vpc_config[0].{vpc_id, subnets, security_group_ids}` — all three required           |
-| PBAC-002 | `service_role` — fails when two or more projects share the same role ARN              |
+| PBAC-001 | `vpc_config[0].{vpc_id, subnets, security_group_ids}`, all three required           |
+| PBAC-002 | `service_role`, fails when two or more projects share the same role ARN              |
 
 ### S3 (artifact buckets discovered from pipelines)
 
@@ -115,9 +115,9 @@ Per bucket, the helper resources below are joined by `bucket` name.
 | S3-002  | `aws_s3_bucket_server_side_encryption_configuration`       | `rule[0].apply_server_side_encryption_by_default[0].sse_algorithm`                |
 | S3-003  | `aws_s3_bucket_versioning`                                 | `versioning_configuration[0].status == "Enabled"`                                 |
 | S3-004  | `aws_s3_bucket_logging`                                    | `target_bucket`                                                                   |
-| S3-005  | `aws_s3_bucket_policy`                                     | `policy` (JSON) — requires Deny on `s3:*` where `aws:SecureTransport=false`        |
+| S3-005  | `aws_s3_bucket_policy`                                     | `policy` (JSON), requires Deny on `s3:*` where `aws:SecureTransport=false`        |
 
-If a helper resource is absent for a given bucket, the check fails —
+If a helper resource is absent for a given bucket, the check fails,
 matching the AWS-provider behavior where the service returns the default
 (usually "not configured").
 
@@ -128,8 +128,8 @@ matching the AWS-provider behavior where the service returns the default
 | SIGN-001 | `aws_lambda_function`, `aws_signer_signing_profile`      | Gated: only emits when a Lambda references `code_signing_config_arn`. Passes if a profile with `platform_id = AWSLambda-*` exists. |
 | EB-002   | `aws_cloudwatch_event_target`                            | Fails when `arn` contains a literal `*`.                                            |
 | CW-001   | `aws_codebuild_project`, `aws_cloudwatch_metric_alarm`   | Gated: only emits when the plan declares CodeBuild. Passes if any alarm has `namespace = AWS/CodeBuild` and `metric_name = FailedBuilds`. |
-| TF-001   | `aws_iam_access_key`                                     | Fails for every `aws_iam_access_key` — long-lived keys as code store credential material in state. |
-| TF-002   | Stateful data stores (`aws_db_instance`, `aws_rds_cluster`, `aws_redshift_cluster`, `aws_elasticache_replication_group`, `aws_docdb_cluster`, `aws_neptune_cluster`, `aws_opensearch_domain`, `aws_memorydb_cluster`) | Fails when a string leaf matches `SECRET_VALUE_RE` (vendor tokens) or a secret-named attribute (`*password`, `*token`, …) carries an 8+ char value that is not a Terraform interpolation residue or a documented placeholder. `aws_lambda_function` / `aws_ssm_parameter` / `aws_codebuild_project` / `aws_secretsmanager_secret_version` are skipped — covered by LMB-003, SSM-001, CB-001, or intentional. |
+| TF-001   | `aws_iam_access_key`                                     | Fails for every `aws_iam_access_key`, long-lived keys as code store credential material in state. |
+| TF-002   | Stateful data stores (`aws_db_instance`, `aws_rds_cluster`, `aws_redshift_cluster`, `aws_elasticache_replication_group`, `aws_docdb_cluster`, `aws_neptune_cluster`, `aws_opensearch_domain`, `aws_memorydb_cluster`) | Fails when a string leaf matches `SECRET_VALUE_RE` (vendor tokens) or a secret-named attribute (`*password`, `*token`, …) carries an 8+ char value that is not a Terraform interpolation residue or a documented placeholder. `aws_lambda_function` / `aws_ssm_parameter` / `aws_codebuild_project` / `aws_secretsmanager_secret_version` are skipped, covered by LMB-003, SSM-001, CB-001, or intentional. |
 | TF-003   | `aws_codebuild_project`, `aws_subnet`                    | When `vpc_config[0].vpc_id` is a resolved string, fails if any `aws_subnet` in the same `vpc_id` has `map_public_ip_on_launch = true`. Silent when `vpc_id` is unresolved ("known after apply"). |
 
 ## Working with data sources
@@ -137,14 +137,14 @@ matching the AWS-provider behavior where the service returns the default
 The context exposes a second iterator, `ctx.data_sources(type=None)`,
 for resources with `mode="data"` (e.g. `aws_iam_policy_document`,
 `aws_caller_identity`). Managed-resource iteration via `ctx.resources()`
-is unchanged — rules that only care about to-be-created state keep
+is unchanged, rules that only care about to-be-created state keep
 their current semantics. Checks that need to follow an indirect
 reference (for instance, a policy-document `.json` rendered by a data
 source and consumed via a module output) can now join against the
 data-source list.
 
 In most plans Terraform already resolves `aws_iam_policy_document`
-data sources inline — the rendered JSON arrives on `aws_iam_policy.policy`
+data sources inline, the rendered JSON arrives on `aws_iam_policy.policy`
 or `aws_iam_role_policy.policy` directly and the IAM checks see it
 without any extra work. The new iterator only matters when the data
 source depends on a to-be-created resource and Terraform defers it to

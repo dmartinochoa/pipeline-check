@@ -1,4 +1,4 @@
-"""K8S-007 — Container ``runAsNonRoot`` not true / ``runAsUser`` is 0."""
+"""K8S-007. Container ``runAsNonRoot`` not true / ``runAsUser`` is 0."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
         "``runAsUser: <non-zero UID>`` on every container, OR set "
         "the same fields at pod level so all containers inherit. "
         "Running as UID 0 inside a container makes container-escape "
-        "exploits dramatically more dangerous — the attacker already "
+        "exploits dramatically more dangerous, the attacker already "
         "has root inside the container, so any kernel CVE that "
         "matters becomes immediately exploitable."
     ),

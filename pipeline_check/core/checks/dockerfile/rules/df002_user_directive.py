@@ -1,4 +1,4 @@
-"""DF-002 — image runs as root (no ``USER`` directive, or ``USER root``)."""
+"""DF-002, image runs as root (no ``USER`` directive, or ``USER root``)."""
 from __future__ import annotations
 
 from ...base import Finding, Location, Severity
@@ -15,7 +15,7 @@ RULE = Rule(
     recommendation=(
         "Add a ``USER <non-root>`` directive after package install steps "
         "(e.g. ``USER 1001`` or ``USER appuser``). Running as root inside "
-        "a container is not isolation — a kernel CVE, a misconfigured "
+        "a container is not isolation, a kernel CVE, a misconfigured "
         "mount, or a mis-applied capability collapses straight into the "
         "host."
     ),
@@ -33,7 +33,7 @@ def _last_stage_user(df: Dockerfile) -> tuple[str | None, int | None, int | None
     ``user`` is the USER value active at the end of the final stage
     (None if absent). ``user_line`` is the line of the offending USER
     directive when one is present (None if absent). ``final_from_line``
-    is the line of the final ``FROM`` — used as the location anchor
+    is the line of the final ``FROM``, used as the location anchor
     when no USER directive exists in the final stage.
     """
     final_user: str | None = None
@@ -54,13 +54,13 @@ def _last_stage_user(df: Dockerfile) -> tuple[str | None, int | None, int | None
 
 
 def check(df: Dockerfile) -> Finding:
-    # If no FROM at all, this isn't a runnable Dockerfile — silent pass
+    # If no FROM at all, this isn't a runnable Dockerfile, silent pass
     # (DF-001 will already have flagged a missing image).
     if not any(ins.directive == "FROM" for ins in iter_instructions(df, directive="FROM")):
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=df.path,
-            description="Dockerfile contains no FROM directive — runtime identity not applicable.",
+            description="Dockerfile contains no FROM directive, runtime identity not applicable.",
             recommendation="No action required.", passed=True,
         )
     user, user_line, final_from_line = _last_stage_user(df)
@@ -68,11 +68,11 @@ def check(df: Dockerfile) -> Finding:
     if user is None:
         passed = False
         desc = (
-            "Final stage has no ``USER`` directive — the image runs as "
+            "Final stage has no ``USER`` directive, the image runs as "
             "root by default, which collapses container isolation in the "
             "presence of any kernel CVE or mount misconfiguration."
         )
-        # Anchor on the final FROM — that's where the absent USER
+        # Anchor on the final FROM, that's where the absent USER
         # directive's stage starts.
         if final_from_line is not None:
             locations.append(Location(
@@ -82,7 +82,7 @@ def check(df: Dockerfile) -> Finding:
     elif user.lower() in ("root", "0", "0:0"):
         passed = False
         desc = (
-            f"Final stage explicitly sets ``USER {user}`` — equivalent "
+            f"Final stage explicitly sets ``USER {user}``, equivalent "
             f"to running as root. Switch to a dedicated non-root user "
             f"(``useradd --uid 1001 app && USER app``)."
         )

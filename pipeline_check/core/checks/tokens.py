@@ -26,16 +26,16 @@ SBOM_DIRECT_TOKENS = (
     "spdx-sbom-generator", "microsoft/sbom-tool",
 )
 
-# Provenance tokens — narrower than SIGN_TOKENS. SLSA Build L3 requires
+# Provenance tokens, narrower than SIGN_TOKENS. SLSA Build L3 requires
 # an in-toto attestation produced by a hardened builder, not just a
 # signed artifact. Anything here provably produces a provenance
 # attestation; ``cosign sign`` alone does NOT (it signs the artifact
 # but doesn't emit an in-toto statement describing how it was built).
 PROVENANCE_TOKENS = (
-    "slsa-github-generator",        # GHA — SLSA Level 3 builder
+    "slsa-github-generator",        # GHA. SLSA Level 3 builder
     "slsa-framework/slsa-",          # SLSA GitHub org actions
-    "actions/attest-build-provenance",  # GHA — native build-provenance action
-    "actions/attest@",               # GHA — generic attest action
+    "actions/attest-build-provenance",  # GHA, native build-provenance action
+    "actions/attest@",               # GHA, generic attest action
     "cosign attest",                 # sigstore attestation (distinct from `cosign sign`)
     "witness run",                   # testifysec/witness attestor
     "in-toto-attestation",           # in-toto library/CLI
@@ -66,7 +66,21 @@ _ARTIFACT_TOKENS = (
 )
 
 
-#: Vulnerability scanning tool tokens — same detection pattern as
+# Substrings the artifact heuristic must ignore: GitHub Pages
+# deployments embed the verbs ``deploy`` / ``publish`` in canonical
+# action names (``actions/deploy-pages``, ``actions/upload-pages-
+# artifact``) but ship a static site, not a software artifact, and
+# don't need cosign / SBOM / SLSA-attest. Pre-strip these zones from
+# the blob before the bare-token match runs so the catch-all tokens
+# above don't bleed into Pages-only workflows.
+_ARTIFACT_TOKEN_EXCLUDE_ZONES = (
+    "actions/deploy-pages",
+    "actions/upload-pages-artifact",
+    "actions/configure-pages",
+)
+
+
+#: Vulnerability scanning tool tokens, same detection pattern as
 #: ``has_signing`` / ``has_sbom``.
 VULN_SCAN_TOKENS = (
     "trivy ", "grype ", "snyk ", "npm audit", "yarn audit",
@@ -83,8 +97,27 @@ def produces_artifacts(doc: Any) -> bool:
     Heuristic: if no artifact-production token appears anywhere in the
     workflow's string content, the workflow is likely lint/test-only and
     the signing/SBOM/vulnerability-scanning checks should not fire.
+
+    Pages-only workflows are recognized structurally and return False
+    even when the blob contains the substring ``deploy`` (which would
+    otherwise match via step names like "Deploy to GitHub Pages" or
+    step ids like ``id: deployment``). The presence of
+    ``actions/deploy-pages`` is the unambiguous signal: that action
+    can only deploy a static GitHub Pages site, never a software
+    artifact, and the rest of the workflow's verbiage about
+    "deployment" is incidental to that.
+
+    The substring zones are also pre-stripped so a workflow that
+    *also* has a real artifact-producing step (e.g. publishes a
+    package AND has Pages docs) still returns True via the genuine
+    artifact token while the Pages action's own substrings can't
+    contribute.
     """
     blob = blob_lower(doc)
+    if "actions/deploy-pages" in blob:
+        return False
+    for zone in _ARTIFACT_TOKEN_EXCLUDE_ZONES:
+        blob = blob.replace(zone, "")
     return any(tok in blob for tok in _ARTIFACT_TOKENS)
 
 
@@ -96,7 +129,7 @@ def has_signing(doc: Any) -> bool:
 def has_provenance(doc: Any) -> bool:
     """Return True when the workflow emits an in-toto/SLSA provenance attestation.
 
-    Distinct from :func:`has_signing` — a workflow that only runs
+    Distinct from :func:`has_signing`, a workflow that only runs
     ``cosign sign`` signs the artifact but doesn't produce a
     provenance statement describing *how* the artifact was built.
     SLSA Build Level 3 requires the latter.
@@ -104,7 +137,7 @@ def has_provenance(doc: Any) -> bool:
     Note: PyPI trusted publishing's PEP 740 attestations are also
     valid provenance, but the ``with: { attestations: true }`` opt-in
     is a structural signal (YAML parses ``true`` as a bool, not a
-    string) — the per-rule check in
+    string), the per-rule check in
     ``checks/github/rules/gha024_slsa_provenance.py`` covers that
     case directly.
     """

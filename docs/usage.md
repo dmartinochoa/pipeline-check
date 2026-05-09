@@ -15,7 +15,7 @@ keeps the CLI out of your project environment.
 
 ## First scan (auto-detect)
 
-Run with no flags in any supported repo — the working directory is
+Run with no flags in any supported repo, the working directory is
 inspected and the matching provider is selected:
 
 ```bash
@@ -43,8 +43,12 @@ pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 pipeline_check --pipeline circleci --circleci-path .circleci/config.yml
 pipeline_check --pipeline bitbucket --bitbucket-path bitbucket-pipelines.yml
 pipeline_check --pipeline cloudbuild --cloudbuild-path cloudbuild.yaml
+pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
+pipeline_check --pipeline tekton --tekton-path tekton/
+pipeline_check --pipeline argo --argo-path workflows/
 pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
+pipeline_check --pipeline helm --helm-path charts/myapp/
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
@@ -84,7 +88,7 @@ pipeline_check --max-failures 10
 
 Gate details: [ci_gate.md](ci_gate.md).
 
-## AWS live scans — credentials
+## AWS live scans: credentials
 
 The AWS provider uses the standard boto3 credential chain. Any of these
 work:
@@ -145,7 +149,7 @@ pipeline_check --fix --apply      # write patches in place
 pipeline_check --fix | git apply  # review first, then apply
 ```
 
-103 fixers cover pinning, secrets, timeouts, TLS bypass, script
+111 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 
@@ -215,7 +219,7 @@ Precedence: CLI > env > config file > defaults.
 
 ```bash
 pipeline_check -v       # debug logs to stderr (per-check timing, API calls)
-pipeline_check -q       # suppress all output — rely on the exit code
+pipeline_check -q       # suppress all output, rely on the exit code
 ```
 
 ## Extended manual pages
@@ -232,10 +236,10 @@ pipeline_check --man standards
 
 ## See also
 
-- [providers/](providers/README.md) — per-provider check reference
-- [standards/](standards/README.md) — compliance mappings
-- [config.md](config.md) — full config-file schema
-- [ci_gate.md](ci_gate.md) — gate logic and baselines
-- [output.md](output.md) — output format schemas
-- [attack_chains.md](attack_chains.md) — chain detection
-- [scoring_model.md](scoring_model.md) — how grades are computed
+- [providers/](providers/README.md): per-provider check reference
+- [standards/](standards/README.md): compliance mappings
+- [config.md](config.md): full config-file schema
+- [ci_gate.md](ci_gate.md): gate logic and baselines
+- [output.md](output.md): output format schemas
+- [attack_chains.md](attack_chains.md): chain detection
+- [scoring_model.md](scoring_model.md): how grades are computed

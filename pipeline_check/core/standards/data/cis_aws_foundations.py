@@ -1,4 +1,4 @@
-"""CIS AWS Foundations Benchmark v3.0.0 — subset covering CI/CD-relevant controls.
+"""CIS AWS Foundations Benchmark v3.0.0, subset covering CI/CD-relevant controls.
 
 Only the controls this scanner's checks can evidence are included. A single
 pipeline_check check may satisfy evidence for multiple CIS controls; likewise,
@@ -48,12 +48,12 @@ STANDARD = Standard(
         "S3-003":  ["2.1.2"],
         "S3-004":  ["3.6"],
         "S3-005":  ["2.1.2"],
-        # KMS — rotation is direct (3.8); a wildcard policy on a CMK is
+        # KMS, rotation is direct (3.8); a wildcard policy on a CMK is
         # the same admin-privilege failure mode CIS 1.16 calls out for
         # IAM, applied to a key resource policy.
         "KMS-001": ["3.8"],
         "KMS-002": ["1.16"],
-        # CloudTrail — trail existence + multi-region together evidence
+        # CloudTrail, trail existence + multi-region together evidence
         # 3.1; log file validation is the dedicated 3.2 control.
         "CT-001":  ["3.1"],
         "CT-002":  ["3.2"],
@@ -73,7 +73,7 @@ STANDARD = Standard(
         # CIS 3.7 scopes "logs encrypted at rest with CMK" to
         # CloudTrail's S3 destination. The same control applies by
         # analogy to every CI/CD storage surface that holds artifact
-        # / source / config / secret material — pipeline-check
+        # / source / config / secret material, pipeline-check
         # extends 3.7 to CodeArtifact domains, CodeCommit repos,
         # CodePipeline artifact stores, ECR repos, Lambda env vars,
         # and SSM SecureStrings. CIS doesn't enumerate these

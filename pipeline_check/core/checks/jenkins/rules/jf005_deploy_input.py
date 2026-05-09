@@ -1,4 +1,4 @@
-"""JF-005 — deploy stages must have a manual `input` approval gate."""
+"""JF-005, deploy stages must have a manual `input` approval gate."""
 from __future__ import annotations
 
 import re

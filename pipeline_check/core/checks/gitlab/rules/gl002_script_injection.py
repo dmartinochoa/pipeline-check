@@ -1,4 +1,4 @@
-"""GL-002 — scripts must not interpolate attacker-controllable commit/MR vars."""
+"""GL-002, scripts must not interpolate attacker-controllable commit/MR vars."""
 from __future__ import annotations
 
 import re
@@ -40,7 +40,7 @@ def _tainted_vars(variables_block: Any) -> set[str]:
     """Return variable names whose values reference untrusted CI variables.
 
     GitLab variable values can be either a plain string or a dict
-    ``{value: "...", description: "..."}`` — both shapes are accepted.
+    ``{value: "...", description: "..."}``, both shapes are accepted.
     """
     if not isinstance(variables_block, dict):
         return set()
@@ -60,7 +60,7 @@ def _gl_ref_pattern(name: str) -> str:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
-    # Pipeline-level tainted variables — inherited by all jobs.
+    # Pipeline-level tainted variables, inherited by all jobs.
     global_tainted = _tainted_vars(doc.get("variables"))
     for name, job in iter_jobs(doc):
         scripts = job_scripts(job)

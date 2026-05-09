@@ -1,4 +1,4 @@
-"""ARGO-001 — Template container images must be digest-pinned."""
+"""ARGO-001. Template container images must be digest-pinned."""
 from __future__ import annotations
 
 import re

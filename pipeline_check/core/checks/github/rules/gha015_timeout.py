@@ -1,4 +1,4 @@
-"""GHA-015 — every job should declare `timeout-minutes`."""
+"""GHA-015, every job should declare `timeout-minutes`."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from ..base import iter_jobs
 
 RULE = Rule(
     id="GHA-015",
-    title="Job has no `timeout-minutes` — unbounded build",
+    title="Job has no `timeout-minutes`, unbounded build",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
@@ -17,7 +17,7 @@ RULE = Rule(
     recommendation=(
         "Add `timeout-minutes:` to each job, sized to the 95th "
         "percentile of historical runtime plus margin. GitHub's "
-        "default is 360 minutes — an explicitly shorter value limits "
+        "default is 360 minutes, an explicitly shorter value limits "
         "blast radius and runner cost."
     ),
     docs_note=(

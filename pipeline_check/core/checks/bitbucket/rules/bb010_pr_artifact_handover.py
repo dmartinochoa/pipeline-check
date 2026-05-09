@@ -1,4 +1,4 @@
-"""BB-010 — deploy steps must verify ingested PR artifacts."""
+"""BB-010, deploy steps must verify ingested PR artifacts."""
 from __future__ import annotations
 
 from typing import Any

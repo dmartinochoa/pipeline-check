@@ -1,4 +1,4 @@
-"""BB-004 — deploy-like steps must declare `deployment:`."""
+"""BB-004, deploy-like steps must declare `deployment:`."""
 from __future__ import annotations
 
 import re

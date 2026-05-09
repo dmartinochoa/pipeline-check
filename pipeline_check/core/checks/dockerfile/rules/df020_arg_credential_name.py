@@ -1,4 +1,4 @@
-"""DF-020 — ``ARG`` declares a credential-named build argument."""
+"""DF-020, ``ARG`` declares a credential-named build argument."""
 from __future__ import annotations
 
 from ..._primitives.secret_shapes import SECRETISH_KEY_RE
@@ -19,14 +19,14 @@ RULE = Rule(
         "a default or from ``--build-arg`` at build time, so a "
         "credential-named ARG leaks the secret to anyone who can pull "
         "the image. Use ``RUN --mount=type=secret,id=<name>`` and "
-        "feed the value with BuildKit's ``--secret`` flag — the "
+        "feed the value with BuildKit's ``--secret`` flag, the "
         "secret never lands in a layer or in the build history."
     ),
     docs_note=(
         "Complements DF-006 (which flags an ENV/ARG with a literal "
         "credential-shaped value). This rule fires on the *name* "
-        "alone — ``ARG NPM_TOKEN``, ``ARG GITHUB_PAT``, "
-        "``ARG DB_PASSWORD`` — even when no default is set, because "
+        "alone, ``ARG NPM_TOKEN``, ``ARG GITHUB_PAT``, "
+        "``ARG DB_PASSWORD``, even when no default is set, because "
         "BuildKit records the resolved value in the image's history "
         "the moment ``--build-arg`` supplies one. Names are matched "
         "via the same ``_primitives/secret_shapes`` regex used by "

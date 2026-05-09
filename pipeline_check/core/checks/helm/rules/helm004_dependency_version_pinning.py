@@ -1,7 +1,7 @@
-"""HELM-004 — Chart dependency version is a range, not an exact pin.
+"""HELM-004. Chart dependency version is a range, not an exact pin.
 
-``dependencies[].version`` accepts the full SemVer range syntax —
-``^1.0.0``, ``~2.3``, ``>=4.5 <5``, ``*`` — same as
+``dependencies[].version`` accepts the full SemVer range syntax
+(``^1.0.0``, ``~2.3``, ``>=4.5 <5``, ``*``), same as
 ``Chart.yaml`` resolves a Go-style constraint at ``helm dependency
 update`` time. The lock file (HELM-002) records whatever version
 that resolution picked, so a later ``helm dependency update`` can
@@ -13,7 +13,7 @@ Note: this rule is about ``Chart.yaml``'s declared constraint, not
 the ``Chart.lock``. The lock catches whatever resolution found, but
 the constraint is what the *next* update will re-resolve against.
 A loose constraint plus a lock is still a chart that will float
-on the next dep-update — the lock's role is reproducibility, not
+on the next dep-update, the lock's role is reproducibility, not
 constraint tightening.
 """
 from __future__ import annotations
@@ -47,7 +47,7 @@ RULE = Rule(
         "``1.2.3+build.5``). Anything carrying ``^`` / ``~`` / "
         "``>`` / ``<`` / ``*`` / ``x`` / ``X`` / ``||`` / a space "
         "(``>=4 <5``) is treated as a range. The bias is toward "
-        "false positives — a chart maintainer can suppress per-rule "
+        "false positives, a chart maintainer can suppress per-rule "
         "via ``--ignore-file`` if they specifically want range "
         "semantics, but the default for production charts is a pin."
     ),

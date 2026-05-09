@@ -1,4 +1,4 @@
-"""SM-002 — Secrets Manager resource policy allows a wildcard principal."""
+"""SM-002. Secrets Manager resource policy allows a wildcard principal."""
 from __future__ import annotations
 
 from ..._iam_policy import iter_allow, public_principal
@@ -24,7 +24,7 @@ RULE = Rule(
         "policy means any principal in any AWS account can call "
         "``GetSecretValue`` (subject to conditions, if any). Always "
         "combine with at least ``aws:SourceAccount`` or "
-        "``aws:PrincipalOrgID`` — the lift-and-shift cross-account "
+        "``aws:PrincipalOrgID``, the lift-and-shift cross-account "
         "secret-access pattern needs scoping."
     ),
 )

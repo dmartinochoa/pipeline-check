@@ -1,4 +1,4 @@
-"""DF-008 — ``RUN`` invokes a privileged docker / capability-add idiom."""
+"""DF-008, ``RUN`` invokes a privileged docker / capability-add idiom."""
 from __future__ import annotations
 
 import re
@@ -19,7 +19,7 @@ RULE = Rule(
         "``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If "
         "the build genuinely requires elevated capabilities (e.g. "
         "compiling a kernel module), do it in a sealed builder image "
-        "and ``COPY`` the artifact out — don't carry the privileged "
+        "and ``COPY`` the artifact out, don't carry the privileged "
         "execution into the runtime image."
     ),
     docs_note=(
@@ -52,7 +52,7 @@ def check(df: Dockerfile) -> Finding:
             offenders.append(f"L{line_no}: {snippet}")
             line_offenders += 1
         if line_offenders:
-            # One Location per offending RUN line — keeps reporters'
+            # One Location per offending RUN line, keeps reporters'
             # click-to-jump tidy when a single RUN chains two
             # privileged invocations.
             locations.append(Location(

@@ -1,4 +1,4 @@
-"""JF-028 — Jenkinsfile must emit SLSA provenance attestation."""
+"""JF-028. Jenkinsfile must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from ...base import PROVENANCE_TOKENS, Finding, Severity
@@ -20,14 +20,14 @@ RULE = Rule(
     ),
     docs_note=(
         "``cosign sign`` signs the artifact bytes. ``cosign attest`` "
-        "signs an in-toto statement describing how the build ran — "
+        "signs an in-toto statement describing how the build ran, "
         "builder, source commit, input parameters. SLSA L3 verifiers "
         "check the latter so consumers can enforce policy on where "
         "and how artifacts were produced."
     ),
 )
 
-# Artifact-production tokens in Groovy/shell — mirrors the heuristic
+# Artifact-production tokens in Groovy/shell, mirrors the heuristic
 # in checks/base.py but narrowed to what appears in Jenkinsfiles so
 # lint/test-only pipelines don't trip this check.
 _ARTIFACT_HINTS = (

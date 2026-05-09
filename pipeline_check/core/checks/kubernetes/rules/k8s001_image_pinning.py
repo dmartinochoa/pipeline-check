@@ -1,4 +1,4 @@
-"""K8S-001 — Container image not pinned by ``@sha256:<digest>``."""
+"""K8S-001. Container image not pinned by ``@sha256:<digest>``."""
 from __future__ import annotations
 
 from ..._primitives.image_pinning import PinKind, classify
@@ -30,7 +30,7 @@ RULE = Rule(
         "Reuses ``_primitives.image_pinning.classify`` so the floating-"
         "tag semantics match DF-001 / GL-001 / JF-009 / ADO-009 / "
         "CC-003. Even a ``PINNED_TAG`` like ``nginx:1.25.4`` is treated "
-        "as unpinned — only an explicit ``@sha256:`` survives, since "
+        "as unpinned, only an explicit ``@sha256:`` survives, since "
         "a tag is mutable on the registry side and Kubernetes will "
         "happily pull the new content on a node restart."
     ),

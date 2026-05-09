@@ -1,9 +1,9 @@
-"""CloudFormation Phase-1 parity — CB-008..010, CT-*, CWL-*, SM-*, IAM-008.
+"""CloudFormation Phase-1 parity. CB-008..010, CT-*, CWL-*, SM-*, IAM-008.
 
 Mirrors ``checks/terraform/extended.py``. IAM-007 (access-key age) is
 runtime-only; the CFN parity rule drops back to nothing. CCM-001 has
 no CFN analogue (CodeCommit approval-rule templates are CLI/SDK-only)
-and is covered — where possible — in services.py.
+and is covered, where possible, in services.py.
 """
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ def _codebuild(ctx: CloudFormationContext) -> list[Finding]:
             ),
             passed=not inline,
         ))
-        # CB-011 — scan the inline buildspec text for indicators of
+        # CB-011, scan the inline buildspec text for indicators of
         # malicious activity. Only meaningful when a buildspec string
         # is present; repo-sourced references have nothing to scan.
         if isinstance(buildspec_raw, str) and inline:
@@ -126,7 +126,7 @@ def _codebuild(ctx: CloudFormationContext) -> list[Finding]:
                 title="CodeBuild buildspec contains indicators of malicious activity",
                 severity=Severity.CRITICAL,
                 resource=r.address,
-                description="Buildspec is repo-sourced or absent — no inline text to scan.",
+                description="Buildspec is repo-sourced or absent, no inline text to scan.",
                 recommendation="No action required.",
                 passed=True,
             ))
@@ -176,7 +176,7 @@ def _codebuild(ctx: CloudFormationContext) -> list[Finding]:
                 resource=r.address,
                 description=(
                     f"FilterGroup(s) {offenders} build PRs but have no "
-                    "ACTOR_ACCOUNT_ID filter — any fork can trigger a build."
+                    "ACTOR_ACCOUNT_ID filter, any fork can trigger a build."
                     if offenders else
                     "Webhook either does not build PRs or pins ACTOR_ACCOUNT_ID."
                 ),
@@ -289,7 +289,7 @@ def _cw_logs(ctx: CloudFormationContext) -> list[Finding]:
 
 def _secrets(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
-    # SM-001 — rotations referenced by SecretId or by !Ref LogicalId.
+    # SM-001, rotations referenced by SecretId or by !Ref LogicalId.
     rotation_targets: set[str] = set()
     for r in ctx.resources("AWS::SecretsManager::RotationSchedule"):
         target = r.properties.get("SecretId")
@@ -316,7 +316,7 @@ def _secrets(ctx: CloudFormationContext) -> list[Finding]:
             recommendation="Declare a RotationSchedule for this secret.",
             passed=has_rot,
         ))
-    # SM-002 — resource policies grant wildcard principal?
+    # SM-002, resource policies grant wildcard principal?
     for policy in ctx.resources("AWS::SecretsManager::ResourcePolicy"):
         doc = _parse_policy(policy.properties.get("ResourcePolicy"))
         offenders = [i for i, s in enumerate(iter_allow(doc)) if public_principal(s)]

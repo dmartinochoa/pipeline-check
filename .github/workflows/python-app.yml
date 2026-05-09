@@ -19,12 +19,13 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         # 3.10 is supported by pyproject.toml (``requires-python = ">=3.10"``)
-        # but excluded from the hash-locked CI install: pytest 9 pulls
-        # in ``exceptiongroup``/``tomli`` conditionally on 3.10, and
-        # the pip-compile that produced requirements-dev.txt ran on a
-        # newer Python so those transitive deps aren't in the lock
-        # file. Re-add 3.10 here once requirements-dev.txt is
-        # regenerated with ``pip-compile`` on Python 3.10.
+        # but excluded from CI: the hash-locked install fails on 3.10
+        # because pytest 9 conditionally pulls ``tomli`` /
+        # ``exceptiongroup``, which the pip-compile that produced
+        # requirements-dev.txt didn't bake in (it ran on a newer
+        # interpreter). The unpinned-fallback path also fails on 3.10
+        # for transitive-resolution reasons. Re-add 3.10 once
+        # ``requirements-dev.txt`` is regenerated under Python 3.10.
         python-version: ["3.11", "3.12", "3.13"]
         include:
           # Windows smoke check on the version most dev laptops run.
@@ -55,21 +56,17 @@ jobs:
           pip install -e .
 
       - name: Lint with ruff
-        run: |
-          pip install ruff
-          ruff check pipeline_check/ tests/
+        # ruff is hash-pinned in requirements-dev.txt; the install step
+        # above already supplied it. Don't re-install here unpinned.
+        run: ruff check pipeline_check/ tests/
 
       - name: Type check with mypy
         # All nine ``mypy --strict`` flags are enabled in
         # ``pyproject.toml``. The two narrow per-module overrides
         # (boto3-leaning AWS modules + ``yaml.SafeLoader`` subclasses)
-        # are documented in the same block. ``--ignore-missing-imports``
-        # is redundant with the pyproject setting but kept here as a
-        # belt-and-suspenders for environments where the config isn't
-        # picked up.
-        run: |
-          pip install mypy
-          mypy pipeline_check/ --ignore-missing-imports
+        # are documented in the same block. mypy is hash-pinned via
+        # requirements-dev.txt, so the install step above provides it.
+        run: mypy pipeline_check/
 
       - name: Test with pytest
         # --cov-fail-under gates the build on coverage regressions. Bump

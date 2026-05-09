@@ -1,4 +1,4 @@
-"""DF-001 — `FROM` not pinned to ``@sha256:<digest>``."""
+"""DF-001, `FROM` not pinned to ``@sha256:<digest>``."""
 from __future__ import annotations
 
 from ..._primitives.image_pinning import PinKind, classify
@@ -25,7 +25,7 @@ RULE = Rule(
         "Reuses ``_primitives/image_pinning.classify`` so the floating-"
         "tag semantics match GL-001 / JF-009 / ADO-009 / CC-003. "
         "``PINNED_TAG`` (e.g. ``python:3.12.1-slim``) is treated as "
-        "unpinned here too — only an explicit ``@sha256:`` survives, "
+        "unpinned here too, only an explicit ``@sha256:`` survives, "
         "since the tag is mutable on the registry side."
     ),
 )

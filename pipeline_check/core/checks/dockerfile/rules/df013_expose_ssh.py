@@ -1,4 +1,4 @@
-"""DF-013 — ``EXPOSE`` declares a sensitive remote-access port (SSH, etc.)."""
+"""DF-013, ``EXPOSE`` declares a sensitive remote-access port (SSH, etc.)."""
 from __future__ import annotations
 
 import re
@@ -17,14 +17,14 @@ RULE = Rule(
     recommendation=(
         "Remove the ``EXPOSE`` line for the remote-access port. If the "
         "operator legitimately needs to reach the container, exec into "
-        "it (``docker exec`` / ``kubectl exec``) — that path uses the "
+        "it (``docker exec`` / ``kubectl exec``). That path uses the "
         "orchestrator's auth and audit, doesn't open a network port, "
         "and doesn't ship an extra daemon inside the image. Containers "
         "should not run sshd / telnetd / ftpd / rsh-d / vncd / RDP "
         "alongside the application."
     ),
     docs_note=(
-        "``EXPOSE`` is documentation, not a firewall — it doesn't "
+        "``EXPOSE`` is documentation, not a firewall. It doesn't "
         "actually open the port. But ``EXPOSE 22`` is a strong signal "
         "the image runs sshd, and any remote-access daemon inside the "
         "container blows up the threat model: now you have an extra "

@@ -1,4 +1,4 @@
-"""CCM-002 — CodeCommit repository not encrypted with a customer KMS key."""
+"""CCM-002. CodeCommit repository not encrypted with a customer KMS key."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError

@@ -322,6 +322,15 @@ class TestTlsBypassPositives:
         ("kubectl get po --insecure-skip-tls-verify", "kubectl"),
         ("ssh -o StrictHostKeyChecking=no user@host", "ssh"),
         ("ssh -o UserKnownHostsFile=/dev/null user@host", "ssh"),
+        # Docker daemon allowing plaintext / self-signed registries.
+        ("dockerd --insecure-registry registry.internal:5000", "docker"),
+        ("docker run --insecure-registry myreg/img:tag", "docker"),
+        # JVM build-tool TLS bypass shortcuts.
+        ("mvn -Dmaven.wagon.http.ssl.insecure=true package", "maven"),
+        ("gradle -Dorg.gradle.https.insecure=true build", "gradle"),
+        # AWS CLI skipping cert verification.
+        ("AWS_S3_NO_VERIFY_SSL=true aws s3 cp x s3://bucket/x", "aws"),
+        ("aws --no-verify-ssl s3 ls", "aws"),
     ])
     def test_bypass_flagged(self, text, tool):
         hits = tls_bypass.scan(text)

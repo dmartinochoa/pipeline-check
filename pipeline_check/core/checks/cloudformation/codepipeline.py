@@ -1,4 +1,4 @@
-"""CloudFormation CodePipeline checks — CP-001..004."""
+"""CloudFormation CodePipeline checks. CP-001..004."""
 from __future__ import annotations
 
 from typing import Any

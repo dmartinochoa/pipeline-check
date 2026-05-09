@@ -1,4 +1,4 @@
-"""CC-003 — Docker images in jobs/executors must be pinned by sha256 digest."""
+"""CC-003. Docker images in jobs/executors must be pinned by sha256 digest."""
 from __future__ import annotations
 
 from typing import Any
@@ -19,7 +19,7 @@ RULE = Rule(
     recommendation=(
         "Pin every Docker image to its sha256 digest: "
         "`cimg/node:18@sha256:abc123...`. Tags like `:latest` or "
-        "`:18` are mutable — a registry compromise or upstream push "
+        "`:18` are mutable, a registry compromise or upstream push "
         "silently replaces the image content."
     ),
     docs_note=(

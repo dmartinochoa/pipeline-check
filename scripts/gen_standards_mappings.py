@@ -35,7 +35,7 @@ def _check_id_link(check_id: str) -> str:
 
     Imports lazily so the script stays standalone if the linker
     helper module ever moves. Falls back to a bare backticked id if
-    the prefix isn't recognized — keeps the generator robust against
+    the prefix isn't recognized, keeps the generator robust against
     new providers landing before the prefix table is updated.
     """
     try:

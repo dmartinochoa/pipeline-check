@@ -1,4 +1,4 @@
-"""NSA/CISA Enduring Security Framework — Securing the Software Supply Chain.
+"""NSA/CISA Enduring Security Framework. Securing the Software Supply Chain.
 
 Three-volume guidance published by the NSA/CISA/ODNI Enduring Security
 Framework working group (Developer 2022, Supplier 2022, Customer 2022).
@@ -17,11 +17,11 @@ from ..base import Standard
 
 STANDARD = Standard(
     name="esf_supply_chain",
-    title="NSA/CISA ESF — Securing the Software Supply Chain",
+    title="NSA/CISA ESF. Securing the Software Supply Chain",
     version="2022",
     url="https://www.cisa.gov/resources-tools/resources/securing-software-supply-chain-recommended-practices-guide-developers",
     controls={
-        # Developer guide — secure development & build
+        # Developer guide, secure development & build
         "ESF-D-BUILD-ENV":       "Harden the build environment (isolated, minimal, ephemeral workers)",
         "ESF-D-BUILD-LOGS":      "Generate and preserve build audit logs",
         "ESF-D-BUILD-TIMEOUT":   "Enforce bounded build execution (single-use, time-limited)",
@@ -30,15 +30,15 @@ STANDARD = Standard(
         "ESF-D-SIGN-ARTIFACTS":  "Sign build artifacts and verify signatures before release",
         "ESF-D-SBOM":            "Produce SBOM / provenance metadata with every build",
         "ESF-D-CODE-REVIEW":     "Require peer review of source and pipeline configuration",
-        "ESF-D-TOKEN-HYGIENE":   "Use short-lived, federated credentials (OIDC) — not long-lived tokens",
+        "ESF-D-TOKEN-HYGIENE":   "Use short-lived, federated credentials (OIDC), not long-lived tokens",
         "ESF-D-INJECTION":       "Prevent script / template injection from untrusted pipeline context",
-        # Supplier guide — verify and gate third-party inputs
+        # Supplier guide, verify and gate third-party inputs
         "ESF-S-VERIFY-DEPS":     "Verify third-party and open-source dependencies before use",
         "ESF-S-PIN-DEPS":        "Pin dependencies / actions / images to immutable digests",
         "ESF-S-TRUSTED-REG":     "Use only trusted, authenticated package and image registries",
         "ESF-S-VULN-MGMT":       "Scan inbound artifacts (images, packages) for known vulnerabilities",
         "ESF-S-IMMUTABLE":       "Enforce artifact / tag immutability to preserve provenance",
-        # Customer guide — deployment & runtime governance
+        # Customer guide, deployment & runtime governance
         "ESF-C-APPROVAL":        "Require explicit approval before production deployment",
         "ESF-C-ROLLBACK":        "Automated rollback on deployment failure or alarm",
         "ESF-C-DEPLOY-MON":      "Monitor deployments with alarms / health checks",
@@ -322,5 +322,53 @@ STANDARD = Standard(
         "HELM-003": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS dep repo
         "HELM-004": ["ESF-S-PIN-DEPS"],                            # version range
         "HELM-005": ["ESF-S-VERIFY-DEPS"],                         # maintainers chain-of-custody
+        "HELM-006": ["ESF-D-CODE-REVIEW"],                         # missing kubeVersion
+        "HELM-007": ["ESF-S-VERIFY-DEPS"],                         # description metadata
+        "HELM-008": ["ESF-S-PIN-DEPS"],                            # stale Chart.lock
+        "HELM-009": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS home/sources
+        "HELM-010": ["ESF-S-VERIFY-DEPS"],                         # appVersion
+        # ── Dockerfile (image build supply chain) ──────────────────
+        "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
+        "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
+        "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity
+        "DF-004": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],      # curl-pipe
+        "DF-005": ["ESF-D-INJECTION"],                             # shell-eval
+        "DF-006": ["ESF-D-SECRETS"],                               # ENV credential
+        "DF-008": ["ESF-D-PRIV-BUILD"],                            # docker --privileged
+        "DF-010": ["ESF-S-PIN-DEPS"],                              # apt upgrade
+        "DF-012": ["ESF-D-PRIV-BUILD"],                            # RUN sudo
+        "DF-013": ["ESF-D-PRIV-BUILD"],                            # sensitive port
+        "DF-014": ["ESF-D-PRIV-BUILD"],                            # WORKDIR /etc
+        "DF-015": ["ESF-D-PRIV-BUILD"],                            # chmod 777
+        "DF-016": ["ESF-D-SBOM"],                                  # OCI provenance labels
+        "DF-019": ["ESF-D-SECRETS"],                               # COPY credential file
+        "DF-020": ["ESF-D-SECRETS"],                               # credential ARG
+        # ── Cloud Build ────────────────────────────────────────────
+        "GCB-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GCB-002": ["ESF-D-SECRETS"],
+        "GCB-003": ["ESF-D-SECRETS"],
+        "GCB-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GCB-005": ["ESF-D-SECRETS"],
+        "GCB-006": ["ESF-D-BUILD-LOGS"],
+        "GCB-007": ["ESF-S-PIN-DEPS"],
+        "GCB-008": ["ESF-D-SIGN-ARTIFACTS"],
+        "GCB-009": ["ESF-D-SBOM"],
+        "GCB-010": ["ESF-D-BUILD-ENV"],
+        "GCB-011": ["ESF-S-VERIFY-DEPS"],
+        "GCB-012": ["ESF-S-VULN-MGMT"],
+        "GCB-013": ["ESF-D-TOKEN-HYGIENE"],
+        "GCB-014": ["ESF-D-INJECTION"],
+        "GCB-015": ["ESF-D-SBOM"],
+        "GCB-016": ["ESF-D-BUILD-TIMEOUT"],
+        "GCB-017": ["ESF-D-BUILD-LOGS"],
+        "GCB-018": ["ESF-S-TRUSTED-REG"],
+        "GCB-019": ["ESF-D-PRIV-BUILD"],
+        "GCB-020": ["ESF-D-TOKEN-HYGIENE"],
+        "GCB-021": ["ESF-D-BUILD-ENV"],
+        "GCB-022": ["ESF-D-INJECTION"],
+        "GCB-023": ["ESF-D-SIGN-ARTIFACTS"],
+        "GCB-024": ["ESF-D-SBOM"],
+        "GCB-025": ["ESF-S-PIN-DEPS"],
+        "GCB-026": ["ESF-C-ARTIFACT-AUTHZ"],
     },
 )

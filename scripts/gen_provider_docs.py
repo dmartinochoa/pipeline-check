@@ -11,7 +11,7 @@ With the per-rule-module refactor (see
 ``pipeline_check/core/checks/<provider>/rules/``), every rule
 exports a ``RULE`` object carrying its metadata plus prose fields
 (``recommendation``, ``docs_note``). This script walks that
-registry and writes a fully-derived provider doc — the code is
+registry and writes a fully-derived provider doc, the code is
 the source of truth and the doc can never drift.
 
 Usage
@@ -102,7 +102,7 @@ pipeline_check --pipeline github --resolve-remote \\
 Resolution rules:
 
 - **Only SHA-pinned refs are fetched.** A tag-pinned ref (`@v1`,
-  `@main`) is skipped with a warning — resolution against a movable
+  `@main`) is skipped with a warning, resolution against a movable
   upstream tag would defeat `GHA-025`'s value.
 - **Recursion** follows transitive `uses:` calls to a depth of 3
   (configurable with `--gha-resolve-depth`; hard ceiling 10). Cycles
@@ -111,7 +111,7 @@ Resolution rules:
   `~/.cache/pipeline-check/gha-resolver/` for 7 days. Use `--no-cache`
   to bypass.
 - **Failure mode.** Network errors, 404s, and malformed YAML never
-  abort the scan — they land in the context's warnings stream.
+  abort the scan. They land in the context's warnings stream.
 - **Attribution.** Findings on a resolved callee carry a synthetic
   `<caller-path> -> <owner>/<repo>/<path>@<ref>` resource string so
   the report points at both the call site and the upstream body.
@@ -130,7 +130,7 @@ Resolution rules:
         """\
 # GitLab CI provider
 
-Parses `.gitlab-ci.yml` on disk — no GitLab API token, no runner install.
+Parses `.gitlab-ci.yml` on disk, no GitLab API token, no runner install.
 Works against the file in a detached clone or a merged-result pipeline
 export.
 
@@ -152,7 +152,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
         """\
 # Bitbucket Pipelines provider
 
-Parses `bitbucket-pipelines.yml` on disk — no Bitbucket API token, no
+Parses `bitbucket-pipelines.yml` on disk, no Bitbucket API token, no
 runner install.
 
 ## Producer workflow
@@ -173,7 +173,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
         """\
 # Azure DevOps Pipelines provider
 
-Parses an `azure-pipelines.yml` from disk — no network calls, no ADO
+Parses an `azure-pipelines.yml` from disk, no network calls, no ADO
 personal access token.
 
 ## Producer workflow
@@ -194,10 +194,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 The walker handles every layout ADO supports:
 
-- Flat single-job pipeline — top-level `steps:`
-- Single-stage multi-job — top-level `jobs:`
-- Multi-stage — `stages: → jobs: → steps:`
-- Deployment jobs — steps under
+- Flat single-job pipeline, top-level `steps:`
+- Single-stage multi-job, top-level `jobs:`
+- Multi-stage, `stages: → jobs: → steps:`
+- Deployment jobs, steps under
   `strategy.{runOnce|rolling|canary}.{preDeploy|deploy|routeTraffic|postRouteTraffic}.steps`
   and `strategy.*.on.{success|failure}.steps`.
 """,
@@ -209,7 +209,7 @@ The walker handles every layout ADO supports:
         """\
 # Jenkins provider
 
-Parses Jenkinsfile text — Declarative or Scripted Pipeline — without
+Parses Jenkinsfile text. Declarative or Scripted Pipeline, without
 talking to a Jenkins controller. No Groovy interpreter, no plugin
 install, no API token.
 
@@ -227,8 +227,8 @@ pipeline_check --pipeline jenkins --jenkinsfile-path ci/
 ```
 
 The loader recognises files named `Jenkinsfile` exactly, plus anything
-ending in `.jenkinsfile` or `.groovy`. It treats every file as text —
-no Groovy parsing — and applies the same regex-driven heuristics the
+ending in `.jenkinsfile` or `.groovy`. It treats every file as text,
+no Groovy parsing, and applies the same regex-driven heuristics the
 other workflow providers use for `run:` blocks. False positives are
 intentional: better to flag and let the operator suppress than to
 miss a real injection because the parser couldn't follow a dynamic
@@ -242,7 +242,7 @@ expression.
         """\
 # CircleCI provider
 
-Parses `.circleci/config.yml` on disk — no CircleCI API token, no
+Parses `.circleci/config.yml` on disk, no CircleCI API token, no
 runner install.
 
 ## Producer workflow
@@ -263,10 +263,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 Several checks target CircleCI concepts that have no direct analogue
 in other providers:
 
-- **CC-001** — orb version pinning (`@volatile`, `@1` → `@5.1.0`)
-- **CC-009** — approval gate via `type: approval` predecessor job
-- **CC-012** — dynamic config generation via `setup: true`
-- **CC-019** — `add_ssh_keys` fingerprint restriction
+- **CC-001**, orb version pinning (`@volatile`, `@1` → `@5.1.0`)
+- **CC-009**, approval gate via `type: approval` predecessor job
+- **CC-012**, dynamic config generation via `setup: true`
+- **CC-019**, `add_ssh_keys` fingerprint restriction
 """,
     ),
     "cloudbuild": (
@@ -276,7 +276,7 @@ in other providers:
         """\
 # Google Cloud Build provider
 
-Parses `cloudbuild.yaml` on disk — no Google Cloud credentials, no
+Parses `cloudbuild.yaml` on disk, no Google Cloud credentials, no
 `gcloud` install, no Cloud Build API token required. Each document
 must declare a top-level `steps:` list; files without it (SAM
 templates, ordinary YAML configs) are skipped by the loader.
@@ -300,12 +300,12 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 Several checks target Cloud Build concepts that have no direct
 analogue in other providers:
 
-- **GCB-002** — `serviceAccount:` must be set; the default Cloud Build
+- **GCB-002**, `serviceAccount:` must be set; the default Cloud Build
   SA is typically broader than any single pipeline needs.
-- **GCB-003** — secrets must flow through `availableSecrets.secret
+- **GCB-003**, secrets must flow through `availableSecrets.secret
   Manager[].env` + `secretEnv:`, never via inline `gcloud secrets
   versions access` in `args`.
-- **GCB-004** — `options.dynamicSubstitutions: true` combined with a
+- **GCB-004**, `options.dynamicSubstitutions: true` combined with a
   user-substitution (`$_FOO`) in step args opens a trigger-editor-
   controlled shell-injection path.
 """,
@@ -318,7 +318,7 @@ analogue in other providers:
 # Kubernetes manifest provider
 
 Parses Kubernetes API documents (`apiVersion:` + `kind:`) from `.yaml`
-/ `.yml` files on disk — text-only static analysis. No `kubectl`, no
+/ `.yml` files on disk, text-only static analysis. No `kubectl`, no
 cluster access, no Helm or Kustomize rendering. Multi-document YAML
 (`---`-separated) is fully supported; each document is parsed into
 its own `Manifest` record.
@@ -349,10 +349,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 The walker recognises every kind that carries a pod spec:
 
-- `Pod` — pod spec at `spec`
+- `Pod`, pod spec at `spec`
 - `Deployment` / `StatefulSet` / `DaemonSet` / `ReplicaSet` / `Job`
-  — pod spec at `spec.template.spec`
-- `CronJob` — pod spec at `spec.jobTemplate.spec.template.spec`
+ , pod spec at `spec.template.spec`
+- `CronJob`, pod spec at `spec.jobTemplate.spec.template.spec`
 
 Container-level rules walk all three container lists (`containers`,
 `initContainers`, `ephemeralContainers`), so init-time and ephemeral
@@ -362,14 +362,14 @@ debug containers are covered along with the long-lived workload.
 
 Four rules target non-workload kinds:
 
-- **K8S-018** — `Kind: Secret` carrying credential-shaped literals
+- **K8S-018**, `Kind: Secret` carrying credential-shaped literals
   in `stringData` or `data`. Base64 values in `data:` are decoded
   and re-checked for AKIA-shaped AWS keys.
-- **K8S-020** — `ClusterRoleBinding` to `cluster-admin`, `admin`,
+- **K8S-020**, `ClusterRoleBinding` to `cluster-admin`, `admin`,
   or `system:masters`.
-- **K8S-021** — `Role` / `ClusterRole` granting wildcard verbs+
+- **K8S-021**, `Role` / `ClusterRole` granting wildcard verbs+
   resources (both `verbs: ["*"]` and `resources: ["*"]`).
-- **K8S-022** — `Service` exposing port 22 (SSH).
+- **K8S-022**, `Service` exposing port 22 (SSH).
 """,
     ),
     "buildkite": (
@@ -380,7 +380,7 @@ Four rules target non-workload kinds:
 # Buildkite provider
 
 Parses `.buildkite/pipeline.yml` (or any user-named pipeline file) on
-disk — no Buildkite API token, no agent install required. Each
+disk, no Buildkite API token, no agent install required. Each
 document must declare a top-level `steps:` list; files without it are
 skipped by the loader.
 
@@ -400,11 +400,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Buildkite-specific checks
 
-- **BK-001** — plugin refs must be pinned to an exact tag
+- **BK-001**, plugin refs must be pinned to an exact tag
   (`docker-compose#v4.13.0`) or a 40-char SHA. Branch refs (`#main`)
   and bare names float and let a compromised plugin release execute
   in the pipeline.
-- **BK-007** — every step that looks like a deploy (label / command
+- **BK-007**, every step that looks like a deploy (label / command
   matches `deploy`, `kubectl apply`, `terraform apply`, `helm
   upgrade`, …) must be preceded by a `block:` or `input:` step in
   the same pipeline file. Buildkite waits for a human to click
@@ -419,7 +419,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 # Tekton provider
 
 Parses Tekton API documents (`apiVersion: tekton.dev/*`) from `.yaml`
-/ `.yml` files on disk — text-only static analysis, no `tkn` binary,
+/ `.yml` files on disk, text-only static analysis, no `tkn` binary,
 no cluster access. Recognized kinds: `Task`, `ClusterTask`,
 `Pipeline`, `TaskRun`, `PipelineRun`. Documents that don't carry a
 `tekton.dev/*` apiVersion are silently skipped, so a directory mixing
@@ -439,11 +439,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Tekton-specific checks
 
-- **TKN-003** — Tekton substitutes `$(params.X)` *before* the shell
+- **TKN-003**. Tekton substitutes `$(params.X)` *before* the shell
   parses the script, so any unquoted use is a command-injection
   primitive. The safe pattern is to receive the parameter through
   `env:` and reference the env var quoted (`"$NAME"`).
-- **TKN-007** — `TaskRun` / `PipelineRun` must set
+- **TKN-007**, `TaskRun` / `PipelineRun` must set
   `serviceAccountName` to a least-privilege ServiceAccount. The
   default SA inherits whatever cluster-admin or wildcard role
   someone later binds to it.
@@ -457,7 +457,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 # Argo Workflows provider
 
 Parses Argo API documents (`apiVersion: argoproj.io/*`) from `.yaml`
-/ `.yml` files on disk — text-only static analysis, no `argo` binary,
+/ `.yml` files on disk, text-only static analysis, no `argo` binary,
 no cluster access. Recognized kinds: `Workflow`, `WorkflowTemplate`,
 `ClusterWorkflowTemplate`, `CronWorkflow`. Documents that don't
 carry an `argoproj.io/*` apiVersion are silently skipped.
@@ -476,11 +476,11 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Argo-specific checks
 
-- **ARGO-005** — `{{inputs.parameters.X}}` substitution happens
+- **ARGO-005**, `{{inputs.parameters.X}}` substitution happens
   before the shell parses the script, so any unquoted use in
   `script.source` / `container.args` is a command-injection
   primitive. Pass the parameter via `env:` and reference quoted.
-- **ARGO-003** — `Workflow` / `CronWorkflow` must set
+- **ARGO-003**, `Workflow` / `CronWorkflow` must set
   `serviceAccountName`. Workflows that fall back to the namespace's
   `default` SA inherit whatever role someone later binds to
   `default`.
@@ -493,7 +493,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
         """\
 # Dockerfile provider
 
-Parses `Dockerfile` / `Containerfile` documents on disk — text-only
+Parses `Dockerfile` / `Containerfile` documents on disk, text-only
 static analysis, no image build, no registry pull, no daemon access.
 Multi-stage builds are flattened: rules see the full instruction
 stream and decide for themselves whether to scope by stage (e.g.
@@ -523,15 +523,15 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 Several checks target Dockerfile concepts that have no direct
 analogue in other providers:
 
-- **DF-001** — `FROM` must pin by `@sha256:<digest>`. Reuses the same
+- **DF-001**, `FROM` must pin by `@sha256:<digest>`. Reuses the same
   classifier as GL-001 / JF-009 / ADO-009 / CC-003 so the
   floating-tag vocabulary matches across the tool.
-- **DF-002** — final stage must run as a non-root `USER`. Multi-stage
+- **DF-002**, final stage must run as a non-root `USER`. Multi-stage
   builds: only the runtime image's identity matters, so this rule
   scopes USER tracking to the directives after the *last* `FROM`.
-- **DF-003** — `ADD <url>` must carry a BuildKit `--checksum=sha256:`
+- **DF-003**, `ADD <url>` must carry a BuildKit `--checksum=sha256:`
   flag, otherwise it pulls remote content with no integrity check.
-- **DF-006** — `ENV` / `ARG` values are baked into image layers;
+- **DF-006**, `ENV` / `ARG` values are baked into image layers;
   ``docker history`` reads them even after they're overwritten. Any
   literal credential-shaped value (AKIA-prefixed, or a key named
   `*_PASSWORD` / `*_TOKEN` / `*_SECRET` with a non-empty literal) is
@@ -606,7 +606,7 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     # pinned attr-list anchor (``{ #gha-001 }``) on the rendered H2.
     # The severity column emits a color-coded chip so the table
     # doubles as a click-through priority list. The ``Fix`` column
-    # marks rules with a registered autofix patch — useful for
+    # marks rules with a registered autofix patch, useful for
     # filtering with the sortable-table JS layered over markdown
     # tables ("show me all the things ``--fix`` will patch").
     fix_count = sum(1 for r, _ in pairs if r.id in _AUTOFIXABLE)
@@ -643,7 +643,7 @@ def _rule_anchor(rule_id: str) -> str:
     Pinned via ``attr_list`` ``{ #gha-001 }`` on the H2, so the slug
     is deterministic regardless of the title text or its punctuation.
     Markdown's default ``toc`` slugifier would strip the em-dash and
-    derive the slug from the title — fine, but couples the anchor to
+    derive the slug from the title, fine, but couples the anchor to
     the wording. A pinned ID survives title rephrases.
     """
     return rule_id.lower()
@@ -659,7 +659,7 @@ def _severity_chip(severity: str) -> str:
 def _autofix_chip(rule_id: str) -> str:
     """A tiny "🔧 fix" badge for rules with a registered autofix.
 
-    Renders as an empty cell when the rule has no fixer — keeps the
+    Renders as an empty cell when the rule has no fixer, keeps the
     table tidy without spelling out "no". Sortable-tables JS treats
     empty cells as "comes after populated", so sorting by Fix puts
     autofixable rules first.
@@ -678,7 +678,7 @@ def _render_rule(rule: Rule) -> str:
 
         <div class="pg-rule pg-rule--high" markdown>
 
-        ## GHA-001 — title { #gha-001 }
+        ## GHA-001, title { #gha-001 }
 
         <div class="pg-rule__tags">…severity chip + tag pills…</div>
 
@@ -700,7 +700,7 @@ def _render_rule(rule: Rule) -> str:
     sev_lc = sev.lower()
 
     parts.append(f'<div class="pg-rule pg-rule--{sev_lc}" markdown>\n\n')
-    parts.append(f"## {rule.id} — {rule.title} {{ #{anchor} }}\n\n")
+    parts.append(f"## {rule.id}: {rule.title} {{ #{anchor} }}\n\n")
 
     # ── Tag chip row: severity + autofix indicator + OWASP + ESF + CWE ──
     chips: list[str] = [_severity_chip(sev)]
@@ -719,10 +719,20 @@ def _render_rule(rule: Rule) -> str:
     parts.append(" ".join(chips) + "\n")
     parts.append("</div>\n\n")
 
-    # ── Body — the rule's ``docs_note`` is the "why this matters"
+    # ── Body, the rule's ``docs_note`` is the "why this matters"
     # narrative; render as plain prose. ──
     if rule.docs_note:
         parts.append(rule.docs_note.strip() + "\n\n")
+
+    # ── Known-FP modes: surface the same prose ``--explain`` shows so
+    # readers see why a rule defaults to LOW / MEDIUM confidence and
+    # what kind of legitimate code trips it. Rendered as a bullet list
+    # so a multi-mode entry stays scannable. ──
+    if rule.known_fp:
+        parts.append("**Known false-positive modes**\n\n")
+        for mode in rule.known_fp:
+            parts.append(f"- {mode.strip()}\n")
+        parts.append("\n")
 
     # ── Recommendation: framed block so it stands out from the body
     # narrative. Marked with ``markdown`` so embedded code blocks /

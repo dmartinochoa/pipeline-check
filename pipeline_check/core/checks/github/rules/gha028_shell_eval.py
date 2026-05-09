@@ -1,9 +1,9 @@
-"""GHA-028 — dangerous shell idioms (eval, ``sh -c "$VAR"``, backtick var).
+"""GHA-028, dangerous shell idioms (eval, ``sh -c "$VAR"``, backtick var).
 
 Complements GHA-003. GHA-003 traces taint from attacker-controllable
 context into ``run:`` blocks; this rule fires on intrinsically risky
-idioms — ``eval``, ``sh -c "$VAR"``, backtick command substitution
-with a variable — regardless of whether the input source is
+idioms, ``eval``, ``sh -c "$VAR"``, backtick command substitution
+with a variable, regardless of whether the input source is
 attacker-controllable. The content of the variable at runtime
 decides whether the shell invocation escapes the current process;
 flagging the idiom forces the author to sanitise at the boundary.
@@ -41,7 +41,7 @@ RULE = Rule(
     known_fp=(
         "``eval \"$(ssh-agent -s)\"`` and similar "
         "``eval \"$(<literal-tool> <literal-args>)\"`` bootstrap "
-        "idioms are intentionally NOT flagged — the substituted "
+        "idioms are intentionally NOT flagged, the substituted "
         "command is literal, only its output is eval'd. The rule "
         "only fires when the substituted command references a "
         "variable.",

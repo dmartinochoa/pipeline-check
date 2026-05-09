@@ -25,6 +25,7 @@ prune .claude
 exclude .pipelinecheckignore
 exclude SECURITY.md
 exclude .pre-commit-config.yaml
+exclude .pre-commit-hooks.yaml
 
 # Local build / cache artefacts.
 prune build

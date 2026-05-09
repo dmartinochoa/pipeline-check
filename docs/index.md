@@ -1,5 +1,5 @@
 ---
-title: Pipeline-Check — CI/CD Security Posture Scanner
+title: Pipeline-Check: CI/CD Security Posture Scanner
 template: home.html
 hide:
   - navigation
@@ -10,7 +10,7 @@ hide:
 <div class="pg-hero__inner" markdown>
 
 <div markdown>
-<div class="pg-hero__mark" role="img" aria-label="Pipeline-Check — shield with checkmark">
+<div class="pg-hero__mark" role="img" aria-label="Pipeline-Check: shield with checkmark">
   <svg viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
     <path d="M32 6 L54 13 V31 C54 44.5 44.5 53.5 32 58 C19.5 53.5 10 44.5 10 31 V13 Z" fill="none" stroke="#f0f2f5" stroke-width="2.5" stroke-linejoin="round"/>
     <path d="M22 32 L29 39 L43 24" stroke="#1ba3a9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 16 providers, graded against 13 compliance frameworks. 
-103 of the 500+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 16 providers, graded against 14 compliance frameworks. 
+111 of the 520+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,10 +55,10 @@ A read-only scanner for 16 providers, graded against 13 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">500+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">520+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">16</div><div class="pg-stat__label">Providers</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">13</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">103</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
@@ -69,7 +69,7 @@ A read-only scanner for 16 providers, graded against 13 compliance frameworks.
 <p class="pg-section__lede">
 Same severity model and report format whether you're scanning a Jenkinsfile,
 a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
-NIST SSDF, SLSA, and the rest — so audit answers don't require leaving the tool.
+NIST SSDF, SLSA, and the rest, so audit answers don't require leaving the tool.
 </p>
 </div>
 
@@ -111,8 +111,8 @@ the default; turning it off is opt-in.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-Multi-finding chains mapped to MITRE ATT&CK. See the kill chain — token leak →
-artifact poisoning → production push — instead of three disconnected findings.
+Multi-finding chains mapped to MITRE ATT&CK. See the kill chain, token leak →
+artifact poisoning → production push, instead of three disconnected findings.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a>
 </div>
 
@@ -164,8 +164,8 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">13 checks</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">13 checks</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
-  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">35 checks</span></a>
-  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 35 K8S-* rules + 10 HELM-*</span></a>
+  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">40 checks</span></a>
+  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 40 K8S-* rules + 10 HELM-*</span></a>
 </div>
 </section>
 
@@ -215,16 +215,16 @@ flowchart LR
     G -->|pass| H([Merge])
     G -->|fail| I([Block + report])
 
-    click A "usage/" "Repo on disk or live AWS account — no API tokens, no SaaS"
+    click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "16 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "500+ checks emit findings with severity, location, fix"
-    click D "standards/" "13 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
+    click C "attack_chains/" "520+ checks emit findings with severity, location, fix"
+    click D "standards/" "14 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"
     click F2 "output/#json" "Machine-parseable JSON for scripts"
     click F3 "output/#html" "HTML report with client-side filters"
     click F4 "output/#sarif" "SARIF 2.1.0 for GitHub code scanning, Defender for DevOps"
-    click G "ci_gate/" "Severity caps, baseline diff, ignore file — pass/fail contract"
+    click G "ci_gate/" "Severity caps, baseline diff, ignore file: pass/fail contract"
     click H "ci_gate/" "Severity below thresholds, exit 0"
     click I "ci_gate/" "Severity above threshold; non-zero exit + report (--fix patches the subset that has a fixer)"
 
@@ -268,7 +268,7 @@ flowchart LR
 </div>
 
 <div class="pg-patrol">
-  <img class="pg-patrol__embed" src="patrol.svg" alt="Pipeline-Check goose patrolling a CI/CD pipeline rail — pauses at the SCAN node and stamps a build DENIED" loading="lazy">
+  <img class="pg-patrol__embed" src="patrol.svg" alt="Pipeline-Check goose patrolling a CI/CD pipeline rail: pauses at the SCAN node and stamps a build DENIED" loading="lazy">
 </div>
 </section>
 

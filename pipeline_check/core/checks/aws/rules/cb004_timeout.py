@@ -1,4 +1,4 @@
-"""CB-004 — CodeBuild project runs at the AWS maximum (480 min) timeout."""
+"""CB-004. CodeBuild project runs at the AWS maximum (480 min) timeout."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

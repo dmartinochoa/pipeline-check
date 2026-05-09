@@ -138,7 +138,7 @@ class TestCurlPipeCommentOut:
         wf = "  - run: curl https://example.com/s.sh | bash\n"
         after = autofix.generate_fix(_finding("GHA-016"), wf)
         assert after is not None
-        assert "TODO(pipelineguard)" in after
+        assert "TODO(pipeline-check)" in after
 
     def test_idempotent(self):
         wf = "  - run: curl https://example.com/s.sh | bash\n"
@@ -256,10 +256,10 @@ class TestJF015Timeout:
         jf = "pipeline {\n    agent any\n    stages {\n    }\n}\n"
         after = autofix.generate_fix(_finding("JF-015", "Jenkinsfile"), jf)
         assert after is not None
-        assert "TODO(pipelineguard): wrap with timeout" in after
+        assert "TODO(pipeline-check): wrap with timeout" in after
 
     def test_idempotent(self):
-        jf = "pipeline {\n    // TODO(pipelineguard): wrap with timeout(time: 30, unit: 'MINUTES')\n    agent any\n}\n"
+        jf = "pipeline {\n    // TODO(pipeline-check): wrap with timeout(time: 30, unit: 'MINUTES')\n    agent any\n}\n"
         assert autofix.generate_fix(_finding("JF-015", "Jenkinsfile"), jf) is None
 
 
@@ -271,14 +271,14 @@ class TestGHA001PinningTodo:
         wf = "    - uses: actions/checkout@v4\n"
         after = autofix.generate_fix(_finding("GHA-001"), wf)
         assert after is not None
-        assert "TODO(pipelineguard): pin to commit SHA" in after
+        assert "TODO(pipeline-check): pin to commit SHA" in after
 
     def test_skips_sha_pinned_action(self):
         wf = "    - uses: actions/checkout@4959ce089c2fe0a3ab7b3aaa3aebc6a0a17b2af9\n"
         assert autofix.generate_fix(_finding("GHA-001"), wf) is None
 
     def test_idempotent(self):
-        wf = "    - uses: actions/checkout@v4  # TODO(pipelineguard): pin to commit SHA\n"
+        wf = "    - uses: actions/checkout@v4  # TODO(pipeline-check): pin to commit SHA\n"
         assert autofix.generate_fix(_finding("GHA-001"), wf) is None
 
 
@@ -290,7 +290,7 @@ class TestGL001PinningTodo:
         wf = "  image: python:3.12\n"
         after = autofix.generate_fix(_finding("GL-001"), wf)
         assert after is not None
-        assert "TODO(pipelineguard): pin to digest" in after
+        assert "TODO(pipeline-check): pin to digest" in after
 
     def test_skips_digest_pinned_image(self):
         wf = "  image: python@sha256:abc123\n"
@@ -305,17 +305,17 @@ class TestTokenPersistenceCommentOut:
         wf = '  - run: echo $GITHUB_TOKEN >> .env\n'
         after = autofix.generate_fix(_finding("GHA-019"), wf)
         assert after is not None
-        assert "WARNING(pipelineguard)" in after
+        assert "WARNING(pipeline-check)" in after
         assert "# - run:" in after or "# echo" in after
 
     def test_gl020_comments_out_token_line(self):
         wf = "  - echo $CI_JOB_TOKEN >> /tmp/token.txt\n"
         after = autofix.generate_fix(_finding("GL-020"), wf)
         assert after is not None
-        assert "WARNING(pipelineguard)" in after
+        assert "WARNING(pipeline-check)" in after
 
     def test_idempotent(self):
-        wf = "  # WARNING(pipelineguard): token written to persistent storage — remove this line\n  # echo $GITHUB_TOKEN >> .env\n"
+        wf = "  # WARNING(pipeline-check): token written to persistent storage — remove this line\n  # echo $GITHUB_TOKEN >> .env\n"
         assert autofix.generate_fix(_finding("GHA-019"), wf) is None
 
 
@@ -328,7 +328,7 @@ class TestGHA014DeployEnvStub:
         after = autofix.generate_fix(_finding("GHA-014"), wf)
         assert after is not None
         assert "environment:" in after
-        assert "TODO(pipelineguard)" in after
+        assert "TODO(pipeline-check)" in after
 
     def test_skips_job_with_existing_environment(self):
         wf = "jobs:\n  deploy:\n    environment: production\n    runs-on: ubuntu-latest\n"
@@ -465,9 +465,9 @@ class TestK8s013HostPathTODO:
         )
         after = autofix.generate_fix(_finding("K8S-013"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-013)" in after
+        assert "TODO(pipeline-check K8S-013)" in after
         # Comment lands above the hostPath: line, not below.
-        idx_todo = after.index("TODO(pipelineguard K8S-013)")
+        idx_todo = after.index("TODO(pipeline-check K8S-013)")
         idx_hp = after.index("hostPath:")
         assert idx_todo < idx_hp
 
@@ -500,13 +500,13 @@ class TestK8s020ClusterAdminTODO:
         )
         after = autofix.generate_fix(_finding("K8S-020"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-020)" in after
+        assert "TODO(pipeline-check K8S-020)" in after
 
     def test_matches_system_masters_too(self):
         manifest = "  name: system:masters\n"
         after = autofix.generate_fix(_finding("K8S-020"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-020)" in after
+        assert "TODO(pipeline-check K8S-020)" in after
 
     def test_skips_unrelated_name_lines(self):
         manifest = "metadata:\n  name: my-deployment\n"
@@ -563,7 +563,7 @@ class TestGCB001PinTODO:
         cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud'\n"
         after = autofix.generate_fix(_finding("GCB-001"), cb)
         assert after is not None
-        assert "TODO(pipelineguard GCB-001)" in after
+        assert "TODO(pipeline-check GCB-001)" in after
 
     def test_skips_already_digest_pinned(self):
         cb = "steps:\n  - name: 'gcr.io/cloud-builders/gcloud@sha256:abcd'\n"
@@ -589,7 +589,7 @@ class TestGCB011TLSBypass:
         )
         after = autofix.generate_fix(_finding("GCB-011"), cb)
         assert after is not None
-        assert "TODO(pipelineguard): remove TLS/SSL verification bypass" in after
+        assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
 
 
 # ── Dockerfile comment-only TODO fixers ───────────────────────────────
@@ -600,8 +600,8 @@ class TestDF001PinTODO:
         df = "FROM python:3.12-slim\nRUN echo hi\n"
         after = autofix.generate_fix(_finding("DF-001"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-001)" in after
-        idx_todo = after.index("TODO(pipelineguard DF-001)")
+        assert "TODO(pipeline-check DF-001)" in after
+        idx_todo = after.index("TODO(pipeline-check DF-001)")
         idx_from = after.index("FROM python:3.12-slim")
         assert idx_todo < idx_from
 
@@ -620,7 +620,7 @@ class TestDF001PinTODO:
         )
         after = autofix.generate_fix(_finding("DF-001"), df)
         assert after is not None
-        assert after.count("TODO(pipelineguard DF-001)") == 1
+        assert after.count("TODO(pipeline-check DF-001)") == 1
 
     def test_idempotent_after_run(self):
         df = "FROM debian:12.5\n"
@@ -634,8 +634,8 @@ class TestDF002UserTODO:
         df = "FROM debian:12.5\nCMD [\"sh\"]\n"
         after = autofix.generate_fix(_finding("DF-002"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-002)" in after
-        idx_todo = after.index("TODO(pipelineguard DF-002)")
+        assert "TODO(pipeline-check DF-002)" in after
+        idx_todo = after.index("TODO(pipeline-check DF-002)")
         idx_cmd = after.index("CMD")
         assert idx_todo < idx_cmd
 
@@ -653,7 +653,7 @@ class TestDF007HealthCheckTODO:
         df = "FROM debian:12.5\nCMD [\"sh\"]\n"
         after = autofix.generate_fix(_finding("DF-007"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-007)" in after
+        assert "TODO(pipeline-check DF-007)" in after
 
     def test_skips_when_healthcheck_present(self):
         df = (
@@ -669,7 +669,7 @@ class TestDF013ExposeSSHTODO:
         df = "FROM debian:12.5\nEXPOSE 22\n"
         after = autofix.generate_fix(_finding("DF-013"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-013)" in after
+        assert "TODO(pipeline-check DF-013)" in after
 
     def test_no_op_for_application_port(self):
         df = "FROM debian:12.5\nEXPOSE 8080\n"
@@ -687,7 +687,7 @@ class TestDF017PathTODO:
         df = "FROM debian:12.5\nENV PATH=/tmp:$PATH\n"
         after = autofix.generate_fix(_finding("DF-017"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-017)" in after
+        assert "TODO(pipeline-check DF-017)" in after
 
     def test_no_op_when_writable_dir_at_tail(self):
         # Tail-position writable entry is harmless — system bins shadow
@@ -710,7 +710,7 @@ class TestK8S001ImagePinTODO:
         )
         after = autofix.generate_fix(_finding("K8S-001"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-001)" in after
+        assert "TODO(pipeline-check K8S-001)" in after
         # Comment sits above the offending image: line, not the name: line.
         lines = after.splitlines()
         todo_idx = next(i for i, ln in enumerate(lines) if "TODO" in ln)
@@ -737,7 +737,7 @@ class TestK8S001ImagePinTODO:
         after = autofix.generate_fix(_finding("K8S-001"), manifest)
         assert after is not None
         # Exactly one TODO should appear (for the nginx:latest line).
-        assert after.count("TODO(pipelineguard K8S-001)") == 1
+        assert after.count("TODO(pipeline-check K8S-001)") == 1
 
     def test_handles_quoted_image_value(self):
         manifest = (
@@ -806,7 +806,7 @@ class TestK8S029DefaultSATODO:
         )
         after = autofix.generate_fix(_finding("K8S-029"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-029)" in after
+        assert "TODO(pipeline-check K8S-029)" in after
 
     def test_no_op_for_named_sa(self):
         manifest = (
@@ -836,7 +836,7 @@ class TestK8S030ControlPlaneTODO:
         )
         after = autofix.generate_fix(_finding("K8S-030"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-030)" in after
+        assert "TODO(pipeline-check K8S-030)" in after
 
     def test_inserts_todo_above_master_toleration(self):
         manifest = (
@@ -846,7 +846,7 @@ class TestK8S030ControlPlaneTODO:
         )
         after = autofix.generate_fix(_finding("K8S-030"), manifest)
         assert after is not None
-        assert "TODO(pipelineguard K8S-030)" in after
+        assert "TODO(pipeline-check K8S-030)" in after
 
     def test_no_op_for_unrelated_node_selector(self):
         manifest = (
@@ -876,7 +876,7 @@ class TestGHA034SecretsInheritTODO:
         )
         after = autofix.generate_fix(_finding("GHA-034"), wf)
         assert after is not None
-        assert "TODO(pipelineguard GHA-034)" in after
+        assert "TODO(pipeline-check GHA-034)" in after
 
     def test_no_op_for_explicit_secrets_mapping(self):
         wf = (
@@ -940,10 +940,10 @@ class TestGCB021WorkerPoolTODO:
         )
         after = autofix.generate_fix(_finding("GCB-021"), cb)
         assert after is not None
-        assert "TODO(pipelineguard GCB-021)" in after
+        assert "TODO(pipeline-check GCB-021)" in after
         # The TODO sits ABOVE options:, not inside it.
         before_options = after.split("options:")[0]
-        assert "TODO(pipelineguard GCB-021)" in before_options
+        assert "TODO(pipeline-check GCB-021)" in before_options
 
     def test_no_op_when_no_options_block(self):
         # Without an ``options:`` anchor the fixer leaves the file
@@ -964,7 +964,7 @@ class TestDF019CopyCredFileTODO:
         df = "FROM alpine:3.19\nCOPY id_rsa /root/.ssh/id_rsa\n"
         after = autofix.generate_fix(_finding("DF-019"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-019)" in after
+        assert "TODO(pipeline-check DF-019)" in after
         assert df.splitlines()[1] in after
 
     def test_inserts_todo_above_npmrc_copy(self):
@@ -998,7 +998,7 @@ class TestDF020ArgCredNameTODO:
         df = "FROM node:20\nARG NPM_TOKEN\nRUN npm install\n"
         after = autofix.generate_fix(_finding("DF-020"), df)
         assert after is not None
-        assert "TODO(pipelineguard DF-020)" in after
+        assert "TODO(pipeline-check DF-020)" in after
 
     def test_inserts_todo_above_password_arg_with_default(self):
         df = "FROM postgres:16\nARG DB_PASSWORD=changeme\n"
@@ -1034,7 +1034,7 @@ class TestGCB007LatestVersionTODO:
         )
         after = autofix.generate_fix(_finding("GCB-007"), cb)
         assert after is not None
-        assert "TODO(pipelineguard GCB-007)" in after
+        assert "TODO(pipeline-check GCB-007)" in after
 
     def test_no_op_when_pinned_version(self):
         cb = (
@@ -1066,9 +1066,9 @@ class TestGHA036RunsOnInjectionTODO:
         )
         after = autofix.generate_fix(_finding("GHA-036"), wf)
         assert after is not None
-        assert "TODO(pipelineguard GHA-036)" in after
+        assert "TODO(pipeline-check GHA-036)" in after
         # TODO lands above the runs-on line, not above the steps block.
-        assert after.index("TODO(pipelineguard GHA-036)") < after.index("runs-on:")
+        assert after.index("TODO(pipeline-check GHA-036)") < after.index("runs-on:")
 
     def test_inserts_todo_above_github_event_head_ref(self):
         wf = (
@@ -1080,7 +1080,7 @@ class TestGHA036RunsOnInjectionTODO:
         )
         after = autofix.generate_fix(_finding("GHA-036"), wf)
         assert after is not None
-        assert "TODO(pipelineguard GHA-036)" in after
+        assert "TODO(pipeline-check GHA-036)" in after
 
     def test_no_op_for_static_runs_on(self):
         wf = (
@@ -1130,7 +1130,7 @@ class TestGL032TagsInjectionTODO:
         )
         after = autofix.generate_fix(_finding("GL-032"), cfg)
         assert after is not None
-        assert "TODO(pipelineguard GL-032)" in after
+        assert "TODO(pipeline-check GL-032)" in after
 
     def test_inserts_todo_above_braced_var(self):
         cfg = (
@@ -1173,7 +1173,7 @@ class TestADO030PoolInjectionTODO:
         )
         after = autofix.generate_fix(_finding("ADO-030"), cfg)
         assert after is not None
-        assert "TODO(pipelineguard ADO-030)" in after
+        assert "TODO(pipeline-check ADO-030)" in after
 
     def test_inserts_todo_above_template_parameter(self):
         cfg = (
@@ -1189,7 +1189,7 @@ class TestADO030PoolInjectionTODO:
         )
         after = autofix.generate_fix(_finding("ADO-030"), cfg)
         assert after is not None
-        assert "TODO(pipelineguard ADO-030)" in after
+        assert "TODO(pipeline-check ADO-030)" in after
 
     def test_no_op_for_vmimage(self):
         cfg = (
@@ -1225,9 +1225,9 @@ class TestJF032AgentLabelInjectionTODO:
         )
         after = autofix.generate_fix(_finding("JF-032"), groovy)
         assert after is not None
-        assert "TODO(pipelineguard JF-032)" in after
+        assert "TODO(pipeline-check JF-032)" in after
         # Groovy comment uses //, not #
-        assert "// TODO(pipelineguard JF-032)" in after
+        assert "// TODO(pipeline-check JF-032)" in after
 
     def test_inserts_todo_above_params_label(self):
         groovy = (
@@ -1239,7 +1239,7 @@ class TestJF032AgentLabelInjectionTODO:
         )
         after = autofix.generate_fix(_finding("JF-032"), groovy)
         assert after is not None
-        assert "TODO(pipelineguard JF-032)" in after
+        assert "TODO(pipeline-check JF-032)" in after
 
     def test_no_op_for_static_label(self):
         groovy = (
@@ -1270,8 +1270,8 @@ class TestHelm001ApiVersionTODO:
         chart = "apiVersion: v1\nname: legacy\nversion: 0.1.0\n"
         after = autofix.generate_fix(_finding("HELM-001"), chart)
         assert after is not None
-        assert "TODO(pipelineguard HELM-001)" in after
-        idx_todo = after.index("TODO(pipelineguard HELM-001)")
+        assert "TODO(pipeline-check HELM-001)" in after
+        idx_todo = after.index("TODO(pipeline-check HELM-001)")
         idx_api = after.index("apiVersion: v1")
         assert idx_todo < idx_api
 
@@ -1298,8 +1298,8 @@ class TestHelm002DependenciesLockTODO:
         )
         after = autofix.generate_fix(_finding("HELM-002"), chart)
         assert after is not None
-        assert "TODO(pipelineguard HELM-002)" in after
-        idx_todo = after.index("TODO(pipelineguard HELM-002)")
+        assert "TODO(pipeline-check HELM-002)" in after
+        idx_todo = after.index("TODO(pipeline-check HELM-002)")
         idx_deps = after.index("dependencies:")
         assert idx_todo < idx_deps
 
@@ -1328,8 +1328,8 @@ class TestHelm003PlaintextRepoTODO:
         )
         after = autofix.generate_fix(_finding("HELM-003"), chart)
         assert after is not None
-        assert "TODO(pipelineguard HELM-003)" in after
-        idx_todo = after.index("TODO(pipelineguard HELM-003)")
+        assert "TODO(pipeline-check HELM-003)" in after
+        idx_todo = after.index("TODO(pipeline-check HELM-003)")
         idx_repo = after.index("http://chartmuseum")
         assert idx_todo < idx_repo
 
@@ -1350,7 +1350,7 @@ class TestHelm003PlaintextRepoTODO:
             )
             after = autofix.generate_fix(_finding("HELM-003"), chart)
             assert after is not None, scheme
-            assert "TODO(pipelineguard HELM-003)" in after
+            assert "TODO(pipeline-check HELM-003)" in after
 
     def test_idempotent(self):
         chart = (
@@ -1361,3 +1361,156 @@ class TestHelm003PlaintextRepoTODO:
         once = autofix.generate_fix(_finding("HELM-003"), chart)
         assert once is not None
         assert autofix.generate_fix(_finding("HELM-003"), once) is None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Buildkite / Tekton / Argo fixers
+#
+# Buildkite, Tekton, and Argo each ride on the cross-provider fixer
+# helpers that GHA / GL / BB / ADO / CC / JF have used since v0.2.x.
+# These tests lock in the registration: regressing the loops in
+# ``autofix/_impl.py`` would silently drop fixer coverage for the
+# three thinnest providers in the catalog.
+# ──────────────────────────────────────────────────────────────────────
+
+
+class TestBuildkiteFixers:
+    def test_bk002_redacts_secret(self):
+        wf = (
+            "steps:\n"
+            "  - command: echo hi\n"
+            "    env:\n"
+            "      AWS_KEY: AKIAIOSFODNN7EXAMPLE\n"
+        )
+        after = autofix.generate_fix(_finding("BK-002"), wf)
+        assert after is not None
+        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "<REDACTED>" in after
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk004_comments_out_curl_pipe(self):
+        wf = "  - command: curl https://e.example/install.sh | bash\n"
+        after = autofix.generate_fix(_finding("BK-004"), wf)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk005_strips_privileged(self):
+        wf = "  - command: docker run --privileged ubuntu:latest cmd\n"
+        after = autofix.generate_fix(_finding("BK-005"), wf)
+        assert after is not None
+        assert "--privileged" not in after
+        assert "docker run" in after
+
+    def test_bk008_comments_out_tls_bypass(self):
+        wf = "  - command: curl --insecure https://api.example/x\n"
+        after = autofix.generate_fix(_finding("BK-008"), wf)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_bk004_idempotent(self):
+        wf = "  - command: curl https://e.example/install.sh | bash\n"
+        once = autofix.generate_fix(_finding("BK-004"), wf)
+        assert once is not None
+        assert autofix.generate_fix(_finding("BK-004"), once) is None
+
+
+class TestTektonFixers:
+    def test_tkn005_redacts_secret_in_step_env(self):
+        # Tekton task step env shape: ``env: [{name: K, value: V}]``.
+        # The shared ``_fix_gha008`` regex matches ``value: V`` lines
+        # exactly the same as the YAML CI providers.
+        manifest = (
+            "apiVersion: tekton.dev/v1\n"
+            "kind: Task\n"
+            "spec:\n"
+            "  steps:\n"
+            "    - name: deploy\n"
+            "      env:\n"
+            "        - name: TOKEN\n"
+            "          value: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-005"), manifest)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+
+    def test_tkn008_handles_curl_pipe(self):
+        manifest = (
+            "spec:\n"
+            "  steps:\n"
+            "    - name: install\n"
+            "      script: |\n"
+            "        curl https://e.example/i.sh | bash\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_tkn008_handles_tls_bypass(self):
+        manifest = (
+            "spec:\n"
+            "  steps:\n"
+            "    - name: fetch\n"
+            "      script: |\n"
+            "        curl --insecure https://api.example/data\n"
+        )
+        after = autofix.generate_fix(_finding("TKN-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+
+class TestArgoFixers:
+    def test_argo006_redacts_secret_in_template_env(self):
+        manifest = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "spec:\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      container:\n"
+            "        env:\n"
+            "          - name: API_KEY\n"
+            "            value: AKIAIOSFODNN7EXAMPLE\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-006"), manifest)
+        assert after is not None
+        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "<REDACTED>" in after
+
+    def test_argo008_handles_curl_pipe(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: install\n"
+            "      script:\n"
+            "        source: |\n"
+            "          curl https://e.example/i.sh | bash\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_argo008_handles_tls_bypass(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: fetch\n"
+            "      script:\n"
+            "        source: |\n"
+            "          export NODE_TLS_REJECT_UNAUTHORIZED=0\n"
+            "          node index.js\n"
+        )
+        after = autofix.generate_fix(_finding("ARGO-008"), manifest)
+        assert after is not None
+        assert "TODO(pipeline-check)" in after
+
+    def test_argo008_no_op_when_safe(self):
+        manifest = (
+            "spec:\n"
+            "  templates:\n"
+            "    - name: build\n"
+            "      script:\n"
+            "        source: |\n"
+            "          npm ci && npm run build\n"
+        )
+        assert autofix.generate_fix(_finding("ARGO-008"), manifest) is None

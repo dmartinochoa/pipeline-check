@@ -8,7 +8,7 @@ integration.
 
 Key shape notes:
 
-- Only **failed** findings become ``results`` — SARIF's convention is
+- Only **failed** findings become ``results``. SARIF's convention is
   that a rule with no results is a passing / not-triggered check.
 - Every distinct ``check_id`` is declared once under
   ``runs[0].tool.driver.rules`` with its title, description, help, and
@@ -22,7 +22,7 @@ Key shape notes:
   scanning UI can filter by standard; individual *control IDs*
   (``CICD-SEC-6``, ``CC6.1``, ``Dangerous-Workflow``) live only on the
   per-result ``properties.controls`` array. GitHub caps rule tags at
-  10 — the docstring formerly said 20, but a SARIF upload exceeding
+  10, the docstring formerly said 20, but a SARIF upload exceeding
   10 tags surfaces a runtime warning and silently drops the
   overflow, which is why the cap is enforced here. Tags that get
   truncated are still present in full on ``properties.controls``.
@@ -117,7 +117,7 @@ def report_sarif(
     Parameters
     ----------
     findings:
-        The full set of findings from the scanner — both passed and
+        The full set of findings from the scanner, both passed and
         failed. Passed findings are used to complete the rule catalog
         but do not emit results.
     score_result:
@@ -211,7 +211,7 @@ def _read_snippet(path: str, line: int | None) -> str:
     Reads *line* from disk if the file exists and is small enough.
     Whitespace is collapsed so a re-indent doesn't invalidate the
     fingerprint. Returns ``""`` for unreadable / out-of-range / non-
-    file inputs — callers must treat that as "fingerprint from id +
+    file inputs, callers must treat that as "fingerprint from id +
     path only".
     """
     if not path or line is None or line <= 0:
@@ -233,7 +233,7 @@ def _read_snippet(path: str, line: int | None) -> str:
 
 
 def _hash(*parts: str) -> str:
-    """SHA-256 of the parts joined by NUL — collision-resistant enough
+    """SHA-256 of the parts joined by NUL, collision-resistant enough
     for cross-run dedup, short enough that SARIF payloads stay readable."""
     h = hashlib.sha256()
     h.update("\0".join(parts).encode("utf-8"))
@@ -244,12 +244,12 @@ def _finding_fingerprints(f: Finding) -> dict[str, str]:
     """Build the ``partialFingerprints`` dict for a finding.
 
     Inputs (in priority order):
-      1. ``check_id`` — same rule, different rule = different fingerprint.
+      1. ``check_id``, same rule, different rule = different fingerprint.
       2. Normalized path of the primary location (or the resource).
       3. Normalized snippet of the primary location's start line, when
          the file is readable. When the file isn't readable (AWS
          resource, Terraform plan, in-memory test fixture, deleted
-         file), the fingerprint falls back to (id, path) only — still
+         file), the fingerprint falls back to (id, path) only, still
          stable across runs.
 
     A rule fix that edits the offending line changes the snippet ->
@@ -258,13 +258,19 @@ def _finding_fingerprints(f: Finding) -> dict[str, str]:
     untouched.
     """
     primary: Location | None = f.locations[0] if f.locations else None
-    raw_path = (primary.path if primary else None) or f.resource or ""
-    norm_path = _normalize_path(raw_path)
+    # Only normalize when we have a file-backed location. Non-file
+    # resource IDs (AWS ARNs, IAM role names) must pass through
+    # untouched. Windows would otherwise lowercase the ARN and
+    # produce a different fingerprint than the same scan run on Linux.
+    if primary is not None:
+        norm_path_or_resource = _normalize_path(primary.path)
+    else:
+        norm_path_or_resource = f.resource or ""
     snippet = _read_snippet(
         primary.path if primary else "",
         primary.start_line if primary else None,
     )
-    digest = _hash(f.check_id, norm_path, snippet)
+    digest = _hash(f.check_id, norm_path_or_resource, snippet)
     return {_FINGERPRINT_VERSION: digest}
 
 
@@ -388,7 +394,7 @@ def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
         # Tags: "security" + the standard slugs this check maps to,
         # priority-ordered so the most user-facing frameworks survive
         # the truncation when the rule maps to more standards than fit.
-        # Control IDs are NOT included here — GitHub code-scanning
+        # Control IDs are NOT included here. GitHub code-scanning
         # caps tags per rule at 10, and structured control data is
         # already exposed via ``properties.controls`` for programmatic
         # consumers without losing fidelity.
@@ -485,7 +491,7 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,
         # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
-        # sort results by how much the scanner trusts them — orthogonal
+        # sort results by how much the scanner trusts them, orthogonal
         # to severity. HIGH-confidence findings surface first; LOW are
         # de-ranked so noisy rules don't drown out the signal.
         "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
@@ -531,7 +537,7 @@ def _best_effort_line(f: Finding) -> int | None:
     check_id = f.check_id.upper()
     # Per-check line signatures. Return the 1-based line number of the
     # first match. Missing patterns mean "don't annotate a specific
-    # line" — caller falls back to file-level.
+    # line", caller falls back to file-level.
     patterns: dict[str, _re.Pattern[str]] = {
         "GHA-001": _re.compile(r"\buses:\s*\S+@(?!\s*[0-9a-f]{40}\b)\S+"),
         "GHA-002": _re.compile(r"pull_request\.head\.(?:sha|ref)"),
@@ -605,7 +611,7 @@ def _rule_name(check_id: str, title: str) -> str:
 
     SARIF requires ``name`` to be a *stable* identifier distinct from
     ``id``. We build it from the title by stripping non-alphanumerics and
-    camel-casing — this is stable as long as titles don't change and is
+    camel-casing. This is stable as long as titles don't change and is
     readable in UIs that show rule names.
     """
     parts = [p for p in _split_title(title) if p]
@@ -635,7 +641,7 @@ def _artifact_uri(resource: str) -> str:
 
     For file-based providers (GitHub / GitLab / Bitbucket) the resource
     is already a path. For AWS / Terraform it is a resource name (e.g.
-    an ARN or bucket name) — we encode those as ``resource://<name>`` so
+    an ARN or bucket name). We encode those as ``resource://<name>`` so
     SARIF consumers treat them as opaque identifiers rather than trying
     to open a file on disk.
     """

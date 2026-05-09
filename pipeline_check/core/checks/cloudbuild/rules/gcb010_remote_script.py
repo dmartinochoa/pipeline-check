@@ -1,4 +1,4 @@
-"""GCB-010 — remote script piped to shell interpreter.
+"""GCB-010, remote script piped to shell interpreter.
 
 Cloud Build steps that run ``curl <url> | bash`` (or the wget,
 python, perl, ruby, or PowerShell equivalents) execute
@@ -26,7 +26,7 @@ RULE = Rule(
     recommendation=(
         "Download the script to a file, verify its checksum, then "
         "execute it. Or vendor the script into the repository and "
-        "invoke it from the checkout — removing the network fetch "
+        "invoke it from the checkout, removing the network fetch "
         "removes the attacker-controllable content entirely."
     ),
     docs_note=(

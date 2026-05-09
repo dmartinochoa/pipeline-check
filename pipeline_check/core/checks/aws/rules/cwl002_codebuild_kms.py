@@ -1,4 +1,4 @@
-"""CWL-002 — CodeBuild log groups are not KMS-encrypted."""
+"""CWL-002. CodeBuild log groups are not KMS-encrypted."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -19,7 +19,7 @@ RULE = Rule(
         "read the logs, not just S3/CloudWatch IAM."
     ),
     docs_note=(
-        "CloudWatch Logs default encryption is service-managed — "
+        "CloudWatch Logs default encryption is service-managed, "
         "fine for confidentiality, but no audit trail or scoping. "
         "Build logs are a frequent secret-leak vector (CWL-001's "
         "rationale extended), so the same key-policy + Decrypt-event "

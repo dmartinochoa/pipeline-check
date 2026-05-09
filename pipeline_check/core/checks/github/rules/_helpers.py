@@ -2,14 +2,14 @@
 
 Keeping these in one module means when the attacker-controllable-
 context catalog (``_UNTRUSTED_CONTEXT_RE``) grows, only one place
-needs editing — and every rule that shares the regex picks up the
+needs editing, and every rule that shares the regex picks up the
 change automatically.
 """
 from __future__ import annotations
 
 import re
 
-# A 40-character lowercase hex string — a git commit SHA.
+# A 40-character lowercase hex string, a git commit SHA.
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 # Untrusted attacker-controllable context expressions inside `run:`
@@ -17,12 +17,12 @@ SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 # advisories plus PPE write-ups (CICD-SEC-4). Three classes of
 # expression:
 #
-#   1. ``github.event.<field>`` — payload fields the SCM event author
+#   1. ``github.event.<field>``, payload fields the SCM event author
 #      populates (PR title/body, commit message, comment body, …).
-#   2. ``github.<top-level>`` — derived shortcuts that resolve to the
+#   2. ``github.<top-level>``, derived shortcuts that resolve to the
 #      same untrusted ref (head_ref, ref_name on push). The pusher
 #      controls these through branch/tag naming.
-#   3. ``inputs.<name>`` — workflow_dispatch / workflow_call inputs.
+#   3. ``inputs.<name>``, workflow_dispatch / workflow_call inputs.
 #      Caller-controlled; safe ONLY when the trigger is restricted to
 #      privileged actors, which the workflow YAML can't enforce.
 UNTRUSTED_CONTEXT_RE = re.compile(
@@ -46,7 +46,7 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r")\s*\}\}"
 )
 
-# A ``ref:`` value pointing at the PR head — used by GHA-002.
+# A ``ref:`` value pointing at the PR head, used by GHA-002.
 PR_HEAD_REF_RE = re.compile(
     r"\$\{\{\s*github\.event\.pull_request\.head\.(?:sha|ref)\s*\}\}"
 )

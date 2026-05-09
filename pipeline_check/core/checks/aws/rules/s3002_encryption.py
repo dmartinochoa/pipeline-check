@@ -1,4 +1,4 @@
-"""S3-002 — CodePipeline artifact bucket has no default server-side encryption."""
+"""S3-002. CodePipeline artifact bucket has no default server-side encryption."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -20,7 +20,7 @@ RULE = Rule(
     docs_note=(
         "Default bucket encryption applies SSE-S3 (AES256) to every "
         "PutObject. As of January 2023, AWS enables this on all new "
-        "buckets automatically — but existing buckets created before "
+        "buckets automatically, but existing buckets created before "
         "then can still be unencrypted unless explicitly configured. "
         "Without it, individual objects can be uploaded without "
         "encryption (the client gets to choose)."

@@ -20,16 +20,16 @@ from .base import Confidence
 
 # ── MEDIUM: heuristic rules with known FP modes ──────────────────────
 _MEDIUM: frozenset[str] = frozenset({
-    # GHA-004 — permissions block missing. Read-only workflows don't
+    # GHA-004, permissions block missing. Read-only workflows don't
     # need an explicit block; the default GITHUB_TOKEN is read-only on
     # public repos. The tightened check skips lint/test-only workflows
     # but can still over-flag some cases.
     "GHA-004",
-    # Self-hosted-runner ephemeral detection — ARC / autoscaled runners
+    # Self-hosted-runner ephemeral detection. ARC / autoscaled runners
     # often use org-specific label conventions the heuristic may miss.
     "GHA-012",
     "JF-014",
-    # Dep-update lockfile bypass — catches all ``pip install -U`` by
+    # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is
     # exempted but other tooling-upgrade idioms exist.
     "GHA-022",
@@ -38,7 +38,7 @@ _MEDIUM: frozenset[str] = frozenset({
     "ADO-022",
     "JF-022",
     "CC-022",
-    # CB-005 outdated managed image — one version behind LATEST is a
+    # CB-005 outdated managed image, one version behind LATEST is a
     # hygiene warning, not a production issue. Two+ versions behind
     # remains HIGH via per-rule confidence assignment.
     "CB-005",
@@ -46,21 +46,21 @@ _MEDIUM: frozenset[str] = frozenset({
 
 # ── LOW: blob-search heuristics; meaningful FP rate expected ─────────
 _LOW: frozenset[str] = frozenset({
-    # Curl-pipe detection — vendor installers over HTTPS are an idiom,
+    # Curl-pipe detection, vendor installers over HTTPS are an idiom,
     # not automatically malicious. The tightened rule allowlists known
     # installers; everything else stays LOW so CI gates default-filter
     # them out unless the team explicitly opts into HIGH-only mode.
     "GHA-016", "GL-016", "BB-012", "ADO-016", "JF-016", "CC-016",
-    # CP-003 source polling — ``PollForSourceChanges=true`` is the CFN
+    # CP-003 source polling, ``PollForSourceChanges=true`` is the CFN
     # default for CodeCommit sources. The rule is advisory ("upgrade
     # to CodeStarSourceConnection") more than a real risk.
     "CP-003",
-    # Malicious-activity rules — blob matches against a token registry.
+    # Malicious-activity rules, blob matches against a token registry.
     # Documentation repos, security training fixtures, CTF challenges
     # legitimately mention reverse shells / exfil domains.
     "GHA-027", "GL-025", "BB-025", "ADO-026", "CC-026", "JF-029",
     "CB-011",
-    # Credential-shaped literals in pipeline body — AKIA/JWT patterns
+    # Credential-shaped literals in pipeline body. AKIA/JWT patterns
     # appear in fixtures/docs even when `example` labeling isn't
     # matched by the context helper.
     "GHA-008", "GL-008", "BB-008", "ADO-008", "JF-008", "CC-008",
@@ -70,7 +70,7 @@ _LOW: frozenset[str] = frozenset({
 def confidence_for(check_id: str) -> Confidence:
     """Return the default confidence for *check_id*.
 
-    HIGH is the fallback — the vast majority of checks assert on
+    HIGH is the fallback, the vast majority of checks assert on
     structural properties (an IAM policy grants ``Action: "*"``; a
     CloudTrail trail has ``LogFileValidationEnabled: false``) and their
     findings are unambiguous. Only the IDs listed above demote.

@@ -1,4 +1,4 @@
-"""CB-010 — CodeBuild webhook allows fork-PR builds without actor filtering."""
+"""CB-010. CodeBuild webhook allows fork-PR builds without actor filtering."""
 from __future__ import annotations
 
 from typing import Any

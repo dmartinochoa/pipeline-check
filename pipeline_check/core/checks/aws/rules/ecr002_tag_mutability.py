@@ -1,4 +1,4 @@
-"""ECR-002 — ECR repository has mutable image tags."""
+"""ECR-002. ECR repository has mutable image tags."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -18,7 +18,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` "
-        "can be re-pushed silently — the same tag points to different "
+        "can be re-pushed silently, the same tag points to different "
         "image content over time. Pinning by digest (``sha256:...``) "
         "in deployment manifests is the only durable reference; "
         "IMMUTABLE on the repo enforces the property registry-side "
@@ -34,7 +34,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         mutability = repo.get("imageTagMutability", "MUTABLE")
         passed = mutability == "IMMUTABLE"
         if passed:
-            desc = "Image tags are immutable — pushed tags cannot be overwritten."
+            desc = "Image tags are immutable, pushed tags cannot be overwritten."
         else:
             desc = (
                 "Image tag mutability is MUTABLE. Any principal with ecr:PutImage "

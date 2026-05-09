@@ -1,4 +1,4 @@
-"""ADO-019 — `extends:` template on PR-validated pipeline points to local path."""
+"""ADO-019, `extends:` template on PR-validated pipeline points to local path."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,7 +21,7 @@ RULE = Rule(
     docs_note=(
         "`extends: template: <local-file>` includes another YAML from "
         "the CURRENT repo. On PR validation builds, the repo content "
-        "is the PR branch — letting the PR author swap the template "
+        "is the PR branch, letting the PR author swap the template "
         "body and inject arbitrary pipeline logic. Cross-repo templates "
         "(`template: foo.yml@my-repo`) are version-pinned and not "
         "affected."
@@ -75,7 +75,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"repo-pinned template (`{template}`)."
         if passed else
         f"PR-validated pipeline `extends:` template points to local "
-        f"path `{template}` — a PR author can replace its contents."
+        f"path `{template}`, a PR author can replace its contents."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

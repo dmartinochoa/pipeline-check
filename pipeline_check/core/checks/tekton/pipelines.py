@@ -2,7 +2,7 @@
 
 Each rule receives the full :class:`TektonContext` and emits a single
 aggregated Finding spanning every doc it cares about. This mirrors
-the Kubernetes orchestrator's shape — Tekton manifests live in
+the Kubernetes orchestrator's shape. Tekton manifests live in
 multi-doc YAML, and the per-doc / per-kind branching belongs inside
 the rule, not in the orchestrator.
 """

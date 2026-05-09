@@ -1,4 +1,4 @@
-"""Tekton provider — scans ``Task`` / ``Pipeline`` / ``*Run`` YAML."""
+"""Tekton provider, scans ``Task`` / ``Pipeline`` / ``*Run`` YAML."""
 from __future__ import annotations
 
 from typing import Any
@@ -11,7 +11,7 @@ from .base import BaseProvider
 
 
 class TektonProvider(BaseProvider):
-    """Tekton provider — multi-doc YAML, kinds under tekton.dev/*."""
+    """Tekton provider, multi-doc YAML, kinds under tekton.dev/*."""
 
     NAME = "tekton"
 

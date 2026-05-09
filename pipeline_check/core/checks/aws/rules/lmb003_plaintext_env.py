@@ -1,4 +1,4 @@
-"""LMB-003 — Lambda function env vars contain secret-like plaintext values."""
+"""LMB-003. Lambda function env vars contain secret-like plaintext values."""
 from __future__ import annotations
 
 from ..._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
@@ -20,7 +20,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Lambda env vars are world-readable to any principal with "
-        "``lambda:GetFunctionConfiguration`` — much wider than the "
+        "``lambda:GetFunctionConfiguration``, much wider than the "
         "principal that can invoke the function. They also persist "
         "in CloudFormation drift, change-sets, and CloudTrail "
         "events. A secret in a Lambda env var is essentially "

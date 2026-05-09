@@ -1,4 +1,4 @@
-"""CA-003 — CodeArtifact domain permissions policy allows wildcard principals."""
+"""CA-003. CodeArtifact domain permissions policy allows wildcard principals."""
 from __future__ import annotations
 
 import json

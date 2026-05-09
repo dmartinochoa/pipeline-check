@@ -101,7 +101,8 @@ class TestEngine:
             "AC-009", "AC-010", "AC-011", "AC-012",
             "AC-013", "AC-014", "AC-015", "AC-016",
             "AC-017", "AC-018", "AC-019", "AC-020",
-            "AC-021",
+            "AC-021", "AC-022", "AC-023", "AC-024",
+            "AC-025", "AC-026", "AC-027",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -862,6 +863,7 @@ class TestChainAC020:
         ])
         chain = next(c for c in out if c.chain_id == "AC-020")
         assert set(chain.resources) == {self.TASK, self.BINDING}
+        assert len(chain.resources) == len(set(chain.resources))
 
 
 class TestChainAC021:
@@ -912,6 +914,484 @@ class TestChainAC021:
         ])
         chain = next(c for c in out if c.chain_id == "AC-021")
         assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC022:
+    """AC-022 — GitLab script injection meets unguarded deploy."""
+
+    WF = ".gitlab-ci.yml"
+    OTHER_WF = "ci/sub-pipeline.yml"
+
+    def test_fires_when_both_legs_on_same_file(self):
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF),
+            _f("GL-004", self.WF),
+        ])
+        ac22 = [c for c in out if c.chain_id == "AC-022"]
+        assert len(ac22) == 1
+        assert ac22[0].severity is Severity.CRITICAL
+        assert set(ac22[0].triggering_check_ids) == {"GL-002", "GL-004"}
+        assert "T1059" in ac22[0].mitre_attack
+        assert "T1078" in ac22[0].mitre_attack
+        assert "T1556" in ac22[0].mitre_attack
+
+    def test_does_not_fire_on_different_files(self):
+        # The chain narrative is per-file: an injection in one
+        # pipeline file co-existing with a missing gate in a
+        # different pipeline file isn't the same end-to-end path.
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF),
+            _f("GL-004", self.OTHER_WF),
+        ])
+        assert not any(c.chain_id == "AC-022" for c in out)
+
+    def test_does_not_fire_without_gl002(self):
+        out = chains_pkg.evaluate([_f("GL-004", self.WF)])
+        assert not any(c.chain_id == "AC-022" for c in out)
+
+    def test_does_not_fire_without_gl004(self):
+        out = chains_pkg.evaluate([_f("GL-002", self.WF)])
+        assert not any(c.chain_id == "AC-022" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, passed=True),
+            _f("GL-004", self.WF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-022" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF), _f("GL-004", self.WF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-022")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_resources_dedupe_per_file(self):
+        # group_by_resource produces one Chain per file. With one
+        # file, exactly one chain instance, with that one resource.
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF),
+            _f("GL-004", self.WF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-022")
+        assert chain.resources == [self.WF]
+        assert len(chain.resources) == len(set(chain.resources))
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, confidence=Confidence.HIGH),
+            _f("GL-004", self.WF, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-022")
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_fires_per_file_when_two_files_each_have_both_legs(self):
+        # Two .gitlab-ci.yml files (monorepo with multiple pipelines)
+        # each independently triggers — each is a separate chain.
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF),
+            _f("GL-004", self.WF),
+            _f("GL-002", self.OTHER_WF),
+            _f("GL-004", self.OTHER_WF),
+        ])
+        ac22 = [c for c in out if c.chain_id == "AC-022"]
+        assert len(ac22) == 2
+        assert {c.resources[0] for c in ac22} == {self.WF, self.OTHER_WF}
+
+
+class TestChainAC023:
+    """AC-023 — Tekton param injection lands in a privileged step."""
+
+    TASK = "tekton/build-task.yaml"
+    OTHER_TASK = "tekton/release-task.yaml"
+
+    def test_fires_when_both_legs_on_same_task(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK),
+            _f("TKN-003", self.TASK),
+        ])
+        ac23 = [c for c in out if c.chain_id == "AC-023"]
+        assert len(ac23) == 1
+        assert ac23[0].severity is Severity.CRITICAL
+        assert set(ac23[0].triggering_check_ids) == {"TKN-002", "TKN-003"}
+        assert "T1059" in ac23[0].mitre_attack
+        assert "T1068" in ac23[0].mitre_attack
+        assert "T1611" in ac23[0].mitre_attack
+
+    def test_does_not_fire_on_different_tasks(self):
+        # Privileged step on Task A and param injection on Task B
+        # don't compose — the chain claim is *same Task*, which is
+        # what determines whether the injected command actually
+        # lands in the privileged container.
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK),
+            _f("TKN-003", self.OTHER_TASK),
+        ])
+        assert not any(c.chain_id == "AC-023" for c in out)
+
+    def test_does_not_fire_without_tkn002(self):
+        out = chains_pkg.evaluate([_f("TKN-003", self.TASK)])
+        assert not any(c.chain_id == "AC-023" for c in out)
+
+    def test_does_not_fire_without_tkn003(self):
+        out = chains_pkg.evaluate([_f("TKN-002", self.TASK)])
+        assert not any(c.chain_id == "AC-023" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK, passed=True),
+            _f("TKN-003", self.TASK, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-023" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK), _f("TKN-003", self.TASK),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+    def test_resources_dedupe_per_task(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK),
+            _f("TKN-003", self.TASK),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.resources == [self.TASK]
+        assert len(chain.resources) == len(set(chain.resources))
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK, confidence=Confidence.HIGH),
+            _f("TKN-003", self.TASK, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_fires_per_task_when_multiple_tasks_each_have_both(self):
+        out = chains_pkg.evaluate([
+            _f("TKN-002", self.TASK),
+            _f("TKN-003", self.TASK),
+            _f("TKN-002", self.OTHER_TASK),
+            _f("TKN-003", self.OTHER_TASK),
+        ])
+        ac23 = [c for c in out if c.chain_id == "AC-023"]
+        assert len(ac23) == 2
+        assert {c.resources[0] for c in ac23} == {self.TASK, self.OTHER_TASK}
+
+
+class TestChainAC024:
+    """AC-024 — OIDC trust drift lands on a mutable ECR tag."""
+
+    WF = ".github/workflows/release.yml"
+    REPO = "arn:aws:ecr:us-east-1:123456789012:repository/myapp"
+    OTHER_REPO = "arn:aws:ecr:us-east-1:123456789012:repository/other"
+
+    def test_fires_when_both_legs_present(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("ECR-002", self.REPO),
+        ])
+        ac24 = [c for c in out if c.chain_id == "AC-024"]
+        assert len(ac24) == 1
+        assert ac24[0].severity is Severity.CRITICAL
+        assert set(ac24[0].triggering_check_ids) == {"GHA-030", "ECR-002"}
+        assert "T1078.004" in ac24[0].mitre_attack
+        assert "T1195.002" in ac24[0].mitre_attack
+        assert "T1525" in ac24[0].mitre_attack
+
+    def test_does_not_fire_without_gha030(self):
+        out = chains_pkg.evaluate([_f("ECR-002", self.REPO)])
+        assert not any(c.chain_id == "AC-024" for c in out)
+
+    def test_does_not_fire_without_ecr002(self):
+        out = chains_pkg.evaluate([_f("GHA-030", self.WF)])
+        assert not any(c.chain_id == "AC-024" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, passed=True),
+            _f("ECR-002", self.REPO, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-024" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("ECR-002", self.REPO),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-024")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "credential-access" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_resources_collect_both_legs_dedup(self):
+        # Cross-resource chain: a single workflow + multiple ECR
+        # repos with mutable tags all surface in the chain's
+        # resources list, deduped.
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("ECR-002", self.REPO),
+            _f("ECR-002", self.OTHER_REPO),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-024")
+        assert set(chain.resources) == {self.WF, self.REPO, self.OTHER_REPO}
+        assert len(chain.resources) == len(set(chain.resources))
+
+    def test_fires_once_even_with_multiple_workflows_and_repos(self):
+        # has_failing-style chain: one chain instance per scan, not
+        # per (workflow, repo) cross product. Attribution between a
+        # specific workflow and a specific repo lives across two
+        # planes — the chain claim is only that *some* OIDC-drifty
+        # workflow exists alongside *some* mutable-tag repo.
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF),
+            _f("GHA-030", ".github/workflows/deploy.yml"),
+            _f("ECR-002", self.REPO),
+            _f("ECR-002", self.OTHER_REPO),
+        ])
+        ac24 = [c for c in out if c.chain_id == "AC-024"]
+        assert len(ac24) == 1
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, confidence=Confidence.HIGH),
+            _f("ECR-002", self.REPO, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-024")
+        assert chain.confidence is Confidence.MEDIUM
+
+
+class TestChainAC025:
+    """AC-025 — Argo param injection lands in a privileged step."""
+
+    WF = "argo/build-workflow.yaml"
+    OTHER_WF = "argo/release-workflow.yaml"
+
+    def test_fires_when_both_legs_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF),
+            _f("ARGO-005", self.WF),
+        ])
+        ac25 = [c for c in out if c.chain_id == "AC-025"]
+        assert len(ac25) == 1
+        assert ac25[0].severity is Severity.CRITICAL
+        assert set(ac25[0].triggering_check_ids) == {"ARGO-002", "ARGO-005"}
+        assert "T1059" in ac25[0].mitre_attack
+        assert "T1068" in ac25[0].mitre_attack
+        assert "T1611" in ac25[0].mitre_attack
+
+    def test_does_not_fire_on_different_workflows(self):
+        # Privilege on one Workflow + param injection on another
+        # don't compose — same-template co-occurrence is the
+        # claim. Different templates means the injected command
+        # doesn't land in the privileged container.
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF),
+            _f("ARGO-005", self.OTHER_WF),
+        ])
+        assert not any(c.chain_id == "AC-025" for c in out)
+
+    def test_does_not_fire_without_argo002(self):
+        out = chains_pkg.evaluate([_f("ARGO-005", self.WF)])
+        assert not any(c.chain_id == "AC-025" for c in out)
+
+    def test_does_not_fire_without_argo005(self):
+        out = chains_pkg.evaluate([_f("ARGO-002", self.WF)])
+        assert not any(c.chain_id == "AC-025" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF, passed=True),
+            _f("ARGO-005", self.WF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-025" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF), _f("ARGO-005", self.WF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+        assert "privilege-escalation" in chain.kill_chain_phase
+
+    def test_resources_dedupe_per_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF),
+            _f("ARGO-005", self.WF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.resources == [self.WF]
+        assert len(chain.resources) == len(set(chain.resources))
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF, confidence=Confidence.HIGH),
+            _f("ARGO-005", self.WF, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_fires_per_workflow_when_multiple_have_both(self):
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF),
+            _f("ARGO-005", self.WF),
+            _f("ARGO-002", self.OTHER_WF),
+            _f("ARGO-005", self.OTHER_WF),
+        ])
+        ac25 = [c for c in out if c.chain_id == "AC-025"]
+        assert len(ac25) == 2
+        assert {c.resources[0] for c in ac25} == {self.WF, self.OTHER_WF}
+
+    def test_orthogonal_to_ac021(self):
+        # AC-021 (ARGO-003 + K8S-029) and AC-025 (ARGO-002 + ARGO-005)
+        # capture genuinely different attack stages on the Argo
+        # surface. A scan that triggers AC-025 should NOT also
+        # trigger AC-021 unless the AC-021 legs are independently
+        # present — they share zero check_ids.
+        out = chains_pkg.evaluate([
+            _f("ARGO-002", self.WF),
+            _f("ARGO-005", self.WF),
+        ])
+        chain_ids = {c.chain_id for c in out}
+        assert "AC-025" in chain_ids
+        assert "AC-021" not in chain_ids
+
+
+class TestChainAC026:
+    """AC-026 — Buildkite injection lands on auto-deploy step."""
+
+    PIPELINE = ".buildkite/pipeline.yml"
+    OTHER_PIPELINE = ".buildkite/release.yml"
+
+    def test_fires_when_both_legs_on_same_pipeline(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE),
+            _f("BK-007", self.PIPELINE),
+        ])
+        ac26 = [c for c in out if c.chain_id == "AC-026"]
+        assert len(ac26) == 1
+        assert ac26[0].severity is Severity.CRITICAL
+        assert set(ac26[0].triggering_check_ids) == {"BK-003", "BK-007"}
+        assert "T1059" in ac26[0].mitre_attack
+        assert "T1078" in ac26[0].mitre_attack
+        assert "T1556" in ac26[0].mitre_attack
+
+    def test_does_not_fire_on_different_pipelines(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE),
+            _f("BK-007", self.OTHER_PIPELINE),
+        ])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_without_bk003(self):
+        out = chains_pkg.evaluate([_f("BK-007", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_without_bk007(self):
+        out = chains_pkg.evaluate([_f("BK-003", self.PIPELINE)])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, passed=True),
+            _f("BK-007", self.PIPELINE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-026" for c in out)
+
+    def test_kill_chain_phase_matches_ac002_ac022_shape(self):
+        # AC-026 is the Buildkite peer of AC-002 (GHA) and AC-022
+        # (GitLab). The kill chain phase must read the same way:
+        # initial-access -> execution -> impact.
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE), _f("BK-007", self.PIPELINE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-026")
+        assert "initial-access" in chain.kill_chain_phase
+        assert "execution" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_confidence_picks_lowest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, confidence=Confidence.HIGH),
+            _f("BK-007", self.PIPELINE, confidence=Confidence.LOW),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-026")
+        assert chain.confidence is Confidence.LOW
+
+
+class TestChainAC027:
+    """AC-027 — Dockerfile credential file + exposed remote-access port."""
+
+    DF = "Dockerfile"
+    OTHER_DF = "build/Dockerfile.test"
+
+    def test_fires_when_both_legs_on_same_dockerfile(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.DF),
+        ])
+        ac27 = [c for c in out if c.chain_id == "AC-027"]
+        assert len(ac27) == 1
+        assert ac27[0].severity is Severity.CRITICAL
+        assert set(ac27[0].triggering_check_ids) == {"DF-013", "DF-019"}
+        # The kill chain shape — credential-access + initial-access +
+        # lateral-movement — is what makes AC-027 distinct from the
+        # injection-shaped chains. Lock it in.
+        assert "T1552.001" in ac27[0].mitre_attack
+        assert "T1078" in ac27[0].mitre_attack
+
+    def test_does_not_fire_on_different_dockerfiles(self):
+        # An ssh key in image A and an ``EXPOSE 22`` in image B don't
+        # compose — the credential-and-listener pair must ship in the
+        # same image.
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.OTHER_DF),
+        ])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_without_df013(self):
+        out = chains_pkg.evaluate([_f("DF-019", self.DF)])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_without_df019(self):
+        out = chains_pkg.evaluate([_f("DF-013", self.DF)])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF, passed=True),
+            _f("DF-019", self.DF, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-027" for c in out)
+
+    def test_kill_chain_phase_set(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF), _f("DF-019", self.DF),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-027")
+        assert "credential-access" in chain.kill_chain_phase
+        assert "initial-access" in chain.kill_chain_phase
+        assert "lateral-movement" in chain.kill_chain_phase
+
+    def test_fires_per_dockerfile_when_multiple_have_both(self):
+        out = chains_pkg.evaluate([
+            _f("DF-013", self.DF),
+            _f("DF-019", self.DF),
+            _f("DF-013", self.OTHER_DF),
+            _f("DF-019", self.OTHER_DF),
+        ])
+        ac27 = [c for c in out if c.chain_id == "AC-027"]
+        assert len(ac27) == 2
+        assert {c.resources[0] for c in ac27} == {self.DF, self.OTHER_DF}
+
 
 
 # ── Gate integration ─────────────────────────────────────────────────

@@ -1,8 +1,8 @@
-"""GitLab CI provider — scans ``.gitlab-ci.yml`` from disk.
+"""GitLab CI provider, scans ``.gitlab-ci.yml`` from disk.
 
     pipeline_check --pipeline gitlab --gitlab-path path/to/.gitlab-ci.yml
 
-Only YAML parsing is required — no network calls, no GitLab API token.
+Only YAML parsing is required, no network calls, no GitLab API token.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ _GITLAB_TOPLEVEL_KEYWORDS = {
 
 
 class GitLabProvider(BaseProvider):
-    """GitLab CI provider — parses pipeline YAML from disk."""
+    """GitLab CI provider, parses pipeline YAML from disk."""
 
     NAME = "gitlab"
 

@@ -6,7 +6,7 @@ detection logic in one place so per-provider rules collapse to a
 thin wrapper that adapts the primitive's output into a
 :class:`Finding`.
 
-Primitives do **not** emit ``Finding`` objects themselves — they
+Primitives do **not** emit ``Finding`` objects themselves. They
 return structured results (lists of offending snippets, booleans,
 etc.) and leave presentation to the calling rule. This keeps the
 primitive reusable across provider contexts whose resource

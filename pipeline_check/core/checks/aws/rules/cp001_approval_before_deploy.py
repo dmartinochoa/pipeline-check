@@ -1,4 +1,4 @@
-"""CP-001 — CodePipeline Deploy stage reachable without a preceding Approval."""
+"""CP-001. CodePipeline Deploy stage reachable without a preceding Approval."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -20,7 +20,7 @@ RULE = Rule(
         "Approval action means every commit on the source branch "
         "ships, with no human ack between code-merged and "
         "code-running-in-prod. The Manual approval action is the "
-        "intentional pause point — combine with CP-005 for "
+        "intentional pause point, combine with CP-005 for "
         "production-tagged stages specifically."
     ),
 )

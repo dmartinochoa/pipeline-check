@@ -1,4 +1,4 @@
-"""GCB-018 — Legacy KMS-encrypted ``secrets:`` block instead of Secret Manager."""
+"""GCB-018. Legacy KMS-encrypted ``secrets:`` block instead of Secret Manager."""
 from __future__ import annotations
 
 from typing import Any
@@ -36,7 +36,7 @@ RULE = Rule(
     ),
     known_fp=(
         "Builds that use both forms during a migration trip the "
-        "rule on the legacy block. That's intentional — finishing "
+        "rule on the legacy block. That's intentional, finishing "
         "the migration is the fix.",
     ),
 )

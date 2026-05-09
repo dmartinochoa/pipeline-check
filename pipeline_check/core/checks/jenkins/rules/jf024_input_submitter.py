@@ -1,4 +1,4 @@
-"""JF-024 — ``input`` approval steps must restrict who can approve."""
+"""JF-024, ``input`` approval steps must restrict who can approve."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -17,7 +17,7 @@ RULE = Rule(
         "Add a ``submitter: 'releasers,sre'`` (or a single role) argument "
         "to every ``input`` step in a deploy-like stage. Without it, any "
         "user with the Jenkins job ``Build`` permission can approve a "
-        "production promotion — the approval gate becomes advisory."
+        "production promotion, the approval gate becomes advisory."
     ),
     docs_note=(
         "JF-005 already flags deploy stages with no ``input`` step. This "
@@ -29,7 +29,7 @@ RULE = Rule(
 )
 
 # Identifies a ``;`` or newline *at the outer Groovy expression depth*
-# — i.e. not inside a balanced ``()``/``{}`` block or a string. Used to
+#. I.e. not inside a balanced ``()``/``{}`` block or a string. Used to
 # terminate the region of a short-form ``input`` call like
 # ``input message: 'foo', submitter: 'releasers'``.
 _EXPR_TERMINATORS = {";", "\n"}
@@ -78,7 +78,7 @@ def _input_regions(body: str) -> list[str]:
                 i += 1
             regions.append(body[start:i])
         else:
-            # Map-style or positional form — ends at a depth-0 newline
+            # Map-style or positional form, ends at a depth-0 newline
             # or semicolon. Track paren depth for args like
             # ``input message: someCall(x)``.
             depth = 0
@@ -132,7 +132,7 @@ def check(jf: Jenkinsfile) -> Finding:
             continue
         regions = _input_regions(body)
         if not regions:
-            # JF-005 already flags "no input at all" — don't double-fire.
+            # JF-005 already flags "no input at all", don't double-fire.
             continue
         if not any(SUBMITTER_FIELD_RE.search(r) for r in regions):
             offenders.append(name)

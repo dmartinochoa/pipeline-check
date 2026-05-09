@@ -1,4 +1,4 @@
-"""CC-028 — package install from git URL / local path / tarball URL."""
+"""CC-028, package install from git URL / local path / tarball URL."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""AC-006 — Cache Poisoning via Untrusted Trigger.
+"""AC-006. Cache Poisoning via Untrusted Trigger.
 
 A workflow that caches build state with a key that an attacker can
 influence (e.g. PR-controlled paths) AND accepts a fork-PR trigger
@@ -48,10 +48,10 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"In `{resource}`:\n"
             "  1. Workflow accepts `pull_request_target` and checks "
-            "out PR-head code (GHA-002) — fork PRs run in a context "
+            "out PR-head code (GHA-002), fork PRs run in a context "
             "that can write to the repo's cache namespace.\n"
             "  2. The cache key is influenceable by attacker-controlled "
-            "input (GHA-011) — e.g. it hashes a path under the PR "
+            "input (GHA-011), e.g. it hashes a path under the PR "
             "tree rather than a stable lockfile.\n"
             "  3. Attacker opens fork PR that populates the cache "
             "with a poisoned `node_modules` (or similar). The next "

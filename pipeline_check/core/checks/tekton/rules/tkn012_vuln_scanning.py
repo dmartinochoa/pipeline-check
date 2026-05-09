@@ -1,4 +1,4 @@
-"""TKN-012 — Tekton Task should run a vulnerability scan."""
+"""TKN-012. Tekton Task should run a vulnerability scan."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_vuln_scanning
@@ -23,7 +23,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Vulnerability scanning sits at a different layer from "
-        "signing and SBOM — it answers *does this artifact ship a "
+        "signing and SBOM. It answers *does this artifact ship a "
         "known CVE?* rather than *can we verify what it is?*. "
         "Detection uses the shared vuln-scan-token catalog: trivy, "
         "grype, snyk, npm-audit, pip-audit, osv-scanner, "
@@ -48,7 +48,7 @@ def check(ctx: TektonContext) -> Finding:
         "At least one Tekton document invokes a vulnerability "
         "scanner (trivy / grype / snyk / …)."
         if passed else
-        "No Tekton document invokes any vulnerability scanner — "
+        "No Tekton document invokes any vulnerability scanner, "
         "known CVEs in dependencies or container layers ship to "
         "production without a build-time signal."
     )

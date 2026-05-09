@@ -1,4 +1,4 @@
-"""AC-011 — Kubernetes Cluster Takeover via hostPath + cluster-admin.
+"""AC-011. Kubernetes Cluster Takeover via hostPath + cluster-admin.
 
 A workload that mounts a hostPath volume escapes to the node
 filesystem on every reschedule. Once on the node, kubelet's TLS keys
@@ -9,7 +9,7 @@ attacker squarely on the path to the control plane.
 Pair that with a ClusterRoleBinding granting ``cluster-admin`` to a
 broad subject (a user group, a default SA, a token) and the attacker
 has both the box-level access (hostPath) and the API-level authority
-(cluster-admin) to pivot anywhere in the cluster — read every Secret,
+(cluster-admin) to pivot anywhere in the cluster, read every Secret,
 mint additional bindings, deploy privileged DaemonSets across nodes,
 or impersonate any account.
 
@@ -31,7 +31,7 @@ RULE = ChainRule(
         "Together those two settings give an attacker who lands code "
         "in any pod on a poisoned node both an escape to the host "
         "filesystem and the API privileges needed to pivot the entire "
-        "cluster — read every Secret, deploy privileged workloads "
+        "cluster, read every Secret, deploy privileged workloads "
         "across all nodes, impersonate any service account."
     ),
     mitre_attack=(
@@ -50,7 +50,7 @@ RULE = ChainRule(
         "specific subtree the workload needs, or use ConfigMap / "
         "downwardAPI volumes for non-storage cases. Audit "
         "ClusterRoleBindings: cluster-admin should be reserved for a "
-        "narrow human-operator group with break-glass access — never "
+        "narrow human-operator group with break-glass access, never "
         "bound to a ServiceAccount or a broad ``Group``. Even with "
         "hostPath in place, removing the cluster-admin grant breaks "
         "the API-pivot leg of this chain."
@@ -75,14 +75,14 @@ def match(findings: list[Finding]) -> list[Chain]:
         "  1. At least one workload mounts a ``hostPath`` volume "
         "(K8S-013). On every node where that pod can land, processes "
         "inside the container read and write the node filesystem "
-        "directly — kubelet credentials at "
+        "directly, kubelet credentials at "
         "``/var/lib/kubelet/pki/``, static pod manifests at "
         "``/etc/kubernetes/manifests/``, the container runtime "
         "socket, all reachable.\n"
         "  2. A ClusterRoleBinding grants ``cluster-admin`` to a "
         "broad subject (K8S-020). Anyone who can authenticate as a "
-        "member of that subject — or anyone who can mint a token "
-        "from a default ServiceAccount the binding covers — has "
+        "member of that subject, or anyone who can mint a token "
+        "from a default ServiceAccount the binding covers, has "
         "unrestricted API access.\n"
         "  3. An attacker who lands code in a pod with the hostPath "
         "and authenticates against the API as the cluster-admin "

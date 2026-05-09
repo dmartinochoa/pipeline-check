@@ -1,4 +1,4 @@
-"""CB-011 — CodeBuild buildspec contains indicators of malicious activity."""
+"""CB-011. CodeBuild buildspec contains indicators of malicious activity."""
 from __future__ import annotations
 
 from ..._malicious import find_malicious_patterns
@@ -16,8 +16,8 @@ RULE = Rule(
         "Treat as a potential compromise. Identify which principal or "
         "pipeline ran the CodeBuild project recently, rotate its "
         "service role's credentials, audit CloudTrail for outbound "
-        "activity to the matched hosts, and — if an inline buildspec "
-        "is in use (CB-008) — enforce repo-sourced buildspecs under "
+        "activity to the matched hosts, and, if an inline buildspec "
+        "is in use (CB-008), enforce repo-sourced buildspecs under "
         "branch protection so the next malicious edit requires a PR."
     ),
     docs_note=(
@@ -25,11 +25,22 @@ RULE = Rule(
         "project for concrete attack indicators: reverse shells, "
         "base64-decoded execution, miner binaries/pools, Discord/"
         "Telegram webhooks, credential-dump pipes, audit-erasure "
-        "commands. CB-011 is CRITICAL by design — a true positive is "
+        "commands. CB-011 is CRITICAL by design, a true positive is "
         "evidence of compromise, not a hygiene improvement. Repo-"
         "sourced buildspecs (not inlined) return ``NOT APPLICABLE`` "
         "because the text isn't visible to the scanner; CB-008 "
         "already flags the inline form as a governance gap."
+    ),
+    known_fp=(
+        "Security-training repositories, CTF challenges, and red-team "
+        "exercise pipelines legitimately contain reverse-shell strings "
+        "or exfil domains as literals. Matches inside YAML keys / HCL "
+        "attributes whose names contain ``example``, ``fixture``, "
+        "``sample``, ``demo``, or ``test`` are auto-suppressed; bare "
+        "lines in a production pipeline still fire.",
+        "Defaults to LOW confidence. Filter with ``--min-confidence "
+        "MEDIUM`` to ignore all matches; the rule still surfaces the "
+        "hit for teams that want to spot-check.",
     ),
 )
 

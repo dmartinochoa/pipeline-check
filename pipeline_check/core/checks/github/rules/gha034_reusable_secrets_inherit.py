@@ -1,4 +1,4 @@
-"""GHA-034 — reusable workflow called with ``secrets: inherit``."""
+"""GHA-034, reusable workflow called with ``secrets: inherit``."""
 from __future__ import annotations
 
 from typing import Any
@@ -18,7 +18,7 @@ RULE = Rule(
         "Replace ``secrets: inherit`` with an explicit list of just "
         "the secrets the called workflow actually needs (``secrets: "
         "{ NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }``). ``inherit`` "
-        "passes every secret the caller can see — including ones the "
+        "passes every secret the caller can see, including ones the "
         "downstream workflow has no business reading. A compromised "
         "or buggy reusable workflow can then exfiltrate credentials "
         "the caller never intended to share."
@@ -30,12 +30,12 @@ RULE = Rule(
         "workflow): inheritance is a problem even when the call is SHA-"
         "pinned, because the surface a compromised callee sees is "
         "every caller secret instead of just the named ones. Explicit "
-        "lists also document the contract — reviewers see exactly "
+        "lists also document the contract, reviewers see exactly "
         "which secrets cross the workflow boundary."
     ),
     known_fp=(
         "Single-tenant repos that share their entire secrets set with "
-        "every reusable workflow by policy. Rare in practice — "
+        "every reusable workflow by policy. Rare in practice, "
         "explicit lists make the secret flow visible and don't add "
         "much typing. Suppress with ``.pipelinecheckignore`` and a "
         "rationale rather than disabling the rule everywhere.",

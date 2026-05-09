@@ -1,4 +1,4 @@
-"""CP-003 — CodePipeline Source action uses polling instead of event trigger."""
+"""CP-003. CodePipeline Source action uses polling instead of event trigger."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -20,10 +20,18 @@ RULE = Rule(
         "``PollForSourceChanges=true`` polls the source repo every "
         "minute or two. Beyond the API-quota and latency cost, "
         "polling produces a less-useful CloudTrail story than "
-        "event-driven triggers — you see the poll calls, not the "
+        "event-driven triggers. You see the poll calls, not the "
         "specific commit that started the pipeline. EventBridge / "
         "CodeCommit triggers tie each pipeline start to the "
         "originating event."
+    ),
+    known_fp=(
+        "``PollForSourceChanges=true`` is the CFN default for "
+        "CodeCommit sources, so legacy templates can carry the flag "
+        "without an active design decision behind it. The rule is "
+        "advisory (consider EventBridge / CodeStarSourceConnection) "
+        "rather than a real risk; defaults to LOW confidence so CI "
+        "gates default-filter it.",
     ),
 )
 

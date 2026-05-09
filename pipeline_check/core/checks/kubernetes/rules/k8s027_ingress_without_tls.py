@@ -1,4 +1,4 @@
-"""K8S-027 — Ingress accepts traffic without a TLS configuration."""
+"""K8S-027. Ingress accepts traffic without a TLS configuration."""
 from __future__ import annotations
 
 from typing import Any
@@ -17,7 +17,7 @@ RULE = Rule(
     recommendation=(
         "Add a ``spec.tls`` block to every Ingress that fronts an "
         "HTTP backend. Each entry pairs one or more hostnames with "
-        "a Secret holding the certificate / key — the canonical "
+        "a Secret holding the certificate / key, the canonical "
         "pattern is to provision the Secret via cert-manager and a "
         "ClusterIssuer pointing at Let's Encrypt or an internal CA. "
         "Plaintext-only Ingress lets a network attacker downgrade "

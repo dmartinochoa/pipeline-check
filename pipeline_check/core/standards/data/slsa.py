@@ -1,7 +1,7 @@
-"""SLSA (Supply-chain Levels for Software Artifacts) v1.0 — Build track.
+"""SLSA (Supply-chain Levels for Software Artifacts) v1.0. Build track.
 
 SLSA v1.0 organizes requirements into "tracks". This module covers the
-Build track (L1–L3) — the only track whose requirements are evidenced
+Build track (L1–L3), the only track whose requirements are evidenced
 by CI/CD configuration state visible to this scanner. The Source and
 Dependency tracks require SCM/registry introspection outside this scan.
 
@@ -19,33 +19,33 @@ STANDARD = Standard(
     version="1.0",
     url="https://slsa.dev/spec/v1.0/",
     controls={
-        # Build L1 — provenance exists
+        # Build L1, provenance exists
         "Build.L1.Scripted":   "Build L1: Build process is fully defined and automated (scripted build)",
         "Build.L1.Provenance": "Build L1: Provenance describing how the artifact was produced is generated",
-        # Build L2 — hosted build platform with signed provenance
+        # Build L2, hosted build platform with signed provenance
         "Build.L2.Hosted":     "Build L2: Builds run on a hosted build platform (not a developer workstation)",
         "Build.L2.Signed":     "Build L2: Provenance is authenticated and cannot be forged by tenants",
-        # Build L3 — hardened builds
+        # Build L3, hardened builds
         "Build.L3.Isolated":   "Build L3: Build runs in an isolated environment not influenced by other builds",
         "Build.L3.Ephemeral":  "Build L3: Build environment is ephemeral and provisioned fresh for each run",
         "Build.L3.NonFalsifiable": "Build L3: Provenance cannot be falsified by the build's own tenant",
     },
     mappings={
-        # CodeBuild — isolation & ephemerality
+        # CodeBuild, isolation & ephemerality
         "CB-002":   ["Build.L3.Isolated"],                         # privileged mode breaks isolation
         "CB-004":   ["Build.L3.Ephemeral"],                        # unbounded timeout ≠ ephemeral
         "CB-007":   ["Build.L3.Isolated", "Build.L3.Ephemeral"],   # uncapped webhook triggers
-        # CodePipeline — provenance storage integrity
+        # CodePipeline, provenance storage integrity
         "CP-001":   ["Build.L3.NonFalsifiable"],                   # no approval gate
         "CP-002":   ["Build.L1.Provenance", "Build.L2.Signed"],    # artifact store not CMK-encrypted
-        # ECR — artifact-to-provenance binding
+        # ECR, artifact-to-provenance binding
         "ECR-002":  ["Build.L2.Signed", "Build.L3.NonFalsifiable"],# mutable tags break binding
-        # IAM — tenant-forgeable provenance if over-privileged
+        # IAM, tenant-forgeable provenance if over-privileged
         "IAM-001":  ["Build.L3.NonFalsifiable"],                   # admin can rewrite artifacts
         "IAM-002":  ["Build.L3.NonFalsifiable"],                   # wildcard action
         "IAM-004":  ["Build.L3.NonFalsifiable"],                   # PassRole * → role hopping
         "IAM-006":  ["Build.L3.NonFalsifiable"],                   # wildcard resource
-        # PBAC — cross-build contamination breaks isolation
+        # PBAC, cross-build contamination breaks isolation
         "PBAC-001": ["Build.L3.Isolated"],                         # no VPC boundary
         "PBAC-002": ["Build.L3.Isolated"],                         # shared service role
         # ── GitHub Actions ────────────────────────────────────────
@@ -141,7 +141,7 @@ STANDARD = Standard(
         # ── Jenkins ───────────────────────────────────────────────
         "JF-001":   ["Build.L3.NonFalsifiable"],                   # unpinned shared library
         "JF-002":   ["Build.L3.Isolated"],                         # script injection
-        "JF-003":   ["Build.L3.Isolated"],                         # agent any — no isolation
+        "JF-003":   ["Build.L3.Isolated"],                         # agent any, no isolation
         "JF-006":   ["Build.L2.Signed"],                           # unsigned artifacts
         "JF-007":   ["Build.L1.Provenance"],                       # no SBOM
         "JF-008":   ["Build.L3.NonFalsifiable"],                   # leaked creds
@@ -221,7 +221,7 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],                   # SLSA provenance
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
-        # boundary — Chart.lock and Chart.yaml are the chart's
+        # boundary. Chart.lock and Chart.yaml are the chart's
         # "provenance metadata" the same way an image manifest is for
         # a container build. HELM-002 (no Chart.lock digest) is the
         # exact NonFalsifiable failure for chart distribution.
@@ -233,5 +233,40 @@ STANDARD = Standard(
         "HELM-004": ["Build.L3.NonFalsifiable"],                   # version not exact-pinned
         "HELM-005": ["Build.L1.Provenance"],                       # maintainers chain-of-custody
         "HELM-006": ["Build.L1.Provenance"],                       # kubeVersion compat range
+        # ── Dockerfile (image build process is the SLSA build) ────
+        # Pinning rules tie to L3.NonFalsifiable (digest pinning is
+        # the canonical "tenant can't substitute" mitigation).
+        # Privileged / root build steps tie to L3.Isolated (the
+        # build environment must not be influenced by other builds
+        # or by the build's own tenant). Provenance labels tie to
+        # L1.Provenance + L2.Signed.
+        "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
+        "DF-004": ["Build.L3.Isolated",
+                   "Build.L3.NonFalsifiable"],                     # curl-pipe
+        "DF-008": ["Build.L3.Isolated"],                           # docker --privileged
+        "DF-010": ["Build.L3.NonFalsifiable"],                     # apt upgrade
+        "DF-016": ["Build.L1.Provenance",
+                   "Build.L2.Signed"],                             # OCI provenance labels
+        # ── Cloud Build (GCB platform IS a SLSA build environment) ─
+        "GCB-001": ["Build.L3.NonFalsifiable"],                    # step image not pinned
+        "GCB-004": ["Build.L3.NonFalsifiable"],                    # community step not SHA-pinned
+        "GCB-007": ["Build.L3.NonFalsifiable"],                    # version: latest secret
+        "GCB-008": ["Build.L1.Provenance",
+                    "Build.L2.Signed"],                            # no signing
+        "GCB-009": ["Build.L1.Provenance"],                        # no SBOM
+        "GCB-014": ["Build.L3.Isolated"],                          # untrusted substitution
+        "GCB-015": ["Build.L1.Provenance",
+                    "Build.L2.Signed",
+                    "Build.L3.NonFalsifiable"],                    # no provenance attestation
+        "GCB-018": ["Build.L3.NonFalsifiable"],                    # legacy gcr.io
+        "GCB-019": ["Build.L3.Isolated"],                          # privileged step
+        "GCB-021": ["Build.L3.Isolated",
+                    "Build.L3.Ephemeral"],                         # no private worker pool
+        "GCB-022": ["Build.L3.Isolated"],                          # ALLOW_LOOSE substitution
+        "GCB-023": ["Build.L1.Provenance",
+                    "Build.L2.Signed"],                            # build artifacts not signed
+        "GCB-024": ["Build.L1.Provenance"],                        # missing provenance labels
+        "GCB-025": ["Build.L3.NonFalsifiable"],                    # outdated runner image
     },
 )

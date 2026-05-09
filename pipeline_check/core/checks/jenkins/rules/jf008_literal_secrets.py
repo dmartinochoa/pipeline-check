@@ -1,4 +1,4 @@
-"""JF-008 — whole-document credential-shaped literal scan."""
+"""JF-008, whole-document credential-shaped literal scan."""
 from __future__ import annotations
 
 from ..._secrets import find_secret_values
@@ -22,6 +22,14 @@ RULE = Rule(
         "Scans the raw Jenkinsfile text against the cross-provider "
         "credential-pattern catalog. Secrets committed to Groovy "
         "source are visible in every fork and every build log."
+    ),
+    known_fp=(
+        "Test fixtures and documentation blobs sometimes embed "
+        "credential-shaped strings (JWT samples, AKIAI... examples). "
+        "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
+        "deliberately NOT suppressed, if it appears in a real "
+        "pipeline it almost always means a copy-paste from docs was "
+        "never substituted. Defaults to LOW confidence.",
     ),
 )
 

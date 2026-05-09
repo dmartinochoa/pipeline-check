@@ -1,4 +1,4 @@
-"""Phase-4 Terraform checks — gap fills + Terraform-native rules.
+"""Phase-4 Terraform checks, gap fills + Terraform-native rules.
 
 Two groups:
 
@@ -7,7 +7,7 @@ Two groups:
     EB-002    aws_cloudwatch_event_target.arn is a wildcard                HIGH  CICD-SEC-8
     CW-001    No aws_cloudwatch_metric_alarm on CodeBuild FailedBuilds     LOW   CICD-SEC-10
 
-**Terraform-native** (IDs with TF- prefix — no AWS runtime analogue,
+**Terraform-native** (IDs with TF- prefix, no AWS runtime analogue,
 because the signal only exists in declarative source):
     TF-001    aws_iam_access_key resource declares a long-lived key       CRIT  CICD-SEC-6
     TF-002    Resource attribute contains a hard-coded secret shape        CRIT  CICD-SEC-6
@@ -26,7 +26,7 @@ from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
 
-# Resource attributes scanned by LMB-003 / SSM-001 / CB-001 already — skip
+# Resource attributes scanned by LMB-003 / SSM-001 / CB-001 already, skip
 # here so operators don't see the same plaintext twice under two IDs.
 _TF002_SKIP_TYPES = {
     "aws_lambda_function",      # LMB-003
@@ -69,7 +69,7 @@ class Phase4Checks(TerraformBaseCheck):
 
 
 # ---------------------------------------------------------------------------
-# SIGN-001 — aws_signer_signing_profile exists when Lambda code-signing is wired
+# SIGN-001, aws_signer_signing_profile exists when Lambda code-signing is wired
 # ---------------------------------------------------------------------------
 
 def _sign001(ctx: TerraformContext) -> list[Finding]:
@@ -78,7 +78,7 @@ def _sign001(ctx: TerraformContext) -> list[Finding]:
         if fn.values.get("code_signing_config_arn")
     ]
     # Gate: without any Lambda using code-signing, an absent profile
-    # isn't a finding — nothing in the plan needs one.
+    # isn't a finding, nothing in the plan needs one.
     if not fns_with_signing:
         return []
     profiles = list(ctx.resources("aws_signer_signing_profile"))
@@ -114,7 +114,7 @@ def _sign001(ctx: TerraformContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# EB-002 — aws_cloudwatch_event_target.arn with wildcard
+# EB-002, aws_cloudwatch_event_target.arn with wildcard
 # ---------------------------------------------------------------------------
 
 def _eb002(ctx: TerraformContext) -> list[Finding]:
@@ -141,7 +141,7 @@ def _eb002(ctx: TerraformContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# CW-001 — CloudWatch alarm on CodeBuild FailedBuilds
+# CW-001. CloudWatch alarm on CodeBuild FailedBuilds
 # ---------------------------------------------------------------------------
 
 def _cw001(ctx: TerraformContext) -> list[Finding]:
@@ -185,7 +185,7 @@ def _cw001(ctx: TerraformContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# TF-001 — aws_iam_access_key as code
+# TF-001, aws_iam_access_key as code
 # ---------------------------------------------------------------------------
 
 def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
@@ -200,7 +200,7 @@ def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
             description=(
                 f"Plan creates a long-lived access key for IAM user {user!r}. "
                 "The credential material is written into Terraform state and "
-                "there is no built-in rotation — any principal with state "
+                "there is no built-in rotation, any principal with state "
                 "read access obtains an unrotated AWS credential."
             ),
             recommendation=(
@@ -215,7 +215,7 @@ def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# TF-002 — hard-coded secret shapes in resource attributes
+# TF-002, hard-coded secret shapes in resource attributes
 # ---------------------------------------------------------------------------
 
 def _tf002_plan_secrets(ctx: TerraformContext) -> list[Finding]:
@@ -235,7 +235,7 @@ def _tf002_plan_secrets(ctx: TerraformContext) -> list[Finding]:
             severity=Severity.CRITICAL,
             resource=r.address,
             description=(
-                f"{len(hits)} attribute(s) carry credential-shaped values — "
+                f"{len(hits)} attribute(s) carry credential-shaped values, "
                 f"e.g. {summary}{'...' if len(hits) > 3 else ''}."
             ),
             recommendation=(
@@ -268,7 +268,7 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
         return
     if not isinstance(node, str) or not node:
         return
-    # Suppress obvious placeholders — ``<your-password>`` etc.
+    # Suppress obvious placeholders, ``<your-password>`` etc.
     if PLACEHOLDER_MARKER_RE.search(node):
         return
     # Vendor-token shape match is strongest signal.
@@ -284,7 +284,7 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# TF-003 — CodeBuild VPC shares its VPC with a public subnet
+# TF-003. CodeBuild VPC shares its VPC with a public subnet
 # ---------------------------------------------------------------------------
 
 def _tf003_codebuild_public_subnet(ctx: TerraformContext) -> list[Finding]:
@@ -305,7 +305,7 @@ def _tf003_codebuild_public_subnet(ctx: TerraformContext) -> list[Finding]:
             continue
         vpc_id = cfg.get("vpc_id")
         if not isinstance(vpc_id, str) or not vpc_id:
-            # Unresolvable vpc_id — cannot reason; stay silent.
+            # Unresolvable vpc_id, cannot reason; stay silent.
             continue
         public = public_by_vpc.get(vpc_id, [])
         out.append(Finding(

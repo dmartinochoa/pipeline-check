@@ -3,7 +3,7 @@
 When a caller workflow declares
 ``jobs.build.uses: owner/repo/.github/workflows/release.yml@v1``, the
 called workflow's body is what actually runs with the caller's token
-and secrets. By default pipeline-check stops at the call site — it
+and secrets. By default pipeline-check stops at the call site. It
 flags an unpinned ref (GHA-025) and goes no further. This module
 adds an opt-in path that fetches the called body and feeds it back
 through the rule pack.
@@ -85,7 +85,7 @@ class DiskFetcher:
 
     For each ``root`` in ``search_paths`` the fetcher checks
     ``<root>/<owner>/<repo>/<path>`` and returns the bytes if found.
-    The ref is intentionally ignored — the caller is asserting that
+    The ref is intentionally ignored, the caller is asserting that
     the on-disk checkout matches the ref they want, since enumerating
     git refs across paths is expensive and out of scope.
     """
@@ -150,7 +150,7 @@ class HttpFetcher:
         self, owner: str, repo: str, ref: str, path: str,
     ) -> bytes | None:
         url = f"{self.BASE_URL}/{owner}/{repo}/{ref}/{path}"
-        req = urllib.request.Request(url)  # noqa: S310 — fixed scheme, fixed host
+        req = urllib.request.Request(url)  # noqa: S310, fixed scheme, fixed host
         if self.token:
             req.add_header("Authorization", f"token {self.token}")
         # Identify ourselves so a server-side rate-limit log can tell
@@ -211,7 +211,7 @@ class FileSystemCache:
     Default TTL is 7 days; tune with ``ttl_seconds=0`` to disable
     write-side caching while still allowing reads of unexpired
     entries. Pass ``enabled=False`` to short-circuit both read and
-    write — the caller wires that up to ``--no-cache``.
+    write, the caller wires that up to ``--no-cache``.
     """
 
     def __init__(
@@ -256,7 +256,7 @@ class FileSystemCache:
             cached.parent.mkdir(parents=True, exist_ok=True)
             cached.write_bytes(data)
         except OSError:
-            # Cache failures are never fatal — the next scan will
+            # Cache failures are never fatal, the next scan will
             # just refetch.
             pass
 

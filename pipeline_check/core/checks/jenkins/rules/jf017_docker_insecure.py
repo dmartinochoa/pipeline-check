@@ -1,4 +1,4 @@
-"""JF-017 — docker run with insecure flags (privileged / host mount)."""
+"""JF-017, docker run with insecure flags (privileged / host mount)."""
 from __future__ import annotations
 
 from ...base import DOCKER_INSECURE_RE, Finding, Severity

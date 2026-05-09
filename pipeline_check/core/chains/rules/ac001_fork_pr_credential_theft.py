@@ -1,4 +1,4 @@
-"""AC-001 — Fork-PR Credential Theft (GitHub Actions).
+"""AC-001. Fork-PR Credential Theft (GitHub Actions).
 
 A `pull_request_target` workflow that checks out PR-head code while
 holding long-lived AWS credentials lets a fork PR run attacker code
@@ -41,7 +41,7 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Both legs must fire on the SAME workflow file — a different-workflow
+    # Both legs must fire on the SAME workflow file, a different-workflow
     # combo isn't the same threat (the credentials would be elsewhere).
     grouped = group_by_resource(findings, ["GHA-002", "GHA-005"])
     out: list[Chain] = []

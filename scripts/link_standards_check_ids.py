@@ -8,7 +8,7 @@ have a stable click-through target. This script walks every
 ``docs/standards/*.md``, finds bare ``\\`<PREFIX>-<N>\\``` cells,
 and rewrites them into markdown links.
 
-Idempotent — re-running on a doc that's already been linked is a
+Idempotent, re-running on a doc that's already been linked is a
 no-op (the regex skips already-linked tokens).
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ PREFIX_TO_PROVIDER: dict[str, str] = {
     # IaC providers
     "TF": "terraform",
     "CF": "cloudformation",
-    # AWS service prefixes — all rules live under providers/aws.md
+    # AWS service prefixes, all rules live under providers/aws.md
     "IAM": "aws",
     "S3": "aws",
     "KMS": "aws",
@@ -111,7 +111,7 @@ def main() -> int:
     total = 0
     for path in sorted(STANDARDS.glob("*.md")):
         if path.name == "README.md":
-            # Standards index — no mapping table to rewrite.
+            # Standards index, no mapping table to rewrite.
             continue
         original = path.read_text(encoding="utf-8")
         rewritten, hits = _rewrite(original)

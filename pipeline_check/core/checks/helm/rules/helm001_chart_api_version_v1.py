@@ -1,4 +1,4 @@
-"""HELM-001 — ``Chart.yaml`` declares the legacy ``apiVersion: v1``.
+"""HELM-001, ``Chart.yaml`` declares the legacy ``apiVersion: v1``.
 
 Helm 2's chart format. Helm 3 still renders ``v1`` charts, but the
 shape carries real supply-chain hazards: dependencies live in a

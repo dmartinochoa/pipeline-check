@@ -1,4 +1,4 @@
-"""GCB-020 — Explicit ``serviceAccount:`` still points at the default Cloud Build SA."""
+"""GCB-020. Explicit ``serviceAccount:`` still points at the default Cloud Build SA."""
 from __future__ import annotations
 
 import re
@@ -28,7 +28,7 @@ RULE = Rule(
     docs_note=(
         "Complements GCB-002, which only fires when ``serviceAccount:`` "
         "is unset. This rule fires when an explicit value is set but "
-        "still resolves to the project default — typically the email "
+        "still resolves to the project default, typically the email "
         "shape ``<digits>@cloudbuild.gserviceaccount.com``, optionally "
         "wrapped in the ``projects/<id>/serviceAccounts/...`` URI form. "
         "The April-2024 GCP default-identity change kept the same SA "
@@ -63,7 +63,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             resource=path,
             description=(
                 "``serviceAccount:`` is unset (covered separately by "
-                "GCB-002). This rule short-circuits to passing — set "
+                "GCB-002). This rule short-circuits to passing, set "
                 "an explicit, dedicated SA email to satisfy both."
             ),
             recommendation=RULE.recommendation, passed=True,

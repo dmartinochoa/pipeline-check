@@ -1,4 +1,4 @@
-"""S3-001 — CodePipeline artifact bucket public access block not fully enabled."""
+"""S3-001. CodePipeline artifact bucket public access block not fully enabled."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
         "that supersedes any future ACL or bucket-policy edit. "
         "Without all four settings enabled, a misconfigured "
         "CloudFormation change or a stray ``aws s3api`` call can "
-        "re-expose the bucket to the public — even if the bucket "
+        "re-expose the bucket to the public, even if the bucket "
         "had previously been private."
     ),
 )

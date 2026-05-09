@@ -16,7 +16,7 @@ from .base import TerraformBaseCheck
 
 
 def _first(block_list: object) -> dict[str, Any]:
-    # Validate both container and head — see ``extended._first`` for
+    # Validate both container and head, see ``extended._first`` for
     # the canonical shape. Callers (`.get()`) always receive a dict.
     if not isinstance(block_list, list) or not block_list:
         return {}

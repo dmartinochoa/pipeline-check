@@ -1,4 +1,4 @@
-"""BB-002 — scripts must not interpolate $BITBUCKET_* ref/PR variables."""
+"""BB-002, scripts must not interpolate $BITBUCKET_* ref/PR variables."""
 from __future__ import annotations
 
 import re
@@ -41,7 +41,7 @@ _EXPORT_RE = re.compile(r"(?:export\s+)?(\w+)=")
 def _tainted_exports(lines: list[str]) -> set[str]:
     """Return shell variable names assigned from untrusted BITBUCKET_* values.
 
-    Bitbucket has no declarative variables block — taint sources are
+    Bitbucket has no declarative variables block, taint sources are
     scraped from inline ``export`` / bare-assignment statements in the
     script body itself.
     """

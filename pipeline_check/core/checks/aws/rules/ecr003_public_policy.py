@@ -1,4 +1,4 @@
-"""ECR-003 — ECR repository policy allows wildcard / public principal."""
+"""ECR-003. ECR repository policy allows wildcard / public principal."""
 from __future__ import annotations
 
 import json
@@ -23,7 +23,7 @@ RULE = Rule(
         "A wildcard-principal repo policy means anyone on the "
         "internet can pull images. Sometimes intentional (a "
         "publicly-distributed base image), but should be a "
-        "deliberate exposure — typically via the ECR Public registry "
+        "deliberate exposure, typically via the ECR Public registry "
         "rather than a private repo with a public policy. The "
         "default for build-output images should never be public."
     ),

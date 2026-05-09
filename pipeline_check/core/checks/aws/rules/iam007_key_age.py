@@ -1,4 +1,4 @@
-"""IAM-007 — IAM user access keys older than 90 days."""
+"""IAM-007. IAM user access keys older than 90 days."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -16,11 +16,11 @@ RULE = Rule(
     recommendation=(
         "Rotate or delete IAM access keys older than 90 days. Long-lived "
         "static credentials are the #1 way compromised CI credentials get "
-        "reused across environments — prefer short-lived STS tokens via "
+        "reused across environments, prefer short-lived STS tokens via "
         "OIDC federation or an assumed role."
     ),
     docs_note=(
-        "Every user in the account is evaluated — CI/CD tooling that still "
+        "Every user in the account is evaluated. CI/CD tooling that still "
         "uses IAM users (older Jenkins agents, GitHub Actions pre-OIDC, "
         "third-party schedulers) shows up here. The 90-day window matches "
         "the common compliance baseline; rotate sooner if the key is used "

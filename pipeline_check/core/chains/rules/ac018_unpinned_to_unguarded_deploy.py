@@ -1,12 +1,12 @@
-"""AC-018 — Unpinned action lands on a deploy job with no approval gate.
+"""AC-018. Unpinned action lands on a deploy job with no approval gate.
 
 The deploy-stage attack pattern that several real GHA-supply-chain
 incidents have exploited: a workflow uses a third-party action
 pinned by tag (or branch) rather than commit SHA, AND its deploy
 job has no GitHub Environment binding (which is what gates the
 job behind required-reviewer approval). When the upstream action
-maintainer's account is compromised — or the maintainer pushes a
-malicious release under the same tag — the next workflow run
+maintainer's account is compromised, or the maintainer pushes a
+malicious release under the same tag, the next workflow run
 executes attacker-controlled code, and the deploy job ships it
 without a human in the loop.
 
@@ -30,8 +30,8 @@ RULE = ChainRule(
         "A workflow uses a third-party action pinned by tag rather "
         "than commit SHA (GHA-001) AND its deploy job has no "
         "``environment:`` binding (GHA-014). A compromise of the "
-        "upstream action maintainer's account — or a malicious "
-        "release re-tagged under the existing version — runs in "
+        "upstream action maintainer's account, or a malicious "
+        "release re-tagged under the existing version, runs in "
         "the deploy job's context without a required-reviewer "
         "gate, shipping attacker-controlled code to production "
         "on the next workflow trigger."
@@ -52,7 +52,7 @@ RULE = ChainRule(
         "(``actions/checkout@<sha> # v4.1.0``) and put deploy "
         "jobs behind a GitHub Environment that requires reviewer "
         "approval and restricts deployment branches. Either fix "
-        "alone breaks the chain — the SHA pin removes the supply-"
+        "alone breaks the chain, the SHA pin removes the supply-"
         "chain leg, the environment gate removes the unattended-"
         "deploy leg. Best is both, plus a deployment-branch "
         "restriction so only ``main`` / ``release/*`` can reach "
@@ -78,8 +78,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "code with the workflow's privileges.\n"
             "  2. The same workflow's deploy job has no "
             "``environment:`` binding (GHA-014). GitHub's "
-            "environment-protection rules — required reviewers, "
-            "deployment-branch restrictions — only enforce against "
+            "environment-protection rules, required reviewers, "
+            "deployment-branch restrictions, only enforce against "
             "jobs that declare an environment, so this job's "
             "deployment runs unattended on every successful build.\n"
             "  3. The combination ships attacker-controlled code "

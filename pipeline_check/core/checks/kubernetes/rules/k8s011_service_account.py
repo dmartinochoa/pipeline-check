@@ -1,4 +1,4 @@
-"""K8S-011 — Pod ``serviceAccountName`` unset or 'default'."""
+"""K8S-011. Pod ``serviceAccountName`` unset or 'default'."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -15,7 +15,7 @@ RULE = Rule(
     recommendation=(
         "Bind every workload to a dedicated, narrow ``ServiceAccount``. "
         "The 'default' SA exists in every namespace and tends to "
-        "accrete RoleBindings over time — using it gives the workload "
+        "accrete RoleBindings over time, using it gives the workload "
         "every privilege any other service in the namespace ever "
         "needed. Create a per-workload SA with the minimum RBAC "
         "needed and reference it via ``spec.serviceAccountName``."

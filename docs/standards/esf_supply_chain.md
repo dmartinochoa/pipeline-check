@@ -1,10 +1,10 @@
-# NSA/CISA ESF — Securing the Software Supply Chain
+# NSA/CISA ESF: Securing the Software Supply Chain
 
 - **Version:** 2022
 - **URL:** https://www.cisa.gov/resources-tools/resources/securing-software-supply-chain-recommended-practices-guide-developers
 - **Scope:** Mitigations from the three-volume Enduring Security
-  Framework guidance — Developer (2022), Supplier (2022), Customer
-  (2022) — that this scanner can evidence from AWS, GitHub Actions,
+  Framework guidance. Developer (2022), Supplier (2022), Customer
+  (2022). That this scanner can evidence from AWS, GitHub Actions,
   GitLab CI, Bitbucket Pipelines, Azure DevOps Pipelines, and Terraform
   state.
 
@@ -29,7 +29,7 @@ is **D**eveloper, **S**upplier, or **C**ustomer.
 | ESF-D-SIGN-ARTIFACTS      | Sign build artifacts and verify signatures before release                |
 | ESF-D-SBOM                | Produce SBOM / provenance metadata with every build                      |
 | ESF-D-CODE-REVIEW         | Require peer review of source and pipeline configuration                 |
-| ESF-D-TOKEN-HYGIENE       | Use short-lived, federated credentials (OIDC) — not long-lived tokens    |
+| ESF-D-TOKEN-HYGIENE       | Use short-lived, federated credentials (OIDC), not long-lived tokens    |
 | ESF-D-INJECTION           | Prevent script / template injection from untrusted pipeline context      |
 | ESF-S-VERIFY-DEPS         | Verify third-party and open-source dependencies before use               |
 | ESF-S-PIN-DEPS            | Pin dependencies / actions / images to immutable digests                 |
@@ -46,7 +46,7 @@ is **D**eveloper, **S**upplier, or **C**ustomer.
 
 ## Selected check → control mappings
 
-Highlights — the full mapping dict lives in
+Highlights, the full mapping dict lives in
 [`pipeline_check/core/standards/data/esf_supply_chain.py`](https://github.com/dmartinochoa/pipeline-check/blob/master/pipeline_check/core/standards/data/esf_supply_chain.py).
 
 | Check      | ESF control(s)                                 |

@@ -1,4 +1,4 @@
-"""GL-020 — CI_JOB_TOKEN written to persistent storage."""
+"""GL-020. CI_JOB_TOKEN written to persistent storage."""
 from __future__ import annotations
 
 import re
@@ -36,7 +36,7 @@ RULE = Rule(
         "Detects patterns where `CI_JOB_TOKEN` is redirected to a file, "
         "piped through `tee`, or appended to dotenv/artifact paths. "
         "Persisted tokens survive the job boundary and can be read by "
-        "later stages, downloaded artifacts, or cache entries — turning "
+        "later stages, downloaded artifacts, or cache entries, turning "
         "a scoped credential into a long-lived one."
     ),
 )

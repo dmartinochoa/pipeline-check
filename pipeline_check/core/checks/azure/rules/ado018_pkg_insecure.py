@@ -1,4 +1,4 @@
-"""ADO-018 — package install from insecure source."""
+"""ADO-018, package install from insecure source."""
 from __future__ import annotations
 
 from typing import Any

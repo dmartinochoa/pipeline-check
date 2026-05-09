@@ -27,7 +27,7 @@ Cloud Build's pipeline file shape (highlights):
     serviceAccount: projects/.../serviceAccounts/builder@...
     timeout: 1800s
 
-The parser is intentionally lenient — a document missing the
+The parser is intentionally lenient, a document missing the
 ``steps`` key (SAM-template style top-level include files) is
 skipped. Unlike GitLab, there is no "hidden template" convention
 in Cloud Build, so every parsable document is in scope.
@@ -145,7 +145,7 @@ def iter_steps(doc: dict[str, Any]) -> Iterator[tuple[int, dict[str, Any]]]:
 
 
 def step_name(step: dict[str, Any], fallback_idx: int) -> str:
-    """Return a stable human name for a step — prefers the ``id`` field."""
+    """Return a stable human name for a step, prefers the ``id`` field."""
     sid = step.get("id")
     if isinstance(sid, str) and sid.strip():
         return sid.strip()
@@ -167,7 +167,7 @@ def step_strings(step: dict[str, Any]) -> list[str]:
 
     Used by rules that pattern-match inside ``args``, ``entrypoint``,
     and similar text-bearing fields. The ``name`` (image ref) is
-    intentionally excluded — image-pinning checks care about it but
+    intentionally excluded, image-pinning checks care about it but
     script-injection / secret-leak checks would otherwise false-match
     on registry hostnames.
     """

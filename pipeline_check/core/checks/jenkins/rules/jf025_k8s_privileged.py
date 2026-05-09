@@ -1,4 +1,4 @@
-"""JF-025 — Kubernetes agent pod template runs privileged or mounts hostPath."""
+"""JF-025. Kubernetes agent pod template runs privileged or mounts hostPath."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -32,7 +32,7 @@ RULE = Rule(
         "plugin lets pipelines declare ``agent { kubernetes { yaml "
         "'''...''' } }``. A pod running with ``privileged: true`` or "
         "mounting ``hostPath: /`` gives the build container the same "
-        "blast radius — container escape, node-credential theft, "
+        "blast radius, container escape, node-credential theft, "
         "cross-tenant contamination on a shared cluster."
     ),
 )

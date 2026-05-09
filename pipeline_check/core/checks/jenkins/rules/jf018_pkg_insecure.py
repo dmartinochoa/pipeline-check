@@ -1,4 +1,4 @@
-"""JF-018 — package install from insecure source."""
+"""JF-018, package install from insecure source."""
 from __future__ import annotations
 
 from ...base import PKG_INSECURE_RE, Finding, Severity

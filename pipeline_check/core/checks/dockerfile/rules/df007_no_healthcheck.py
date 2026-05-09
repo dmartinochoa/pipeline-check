@@ -1,4 +1,4 @@
-"""DF-007 — image declares no ``HEALTHCHECK``."""
+"""DF-007, image declares no ``HEALTHCHECK``."""
 from __future__ import annotations
 
 from ...base import Finding, Location, Severity
@@ -16,11 +16,11 @@ RULE = Rule(
         "stuck or zombie containers. Example: ``HEALTHCHECK --interval"
         "=30s --timeout=5s --retries=3 CMD curl -fsS http://localhost"
         "/healthz || exit 1``. Skip this for builder/multi-stage "
-        "intermediate images — only the runtime image needs one."
+        "intermediate images, only the runtime image needs one."
     ),
     docs_note=(
         "This is a defense-in-depth signal rather than an exploitation "
-        "indicator — severity is LOW. A missing healthcheck doesn't "
+        "indicator, severity is LOW. A missing healthcheck doesn't "
         "create a vulnerability on its own, but downstream orchestrators "
         "(Kubernetes, ECS, Compose) cannot recover an unhealthy "
         "container they cannot detect, and that turns a soft failure "
@@ -45,7 +45,7 @@ def check(df: Dockerfile) -> Finding:
             final_from_line = ins.line_no
             continue
         if saw_final_from and ins.directive == "HEALTHCHECK":
-            # Skip ``HEALTHCHECK NONE`` — that's an explicit opt-out
+            # Skip ``HEALTHCHECK NONE``, that's an explicit opt-out
             # which is worse than no healthcheck (it suppresses the
             # base image's healthcheck too).
             if ins.args.strip().upper() != "NONE":
@@ -59,7 +59,7 @@ def check(df: Dockerfile) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=df.path,
-            description="Dockerfile contains no FROM directive — runtime healthcheck not applicable.",
+            description="Dockerfile contains no FROM directive, runtime healthcheck not applicable.",
             recommendation="No action required.", passed=True,
         )
     passed = final_has_hc
@@ -72,7 +72,7 @@ def check(df: Dockerfile) -> Finding:
     locations: list[Location] = []
     if not passed:
         # Prefer anchoring on an explicit ``HEALTHCHECK NONE`` line
-        # (the offending line). Otherwise anchor on the final FROM —
+        # (the offending line). Otherwise anchor on the final FROM,
         # that's where a missing HEALTHCHECK should be added.
         anchor_line = healthcheck_none_line or final_from_line
         if anchor_line is not None:

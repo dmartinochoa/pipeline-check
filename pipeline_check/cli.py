@@ -22,7 +22,7 @@ Examples
     # Run specific checks only.
     pipeline_check --pipeline aws --checks CB-001 --checks CB-003
 
-    # Scan a Terraform plan — no AWS credentials needed.
+    # Scan a Terraform plan, no AWS credentials needed.
     pipeline_check --pipeline terraform --tf-plan plan.json
 
     # Annotate findings with a single standard, or list registered standards.
@@ -90,7 +90,7 @@ def _tolerate_unencodable_stdio() -> None:
         # ``reconfigure`` is only present on ``io.TextIOWrapper``, which
         # is the type sys.stdout/stderr carry when not redirected.
         # When they're redirected (a pipe, a captured fixture in tests)
-        # they may be a plain TextIO without ``reconfigure`` — caught
+        # they may be a plain TextIO without ``reconfigure``, caught
         # by the AttributeError below.
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:
@@ -110,7 +110,7 @@ _tolerate_unencodable_stdio()
 class _GroupedCommand(click.Command):
     """Click command that renders ``--help`` options under named sections.
 
-    Keeps option declarations unchanged — the section→flag mapping lives
+    Keeps option declarations unchanged, the section→flag mapping lives
     here so adding an option only forces a mapping edit when the author
     wants it in a specific section. Unmapped options fall into
     ``Other`` so nothing silently vanishes from help.
@@ -216,6 +216,25 @@ class _FuzzyChoice(click.Choice[str]):
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _completion_debug(source: str, exc: BaseException) -> None:
+    """Log a completion-helper exception to stderr when ``$PIPELINE_CHECK_DEBUG``
+    is truthy.
+
+    Tab-completion runs in the user's interactive shell, where stderr
+    output during a Tab press is invisible (the shell renders the
+    candidate list, not stderr). Silent ``except`` is therefore the
+    only reasonable production behavior: a broken helper must not eat
+    the keypress with a traceback. But debugging "why does my Tab
+    show no candidates" requires *some* breadcrumb, so we honor an
+    opt-in env var. Default off to keep the live path quiet.
+    """
+    if os.environ.get("PIPELINE_CHECK_DEBUG"):
+        click.echo(
+            f"[completion] {source}: {type(exc).__name__}: {exc}",
+            err=True,
+        )
+
+
 def _complete_check_ids(
     ctx: click.Context, param: click.Parameter, incomplete: str,
 ) -> list[Any]:
@@ -223,7 +242,8 @@ def _complete_check_ids(
     from click.shell_completion import CompletionItem
     try:
         ids = _all_check_ids()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("check-ids", exc)
         return []
     return [
         CompletionItem(cid)
@@ -239,7 +259,8 @@ def _complete_standards(
     from click.shell_completion import CompletionItem
     try:
         names = _standards.available()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("standards", exc)
         return []
     return [
         CompletionItem(n)
@@ -256,7 +277,8 @@ def _complete_man_topics(
     try:
         from .core.manual import topics
         names = topics()
-    except Exception:
+    except Exception as exc:
+        _completion_debug("man-topics", exc)
         return []
     return [
         CompletionItem(t)
@@ -272,7 +294,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
     ``cloudformation/*`` + ``terraform/*``) expose ``Rule`` metadata via
     ``discover_rules``. Class-based modules (AWS core services,
     Terraform core services) have the same info in their module
-    docstring header — we parse it so the output is uniform.
+    docstring header. We parse it so the output is uniform.
     """
     rows: list[tuple[str, str, str]] = []
     rule_packages = {
@@ -295,7 +317,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         except Exception as exc:  # pragma: no cover - defensive
             click.echo(f"[warn] could not load {pkg}: {exc}", err=True)
 
-    # Class-based modules — parse the docstring header. CloudFormation
+    # Class-based modules, parse the docstring header. CloudFormation
     # modules don't carry the table header (their docstrings point at
     # Terraform's mirror); scan Terraform's source as a fallback so
     # ``--pipeline cloudformation --list-checks`` produces the same
@@ -350,6 +372,64 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
     for cid in sorted(dedup):
         _, sev, title = dedup[cid]
         click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
+
+
+def _resolve_provider_path(
+    provider_lc: str,
+    *,
+    flag: str,
+    value: str | None,
+    candidates: tuple[str, ...] = (),
+    candidate_kind: str = "file",
+    validate_kind: str = "exists",
+    detect_label: str = "",
+    not_found_label: str = "",
+) -> str:
+    """Auto-detect, validate, and return a per-provider input path.
+
+    Replaces the per-provider elif ladder that ``main()`` used to
+    carry. Cloudformation and helm have edge cases (template-folder
+    detection, ``--helm-values`` validation) so they stay inline;
+    every other provider's contract is exactly:
+
+      1. If the user didn't pass ``--<flag>``, walk *candidates*
+         and pick the first one that exists. ``candidate_kind`` is
+         ``file`` for canonical files (``.gitlab-ci.yml``) or
+         ``dir`` for canonical directories (``.github/workflows``).
+      2. If still empty, raise ``UsageError`` with a hint that names
+         the canonical files we looked for (*detect_label*).
+      3. Validate that the resolved path exists. ``validate_kind``
+         is ``exists`` (default; file or dir), ``file``, or ``dir``.
+         ``not_found_label`` ("directory" / "path") inserts a noun
+         into the error message when the validation kind is stricter
+         than ``exists``.
+    """
+    if not value:
+        check = os.path.isdir if candidate_kind == "dir" else os.path.isfile
+        for cand in candidates:
+            if check(cand):
+                value = cand
+                click.echo(f"[auto] using --{flag} {value}", err=True)
+                break
+    if not value:
+        suffix = (
+            f" (no {detect_label} found in the current directory)."
+            if detect_label else "."
+        )
+        raise click.UsageError(
+            f"--{flag} PATH is required when --pipeline {provider_lc}{suffix}"
+        )
+    validators = {
+        "exists": os.path.exists,
+        "file": os.path.isfile,
+        "dir": os.path.isdir,
+    }
+    if not validators[validate_kind](value):
+        kind_word = (not_found_label + " ") if not_found_label else ""
+        raise click.UsageError(
+            f"--{flag} {kind_word}not found: {value}"
+        )
+    return value
 
 
 def _detect_pipeline_from_cwd() -> str | None:
@@ -414,7 +494,7 @@ def _all_check_ids() -> list[str]:
     if _CHECK_IDS_CACHE is not None:
         return _CHECK_IDS_CACHE
     ids: list[str] = []
-    # Rule-based providers — each has a rules/ package with RULE.id.
+    # Rule-based providers, each has a rules/ package with RULE.id.
     # Derive the package list from the filesystem so adding a new
     # provider under ``pipeline_check/core/checks/<name>/rules/``
     # automatically surfaces in ``--list-checks`` / ``--explain`` /
@@ -431,9 +511,9 @@ def _all_check_ids() -> list[str]:
             from .core.checks.rule import discover_rules
             for rule, _ in discover_rules(pkg):
                 ids.append(rule.id)
-        except Exception:
-            pass
-    # AWS / Terraform — class-based checks with hardcoded check_id strings.
+        except Exception as exc:
+            _completion_debug(f"rule-discover {pkg}", exc)
+    # AWS / Terraform, class-based checks with hardcoded check_id strings.
     _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
     for provider_pkg_name in (
         "pipeline_check.core.checks.aws",
@@ -443,7 +523,7 @@ def _all_check_ids() -> list[str]:
             import importlib
             import pkgutil
             # Distinct from the ``pkg`` loop variables earlier (lines
-            # 264, 378) which iterate over strings — the inferred
+            # 264, 378) which iterate over strings, the inferred
             # ``str`` type would conflict with this Module assignment.
             provider_pkg_module = importlib.import_module(provider_pkg_name)
             for info in pkgutil.iter_modules(provider_pkg_module.__path__):
@@ -451,8 +531,8 @@ def _all_check_ids() -> list[str]:
                 if mod.__file__:
                     with open(mod.__file__, encoding="utf-8") as fh:
                         ids.extend(_id_re.findall(fh.read()))
-        except Exception:
-            pass
+        except Exception as exc:
+            _completion_debug(f"id-scan {provider_pkg_name}", exc)
     ids = sorted(set(ids))
     _CHECK_IDS_CACHE = ids
     return ids
@@ -463,7 +543,7 @@ _SEVERITY_CHOICES = [
     for s in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO)
 ]
 
-# Derived from the provider registry — no manual list to maintain.
+# Derived from the provider registry, no manual list to maintain.
 # Registering a new provider in core/providers/__init__.py automatically
 # makes it available here. ``auto`` is a CLI-only sentinel that picks
 # a provider by looking at cwd; it is resolved before Scanner runs.
@@ -473,7 +553,7 @@ _PIPELINE_CHOICES = ["auto", *_providers.available()]
 def _load_config_callback(
     ctx: click.Context, _param: click.Parameter, value: str | None,
 ) -> str | None:
-    """Eager callback — populates ``ctx.default_map`` so every other flag's
+    """Eager callback, populates ``ctx.default_map`` so every other flag's
     default is pre-filled from the config file + environment.
 
     Precedence flows naturally from click here: ``default_map`` supplies
@@ -655,7 +735,7 @@ def _install_completion_callback(
     help=(
         "Follow ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` "
         "to the called workflow body and run the GHA rule pack against "
-        "it with the caller's permissions context. Default off — the "
+        "it with the caller's permissions context. Default off, the "
         "scanner stays read-from-disk-only by default. When off and a "
         "remote ref is encountered, a one-line stderr warning lists "
         "the count so users know what they're missing."
@@ -868,7 +948,7 @@ def _install_completion_callback(
     default=False,
     help=(
         "Emit a component inventory alongside findings. Lists every "
-        "resource/workflow/template the scanner discovered — "
+        "resource/workflow/template the scanner discovered, "
         "complements the findings view and feeds asset-register "
         "dashboards. Added to JSON output as an ``inventory`` top-level "
         "array; rendered as a table after the findings for terminal "
@@ -883,7 +963,7 @@ def _install_completion_callback(
     help=(
         "Glob pattern to scope --inventory output by component type "
         "(e.g. ``AWS::IAM::*``, ``aws_iam_role``, ``workflow``). "
-        "Repeat for multiple patterns — a component is kept when its "
+        "Repeat for multiple patterns, a component is kept when its "
         "type matches any of them. Implies --inventory."
     ),
 )
@@ -1070,7 +1150,7 @@ def _install_completion_callback(
     default=False,
     help=(
         "Emit a unified-diff patch to stdout for every failing finding "
-        "that has a registered autofix. Does not modify files — pipe "
+        "that has a registered autofix. Does not modify files, pipe "
         "the output into `git apply` to apply. Currently supports: "
         + ", ".join(_autofix.available_fixers()) + "."
     ),
@@ -1200,7 +1280,7 @@ def _install_completion_callback(
     help=(
         "Fail the gate if the named attack chain matched. Repeat for "
         "multiple (e.g. --fail-on-chain AC-001 --fail-on-chain AC-007). "
-        "Chain matches bypass baseline/ignore filtering — a correlated "
+        "Chain matches bypass baseline/ignore filtering, a correlated "
         "attack path is intrinsically a new finding."
     ),
 )
@@ -1276,7 +1356,7 @@ def scan(
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
-    """PipelineCheck — CI/CD Security Posture Scanner.
+    """PipelineCheck. CI/CD Security Posture Scanner.
 
     Analyzes CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.
@@ -1303,7 +1383,7 @@ def scan(
 
     if list_standards:
         for std in _standards.resolve():
-            click.echo(f"{std.name}  —  {std.title} (v{std.version or 'n/a'})")
+            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
             if std.url:
                 click.echo(f"    {std.url}")
         return
@@ -1341,7 +1421,7 @@ def scan(
                 err=True,
             )
             sys.exit(3)
-        click.echo(f"{rule.id} — {rule.title}")
+        click.echo(f"{rule.id}, {rule.title}")
         click.echo(f"  Severity: {rule.severity.value}")
         if rule.providers:
             click.echo(f"  Providers: {', '.join(rule.providers)}")
@@ -1378,7 +1458,7 @@ def scan(
                 f"Unknown standard {standard_report!r}. "
                 f"Available: {available or 'none'}."
             )
-        click.echo(f"{report_std.name}  —  {report_std.title} (v{report_std.version or 'n/a'})")
+        click.echo(f"{report_std.name} ,  {report_std.title} (v{report_std.version or 'n/a'})")
         if report_std.url:
             click.echo(f"  {report_std.url}")
         click.echo("")
@@ -1407,17 +1487,17 @@ def scan(
         from .core.config import last_unknown_keys
         dropped = last_unknown_keys()
         if not dropped:
-            click.echo("[config] OK — no unknown keys.")
+            click.echo("[config] OK, no unknown keys.")
             return
         for source, key, reason in dropped:
-            click.echo(f"[config] {source}: {key!r} — {reason}", err=True)
+            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
         click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
         sys.exit(3)
 
     if apply_fixes and not fix:
         raise click.UsageError("--apply requires --fix.")
 
-    # Mutually-exclusive flag combinations — catch these before the
+    # Mutually-exclusive flag combinations, catch these before the
     # provider context is built so the error points at the conflict
     # rather than surfacing as a silent no-op later.
     if inventory_only and fix:
@@ -1454,78 +1534,47 @@ def scan(
             )
             pipeline_lc = "aws"
     if pipeline_lc == "terraform":
-        if not tf_plan:
-            raise click.UsageError(
-                "--tf-plan PATH is required when --pipeline terraform."
-            )
-        if not os.path.isfile(tf_plan):
-            raise click.UsageError(f"--tf-plan path not found: {tf_plan}")
+        tf_plan = _resolve_provider_path(
+            "terraform", flag="tf-plan", value=tf_plan,
+            validate_kind="file", not_found_label="path",
+        )
     elif pipeline_lc == "github":
-        if not gha_path and os.path.isdir(".github/workflows"):
-            gha_path = ".github/workflows"
-            click.echo(f"[auto] using --gha-path {gha_path}", err=True)
-        if not gha_path:
-            raise click.UsageError(
-                "--gha-path PATH is required when --pipeline github "
-                "(no .github/workflows found in the current directory)."
-            )
-        if not os.path.isdir(gha_path):
-            raise click.UsageError(f"--gha-path directory not found: {gha_path}")
+        gha_path = _resolve_provider_path(
+            "github", flag="gha-path", value=gha_path,
+            candidates=(".github/workflows",), candidate_kind="dir",
+            validate_kind="dir", detect_label=".github/workflows",
+            not_found_label="directory",
+        )
     elif pipeline_lc == "gitlab":
-        if not gitlab_path and os.path.isfile(".gitlab-ci.yml"):
-            gitlab_path = ".gitlab-ci.yml"
-            click.echo(f"[auto] using --gitlab-path {gitlab_path}", err=True)
-        if not gitlab_path:
-            raise click.UsageError(
-                "--gitlab-path PATH is required when --pipeline gitlab "
-                "(no .gitlab-ci.yml found in the current directory)."
-            )
-        if not os.path.exists(gitlab_path):
-            raise click.UsageError(f"--gitlab-path not found: {gitlab_path}")
+        gitlab_path = _resolve_provider_path(
+            "gitlab", flag="gitlab-path", value=gitlab_path,
+            candidates=(".gitlab-ci.yml",),
+            detect_label=".gitlab-ci.yml",
+        )
     elif pipeline_lc == "bitbucket":
-        if not bitbucket_path and os.path.isfile("bitbucket-pipelines.yml"):
-            bitbucket_path = "bitbucket-pipelines.yml"
-            click.echo(f"[auto] using --bitbucket-path {bitbucket_path}", err=True)
-        if not bitbucket_path:
-            raise click.UsageError(
-                "--bitbucket-path PATH is required when --pipeline bitbucket "
-                "(no bitbucket-pipelines.yml found in the current directory)."
-            )
-        if not os.path.exists(bitbucket_path):
-            raise click.UsageError(f"--bitbucket-path not found: {bitbucket_path}")
+        bitbucket_path = _resolve_provider_path(
+            "bitbucket", flag="bitbucket-path", value=bitbucket_path,
+            candidates=("bitbucket-pipelines.yml",),
+            detect_label="bitbucket-pipelines.yml",
+        )
     elif pipeline_lc == "azure":
-        if not azure_path and os.path.isfile("azure-pipelines.yml"):
-            azure_path = "azure-pipelines.yml"
-            click.echo(f"[auto] using --azure-path {azure_path}", err=True)
-        if not azure_path:
-            raise click.UsageError(
-                "--azure-path PATH is required when --pipeline azure "
-                "(no azure-pipelines.yml found in the current directory)."
-            )
-        if not os.path.exists(azure_path):
-            raise click.UsageError(f"--azure-path not found: {azure_path}")
+        azure_path = _resolve_provider_path(
+            "azure", flag="azure-path", value=azure_path,
+            candidates=("azure-pipelines.yml",),
+            detect_label="azure-pipelines.yml",
+        )
     elif pipeline_lc == "jenkins":
-        if not jenkinsfile_path and os.path.isfile("Jenkinsfile"):
-            jenkinsfile_path = "Jenkinsfile"
-            click.echo(f"[auto] using --jenkinsfile-path {jenkinsfile_path}", err=True)
-        if not jenkinsfile_path:
-            raise click.UsageError(
-                "--jenkinsfile-path PATH is required when --pipeline jenkins "
-                "(no Jenkinsfile found in the current directory)."
-            )
-        if not os.path.exists(jenkinsfile_path):
-            raise click.UsageError(f"--jenkinsfile-path not found: {jenkinsfile_path}")
+        jenkinsfile_path = _resolve_provider_path(
+            "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
+            candidates=("Jenkinsfile",),
+            detect_label="Jenkinsfile",
+        )
     elif pipeline_lc == "circleci":
-        if not circleci_path and os.path.isfile(".circleci/config.yml"):
-            circleci_path = ".circleci/config.yml"
-            click.echo(f"[auto] using --circleci-path {circleci_path}", err=True)
-        if not circleci_path:
-            raise click.UsageError(
-                "--circleci-path PATH is required when --pipeline circleci "
-                "(no .circleci/config.yml found in the current directory)."
-            )
-        if not os.path.exists(circleci_path):
-            raise click.UsageError(f"--circleci-path not found: {circleci_path}")
+        circleci_path = _resolve_provider_path(
+            "circleci", flag="circleci-path", value=circleci_path,
+            candidates=(".circleci/config.yml",),
+            detect_label=".circleci/config.yml",
+        )
     elif pipeline_lc == "cloudformation":
         if not cfn_template:
             for _candidate in (
@@ -1560,89 +1609,38 @@ def scan(
                     ".yml / .yaml / .json / .template files."
                 )
     elif pipeline_lc == "cloudbuild":
-        if not cloudbuild_path:
-            for _candidate in ("cloudbuild.yaml", "cloudbuild.yml"):
-                if os.path.isfile(_candidate):
-                    cloudbuild_path = _candidate
-                    click.echo(
-                        f"[auto] using --cloudbuild-path {cloudbuild_path}",
-                        err=True,
-                    )
-                    break
-        if not cloudbuild_path:
-            raise click.UsageError(
-                "--cloudbuild-path PATH is required when --pipeline cloudbuild "
-                "(no cloudbuild.yaml/cloudbuild.yml found in the current directory)."
-            )
-        if not os.path.exists(cloudbuild_path):
-            raise click.UsageError(f"--cloudbuild-path not found: {cloudbuild_path}")
+        cloudbuild_path = _resolve_provider_path(
+            "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
+            candidates=("cloudbuild.yaml", "cloudbuild.yml"),
+            detect_label="cloudbuild.yaml/cloudbuild.yml",
+        )
     elif pipeline_lc == "buildkite":
-        if not buildkite_path:
-            for _candidate in (
-                ".buildkite/pipeline.yml", ".buildkite/pipeline.yaml",
-            ):
-                if os.path.isfile(_candidate):
-                    buildkite_path = _candidate
-                    click.echo(
-                        f"[auto] using --buildkite-path {buildkite_path}",
-                        err=True,
-                    )
-                    break
-        if not buildkite_path:
-            raise click.UsageError(
-                "--buildkite-path PATH is required when --pipeline buildkite "
-                "(no .buildkite/pipeline.yml found in the current directory)."
-            )
-        if not os.path.exists(buildkite_path):
-            raise click.UsageError(f"--buildkite-path not found: {buildkite_path}")
+        buildkite_path = _resolve_provider_path(
+            "buildkite", flag="buildkite-path", value=buildkite_path,
+            candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+            detect_label=".buildkite/pipeline.yml",
+        )
     elif pipeline_lc == "tekton":
-        if not tekton_path:
-            raise click.UsageError(
-                "--tekton-path PATH is required when --pipeline tekton."
-            )
-        if not os.path.exists(tekton_path):
-            raise click.UsageError(f"--tekton-path not found: {tekton_path}")
+        tekton_path = _resolve_provider_path(
+            "tekton", flag="tekton-path", value=tekton_path,
+        )
     elif pipeline_lc == "argo":
-        if not argo_path:
-            raise click.UsageError(
-                "--argo-path PATH is required when --pipeline argo."
-            )
-        if not os.path.exists(argo_path):
-            raise click.UsageError(f"--argo-path not found: {argo_path}")
+        argo_path = _resolve_provider_path(
+            "argo", flag="argo-path", value=argo_path,
+        )
     elif pipeline_lc == "dockerfile":
-        if not dockerfile_path:
-            for _candidate in ("Dockerfile", "Containerfile"):
-                if os.path.isfile(_candidate):
-                    dockerfile_path = _candidate
-                    click.echo(
-                        f"[auto] using --dockerfile-path {dockerfile_path}",
-                        err=True,
-                    )
-                    break
-        if not dockerfile_path:
-            raise click.UsageError(
-                "--dockerfile-path PATH is required when --pipeline dockerfile "
-                "(no Dockerfile/Containerfile found in the current directory)."
-            )
-        if not os.path.exists(dockerfile_path):
-            raise click.UsageError(f"--dockerfile-path not found: {dockerfile_path}")
+        dockerfile_path = _resolve_provider_path(
+            "dockerfile", flag="dockerfile-path", value=dockerfile_path,
+            candidates=("Dockerfile", "Containerfile"),
+            detect_label="Dockerfile/Containerfile",
+        )
     elif pipeline_lc == "kubernetes":
-        if not k8s_path:
-            for _candidate in ("kubernetes", "k8s", "manifests"):
-                if os.path.isdir(_candidate):
-                    k8s_path = _candidate
-                    click.echo(
-                        f"[auto] using --k8s-path {k8s_path}",
-                        err=True,
-                    )
-                    break
-        if not k8s_path:
-            raise click.UsageError(
-                "--k8s-path PATH is required when --pipeline kubernetes "
-                "(no kubernetes/, k8s/, or manifests/ directory found in cwd)."
-            )
-        if not os.path.exists(k8s_path):
-            raise click.UsageError(f"--k8s-path not found: {k8s_path}")
+        k8s_path = _resolve_provider_path(
+            "kubernetes", flag="k8s-path", value=k8s_path,
+            candidates=("kubernetes", "k8s", "manifests"),
+            candidate_kind="dir",
+            detect_label="kubernetes/, k8s/, or manifests/ directory",
+        )
     elif pipeline_lc == "helm":
         if not helm_path:
             if os.path.isfile("Chart.yaml"):
@@ -1678,6 +1676,18 @@ def scan(
     for crp in custom_rules:
         if not os.path.exists(crp):
             raise click.UsageError(f"--custom-rules not found: {crp}")
+
+    if diff_base is not None and diff_base.startswith("-"):
+        # ``diff_base`` is composed into ``git diff --name-only
+        # <base>...HEAD``. A leading ``-`` makes git parse the value
+        # as an option (e.g. ``--output=path``, write-anywhere
+        # primitive). Catch it here so the CLI shows a clean
+        # UsageError; the helper also validates as defense in depth
+        # (CWE-88, argument injection).
+        raise click.UsageError(
+            "--diff-base must not start with '-' "
+            "(would be parsed as a git flag, not a positional ref)"
+        )
 
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
@@ -1778,7 +1788,7 @@ def scan(
 
     score_result = score(findings)
 
-    # Collect the component inventory only when requested — some
+    # Collect the component inventory only when requested, some
     # providers (AWS runtime) perform extra API calls to build it.
     components = None
     if want_inventory:
@@ -1796,7 +1806,7 @@ def scan(
         if output in ("terminal", "both"):
             # When emitting both terminal and JSON, send the human-readable report to
             # stderr so the JSON on stdout remains clean and machine-parseable.
-            from rich.console import Console as _Console  # local import — only needed here
+            from rich.console import Console as _Console  # local import, only needed here
             console = _Console(stderr=(output == "both"))
             report_terminal(findings, score_result, severity_threshold=threshold, console=console)
             if chains:
@@ -1872,6 +1882,16 @@ def scan(
                 "--baseline-from-git expects REF:PATH (e.g. origin/main:baseline.json)"
             )
         ref_part, path_part = baseline_from_git.split(":", 1)
+        # ``ref_part`` and ``path_part`` flow into ``git show`` as
+        # positional arguments composed via f-string. Reject leading
+        # ``-`` here so the CLI surfaces a clean UsageError instead of
+        # the lower-layer ValueError; the helper validates again as a
+        # second line of defense (CWE-88, argument injection).
+        if ref_part.startswith("-") or path_part.startswith("-"):
+            raise click.UsageError(
+                "--baseline-from-git REF and PATH must not start with '-' "
+                "(would be parsed as a git flag, not a positional argument)"
+            )
         baseline_git_pair = (ref_part, path_part)
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
@@ -1915,7 +1935,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
     stdout (``--output json/sarif/html/both``), the caller sets
     ``to_stderr=True`` to avoid corrupting that stream.
 
-    File read errors are silently skipped — a missing file is almost
+    File read errors are silently skipped, a missing file is almost
     always due to a finding with a synthetic resource name (e.g. an
     AWS check), not a real on-disk workflow. Per-path content is
     cached so multiple findings against the same file only re-read
@@ -2028,7 +2048,7 @@ def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> No
     if not detected:
         return
     click.echo(
-        f"[hint] no real AWS results — this looks like a '{detected}' "
+        f"[hint] no real AWS results. This looks like a '{detected}' "
         f"repo; try: pipeline_check --pipeline {detected}",
         err=True,
     )
@@ -2087,7 +2107,7 @@ def _emit_gate_summary(gate: Any) -> None:
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# `init` subcommand — scaffold a starter config file.
+# `init` subcommand, scaffold a starter config file.
 # ────────────────────────────────────────────────────────────────────────────
 
 
@@ -2126,7 +2146,7 @@ def init_cmd(target_path: str, force: bool) -> None:
     suffix = (
         f" (pipeline: {detected})"
         if detected
-        else " (no CI files detected — edit the 'pipeline:' line before use)"
+        else " (no CI files detected, edit the 'pipeline:' line before use)"
     )
     click.echo(f"[init] wrote {target_path}{suffix}")
 
@@ -2135,7 +2155,7 @@ def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
     Keeping the top-level command as ``scan`` preserves backward
-    compatibility — every documented ``pipeline_check --flag ...``
+    compatibility, every documented ``pipeline_check --flag ...``
     invocation keeps working. Subcommands are opt-in via a bare
     argv[1] match, so adding more later is cheap.
     """

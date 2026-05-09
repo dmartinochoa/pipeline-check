@@ -1,4 +1,4 @@
-"""ADO-004 — deployment jobs must bind an environment."""
+"""ADO-004, deployment jobs must bind an environment."""
 from __future__ import annotations
 
 import re

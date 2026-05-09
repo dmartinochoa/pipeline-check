@@ -1,4 +1,4 @@
-"""GHA-024 — workflow must emit SLSA provenance attestation."""
+"""GHA-024, workflow must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any
@@ -19,7 +19,7 @@ RULE = Rule(
         "``actions/attest-build-provenance`` after the build step to "
         "emit an in-toto attestation alongside the artifact. "
         "``cosign sign`` alone (covered by GHA-006) signs the artifact "
-        "but doesn't record *how* it was built — SLSA Build L3 requires "
+        "but doesn't record *how* it was built. SLSA Build L3 requires "
         "the provenance statement."
     ),
     docs_note=(
@@ -29,7 +29,7 @@ RULE = Rule(
         "the build happened on a trusted runner, from a specific source "
         "commit, with known parameters. Without it, a leaked signing "
         "key forges identity but a leaked build environment also forges "
-        "provenance — you need both for the SLSA L3 non-falsifiability "
+        "provenance. You need both for the SLSA L3 non-falsifiability "
         "guarantee."
     ),
 )
@@ -58,7 +58,7 @@ def _has_pypi_pep740_attestations(doc: dict[str, Any]) -> bool:
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    # Only apply to artifact-producing workflows — lint/test-only
+    # Only apply to artifact-producing workflows, lint/test-only
     # workflows have nothing to attest.
     if not produces_artifacts(doc):
         return Finding(

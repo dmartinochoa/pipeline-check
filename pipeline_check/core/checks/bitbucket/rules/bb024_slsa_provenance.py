@@ -1,4 +1,4 @@
-"""BB-024 — Bitbucket pipeline must emit SLSA provenance attestation."""
+"""BB-024. Bitbucket pipeline must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,8 +1,8 @@
-"""GL-028 — ``services:`` images must be pinned to a version or digest.
+"""GL-028, ``services:`` images must be pinned to a version or digest.
 
 GL-001 / GL-009 only look at ``image:``. GitLab also lets jobs (and
 the top-level document) declare ``services:`` for docker-in-docker,
-databases, caches, and other sidecars — and those containers run in
+databases, caches, and other sidecars, and those containers run in
 the build network with the primary job. A ``:latest`` postgres
 service is the same supply-chain risk as a ``:latest`` build image,
 just historically missed by the pinning checks.
@@ -25,7 +25,7 @@ RULE = Rule(
     cwe=("CWE-829",),
     recommendation=(
         "Pin every ``services:`` entry the same way ``image:`` is "
-        "pinned — prefer ``@sha256:<digest>``, or at minimum a full "
+        "pinned, prefer ``@sha256:<digest>``, or at minimum a full "
         "immutable version tag (``postgres:16.2-alpine``). Avoid "
         "``:latest`` and bare tags like ``:16``."
     ),
@@ -77,7 +77,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         for ref in _service_refs(job.get("services")):
             _inspect(ref, name)
 
-    # No services declared anywhere — silent pass.
+    # No services declared anywhere, silent pass.
     has_any = bool(_service_refs(doc.get("services"))) or any(
         _service_refs(j.get("services")) for _, j in iter_jobs(doc)
     )

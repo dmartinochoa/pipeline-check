@@ -1,4 +1,4 @@
-"""BB-009 — `pipe:` should pin by sha256 digest (strictest tier)."""
+"""BB-009, `pipe:` should pin by sha256 digest (strictest tier)."""
 from __future__ import annotations
 
 from typing import Any

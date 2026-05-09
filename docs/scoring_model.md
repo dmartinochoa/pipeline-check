@@ -44,7 +44,7 @@ If every finding is INFO (or there are none), the score is 100.
 | `2`  | Scanner error                 |
 | `3`  | Usage / config / unknown ID   |
 
-The default gate is `--fail-on CRITICAL` — one CRITICAL finding in the
+The default gate is `--fail-on CRITICAL`, one CRITICAL finding in the
 effective set (after baseline + ignore filtering) fails CI. The grade
 is *not* the default gate criterion; use `--min-grade` to gate on it
 explicitly. See [ci_gate.md](ci_gate.md) for the full gate contract.

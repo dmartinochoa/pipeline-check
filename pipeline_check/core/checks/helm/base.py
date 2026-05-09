@@ -2,7 +2,7 @@
 
 Composes a :class:`KubernetesContext` from one or more rendered Helm
 charts. The helm provider returns this context so the existing K8s
-rule pack runs unmodified — every K8S-* check sees the rendered
+rule pack runs unmodified, every K8S-* check sees the rendered
 manifests as if they had been read off disk.
 
 Each chart referenced by ``--helm-path`` is rendered once via
@@ -11,8 +11,8 @@ chart-by-chart, or by pointing at the parent directory: in the
 parent-dir case we walk for every ``Chart.yaml`` at depth ≤ 2 (so
 ``charts/myapp/Chart.yaml`` is picked up, but a vendored
 ``charts/myapp/charts/redis/Chart.yaml`` subchart is not). The
-subchart is still rendered as part of its parent — Helm handles the
-dependency recursion — so skipping it here just avoids rendering
+subchart is still rendered as part of its parent. Helm handles the
+dependency recursion, so skipping it here just avoids rendering
 the same content twice.
 """
 from __future__ import annotations
@@ -32,7 +32,7 @@ class HelmContext(KubernetesContext):
     ``KubernetesManifestChecks`` orchestrator (and every K8S-* rule)
     accepts it without isinstance checks.
 
-    Carries an extra ``charts`` list — one :class:`Chart` per rendered
+    Carries an extra ``charts`` list, one :class:`Chart` per rendered
     chart, with the parsed ``Chart.yaml`` / ``Chart.lock`` content the
     HELM-* rules need. The K8s rule pack ignores this attribute (it
     only iterates ``self.manifests``); HELM-* rules iterate ``charts``
@@ -57,7 +57,7 @@ class HelmContext(KubernetesContext):
         directory holding multiple charts (one ``Chart.yaml`` per
         immediate subdirectory).
 
-        Render failures don't raise out of context construction — they
+        Render failures don't raise out of context construction. They
         land in ``ctx.warnings`` so the scanner can finish and surface
         a clean "chart X failed to render" warning alongside whatever
         other charts succeeded.
@@ -142,7 +142,7 @@ class HelmChartBaseCheck(BaseCheck):
     """Base for HELM-* rule modules that operate on chart metadata.
 
     Distinct from :class:`KubernetesBaseCheck` because chart-level
-    rules don't read ``ctx.manifests`` — they walk ``ctx.charts``,
+    rules don't read ``ctx.manifests``. They walk ``ctx.charts``,
     which is populated above and carries the parsed ``Chart.yaml`` /
     ``Chart.lock`` for each rendered chart. The K8s rule pack still
     runs over the same ``HelmContext`` via its own orchestrator;

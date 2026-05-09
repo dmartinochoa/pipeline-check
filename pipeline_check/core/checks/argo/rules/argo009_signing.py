@@ -1,4 +1,4 @@
-"""ARGO-009 — Argo workflow should sign artifacts it produces."""
+"""ARGO-009. Argo workflow should sign artifacts it produces."""
 from __future__ import annotations
 
 from ...base import Finding, Severity, has_signing, produces_artifacts
@@ -19,7 +19,7 @@ RULE = Rule(
         "not tag, so a re-pushed tag can't bypass the signature."
     ),
     docs_note=(
-        "Detection mirrors GHA-006 / TKN-009 / BK-009 — the shared "
+        "Detection mirrors GHA-006 / TKN-009 / BK-009, the shared "
         "signing-token catalog (cosign, sigstore, slsa-github-"
         "generator, slsa-framework, notation-sign) is searched "
         "across every string in each Argo document. Fires only on "
@@ -44,7 +44,7 @@ def check(ctx: ArgoContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="argo",
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     unsigned = [d for d in artifact_producers if not has_signing(d.data)]

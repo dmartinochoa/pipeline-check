@@ -29,7 +29,7 @@
 
 Each row below pairs a `check_id` with the PCI DSS requirements its
 passing state evidences. Source of truth:
-`pipeline_check/core/standards/data/pci_dss_v4.py` — regenerate with
+`pipeline_check/core/standards/data/pci_dss_v4.py`, regenerate with
 `python scripts/gen_standards_mappings.py pci_dss_v4`.
 
 | Check | Control(s) |
@@ -114,5 +114,5 @@ passing state evidences. Source of truth:
 
 - Cardholder data discovery and handling (Req 3)
 - Network segmentation and firewall rules (Req 1)
-- MFA enforcement on interactive logins (Req 8.3–8.5) — requires IdP
+- MFA enforcement on interactive logins (Req 8.3–8.5): requires IdP
   inspection outside the CI/CD surface.

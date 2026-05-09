@@ -1,4 +1,4 @@
-"""GHA-004 — workflow must declare an explicit `permissions:` block."""
+"""GHA-004, workflow must declare an explicit `permissions:` block."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Without an explicit `permissions:` block (either top-level "
         "or per-job), the GITHUB_TOKEN inherits the repository's "
-        "default scope — typically `write`. A compromised step "
+        "default scope, typically `write`. A compromised step "
         "receives far more privilege than it needs."
     ),
     known_fp=(
@@ -106,7 +106,7 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
     top_perms = doc.get("permissions")
     # Resolved callees inherit their caller's permissions block when
     # they don't declare their own. Treat the inherited block as the
-    # effective top-level for the absence-check below — otherwise
+    # effective top-level for the absence-check below, otherwise
     # every legitimate reusable workflow gets flagged.
     inherited = wf.inherited_permissions if wf is not None else None
     effective_top = top_perms if top_perms is not None else inherited

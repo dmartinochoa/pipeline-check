@@ -1,4 +1,4 @@
-"""Configuration loading — pyproject.toml, .pipeline-check.yml, and env vars.
+"""Configuration loading, pyproject.toml, .pipeline-check.yml, and env vars.
 
 Precedence (highest wins):
 
@@ -19,7 +19,7 @@ stray key from a newer version doesn't brick an older install. Gate
 settings live under a ``[tool.pipeline_check.gate]`` sub-table (TOML) or
 a ``gate:`` sub-mapping (YAML).
 
-The returned dict is suitable for ``click.Context.default_map`` — which
+The returned dict is suitable for ``click.Context.default_map``, which
 means option names must match click parameter names. Anything we don't
 recognize is dropped from the returned map.
 """
@@ -52,9 +52,9 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "output", "output_file",
     "standards", "severity_threshold",
     "secret_patterns",
-    # Custom rule files — paths to YAML rule definitions.
+    # Custom rule files, paths to YAML rule definitions.
     "custom_rules",
-    # Per-rule severity overrides — see ``_parse_overrides``.
+    # Per-rule severity overrides, see ``_parse_overrides``.
     "overrides",
 })
 
@@ -152,7 +152,7 @@ def _load_from_file(explicit_path: str | None, cwd: Path) -> dict[str, Any]:
     if explicit_path:
         p = Path(explicit_path)
         if not p.exists():
-            # Explicit path was given and doesn't exist — caller wants this
+            # Explicit path was given and doesn't exist, caller wants this
             # file in particular, so surface the error rather than silently
             # falling back to auto-discovery.
             raise FileNotFoundError(f"--config file not found: {p}")
@@ -185,7 +185,7 @@ def _load_path(p: Path) -> dict[str, Any]:
                 doc = tomllib.load(fh)
             data = doc.get("tool", {}).get("pipeline_check", {}) or {}
         else:
-            # Unknown extension — best effort: try YAML (it's a superset of JSON).
+            # Unknown extension, best effort: try YAML (it's a superset of JSON).
             data = _safe_load_strict(p.read_text(encoding="utf-8")) or {}
     except (OSError, yaml.YAMLError, tomllib.TOMLDecodeError) as exc:
         print(f"[config] could not parse {p}: {exc}", file=sys.stderr)
@@ -234,7 +234,7 @@ def _coerce(key: str, value: Any) -> Any:
     """Light coercion so tests/config files can express values naturally.
 
     - ``checks``, ``standards``, ``fail_on_checks`` always reach click as
-      tuples (multiple=True) — accept a list in config and convert.
+      tuples (multiple=True), accept a list in config and convert.
     - ``overrides`` arrives as a nested mapping; normalize the keys to
       upper-case and the severity values to upper-case strings so the
       Scanner can convert to ``Severity`` without re-validating.
@@ -267,7 +267,7 @@ def _parse_overrides(raw: Any) -> dict[str, dict[str, str]]:
             severity: critical
 
     Unknown sub-keys, malformed values, and bad severities are dropped
-    with an ``[config]`` warning rather than raising — the rest of the
+    with an ``[config]`` warning rather than raising, the rest of the
     config should still load.
     """
     if not isinstance(raw, dict):

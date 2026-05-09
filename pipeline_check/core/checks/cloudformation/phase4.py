@@ -1,4 +1,4 @@
-"""CloudFormation Phase-4 parity — gap fills + CFN-native rules.
+"""CloudFormation Phase-4 parity, gap fills + CFN-native rules.
 
 Mirrors ``checks/terraform/phase4.py`` resource-for-resource:
 
@@ -13,7 +13,7 @@ Mirrors ``checks/terraform/phase4.py`` resource-for-resource:
     CF-003    CodeBuild VPC shares its VPC with a public subnet          HIGH  CICD-SEC-7
 
 Intrinsics (``{"Ref": ...}``, ``{"Fn::Sub": ...}``) are treated as
-non-literal — a rule that can only reason about concrete strings stays
+non-literal, a rule that can only reason about concrete strings stays
 silent when the value is unresolved, rather than false-matching.
 """
 from __future__ import annotations
@@ -38,7 +38,7 @@ _CF002_SKIP_TYPES = {
     "AWS::SecretsManager::Secret",
 }
 
-# Stateful data stores — narrow allow-list of types whose property
+# Stateful data stores, narrow allow-list of types whose property
 # maps historically carry hard-coded database credentials.
 _CF002_SCAN_TYPES = {
     "AWS::RDS::DBInstance",
@@ -66,7 +66,7 @@ class Phase4Checks(CloudFormationBaseCheck):
 
 
 # ---------------------------------------------------------------------------
-# SIGN-001 — Lambda code-signing needs a matching signer profile
+# SIGN-001. Lambda code-signing needs a matching signer profile
 # ---------------------------------------------------------------------------
 
 def _sign001(ctx: CloudFormationContext) -> list[Finding]:
@@ -108,7 +108,7 @@ def _sign001(ctx: CloudFormationContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# EB-002 — AWS::Events::Rule target ARNs with wildcards
+# EB-002. AWS::Events::Rule target ARNs with wildcards
 # ---------------------------------------------------------------------------
 
 def _eb002(ctx: CloudFormationContext) -> list[Finding]:
@@ -148,7 +148,7 @@ def _eb002(ctx: CloudFormationContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# CW-001 — CloudWatch alarm on CodeBuild FailedBuilds
+# CW-001. CloudWatch alarm on CodeBuild FailedBuilds
 # ---------------------------------------------------------------------------
 
 def _cw001(ctx: CloudFormationContext) -> list[Finding]:
@@ -190,7 +190,7 @@ def _cw001(ctx: CloudFormationContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# CF-001 — AWS::IAM::AccessKey as code
+# CF-001. AWS::IAM::AccessKey as code
 # ---------------------------------------------------------------------------
 
 def _cf001_iam_access_key(ctx: CloudFormationContext) -> list[Finding]:
@@ -205,7 +205,7 @@ def _cf001_iam_access_key(ctx: CloudFormationContext) -> list[Finding]:
             description=(
                 f"Template creates a long-lived access key for IAM user {user!r}. "
                 "The SecretAccessKey is emitted as a stack output or must be "
-                "referenced via Fn::GetAtt — either way the credential is "
+                "referenced via Fn::GetAtt, either way the credential is "
                 "stored in the CloudFormation stack metadata without rotation."
             ),
             recommendation=(
@@ -220,7 +220,7 @@ def _cf001_iam_access_key(ctx: CloudFormationContext) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# CF-002 — hard-coded secret shapes in resource properties
+# CF-002, hard-coded secret shapes in resource properties
 # ---------------------------------------------------------------------------
 
 def _cf002_template_secrets(ctx: CloudFormationContext) -> list[Finding]:
@@ -239,7 +239,7 @@ def _cf002_template_secrets(ctx: CloudFormationContext) -> list[Finding]:
             resource=r.address,
             description=(
                 f"{len(hits)} property leaf/leaves carry credential-shaped "
-                f"values — e.g. {summary}{'...' if len(hits) > 3 else ''}."
+                f"values, e.g. {summary}{'...' if len(hits) > 3 else ''}."
             ),
             recommendation=(
                 "Move the value to AWS Secrets Manager or SSM SecureString "
@@ -261,7 +261,7 @@ def _scan_values(node: object) -> list[tuple[str, str]]:
 
 def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
     if isinstance(node, dict):
-        # Treat unresolved intrinsics as opaque — they carry a Ref or
+        # Treat unresolved intrinsics as opaque. They carry a Ref or
         # Fn::Sub expression, never a literal credential.
         if is_intrinsic(node):
             return
@@ -288,7 +288,7 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# CF-003 — CodeBuild VPC shares its VPC with a public subnet
+# CF-003. CodeBuild VPC shares its VPC with a public subnet
 # ---------------------------------------------------------------------------
 
 def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:

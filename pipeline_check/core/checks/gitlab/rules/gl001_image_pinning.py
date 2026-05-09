@@ -1,4 +1,4 @@
-"""GL-001 — `image:` must be pinned to a specific version or digest."""
+"""GL-001, `image:` must be pinned to a specific version or digest."""
 from __future__ import annotations
 
 from typing import Any

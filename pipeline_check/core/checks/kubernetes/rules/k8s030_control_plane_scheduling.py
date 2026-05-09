@@ -1,4 +1,4 @@
-"""K8S-030 — Workload schedules onto a control-plane node."""
+"""K8S-030. Workload schedules onto a control-plane node."""
 from __future__ import annotations
 
 from typing import Any
@@ -37,7 +37,7 @@ RULE = Rule(
         "target ``node-role.kubernetes.io/control-plane`` (or the "
         "legacy ``master`` spelling) from non-system workloads. A pod "
         "scheduled on a control-plane node shares the kernel with "
-        "the API server, etcd, and kubelet credentials — credential "
+        "the API server, etcd, and kubelet credentials, credential "
         "theft from any such pod yields cluster-wide takeover. "
         "Application workloads belong on dedicated worker nodes; "
         "system add-ons that legitimately need control-plane "

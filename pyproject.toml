@@ -29,6 +29,22 @@ dependencies = [
     "rich>=13.0.0",
 ]
 
+# Floor versions only — the hash-locked, reproducible dev install lives
+# in ``requirements-dev.txt``. Install via ``make install`` or
+# ``pip install --require-hashes -r requirements-dev.txt``. This extra
+# is provided so ad-hoc ``pip install -e ".[dev]"`` works for
+# contributors who don't want the locked tree.
+[project.optional-dependencies]
+dev = [
+    "jsonschema>=4.0",
+    "mypy>=1.8.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.8.0",
+    "types-PyYAML>=6.0",
+    "typing-extensions>=4.4.0",
+]
+
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
 
@@ -111,10 +127,6 @@ disallow_untyped_defs = true
 # disable ``type-arg`` since ``boto3``'s untyped paginator output
 # would otherwise require ``cast()`` at every wrapper site.
 disallow_any_generics = true
-# Silence "Library stubs not installed for X" until requirements-dev.txt
-# is regenerated to include types-PyYAML. The runtime behavior is fine;
-# this only affects mypy's static checks on yaml.* call sites.
-disable_error_code = ["import-untyped"]
 
 # pyyaml ships without type stubs in our hash-locked lockfile, so
 # ``yaml.SafeLoader`` resolves to ``Any``. The three project-side

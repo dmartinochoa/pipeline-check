@@ -1,6 +1,6 @@
 """HTML report formatter.
 
-Generates a self-contained HTML file — no external CDN dependencies.
+Generates a self-contained HTML file, no external CDN dependencies.
 YAML rule metadata is loaded from pipeline_check/core/checks/aws/rules/ when
 PyYAML is installed; the report degrades gracefully without it.
 """
@@ -367,7 +367,7 @@ _SCRIPT = r"""
   const collapseBtn = document.getElementById('f-collapse');
   function setAll(open) {
     document.querySelectorAll('tr[data-check-id] details').forEach(d => {
-      // Only toggle rows currently visible after filtering — honours the
+      // Only toggle rows currently visible after filtering, honours the
       // user's "show me what's failing" filter even when they expand all.
       if (d.closest('tr').style.display !== 'none') d.open = open;
     });
@@ -538,7 +538,7 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
             f'</div>'
         )
 
-    # Recommended actions — prefer structured list from YAML, fall back to Finding string
+    # Recommended actions, prefer structured list from YAML, fall back to Finding string
     actions = rule.get("recommended_actions")
     if actions:
         items = "".join(f"<li>{_e(a)}</li>" for a in actions)
@@ -569,7 +569,7 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
             f'</div>'
         )
 
-    # Compliance controls — one tag per ControlRef, grouped by standard.
+    # Compliance controls, one tag per ControlRef, grouped by standard.
     if finding.controls:
         by_std: dict[str, list[Any]] = {}
         for c in finding.controls:
@@ -602,7 +602,7 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     # but NOT the detail sections (keeps matches predictable).
     haystack = f"{finding.check_id} {finding.title} {finding.resource}".lower()
     # Ignore-rule the copy button will drop into the clipboard:
-    # ``CHECK_ID:RESOURCE`` — the flat format the gate accepts.
+    # ``CHECK_ID:RESOURCE``, the flat format the gate accepts.
     ignore_rule = f"{finding.check_id}:{finding.resource}"
 
     # Stable, shareable anchor per finding: ``#finding-<check>-<slug>``.
@@ -650,7 +650,7 @@ def _chains_section_html(chains: list[Chain]) -> str:
     Sits between the score card and the findings table. Each chain is
     its own card with a left border tinted by the chain's severity so
     a CRITICAL chain is unmissable. Narrative is preserved as a
-    ``<pre>`` block — chain rules already format multi-line steps and
+    ``<pre>`` block, chain rules already format multi-line steps and
     we don't want Markdown reflow to dissolve the numbered list.
     """
     if not chains:
@@ -774,7 +774,7 @@ def report_html(
 
     Returns the HTML string. When *output_path* is provided the report is
     also written to that file. When *chains* is supplied an Attack Chains
-    section is rendered immediately after the score card — it's the
+    section is rendered immediately after the score card, it's the
     highest-signal artifact in the report.
     """
     rules = _load_rules()

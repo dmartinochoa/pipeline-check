@@ -1,4 +1,4 @@
-"""GCB-005 — Build ``timeout:`` must be set to a reasonable bound.
+"""GCB-005. Build ``timeout:`` must be set to a reasonable bound.
 
 Cloud Build's default build timeout is 10 minutes; the maximum is
 24 hours. A build without an explicit ``timeout:`` inherits the
@@ -10,7 +10,7 @@ the cost / dwell-time of a compromise.
 
 Values accepted:
 - ``timeout: 1800s`` (seconds, Cloud Build native format)
-- ``timeout: 30m`` (convenience suffix — accepted by gcloud but not
+- ``timeout: 30m`` (convenience suffix, accepted by gcloud but not
   by the API; treated here as unresolvable and a fail)
 
 This rule fails on:
@@ -82,7 +82,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
             description=(
-                "No ``timeout:`` declared — build inherits the 10-minute "
+                "No ``timeout:`` declared, build inherits the 10-minute "
                 "Cloud Build default."
                 if raw is None else
                 f"``timeout: {raw!r}`` is not a valid Cloud Build duration "

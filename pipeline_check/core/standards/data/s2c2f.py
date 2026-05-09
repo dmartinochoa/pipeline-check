@@ -1,11 +1,11 @@
-"""S2C2F — Secure Supply Chain Consumption Framework (OpenSSF / Microsoft).
+"""S2C2F. Secure Supply Chain Consumption Framework (OpenSSF / Microsoft).
 
 S2C2F is a purpose-built framework for how an organization *consumes*
 open-source software in its CI/CD pipeline. It's organized into 8
 practices (Ingest, Scan, Inventory, Update, Enforce, Audit, Rebuild,
 Fix) with requirements at maturity levels L1–L4.
 
-This scanner evidences a focused subset — the requirements that show
+This scanner evidences a focused subset, the requirements that show
 up as pipeline configuration (not the ones that require org-level
 process or external tooling visibility). Level 4 rebuild requirements
 (REB-1: rebuild on trusted infra, REB-2/3/4: sign + SBOM the rebuild)
@@ -184,5 +184,25 @@ STANDARD = Standard(
         "BK-011":   ["REB-4"],
         "TKN-011":  ["REB-4"],
         "ARGO-011": ["REB-4"],
+
+        # ── Dockerfile (image build = OSS consumption boundary) ───
+        # ING-1 covers using trusted package managers / registries;
+        # SCA-1 covers vuln scanning OSS; UPD-1 / UPD-2 cover
+        # tracking and updating OSS; REB-2 / REB-3 cover signing
+        # and SBOMs of produced artifacts.
+        "DF-001":  ["ING-1", "UPD-1"],   # FROM not digest-pinned
+        "DF-003":  ["ING-1", "UPD-1"],   # ADD remote no integrity
+        "DF-004":  ["ING-1"],            # curl-pipe
+        "DF-010":  ["UPD-1"],            # apt upgrade unpinned
+        "DF-011":  ["UPD-1"],            # no cache cleanup
+        "DF-016":  ["REB-3"],            # no OCI provenance labels
+
+        # ── Helm chart deps (chart = OSS bundled into a release) ──
+        "HELM-001": ["ING-1"],           # legacy v1
+        "HELM-002": ["UPD-1", "REB-3"],  # missing Chart.lock digests
+        "HELM-003": ["ING-1"],           # non-HTTPS dep repo
+        "HELM-004": ["UPD-1"],           # version range
+        "HELM-008": ["UPD-1"],           # stale Chart.lock
+        "HELM-009": ["ING-1"],           # non-HTTPS home/sources
     },
 )

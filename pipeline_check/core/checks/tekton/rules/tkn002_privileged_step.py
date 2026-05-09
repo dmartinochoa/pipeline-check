@@ -1,4 +1,4 @@
-"""TKN-002 — Steps must not run privileged or as UID 0."""
+"""TKN-002. Steps must not run privileged or as UID 0."""
 from __future__ import annotations
 
 from typing import Any

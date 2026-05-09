@@ -1,8 +1,8 @@
-"""Kubernetes manifest provider — scans Kubernetes API documents on disk.
+"""Kubernetes manifest provider, scans Kubernetes API documents on disk.
 
     pipeline_check --pipeline kubernetes --k8s-path path/to/manifests/
 
-Text-only YAML parsing — no `kubectl`, no cluster access, no Helm or
+Text-only YAML parsing, no `kubectl`, no cluster access, no Helm or
 Kustomize rendering. Helm chart values and kustomization base files
 are silently skipped (they don't carry the canonical
 ``apiVersion`` + ``kind`` shape).
@@ -19,7 +19,7 @@ from .base import BaseProvider
 
 
 class KubernetesProvider(BaseProvider):
-    """Kubernetes provider — parses K8s API YAML manifests."""
+    """Kubernetes provider, parses K8s API YAML manifests."""
 
     NAME = "kubernetes"
 

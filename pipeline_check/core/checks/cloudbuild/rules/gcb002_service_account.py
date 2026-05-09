@@ -1,4 +1,4 @@
-"""GCB-002 — Cloud Build runs with the default service account.
+"""GCB-002. Cloud Build runs with the default service account.
 
 When ``serviceAccount:`` is unset, Cloud Build uses the project's
 default Cloud Build service account (``<project-number>@cloudbuild.

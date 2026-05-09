@@ -1,4 +1,4 @@
-"""SIGN-001 — No AWS Signer signing profile exists when Lambda code-signing is wired."""
+"""SIGN-001. No AWS Signer signing profile exists when Lambda code-signing is wired."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
     docs_note=(
         "AWS Signer profiles are the upstream of LMB-001's "
         "code-signing config. Without a profile defined, no "
-        "function in the account can enforce code-signing — "
+        "function in the account can enforce code-signing, "
         "LMB-001's recommendation has nothing to point at. The "
         "profile is the foundation; the per-function code-signing "
         "config attaches it."

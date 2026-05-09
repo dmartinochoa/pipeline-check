@@ -1,4 +1,4 @@
-"""CC-005 — Jobs should not declare long-lived AWS access keys in environment blocks."""
+"""CC-005. Jobs should not declare long-lived AWS access keys in environment blocks."""
 from __future__ import annotations
 
 from typing import Any

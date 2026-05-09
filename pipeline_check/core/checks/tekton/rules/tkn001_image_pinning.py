@@ -1,4 +1,4 @@
-"""TKN-001 — Step images must be digest-pinned (``image@sha256:<digest>``)."""
+"""TKN-001. Step images must be digest-pinned (``image@sha256:<digest>``)."""
 from __future__ import annotations
 
 import re

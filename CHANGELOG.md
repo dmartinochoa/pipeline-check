@@ -12,6 +12,528 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-026 — Buildkite injection lands on auto-deploy step with no
+  manual gate.** New cross-rule attack chain on the Buildkite
+  surface, mirroring the AC-002 (GitHub) and AC-022 (GitLab)
+  injection-meets-impact shape. Fires when the same
+  ``pipeline.yml`` carries BK-003 (a step's ``command:``
+  interpolates an untrusted Buildkite metadata variable —
+  ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_BRANCH``,
+  ``$BUILDKITE_PULL_REQUEST_TITLE``, etc.) AND BK-007 (a deploy-
+  named step has no ``manual:`` or ``input:`` gate). Combined,
+  anyone who can land a commit on a branch the pipeline runs
+  against supplies the injection vector AND triggers the
+  unattended deploy in the same run; the injected command
+  executes with the deploy step's credentials. Closes a real
+  catalog gap: every CI provider with both primitives can
+  compose this chain, but until now the catalog covered GitHub
+  and GitLab and left Buildkite as the one provider with both
+  ingredients but no chain. Severity CRITICAL, MITRE ``T1059`` /
+  ``T1078`` / ``T1556``, kill-chain ``initial-access -> execution
+  -> impact``. Auto-discovered; ``--explain BK-003`` and
+  ``--explain BK-007`` now list AC-026 alongside their existing
+  chain references; ``--list-chains`` and
+  ``--explain-chain AC-026`` pick it up. Catalog 25 -> 26.
+- **AC-027 — Image bakes a credential file AND exposes a remote-
+  access port.** First Dockerfile-side attack chain. Fires when
+  the same ``Dockerfile`` carries DF-019 (a ``COPY`` / ``ADD``
+  source path names a credential file: ``id_rsa``,
+  ``.aws/credentials``, ``.npmrc``, ``.kube/config``, etc.) AND
+  DF-013 (an ``EXPOSE`` declares a sensitive remote-access port:
+  22 sshd, 23 telnet, 21 ftp, 3389 rdp, 5900 vnc, common database
+  / cache / search ports). The image ships a key AND a way to
+  reach it from the outside; pulling a public mirror or
+  exfiltrating a single CI build artifact yields both halves of
+  the credential-and-listener pair. Distinct kill-chain shape
+  from the other 26 catalog chains: ``credential-access ->
+  initial-access -> lateral-movement`` rather than the typical
+  ``initial-access -> execution`` shape. Severity CRITICAL,
+  MITRE ``T1552.001`` / ``T1078`` / ``T1190``. Auto-discovered;
+  ``--explain DF-013`` and ``--explain DF-019`` now list AC-027.
+  Catalog 26 -> 27. Dockerfile gains its first attack chain
+  (provider went 0 -> 1).
+- **Standards-mapping backfill rounds out BK / DF / HELM / GCB to
+  the realistic ceiling.** Previous round closed NIST SSDF for
+  the three thinnest packs; this round closes every other
+  standard that semantically applies. After this commit each of
+  Buildkite, Dockerfile, Helm, and Cloud Build maps to 12/14
+  registered standards (the ``cis_aws_foundations`` and
+  ``cis_kubernetes`` exceptions are intentional, those benchmarks
+  are scoped to AWS and Kubernetes posture respectively and don't
+  apply here).
+  Eight standards files gained mappings:
+  - **``cis_supply_chain``**: Dockerfile (18 rules → CIS sections
+    1.4 / 2.1 / 2.3 / 4.4) and Cloud Build (26 rules) added; Helm
+    expanded HELM-006..010.
+  - **``esf_supply_chain``**: Dockerfile (15 rules) and Cloud
+    Build (26) added; Helm expanded HELM-006..010.
+  - **``nist_800_190``**: Dockerfile (17 rules — NIST 800-190
+    Section 4.1 maps almost line-for-line to a Dockerfile's
+    threat surface) and Buildkite (7 rules — runtime container
+    concerns) added.
+  - **``nist_csf_2``**: Dockerfile (19 rules) and Buildkite (13)
+    added.
+  - **``nist_ssdf``**: Cloud Build (26 rules) added — closes the
+    last unmapped CI provider on this standard.
+  - **``openssf_scorecard``**: Dockerfile (9 rules — Pinned-
+    Dependencies / Dangerous-Workflow / Token-Permissions /
+    SBOM) added.
+  - **``pci_dss_v4``**: Dockerfile (14), Helm (6), and Cloud
+    Build (20) added.
+  - **``s2c2f``**: Dockerfile (6 — ING-1 / UPD-1 / REB-3) and
+    Helm (6) added.
+  - **``slsa``**: Dockerfile (6 — Build.L1.Provenance /
+    L2.Signed / L3.NonFalsifiable / L3.Isolated) and Cloud
+    Build (14) added.
+  - **``soc2``**: Dockerfile (18) and Buildkite (13) added.
+  Net 263 new mappings. Operators running ``--standard-report
+  <name>`` will now see BK / DF / HELM / GCB findings annotated
+  on every applicable framework rather than rendering as
+  "unmapped".
+- **NIST SSDF mappings backfilled for Buildkite, Dockerfile, and
+  Helm.** All three packs previously had **zero** entries in
+  ``nist_ssdf``: every BK / DF / HELM rule rendered as
+  "unmapped" in ``--standard-report nist_ssdf``. 43 new
+  mappings close the gap (BK 13, DF 20, HELM 10), routed
+  across SSDF practice areas:
+  - PW.4.* (acquire and verify 3rd-party components) for
+    pinning rules and curl-pipe / TLS-bypass shapes
+    (BK-001 / BK-004 / BK-008 / DF-001 / DF-003 / DF-004 /
+    DF-010 / DF-011 / HELM-002 / HELM-003 / HELM-004 / HELM-008).
+  - PS.* (protect software, integrity, provenance) for credential
+    and signing rules (BK-002 / BK-009 / BK-010 / BK-011 /
+    DF-006 / DF-016 / DF-019 / DF-020 / HELM-002 / HELM-010).
+  - PO.5.1 / PW.9.1 (env separation, secure defaults) for
+    privileged / root / sensitive-port rules (BK-005 / BK-007 /
+    BK-013 / DF-002 / DF-008 / DF-012 / DF-013 / DF-014 / DF-015 /
+    DF-017 / DF-018).
+  - PO.3.3 (audit trail) for hygiene fields (HELM-005 / HELM-007
+    / DF-007 / HELM-010).
+  - RV.1.1 (vulnerability response) for scanning / health-check
+    rules (BK-012 / DF-007).
+  Standards coverage per provider now: Buildkite 8/14 -> 9/14,
+  Dockerfile 2/14 -> 3/14, Helm 9/14 -> 10/14.
+- **Buildkite / Tekton / Argo each gain autofixer coverage.** All
+  three providers had 13 rules and zero fixers — the only thin
+  spots in the catalog after rounds 22-24 expanded their rule
+  packs. Eight new fixer registrations close the gap by re-using
+  the cross-provider helpers the GHA / GL / BB / ADO / CC / JF
+  packs already ride on (no new patching logic, just additional
+  ``register(...)`` entries plus one composed fixer for the
+  TKN-008 / ARGO-008 case that bundles two primitives):
+  - **BK-002 / TKN-005 / ARGO-006** (literal secret in pipeline
+    body) join ``_fix_gha008`` — replaces credential-shaped RHS
+    values with ``"<REDACTED>"`` and leaves a rotate-and-wire-up
+    TODO comment.
+  - **BK-004** (curl-pipe) joins ``_comment_curl_pipe``.
+  - **BK-005** (docker insecure flags) joins
+    ``_strip_docker_flags`` for ``--privileged`` / ``-v`` /
+    ``--cap-add`` / ``--net=host``.
+  - **BK-008** (TLS bypass) joins ``_comment_tls_bypass``.
+  - **TKN-008 / ARGO-008** (curl-pipe **OR** TLS bypass) get a
+    new composed fixer that chains both primitives, since each
+    rule can fire on either shape.
+  Catalog autofixers: 103 → 111. Per-provider counts:
+  Buildkite 0 → 4, Tekton 0 → 2, Argo 0 → 2; the three thinnest
+  packs now run with the rest. 13 new tests in
+  ``tests/test_autofix.py`` lock per-fixer behavior plus the
+  composed-fixer dispatch and idempotency. README / docs / usage
+  numerical claims bumped 103 → 111; provider docs regenerated
+  to surface the autofix chip on every newly-covered rule.
+- **Three new malicious-activity patterns covering canonical
+  attacker idioms the catalog missed.** ``_malicious.py`` gains
+  PowerShell IEX downloader detection (``IEX (New-Object
+  Net.WebClient).DownloadString(...)`` and the
+  ``Invoke-WebRequest | IEX`` / ``iwr | iex`` short forms — the
+  Cobalt-Strike / commodity-malware loader shape), socat reverse
+  shells (``TCP-LISTEN:port EXEC:bash``, the ``TCP:host:port
+  SYSTEM:`` connect-back form, and the ``OPENSSL:host:443 EXEC:``
+  TLS-tunneled variant — covers the reverse-shell tooling missed
+  by the existing bash / nc / perl / python patterns), and base64-
+  encoded credential exfil (``base64 ~/.aws/credentials | curl
+  ...`` and peers — real intrusions prefer encoded over plain text
+  to defeat keyword-based IDS). Each new pattern is wired through
+  the existing ``find_malicious_patterns()`` dispatch, so every
+  ``*-027`` / ``*-025`` / ``*-029`` / ``CB-011`` malicious-activity
+  rule across the providers picks them up without per-rule edits.
+  New ``tests/test_malicious_patterns.py`` (23 cases) locks
+  positive matches, negative cases for benign sibling idioms (a
+  legit ``Invoke-WebRequest`` that doesn't pipe to IEX, socat as
+  a TCP relay, base64 of a build artifact), and three suppression
+  invariants so a future ``looks_like_example`` rewrite can't
+  silently start letting real hits through.
+- **Five new credential detectors plus encrypted PKCS#8 PEM block
+  detection.** ``_patterns.SECRET_DETECTORS`` adds Cohere
+  production keys (``co_pat_<40+>``), Replicate API tokens
+  (``r8_<40>``), Asana personal access tokens
+  (``1/<account-id>:<32-hex>``), Square access tokens
+  (``sq0(atp|csp)-<token>``), and Terraform Cloud / Enterprise
+  tokens (``<14-alnum>.atlasv1.<60+>`` — the literal
+  ``.atlasv1.`` middle segment makes the regex tight enough to
+  not collide with arbitrary base62). ``PEM_BLOCK_RE`` now also
+  matches ``-----BEGIN ENCRYPTED PRIVATE KEY-----`` (PKCS#8
+  password-protected form) — still a credential leak even when
+  the body is encrypted, since offline brute-force is cheap once
+  the file leaves the perimeter. Per-detector positive + negative
+  cases land in ``tests/test_secret_detection.py`` (99 → 111
+  cases).
+- **Six new TLS-verification-bypass patterns in
+  ``_primitives/tls_bypass.py``.** Adds Docker daemon / CLI
+  ``--insecure-registry`` (the ``dockerd`` startup-script idiom
+  for talking to an internal registry over plain HTTP), Maven /
+  Gradle JVM-property opt-outs
+  (``-Dmaven.wagon.http.ssl.insecure=true``,
+  ``-Dorg.gradle.https.insecure=true``,
+  ``systemProp.https.insecure=true``), and AWS CLI bypasses
+  (``AWS_S3_NO_VERIFY_SSL=true`` env var, ``aws --no-verify-ssl``
+  request flag). Every existing ``*-023`` TLS-bypass rule across
+  the providers picks them up via the shared primitive without
+  per-rule edits.
+- **New ``checks/_primitives/local_mock.py`` primitive.** One
+  source of truth for "this env block points at a LocalStack /
+  Moto / kind / k3d local mock." Exports ``LOCAL_ENDPOINT_RE``
+  (anchored localhost / 127.0.0.1 / ::1 matcher),
+  ``env_targets_local_mock(env)`` (any AWS / k8s endpoint pointed
+  at localhost), and ``env_has_localstack_sentinel(env)`` (the
+  combined "localhost endpoint + literal ``test`` access keys"
+  signal). GHA-005 and GHA-014 both consume it; future rules with
+  the same FP risk plug in by importing.
+
+### Changed
+
+- **``RULE.known_fp`` is now populated on 25 demoted rules and
+  rendered in provider docs.** The ``--explain CHECK-ID`` and
+  provider-doc surfaces previously dropped the ``known_fp`` field
+  for any rule whose confidence default lived in
+  ``_confidence.py`` rather than in the rule module — readers had
+  no way to see *why* a rule defaulted to LOW or MEDIUM. Anchored
+  on three already-documented IDs (GHA-016 curl-pipe, GHA-027
+  malicious-activity, GHA-008 credential-literal) and propagated
+  the same prose to the GitLab / Bitbucket / Azure DevOps /
+  Jenkins / CircleCI / CodeBuild peers across the curl-pipe,
+  malicious-activity, credential-literal, dep-update, and
+  outdated-image rule families. ``scripts/gen_provider_docs.py``
+  now renders ``known_fp`` as a "Known false-positive modes"
+  bullet list between the body prose and the recommendation block,
+  closing the drift between ``--explain`` (which had been
+  rendering it) and the published provider-reference docs (which
+  had been dropping it).
+- **CLI per-provider path detection collapses into a small
+  helper.** ``main()``'s 16-block elif ladder for
+  ``--<provider>-path PATH`` resolution becomes one helper
+  (``_resolve_provider_path``) plus 12 one-call dispatches.
+  ``cloudformation`` (template-folder probe) and ``helm``
+  (``--helm-values`` validation) stay inline because their
+  contracts don't fit the table. Net: ``cli.py`` shed ~150 lines.
+  Adding the next provider is now a 6-line table entry instead of
+  a 15-line elif block.
+- **``autofix.py`` split into a package.** The 1,910-line file
+  becomes ``autofix/__init__.py`` (the public surface —
+  ``register``, ``generate_fix``, ``render_patch``,
+  ``available_fixers``, ``_FIXERS``, ``Fixer``) plus
+  ``autofix/_impl.py`` (the 100+ fixer implementations). The
+  package facade runs every ``@register(...)`` decorator at
+  import time via a side-effect import from ``__init__``. Future
+  contributors can drop a per-provider sibling module
+  (``autofix/k8s.py``, ``autofix/dockerfile.py``) and wire it into
+  ``__init__`` with one line; the public API is unchanged. No
+  behavior change for callers.
+- **Scanner extracts ``_build_context``.** The diff-filter +
+  ``post_filter`` hook + warning-capture logic moves out of
+  ``Scanner.__init__`` into a ``_build_context()`` method so tests
+  can substitute their own context-building strategy without
+  re-implementing the rest of Scanner construction. The
+  ``import fnmatch`` lazy imports inside ``run()`` and
+  ``inventory()`` get hoisted to module scope. ``_load_custom_rules``
+  no longer hand-maintains a 9-package list — rule packages come
+  from a filesystem glob mirroring the CLI's existing approach,
+  so adding a new provider's ``rules/`` subpackage automatically
+  participates in collision detection without a registry edit.
+- **``__version__`` is a single source of truth literal.** Drops
+  the ``importlib.metadata.version("pipeline_check")`` lookup that
+  silently went stale on editable installs whenever
+  ``pyproject.toml`` got bumped without a reinstall, producing a
+  misleading ``--version`` for contributors. The literal stays
+  the canonical source; the release script bumps it alongside
+  ``[project] version`` in ``pyproject.toml`` and the ``vX.Y.Z``
+  git tag.
+
+### Fixed
+
+- **TLS-bypass autofixer recall on uppercase env vars.**
+  ``_comment_tls_bypass`` matched ``TLS_BYPASS_RE`` (a case-
+  sensitive lowercase pattern shared with the detection rules
+  that always run against ``blob_lower(doc)``) directly against
+  the raw original-case lines, so uppercase env-var assignments
+  like ``NODE_TLS_REJECT_UNAUTHORIZED=0`` and
+  ``GIT_SSL_NO_VERIFY=1`` were detected but never fixed. Now
+  searches against ``line.lower()`` while still emitting the
+  operator's original-case line in the commented-out output.
+  Surfaced while wiring TKN-008 and ARGO-008 onto the same
+  primitive; a longstanding silent gap on the GHA / GL / BB /
+  ADO / CC / JF ``*-023`` rules too.
+- **Argument-injection (CWE-88) hardening on ``--diff-base`` and
+  ``--baseline-from-git``.** Both flags compose user-controlled
+  values into git as positional arguments via f-string
+  (``f"{base_ref}...HEAD"``, ``f"{ref}:{path}"``). Git parses any
+  argv element starting with ``-`` as an option even when it
+  appears in a positional slot, so a value like
+  ``--output=/tmp/pwned`` would have been interpreted by
+  ``git diff`` as a write-to-arbitrary-path flag rather than a
+  rev. Two layers of defense land here: the ``diff.py`` helpers
+  reject any leading-``-`` ref / path with a clear ValueError
+  (covers CLI users, library callers, and config-file driven
+  invocations uniformly), and the same git invocations now pass
+  ``--end-of-options`` (git 2.24+) so even an internal regression
+  that forgot the ref check can't smuggle a flag past the
+  positional cutoff. The CLI raises ``UsageError`` instead of the
+  lower-layer ``ValueError`` so operators see the same error
+  shape as for other input-validation failures. Eight new
+  parameterized tests in ``tests/test_diff_mode.py`` lock the
+  rejection path and the argv-shape invariant.
+- **``produces_artifacts`` heuristic recognises GitHub Pages
+  workflows.** A workflow using ``actions/deploy-pages`` can only
+  ship a static documentation site, never a software artifact —
+  but the heuristic's bare ``deploy`` / ``publish`` substring
+  tokens used to match action names like ``actions/deploy-pages``
+  and step names like "Deploy to GitHub Pages", causing GHA-006
+  / GHA-007 / GHA-020 / GHA-024 (signing / SBOM / vuln-scan /
+  SLSA-attest) to fire on docs-only workflows. Now returns
+  ``False`` outright when ``actions/deploy-pages`` appears
+  anywhere; sibling Pages-action substrings (``upload-pages-
+  artifact``, ``configure-pages``) are pre-stripped from the blob
+  before the bare-token match runs so a hybrid workflow (real
+  publish + docs site) still detects via its real artifact token.
+- **GHA-005 no longer fires on LocalStack / Moto sentinel envs.**
+  A step pairing ``AWS_ENDPOINT_URL`` at a localhost address with
+  the literal ``test`` access keys is talking to a local mock —
+  boto3 / aws-sdk would refuse those credentials against real
+  AWS, so the long-lived-keys violation was a false positive.
+  Detection is structural and conservative (both signals
+  required), so a workflow that hardcodes ``test`` keys without a
+  localhost endpoint still fires.
+- **GHA-014 skips deploy commands against a local mock.** A job
+  whose env block (or any of its steps' envs) carries
+  ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` at a localhost
+  address is an integration test, not a deploy. ``terraform
+  apply`` against LocalStack no longer requires a GitHub
+  ``environment:`` gate.
+- **``tests/test_doc_claims.py`` derives its catalog total from
+  code.** Previously hardcoded ``_AWSLIKE_TOTAL = 71 + 63``
+  (literally violating the test's own promise that "numbers come
+  from code"). Now scans the AWS / Terraform / CloudFormation
+  modules for ``check_id="..."`` literals and sums dynamically.
+  Tolerance tightened from 50 to 20 since the count is no longer
+  hand-maintained. Catalog total floor on README and
+  ``docs/index.md`` bumped 500+ → 520+ to match.
+- **``pyproject.toml`` gains ``[project.optional-dependencies]
+  dev``.** The ``Makefile install`` target was running
+  ``pip install -e ".[dev]"`` against a non-existent extra. The
+  new extra mirrors ``requirements-dev.in`` (floor versions only;
+  the hash-locked, reproducible install lives in
+  ``requirements-dev.txt``).
+- **``requirements-dev.txt`` actually pins ruff and mypy.** The
+  ``ci:`` lint and type-check steps had been doing
+  ``pip install ruff`` / ``pip install mypy`` un-pinned because
+  neither was actually in the lockfile despite both being in
+  ``requirements-dev.in``. Regenerated the lockfile so both ride
+  the hash-pinned install path; pinned ``mypy<2.0`` because
+  mypy 2.0 tightens ``no-untyped-call`` against several PyYAML
+  helpers (lifting that pin is its own follow-up). Dropped the
+  ``disable_error_code = ["import-untyped"]`` placeholder in
+  ``pyproject.toml`` now that ``types-PyYAML`` actually resolves
+  through the lockfile, with per-call ``# type: ignore[no-
+  untyped-call]`` markers on the handful of PyYAML constructor
+  helpers the stubs annotate as untyped.
+- **MANIFEST hygiene + cross-platform Makefile.** ``MANIFEST.in``
+  excludes ``.pre-commit-hooks.yaml`` alongside the existing
+  ``.pre-commit-config.yaml`` exclusion, both as defense in depth
+  against either landing in a published sdist. ``make install``
+  switches to the same hash-locked ``requirements-dev.txt`` flow
+  CI uses, removing the broken ``pip install -e ".[dev]"`` call.
+  ``make clean`` runs through a Python one-liner so it works on
+  Windows. ``make lint`` now also covers ``scripts/`` (where a
+  malformed ``# noqa: ANN001.`` directive — period instead of
+  whitespace — had been silently tripping a ruff warning).
+- **One ruff ``E501`` long-line and one stale-noqa warning.**
+  Wrapped ``ac013_caller_runner_token_persist.py:24`` (was 126
+  chars) and rewrote the malformed
+  ``scripts/gen_attack_chains_doc.py:60`` ``# noqa`` directive
+  ruff was logging at every run.
+
+### Added
+
+- **AC-025 — Argo param injection lands in a privileged or root
+  step.** New cross-rule attack chain on the Argo Workflows
+  surface, mirroring the AC-023 shape (Tekton). Fires when the
+  same Argo Workflow / WorkflowTemplate /
+  ClusterWorkflowTemplate carries ARGO-005 (a template's
+  ``script.source`` or container ``command`` / ``args``
+  interpolates ``{{inputs.parameters.<name>}}`` /
+  ``{{workflow.parameters.<name>}}`` into the shell body without
+  quoting) AND ARGO-002 (the same template runs ``privileged:
+  true``, ``runAsUser: 0``, or with node-level
+  ``capabilities.add``). The combination converts an Argo trigger
+  surface — Argo Events Sensor webhook, CronWorkflow trigger,
+  WorkflowEventBinding fork-PR path, direct ``argo submit`` — into
+  in-pod shell execution inside a kernel-privileged container.
+  Distinct from AC-021 (default-SA + K8S-029 RoleBinding lateral-
+  movement shape); AC-025 is the *trigger-to-execution* shape on
+  the Argo side, and is independent of ServiceAccount /
+  RoleBinding configuration since the escape route is the node
+  rather than the K8s API. Severity CRITICAL, MITRE ``T1059`` /
+  ``T1068`` / ``T1611``, kill-chain ``initial-access -> execution
+  -> privilege-escalation``. Auto-discovered; ``--list-chains``
+  and ``--explain-chain AC-025`` pick it up; ``--explain
+  ARGO-002`` and ``--explain ARGO-005`` now list AC-025 under
+  "Triggers attack chains". Catalog 24 -> 25. Argo chain
+  coverage 1 -> 2 (AC-021 + AC-025), with the two chains on the
+  Argo surface now spanning two genuinely distinct attack stages.
+- **AC-024 — OIDC trust drift lands on a mutable ECR tag.** New
+  cross-provider attack chain (github / aws). Fires when a scan
+  carries GHA-030 (a workflow requests an OIDC token without an
+  ``environment:`` binding on the requesting job, so any branch
+  or fork PR can redeem the role with no required-reviewer gate)
+  AND ECR-002 (an ECR repository allows mutable image tags). Any
+  branch or fork PR that triggers the workflow obtains short-
+  lived AWS credentials; if those credentials reach an ECR push
+  role, the mutable-tag policy lets the workflow overwrite an
+  existing tag and the substituted image propagates to every
+  consumer that pulls by name (``imagePullPolicy: Always``,
+  digest-less manifests). Distinct attack vector from the existing
+  GHA-030 / ECR-002 chains: AC-016 = GHA-030 + IAM-002 (drift
+  meets *wildcard authority*), AC-017 = GHA-011 + ECR-002 (cache
+  poisoning meets writable surface), AC-024 = drift meets
+  writable surface — narrow authority but a supply-chain blast
+  radius. Severity CRITICAL, MITRE ``T1078.004`` / ``T1195.002``
+  / ``T1525``, kill-chain ``initial-access -> credential-access
+  -> impact``. Auto-discovered; ``--explain GHA-030`` and
+  ``--explain ECR-002`` now list AC-024 alongside their existing
+  chain references. Catalog 23 -> 24.
+- **AC-023 — Tekton param injection lands in a privileged or root
+  step.** New cross-rule attack chain. Fires when the same Tekton
+  ``Task`` / ``ClusterTask`` carries TKN-003 (a step's ``script:``
+  interpolates ``$(params.<name>)`` into the shell body without
+  quoting) AND TKN-002 (the same step runs ``privileged: true``,
+  ``runAsUser: 0``, or with node-level ``capabilities.add``). The
+  combination converts a PipelineRun trigger surface — webhook
+  payload routed through a Tekton EventListener, GitOps merge,
+  fork-PR-triggered CEL Trigger filter — into in-pod shell
+  execution inside a kernel-privileged container, the two
+  ingredients for a Kubernetes node escape. Distinct from AC-020
+  which captures the *static-RBAC* lateral-movement shape; AC-023
+  captures the *trigger-to-execution* shape on the Tekton side
+  alone. Severity CRITICAL, MITRE ``T1059`` / ``T1068`` / ``T1611``,
+  kill-chain ``initial-access -> execution -> privilege-
+  escalation``. Auto-discovered; ``--list-chains`` and
+  ``--explain-chain AC-023`` pick it up, ``--explain TKN-002`` and
+  ``--explain TKN-003`` now list AC-023 under "Triggers attack
+  chains". Catalog 22 -> 23. Tekton chain coverage 1 -> 2.
+- **AC-022 — GitLab script injection lands on deploy job with no
+  manual gate.** New cross-rule attack chain. Fires when the same
+  ``.gitlab-ci.yml`` carries GL-002 (a job's ``script:``
+  interpolates an attacker-controlled context field — commit
+  title, MR description, branch / tag name) AND GL-004 (a deploy
+  job has no ``when: manual`` and no protected ``environment:``
+  binding). The combination converts a fork-MR-controllable
+  injection point into an unattended production push, which is
+  the GitLab analog of AC-002 (``GHA-003`` + ``GHA-014``) — every
+  CI provider with a script-injection primitive and a deploy-gate
+  primitive can compose this same shape, but until now the chain
+  catalog had AC-002 for GitHub and nothing for GitLab. Severity
+  CRITICAL, MITRE ``T1059`` / ``T1078`` / ``T1556``, kill-chain
+  ``initial-access -> execution -> impact``. Closes a real
+  coverage gap: of the catalog's 22 chains, GitLab now has two
+  (AC-014 covered the runner-token persistence shape; AC-022
+  covers the injection-to-deploy shape). Auto-discovered;
+  ``--list-chains`` and ``--explain-chain AC-022`` pick it up,
+  ``--explain GL-002`` and ``--explain GL-004`` now list AC-022
+  under "Triggers attack chains". Catalog 21 -> 22.
+- **CIS Kubernetes Benchmark v1.10 — new compliance standard.**
+  Adds the 14th registered standard. Covers Section 5 (Policies)
+  of the benchmark — the workload-manifest controls a posture-
+  from-YAML scanner can evidence: 5.1 RBAC and Service Accounts
+  (cluster-admin minimization, wildcard verbs, default-SA bindings,
+  token-automount), 5.2 Pod Security Standards (privileged,
+  hostNamespaces, allowPrivilegeEscalation, runAsRoot,
+  capabilities, seccomp, hostPath, hostPort), 5.3 NetworkPolicies
+  (default-deny, allow-list enforcement), 5.4 Secrets Management
+  (env-mounted credentials, plaintext data), 5.7 General Policies
+  (namespace separation, default-namespace avoidance,
+  SecurityContext applied broadly). Sections 1-4 (control-plane
+  components, etcd, kubelet) require live cluster inspection and
+  are intentionally out of scope — run ``kube-bench`` for those.
+  31 of the 40 K8s rules + 6 cross-cutting K8s-related rules map
+  to 24 controls; ``--list-standards``, ``--standard-report
+  cis_kubernetes``, ``pipeline_check --standard cis_kubernetes``,
+  and SARIF tag ``cis_kubernetes`` all pick it up automatically.
+  Catalog standards count 13 to 14; updated README +
+  ``docs/index.md`` claim, plus ``docs/standards/cis_kubernetes.md``
+  reference page mirroring the cis_aws_foundations doc shape.
+  Floor in ``test_floors_hold`` set to 7% (the standard is
+  intentionally K8s-narrow, like cis_aws_foundations is AWS-narrow,
+  so catalog-wide coverage caps at the K8s-pack share).
+- **NIST CSF 2.0 + SOC 2 mappings for the K8s + Helm packs.** Both
+  standards previously had **zero** entries for the entire
+  Kubernetes (40 rules) and Helm (10 rules) packs, so
+  ``--standard-report nist_csf_2`` and ``--standard-report soc2``
+  rendered every K8s or Helm finding as "unmapped". Round 28 closed
+  this for PCI DSS v4 + S2C2F across the BK / TKN / ARGO packs;
+  this round closes it for the K8s and Helm packs across the two
+  remaining standards that already covered the rest of the catalog.
+  CSF 2.0 picks up 50 new mappings: every K8S-001..040 rule
+  routed across PR.PS (platform security), PR.AA (access), PR.IR
+  (network), PR.DS (data integrity), DE.CM (continuous
+  monitoring), and GV.SC (supply chain) plus all 10 HELM-* rules
+  on the GV.SC supply-chain function. Catalog-wide coverage:
+  59% to 72%; floor bumped 59 -> 70. SOC 2 picks up 38 new
+  mappings concentrated in CC6 (logical access — RBAC, SA tokens,
+  credentials), CC6.6 (network boundary), CC6.7 (data in transit),
+  CC6.8 (malicious software prevention — privileged containers,
+  hostPath escapes, runtime hardening), CC7.1 / CC7.2 (config
+  drift / monitoring), and CC8.1 (change management — image
+  pinning, chart pinning, attestation). Catalog-wide coverage:
+  39% to 51%; floor bumped 39 -> 49. The standards-mapping picture
+  for the catalog's 14 frameworks is now consistent across every
+  rule pack — no more "drag-down by zero coverage" floor wobble
+  when a pack expands.
+- **Five new K8s posture rules (`K8S-036`..`K8S-040`).** Extends the
+  Kubernetes pack with one cross-doc supply-chain check, two
+  secrets / network gaps, and two runtime-isolation checks.
+  ``K8S-036`` (cross-doc) walks every ``ServiceAccount``'s
+  ``imagePullSecrets`` and confirms each named ``Secret`` exists
+  in the same namespace within the manifest set; a dangling
+  reference doesn't fail apply but causes silent fallback to
+  anonymous registry pulls (MEDIUM). ``K8S-037`` is the ConfigMap
+  companion to K8S-018 — walks ``data`` / ``binaryData`` for AKIA-
+  shaped values and credential-shaped key names. ConfigMaps have
+  much broader RBAC scope than Secrets, so credentials leaked
+  this way reach a wider audience (HIGH). ``K8S-038`` is the
+  inverse of K8S-032 — fires when a NetworkPolicy carries an
+  ingress / egress rule with an empty ``from: []`` / ``to: []``
+  (or missing field), which is K8s shorthand for "match every
+  peer". The false-sense-of-security failure mode is worse than
+  no policy (MEDIUM). ``K8S-039`` flags pods that set
+  ``spec.shareProcessNamespace: true`` — collapses PID isolation
+  between containers and lets a compromised sidecar enumerate
+  every primary container's processes / env vars (MEDIUM).
+  ``K8S-040`` flags containers with ``securityContext.procMount:
+  Unmasked`` — undoes the kernel-info masking under ``/proc``
+  that the default ``Default`` procMount applies, exposing
+  ``/proc/kcore`` / ``/proc/keys`` / writable ``/proc/sys`` (HIGH).
+  Provider catalog: 35 to 40 K8s rules. 25 new tests in
+  ``tests/kubernetes/test_k8s036_040_posture_gaps.py`` covering
+  per-rule positive / negative cases, cross-namespace SA-pullsecret
+  isolation (K8S-036), binaryData base64 decode (K8S-037),
+  init-container coverage (K8S-040), and Deployment-template
+  walks (K8S-039); OWASP / NIST 800-53 / NIST 800-190 mappings
+  added; README + ``docs/index.md`` provider listings + Helm
+  K8S-* count + kubernetes.md provider doc regenerated;
+  ``insecure.yaml`` / ``secure.yaml`` fixtures extended to
+  exercise / pass every new rule. ``nist_csf_2`` floor 60 -> 59
+  and ``soc2`` floor 40 -> 39 to absorb the denominator widening
+  from the new rules — neither standard has any K8s mappings to
+  draw from.
 - **PCI DSS v4 + S2C2F mapping backfill across BK / TKN / ARGO.**
   Rounds 22-24 added 15 new rules (BK-009..013, TKN-009..013,
   ARGO-009..013) but only mapped them across 7 of the 13
@@ -499,7 +1021,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   against a cluster whose API surface dropped something the chart
   still uses (LOW). Provider catalog: 3 native to 6 native.
 - **Three new comment-only autofixers (`HELM-001` / `HELM-002` /
-  `HELM-003`).** Each drops a ``# TODO(pipelineguard HELM-NNN):``
+  `HELM-003`).** Each drops a ``# TODO(pipeline-check HELM-NNN):``
   marker above the offending Chart.yaml line so the change is
   visible in review. Same comment-only shape used for the K8s and
   Dockerfile rules where text-rewriting can't safely synthesize
@@ -542,8 +1064,123 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   unchanged. Verified by running the full 3791-test suite plus
   strict mypy across all 573 source files; no regressions.
 
+### Changed
+
+- **Em-dash sweep across the docs surface.** CLAUDE.md asks
+  contributors to avoid em-dashes (``—``) as dramatic pauses and
+  use periods, commas, parentheses, or colons instead. The
+  convention had drifted, and the project carried over 3500
+  em-dashes across docs, README, source rule modules, and
+  generator templates. This sweep clears the docs surface
+  (``docs/``, README, all auto-generated provider docs, all 25
+  attack-chain reference cards) plus the source rule modules and
+  chain modules that drive the generated docs, plus the generator
+  scripts themselves. Heuristic: capital-letter follower → period,
+  pronoun follower (it / this / they / etc.) → period +
+  capitalize, lowercase follower → comma; list-bullet, heading,
+  YAML-frontmatter, and HTML-attribute em-dashes all become
+  colons; end-of-line wrapped em-dashes get the same treatment
+  using lookahead at the next line. Manual prose fixes for places
+  where mechanical replacement broke parenthetical-list grammar
+  (AC-021 / AC-022 / AC-024 / AC-025 narratives, a few helm rule
+  doc-notes). Also bumped both generator scripts'
+  ``## RULE-ID`` / ``### AC-NNN`` heading templates from
+  ``RULE-ID — title`` to ``RULE-ID: title`` so future regenerated
+  docs stay consistent. Out of scope (deliberately): ``autofix.py``
+  TODO markers (those ship into customer YAML / Dockerfile / Helm
+  files, separate UX call), ``CHANGELOG.md`` historical sections
+  (frozen prose), test-fixture narrative assertions (separate
+  scope, would create churn without user-visible benefit).
+  ~3450 sites cleaned across ~600 files; the remaining ~95 are
+  the explicitly out-of-scope surfaces listed above. Verified: zero
+  em-dashes in ``docs/``, README, scripts/, source rule modules
+  under ``pipeline_check/core/checks/*/rules/``, chain modules
+  under ``pipeline_check/core/chains/rules/``, and shared
+  ``_primitives``. 3964 tests passing.
+
 ### Fixed
 
+- **Doc-accuracy fixes from a documentation review.** Three
+  numerical / structural drifts and one broken link, all
+  user-visible:
+  (1) `README.md` ASCII tree showed the kubernetes pack as
+  `K8S-001 .. K8S-035` while the table on the same page (and the
+  registry) had grown to `K8S-001 .. K8S-040`; the tree was
+  stale across the K8S-027 / -030 / -035 / -040 expansion waves.
+  Bumped to 040.
+  (2) `docs/index.md:25` lede claimed "graded against 13
+  compliance frameworks"; current count is 14 (CIS Kubernetes
+  Benchmark v1.10 was added in the previous wave).
+  `tests/test_doc_claims.py` happens not to lock this exact
+  string format so the drift wasn't caught by the existing
+  guard. README:13 already said "14".
+  (3) `docs/writing_a_provider.md:184` told future contributors
+  that `README.md` and `docs/index.md` carry claims of "`16
+  providers`, `13 standards`". The literal "13" would have
+  copied forward into the next provider's PR description.
+  Rephrased to be format-agnostic so the contributor doc can't
+  rot the same way.
+  (4) `README.md:415` had a broken link `[docs/lambda.md](docs/)`
+  for the Lambda deployment section; the file `docs/lambda.md`
+  does not exist and the link target is the directory itself.
+  The actual canonical Lambda docs are inside
+  `pipeline_check --man lambda` (verified comprehensive: build
+  steps, env vars, IAM permissions, event payload shapes, SNS
+  alerting). Replaced the broken link with a pointer to the
+  `--man` topic.
+- **Rebrand: removed leaked `pipelineguard` codename from autofix
+  output, docs, and tests.** The published name has always been
+  `pipeline-check` (per `pyproject.toml`), but 91 instances of an
+  earlier codename had leaked through: 37 sites in
+  `pipeline_check/core/autofix.py` were stamping
+  ``# TODO(pipelineguard): ...`` markers into customer YAML /
+  Dockerfile / Helm chart files every time `--autofix` ran, 53
+  test-assertion sites in `test_autofix.py` / `test_bug_fixes.py`
+  were locking the wrong string (so the test suite was structurally
+  enforcing the bug), 1 site in `pipeline_check/core/manual.py`
+  showed up in `--man autofix` output, and 2 sites in
+  `docs/ci_gate.md` documented an `.pipelineguard-ignore.yml`
+  filename example that the loader never accepted (the actual
+  default is `.pipelinecheckignore`, with optional YAML form
+  `.pipeline-check-ignore.yml`). Also corrected
+  `docs/providers/aws.md` IAM-policy snippet from
+  `PipelineGuardReadOnlyScan` / `pipeline-guard-readonly.json` to
+  `PipelineCheckReadOnlyScan` / `pipeline-check-readonly.json`,
+  fixed `scripts/build_lambda.sh` (header comment, output zip
+  filename, build-output echo), and added a regression guard
+  (`tests/test_brand_leak.py`) that scans every tracked
+  `.py` / `.md` / `.yml` / `.yaml` / `.toml` / `.sh` for the
+  forbidden token (case-insensitive) and fails CI if it ever
+  drifts back. Verified end-to-end: a synthetic GHA-008 fixture
+  through `generate_fix` now emits
+  `# TODO(pipeline-check): rotate and wire up a secret`, and
+  `pipeline_check --man autofix` reads the same.
+- **SARIF fingerprint stability for AWS-resource findings on
+  Windows.** ``_finding_fingerprints`` previously routed every
+  ``f.resource`` value through ``_normalize_path``, which
+  lowercases on Windows because the local filesystem is case-
+  insensitive. AWS findings carry ARNs / IAM role names in
+  ``f.resource`` (no ``Location``), and ARN case is meaningful
+  ("``us-east-1``" vs "``US-EAST-1``"), so a Windows-hosted scan
+  hashed those resources to a different fingerprint than the same
+  AWS account scanned on Linux. GHCS dedup broke whenever a
+  customer alternated the runner OS. The reporter now normalizes
+  only when the finding has a file-backed primary ``Location``;
+  resource-only findings hash ``f.resource`` raw. New regression
+  test ``test_arn_fingerprint_is_cross_platform_stable`` patches
+  ``os.name`` and asserts the same ARN produces the same
+  fingerprint on either platform.
+- **AC-021 narrative no longer says "TaskRun".** The AC-021
+  ("Argo default-SA workflow lands on a default-SA RoleBinding")
+  prose was using Tekton terminology, TaskRun is a Tekton CRD,
+  not an Argo concept. Replaced with "workflow pod", which is
+  what an Argo Workflow / WorkflowTemplate actually spawns. Pure
+  prose change; the chain match logic and severity were unaffected.
+- **AC-020 / AC-021 attack-chain table now links the per-rule
+  anchors.** ``docs/attack_chains.md`` rendered ``TKN-004`` and
+  ``ARGO-003`` as plain code spans for the two newest chains
+  while every prior row linked through to the rule's section in
+  the provider doc. Now consistent with AC-001..AC-019.
 - **`ControlRef` re-export now explicit in ``checks.base``.**
   ``pipeline_check.__init__`` re-exports ``ControlRef`` from
   ``pipeline_check.core.checks.base``, but the latter only had it

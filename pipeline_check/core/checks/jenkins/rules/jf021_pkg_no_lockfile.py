@@ -1,4 +1,4 @@
-"""JF-021 — package install without lockfile enforcement."""
+"""JF-021, package install without lockfile enforcement."""
 from __future__ import annotations
 
 from ...base import PKG_NO_LOCKFILE_RE, Finding, Severity
@@ -21,7 +21,7 @@ RULE = Rule(
     docs_note=(
         "Detects package-manager install commands that do not enforce a "
         "lockfile or hash verification. Without lockfile enforcement the "
-        "resolver pulls whatever version is currently latest — exactly "
+        "resolver pulls whatever version is currently latest, exactly "
         "the window a supply-chain attacker exploits."
     ),
 )

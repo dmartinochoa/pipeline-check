@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**500+ checks** across **16 providers**, mapped to **13 compliance standards**, with **103 autofixers**, plus **21 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
+**520+ checks** across **16 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **27 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -37,7 +37,7 @@ pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
 
-Run `pipeline_check` with no flags in any supported repo — it inspects
+Run `pipeline_check` with no flags in any supported repo. It inspects
 the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
 `Jenkinsfile`, `cloudbuild.yaml`, `Chart.yaml`, `template.yml`, …),
 picks the matching provider, and falls back to `aws` when nothing
@@ -94,8 +94,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 13 checks (`TKN-001`--`013`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 13 checks (`ARGO-001`--`013`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
-| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 35 checks (`K8S-001`--`035`) |
-| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 35 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -117,7 +117,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   500+ checks across 16 providers
+  Config files   |  Scanner  |   520+ checks across 16 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -145,7 +145,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 103 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 111 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -295,7 +295,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `dockerfile`, `kubernetes`, `helm` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm` |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
@@ -328,7 +328,8 @@ See [docs/standards/](docs/standards/).
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
 `--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`,
-`--cloudbuild-path`, `--dockerfile-path`, `--k8s-path`, `--helm-path`) are
+`--cloudbuild-path`, `--buildkite-path`, `--tekton-path`, `--argo-path`,
+`--dockerfile-path`, `--k8s-path`, `--helm-path`) are
 auto-detected from the working directory when omitted. The Helm provider also
 takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
 forwarded to `helm template`.
@@ -350,7 +351,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 103 fixers (text-based, comment-preserving)
+    ├── autofix.py             # 111 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -370,7 +371,7 @@ pipeline_check/
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── dockerfile/rules/  # DF-001 .. DF-020
-        ├── kubernetes/rules/  # K8S-001 .. K8S-035
+        ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack
         └── custom/            # YAML rule loader + predicate engine
 ```
@@ -412,8 +413,8 @@ Public surface: `Scanner`, `Finding`, `Severity`, `Confidence`,
 ## Lambda deployment
 
 Pipeline-Check can run as an AWS Lambda for scheduled scans.
-See [docs/lambda.md](docs/) for packaging, IAM permissions, event payload
-shapes, and SNS alerting.
+Run `pipeline_check --man lambda` for packaging, IAM permissions, event
+payload shapes, and SNS alerting.
 
 ---
 

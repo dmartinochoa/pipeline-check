@@ -64,7 +64,7 @@ def helm_version() -> str:
 
     Raises HelmRenderError if the binary is missing or its output
     isn't parseable. The major-version split is enough to reject
-    Helm 2 — the v2 / v3 boundary is the load-bearing one.
+    Helm 2, the v2 / v3 boundary is the load-bearing one.
     """
     binary = helm_available()
     if not binary:
@@ -237,7 +237,7 @@ def _extract_source_templates(yaml_text: str) -> list[str | None]:
                 # Other comment lines may precede the Source: marker;
                 # keep scanning.
                 continue
-            # First non-comment, non-blank line — no Source: header
+            # First non-comment, non-blank line, no Source: header
             # in this segment.
             break
         out.append(match)

@@ -1,4 +1,4 @@
-"""BK-002 — Literal secret values inline in ``env:`` blocks."""
+"""BK-002. Literal secret values inline in ``env:`` blocks."""
 from __future__ import annotations
 
 import re
@@ -34,7 +34,7 @@ RULE = Rule(
     ),
 )
 
-# Strong patterns — high confidence that the literal is a credential.
+# Strong patterns, high confidence that the literal is a credential.
 _STRONG_PATTERNS = (
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),                      # AWS access key
     re.compile(r"\bASIA[0-9A-Z]{16}\b"),                      # AWS STS key

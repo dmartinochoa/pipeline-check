@@ -1,4 +1,4 @@
-"""ARGO-003 — Workflow spec must set a non-default ``serviceAccountName``."""
+"""ARGO-003. Workflow spec must set a non-default ``serviceAccountName``."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,7 +21,7 @@ RULE = Rule(
         "secrets and RBAC the workflow needs. Falling back to the "
         "namespace's ``default`` SA grants access to whatever "
         "cluster-admin or wildcard role someone later binds to "
-        "``default`` — a privilege-escalation surface that should "
+        "``default``, a privilege-escalation surface that should "
         "never be load-bearing for workflow pods."
     ),
     docs_note=(

@@ -162,7 +162,7 @@ GHA-004  Inserts ``permissions: contents: read`` at the top of
          declare any top-level permissions block.
 
 GHA-008  Replaces credential-shaped literals with ``"<REDACTED>"``
-         and a ``# TODO(pipelineguard): rotate ...`` marker.
+         and a ``# TODO(pipeline-check): rotate ...`` marker.
          Preserves any operator comment on the line so existing
          context (ticket numbers, blame hints) survives.
 

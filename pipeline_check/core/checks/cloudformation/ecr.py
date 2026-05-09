@@ -1,4 +1,4 @@
-"""CloudFormation ECR checks — ECR-001..005.
+"""CloudFormation ECR checks. ECR-001..005.
 
 Resource policies and lifecycle policies are inline on AWS::ECR::Repository
 (``RepositoryPolicyText`` and ``LifecyclePolicy.LifecyclePolicyText``) —

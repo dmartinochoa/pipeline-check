@@ -1,4 +1,4 @@
-"""CB-007 — CodeBuild webhook attached without filter groups."""
+"""CB-007. CodeBuild webhook attached without filter groups."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -17,7 +17,7 @@ RULE = Rule(
     ),
     docs_note=(
         "A CodeBuild webhook with no filter groups fires on every "
-        "push and every PR from any actor — including fork PRs from "
+        "push and every PR from any actor, including fork PRs from "
         "outside the org. Anyone able to open a PR triggers the "
         "build with whatever IAM authority the project's role "
         "carries. Filter groups (branch + actor + event type) are "

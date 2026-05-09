@@ -1,15 +1,15 @@
-"""HELM-007 — ``Chart.yaml`` ``description`` field empty or missing.
+"""HELM-007, ``Chart.yaml`` ``description`` field empty or missing.
 
 The ``description:`` field is what Helm registries display to chart
 consumers (ArtifactHub, the ``helm search`` CLI, internal chart
 museums). Without it, the chart shows up in listings as the bare
-chart name, with no hint at what the chart does — anyone browsing
+chart name, with no hint at what the chart does, anyone browsing
 the registry has to read the README to figure it out.
 
 Like HELM-005 (maintainers), this is chart-listing hygiene rather
 than a direct security control. A chart published to a shared
 registry without a description is anonymous in the same way a
-maintainers-less chart is — discovery and trust both suffer.
+maintainers-less chart is, discovery and trust both suffer.
 """
 from __future__ import annotations
 

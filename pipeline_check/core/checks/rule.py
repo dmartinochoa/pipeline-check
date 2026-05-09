@@ -1,4 +1,4 @@
-"""Rule framework — metadata + behavior for a single check, in one module.
+"""Rule framework, metadata + behavior for a single check, in one module.
 
 Before this lived, every provider packed its checks into one class
 with hundreds of inlined methods, and the accompanying prose was
@@ -21,15 +21,15 @@ The Rule dataclass owns:
 
   - stable metadata (``id``, ``title``, ``severity``) used to build
     the ``Finding`` the orchestrator returns;
-  - compliance mappings (``owasp`` / ``esf``) that supplement — but
-    do NOT replace — the ``core/standards/data`` registry (the
+  - compliance mappings (``owasp`` / ``esf``) that supplement, but
+    do NOT replace, the ``core/standards/data`` registry (the
     authoritative source for standard-to-check mappings remains the
     standards package; these are for doc generation only);
   - prose fields (``recommendation``, ``docs_note``) that feed the
     provider reference doc directly.
 
 Rule ``check`` callables return a ``Finding`` directly. They have
-full control over the dynamic ``description`` — which matters because
+full control over the dynamic ``description``, which matters because
 the real signal is usually a list of offending items, not a static
 template.
 """
@@ -79,7 +79,7 @@ def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]
     """Import every submodule under ``package_fqn`` and collect
     ``(RULE, check)`` pairs.
 
-    Results are cached after the first call — rule modules don't
+    Results are cached after the first call, rule modules don't
     change at runtime, and the pkgutil filesystem scan is the
     dominant cost for repeated orchestrator construction (e.g. when
     scanning many files in a directory).

@@ -1,7 +1,7 @@
 """JUnit XML reporter.
 
 JUnit is the de-facto interchange format for test results across CI
-systems — Jenkins, GitLab CI, Azure DevOps, CircleCI, Buildkite, and
+systems. Jenkins, GitLab CI, Azure DevOps, CircleCI, Buildkite, and
 GitHub Actions all parse it natively and render each finding as a
 pass/fail row in the build UI with no plugin configuration. Emitting
 JUnit turns pipeline_check findings into first-class CI test results.
@@ -33,7 +33,7 @@ from .scorer import ScoreResult
 
 
 def _prefix(check_id: str) -> str:
-    """Derive a suite name from a check_id — the letters before the first dash.
+    """Derive a suite name from a check_id, the letters before the first dash.
 
     ``IAM-001`` → ``IAM``, ``GHA-028`` → ``GHA``, ``SIGN-001`` → ``SIGN``.
     Falls back to the full ID if there's no dash.
@@ -43,7 +43,7 @@ def _prefix(check_id: str) -> str:
 
 
 def _failure_body(f: Finding) -> str:
-    """Render the body of a <failure> element — recommendation + controls."""
+    """Render the body of a <failure> element, recommendation + controls."""
     parts = [f.description.strip()] if f.description else []
     if f.recommendation:
         parts.append(f"Recommendation: {f.recommendation.strip()}")
@@ -62,7 +62,7 @@ def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
     """Render *findings* as a JUnit XML 4.x report string.
 
     Returns the XML as a string, prologue included. The caller decides
-    whether to write to a file or stdout — symmetric with the other
+    whether to write to a file or stdout, symmetric with the other
     reporters in this package.
     """
     # Group by prefix. Preserve input order within each group so that

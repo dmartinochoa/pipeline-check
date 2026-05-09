@@ -1,4 +1,4 @@
-"""JF-001 — @Library references must be pinned to a tag or commit."""
+"""JF-001, @Library references must be pinned to a tag or commit."""
 from __future__ import annotations
 
 import re
@@ -8,7 +8,7 @@ from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import FLOATING_REFS, PINNED_REF_RE
 
-# Same shape as ``_LIBRARY_RE`` in jenkins/base.py — duplicated here
+# Same shape as ``_LIBRARY_RE`` in jenkins/base.py, duplicated here
 # so the rule can re-scan the source text for byte offsets and
 # convert them to 1-based line numbers without changing the
 # ``Jenkinsfile`` dataclass shape (which today exposes specs as
@@ -54,7 +54,7 @@ def check(jf: Jenkinsfile) -> Finding:
         if is_floating:
             # 1-based line of the @Library call. ``str.count('\n', ...)``
             # on the prefix is the canonical "byte offset to line"
-            # conversion for plain text — no line-aware loader is
+            # conversion for plain text, no line-aware loader is
             # involved here since Jenkinsfiles aren't YAML.
             line_no = jf.text.count("\n", 0, m.start()) + 1
             locations.append(Location(

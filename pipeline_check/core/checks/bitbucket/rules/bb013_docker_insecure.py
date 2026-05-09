@@ -1,4 +1,4 @@
-"""BB-013 — docker run with insecure flags (privileged / host mount)."""
+"""BB-013, docker run with insecure flags (privileged / host mount)."""
 from __future__ import annotations
 
 from typing import Any

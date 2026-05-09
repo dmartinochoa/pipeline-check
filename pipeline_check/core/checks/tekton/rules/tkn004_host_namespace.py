@@ -1,4 +1,4 @@
-"""TKN-004 — ``hostPath`` / host-namespace volumes in Task workspaces."""
+"""TKN-004, ``hostPath`` / host-namespace volumes in Task workspaces."""
 from __future__ import annotations
 
 from typing import Any

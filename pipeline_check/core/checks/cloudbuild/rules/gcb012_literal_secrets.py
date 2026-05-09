@@ -1,9 +1,9 @@
-"""GCB-012 — credential-shaped literal in pipeline body.
+"""GCB-012, credential-shaped literal in pipeline body.
 
 Scans every string scalar in the document against the cross-provider
 credential-pattern catalog (AWS keys, GitHub tokens, Slack tokens,
 PEM blocks, JWTs, …). Complements GCB-003 (secrets consumed inline
-via ``gcloud secrets versions access``) — GCB-003 catches *fetches*,
+via ``gcloud secrets versions access``). GCB-003 catches *fetches*,
 this catches *pastes*.
 
 Mirrors GHA-008 / GL-008 / BB-008 / ADO-008 / CC-008 / JF-008.
@@ -34,7 +34,7 @@ RULE = Rule(
         "Complements GCB-003 (inline ``gcloud secrets versions access``) "
         "and GCB-007 (``/versions/latest`` alias). This rule runs the "
         "shared credential-shape catalog against every string in the "
-        "YAML — AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private "
+        "YAML. AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private "
         "key blocks, and any user-registered ``--secret-pattern`` regex. "
         "Known placeholders like ``EXAMPLE``/``CHANGEME`` are already "
         "filtered upstream so fixtures and docs don't false-match."

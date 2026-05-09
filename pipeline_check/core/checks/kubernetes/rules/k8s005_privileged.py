@@ -1,4 +1,4 @@
-"""K8S-005 — Container ``securityContext.privileged: true``."""
+"""K8S-005. Container ``securityContext.privileged: true``."""
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +29,7 @@ RULE = Rule(
     recommendation=(
         "Remove ``securityContext.privileged: true`` from every "
         "container. A privileged container has full access to the "
-        "host's devices and capabilities — escape to the node is "
+        "host's devices and capabilities, escape to the node is "
         "trivial. If the workload genuinely needs a kernel "
         "capability, grant only that capability via "
         "``capabilities.add`` rather than enabling privileged mode."

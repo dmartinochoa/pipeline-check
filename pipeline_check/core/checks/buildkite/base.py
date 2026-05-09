@@ -26,7 +26,7 @@ Buildkite's pipeline file shape (highlights)::
       - block: "Deploy?"
       - trigger: deploy-pipeline
 
-The parser is lenient — a document without a top-level ``steps`` list
+The parser is lenient, a document without a top-level ``steps`` list
 is skipped, so unrelated YAML files in the same directory don't get
 double-scanned.
 """
@@ -162,7 +162,7 @@ def iter_command_steps(doc: dict[str, Any]) -> Iterator[tuple[int, dict[str, Any
         if any(k in raw for k in ("wait", "block", "input", "trigger")):
             idx += 1
             continue
-        # Group step — flatten its children with continued indices.
+        # Group step, flatten its children with continued indices.
         if "group" in raw and isinstance(raw.get("steps"), list):
             for child in raw["steps"]:
                 if isinstance(child, dict) and not any(
@@ -176,7 +176,7 @@ def iter_command_steps(doc: dict[str, Any]) -> Iterator[tuple[int, dict[str, Any
 
 
 def step_label(step: dict[str, Any], fallback_idx: int) -> str:
-    """Return a stable human name for a step — prefers ``key`` then ``label``."""
+    """Return a stable human name for a step, prefers ``key`` then ``label``."""
     for k in ("key", "label"):
         v = step.get(k)
         if isinstance(v, str) and v.strip():
@@ -207,7 +207,7 @@ def step_location(path: str, step: dict[str, Any]) -> Location:
     """Build a :class:`Location` pointing at *step* in *path*.
 
     Returns a path-only location when the loader didn't preserve line
-    info — keeps the call sites uniform whether or not lines are
+    info, keeps the call sites uniform whether or not lines are
     available.
     """
     line = _line_of(step)

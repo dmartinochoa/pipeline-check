@@ -1,4 +1,4 @@
-"""DF-012 — ``sudo`` invocation inside a ``RUN``."""
+"""DF-012, ``sudo`` invocation inside a ``RUN``."""
 from __future__ import annotations
 
 import re
@@ -18,7 +18,7 @@ RULE = Rule(
         "Drop ``sudo`` from the ``RUN``. Either the build is already "
         "running as root (the default before any ``USER`` directive), "
         "in which case ``sudo`` is no-op noise, or the build switched "
-        "to a non-root ``USER`` and needs root for a specific step — "
+        "to a non-root ``USER`` and needs root for a specific step, "
         "in which case temporarily revert with ``USER root`` for that "
         "``RUN`` and switch back afterward."
     ),
@@ -36,7 +36,7 @@ RULE = Rule(
 
 # Word-boundary match so ``pseudo``, ``sudoers``, ``Sudokugame`` don't
 # trigger. Allow leading ``-E`` / ``-H`` flag forms and a typical
-# ``sudo command`` shape — but not ``visudo`` (that's the editor for
+# ``sudo command`` shape, but not ``visudo`` (that's the editor for
 # the sudoers file itself, which is a legitimate package-config use).
 _SUDO_RE = re.compile(r"(?:^|[\s|;&])sudo(?:\s+-?\w+)*\s+\S", re.MULTILINE)
 

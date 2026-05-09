@@ -1,4 +1,4 @@
-"""AC-003 — Unpinned Action to Credential Exfiltration.
+"""AC-003. Unpinned Action to Credential Exfiltration.
 
 A workflow that uses third-party actions pinned only by tag (mutable)
 and exposes long-lived AWS credentials gives the action's author
@@ -49,7 +49,7 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"In `{resource}`:\n"
             "  1. One or more third-party actions are referenced by "
-            "mutable tag (GHA-001) — the maintainer can rewrite the "
+            "mutable tag (GHA-001), the maintainer can rewrite the "
             "tag pointer at any time.\n"
             "  2. Same workflow holds long-lived AWS credentials in "
             "env (GHA-005).\n"

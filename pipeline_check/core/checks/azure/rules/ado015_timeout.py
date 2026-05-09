@@ -1,4 +1,4 @@
-"""ADO-015 — every job should declare `timeoutInMinutes`."""
+"""ADO-015, every job should declare `timeoutInMinutes`."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from ..base import iter_jobs
 
 RULE = Rule(
     id="ADO-015",
-    title="Job has no `timeoutInMinutes` — unbounded build",
+    title="Job has no `timeoutInMinutes`, unbounded build",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-BUILD-TIMEOUT",),
@@ -17,7 +17,7 @@ RULE = Rule(
     recommendation=(
         "Add `timeoutInMinutes:` to each job, sized to the 95th "
         "percentile of historical runtime plus margin. Azure's "
-        "default is 60 minutes — an explicitly shorter value limits "
+        "default is 60 minutes, an explicitly shorter value limits "
         "blast radius and agent cost."
     ),
     docs_note=(

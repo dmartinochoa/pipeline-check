@@ -1,4 +1,4 @@
-"""CloudFormation IAM checks — IAM-001..006, scoped to CI/CD service roles.
+"""CloudFormation IAM checks. IAM-001..006, scoped to CI/CD service roles.
 
 CFN differences from Terraform:
   - Inline policies live on the Role itself (``Policies`` property),
@@ -176,7 +176,7 @@ def _iam004_passrole_wildcard(policy_docs: list[tuple[str, dict[str, Any]]], rol
         f"No policy on '{role_name}' grants iam:PassRole with Resource: '*'."
         if passed else
         f"Policy/policies {offenders} on role '{role_name}' grant iam:PassRole "
-        "with Resource: '*' — a classic privilege-escalation path."
+        "with Resource: '*', a classic privilege-escalation path."
     )
     return Finding(
         check_id="IAM-004",

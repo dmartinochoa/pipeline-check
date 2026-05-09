@@ -34,7 +34,7 @@ _MAX_SENSIBLE_TIMEOUT = 480
 
 
 def _first(block_list: object) -> dict[str, Any]:
-    # Validate both the container AND the head — Terraform plan values
+    # Validate both the container AND the head. Terraform plan values
     # may surface a non-list ``object`` here (a ``values.get`` Any can
     # be a dict, string, int, …) and the head may be a non-dict truthy
     # value. Mirrors ``extended._first`` so callers always see a
@@ -303,7 +303,7 @@ def _cb007_webhook_filter(webhook_values: dict[str, Any] | None, address: str) -
         f"Webhook for project defines {len(filter_groups)} filter_group(s)."
         if passed else
         "Webhook is attached to the project but has no filter_group. Any push "
-        "event from any principal will trigger a build — including from forks "
+        "event from any principal will trigger a build, including from forks "
         "for public repositories."
     )
     return Finding(

@@ -1,4 +1,4 @@
-"""EB-002 — EventBridge rule has a wildcard target ARN."""
+"""EB-002. EventBridge rule has a wildcard target ARN."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -14,15 +14,15 @@ RULE = Rule(
     recommendation=(
         "Replace wildcard target ARNs with specific resource ARNs. "
         "EventBridge targets with ``*`` route events to any resource "
-        "that matches the prefix — frequently triggering unintended "
+        "that matches the prefix, frequently triggering unintended "
         "Lambda invocations or SNS sends."
     ),
     docs_note=(
         "Wildcard target ARNs (e.g. "
         "``arn:aws:lambda:us-east-1:123456789012:function:*``) "
         "match every resource that fits the prefix. This is rarely "
-        "intentional — usually a copy-paste from a more permissive "
-        "resource ARN — and means the rule fans out to a much "
+        "intentional, usually a copy-paste from a more permissive "
+        "resource ARN, and means the rule fans out to a much "
         "larger set of consumers than the author meant."
     ),
 )

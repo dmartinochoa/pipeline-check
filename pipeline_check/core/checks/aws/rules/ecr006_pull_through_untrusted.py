@@ -1,4 +1,4 @@
-"""ECR-006 — ECR pull-through cache rule has an untrusted upstream registry."""
+"""ECR-006. ECR pull-through cache rule has an untrusted upstream registry."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -14,7 +14,7 @@ RULE = Rule(
     recommendation=(
         "Scope pull-through cache rules to AWS-trusted registries (ECR "
         "Public, Quay.io with authentication, or a vetted private registry). "
-        "Avoid wildcard or unauthenticated upstreams — a malicious image "
+        "Avoid wildcard or unauthenticated upstreams, a malicious image "
         "there gets cached into your account registry on first pull."
     ),
     docs_note=(
@@ -46,7 +46,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             + (" with an authenticated credential." if has_credential else " (on trusted allow-list).")
             if passed else
             f"Pull-through prefix '{prefix}' uses upstream {upstream!r} with "
-            "no authenticated credential — any image published under that "
+            "no authenticated credential, any image published under that "
             "namespace gets cached into this account."
         )
         findings.append(Finding(

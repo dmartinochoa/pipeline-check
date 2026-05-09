@@ -1,4 +1,4 @@
-"""ADO-002 — scripts must not interpolate attacker-controllable vars."""
+"""ADO-002, scripts must not interpolate attacker-controllable vars."""
 from __future__ import annotations
 
 import re
@@ -40,7 +40,7 @@ RULE = Rule(
 def _tainted_vars(variables_block: Any) -> set[str]:
     """Return variable names whose values reference untrusted ADO macros.
 
-    Azure pipelines accept two shapes for ``variables:`` — a dict
+    Azure pipelines accept two shapes for ``variables:``, a dict
     (``{NAME: VALUE}``) or a list of single-key dicts
     (``- name: NAME, value: VALUE``). Both are scanned.
     """

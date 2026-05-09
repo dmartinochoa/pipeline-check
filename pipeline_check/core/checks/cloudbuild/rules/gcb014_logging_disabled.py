@@ -1,11 +1,11 @@
-"""GCB-014 — build logging disabled (``options.logging: NONE``).
+"""GCB-014, build logging disabled (``options.logging: NONE``).
 
 Cloud Build exposes four ``options.logging`` modes:
 
-- ``CLOUD_LOGGING_ONLY`` (default) — logs stream to Cloud Logging.
-- ``GCS_ONLY`` — logs stream to a GCS bucket the caller owns.
-- ``LEGACY`` — both Cloud Logging and GCS.
-- ``NONE`` — **no logs are persisted**.
+- ``CLOUD_LOGGING_ONLY`` (default), logs stream to Cloud Logging.
+- ``GCS_ONLY``, logs stream to a GCS bucket the caller owns.
+- ``LEGACY``, both Cloud Logging and GCS.
+- ``NONE``, **no logs are persisted**.
 
 ``NONE`` removes the audit trail entirely: a compromised step produces
 no record of its commands, no record of its exit code, and no record
@@ -31,8 +31,8 @@ RULE = Rule(
     esf=("ESF-O-AUDIT",),
     cwe=("CWE-778",),
     recommendation=(
-        "Remove the ``logging: NONE`` override — or replace it with "
-        "``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY`` — so every step's stdout, "
+        "Remove the ``logging: NONE`` override, or replace it with "
+        "``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY``, so every step's stdout, "
         "stderr, and exit code is persisted. Loss of logs is a "
         "detection-and-response black hole; the storage cost is "
         "measured in cents."
@@ -40,8 +40,8 @@ RULE = Rule(
     docs_note=(
         "``options.logging`` defaults to ``CLOUD_LOGGING_ONLY`` when "
         "omitted, which passes. Only the explicit ``NONE`` value (case- "
-        "insensitive) trips this rule. ``GCS_ONLY`` / ``LEGACY`` pass "
-        "— they persist logs, just to a different destination."
+        "insensitive) trips this rule. ``GCS_ONLY`` / ``LEGACY`` pass. "
+        "They persist logs, just to a different destination."
     ),
 )
 

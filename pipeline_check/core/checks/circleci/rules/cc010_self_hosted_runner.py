@@ -1,4 +1,4 @@
-"""CC-010 — Self-hosted runners should be ephemeral."""
+"""CC-010. Self-hosted runners should be ephemeral."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "and process state. A PR-triggered job writes to `/tmp`; a "
         "subsequent prod-deploy job on the same runner reads it. The "
         "check looks for `resource_class` values containing "
-        "'self-hosted' — if found, it checks for 'ephemeral' in the "
+        "'self-hosted', if found, it checks for 'ephemeral' in the "
         "value. Also checks for `machine: true` combined with a "
         "self-hosted resource class."
     ),
@@ -41,7 +41,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         rc_lower = resource_class.lower()
         if "self-hosted" not in rc_lower and "self_hosted" not in rc_lower:
             continue
-        # Self-hosted runner detected — check for ephemeral marker.
+        # Self-hosted runner detected, check for ephemeral marker.
         if "ephemeral" not in rc_lower:
             offending.append(job_id)
     passed = not offending

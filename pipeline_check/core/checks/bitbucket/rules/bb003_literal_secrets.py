@@ -1,4 +1,4 @@
-"""BB-003 — definitions / step variables must not hold literal credentials."""
+"""BB-003, definitions / step variables must not hold literal credentials."""
 from __future__ import annotations
 
 from typing import Any

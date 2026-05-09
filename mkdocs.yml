@@ -148,6 +148,7 @@ nav:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
       - CIS AWS Foundations: standards/cis_aws_foundations.md
+      - CIS Kubernetes Benchmark: standards/cis_kubernetes.md
       - CIS Supply Chain: standards/cis_supply_chain.md
       - NIST SSDF (800-218): standards/nist_ssdf.md
       - NIST 800-53: standards/nist_800_53.md

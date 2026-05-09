@@ -1,4 +1,4 @@
-"""GCB-023 — Step references a ``$_USER_VAR`` not declared in ``substitutions:``."""
+"""GCB-023. Step references a ``$_USER_VAR`` not declared in ``substitutions:``."""
 from __future__ import annotations
 
 import re
@@ -17,7 +17,7 @@ RULE = Rule(
     cwe=("CWE-1188",),
     recommendation=(
         "Add an entry for every ``$_USER_VAR`` referenced anywhere "
-        "in the build to the top-level ``substitutions:`` block — "
+        "in the build to the top-level ``substitutions:`` block, "
         "either with a sensible default or with an empty string if "
         "the trigger always supplies the value. Cloud Build's "
         "default ``options.substitutionOption: MUST_MATCH`` then "
@@ -46,7 +46,7 @@ RULE = Rule(
 
 #: Cloud Build user substitution shape: ``$_FOO`` or ``${_FOO}``.
 #: User subs are leading underscore; built-in subs (``$PROJECT_ID``)
-#: don't have the leading underscore — the rule scopes itself to
+#: don't have the leading underscore, the rule scopes itself to
 #: user-named subs only.
 _USER_SUB_RE = re.compile(r"\$\{?(?P<name>_[A-Z0-9_]+)\}?")
 

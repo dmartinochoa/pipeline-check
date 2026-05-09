@@ -1,4 +1,4 @@
-"""HELM-003 — Chart dependency declared on a non-HTTPS repository.
+"""HELM-003. Chart dependency declared on a non-HTTPS repository.
 
 ``dependencies[].repository`` in ``Chart.yaml`` is the URL ``helm
 dependency build`` fetches the dependency tarball from. ``http://``
@@ -37,14 +37,14 @@ RULE = Rule(
         "Walks ``Chart.yaml`` ``dependencies:`` (v2 charts only) "
         "and inspects each entry's ``repository:`` URL. Accepted "
         "schemes:\n\n"
-        "- ``https://`` — chart-museum / OSS chart repos. The default "
+        "- ``https://``, chart-museum / OSS chart repos. The default "
         "for public Helm charts.\n"
-        "- ``oci://`` — registry-hosted charts. TLS is enforced by "
+        "- ``oci://``, registry-hosted charts. TLS is enforced by "
         "the registry, not the URL scheme; we still accept this "
         "shape because Helm 3.8+ pulls OCI charts over HTTPS unless "
         "explicitly configured otherwise.\n"
-        "- ``file://`` — in-repo dependency. No network surface.\n"
-        "- ``@alias`` — local alias for a previously registered "
+        "- ``file://``, in-repo dependency. No network surface.\n"
+        "- ``@alias``, local alias for a previously registered "
         "``helm repo add`` URL. The scheme of the original URL is "
         "the user's responsibility (and is captured in the chart "
         "consumer's ``~/.config/helm/repositories.yaml``)."
@@ -59,7 +59,7 @@ def check(ctx: HelmContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for chart in ctx.charts:
-        # v1 charts use requirements.yaml — outside this check's scope.
+        # v1 charts use requirements.yaml, outside this check's scope.
         if chart.api_version != "v2":
             continue
         for dep in chart.dependencies:
@@ -93,7 +93,7 @@ def check(ctx: HelmContext) -> Finding:
 def _is_safe_repo(repo: str) -> bool:
     s = repo.strip()
     if not s:
-        # Empty repository fields don't reach the network — treat as
+        # Empty repository fields don't reach the network, treat as
         # not-an-offender. A separate schema check could flag the
         # missing field, but it's outside this rule's scope.
         return True

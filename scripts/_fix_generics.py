@@ -3,7 +3,7 @@ pass. Mechanically rewrites bare ``dict`` / ``list`` annotations in
 function signatures and return types to their parameterized forms.
 
 Skips the four AWS modules that are exempted via the boto3 mypy
-override block — those wrap ``Any`` from boto3 returns and adding
+override block. Those wrap ``Any`` from boto3 returns and adding
 explicit type parameters there would be noise.
 
 This script is intentionally conservative: it only touches positions

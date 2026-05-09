@@ -27,7 +27,7 @@ class ControlRef:
         }
 
     def label(self) -> str:
-        """Short human label — e.g. 'CICD-SEC-5: Insufficient PBAC'."""
+        """Short human label, e.g. 'CICD-SEC-5: Insufficient PBAC'."""
         return f"{self.control_id}: {self.control_title}"
 
 

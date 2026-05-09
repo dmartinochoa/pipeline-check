@@ -1,8 +1,8 @@
-"""Attack-chain detection — correlate findings into multi-step attack narratives.
+"""Attack-chain detection, correlate findings into multi-step attack narratives.
 
 A single finding rarely captures the full risk: a `pull_request_target`
 trigger is bad, AWS long-lived credentials are bad, an unprotected deploy
-environment is bad — but the *combination* is exactly how the PyTorch
+environment is bad, but the *combination* is exactly how the PyTorch
 supply-chain compromise worked. This subpackage detects those
 combinations and emits a higher-order :class:`Chain` finding mapped to
 MITRE ATT&CK techniques.

@@ -1,4 +1,4 @@
-"""CT-003 — CloudTrail trail is not multi-region."""
+"""CT-003. CloudTrail trail is not multi-region."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -13,7 +13,7 @@ RULE = Rule(
     cwe=("CWE-778",),
     recommendation=(
         "Convert the trail to a multi-region trail. A single-region trail "
-        "misses activity in every other region — an attacker aware of the "
+        "misses activity in every other region, an attacker aware of the "
         "scope can drive reconnaissance or persistence from an unlogged "
         "region."
     ),
@@ -21,7 +21,7 @@ RULE = Rule(
         "An attacker who knows your CloudTrail trail is regional "
         "deliberately operates from a different region. Multi-region "
         "trails capture management events from every region into a "
-        "single trail — closing the gap without you having to "
+        "single trail, closing the gap without you having to "
         "enumerate which regions you actually use."
     ),
 )

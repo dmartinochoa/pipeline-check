@@ -1,4 +1,4 @@
-"""BK-012 — pipeline should run a vulnerability scan."""
+"""BK-012, pipeline should run a vulnerability scan."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-D-VULN-SCAN",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add a vulnerability scanner — ``trivy fs .`` for source / "
+        "Add a vulnerability scanner, ``trivy fs .`` for source / "
         "filesystem, ``trivy image <ref>`` for container images, "
         "``grype`` and ``snyk`` for either. Add ``npm audit`` / "
         "``pip-audit`` for language-specific dep audits. Fail the "
@@ -23,7 +23,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Vulnerability scanning sits at a different layer from signing "
-        "and SBOM — it answers ``does this artifact ship a known "
+        "and SBOM. It answers ``does this artifact ship a known "
         "CVE?`` rather than ``can we verify what it is?``. Detection "
         "uses the shared vuln-scan-token catalog: trivy, grype, "
         "snyk, npm-audit, pip-audit, anchore, dependency-check, "
@@ -37,7 +37,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     desc = (
         "Pipeline runs a vulnerability scanner (trivy / grype / snyk / …)."
         if passed else
-        "Pipeline does not invoke any vulnerability scanner — known "
+        "Pipeline does not invoke any vulnerability scanner, known "
         "CVEs in dependencies or container layers ship to production "
         "without a build-time signal. Add ``trivy``, ``grype``, "
         "``snyk``, ``npm audit``, or ``pip-audit`` to the build."

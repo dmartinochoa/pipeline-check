@@ -2,11 +2,11 @@
 
 Individual GHA-* checks each live in their own module under
 ``pipeline_check/core/checks/github/rules/``. This module is a thin
-driver — ``discover_rules`` auto-imports every rule at construction
+driver, ``discover_rules`` auto-imports every rule at construction
 time and the orchestrator runs each against every loaded workflow
 document.
 
-Adding a check is a one-file change — drop ``ghaNNN_<name>.py`` into
+Adding a check is a one-file change, drop ``ghaNNN_<name>.py`` into
 ``rules/`` exporting ``RULE`` and ``check``. The orchestrator, the
 test fixtures catalog, and the provider reference doc all pick it
 up automatically.

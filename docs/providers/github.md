@@ -50,7 +50,7 @@ pipeline_check --pipeline github --resolve-remote \
 Resolution rules:
 
 - **Only SHA-pinned refs are fetched.** A tag-pinned ref (`@v1`,
-  `@main`) is skipped with a warning — resolution against a movable
+  `@main`) is skipped with a warning, resolution against a movable
   upstream tag would defeat `GHA-025`'s value.
 - **Recursion** follows transitive `uses:` calls to a depth of 3
   (configurable with `--gha-resolve-depth`; hard ceiling 10). Cycles
@@ -59,7 +59,7 @@ Resolution rules:
   `~/.cache/pipeline-check/gha-resolver/` for 7 days. Use `--no-cache`
   to bypass.
 - **Failure mode.** Network errors, 404s, and malformed YAML never
-  abort the scan — they land in the context's warnings stream.
+  abort the scan. They land in the context's warnings stream.
 - **Attribution.** Findings on a resolved callee carry a synthetic
   `<caller-path> -> <owner>/<repo>/<path>@<ref>` resource string so
   the report points at both the call site and the upstream body.
@@ -90,7 +90,7 @@ Resolution rules:
 | [GHA-012](#gha-012) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-013](#gha-013) | issue_comment trigger without author guard | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-014](#gha-014) | Deploy job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-| [GHA-015](#gha-015) | Job has no `timeout-minutes` — unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [GHA-015](#gha-015) | Job has no `timeout-minutes`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-016](#gha-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-017](#gha-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-018](#gha-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -117,13 +117,13 @@ Resolution rules:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-001 — Action not pinned to commit SHA { #gha-001 }
+## GHA-001: Action not pinned to commit SHA { #gha-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch refs (`@v4`, `@main`) can be silently moved to malicious commits by whoever controls the upstream repository — a third-party action compromise will propagate into the pipeline on the next run.
+Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch refs (`@v4`, `@main`) can be silently moved to malicious commits by whoever controls the upstream repository, a third-party action compromise will propagate into the pipeline on the next run.
 
 <div class="pg-rule__rec" markdown>
 
@@ -137,13 +137,13 @@ Replace tag/branch references (`@v4`, `@main`) with the full 40-char commit SHA.
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-002 — pull_request_target checks out PR head { #gha-002 }
+## GHA-002: pull_request_target checks out PR head { #gha-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-`pull_request_target` runs with a write-scope GITHUB_TOKEN and access to repository secrets — deliberately so, since it's how labeling and comment-bot workflows work. When the same workflow then explicitly checks out the PR head (`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) it executes attacker-controlled code with those privileges.
+`pull_request_target` runs with a write-scope GITHUB_TOKEN and access to repository secrets, deliberately so, since it's how labeling and comment-bot workflows work. When the same workflow then explicitly checks out the PR head (`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) it executes attacker-controlled code with those privileges.
 
 <div class="pg-rule__rec" markdown>
 
@@ -157,7 +157,7 @@ Use `pull_request` instead of `pull_request_target` for any workflow that must r
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-003 — Script injection via untrusted context { #gha-003 }
+## GHA-003: Script injection via untrusted context { #gha-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -177,13 +177,17 @@ Pass untrusted values through an intermediate `env:` variable and reference that
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-004 — Workflow has no explicit permissions block { #gha-004 }
+## GHA-004: Workflow has no explicit permissions block { #gha-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-Without an explicit `permissions:` block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope — typically `write`. A compromised step receives far more privilege than it needs.
+Without an explicit `permissions:` block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope, typically `write`. A compromised step receives far more privilege than it needs.
+
+**Known false-positive modes**
+
+- Read-only / lint-only workflows that do not call any write-scoped API often pass without an explicit block because the default token scope on public repos is read. The rule defaults to MEDIUM confidence to reflect this.
 
 <div class="pg-rule__rec" markdown>
 
@@ -197,13 +201,17 @@ Add a top-level `permissions:` block (start with `contents: read`) and grant add
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-005 — AWS auth uses long-lived access keys { #gha-005 }
+## GHA-005: AWS auth uses long-lived access keys { #gha-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
 </div>
 
 Long-lived `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets in GitHub Actions can't be rotated on a fine-grained schedule and remain valid until manually revoked. OIDC with `role-to-assume` yields short-lived credentials per workflow run.
+
+**Known false-positive modes**
+
+- LocalStack and Moto integration tests set ``AWS_ENDPOINT_URL`` to a localhost address and use the sentinel ``test`` / ``test`` access keys (the LocalStack convention). Those values can't authenticate against real AWS, so the rule auto-suppresses an env block that pairs a localhost endpoint with sentinel keys.
 
 <div class="pg-rule__rec" markdown>
 
@@ -217,7 +225,7 @@ Use `aws-actions/configure-aws-credentials` with `role-to-assume` + `permissions
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-006 — Artifacts not signed (no cosign/sigstore step) { #gha-006 }
+## GHA-006: Artifacts not signed (no cosign/sigstore step) { #gha-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -229,7 +237,7 @@ Unsigned artifacts cannot be verified downstream, so a tampered build is indisti
 
 **Recommended action**
 
-Add a signing step — e.g. `sigstore/cosign-installer` followed by `cosign sign`, or `slsa-framework/slsa-github-generator` for keyless SLSA provenance. Publish the signature alongside the artifact and verify it at consumption time.
+Add a signing step, e.g. `sigstore/cosign-installer` followed by `cosign sign`, or `slsa-framework/slsa-github-generator` for keyless SLSA provenance. Publish the signature alongside the artifact and verify it at consumption time.
 
 </div>
 
@@ -237,7 +245,7 @@ Add a signing step — e.g. `sigstore/cosign-installer` followed by `cosign sign
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-007 — SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) { #gha-007 }
+## GHA-007: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) { #gha-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -249,7 +257,7 @@ Without an SBOM, downstream consumers cannot audit the exact set of dependencies
 
 **Recommended action**
 
-Add an SBOM generation step — `anchore/sbom-action`, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.
+Add an SBOM generation step, `anchore/sbom-action`, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.
 
 </div>
 
@@ -257,13 +265,17 @@ Add an SBOM generation step — `anchore/sbom-action`, `syft . -o cyclonedx-json
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-008 — Credential-shaped literal in workflow body { #gha-008 }
+## GHA-008: Credential-shaped literal in workflow body { #gha-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc. — see `--man secrets` for the full catalog). A match means a secret was pasted into YAML — the value is visible in every fork and every build log and must be treated as compromised.
+Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc., see `--man secrets` for the full catalog). A match means a secret was pasted into YAML, the value is visible in every fork and every build log and must be treated as compromised.
+
+**Known false-positive modes**
+
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real workflow it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
 <div class="pg-rule__rec" markdown>
 
@@ -277,13 +289,13 @@ Rotate the exposed credential immediately. Move the value to an encrypted reposi
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-009 — workflow_run downloads upstream artifact unverified { #gha-009 }
+## GHA-009: workflow_run downloads upstream artifact unverified { #gha-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
-`on: workflow_run` runs in the privileged context of the default branch (write GITHUB_TOKEN, secrets accessible) but consumes artifacts produced by the triggering workflow — which is often a fork PR with no trust boundary. Classic PPE: a malicious PR uploads a tampered artifact, the privileged workflow_run downloads and executes it.
+`on: workflow_run` runs in the privileged context of the default branch (write GITHUB_TOKEN, secrets accessible) but consumes artifacts produced by the triggering workflow, which is often a fork PR with no trust boundary. Classic PPE: a malicious PR uploads a tampered artifact, the privileged workflow_run downloads and executes it.
 
 <div class="pg-rule__rec" markdown>
 
@@ -297,13 +309,13 @@ Add a verification step BEFORE consuming the artifact: `cosign verify-attestatio
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-010 — Local action (./path) on untrusted-trigger workflow { #gha-010 }
+## GHA-010: Local action (./path) on untrusted-trigger workflow { #gha-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-`uses: ./path/to/action` resolves the action against the CHECKED-OUT workspace. On `pull_request_target` / `workflow_run`, that workspace can be PR-controlled — meaning the attacker supplies the `action.yml` that runs with default-branch privilege.
+`uses: ./path/to/action` resolves the action against the CHECKED-OUT workspace. On `pull_request_target` / `workflow_run`, that workspace can be PR-controlled, meaning the attacker supplies the `action.yml` that runs with default-branch privilege.
 
 <div class="pg-rule__rec" markdown>
 
@@ -317,7 +329,7 @@ Move the action to a separate repo under your control and reference it by SHA-pi
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-011 — Cache key derives from attacker-controllable input { #gha-011 }
+## GHA-011: Cache key derives from attacker-controllable input { #gha-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
@@ -337,13 +349,17 @@ Build the cache key from values the attacker can't control: `${{ runner.os }}`, 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-012 — Self-hosted runner without ephemeral marker { #gha-012 }
+## GHA-012: Self-hosted runner without ephemeral marker { #gha-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode — the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognises all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
+Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode, the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognises all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
+
+**Known false-positive modes**
+
+- Organisations using actions-runner-controller (ARC), autoscaled pools, or vendor runner fleets often use labels like ``arc-*``, ``autoscaled-*``, or ``ephemeral-pool-*`` instead of a bare ``ephemeral`` label. The check only matches the literal ``ephemeral`` token on ``runs-on``; extend via a custom allow-prefix config if your fleet uses a different naming convention. Defaults to MEDIUM confidence.
 
 <div class="pg-rule__rec" markdown>
 
@@ -357,7 +373,7 @@ Configure the self-hosted runner to register with `--ephemeral` (the runner exit
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-013 — issue_comment trigger without author guard { #gha-013 }
+## GHA-013: issue_comment trigger without author guard { #gha-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
@@ -377,13 +393,17 @@ Add an `if:` condition that checks `github.event.comment.author_association` (e.
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-014 — Deploy job missing environment binding { #gha-014 }
+## GHA-014: Deploy job missing environment binding { #gha-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
 Without an `environment:` binding, a deploy job can't be gated by required reviewers, deployment-branch policies, or wait timers. Any push to the triggering branch will deploy immediately.
+
+**Known false-positive modes**
+
+- Integration-test jobs that run ``terraform apply`` or ``kubectl apply`` against a local mock (LocalStack, Moto, kind, k3d) aren't real deploys. The rule auto-suppresses a step whose env carries ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` pointing at a localhost address.
 
 <div class="pg-rule__rec" markdown>
 
@@ -397,7 +417,7 @@ Add `environment: <name>` to jobs that deploy. Configure required reviewers, wai
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-015 — Job has no `timeout-minutes` — unbounded build { #gha-015 }
+## GHA-015: Job has no `timeout-minutes`, unbounded build { #gha-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-TIMEOUT</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
@@ -409,7 +429,7 @@ Without `timeout-minutes`, the job runs until GitHub's 6-hour default kills it. 
 
 **Recommended action**
 
-Add `timeout-minutes:` to each job, sized to the 95th percentile of historical runtime plus margin. GitHub's default is 360 minutes — an explicitly shorter value limits blast radius and runner cost.
+Add `timeout-minutes:` to each job, sized to the 95th percentile of historical runtime plus margin. GitHub's default is 360 minutes, an explicitly shorter value limits blast radius and runner cost.
 
 </div>
 
@@ -417,13 +437,17 @@ Add `timeout-minutes:` to each job, sized to the 95th percentile of historical r
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-016 — Remote script piped to shell interpreter { #gha-016 }
+## GHA-016: Remote script piped to shell interpreter { #gha-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
 Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a workflow. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+
+**Known false-positive modes**
+
+- Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
 <div class="pg-rule__rec" markdown>
 
@@ -437,7 +461,7 @@ Download the script to a file, verify its checksum, then execute it. Or vendor t
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-017 — Docker run with insecure flags (privileged/host mount) { #gha-017 }
+## GHA-017: Docker run with insecure flags (privileged/host mount) { #gha-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -457,7 +481,7 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-018 — Package install from insecure source { #gha-018 }
+## GHA-018: Package install from insecure source { #gha-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
@@ -477,13 +501,13 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-019 — GITHUB_TOKEN written to persistent storage { #gha-019 }
+## GHA-019: GITHUB_TOKEN written to persistent storage { #gha-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
 </div>
 
-Detects patterns where `GITHUB_TOKEN` is written to files, environment files (`$GITHUB_ENV`), or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries — turning a scoped credential into a long-lived one.
+Detects patterns where `GITHUB_TOKEN` is written to files, environment files (`$GITHUB_ENV`), or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries, turning a scoped credential into a long-lived one.
 
 <div class="pg-rule__rec" markdown>
 
@@ -497,7 +521,7 @@ Never write GITHUB_TOKEN to files, artifacts, or GITHUB_ENV. Use the token inlin
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-020 — No vulnerability scanning step { #gha-020 }
+## GHA-020: No vulnerability scanning step { #gha-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
@@ -509,7 +533,7 @@ Without a vulnerability scanning step, known-vulnerable dependencies ship to pro
 
 **Recommended action**
 
-Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
+Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
 </div>
 
@@ -517,13 +541,13 @@ Add a vulnerability scanning step — trivy, grype, snyk test, npm audit, pip-au
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-021 — Package install without lockfile enforcement { #gha-021 }
+## GHA-021: Package install without lockfile enforcement { #gha-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest — exactly the window a supply-chain attacker exploits.
+Detects package-manager install commands that do not enforce a lockfile or hash verification. Without lockfile enforcement the resolver pulls whatever version is currently latest, exactly the window a supply-chain attacker exploits.
 
 <div class="pg-rule__rec" markdown>
 
@@ -537,13 +561,17 @@ Use lockfile-enforcing install commands: `npm ci` instead of `npm install`, `pip
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-022 — Dependency update command bypasses lockfile pins { #gha-022 }
+## GHA-022: Dependency update command bypasses lockfile pins { #gha-022 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
 Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+
+**Known false-positive modes**
+
+- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``) and security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``) are exempted by the ``DEP_UPDATE_RE`` tooling allowlist. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
 
 <div class="pg-rule__rec" markdown>
 
@@ -557,7 +585,7 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-023 — TLS / certificate verification bypass { #gha-023 }
+## GHA-023: TLS / certificate verification bypass { #gha-023 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
@@ -577,19 +605,19 @@ Remove TLS verification bypasses. Fix certificate issues at the source (install 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-024 — No SLSA provenance attestation produced { #gha-024 }
+## GHA-024: No SLSA provenance attestation produced { #gha-024 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Provenance generation is distinct from signing. A signed artifact proves ``who`` published it; a provenance attestation proves ``where/how`` it was built. Consumers can then verify the build happened on a trusted runner, from a specific source commit, with known parameters. Without it, a leaked signing key forges identity but a leaked build environment also forges provenance — you need both for the SLSA L3 non-falsifiability guarantee.
+Provenance generation is distinct from signing. A signed artifact proves ``who`` published it; a provenance attestation proves ``where/how`` it was built. Consumers can then verify the build happened on a trusted runner, from a specific source commit, with known parameters. Without it, a leaked signing key forges identity but a leaked build environment also forges provenance. You need both for the SLSA L3 non-falsifiability guarantee.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Call ``slsa-framework/slsa-github-generator`` or ``actions/attest-build-provenance`` after the build step to emit an in-toto attestation alongside the artifact. ``cosign sign`` alone (covered by GHA-006) signs the artifact but doesn't record *how* it was built — SLSA Build L3 requires the provenance statement.
+Call ``slsa-framework/slsa-github-generator`` or ``actions/attest-build-provenance`` after the build step to emit an in-toto attestation alongside the artifact. ``cosign sign`` alone (covered by GHA-006) signs the artifact but doesn't record *how* it was built. SLSA Build L3 requires the provenance statement.
 
 </div>
 
@@ -597,7 +625,7 @@ Call ``slsa-framework/slsa-github-generator`` or ``actions/attest-build-provenan
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-025 — Reusable workflow not pinned to commit SHA { #gha-025 }
+## GHA-025: Reusable workflow not pinned to commit SHA { #gha-025 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -617,13 +645,13 @@ Pin every ``jobs.<id>.uses:`` reference to a 40-char commit SHA (``owner/repo/.g
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-026 — Container job disables isolation via `options:` { #gha-026 }
+## GHA-026: Container job disables isolation via `options:` { #gha-026 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-276</span>
 </div>
 
-GitHub-hosted runners execute ``container:`` jobs inside a Docker container the runner itself manages — normally a hardened, network-namespaced sandbox. ``options:`` is a free-text passthrough to ``docker run``; a flag that breaks the sandbox (shares host network/PID, runs privileged, maps the Docker socket) turns the job into an RCE on the runner VM.
+GitHub-hosted runners execute ``container:`` jobs inside a Docker container the runner itself manages, normally a hardened, network-namespaced sandbox. ``options:`` is a free-text passthrough to ``docker run``; a flag that breaks the sandbox (shares host network/PID, runs privileged, maps the Docker socket) turns the job into an RCE on the runner VM.
 
 <div class="pg-rule__rec" markdown>
 
@@ -637,19 +665,24 @@ Remove ``--network host``, ``--privileged``, ``--cap-add``, ``--user 0``/``--use
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-027 — Workflow contains indicators of malicious activity { #gha-027 }
+## GHA-027: Workflow contains indicators of malicious activity { #gha-027 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
 </div>
 
-Distinct from the hygiene checks. GHA-016 flags ``curl | bash`` as a risky default; this rule fires only on concrete indicators — reverse shells, base64-decoded execution, known miner binaries or pool URLs, exfil-channel domains, credential-dump pipes, history-erasure commands. Categories reported: ``obfuscated-exec``, ``reverse-shell``, ``crypto-miner``, ``exfil-channel``, ``credential-exfil``, ``audit-erasure``.
+Distinct from the hygiene checks. GHA-016 flags ``curl | bash`` as a risky default; this rule fires only on concrete indicators, reverse shells, base64-decoded execution, known miner binaries or pool URLs, exfil-channel domains, credential-dump pipes, history-erasure commands. Categories reported: ``obfuscated-exec``, ``reverse-shell``, ``crypto-miner``, ``exfil-channel``, ``credential-exfil``, ``audit-erasure``.
+
+**Known false-positive modes**
+
+- Security-training repositories, CTF challenges, and red-team exercise workflows legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production workflow still fire.
+- Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Treat this as a potential pipeline compromise. Inspect the matching step(s), identify the author and the PR that introduced them, rotate any credentials the workflow has access to, and audit CloudTrail/AuditLogs for exfil. If the match is a legitimate red-team exercise, whitelist via ``.pipelinecheckignore`` with an ``expires:`` date — never a permanent suppression.
+Treat this as a potential pipeline compromise. Inspect the matching step(s), identify the author and the PR that introduced them, rotate any credentials the workflow has access to, and audit CloudTrail/AuditLogs for exfil. If the match is a legitimate red-team exercise, whitelist via ``.pipelinecheckignore`` with an ``expires:`` date, never a permanent suppression.
 
 </div>
 
@@ -657,13 +690,17 @@ Treat this as a potential pipeline compromise. Inspect the matching step(s), ide
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-028 — Dangerous shell idiom (eval, sh -c variable, backtick exec) { #gha-028 }
+## GHA-028: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #gha-028 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
 </div>
 
 ``eval``, ``sh -c "$X"``, and `` `$X` `` all re-parse the variable's value as shell syntax. If the value contains ``;``, ``&&``, ``|``, backticks, or ``$()``, those metacharacters execute. Even when the variable source looks controlled today, relocating the script or adding a new caller can silently expose it to untrusted input.
+
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool> <literal-args>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd. The rule only fires when the substituted command references a variable.
 
 <div class="pg-rule__rec" markdown>
 
@@ -677,7 +714,7 @@ Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec of variables with dir
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-029 — Package install bypasses registry integrity (git / path / tarball source) { #gha-029 }
+## GHA-029: Package install bypasses registry integrity (git / path / tarball source) { #gha-029 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
@@ -697,13 +734,13 @@ Pin git dependencies to a commit SHA (``pip install git+https://…/repo@<sha>``
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-030 — OIDC token requested without environment-protected job { #gha-030 }
+## GHA-030: OIDC token requested without environment-protected job { #gha-030 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Pairs with IAM-008 — IAM-008 verifies the AWS-side trust policy pins audience + subject; this rule verifies the GitHub-side workflow can't request the token from any branch without a deployment gate. A misconfiguration on either side defeats the OIDC story.
+Pairs with IAM-008. IAM-008 verifies the AWS-side trust policy pins audience + subject; this rule verifies the GitHub-side workflow can't request the token from any branch without a deployment gate. A misconfiguration on either side defeats the OIDC story.
 
 <div class="pg-rule__rec" markdown>
 
@@ -717,19 +754,19 @@ Bind every job that exchanges the GHA OIDC token for cloud credentials to a prot
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-031 — Workflow uses retired set-output / save-state command { #gha-031 }
+## GHA-031: Workflow uses retired set-output / save-state command { #gha-031 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
 </div>
 
-GitHub deprecated ``::set-output::`` and ``::save-state::`` in October 2022 because they read from the runner's stdout as a control channel. Any tool whose output happens to contain ``::set-output…`` (a CI job's own diagnostic, a downloaded log, an upstream test framework) silently sets a step output. The replacement workflow commands (``$GITHUB_OUTPUT`` / ``$GITHUB_STATE`` files) close that injection channel. Workflows still using the retired commands also depend on a deprecation timer that GitHub has extended several times — they will eventually break.
+GitHub deprecated ``::set-output::`` and ``::save-state::`` in October 2022 because they read from the runner's stdout as a control channel. Any tool whose output happens to contain ``::set-output…`` (a CI job's own diagnostic, a downloaded log, an upstream test framework) silently sets a step output. The replacement workflow commands (``$GITHUB_OUTPUT`` / ``$GITHUB_STATE`` files) close that injection channel. Workflows still using the retired commands also depend on a deprecation timer that GitHub has extended several times. They will eventually break.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Replace ``echo "::set-output name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_OUTPUT"`` and ``echo "::save-state name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_STATE"``. The old commands stream through the runner's stdout, which lets any log line that happens to start with ``::`` inject into the command channel. The file-redirect forms write to a private file the runner reads after the step exits — no log-line interleaving, no injection.
+Replace ``echo "::set-output name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_OUTPUT"`` and ``echo "::save-state name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_STATE"``. The old commands stream through the runner's stdout, which lets any log line that happens to start with ``::`` inject into the command channel. The file-redirect forms write to a private file the runner reads after the step exits, no log-line interleaving, no injection.
 
 </div>
 
@@ -737,13 +774,13 @@ Replace ``echo "::set-output name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHU
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-032 — run: invokes local script on untrusted-trigger workflow { #gha-032 }
+## GHA-032: run: invokes local script on untrusted-trigger workflow { #gha-032 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-GHA-010 flags ``uses: ./action`` — the *action* form of the same threat. This rule extends to direct shell invocation: ``run: ./scripts/setup.sh`` / ``run: bash scripts/setup.sh`` / ``run: python tools/build.py`` resolve against the checked-out workspace, which on ``pull_request_target`` / ``workflow_run`` is PR-controlled. The attacker ships an edited script and gets a default-branch-privileged shell.
+GHA-010 flags ``uses: ./action``, the *action* form of the same threat. This rule extends to direct shell invocation: ``run: ./scripts/setup.sh`` / ``run: bash scripts/setup.sh`` / ``run: python tools/build.py`` resolve against the checked-out workspace, which on ``pull_request_target`` / ``workflow_run`` is PR-controlled. The attacker ships an edited script and gets a default-branch-privileged shell.
 
 <div class="pg-rule__rec" markdown>
 
@@ -757,7 +794,7 @@ Either don't run the script under an untrusted trigger, or split the workflow: k
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## GHA-033 — Secret value echoed / printed in a run: block { #gha-033 }
+## GHA-033: Secret value echoed / printed in a run: block { #gha-033 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
@@ -769,7 +806,7 @@ Two distinct shapes are flagged: (1) printing a secret context expression direct
 
 **Recommended action**
 
-Don't print secret values from a script. GitHub's log redaction is a best-effort string match — it doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
+Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
 
 </div>
 
@@ -777,19 +814,23 @@ Don't print secret values from a script. GitHub's log redaction is a best-effort
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-034 — Reusable workflow called with secrets: inherit { #gha-034 }
+## GHA-034: Reusable workflow called with secrets: inherit { #gha-034 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-272</span>
 </div>
 
-Fires on a ``jobs.<id>.uses: ...`` reference whose sibling ``secrets:`` value is the literal string ``inherit``. This is distinct from GHA-025 (which gates on the *pin* of the called workflow): inheritance is a problem even when the call is SHA-pinned, because the surface a compromised callee sees is every caller secret instead of just the named ones. Explicit lists also document the contract — reviewers see exactly which secrets cross the workflow boundary.
+Fires on a ``jobs.<id>.uses: ...`` reference whose sibling ``secrets:`` value is the literal string ``inherit``. This is distinct from GHA-025 (which gates on the *pin* of the called workflow): inheritance is a problem even when the call is SHA-pinned, because the surface a compromised callee sees is every caller secret instead of just the named ones. Explicit lists also document the contract, reviewers see exactly which secrets cross the workflow boundary.
+
+**Known false-positive modes**
+
+- Single-tenant repos that share their entire secrets set with every reusable workflow by policy. Rare in practice, explicit lists make the secret flow visible and don't add much typing. Suppress with ``.pipelinecheckignore`` and a rationale rather than disabling the rule everywhere.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Replace ``secrets: inherit`` with an explicit list of just the secrets the called workflow actually needs (``secrets: { NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }``). ``inherit`` passes every secret the caller can see — including ones the downstream workflow has no business reading. A compromised or buggy reusable workflow can then exfiltrate credentials the caller never intended to share.
+Replace ``secrets: inherit`` with an explicit list of just the secrets the called workflow actually needs (``secrets: { NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }``). ``inherit`` passes every secret the caller can see, including ones the downstream workflow has no business reading. A compromised or buggy reusable workflow can then exfiltrate credentials the caller never intended to share.
 
 </div>
 
@@ -797,13 +838,17 @@ Replace ``secrets: inherit`` with an explicit list of just the secrets the calle
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-035 — github-script step interpolates untrusted context { #gha-035 }
+## GHA-035: github-script step interpolates untrusted context { #gha-035 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-GHA-003 covers ``run:`` blocks where shell expansion is the injection surface. ``actions/github-script@<ref>`` runs the ``script:`` input as Node.js inside an authenticated Octokit context — same threat model, different language. The rule fires when ``script:`` (or the legacy ``previews:`` companion for inline JS) contains a ``${{ github.event.* }}``, ``${{ inputs.* }}``, ``${{ github.head_ref }}``, ``${{ github.ref_name }}``, or any other untrusted context expression — exactly the same catalog GHA-003 uses.
+GHA-003 covers ``run:`` blocks where shell expansion is the injection surface. ``actions/github-script@<ref>`` runs the ``script:`` input as Node.js inside an authenticated Octokit context, same threat model, different language. The rule fires when ``script:`` (or the legacy ``previews:`` companion for inline JS) contains a ``${{ github.event.* }}``, ``${{ inputs.* }}``, ``${{ github.head_ref }}``, ``${{ github.ref_name }}``, or any other untrusted context expression, exactly the same catalog GHA-003 uses.
+
+**Known false-positive modes**
+
+- Scripts that interpolate ``${{ steps.*.outputs.* }}`` from a trusted upstream step are out of scope (the rule only matches the curated untrusted-context regex). If you intentionally rely on a non-curated context, suppress with a brief ``.pipelinecheckignore`` rationale.
 
 <div class="pg-rule__rec" markdown>
 
@@ -817,13 +862,17 @@ Pass attacker-controllable values through ``env:`` and read them inside the scri
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-036 — runs-on interpolates untrusted context { #gha-036 }
+## GHA-036: runs-on interpolates untrusted context { #gha-036 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-GHA-012 catches self-hosted runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``runs-on`` is computed from an untrusted expression, the caller picks where the workflow runs — including any self-hosted label the org owns. A reusable workflow that declares ``runs-on: ${{ inputs.runner }}`` lets a downstream caller route the job onto the production-deploy fleet (or any other privileged label) and execute arbitrary code with the privileges that fleet inherits. The same surface exists via ``workflow_dispatch`` inputs and any ``${{ github.event.* }}`` field that an attacker can populate. The rule walks all three ``runs-on`` shapes — string scalar, list of labels, and the long-form ``{ group, labels }`` dict — and matches the same untrusted-context regex GHA-003 / GHA-035 use.
+GHA-012 catches self-hosted runners that aren't ephemeral; this rule catches the upstream targeting choice. When ``runs-on`` is computed from an untrusted expression, the caller picks where the workflow runs, including any self-hosted label the org owns. A reusable workflow that declares ``runs-on: ${{ inputs.runner }}`` lets a downstream caller route the job onto the production-deploy fleet (or any other privileged label) and execute arbitrary code with the privileges that fleet inherits. The same surface exists via ``workflow_dispatch`` inputs and any ``${{ github.event.* }}`` field that an attacker can populate. The rule walks all three ``runs-on`` shapes, string scalar, list of labels, and the long-form ``{ group, labels }`` dict, and matches the same untrusted-context regex GHA-003 / GHA-035 use.
+
+**Known false-positive modes**
+
+- Workflows that intentionally select runners by environment via a vetted matrix (``runs-on: ${{ matrix.os }}`` where ``matrix.os`` is a hard-coded list inside the workflow) are out of scope, the matrix values are author-controlled, not caller-controlled. The rule only matches the catalog of untrusted contexts (``inputs.*``, ``github.event.*``, ``github.head_ref``, …); ``matrix.*`` and ``env.*`` references are intentionally not flagged.
 
 <div class="pg-rule__rec" markdown>
 

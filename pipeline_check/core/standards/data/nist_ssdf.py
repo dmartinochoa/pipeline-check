@@ -3,10 +3,10 @@
 Subset covering the practices and tasks this scanner can evidence from
 CI/CD state. The SSDF is grouped into four practice areas:
 
-- PO — Prepare the Organization
-- PS — Protect the Software
-- PW — Produce Well-Secured Software
-- RV — Respond to Vulnerabilities
+- PO. Prepare the Organization
+- PS. Protect the Software
+- PW. Produce Well-Secured Software
+- RV. Respond to Vulnerabilities
 
 Only the tasks for which at least one check produces evidence are
 included. A single task may be evidenced by multiple checks, and a
@@ -128,5 +128,89 @@ STANDARD = Standard(
         "CC-021":   ["PW.4.4"],                        # no lockfile
         "CC-022":   ["PW.4.1"],                        # no dependency updates
         "CC-023":   ["PW.4.4"],                        # TLS verification bypass
+        # Buildkite — same shape as the other CI providers, mapped to
+        # the corresponding tasks. Plugin / curl-pipe / TLS-bypass land
+        # under PW.4.* (acquire / verify components); secret / signing
+        # land under PS.* (protect software, integrity, provenance).
+        "BK-001":   ["PW.4.1", "PW.4.4"],              # plugin not pinned
+        "BK-002":   ["PS.1.1"],                        # literal secret
+        "BK-003":   ["PW.6.1", "PW.9.1"],              # untrusted variable interp
+        "BK-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe
+        "BK-005":   ["PO.5.1", "PW.9.1"],              # privileged container
+        "BK-006":   ["PO.5.2", "PW.9.1"],              # no timeout
+        "BK-007":   ["PO.5.1"],                        # no manual deploy gate
+        "BK-008":   ["PW.4.4"],                        # TLS bypass
+        "BK-009":   ["PS.2.1", "PS.3.2"],              # no signing
+        "BK-010":   ["PS.3.2"],                        # no SBOM
+        "BK-011":   ["PS.3.2"],                        # no SLSA provenance
+        "BK-012":   ["RV.1.1"],                        # no vuln scan
+        "BK-013":   ["PO.5.1"],                        # no branches filter
+        # Dockerfile — image-build supply chain. Pinning / verification
+        # rules tie to PW.4.* (acquire and verify 3rd-party components);
+        # privileged / root / sensitive-path rules tie to PO.5.1 +
+        # PW.9.1 (env separation, secure defaults); credential-shape
+        # rules tie to PS.1.1 (least-privilege code storage).
+        "DF-001":   ["PW.4.1", "PW.4.4"],              # FROM not digest-pinned
+        "DF-002":   ["PO.5.1", "PW.9.1"],              # runs as root
+        "DF-003":   ["PW.4.4", "PS.2.1"],              # ADD remote, no integrity
+        "DF-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe in RUN
+        "DF-005":   ["PW.6.1", "PW.9.1"],              # shell-eval
+        "DF-006":   ["PS.1.1"],                        # ENV credential literal
+        "DF-007":   ["PO.3.3", "RV.1.1"],              # no HEALTHCHECK
+        "DF-008":   ["PO.5.1", "PW.9.1"],              # docker --privileged
+        "DF-009":   ["PW.6.1"],                        # ADD where COPY suffices
+        "DF-010":   ["PW.4.1"],                        # apt dist-upgrade
+        "DF-011":   ["PW.4.1"],                        # no cache cleanup
+        "DF-012":   ["PO.5.1", "PW.9.1"],              # RUN sudo
+        "DF-013":   ["PO.5.1", "PW.9.1"],              # sensitive EXPOSE
+        "DF-014":   ["PW.9.1"],                        # WORKDIR /etc
+        "DF-015":   ["PW.9.1"],                        # chmod 777
+        "DF-016":   ["PS.3.2"],                        # no OCI provenance labels
+        "DF-017":   ["PW.9.1"],                        # PATH world-writable
+        "DF-018":   ["PW.9.1"],                        # chown system path
+        "DF-019":   ["PS.1.1"],                        # COPY credential file
+        "DF-020":   ["PS.1.1"],                        # credential-named ARG
+        # Helm chart-supply-chain — every HELM-* rule scores a chart's
+        # own posture (lockfile drift, transport, plaintext metadata),
+        # so they ride mostly on PW.4.* (acquire / verify components)
+        # and PS.3.* (provenance / archive). Hygiene fields (description,
+        # maintainers, appVersion) tie to PO.3.3 audit trail.
+        "HELM-001": ["PW.6.1"],                        # legacy apiVersion
+        "HELM-002": ["PW.4.4", "PS.3.2"],              # no lockfile digests
+        "HELM-003": ["PW.4.4", "PS.2.1"],              # non-HTTPS dep repo
+        "HELM-004": ["PW.4.1", "PW.4.4"],              # dep version range
+        "HELM-005": ["PO.3.3"],                        # missing maintainers
+        "HELM-006": ["PO.5.1"],                        # missing kubeVersion
+        "HELM-007": ["PO.3.3"],                        # missing description
+        "HELM-008": ["PW.4.1"],                        # stale Chart.lock
+        "HELM-009": ["PW.4.4"],                        # non-HTTPS home/sources
+        "HELM-010": ["PO.3.3", "PS.3.2"],              # missing appVersion
+        # ── Cloud Build (GCB) ────────────────────────────────────
+        "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
+        "GCB-002": ["PS.1.1"],                         # plaintext env secret
+        "GCB-003": ["PS.1.1"],                         # plain script secret
+        "GCB-004": ["PW.4.1", "PW.4.4"],               # community step not SHA-pinned
+        "GCB-005": ["PS.1.1"],                         # secret-shaped substitution
+        "GCB-006": ["PO.3.3"],                         # build logging disabled
+        "GCB-007": ["PW.4.1"],                         # latest secret version
+        "GCB-008": ["PS.2.1", "PS.3.2"],               # no signing
+        "GCB-009": ["PS.3.2"],                         # no SBOM
+        "GCB-010": ["PO.5.1"],                         # default network egress
+        "GCB-011": ["PW.4.4"],                         # TLS bypass
+        "GCB-012": ["RV.1.1"],                         # no vuln scan
+        "GCB-013": ["PS.1.1"],                         # default service account
+        "GCB-014": ["PW.6.1", "PW.9.1"],               # untrusted substitution
+        "GCB-015": ["PS.3.2"],                         # no provenance
+        "GCB-016": ["PO.5.2", "PW.9.1"],               # no timeout
+        "GCB-017": ["PO.3.3"],                         # default logs
+        "GCB-018": ["PW.4.1"],                         # legacy gcr.io
+        "GCB-019": ["PO.5.1", "PW.9.1"],               # privileged step
+        "GCB-020": ["PS.1.1"],                         # default SA email
+        "GCB-021": ["PO.5.1"],                         # no private worker pool
+        "GCB-022": ["PW.6.1", "PW.9.1"],               # ALLOW_LOOSE substitution
+        "GCB-023": ["PS.2.1", "PS.3.2"],               # build artifacts not signed
+        "GCB-024": ["PS.3.2"],                         # missing provenance labels
+        "GCB-025": ["PW.4.1"],                         # outdated runner image
+        "GCB-026": ["PS.1.1"],                         # public storage bucket
     },
 )

@@ -1,4 +1,4 @@
-"""K8S-023 — Namespace missing Pod Security Admission enforcement label."""
+"""K8S-023. Namespace missing Pod Security Admission enforcement label."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,10 +1,10 @@
-"""HELM-009 — Chart ``home`` / ``sources`` URLs use a non-HTTPS scheme.
+"""HELM-009. Chart ``home`` / ``sources`` URLs use a non-HTTPS scheme.
 
 ``home:`` and ``sources:`` in ``Chart.yaml`` are the chart's
 landing page and source-repository links, displayed by chart
 registries (ArtifactHub, ``helm search``) and embedded into the
 chart's metadata. A consumer browsing the registry follows these
-URLs to verify the chart's provenance — clicking through to a
+URLs to verify the chart's provenance, clicking through to a
 ``http://`` link drops them into a session vulnerable to an
 on-path attacker rewriting the page (or, more commonly, a 301
 redirect to a typo-squat).
@@ -34,7 +34,7 @@ RULE = Rule(
         "click-through links from a public chart registry; serving "
         "them over plaintext is a confused-deputy footgun for "
         "anyone evaluating the chart's provenance. ``http://`` "
-        "URLs against ``localhost`` are not exempted — production "
+        "URLs against ``localhost`` are not exempted, production "
         "charts shouldn't ship references to a developer-local "
         "endpoint anyway."
     ),
@@ -42,7 +42,7 @@ RULE = Rule(
         "Walks ``Chart.yaml`` ``home:`` (single string) and "
         "``sources:`` (list of strings). Fires on any value whose "
         "scheme is ``http://``, ``ftp://``, or other plaintext "
-        "form. Empty / missing fields pass — the rule only "
+        "form. Empty / missing fields pass, the rule only "
         "evaluates URLs that are *populated* with the wrong scheme. "
         "HELM-003 covers the same risk for dependency-repo URLs."
     ),

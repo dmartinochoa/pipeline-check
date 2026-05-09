@@ -1,4 +1,4 @@
-"""AWS provider — builds a boto3 Session and wires the rule orchestrator.
+"""AWS provider, builds a boto3 Session and wires the rule orchestrator.
 
 To add a new AWS check
 ----------------------
@@ -14,7 +14,7 @@ To add a new AWS check
    ``make_catalog`` fixture from ``tests/aws/rules/conftest.py``.
 
 Every rule module is auto-discovered by :class:`AWSRuleChecks` via
-``discover_rules("pipeline_check.core.checks.aws.rules")`` — this file,
+``discover_rules("pipeline_check.core.checks.aws.rules")``. This file,
 Scanner, CLI, and the doc generator all update automatically.
 """
 from __future__ import annotations
@@ -225,7 +225,7 @@ class AWSProvider(BaseProvider):
                 },
             )
 
-        # ECR repositories — now catalog-backed; reuses the same
+        # ECR repositories, now catalog-backed; reuses the same
         # memoized enumeration that ECR-001..005 rules consume.
         for repo in catalog.ecr_repositories():
             enc = repo.get("encryptionConfiguration") or {}
@@ -241,7 +241,7 @@ class AWSProvider(BaseProvider):
                 },
             )
 
-        # S3 artifact buckets — discovered via CodePipeline, then
+        # S3 artifact buckets, discovered via CodePipeline, then
         # dereferenced for their per-bucket config. Per-bucket API calls
         # aren't worth hoisting into the catalog (no rule shares them).
         artifact_buckets = catalog.s3_artifact_buckets()
@@ -278,7 +278,7 @@ class AWSProvider(BaseProvider):
                 metadata=meta,
             )
 
-        # IAM users — separate from cicd_roles; useful for access-key
+        # IAM users, separate from cicd_roles; useful for access-key
         # age dashboards and human-inventory audits. Use the catalog
         # method so failures route through ``catalog.errors``.
         for user in catalog.iam_users():
@@ -297,7 +297,7 @@ class AWSProvider(BaseProvider):
             )
 
         # Surface any degraded services so the inventory isn't silently
-        # incomplete — the operator can see "we couldn't enumerate X".
+        # incomplete, the operator can see "we couldn't enumerate X".
         for svc, err in catalog.errors.items():
             _emit(f"{svc}_degraded", svc, metadata={"error": err})
         return out

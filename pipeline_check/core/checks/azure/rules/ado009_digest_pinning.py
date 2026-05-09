@@ -1,4 +1,4 @@
-"""ADO-009 — containers should pin by sha256 digest (strictest tier)."""
+"""ADO-009, containers should pin by sha256 digest (strictest tier)."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""K8S-029 — RoleBinding subjects include the namespace's ``default`` ServiceAccount."""
+"""K8S-029. RoleBinding subjects include the namespace's ``default`` ServiceAccount."""
 from __future__ import annotations
 
 from typing import Any
@@ -41,7 +41,7 @@ RULE = Rule(
     ),
     known_fp=(
         "Charts that intentionally re-use the default SA in single-tenant "
-        "namespaces. Consider creating a named SA anyway — it keeps the "
+        "namespaces. Consider creating a named SA anyway. It keeps the "
         "audit log unambiguous about which workload made an API call.",
     ),
 )

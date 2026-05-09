@@ -1,4 +1,4 @@
-"""IAM-005 — CI/CD role trust allows external AWS principal w/o sts:ExternalId."""
+"""IAM-005. CI/CD role trust allows external AWS principal w/o sts:ExternalId."""
 from __future__ import annotations
 
 import json

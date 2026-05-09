@@ -1,4 +1,4 @@
-"""GitHub Actions provider — scans workflow YAML under ``.github/workflows/``.
+"""GitHub Actions provider, scans workflow YAML under ``.github/workflows/``.
 
 Producer workflow:
 
@@ -30,7 +30,7 @@ from .base import BaseProvider
 
 
 class GitHubProvider(BaseProvider):
-    """GitHub Actions provider — parses workflow YAML from disk."""
+    """GitHub Actions provider, parses workflow YAML from disk."""
 
     NAME = "github"
 
@@ -151,7 +151,7 @@ def _gha_metadata(data: dict[str, Any]) -> dict[str, Any]:
             meta["runners"] = sorted(runners)
         if environments:
             meta["environments"] = sorted(environments)
-    # Trigger events — ``pull_request_target`` is the one that grants
+    # Trigger events, ``pull_request_target`` is the one that grants
     # write tokens on fork PRs, so surfacing triggers is load-bearing
     # for any "which workflows are reachable from untrusted input"
     # audit.
@@ -170,7 +170,7 @@ def _gha_metadata(data: dict[str, Any]) -> dict[str, Any]:
         meta["triggers"] = sorted(x for x in on if isinstance(x, str))
     elif isinstance(on, str):
         meta["triggers"] = [on]
-    # Top-level ``permissions:``  — tightened token scopes worth recording.
+    # Top-level ``permissions:`` , tightened token scopes worth recording.
     perms = data.get("permissions")
     if isinstance(perms, str):
         meta["permissions"] = perms

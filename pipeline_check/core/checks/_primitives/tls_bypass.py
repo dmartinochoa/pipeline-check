@@ -14,15 +14,15 @@ turn verification off across the tooling commonly found in CI:
   ``PYTHONHTTPSVERIFY=0``, ``GOINSECURE``.
 * **curl / wget**: ``-k`` / ``--insecure`` / ``--no-check-certificate``.
 * **Kubernetes tooling**: ``helm`` and ``kubectl`` with
-  ``--insecure-skip-tls-verify`` — frequently slipped into CI
+  ``--insecure-skip-tls-verify``, frequently slipped into CI
   dry-run steps as a "just make it work" shortcut.
 * **SSH**: ``-o StrictHostKeyChecking=no`` /
-  ``-o UserKnownHostsFile=/dev/null`` — TOFU on every connection,
+  ``-o UserKnownHostsFile=/dev/null``. TOFU on every connection,
   which for an unattended CI runner is effectively no verification.
 
 The primitive is intentionally word-boundary-strict so natural-text
 strings like ``"sslverify is currently false in the docs"`` don't
-false-positive — it looks for the tool's invocation shape, not for
+false-positive. It looks for the tool's invocation shape, not for
 any mention of the bypass token.
 """
 from __future__ import annotations
@@ -86,6 +86,40 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
      re.compile(r"\bssh\b[^\n]*-o\s+StrictHostKeyChecking\s*=\s*no\b", re.IGNORECASE)),
     ("ssh-known-hosts-null", "ssh",
      re.compile(r"\bssh\b[^\n]*-o\s+UserKnownHostsFile\s*=\s*/dev/null\b", re.IGNORECASE)),
+
+    # ── Docker daemon and CLI ──
+    # ``--insecure-registry`` on the daemon (or its config in
+    # ``/etc/docker/daemon.json``) tells Docker to talk to a registry
+    # over HTTP or with a self-signed cert — the same MITM exposure
+    # the other patterns flag, but routinely overlooked because the
+    # flag tends to be tucked into a ``dockerd`` startup script.
+    ("docker-insecure-registry", "docker",
+     re.compile(
+         r"\b(?:dockerd|docker(?:\s+\S+)?)\b[^\n]*--insecure-registry\b",
+         re.IGNORECASE,
+     )),
+
+    # ── JVM build tools ──
+    # Maven and Gradle each have a JVM system property that disables
+    # the HTTPS hostname / cert check for their dependency resolvers.
+    # Both are popular shortcuts when an internal Nexus is misconfigured;
+    # both turn the build into a soft target for repo poisoning.
+    ("maven-insecure", "maven",
+     re.compile(r"-Dmaven\.wagon\.http\.ssl\.insecure\s*=\s*true", re.IGNORECASE)),
+    ("gradle-insecure", "gradle",
+     re.compile(r"-Dorg\.gradle\.internal\.http\.connectionTimeout|"
+                r"-Dorg\.gradle\.https\.insecure\s*=\s*true|"
+                r"systemProp\.https?\.insecure\s*=\s*true", re.IGNORECASE)),
+
+    # ── AWS CLI ──
+    # ``AWS_S3_NO_VERIFY_SSL=true`` tells the boto3-backed CLI to skip
+    # cert verification for S3; ``AWS_CA_BUNDLE=`` (empty) does the
+    # same blanket-disable across services. ``--no-verify-ssl`` on the
+    # CLI is the request-level form of the same opt-out.
+    ("aws-no-verify-ssl-env", "aws",
+     re.compile(r"\bAWS_S3_NO_VERIFY_SSL\s*=\s*(?:true|1)\b", re.IGNORECASE)),
+    ("aws-no-verify-ssl-flag", "aws",
+     re.compile(r"\baws\b[^\n]*--no-verify-ssl\b", re.IGNORECASE)),
 )
 
 

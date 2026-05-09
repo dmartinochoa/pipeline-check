@@ -14,7 +14,7 @@ parsed the string itself with ad-hoc ``rsplit("@", 1)`` calls. The
 remote-ref resolver needs a structured decomposition (owner, repo,
 path, ref) shared with the rules so they all classify the same way.
 
-The parser is conservative — it returns ``None`` for anything it
+The parser is conservative. It returns ``None`` for anything it
 doesn't recognize, and rules treat ``None`` as "not a uses we care
 about." It never raises.
 """
@@ -85,7 +85,7 @@ def parse_uses(value: Any) -> UsesRef | None:
         return UsesRef(raw=raw, kind="local-action", path=raw)
 
     # Remote refs always carry an ``@<ref>``. Anything else without an
-    # ``@`` is malformed for our purposes — return None so the rules
+    # ``@`` is malformed for our purposes, return None so the rules
     # ignore it the same way they ignore docker refs.
     if "@" not in raw:
         return None

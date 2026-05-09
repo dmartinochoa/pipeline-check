@@ -1,4 +1,4 @@
-"""GL-013 — pipeline should not embed long-lived AWS access keys."""
+"""GL-013, pipeline should not embed long-lived AWS access keys."""
 from __future__ import annotations
 
 import re

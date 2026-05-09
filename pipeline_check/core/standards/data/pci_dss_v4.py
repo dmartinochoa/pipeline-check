@@ -1,4 +1,4 @@
-"""PCI DSS v4.0 — subset covering CI/CD-relevant requirements.
+"""PCI DSS v4.0, subset covering CI/CD-relevant requirements.
 
 Only requirements whose evidence can be collected from CI/CD
 configuration state are mapped here. Requirements about network
@@ -15,20 +15,20 @@ STANDARD = Standard(
     version="4.0",
     url="https://www.pcisecuritystandards.org/document_library/",
     controls={
-        # Req 6 — develop and maintain secure systems and software
+        # Req 6, develop and maintain secure systems and software
         "6.3.1": "Security vulnerabilities are identified and managed",
         "6.3.3": "All system components protected from known vulnerabilities by installing applicable patches",
         "6.4.1": "Public-facing web apps are protected against attacks (secure build/config)",
         "6.4.3": "Changes to systems are managed via documented change control",
         "6.5.1": "Changes to system components follow secure development procedures",
-        # Req 7 — restrict access by business need to know
+        # Req 7, restrict access by business need to know
         "7.2.1": "Access control is defined per job role with least privilege",
         "7.2.2": "Access is assigned based on job classification and function",
         "7.2.5": "System and application accounts have least-privilege access",
-        # Req 8 — identify users and authenticate access
+        # Req 8, identify users and authenticate access
         "8.2.1": "Strong unique identifiers are assigned to each user and service account",
         "8.2.2": "Group, shared, or generic accounts are managed and justified",
-        # Req 10 — log and monitor all access to system components
+        # Req 10, log and monitor all access to system components
         "10.2.1": "Audit logs are enabled and active for all system components",
         "10.3.2": "Audit logs are protected from unauthorized modifications",
         "10.3.3": "Audit logs are promptly backed up to a centralized log server",
@@ -121,7 +121,7 @@ STANDARD = Standard(
         "CC-021":   ["6.3.3"],                           # no lockfile
         "CC-022":   ["6.3.3"],                           # no dependency updates
         "CC-023":   ["6.5.1"],                           # TLS verification bypass
-        # Buildkite — pipeline-config posture maps to the same Req-6 /
+        # Buildkite, pipeline-config posture maps to the same Req-6 /
         # Req-7 / Req-8 / Req-10 families as the other CI providers.
         "BK-001":   ["6.3.3"],                           # plugin not pinned
         "BK-002":   ["8.2.1", "6.5.1"],                  # literal secret
@@ -136,7 +136,7 @@ STANDARD = Standard(
         "BK-011":   ["6.5.1", "10.3.2"],                 # SLSA provenance
         "BK-012":   ["6.3.1", "6.3.3"],                  # no vuln scanning
         "BK-013":   ["6.4.3"],                           # deploy w/o branches filter
-        # Tekton — Kubernetes-native pipeline kinds.
+        # Tekton. Kubernetes-native pipeline kinds.
         "TKN-001":  ["6.3.3"],                           # step image not digest-pinned
         "TKN-002":  ["6.4.1", "6.5.1"],                  # step privileged
         "TKN-003":  ["6.5.1"],                           # param injection
@@ -164,5 +164,53 @@ STANDARD = Standard(
         "ARGO-011": ["6.5.1", "10.3.2"],                 # SLSA provenance
         "ARGO-012": ["6.3.1", "6.3.3"],                  # no vuln scanning
         "ARGO-013": ["7.2.5"],                           # SA token automount
+        # ── Dockerfile (image build = system component change) ─
+        # Pinning rules tie to 6.4.3 / 6.5.1 (change control,
+        # secure dev). Privileged / root rules tie to 6.4.1
+        # (secure build/config). Credential rules tie to 8.2.1
+        # (strong unique identifiers). Vuln-related rules tie to
+        # 6.3.1 / 6.3.3.
+        "DF-001": ["6.4.3", "6.5.1"],                    # FROM not digest-pinned
+        "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
+        "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity
+        "DF-004": ["6.5.1", "6.3.3"],                    # curl-pipe
+        "DF-005": ["6.5.1"],                             # shell-eval
+        "DF-006": ["8.2.1", "8.2.2"],                    # ENV credential literal
+        "DF-008": ["6.4.1", "7.2.5"],                    # docker --privileged
+        "DF-010": ["6.3.3"],                             # apt upgrade
+        "DF-012": ["7.2.5"],                             # RUN sudo
+        "DF-013": ["6.4.1"],                             # sensitive EXPOSE
+        "DF-015": ["6.4.1"],                             # chmod 777
+        "DF-016": ["10.3.2", "6.5.1"],                   # OCI provenance
+        "DF-019": ["8.2.1", "8.2.2"],                    # COPY credential file
+        "DF-020": ["8.2.1"],                             # credential ARG
+        # ── Helm chart-supply-chain ────────────────────────────
+        "HELM-001": ["6.4.3"],                           # legacy apiVersion
+        "HELM-002": ["6.5.1", "10.3.2"],                 # missing Chart.lock digests
+        "HELM-003": ["6.3.3"],                           # non-HTTPS dep repo
+        "HELM-004": ["6.4.3", "6.5.1"],                  # version range
+        "HELM-008": ["6.3.3"],                           # stale Chart.lock
+        "HELM-009": ["6.3.3"],                           # non-HTTPS home/sources
+        # ── Cloud Build ────────────────────────────────────────
+        "GCB-001": ["6.4.3", "6.5.1"],                   # step image not pinned
+        "GCB-002": ["8.2.1", "8.2.2"],                   # plaintext env secret
+        "GCB-003": ["8.2.1"],                            # plain script secret
+        "GCB-004": ["6.4.3", "6.5.1"],                   # community step not pinned
+        "GCB-005": ["8.2.1"],                            # secret-shaped substitution
+        "GCB-006": ["10.2.1"],                           # build logging disabled
+        "GCB-008": ["6.5.1", "10.3.2"],                  # no signing
+        "GCB-009": ["6.5.1"],                            # no SBOM
+        "GCB-010": ["7.2.5"],                            # default network egress
+        "GCB-011": ["6.3.3"],                            # TLS bypass
+        "GCB-012": ["6.3.1", "6.3.3"],                   # no vuln scan
+        "GCB-013": ["7.2.5", "8.2.2"],                   # default service account
+        "GCB-014": ["6.5.1"],                            # untrusted substitution
+        "GCB-015": ["6.5.1", "10.3.2"],                  # no provenance
+        "GCB-016": ["6.4.1"],                            # no timeout
+        "GCB-019": ["6.4.1", "7.2.5"],                   # privileged step
+        "GCB-020": ["7.2.5", "8.2.2"],                   # default SA email
+        "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
+        "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
+        "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
     },
 )

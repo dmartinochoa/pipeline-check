@@ -12,9 +12,9 @@ provider differences are entirely in the *vocabulary*:
   ``${VAR}``, ADO ``$(VAR)``, PowerShell ``$env:VAR``,
   GitHub ``${{ env.VAR }}``).
 
-The *algorithm* — "scan script lines, treat double-quoted segments as
+The *algorithm*, "scan script lines, treat double-quoted segments as
 neutralised, treat ``VAR="...$X..."`` assignments as safe, otherwise
-flag" — is identical. This module owns that algorithm so every
+flag", is identical. This module owns that algorithm so every
 provider rule collapses to a thin adapter passing in the right regex.
 
 Why not also collapse the source-side taint extraction (variables /
@@ -36,7 +36,7 @@ from ..base import is_quoted_assignment
 #: Strip every double-quoted segment from a line before re-checking
 #: for a variable reference. Bash double-quotes prevent re-evaluation,
 #: so ``cmd "$X"`` is safe even if ``$X`` carries shell
-#: metacharacters — the value is treated as a single literal argument.
+#: metacharacters, the value is treated as a single literal argument.
 _DQ_SEGMENT_RE = re.compile(r'"[^"]*"')
 
 
@@ -80,7 +80,7 @@ def has_unsafe_reference(
     string matching every reference syntax the provider's shell layer
     recognises. The primitive owns the safety filter:
 
-    1. Skip lines that match :func:`is_quoted_assignment` outright —
+    1. Skip lines that match :func:`is_quoted_assignment` outright,
        a ``VAR="...$X..."`` capture is a safe idiom (the inner ``$X``
        is interpolated once into a string-typed variable, never
        re-executed).

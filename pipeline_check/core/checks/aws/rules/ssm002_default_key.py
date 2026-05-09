@@ -1,4 +1,4 @@
-"""SSM-002 — SecureString parameter uses default ``alias/aws/ssm`` key instead of CMK."""
+"""SSM-002. SecureString parameter uses default ``alias/aws/ssm`` key instead of CMK."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -19,7 +19,7 @@ RULE = Rule(
     ),
     docs_note=(
         "``alias/aws/ssm`` is the AWS-managed default for "
-        "SecureString — its key policy is fixed and account-wide. "
+        "SecureString. Its key policy is fixed and account-wide. "
         "A customer-managed key gives you the same per-parameter "
         "key-policy + CloudTrail audit story you'd apply to "
         "Secrets Manager (which always uses a CMK)."

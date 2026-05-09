@@ -1,4 +1,4 @@
-"""CC-004 — Jobs with secret-like env vars should use contexts, not inline values."""
+"""CC-004. Jobs with secret-like env vars should use contexts, not inline values."""
 from __future__ import annotations
 
 import re
@@ -25,7 +25,7 @@ RULE = Rule(
         "Jobs that declare environment variables with secret-looking "
         "names (containing PASSWORD, TOKEN, SECRET, or API_KEY) in "
         "inline `environment:` blocks bypass CircleCI's context "
-        "restrictions — security groups, OIDC claims, and audit logs "
+        "restrictions, security groups, OIDC claims, and audit logs "
         "are only enforced when secrets live in contexts."
     ),
 )

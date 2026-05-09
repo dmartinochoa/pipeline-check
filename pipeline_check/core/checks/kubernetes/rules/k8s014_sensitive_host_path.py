@@ -1,4 +1,4 @@
-"""K8S-014 — Pod ``hostPath`` references a sensitive host directory."""
+"""K8S-014. Pod ``hostPath`` references a sensitive host directory."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

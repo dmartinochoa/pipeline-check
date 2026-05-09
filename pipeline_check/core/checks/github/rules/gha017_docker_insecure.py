@@ -1,4 +1,4 @@
-"""GHA-017 — docker run with insecure flags (privileged / host mount)."""
+"""GHA-017, docker run with insecure flags (privileged / host mount)."""
 from __future__ import annotations
 
 from typing import Any
@@ -38,7 +38,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
 
     # Then walk every step and re-scan its ``run:`` body for the
     # same pattern. When a step's run text contains the offending
-    # flag, the step's source line is the most useful anchor —
+    # flag, the step's source line is the most useful anchor,
     # reporters / SARIF can render path:line and the user lands on
     # the right step. Falls back to a path-only Location when no
     # step matches (the blob hit was in workflow-level env or a

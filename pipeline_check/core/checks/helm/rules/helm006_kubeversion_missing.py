@@ -1,4 +1,4 @@
-"""HELM-006 — ``Chart.yaml`` declares no ``kubeVersion`` compat range.
+"""HELM-006, ``Chart.yaml`` declares no ``kubeVersion`` compat range.
 
 ``kubeVersion:`` is the SemVer range of Kubernetes API versions the
 chart is known to render against. Helm refuses ``helm install``
@@ -7,7 +7,7 @@ the only static guard against rendering against an unsupported API
 shape (a removed apiVersion, a renamed RBAC verb, an alpha feature
 the chart still uses). Charts shipped without ``kubeVersion`` will
 ``helm install`` against any cluster, including one that quietly
-drops the ``policy/v1beta1`` PSP the chart still emits — silent
+drops the ``policy/v1beta1`` PSP the chart still emits, silent
 breakage instead of a clear pre-flight rejection.
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ RULE = Rule(
     docs_note=(
         "The field is a string carrying a Helm-flavoured SemVer "
         "range. Empty / missing fails the rule. Whitespace-only "
-        "values fail too — an obviously-blank key should not "
+        "values fail too, an obviously-blank key should not "
         "satisfy a posture check."
     ),
     known_fp=(

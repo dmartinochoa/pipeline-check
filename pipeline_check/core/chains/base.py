@@ -29,7 +29,7 @@ class ChainRule:
     kill_chain_phase: str = ""
     #: External references (URLs, CVE IDs, real-world incident write-ups).
     references: tuple[str, ...] = ()
-    #: Cross-finding remediation guidance — what to fix to break the chain.
+    #: Cross-finding remediation guidance, what to fix to break the chain.
     recommendation: str = ""
     #: Provider scoping. Empty means provider-agnostic. Used by
     #: ``--list-chains`` to filter and by the engine to short-circuit
@@ -47,7 +47,7 @@ class ChainRule:
 
 @dataclass(slots=True)
 class Chain:
-    """An attack-chain instance — a concrete correlation of findings.
+    """An attack-chain instance, a concrete correlation of findings.
 
     Built by a :class:`ChainRule`'s ``match()`` callable when the
     underlying findings line up. Carries both the rule's static prose
@@ -111,7 +111,7 @@ def group_by_resource(
     *every* check_id in *required* fired.
 
     Returned shape: ``{resource: {check_id: Finding}}``. Useful when a
-    chain must fire on a *single* workflow file or AWS resource — e.g.
+    chain must fire on a *single* workflow file or AWS resource, e.g.
     GHA-002 and GHA-005 must both fire on the *same* workflow for the
     fork-PR chain to be real (a different-workflow combo is not the
     same threat).
@@ -122,7 +122,7 @@ def group_by_resource(
         if f.passed or f.check_id not in needed:
             continue
         # If multiple findings of the same check_id fire on the same
-        # resource (rare — usually one per resource), keep the first;
+        # resource (rare, usually one per resource), keep the first;
         # the chain only needs evidence that the check fired at all.
         if f.check_id not in by_res[f.resource]:
             by_res[f.resource][f.check_id] = f
@@ -135,7 +135,7 @@ def group_by_resource(
 def min_confidence(findings: list[Finding]) -> Confidence:
     """Return the lowest confidence among *findings* (LOW > MEDIUM > HIGH).
 
-    A chain is only as trustworthy as its weakest leg — if one leg is
+    A chain is only as trustworthy as its weakest leg, if one leg is
     a heuristic blob match, the chain shouldn't claim HIGH confidence.
     """
     from ..checks.base import confidence_rank

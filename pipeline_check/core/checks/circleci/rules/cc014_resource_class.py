@@ -1,4 +1,4 @@
-"""CC-014 — jobs should specify a resource_class to limit executor scope."""
+"""CC-014, jobs should specify a resource_class to limit executor scope."""
 from __future__ import annotations
 
 from typing import Any

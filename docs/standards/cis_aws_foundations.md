@@ -47,10 +47,10 @@
 
 ## Not yet covered
 
-Controls listed above but not yet evidenced by any check — contributions
+Controls listed above but not yet evidenced by any check, contributions
 welcome:
 
-- **1.17** (support role) — needs an IAM check scanning for a role
+- **1.17** (support role): needs an IAM check scanning for a role
   with the AWS-managed `AWSSupportAccess` policy.
-- **4.3** (root-account log metric filter) — needs a CloudWatch
+- **4.3** (root-account log metric filter): needs a CloudWatch
   metric-filter check.

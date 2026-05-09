@@ -1,4 +1,4 @@
-"""DF-017 — ENV PATH prepends a world-writable directory."""
+"""DF-017. ENV PATH prepends a world-writable directory."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -24,8 +24,8 @@ RULE = Rule(
         "A writable PATH entry that comes before the system bins lets "
         "any process inside the container shadow ``ls``, ``ps``, "
         "``apt-get``, ``cat``, etc. by dropping a binary of the same "
-        "name into the writable dir. On a multi-tenant image — or "
-        "any image where an exploit can reach the filesystem — "
+        "name into the writable dir. On a multi-tenant image, or "
+        "any image where an exploit can reach the filesystem, "
         "this is a free privilege-escalation vector."
     ),
 )
@@ -42,7 +42,7 @@ def _path_offends(value: str) -> str | None:
     """Return the offending PATH entry if it precedes ``$PATH`` / ``${PATH}``.
 
     Only entries that come *before* the literal ``$PATH`` reference
-    matter — appending writable dirs at the end of PATH is harmless
+    matter, appending writable dirs at the end of PATH is harmless
     because system bins still shadow them. We split on ``:`` and walk
     until we see the existing-PATH marker; entries seen so far that
     sit under a writable prefix are reported.
@@ -55,7 +55,7 @@ def _path_offends(value: str) -> str | None:
         for prefix in _WRITABLE_PREFIXES:
             if token == prefix or token.startswith(prefix + "/"):
                 return token
-    # PATH set without referencing the prior PATH — same risk if the
+    # PATH set without referencing the prior PATH, same risk if the
     # writable prefix appears anywhere because the new value is
     # authoritative for every later directive.
     for entry in parts:

@@ -1,4 +1,4 @@
-"""CB-008 — CodeBuild buildspec is declared inline rather than sourced from the repo."""
+"""CB-008. CodeBuild buildspec is declared inline rather than sourced from the repo."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -21,7 +21,7 @@ RULE = Rule(
         "An inline buildspec (source.buildspec set to YAML text, or a S3 URL) "
         "bypasses the protections that cover your source code. A user with "
         "``codebuild:UpdateProject`` can rewrite the build commands without "
-        "touching the repository — no PR review, no branch protection, no audit "
+        "touching the repository, no PR review, no branch protection, no audit "
         "of what changed. Store buildspec.yml in the repo instead."
     ),
 )

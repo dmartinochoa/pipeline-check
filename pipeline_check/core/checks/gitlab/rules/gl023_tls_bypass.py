@@ -1,4 +1,4 @@
-"""GL-023 — TLS / certificate verification bypass."""
+"""GL-023. TLS / certificate verification bypass."""
 from __future__ import annotations
 
 from typing import Any

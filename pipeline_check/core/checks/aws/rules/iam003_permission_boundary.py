@@ -1,4 +1,4 @@
-"""IAM-003 — CI/CD role has no permissions boundary."""
+"""IAM-003. CI/CD role has no permissions boundary."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

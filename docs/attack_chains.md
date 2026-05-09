@@ -2,13 +2,13 @@
 
 A single finding rarely captures the full risk of a CI/CD misconfiguration.
 A `pull_request_target` trigger is bad on its own; long-lived AWS credentials
-are bad on their own; but the *combination* — on the same workflow — is
+are bad on their own; but the *combination*, on the same workflow, is
 exactly how the PyTorch supply-chain compromise worked. Pipeline-Check's
 **attack chain** engine correlates findings into those multi-step
 narratives and emits one higher-order result per matched chain, mapped to
 [MITRE ATT&CK](https://attack.mitre.org/) techniques.
 
-Chains are **additive**. They never replace a finding — they sit on top of
+Chains are **additive**. They never replace a finding. They sit on top of
 the finding set and highlight the combinations that map to real-world
 attack paths. Fix any one leg and the chain breaks.
 
@@ -35,8 +35,12 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-017`](#ac-017) | Build cache poisoning that lands on a mutable ECR tag | <span class="pg-sev pg-sev--high">HIGH</span> | github / aws | [`GHA-011`](providers/github.md#gha-011) + [`ECR-002`](providers/aws.md) |
 | [`AC-018`](#ac-018) | Unpinned action lands on deploy job with no environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-014`](providers/github.md#gha-014) |
 | [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
-| [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | `TKN-004` + [`K8S-020`](providers/kubernetes.md#k8s-020) |
-| [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | `ARGO-003` + [`K8S-029`](providers/kubernetes.md#k8s-029) |
+| [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | [`TKN-004`](providers/tekton.md#tkn-004) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
+| [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | [`ARGO-003`](providers/argo.md#argo-003) + [`K8S-029`](providers/kubernetes.md#k8s-029) |
+| [`AC-022`](#ac-022) | GitLab script injection lands on deploy job with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | gitlab | [`GL-002`](providers/gitlab.md#gl-002) + [`GL-004`](providers/gitlab.md#gl-004) |
+| [`AC-023`](#ac-023) | Tekton param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton | [`TKN-002`](providers/tekton.md#tkn-002) + [`TKN-003`](providers/tekton.md#tkn-003) |
+| [`AC-024`](#ac-024) | OIDC trust drift lands on a mutable ECR tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / aws | [`GHA-030`](providers/github.md#gha-030) + [`ECR-002`](providers/aws.md) |
+| [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
@@ -45,20 +49,20 @@ recommendation).
 
 ## How chains surface in output
 
-- **Terminal** — a panel per chain after the findings table, with a
+- **Terminal**: a panel per chain after the findings table, with a
   colored border matching the chain's severity and the full narrative
   inline.
-- **JSON** — `chains` top-level array carrying every field plus
+- **JSON**: `chains` top-level array carrying every field plus
   `triggering_findings: [{check_id, resource}, …]`. Omitted (not empty)
   when the caller passed `--no-chains`, so consumers can distinguish
   "nothing matched" from "not asked for".
-- **SARIF** — one rule and one result per chain, tagged `attack-chain`
+- **SARIF**: one rule and one result per chain, tagged `attack-chain`
   plus `mitre/T…` for each technique. GitHub Code Scanning surfaces
   them as top-level alerts.
-- **HTML** — an Attack Chains section immediately after the score
+- **HTML**: an Attack Chains section immediately after the score
   card. Each chain is a bordered card with severity, confidence,
   narrative, triggering checks, MITRE techniques, and references.
-- **Markdown** — an Attack Chains H2 between the summary line and the
+- **Markdown**: an Attack Chains H2 between the summary line and the
   Failures table, so a PR comment reader sees the highest-signal
   artifact first.
 
@@ -73,7 +77,7 @@ pipeline_check --fail-on-chain AC-001 --fail-on-chain AC-007
 pipeline_check --fail-on-any-chain
 ```
 
-Chain gates **bypass baseline and ignore-file filtering** — a correlated
+Chain gates **bypass baseline and ignore-file filtering**, a correlated
 attack path is intrinsically a new finding even when the constituent
 legs were baselined separately. An `AC-001` match that surfaces after
 an OIDC migration partial-rollout would otherwise hide behind two
@@ -93,7 +97,7 @@ path (chain evaluation is O(findings × rules), cheap in practice).
 ## Confidence inheritance
 
 A chain is only as trustworthy as its weakest leg. `Chain.confidence`
-is set to the minimum confidence among the triggering findings — if
+is set to the minimum confidence among the triggering findings, if
 one leg comes from a LOW-confidence blob heuristic, the chain is
 reported at LOW confidence even when every other leg is HIGH. The
 `--min-confidence` filter applies the same way to chains as to
@@ -105,7 +109,7 @@ Chains are plugin-discovered from `pipeline_check/core/chains/rules/`.
 Drop a module named `ac<NNN>_<slug>.py` exporting a `RULE` of type
 `ChainRule` and a `match(findings) -> list[Chain]` function. The
 engine auto-registers it at import time. See the existing
-`ac001_fork_pr_credential_theft.py` for the canonical shape — most
+`ac001_fork_pr_credential_theft.py` for the canonical shape, most
 chains only need `group_by_resource(findings, [...])` plus a narrative
 template.
 
@@ -117,7 +121,7 @@ Click any chain in the [registered chains](#registered-chains) table above to ju
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-001 — Fork-PR Credential Theft (pull_request_target) { #ac-001 }
+### AC-001: Fork-PR Credential Theft (pull_request_target) { #ac-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -142,7 +146,7 @@ Break the chain by either (a) switching to `pull_request` (no write-scope token)
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-002 — Script Injection to Unprotected Deploy { #ac-002 }
+### AC-002: Script Injection to Unprotected Deploy { #ac-002 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1190</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1648</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -167,7 +171,7 @@ Pipe untrusted input through an env-var (one-shot quoting) and add `environment:
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-003 — Unpinned Action to Credential Exfiltration { #ac-003 }
+### AC-003: Unpinned Action to Credential Exfiltration { #ac-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="kill-chain phase">supply-chain -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -192,7 +196,7 @@ Pin every third-party action to a 40-char SHA. Combined with OIDC short-lived cr
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-004 — Self-Hosted Runner Persistent Foothold { #ac-004 }
+### AC-004: Self-Hosted Runner Persistent Foothold { #ac-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1543</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1554</span> <span class="pg-tag" title="kill-chain phase">initial-access -> persistence -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -209,7 +213,7 @@ A self-hosted runner is configured non-ephemerally AND the same workflow accepts
 
 **Recommended action**
 
-Use ephemeral runners (one job, then destroy the host). If ephemeral isn't possible, restrict the workflow trigger to first-party events only — `pull_request` from forks must land on GitHub-hosted runners exclusively.
+Use ephemeral runners (one job, then destroy the host). If ephemeral isn't possible, restrict the workflow trigger to first-party events only, `pull_request` from forks must land on GitHub-hosted runners exclusively.
 
 </div>
 
@@ -217,7 +221,7 @@ Use ephemeral runners (one job, then destroy the host). If ephemeral isn't possi
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-005 — Unsigned Artifact to Production { #ac-005 }
+### AC-005: Unsigned Artifact to Production { #ac-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1554</span> <span class="pg-tag" title="kill-chain phase">supply-chain -> defense-evasion -> impact</span>
@@ -242,7 +246,7 @@ Add a signing step (`cosign sign`, `gh attestation`) or SLSA provenance generati
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-006 — Cache Poisoning via Untrusted Trigger { #ac-006 }
+### AC-006: Cache Poisoning via Untrusted Trigger { #ac-006 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1554</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="kill-chain phase">initial-access -> persistence -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -267,7 +271,7 @@ Lock cache keys to verifiable inputs (lockfile hashes, not PR-controlled paths).
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-007 — IAM Privilege Escalation via CodeBuild { #ac-007 }
+### AC-007: IAM Privilege Escalation via CodeBuild { #ac-007 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1548.005</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.001</span> <span class="pg-tag" title="kill-chain phase">execution -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">aws</span> <span class="pg-tag pg-tag--owasp">terraform</span> <span class="pg-tag pg-tag--owasp">cloudformation</span>
@@ -292,13 +296,13 @@ Strip wildcard actions and unconstrained PassRole from the CodeBuild service rol
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-008 — Dependency Confusion Window { #ac-008 }
+### AC-008: Dependency Confusion Window { #ac-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="kill-chain phase">supply-chain -> execution</span> <span class="pg-tag pg-tag--owasp">github</span>
 </div>
 
-A workflow installs packages without a lockfile AND without integrity verification. On every run the dependency resolver picks the highest-version match across configured registries — ideal conditions for a dependency-confusion / typosquatting attack to land in the build.
+A workflow installs packages without a lockfile AND without integrity verification. On every run the dependency resolver picks the highest-version match across configured registries, ideal conditions for a dependency-confusion / typosquatting attack to land in the build.
 
 **References**
 
@@ -317,7 +321,7 @@ Use lockfile-enforcing install commands (`npm ci`, `pip install -r requirements.
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-009 — Supply Chain Repo Poisoning { #ac-009 }
+### AC-009: Supply Chain Repo Poisoning { #ac-009 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -342,7 +346,7 @@ Pin every third-party action to a commit SHA (not a tag). Move secrets out of th
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-010 — Self-Hosted Runner Environment Exfiltration { #ac-010 }
+### AC-010: Self-Hosted Runner Environment Exfiltration { #ac-010 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="kill-chain phase">execution -> persistence -> credential-access</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -367,13 +371,13 @@ Configure self-hosted runners as ephemeral (one job per VM, recycled afterward).
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-011 — Kubernetes Cluster Takeover via hostPath + cluster-admin { #ac-011 }
+### AC-011: Kubernetes Cluster Takeover via hostPath + cluster-admin { #ac-011 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
 </div>
 
-A workload mounts a hostPath volume (K8S-013) AND the cluster carries a ClusterRoleBinding granting cluster-admin (K8S-020). Together those two settings give an attacker who lands code in any pod on a poisoned node both an escape to the host filesystem and the API privileges needed to pivot the entire cluster — read every Secret, deploy privileged workloads across all nodes, impersonate any service account.
+A workload mounts a hostPath volume (K8S-013) AND the cluster carries a ClusterRoleBinding granting cluster-admin (K8S-020). Together those two settings give an attacker who lands code in any pod on a poisoned node both an escape to the host filesystem and the API privileges needed to pivot the entire cluster, read every Secret, deploy privileged workloads across all nodes, impersonate any service account.
 
 **References**
 
@@ -385,7 +389,7 @@ A workload mounts a hostPath volume (K8S-013) AND the cluster carries a ClusterR
 
 **Recommended action**
 
-Replace hostPath volumes with a CSI driver scoped to the specific subtree the workload needs, or use ConfigMap / downwardAPI volumes for non-storage cases. Audit ClusterRoleBindings: cluster-admin should be reserved for a narrow human-operator group with break-glass access — never bound to a ServiceAccount or a broad ``Group``. Even with hostPath in place, removing the cluster-admin grant breaks the API-pivot leg of this chain.
+Replace hostPath volumes with a CSI driver scoped to the specific subtree the workload needs, or use ConfigMap / downwardAPI volumes for non-storage cases. Audit ClusterRoleBindings: cluster-admin should be reserved for a narrow human-operator group with break-glass access, never bound to a ServiceAccount or a broad ``Group``. Even with hostPath in place, removing the cluster-admin grant breaks the API-pivot leg of this chain.
 
 </div>
 
@@ -393,7 +397,7 @@ Replace hostPath volumes with a CSI driver scoped to the specific subtree the wo
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-012 — Reusable Workflow Secret Exfiltration { #ac-012 }
+### AC-012: Reusable Workflow Secret Exfiltration { #ac-012 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -418,7 +422,7 @@ Break either leg of the chain. (a) Replace the mutable ref (``@v2`` / ``@main``)
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-013 — Caller-Controlled Runner with Token Persistence { #ac-013 }
+### AC-013: Caller-Controlled Runner with Token Persistence { #ac-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1133</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">github</span>
@@ -435,7 +439,7 @@ A workflow's ``runs-on:`` is computed from an attacker-controllable expression (
 
 **Recommended action**
 
-Break either leg of the chain. (a) Hard-code ``runs-on:`` or validate the input against an allowlist of known-good labels before the job runs, so the caller can't pick an attacker-controlled runner. (b) Stop writing ``GITHUB_TOKEN`` to disk — use it inline via ``${{ secrets.GITHUB_TOKEN }}`` in the step that needs it. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
+Break either leg of the chain. (a) Hard-code ``runs-on:`` or validate the input against an allowlist of known-good labels before the job runs, so the caller can't pick an attacker-controlled runner. (b) Stop writing ``GITHUB_TOKEN`` to disk, use it inline via ``${{ secrets.GITHUB_TOKEN }}`` in the step that needs it. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
 
 </div>
 
@@ -443,7 +447,7 @@ Break either leg of the chain. (a) Hard-code ``runs-on:`` or validate the input 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-014 — Caller-Controlled Runner with Token Persistence (GitLab) { #ac-014 }
+### AC-014: Caller-Controlled Runner with Token Persistence (GitLab) { #ac-014 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1133</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> exfiltration</span> <span class="pg-tag pg-tag--owasp">gitlab</span>
@@ -460,7 +464,7 @@ A pipeline's ``tags:`` is computed from an attacker-controllable CI variable (GL
 
 **Recommended action**
 
-Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag list, or validate the value against an allowlist in a ``rules:`` guard before the job runs, so the trigger can't pick an attacker-controlled runner. (b) Stop writing ``CI_JOB_TOKEN`` (or other CI-managed credentials) to disk — use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
+Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag list, or validate the value against an allowlist in a ``rules:`` guard before the job runs, so the trigger can't pick an attacker-controlled runner. (b) Stop writing ``CI_JOB_TOKEN`` (or other CI-managed credentials) to disk, use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes. Doing (a) closes the targeting leg; (b) limits blast radius even if (a) is somehow bypassed because the token no longer outlives the step that consumes it.
 
 </div>
 
@@ -468,7 +472,7 @@ Break either leg of the chain. (a) Hard-code ``tags:`` to a specific runner-tag 
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-015 — Helm chart-supply-chain takeover via legacy + unlocked + plaintext { #ac-015 }
+### AC-015: Helm chart-supply-chain takeover via legacy + unlocked + plaintext { #ac-015 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1557</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> persistence</span> <span class="pg-tag pg-tag--owasp">helm</span>
@@ -486,7 +490,7 @@ A Helm chart simultaneously declares the legacy v1 schema (HELM-001), ships depe
 
 **Recommended action**
 
-Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism is available. Re-run ``helm dependency update`` to populate per-dependency ``sha256:`` digests in the lock and commit it alongside ``Chart.yaml``. Switch each ``dependencies[].repository`` to ``https://``, ``oci://``, or a ``file://`` sibling — Helm 3.8+ pulls OCI-hosted charts over HTTPS by default and is the recommended distribution shape. Removing any *one* of these three legs breaks this chain (the lock catches a swap on the next update; HTTPS catches it before the tarball lands; v2 makes the lock possible in the first place).
+Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism is available. Re-run ``helm dependency update`` to populate per-dependency ``sha256:`` digests in the lock and commit it alongside ``Chart.yaml``. Switch each ``dependencies[].repository`` to ``https://``, ``oci://``, or a ``file://`` sibling. Helm 3.8+ pulls OCI-hosted charts over HTTPS by default and is the recommended distribution shape. Removing any *one* of these three legs breaks this chain (the lock catches a swap on the next update; HTTPS catches it before the tarball lands; v2 makes the lock possible in the first place).
 
 </div>
 
@@ -494,13 +498,13 @@ Bump every chart to ``apiVersion: v2`` so the in-tree ``Chart.lock`` mechanism i
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-016 — OIDC role drift: ungated GitHub trust meets wildcard AWS authority { #ac-016 }
+### AC-016: OIDC role drift: ungated GitHub trust meets wildcard AWS authority { #ac-016 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
 </div>
 
-A GitHub Actions workflow requests an OIDC token without an ``environment:`` gate (GHA-030) AND the AWS IAM role it assumes carries a wildcard ``Action`` (IAM-002). Together, any branch — including a fork PR if the workflow is fork-runnable — can mint a token that maps to a role with broad authority over the account.
+A GitHub Actions workflow requests an OIDC token without an ``environment:`` gate (GHA-030) AND the AWS IAM role it assumes carries a wildcard ``Action`` (IAM-002). Together, any branch, including a fork PR if the workflow is fork-runnable, can mint a token that maps to a role with broad authority over the account.
 
 **References**
 
@@ -512,7 +516,7 @@ A GitHub Actions workflow requests an OIDC token without an ``environment:`` gat
 
 **Recommended action**
 
-Close either leg to break the chain. On the GitHub side: require an ``environment:`` key on every job that uses ``id-token: write``, and configure that environment with required reviewers + deployment-branch restrictions. On the AWS side: scope the role's policies to specific actions and resources — replace ``Action: '*'`` with the narrow set the workflow actually needs. Best is both: environment gate + least-privilege role + a ``token.actions.githubusercontent.com:sub`` condition in the role's trust policy that names the specific repo/ref.
+Close either leg to break the chain. On the GitHub side: require an ``environment:`` key on every job that uses ``id-token: write``, and configure that environment with required reviewers + deployment-branch restrictions. On the AWS side: scope the role's policies to specific actions and resources, replace ``Action: '*'`` with the narrow set the workflow actually needs. Best is both: environment gate + least-privilege role + a ``token.actions.githubusercontent.com:sub`` condition in the role's trust policy that names the specific repo/ref.
 
 </div>
 
@@ -520,7 +524,7 @@ Close either leg to break the chain. On the GitHub side: require an ``environmen
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-017 — Build cache poisoning that lands on a mutable ECR tag { #ac-017 }
+### AC-017: Build cache poisoning that lands on a mutable ECR tag { #ac-017 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> persistence -> impact</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
@@ -538,7 +542,7 @@ A GitHub Actions workflow's cache key derives from attacker-controllable input (
 
 **Recommended action**
 
-Close either leg to break the chain. On the GitHub side: the cache key must be deterministic from the build's own inputs (lockfile hash, source-tree hash) — never from PR-controlled context (``github.head_ref``, ``github.event.*.title``, etc.). On the AWS side: set ``imageTagMutability=IMMUTABLE`` on the ECR repository and reference images by digest in deployment manifests. Best is both: deterministic cache keys + immutable tags + digest-pinned consumers.
+Close either leg to break the chain. On the GitHub side: the cache key must be deterministic from the build's own inputs (lockfile hash, source-tree hash), never from PR-controlled context (``github.head_ref``, ``github.event.*.title``, etc.). On the AWS side: set ``imageTagMutability=IMMUTABLE`` on the ECR repository and reference images by digest in deployment manifests. Best is both: deterministic cache keys + immutable tags + digest-pinned consumers.
 
 </div>
 
@@ -546,13 +550,13 @@ Close either leg to break the chain. On the GitHub side: the cache key must be d
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-018 — Unpinned action lands on deploy job with no environment gate { #ac-018 }
+### AC-018: Unpinned action lands on deploy job with no environment gate { #ac-018 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
 </div>
 
-A workflow uses a third-party action pinned by tag rather than commit SHA (GHA-001) AND its deploy job has no ``environment:`` binding (GHA-014). A compromise of the upstream action maintainer's account — or a malicious release re-tagged under the existing version — runs in the deploy job's context without a required-reviewer gate, shipping attacker-controlled code to production on the next workflow trigger.
+A workflow uses a third-party action pinned by tag rather than commit SHA (GHA-001) AND its deploy job has no ``environment:`` binding (GHA-014). A compromise of the upstream action maintainer's account, or a malicious release re-tagged under the existing version, runs in the deploy job's context without a required-reviewer gate, shipping attacker-controlled code to production on the next workflow trigger.
 
 **References**
 
@@ -564,7 +568,7 @@ A workflow uses a third-party action pinned by tag rather than commit SHA (GHA-0
 
 **Recommended action**
 
-Pin every third-party action to a 40-char commit SHA (``actions/checkout@<sha> # v4.1.0``) and put deploy jobs behind a GitHub Environment that requires reviewer approval and restricts deployment branches. Either fix alone breaks the chain — the SHA pin removes the supply-chain leg, the environment gate removes the unattended-deploy leg. Best is both, plus a deployment-branch restriction so only ``main`` / ``release/*`` can reach the gated environment.
+Pin every third-party action to a 40-char commit SHA (``actions/checkout@<sha> # v4.1.0``) and put deploy jobs behind a GitHub Environment that requires reviewer approval and restricts deployment branches. Either fix alone breaks the chain, the SHA pin removes the supply-chain leg, the environment gate removes the unattended-deploy leg. Best is both, plus a deployment-branch restriction so only ``main`` / ``release/*`` can reach the gated environment.
 
 </div>
 
@@ -572,7 +576,7 @@ Pin every third-party action to a 40-char commit SHA (``actions/checkout@<sha> #
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-019 — Lambda env-secret meets a CI/CD role with PassRole * { #ac-019 }
+### AC-019: Lambda env-secret meets a CI/CD role with PassRole * { #ac-019 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">credential-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">aws</span>
@@ -598,13 +602,13 @@ Close either leg. On the Lambda side: move every env-var credential into Secrets
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-### AC-020 — Tekton hostPath build workload meets cluster-admin RBAC { #ac-020 }
+### AC-020: Tekton hostPath build workload meets cluster-admin RBAC { #ac-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">tekton</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
 </div>
 
-A Tekton Task mounts a hostPath volume or shares host namespaces (TKN-004) AND the cluster carries a ClusterRoleBinding granting cluster-admin (K8S-020). Anyone who can land code in a TaskRun has both an escape to the host filesystem and the API privileges needed to pivot the entire cluster — read every Secret, deploy privileged workloads across all nodes, impersonate any service account.
+A Tekton Task mounts a hostPath volume or shares host namespaces (TKN-004) AND the cluster carries a ClusterRoleBinding granting cluster-admin (K8S-020). Anyone who can land code in a TaskRun has both an escape to the host filesystem and the API privileges needed to pivot the entire cluster, read every Secret, deploy privileged workloads across all nodes, impersonate any service account.
 
 **References**
 
@@ -616,7 +620,7 @@ A Tekton Task mounts a hostPath volume or shares host namespaces (TKN-004) AND t
 
 **Recommended action**
 
-Replace the Task's ``hostPath`` volume with a Workspace (``workspaces`` declaration + per-TaskRun ``persistentVolumeClaim`` / ``emptyDir`` binding) — Tekton's native shape for sharing files between steps without exposing the node filesystem. Audit cluster ``ClusterRoleBindings``: cluster-admin should be reserved for a narrow human-operator group with break-glass access, never bound to a ServiceAccount or a broad Group. Even with hostPath in place, removing the cluster-admin grant breaks the API-pivot leg of this chain.
+Replace the Task's ``hostPath`` volume with a Workspace (``workspaces`` declaration + per-TaskRun ``persistentVolumeClaim`` / ``emptyDir`` binding). Tekton's native shape for sharing files between steps without exposing the node filesystem. Audit cluster ``ClusterRoleBindings``: cluster-admin should be reserved for a narrow human-operator group with break-glass access, never bound to a ServiceAccount or a broad Group. Even with hostPath in place, removing the cluster-admin grant breaks the API-pivot leg of this chain.
 
 </div>
 
@@ -624,13 +628,13 @@ Replace the Task's ``hostPath`` volume with a Workspace (``workspaces`` declarat
 
 <div class="pg-rule pg-rule--high" markdown>
 
-### AC-021 — Argo default-SA workflow lands on a default-SA RoleBinding { #ac-021 }
+### AC-021: Argo default-SA workflow lands on a default-SA RoleBinding { #ac-021 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">argo</span> <span class="pg-tag pg-tag--owasp">kubernetes</span>
 </div>
 
-An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a RoleBinding grants permissions to that default SA (K8S-029). Anyone who can submit a Workflow into the namespace runs code under whatever verbs the binding grants — turning ARGO-003 from a hygiene gap into a concrete privilege-escalation primitive.
+An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a RoleBinding grants permissions to that default SA (K8S-029). Anyone who can submit a Workflow into the namespace runs code under whatever verbs the binding grants, turning ARGO-003 from a hygiene gap into a concrete privilege-escalation primitive.
 
 **References**
 
@@ -642,7 +646,169 @@ An Argo Workflow runs as the namespace default ServiceAccount (ARGO-003) AND a R
 
 **Recommended action**
 
-On the Argo side: set ``spec.serviceAccountName: <workflow-runner>`` on every Workflow / WorkflowTemplate and bind that SA to a least-privilege Role. On the Kubernetes side: never grant verbs to ``default`` — every RoleBinding's ``subjects`` should name a workflow-specific SA. The fix on either side breaks the chain. Best is both: explicit per-workflow SAs across every namespace, plus deny rules / OPA policies that block any RoleBinding subject named ``default`` at admission time.
+On the Argo side: set ``spec.serviceAccountName: <workflow-runner>`` on every Workflow / WorkflowTemplate and bind that SA to a least-privilege Role. On the Kubernetes side: never grant verbs to ``default``, every RoleBinding's ``subjects`` should name a workflow-specific SA. The fix on either side breaks the chain. Best is both: explicit per-workflow SAs across every namespace, plus deny rules / OPA policies that block any RoleBinding subject named ``default`` at admission time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-022: GitLab script injection lands on deploy job with no manual gate { #ac-022 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">gitlab</span>
+</div>
+
+A ``.gitlab-ci.yml`` job interpolates an attacker-controlled context field directly into its ``script:`` (GL-002) AND a deploy job in the same file lacks a manual approval / protected ``environment:`` gate (GL-004). A crafted commit title or MR description from any branch the pipeline runs on injects a shell command into the build stage; the deploy stage then ships the resulting artifacts to production unattended.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+- <https://docs.gitlab.com/ee/ci/environments/protected_environments.html>
+- <https://docs.gitlab.com/ee/ci/yaml/#whenmanual>
+- <https://docs.gitlab.com/ee/ci/variables/predefined_variables.html>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: never interpolate ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` directly into a shell command. Bind the field to a job-scoped ``variables:`` entry and reference the variable inside double quotes (``echo "$TITLE"``), so the shell sees one literal argument rather than interpreted syntax. On the deploy side: gate every job that publishes artifacts, applies infrastructure, or pushes to a registry behind ``when: manual`` plus an ``environment:`` mapped to a *protected* environment in GitLab settings, and use ``rules:``/``only:`` to limit the job to the default branch. Either fix breaks the chain; doing both also closes off the same primitive against future rule additions.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-023: Tekton param injection lands in a privileged or root step { #ac-023 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1068</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">tekton</span>
+</div>
+
+A Tekton Task interpolates ``$(params.<name>)`` directly into a step's ``script:`` body without quoting (TKN-003) AND the same step runs ``privileged: true`` / ``runAsUser: 0`` / with node-level ``capabilities.add`` (TKN-002). A crafted PipelineRun param value, supplied via a webhook payload, GitOps merge, or fork-PR-triggered EventListener, injects a shell command that executes inside a kernel-privileged container, the two ingredients for a Kubernetes node escape.
+
+**References**
+
+- <https://tekton.dev/docs/pipelines/tasks/#using-variable-substitution>
+- <https://tekton.dev/docs/triggers/eventlisteners/>
+- <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating ``$(params.<name>)`` directly into a step's shell body. Pass the param through ``env:``. Tekton substitutes the param into the env value at run time, and the shell then sees a quoted variable (``"$FOO"``) rather than syntax it can interpret. On the privilege side: drop ``securityContext.privileged: true``, set ``runAsNonRoot: true`` + a non-zero ``runAsUser``, and list only the specific Linux capabilities the step needs (most build tooling needs none). Either fix breaks the chain, a non-privileged container makes the injection a hygiene smell rather than a node-escape primitive, and a quoted param removes the injection regardless of container capabilities. Best is both, plus a Pod Security Admission ``restricted`` label on the namespace to enforce the privilege side at admission time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-024: OIDC trust drift lands on a mutable ECR tag { #ac-024 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> impact</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">aws</span>
+</div>
+
+A GitHub Actions workflow requests an OIDC token without an environment-protected job (GHA-030) AND an ECR repository has mutable image tags (ECR-002). Any branch or fork PR that triggers the workflow obtains short-lived AWS credentials with no required-reviewer gate; if those credentials reach an ECR push role, the mutable-tag policy lets the workflow overwrite an existing tag (``:latest``, ``:v1.2.3``) and the substituted image propagates to every downstream consumer that pulls by name.
+
+**References**
+
+- <https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect>
+- <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html>
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-09-Improper-Artifact-Integrity-Validation>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Either fix breaks the chain. On the GitHub side: bind any job that requests ``id-token: write`` to a GitHub Environment with required-reviewer protection, and pin the IAM trust policy's ``token.actions.githubusercontent.com:sub`` claim to a specific repo + ref pattern (``repo:owner/repo:ref:refs/heads/main``) so a fork PR can't redeem the role. On the AWS side: set ``imageTagMutability=IMMUTABLE`` on every ECR repository consumed in production, and reference images by digest (``@sha256:...``) in deployment manifests so tag substitution can't propagate even if a push slips through. Best is both: gated OIDC + immutable tags + digest-pinned consumers.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-025: Argo param injection lands in a privileged or root step { #ac-025 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1068</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1611</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> privilege-escalation</span> <span class="pg-tag pg-tag--owasp">argo</span>
+</div>
+
+An Argo Workflow / WorkflowTemplate interpolates ``{{inputs.parameters.<name>}}`` / ``{{workflow.parameters.<name>}}`` directly into a template's ``script.source`` or container ``command``/``args`` without quoting (ARGO-005) AND the same template runs ``privileged: true`` / ``runAsUser: 0`` / with node-level ``capabilities.add`` (ARGO-002). A crafted param value supplied via an Argo Events Sensor webhook, a CronWorkflow trigger, or a WorkflowEventBinding fork-PR path injects a shell command that executes inside a kernel-privileged container, the two ingredients for a Kubernetes node escape, regardless of what the workflow's ServiceAccount can reach via the API.
+
+**References**
+
+- <https://argo-workflows.readthedocs.io/en/latest/walk-through/parameters/>
+- <https://argoproj.github.io/argo-events/sensors/sensor/>
+- <https://argo-workflows.readthedocs.io/en/latest/workflow-of-workflows/>
+- <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating ``{{inputs.parameters.<name>}}`` / ``{{workflow.parameters.<name>}}`` directly into a template's shell body. Bind the param to a template ``env:`` entry (``env: [{name: FOO, value: '{{inputs.parameters.foo}}'}]``) and reference the env var inside double quotes (``echo "$FOO"``). Argo substitutes into env values, the shell then sees one literal argument rather than interpreted syntax. On the privilege side: drop ``securityContext.privileged: true``, set ``runAsNonRoot: true`` + a non-zero ``runAsUser``, and list only the specific Linux capabilities the step needs. Either fix breaks the chain, a non-privileged container makes the injection a hygiene smell rather than a node-escape primitive, and a quoted param removes the injection regardless of container capabilities. Best is both, plus a Pod Security Admission ``restricted`` label on the namespace to enforce the privilege side at admission time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-026: Buildkite injection lands on auto-deploy step with no manual gate { #ac-026 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1556</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> impact</span> <span class="pg-tag pg-tag--owasp">buildkite</span>
+</div>
+
+A ``pipeline.yml`` interpolates an untrusted Buildkite variable (``$BUILDKITE_MESSAGE``, ``$BUILDKITE_BRANCH``, ``$BUILDKITE_PULL_REQUEST_TITLE``, etc.) into a step's ``command:`` body (BK-003) AND a deploy-named step in the same pipeline runs without a ``manual:`` or ``input:`` gate (BK-007). The combination converts a fork-controllable injection point into an unattended production push, the Buildkite analog of AC-002 / AC-022 on the GitHub and GitLab surfaces.
+
+**References**
+
+- <https://buildkite.com/docs/pipelines/environment-variables>
+- <https://buildkite.com/docs/pipelines/block-step>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-01-Insufficient-Flow-Control-Mechanisms>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the injection side: stop interpolating Buildkite metadata variables directly into ``command:`` bodies. Bind the value through ``env:`` instead (``env: { MSG: "$BUILDKITE_MESSAGE" }`` then reference ``"$MSG"`` inside the command) so the shell sees a quoted variable rather than syntax it can interpret. On the gate side: every deploy-named step should carry a ``manual:`` block (or be preceded by a separate ``input:`` step) so a human reviewer acknowledges the deploy. Configure the manual block's ``branches:`` filter and the surrounding step's ``branches:`` filter together so a fork PR build can't trigger production. Either fix breaks the chain; both is best.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-027: Image bakes a credential file AND exposes a remote-access port { #ac-027 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1190</span> <span class="pg-tag" title="kill-chain phase">credential-access -> initial-access -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">dockerfile</span>
+</div>
+
+A ``Dockerfile`` ``COPY`` / ``ADD`` source path names a credential file (``id_rsa``, ``.aws/credentials``, ``.npmrc``, ``.kube/config``, etc.: DF-019) AND the same image ``EXPOSE`` s a sensitive remote-access port (22, 23, 21, 3389, 5900, common database / cache / search ports: DF-013). The image ships a key and a way to reach it from the outside; pulling a public mirror or exfiltrating a single CI build artifact yields both halves of the credential-and-listener pair.
+
+**References**
+
+- <https://docs.docker.com/build/building/best-practices/#exclude-with-dockerignore>
+- <https://docs.docker.com/engine/security/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-06-Insufficient-Credential-Hygiene>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential out of the image. Mount it at runtime: a Kubernetes secret (or projected SA token), AWS Secrets Manager / GCP Secret Manager / Vault for cloud creds, or a container-level env var sourced from the orchestrator. The image stops being a leak surface the moment the credential isn't baked in. Drop the ``EXPOSE`` for the remote-access daemon: the container runtime's exec path (``docker exec`` / ``kubectl exec``) covers every legitimate debugging use without opening a port or shipping an extra daemon. Either fix breaks the chain on its own. Add a ``.dockerignore`` rule to keep credential files out of build context as a third layer; the COPY can't bake in what the build never sees.
 
 </div>
 

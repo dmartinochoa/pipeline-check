@@ -24,7 +24,7 @@ _EXAMPLE_KEY_RE = re.compile(
     r"readme|changelog)\b"
 )
 
-# Inline example markers — deliberately narrow. Must appear attached
+# Inline example markers, deliberately narrow. Must appear attached
 # to a comment marker or assignment, NOT in free text. Matching a bare
 # word like "example" anywhere in the window would false-suppress on
 # ``example.com`` (RFC 2606 reserved domain used by real attackers as
@@ -33,7 +33,7 @@ _EXAMPLE_KEY_RE = re.compile(
 #
 # The comment marker must start a line (with optional leading
 # whitespace) so ``//`` inside a URL like ``https://example.com`` does
-# not trigger suppression — that false-positive would silence CRITICAL
+# not trigger suppression. That false-positive would silence CRITICAL
 # findings (reverse shells, exfil channels) any time a workflow
 # happened to reference an RFC 2606 example domain.
 _EXAMPLE_INLINE_RE = re.compile(
@@ -53,16 +53,16 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
 
     Two heuristics, both conservative:
 
-    1. **YAML ancestor chain** — walk all preceding ``^<indent>key:``
+    1. **YAML ancestor chain**, walk all preceding ``^<indent>key:``
        declarations with strictly less indent than the line containing
        *match_start*. If any ancestor's key matches an example marker,
        the match lives inside an example/fixture block.
-    2. **Inline comment marker** — a comment line preceding the match
+    2. **Inline comment marker**, a comment line preceding the match
        that labels the block as an example (``# example:``,
        ``// sample``).
 
     Bare occurrences of "example" in free text (e.g. ``example.com``
-    as a lure hostname) do NOT trigger suppression — inline detection
+    as a lure hostname) do NOT trigger suppression, inline detection
     requires an explicit comment or assignment marker.
     """
     # Line containing the match.
@@ -89,7 +89,7 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
         if _EXAMPLE_KEY_RE.search(name):
             return True
 
-    # HCL attribute: ``<name> = ...`` — no indentation semantics in
+    # HCL attribute: ``<name> = ...``, no indentation semantics in
     # HCL so scope the walk to a local window.
     prior = blob[max(0, match_start - window):match_start]
     for m in re.finditer(r"(?m)^\s*([A-Za-z_][\w-]*)\s*=", prior):
@@ -105,7 +105,7 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
 # install.sh via their own CDN. A ``curl … | bash`` against one of
 # these is an established idiom, not a smoking gun. Findings that
 # match only against this list should be LOW-confidence, not a hard
-# fail — the user should still consider cryptographic verification,
+# fail, the user should still consider cryptographic verification,
 # but the finding shouldn't gate every PR that installs Docker.
 _KNOWN_INSTALLERS: frozenset[str] = frozenset({
     "get.docker.com",
@@ -130,7 +130,7 @@ def is_known_installer(url: str) -> bool:
 
     Matches by substring so query strings / path variations don't
     cause spurious misses. The allowlist is intentionally conservative
-    — adding a new entry should require evidence that the installer
+   , adding a new entry should require evidence that the installer
     uses HTTPS with cryptographic trust (either sigstore / notary or
     a published GPG key).
     """

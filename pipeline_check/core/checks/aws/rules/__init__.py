@@ -1,4 +1,4 @@
-"""AWS rule modules — auto-discovered by ``AWSRuleChecks``.
+"""AWS rule modules, auto-discovered by ``AWSRuleChecks``.
 
 Each rule module exports:
 

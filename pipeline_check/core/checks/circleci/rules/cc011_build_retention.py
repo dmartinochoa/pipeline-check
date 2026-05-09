@@ -1,4 +1,4 @@
-"""CC-011 — Jobs should archive test results for traceability."""
+"""CC-011. Jobs should archive test results for traceability."""
 from __future__ import annotations
 
 from typing import Any

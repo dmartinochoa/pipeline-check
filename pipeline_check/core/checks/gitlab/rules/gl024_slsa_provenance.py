@@ -1,4 +1,4 @@
-"""GL-024 — GitLab pipeline must emit SLSA provenance attestation."""
+"""GL-024. GitLab pipeline must emit SLSA provenance attestation."""
 from __future__ import annotations
 
 from typing import Any
@@ -17,7 +17,7 @@ RULE = Rule(
         "Add a job that runs ``cosign attest`` against a "
         "``provenance.intoto.jsonl`` statement, or adopt a SLSA-aware "
         "builder (the SLSA project ships GitLab templates). Signing "
-        "the artifact (GL-006) isn't enough for SLSA L3 — the "
+        "the artifact (GL-006) isn't enough for SLSA L3, the "
         "attestation describes *how* the build ran."
     ),
     docs_note=(

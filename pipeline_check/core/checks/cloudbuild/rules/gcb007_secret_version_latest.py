@@ -1,10 +1,10 @@
-"""GCB-007 — ``availableSecrets`` references a rolling ``versions/latest``.
+"""GCB-007, ``availableSecrets`` references a rolling ``versions/latest``.
 
 Secret Manager secret versions are immutable once created, but the
 ``versions/latest`` alias rolls to whatever version is newest at the
 time the build executes. A build that references
 ``projects/.../secrets/<name>/versions/latest`` therefore pulls a
-different value any time a new version is published — and a
+different value any time a new version is published, and a
 compromised principal with ``roles/secretmanager.admin`` on that
 project can publish a new version that the next build will transparently
 consume.
@@ -45,7 +45,7 @@ RULE = Rule(
     docs_note=(
         "``versions/latest`` is documented as a rolling alias. A build "
         "run on Monday and a re-run on Tuesday can consume different "
-        "secret bodies without any change to ``cloudbuild.yaml`` — "
+        "secret bodies without any change to ``cloudbuild.yaml``, "
         "breaking the reproducibility invariant that pinning protects."
     ),
 )

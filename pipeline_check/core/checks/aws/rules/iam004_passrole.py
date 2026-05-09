@@ -1,4 +1,4 @@
-"""IAM-004 — CI/CD role grants iam:PassRole with Resource:'*'."""
+"""IAM-004. CI/CD role grants iam:PassRole with Resource:'*'."""
 from __future__ import annotations
 
 from ..._iam_policy import passrole_wildcard
@@ -39,7 +39,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             desc = f"{error}. Cannot verify iam:PassRole scope for '{role_name}'."
         elif offenders:
             desc = (
-                f"Policy/policies {offenders} grant iam:PassRole with Resource: '*' — "
+                f"Policy/policies {offenders} grant iam:PassRole with Resource: '*', "
                 f"a classic privilege-escalation path."
             )
         else:

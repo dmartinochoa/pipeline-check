@@ -2,11 +2,11 @@
 
 Individual CC-* checks each live in their own module under
 ``pipeline_check/core/checks/circleci/rules/``. This module is a
-thin driver — ``discover_rules`` auto-imports every rule at
+thin driver, ``discover_rules`` auto-imports every rule at
 construction time and the orchestrator runs each against every
 loaded config document.
 
-Adding a check is a one-file change — drop ``ccNNN_<name>.py`` into
+Adding a check is a one-file change, drop ``ccNNN_<name>.py`` into
 ``rules/`` exporting ``RULE`` and ``check``. The orchestrator, the
 test fixtures catalog, and the provider reference doc all pick it
 up automatically.

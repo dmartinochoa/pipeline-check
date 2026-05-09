@@ -1,4 +1,4 @@
-"""JF-016 — remote script piped to shell interpreter."""
+"""JF-016, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from ..._primitives import remote_script_exec
@@ -23,6 +23,14 @@ RULE = Rule(
         "inside a Jenkinsfile. An attacker who controls the remote "
         "endpoint (or poisons DNS / CDN) gains arbitrary code "
         "execution in the build agent."
+    ),
+    known_fp=(
+        "Established vendor installers (get.docker.com, sh.rustup.rs, "
+        "bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) "
+        "ship via HTTPS from their own CDN and are idiomatic. This "
+        "rule defaults to LOW confidence so CI gates can ignore them "
+        "with --min-confidence MEDIUM; the finding still surfaces so "
+        "teams that want cryptographic verification can audit.",
     ),
 )
 

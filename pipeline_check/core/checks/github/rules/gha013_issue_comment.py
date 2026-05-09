@@ -1,4 +1,4 @@
-"""GHA-013 — issue_comment trigger must guard on author association."""
+"""GHA-013, issue_comment trigger must guard on author association."""
 from __future__ import annotations
 
 import re
@@ -58,7 +58,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # Look for author-association or actor guards in job/workflow if: conditions.
     guarded = False
     # Check workflow-level if: (uncommon but valid).
-    # Scan entire doc as text for the guard patterns — they must appear
+    # Scan entire doc as text for the guard patterns. They must appear
     # in an `if:` expression somewhere to be effective.
     from ...base import blob_lower
     blob = blob_lower(doc)
@@ -77,7 +77,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     )
     locations: list[Location] = []
     if not passed:
-        # Anchor on the workflow's ``on:`` block — that's where the
+        # Anchor on the workflow's ``on:`` block, that's where the
         # missing guard lives. The loader's str-key shim normalises
         # the YAML 1.1 ``on`` -> ``True`` quirk, so a plain ``"on"``
         # lookup is sufficient. Falls back to the doc's own line

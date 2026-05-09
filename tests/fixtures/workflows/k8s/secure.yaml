@@ -252,3 +252,63 @@ spec:
                 name: secure-app-lb
                 port:
                   number: 443
+---
+# K8S-036: ServiceAccount imagePullSecret references an existing Secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-creds
+  namespace: secure-apps
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: '{"auths":{}}'
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secure-app-puller
+  namespace: secure-apps
+automountServiceAccountToken: false
+imagePullSecrets:
+  - name: registry-creds
+---
+# K8S-037: ConfigMap holds non-sensitive config only — endpoint URL,
+# log level. No credential-shaped keys, no AKIA values.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secure-app-config
+  namespace: secure-apps
+data:
+  app.endpoint: "https://api.example.com"
+  app.log_level: "info"
+---
+# K8S-038: NetworkPolicy names explicit peers (no empty from / to).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-app-allow-frontend
+  namespace: secure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-app
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8443
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              role: kube-system
+      ports:
+        - protocol: TCP
+          port: 53

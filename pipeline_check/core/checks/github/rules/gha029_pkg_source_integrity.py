@@ -1,8 +1,8 @@
-"""GHA-029 — package install from git URL / local path / tarball URL.
+"""GHA-029, package install from git URL / local path / tarball URL.
 
 GHA-021 catches install commands that skip the lockfile flag. This
 rule catches the adjacent class: installs that do run a resolver
-but aim it at a source the lockfile cannot protect — unpinned git
+but aim it at a source the lockfile cannot protect, unpinned git
 URLs (``git+https://…`` without a commit SHA), local paths
 (``./dir``, ``file:…``, absolute paths), and direct tarball
 downloads.

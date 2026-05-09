@@ -1,4 +1,4 @@
-"""GCB-001 — Cloud Build step ``name:`` image must be digest-pinned.
+"""GCB-001. Cloud Build step ``name:`` image must be digest-pinned.
 
 Every step in a Cloud Build YAML runs the container referenced by
 ``name:``. Google-published builder images (``gcr.io/cloud-builders/*``

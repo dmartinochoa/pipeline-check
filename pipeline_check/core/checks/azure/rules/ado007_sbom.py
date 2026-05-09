@@ -1,4 +1,4 @@
-"""ADO-007 — pipeline should produce an SBOM."""
+"""ADO-007, pipeline should produce an SBOM."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-D-SBOM",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add an SBOM step — `microsoft/sbom-tool`, `syft . -o "
+        "Add an SBOM step, `microsoft/sbom-tool`, `syft . -o "
         "cyclonedx-json`, or `anchore/sbom-action`. Publish the SBOM "
         "as a pipeline artifact so downstream consumers can ingest it."
     ),
@@ -31,7 +31,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

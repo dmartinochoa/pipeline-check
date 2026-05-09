@@ -1,4 +1,4 @@
-"""AWS rule orchestrator — runs every rule under ``aws/rules/``.
+"""AWS rule orchestrator, runs every rule under ``aws/rules/``.
 
 Mirrors the GitHub/GitLab/etc rule-based providers: a single orchestrator
 class auto-discovers rules, hands each one a shared
@@ -138,7 +138,7 @@ class AWSRuleChecks(AWSBaseCheck):
     def run(self) -> list[Finding]:
         catalog = ResourceCatalog(self.session)
         # Collect (rule, batch) pairs first so we can drop findings whose
-        # service errored during *any* rule's enumeration — otherwise the
+        # service errored during *any* rule's enumeration, otherwise the
         # first rule to trip an API failure emits a misleading "no
         # resources" finding alongside the subsequent degraded entry.
         pending: list[tuple[str, list[Finding]]] = []
@@ -161,7 +161,7 @@ class AWSRuleChecks(AWSBaseCheck):
             prefix = rule_id.split("-", 1)[0]
             svc = _RULE_PREFIX_TO_SERVICE.get(prefix)
             if svc in degraded_services:
-                # Suppress this rule's output — a <PREFIX>-000 will cover it.
+                # Suppress this rule's output, a <PREFIX>-000 will cover it.
                 continue
             findings.extend(batch)
 

@@ -1,4 +1,4 @@
-"""TKN-003 — Param interpolation in step ``script:`` is unsafe."""
+"""TKN-003. Param interpolation in step ``script:`` is unsafe."""
 from __future__ import annotations
 
 import re

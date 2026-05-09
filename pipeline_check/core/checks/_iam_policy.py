@@ -2,7 +2,7 @@
 
 Policy documents are the same shape regardless of how they were fetched
 (boto3 GetPolicyVersion vs Terraform plan JSON). Keeping the walk/filter
-logic here prevents the two providers from drifting — e.g. a new
+logic here prevents the two providers from drifting, e.g. a new
 ``iam:PassRole`` variant or a new sensitive service prefix only needs to
 land in one place.
 """
@@ -96,7 +96,7 @@ def passrole_wildcard(doc: dict[str, Any], ignore_constrained: bool = False) -> 
 #: Tokens suggesting an OIDC identity-provider federation (GitHub
 #: Actions, GitLab CI, Terraform Cloud, BuildKite, CircleCI, Bitbucket,
 #: Azure DevOps). Trust statements referencing any of these must also
-#: pin an audience and a subject prefix — otherwise any workflow in
+#: pin an audience and a subject prefix, otherwise any workflow in
 #: any GitHub org can assume the role.
 OIDC_FEDERATION_HOSTS = (
     "token.actions.githubusercontent.com",

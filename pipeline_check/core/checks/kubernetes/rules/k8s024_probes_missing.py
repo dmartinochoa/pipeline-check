@@ -1,4 +1,4 @@
-"""K8S-024 — Container missing livenessProbe and readinessProbe."""
+"""K8S-024. Container missing livenessProbe and readinessProbe."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -25,7 +25,7 @@ RULE = Rule(
         "blast radius of a single faulty replica."
     ),
     docs_note=(
-        "Init containers and ephemeral debug containers are exempt — "
+        "Init containers and ephemeral debug containers are exempt, "
         "neither makes sense to probe. Jobs and CronJobs are also "
         "exempt because Kubernetes treats them as one-shot work; "
         "completion is the lifecycle signal, not health."

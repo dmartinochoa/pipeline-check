@@ -1,4 +1,4 @@
-"""BB-017 — repository token written to persistent storage."""
+"""BB-017, repository token written to persistent storage."""
 from __future__ import annotations
 
 import re

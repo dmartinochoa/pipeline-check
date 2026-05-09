@@ -1,4 +1,4 @@
-"""DF-006 — ``ENV`` / ``ARG`` carries a credential-shaped literal value."""
+"""DF-006, ``ENV`` / ``ARG`` carries a credential-shaped literal value."""
 from __future__ import annotations
 
 from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
@@ -15,14 +15,14 @@ RULE = Rule(
     cwe=("CWE-798",),
     recommendation=(
         "Never hard-code credentials in a Dockerfile. ``ENV`` values "
-        "are baked into the image layer history — even if the value is "
+        "are baked into the image layer history, even if the value is "
         "later overwritten, ``docker history --no-trunc`` reads the "
         "original. Use ``RUN --mount=type=secret`` for build-time "
         "secrets or runtime env injection (``docker run -e SECRET=…``) "
         "for runtime ones. Rotate any secret already exposed."
     ),
     docs_note=(
-        "Reuses ``_primitives/secret_shapes`` — flags AKIA-prefixed "
+        "Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed "
         "AWS keys outright (the literal AWS access-key shape) and "
         "credential-named keys (``API_KEY``, ``DB_PASSWORD``, "
         "``SECRET_TOKEN``) when the value is a non-empty literal."
@@ -33,7 +33,7 @@ RULE = Rule(
 def _looks_literal(value: str) -> bool:
     """A non-empty value that doesn't look like a build-arg / env-var
     indirection. Indirection forms (``$VAR``, ``${VAR}``, ``''``) are
-    safe — they receive their actual content at build / run time."""
+    safe. They receive their actual content at build / run time."""
     if not value:
         return False
     if value.startswith("$"):
@@ -48,7 +48,7 @@ def check(df: Dockerfile) -> Finding:
     locations: list[Location] = []
     for line_no, key, value in env_pairs(df):
         hit = False
-        # Direct AWS-key shape match — flag regardless of key name.
+        # Direct AWS-key shape match, flag regardless of key name.
         if AWS_KEY_RE.search(value):
             offenders.append(f"L{line_no}: {key} (AKIA-shaped value)")
             hit = True

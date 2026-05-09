@@ -1,4 +1,4 @@
-"""K8S-010 — Container seccompProfile not set to RuntimeDefault/Localhost."""
+"""K8S-010. Container seccompProfile not set to RuntimeDefault/Localhost."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,14 +23,14 @@ RULE = Rule(
         "Set ``securityContext.seccompProfile.type: RuntimeDefault`` "
         "(or ``Localhost`` with a path to your tuned profile) at "
         "either pod or container level. Without seccomp, every "
-        "syscall is reachable from the container — modern kernel "
+        "syscall is reachable from the container, modern kernel "
         "CVEs (e.g. ``io_uring``) become trivially exploitable."
     ),
     docs_note=(
         "Pod-level ``securityContext.seccompProfile`` covers all "
         "containers in the pod. Either path passes this rule. The "
         "default of ``Unconfined`` (or unset, which inherits the "
-        "node default — usually Unconfined) fails."
+        "node default, usually Unconfined) fails."
     ),
 )
 

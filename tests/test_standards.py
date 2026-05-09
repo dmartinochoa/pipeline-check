@@ -369,13 +369,13 @@ class TestPerFrameworkCoverageFloor:
     # number — that's the ratchet.
     FLOORS: dict[str, int] = {
         "owasp_cicd_top_10":   100,
-        "nist_csf_2":           60,
+        "nist_csf_2":           70,
         "esf_supply_chain":     60,
         "openssf_scorecard":    58,
         "nist_800_53":          55,
         "nist_800_190":         45,
         "slsa":                 42,
-        "soc2":                 40,
+        "soc2":                 49,
         "cis_supply_chain":     28,
         "s2c2f":                29,
         "nist_ssdf":            18,
@@ -385,6 +385,11 @@ class TestPerFrameworkCoverageFloor:
         # Foundations analog. The floor caps catalog-wide coverage
         # at the AWS-pack share, not the full 363 rules.
         "cis_aws_foundations":  10,
+        # cis_kubernetes is also intentionally narrow: only the K8s
+        # pack (and a few Helm-rendered K8s rules) map to it. The
+        # floor caps coverage at the K8s-pack share — most of the
+        # catalog is non-K8s and never enters the denominator.
+        "cis_kubernetes":        7,
     }
 
     def test_floors_hold(self):

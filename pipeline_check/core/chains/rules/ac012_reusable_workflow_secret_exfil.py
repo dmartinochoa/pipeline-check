@@ -1,4 +1,4 @@
-"""AC-012 — Reusable Workflow Secret Exfiltration (GitHub Actions).
+"""AC-012. Reusable Workflow Secret Exfiltration (GitHub Actions).
 
 A reusable workflow whose ``uses:`` ref is mutable (tag / branch
 rather than a 40-char SHA) AND that's called with ``secrets:
@@ -9,13 +9,13 @@ under cover of GitHub's normal reusable-workflow plumbing.
 
 Distinct from:
 
-  * AC-001 — fork-PR credential theft via ``pull_request_target``.
-  * AC-009 — repo-poisoning combo with multiple GHA-* findings on
+  * AC-001, fork-PR credential theft via ``pull_request_target``.
+  * AC-009, repo-poisoning combo with multiple GHA-* findings on
     the same workflow.
 
 The chain fires when both GHA-025 (reusable workflow not pinned to
 SHA) and GHA-034 (``secrets: inherit``) fire on the *same* workflow
-file. A different-workflow combo is not the same threat — the
+file. A different-workflow combo is not the same threat, the
 secret surface is decided per call site, not at the catalog level.
 """
 from __future__ import annotations
@@ -72,7 +72,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             "  1. A reusable-workflow ``uses:`` ref is pinned to a "
             "tag or branch rather than a commit SHA (GHA-025). The "
             "callee repo's owner can repoint that ref to any commit "
-            "they choose — including one that exfiltrates whatever "
+            "they choose, including one that exfiltrates whatever "
             "secrets it receives.\n"
             "  2. The same call site passes ``secrets: inherit`` "
             "(GHA-034). Every caller-defined secret reachable to the "

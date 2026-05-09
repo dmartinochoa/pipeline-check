@@ -1,4 +1,4 @@
-"""DF-005 — ``RUN`` body uses dangerous shell-eval idioms."""
+"""DF-005, ``RUN`` body uses dangerous shell-eval idioms."""
 from __future__ import annotations
 
 from ..._primitives import shell_eval
@@ -22,7 +22,7 @@ RULE = Rule(
         "inside a Dockerfile."
     ),
     docs_note=(
-        "Reuses ``_primitives/shell_eval.scan`` — same primitive used "
+        "Reuses ``_primitives/shell_eval.scan``, same primitive used "
         "by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so "
         "the safe / unsafe vocabulary matches across the tool."
     ),

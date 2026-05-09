@@ -1,4 +1,4 @@
-"""ECR-005 — ECR repository uses AES256 (AWS-managed) encryption, not KMS CMK."""
+"""ECR-005. ECR repository uses AES256 (AWS-managed) encryption, not KMS CMK."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -18,7 +18,7 @@ RULE = Rule(
         "Same shape as CP-002 / CWL-002 / CCM-002: AES256 (the "
         "AWS-managed default) gives confidentiality at rest but no "
         "key-policy or CloudTrail Decrypt-event story. Container "
-        "images are arguably sensitive intellectual property — the "
+        "images are arguably sensitive intellectual property, the "
         "same key-policy + audit shape as build outputs in S3 is "
         "warranted."
     ),

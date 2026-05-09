@@ -1,4 +1,4 @@
-"""BB-001 — `pipe:` references must be pinned to a full semver or SHA."""
+"""BB-001, `pipe:` references must be pinned to a full semver or SHA."""
 from __future__ import annotations
 
 from typing import Any

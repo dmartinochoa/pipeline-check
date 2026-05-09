@@ -1,4 +1,4 @@
-"""BK-005 — ``docker run --privileged`` in step commands."""
+"""BK-005, ``docker run --privileged`` in step commands."""
 from __future__ import annotations
 
 from typing import Any

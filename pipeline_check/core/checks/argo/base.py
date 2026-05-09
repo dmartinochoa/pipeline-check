@@ -4,10 +4,10 @@ Parses multi-doc YAML files and keeps documents whose ``apiVersion``
 is ``argoproj.io/v1alpha1`` (or any future ``argoproj.io/*``).
 Recognized kinds:
 
-  - ``Workflow``                  — concrete run instance
-  - ``WorkflowTemplate``          — namespaced template
-  - ``ClusterWorkflowTemplate``   — cluster-scoped template
-  - ``CronWorkflow``              — cron-triggered Workflow
+  - ``Workflow``                 , concrete run instance
+  - ``WorkflowTemplate``         , namespaced template
+  - ``ClusterWorkflowTemplate``  , cluster-scoped template
+  - ``CronWorkflow``             , cron-triggered Workflow
 
 Rules iterate ``self.ctx.docs``; helpers below normalize template
 walking so a rule can iterate every container / script regardless of

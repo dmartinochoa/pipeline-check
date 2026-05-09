@@ -1,4 +1,4 @@
-"""BK-003 — Attacker-controllable env vars interpolated into commands."""
+"""BK-003. Attacker-controllable env vars interpolated into commands."""
 from __future__ import annotations
 
 import re
@@ -51,7 +51,7 @@ _TAINTED_VARS = (
 )
 
 # Match ``$VAR`` or ``${VAR}`` (but not ``\$VAR`` or ``"$VAR"`` when
-# already quoted — Buildkite pipeline.yml is parsed before the shell,
+# already quoted. Buildkite pipeline.yml is parsed before the shell,
 # so the YAML value is what gets handed to the agent). The trailing
 # negative lookahead prevents matching tainted names that are merely
 # a prefix of a longer identifier (e.g. ``$BUILDKITE_BRANCH_FOO``).

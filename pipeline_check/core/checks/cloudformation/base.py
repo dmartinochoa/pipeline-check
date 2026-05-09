@@ -38,7 +38,7 @@ class CloudFormationResource:
     logical_id: str            # e.g. "MyCodeBuildProject"
     type: str                  # e.g. "AWS::CodeBuild::Project"
     properties: dict[str, Any] # parsed Properties block (may contain intrinsics)
-    #: Resource-level attributes outside ``Properties`` — ``DeletionPolicy``,
+    #: Resource-level attributes outside ``Properties``, ``DeletionPolicy``,
     #: ``UpdateReplacePolicy``, ``Metadata``, ``Condition``, etc. Useful for
     #: CFN-idiomatic checks that care about lifecycle protections.
     attributes: dict[str, Any]
@@ -58,7 +58,7 @@ class CloudFormationContext:
         #: Merged ``Parameters[name].Default`` values across every template.
         #: Used by :func:`resolve_literal` to substitute ``Ref`` / ``Fn::Sub``
         #: references against the author-declared defaults. Pseudo-parameters
-        #: (``AWS::Region`` et al.) are intentionally absent — they are only
+        #: (``AWS::Region`` et al.) are intentionally absent. They are only
         #: resolvable at stack creation and rules should skip on them.
         self._parameter_defaults: dict[str, Any] = {}
         for _path, template in templates:
@@ -140,7 +140,7 @@ class CloudFormationBaseCheck(BaseCheck):
 
 
 # ---------------------------------------------------------------------------
-# Parser — YAML loader with CFN intrinsic-tag constructors
+# Parser. YAML loader with CFN intrinsic-tag constructors
 # ---------------------------------------------------------------------------
 
 class _CfnSafeLoader(yaml.SafeLoader):
@@ -149,7 +149,7 @@ class _CfnSafeLoader(yaml.SafeLoader):
     Subclassed rather than modifying ``yaml.SafeLoader`` directly so
     that other YAML parsing in the codebase (workflow providers) keeps
     its strict behavior. PyYAML looks up constructors by
-    ``(loader_class, tag)`` — registering on the subclass keeps the
+    ``(loader_class, tag)``, registering on the subclass keeps the
     effect scoped.
     """
 
@@ -193,8 +193,18 @@ def _make_constructor(fn_key: str) -> Callable[[yaml.Loader, yaml.Node], dict[st
             return {fn_key: value}
         if isinstance(node, yaml.SequenceNode):
             return {fn_key: loader.construct_sequence(node, deep=True)}
-        # MappingNode (rare — e.g. !Sub with variable-map form)
-        return {fn_key: loader.construct_mapping(node, deep=True)}
+        # MappingNode (rare, e.g. !Sub with variable-map form). The
+        # isinstance narrows the static type for ``construct_mapping``,
+        # which the types-PyYAML stub spells as ``MappingNode`` rather
+        # than the broader ``Node``.
+        if isinstance(node, yaml.MappingNode):
+            return {fn_key: loader.construct_mapping(node, deep=True)}
+        raise yaml.constructor.ConstructorError(
+            None, None,
+            f"unsupported node type {type(node).__name__} for "
+            f"intrinsic {fn_key}",
+            node.start_mark,
+        )
     return _construct
 
 
@@ -203,7 +213,7 @@ for _tag, _fn in _INTRINSIC_TAGS.items():
 
 
 def _parse_template(text: str) -> Any:
-    """Parse *text* as a CFN template — JSON first (strict), YAML fallback.
+    """Parse *text* as a CFN template. JSON first (strict), YAML fallback.
 
     JSON templates don't contain intrinsic tags so the json path is
     both faster and safer; falling back to YAML only on failure
@@ -260,7 +270,7 @@ def is_true(value: Any) -> bool:
     ``"true"``/``"false"``, or an unresolved intrinsic dict. A rule that
     asks "is this flag explicitly enabled?" should treat anything
     unresolved as False so the template must make the safe default
-    explicit — shift-left can't wait for runtime resolution.
+    explicit, shift-left can't wait for runtime resolution.
     """
     if value is True:
         return True
@@ -285,7 +295,7 @@ def as_str(value: Any) -> str:
     """Return *value* rendered as a literal string, or empty for intrinsics.
 
     Used by rules that match on string prefixes/suffixes (image names,
-    ARNs) — they should skip unresolved values rather than false-match
+    ARNs). They should skip unresolved values rather than false-match
     on ``{"Ref": "..."}``.
     """
     return value if isinstance(value, str) else ""
@@ -318,7 +328,7 @@ def resolve_literal(value: Any, parameters: dict[str, Any] | None = None) -> str
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
-        # bool must be checked before int — bool is a subclass of int.
+        # bool must be checked before int, bool is a subclass of int.
         return "true" if value else "false"
     if isinstance(value, (int, float)):
         return str(value)

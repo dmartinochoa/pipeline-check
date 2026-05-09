@@ -1,4 +1,4 @@
-"""S3-003 — CodePipeline artifact bucket has versioning disabled."""
+"""S3-003. CodePipeline artifact bucket has versioning disabled."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
         "previous content of an object survives until lifecycle "
         "expires it. Without versioning, an artifact overwrite (a "
         "bad pipeline run, a malicious replacement, a typo'd "
-        "``aws s3 cp``) is unrecoverable — the original bytes are "
+        "``aws s3 cp``) is unrecoverable, the original bytes are "
         "gone."
     ),
 )

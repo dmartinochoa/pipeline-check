@@ -1,4 +1,4 @@
-"""CWL-001 — CodeBuild log groups have no retention policy."""
+"""CWL-001. CodeBuild log groups have no retention policy."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

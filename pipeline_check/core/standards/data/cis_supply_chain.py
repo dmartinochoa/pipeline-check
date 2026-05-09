@@ -15,27 +15,27 @@ STANDARD = Standard(
     version="1.0",
     url="https://www.cisecurity.org/insights/white-papers/cis-software-supply-chain-security-guide",
     controls={
-        # 1 — Source Code
+        # 1. Source Code
         "1.3.4": "Ensure organization identity is required for contribution (no long-lived personal tokens)",
         "1.4.1": "Ensure third-party artifacts and open-source libraries are verified",
-        # 2 — Build Pipelines
+        # 2. Build Pipelines
         "2.1.3": "Ensure the build environment is hardened",
         "2.1.6": "Ensure build workers have minimal network connectivity",
         "2.2.2": "Ensure build workers are single-use",
         "2.3.4": "Ensure pipelines are scanned for secrets and sensitive data",
         "2.3.7": "Ensure pipeline steps produce audit logs",
         "2.3.8": "Ensure pipeline configuration files are reviewed before execution",
-        "2.4.2": "Ensure pipeline integrity — artifacts are signed by the pipeline",
+        "2.4.2": "Ensure pipeline integrity, artifacts are signed by the pipeline",
         "2.4.3": "Ensure access to the pipeline execution environment is restricted",
-        # 3 — Build Dependencies
+        # 3. Build Dependencies
         "3.1.3": "Ensure signed metadata of dependencies is verified",
         "3.1.5": "Ensure only trusted package managers and repositories are used",
-        # 4 — Artifacts
+        # 4. Artifacts
         "4.1.1": "Ensure all artifacts on all releases are verified (signed, integrity-checked)",
         "4.2.1": "Ensure access to artifacts is limited",
         "4.3.3": "Ensure package registries use authentication and authorisation",
         "4.4.1": "Ensure artifacts have provenance/SBOM metadata",
-        # 5 — Deployment
+        # 5. Deployment
         "5.1.4": "Ensure deployment configuration manifests are reviewed before apply",
         "5.2.1": "Ensure deployment environments are separated",
         "5.2.3": "Ensure deployment environment activity is audited",
@@ -184,5 +184,64 @@ STANDARD = Standard(
         "HELM-003": ["3.1.5"],                     # non-HTTPS dep repo
         "HELM-004": ["1.4.1", "3.1.3"],            # version range
         "HELM-005": ["4.4.1"],                     # maintainers chain-of-custody
+        "HELM-006": ["2.3.8"],                     # missing kubeVersion (manifest review)
+        "HELM-007": ["4.4.1"],                     # description (provenance metadata)
+        "HELM-008": ["1.4.1", "3.1.3"],            # stale Chart.lock
+        "HELM-009": ["3.1.5"],                     # non-HTTPS home/sources URL
+        "HELM-010": ["4.4.1"],                     # appVersion (provenance metadata)
+        # ── Dockerfile (image build supply chain) ──────────────────
+        # The CIS Supply Chain Benchmark Section 2 (build) and 3
+        # (dependencies) cover the same ground a hardened Dockerfile
+        # touches. Pinning rules tie to 1.4.1 / 3.1.3 (verify and
+        # pin third-party / dependency); privileged / root rules tie
+        # to 2.1.3 (build env hardened); credential-shape rules tie
+        # to 2.3.4 (scan for secrets).
+        "DF-001": ["1.4.1", "3.1.3"],              # FROM not digest-pinned
+        "DF-002": ["2.1.3"],                       # runs as root
+        "DF-003": ["1.4.1", "3.1.3"],              # ADD remote, no integrity
+        "DF-004": ["3.1.5", "1.4.1"],              # curl-pipe in RUN
+        "DF-005": ["2.1.3"],                       # shell-eval
+        "DF-006": ["2.3.4"],                       # ENV credential literal
+        "DF-008": ["2.1.3"],                       # docker --privileged
+        "DF-010": ["1.4.1"],                       # apt upgrade unpinned
+        "DF-011": ["1.4.1"],                       # no cache cleanup
+        "DF-012": ["2.1.3"],                       # RUN sudo
+        "DF-013": ["2.1.3", "2.1.6"],              # sensitive EXPOSE / network
+        "DF-014": ["2.1.3"],                       # WORKDIR /etc
+        "DF-015": ["2.1.3"],                       # chmod 777
+        "DF-016": ["4.4.1"],                       # OCI provenance labels
+        "DF-017": ["2.1.3"],                       # PATH world-writable
+        "DF-018": ["2.1.3"],                       # chown system path
+        "DF-019": ["2.3.4"],                       # COPY credential file
+        "DF-020": ["2.3.4"],                       # credential ARG
+        # ── Cloud Build ────────────────────────────────────────────
+        # Mirrors the GCB-* coverage other CI providers got across
+        # rounds 22-24 in the catalog.
+        "GCB-001": ["1.4.1", "3.1.3"],             # step image not pinned
+        "GCB-002": ["2.1.3"],                      # plaintext env secret
+        "GCB-003": ["2.3.4"],                      # plain script secret
+        "GCB-004": ["1.4.1", "3.1.3"],             # community step not SHA-pinned
+        "GCB-005": ["2.3.4"],                      # secret-shaped substitution
+        "GCB-006": ["2.3.7"],                      # build logging disabled
+        "GCB-007": ["1.4.1", "3.1.3"],             # version: latest secret
+        "GCB-008": ["2.4.2"],                      # no signing step
+        "GCB-009": ["4.4.1"],                      # no SBOM
+        "GCB-010": ["2.1.6"],                      # default network egress
+        "GCB-011": ["3.1.5"],                      # TLS bypass
+        "GCB-012": ["1.4.1"],                      # no vuln scan
+        "GCB-013": ["2.1.6"],                      # default service account
+        "GCB-014": ["2.3.8"],                      # untrusted substitution
+        "GCB-015": ["2.4.2"],                      # no provenance attestation
+        "GCB-016": ["2.1.3"],                      # no timeout
+        "GCB-017": ["2.3.7"],                      # default logs
+        "GCB-018": ["3.1.5"],                      # gcr.io legacy
+        "GCB-019": ["2.1.3"],                      # privileged step
+        "GCB-020": ["4.2.1"],                      # SA email default
+        "GCB-021": ["2.1.6"],                      # no private worker pool
+        "GCB-022": ["2.3.8"],                      # ALLOW_LOOSE substitution
+        "GCB-023": ["2.4.2"],                      # build artifacts not signed
+        "GCB-024": ["4.4.1"],                      # no provenance labels
+        "GCB-025": ["1.4.1"],                      # outdated runner image
+        "GCB-026": ["2.4.3"],                      # public storage bucket
     },
 )

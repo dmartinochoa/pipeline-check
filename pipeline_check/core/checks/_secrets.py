@@ -6,7 +6,7 @@ This module adds a broader detector that walks every string scalar in a
 document and flags any value matching a known credential pattern from
 ``_patterns.SECRET_DETECTORS``. That catches secrets pasted into
 ``script:`` bodies, ``run:`` blocks, custom env blocks, and anywhere
-else a contributor might land them — places the name-based detector
+else a contributor might land them, places the name-based detector
 can't see.
 
 The detector catalog is shape-based, not entropy-based. False
@@ -18,9 +18,9 @@ which is the wrong direction.
 
 Three signal types fire:
 
-  1. Token-shape match — a tokenised value matches a built-in or
+  1. Token-shape match, a tokenised value matches a built-in or
      user-registered credential regex. Hit label: ``<detector>:<token>``.
-  2. PEM private-key block — multi-line ``-----BEGIN PRIVATE KEY-----``
+  2. PEM private-key block, multi-line ``-----BEGIN PRIVATE KEY-----``
      marker anywhere in the document. Hit label: ``private_key:<kind>``.
   3. User-registered custom pattern (via ``register_pattern`` or
      ``--secret-pattern``). Hit label: ``custom:<token>``.
@@ -39,7 +39,7 @@ from ._patterns import (
     SECRET_VALUE_RE,
 )
 
-# Mutable registry — appended to by :func:`register_pattern` so users
+# Mutable registry, appended to by :func:`register_pattern` so users
 # can extend the detector with org-specific credential shapes (e.g.
 # internal token prefixes) without vendoring the package.
 _USER_PATTERNS: list[Pattern[str]] = []
@@ -48,7 +48,7 @@ _USER_PATTERNS: list[Pattern[str]] = []
 def register_pattern(pattern: str | Pattern[str]) -> None:
     """Add ``pattern`` to the set of regexes :func:`find_secret_values` checks.
 
-    The pattern is anchored by the caller — tokens are whole-string
+    The pattern is anchored by the caller, tokens are whole-string
     matched (``re.fullmatch``) after tokenisation, so a pattern like
     ``^acme_[a-z0-9]{32}$`` matches the token ``acme_…`` but not a
     substring of a larger blob. Duplicate patterns are ignored.
@@ -65,7 +65,7 @@ def reset_patterns() -> None:
 
     Exists for test isolation and for the long-lived Lambda container
     case where a prior invocation's patterns shouldn't leak into the
-    next one — see ``Scanner.__init__`` for the lifecycle hook.
+    next one, see ``Scanner.__init__`` for the lifecycle hook.
     """
     _USER_PATTERNS.clear()
 
@@ -108,7 +108,7 @@ def find_secret_values(doc: Any) -> list[str]:
         if not candidate:
             continue
 
-        # PEM blocks span many lines — match the BEGIN marker anywhere.
+        # PEM blocks span many lines, match the BEGIN marker anywhere.
         for pem in PEM_BLOCK_RE.finditer(candidate):
             kind = pem.group("kind").lower().replace(" ", "_")
             label = f"private_key:{kind}"
@@ -139,12 +139,12 @@ def _classify(token: str) -> str | None:
     (catches 39 of 41 built-in detectors), then a short fallback list
     for patterns with no fixed prefix (mailchimp hex, telegram numeric).
 
-    Tokens shorter than 8 characters are rejected early — no built-in
+    Tokens shorter than 8 characters are rejected early, no built-in
     credential shape is that short.
     """
     if len(token) < 8:
         return None
-    # Two-char prefix dispatch — covers ~95% of detectors.
+    # Two-char prefix dispatch, covers ~95% of detectors.
     prefix2 = token[:2]
     candidates = _PREFIX_DISPATCH.get(prefix2)
     if candidates:

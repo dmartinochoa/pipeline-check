@@ -1,4 +1,4 @@
-"""GL-032 — job ``tags:`` interpolates an attacker-controllable variable."""
+"""GL-032, job ``tags:`` interpolates an attacker-controllable variable."""
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +29,7 @@ RULE = Rule(
         "``tags:`` is computed from an attacker-controllable CI "
         "variable, the operator (or anyone who can craft a PR title / "
         "branch name / commit message that the workflow consumes) "
-        "picks where the job runs — including any privileged tag the "
+        "picks where the job runs, including any privileged tag the "
         "instance exposes (``deploy-prod``, ``signer``, ``hsm`` …). "
         "The rule reuses the same untrusted-context catalog as GL-002 "
         "(``CI_COMMIT_MESSAGE``, ``CI_COMMIT_REF_NAME``, "
@@ -40,7 +40,7 @@ RULE = Rule(
         "Workflows that intentionally select runners by environment "
         "via a vetted ``variables:`` block (``RUNNER_TAG: deploy-"
         "prod``) referencing a build-time-set value are out of "
-        "scope — the rule only matches the curated untrusted-"
+        "scope, the rule only matches the curated untrusted-"
         "predefined-variable catalog. Static custom variables "
         "(``$DEPLOY_FLEET`` defined inside the workflow file) are "
         "intentionally not flagged.",
@@ -53,7 +53,7 @@ def _tags_strings(tags: Any) -> list[str]:
 
     GitLab accepts ``tags:`` as either a list of strings or, in
     rare cases, a single string scalar. Non-string entries are
-    skipped — the YAML loader already accepted them, so the
+    skipped, the YAML loader already accepted them, so the
     surface for injection is what matters here, not the schema.
     """
     out: list[str] = []
@@ -83,7 +83,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{'…' if len(set(offenders)) > 5 else ''}. "
         f"A pipeline trigger (or anyone whose PR title / branch name "
         f"the workflow consumes) can route the job onto any runner "
-        f"tag the instance exposes — including privileged self-"
+        f"tag the instance exposes, including privileged self-"
         f"managed tags."
     )
     return Finding(

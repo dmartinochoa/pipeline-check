@@ -1,4 +1,4 @@
-"""K8S-021 — Role/ClusterRole grants wildcard verbs+resources."""
+"""K8S-021. Role/ClusterRole grants wildcard verbs+resources."""
 from __future__ import annotations
 
 from typing import Any
@@ -55,7 +55,7 @@ def check(ctx: KubernetesContext) -> Finding:
                 continue
             if _has_wildcard(r.get("verbs")) and _has_wildcard(r.get("resources")):
                 offenders.append(f"{m.kind}/{m.name} rules[{idx}]")
-                # Anchor on the offending rule entry — that's the
+                # Anchor on the offending rule entry, that's the
                 # specific verbs+resources pair the user needs to
                 # narrow.
                 line = _line_of(r)

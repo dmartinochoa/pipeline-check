@@ -1,4 +1,4 @@
-"""K8S-035 — Container ``securityContext.runAsUser`` is 0 (root)."""
+"""K8S-035. Container ``securityContext.runAsUser`` is 0 (root)."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +25,7 @@ RULE = Rule(
         "1000 or any application-specific value) on every workload "
         "container. The corresponding ``runAsGroup`` and "
         "``fsGroup`` should also be non-zero. Root inside a "
-        "container is not isolation — a kernel CVE, a misconfigured "
+        "container is not isolation, a kernel CVE, a misconfigured "
         "mount, or a mis-applied capability collapses straight into "
         "the host."
     ),
@@ -33,7 +33,7 @@ RULE = Rule(
         "K8S-007 covers ``runAsNonRoot: false`` (the boolean form). "
         "This rule covers the explicit numeric form: a container "
         "that sets ``runAsUser: 0`` runs as root regardless of "
-        "``runAsNonRoot`` being declared elsewhere — Kubernetes "
+        "``runAsNonRoot`` being declared elsewhere. Kubernetes "
         "won't reject the spec, it just runs the container as root. "
         "The two rules are paired so neither shape slips through "
         "alone. The pod-level ``securityContext.runAsUser`` "
@@ -49,7 +49,7 @@ def _effective_uid(podspec: dict[str, Any], container: dict[str, Any]) -> Any:
 
     Per-container ``securityContext.runAsUser`` wins; pod-level is
     the fallback. ``None`` means the field is absent at both levels
-    — the kubelet uses whatever UID the image was built with, which
+   , the kubelet uses whatever UID the image was built with, which
     is outside this rule's scope (covered by K8S-007's runAsNonRoot
     check)."""
     c_sc = container.get("securityContext")

@@ -259,3 +259,67 @@ spec:
           image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000004
           securityContext:
             runAsUser: 0
+---
+# ServiceAccount referencing an imagePullSecret that doesn't exist
+# in this manifest set — exercises K8S-036.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dangling-pull-sa
+  namespace: insecure-apps
+imagePullSecrets:
+  - name: missing-registry-creds
+---
+# ConfigMap with credential-shaped data — exercises K8S-037.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: insecure-config
+  namespace: insecure-apps
+data:
+  app.endpoint: "https://api.example.com"
+  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  api_key: "supersecret-key-please-rotate-me"
+---
+# NetworkPolicy with allow-all ingress (empty `from:`) — exercises K8S-038.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: insecure-allow-all
+  namespace: insecure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: insecure-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - from: []
+---
+# Pod with shareProcessNamespace: true — exercises K8S-039.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-shared-pid
+  namespace: insecure-apps
+spec:
+  shareProcessNamespace: true
+  containers:
+    - name: app
+      image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000005
+    - name: debug
+      image: busybox@sha256:0000000000000000000000000000000000000000000000000000000000000006
+      command: ["sleep", "infinity"]
+---
+# Container with procMount: Unmasked — exercises K8S-040.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-unmasked-proc
+  namespace: insecure-apps
+spec:
+  containers:
+    - name: app
+      image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000007
+      securityContext:
+        procMount: Unmasked

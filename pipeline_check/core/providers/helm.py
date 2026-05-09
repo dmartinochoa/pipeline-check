@@ -1,4 +1,4 @@
-"""Helm provider — renders charts via ``helm template`` and reuses the K8s rule pack.
+"""Helm provider, renders charts via ``helm template`` and reuses the K8s rule pack.
 
     pipeline_check --pipeline helm --helm-path path/to/chart \\
         [--helm-values values-prod.yaml] [--helm-set key=value]
@@ -30,7 +30,7 @@ from .base import BaseProvider
 
 
 class HelmProvider(BaseProvider):
-    """Helm provider — renders charts and runs the K8s rule pack on them."""
+    """Helm provider, renders charts and runs the K8s rule pack on them."""
 
     NAME = "helm"
 

@@ -310,6 +310,52 @@ class TestGHA005AwsCredentials:
         )
         assert f.passed
 
+    def test_localstack_sentinel_passes(self):
+        # LocalStack / Moto integration tests pair AWS_ENDPOINT_URL
+        # at localhost with the literal ``test`` access keys; that
+        # combination cannot authenticate against real AWS, so the
+        # rule must not flag it as a long-lived-key violation.
+        f = _run(
+            """
+            on: workflow_dispatch
+            jobs:
+              integration:
+                runs-on: ubuntu-latest
+                steps:
+                  - env:
+                      AWS_ACCESS_KEY_ID: test
+                      AWS_SECRET_ACCESS_KEY: test
+                      AWS_DEFAULT_REGION: us-east-1
+                      AWS_ENDPOINT_URL: http://localhost:4566
+                    run: pytest tests/integration/
+            """,
+            "GHA-005",
+        )
+        assert f.passed, (
+            "LocalStack env (AWS_ENDPOINT_URL=localhost + sentinel keys) "
+            "must not trigger GHA-005"
+        )
+
+    def test_real_aws_static_keys_still_fail_even_if_value_is_test(self):
+        # ``AWS_ACCESS_KEY_ID: test`` WITHOUT a localhost endpoint is
+        # not a LocalStack signal — could be a real key copy-pasted
+        # from a doc fixture. Must still fire.
+        f = _run(
+            """
+            on: push
+            jobs:
+              deploy:
+                runs-on: ubuntu-latest
+                steps:
+                  - env:
+                      AWS_ACCESS_KEY_ID: test
+                      AWS_SECRET_ACCESS_KEY: test
+                    run: aws s3 ls
+            """,
+            "GHA-005",
+        )
+        assert not f.passed
+
 
 class TestContextLoading:
     def test_loads_yaml_files_from_directory(self, tmp_path):

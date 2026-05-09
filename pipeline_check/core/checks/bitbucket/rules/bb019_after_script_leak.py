@@ -1,4 +1,4 @@
-"""BB-019 — after-script accessing secrets may leak credentials on failure."""
+"""BB-019, after-script accessing secrets may leak credentials on failure."""
 from __future__ import annotations
 
 import re
@@ -23,7 +23,7 @@ RULE = Rule(
     recommendation=(
         "Move secret-dependent operations into the main `script:` "
         "block. `after-script` runs even when the step fails and "
-        "executes in a separate shell context — credential exposure "
+        "executes in a separate shell context, credential exposure "
         "here is harder to audit and more likely to persist in logs."
     ),
     docs_note=(

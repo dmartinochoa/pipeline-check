@@ -1,4 +1,4 @@
-"""JF-006 — artifact signing."""
+"""JF-006, artifact signing."""
 from __future__ import annotations
 
 from ...base import _ARTIFACT_TOKENS, SIGN_TOKENS, Finding, Severity
@@ -32,7 +32,7 @@ def check(jf: Jenkinsfile) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=jf.path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

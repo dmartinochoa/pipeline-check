@@ -1,8 +1,8 @@
-"""Jenkins provider — scans ``Jenkinsfile`` (declarative + scripted).
+"""Jenkins provider, scans ``Jenkinsfile`` (declarative + scripted).
 
     pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 
-Only text parsing is required — no Jenkins controller access, no
+Only text parsing is required, no Jenkins controller access, no
 Groovy interpreter, no plugin install. Works on detached repos.
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .base import BaseProvider
 
 
 class JenkinsProvider(BaseProvider):
-    """Jenkins provider — parses Jenkinsfile text from disk."""
+    """Jenkins provider, parses Jenkinsfile text from disk."""
 
     NAME = "jenkins"
 
@@ -44,7 +44,7 @@ class JenkinsProvider(BaseProvider):
                 metadata["stages"] = stages
             if jf.library_refs:
                 metadata["library_refs"] = list(jf.library_refs)
-            # Agent declaration — ``any``, a label, a docker image, or
+            # Agent declaration, ``any``, a label, a docker image, or
             # a Kubernetes pod. Surfaced so an asset register can
             # distinguish "runs on a shared pool" from "runs in an
             # ephemeral container".
@@ -57,7 +57,7 @@ class JenkinsProvider(BaseProvider):
                 metadata["agent"] = f"docker:{m.group(1)}"
             elif m := re.search(r"\bagent\s*\{\s*label\s+['\"]([^'\"]+)['\"]", text):
                 metadata["agent"] = f"label:{m.group(1)}"
-            # Guard presence — shows which pipelines already have the
+            # Guard presence, shows which pipelines already have the
             # bounded-runtime protections JF-011/015 check for.
             metadata["has_timeout"] = bool(re.search(r"\btimeout\s*\(", text))
             metadata["has_build_discarder"] = bool(

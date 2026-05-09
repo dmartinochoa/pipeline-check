@@ -1,4 +1,4 @@
-"""SIGN-002 — Signing profile is revoked or expired."""
+"""SIGN-002. Signing profile is revoked or expired."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -17,7 +17,7 @@ RULE = Rule(
         "Rotate the signing profile: create a replacement and update every "
         "code-signing config that references the revoked profile. A "
         "revoked or canceled profile invalidates every signature it "
-        "produced — lambdas relying on it will fail verification."
+        "produced, lambdas relying on it will fail verification."
     ),
     docs_note=(
         "A revoked or canceled Signer profile invalidates every "

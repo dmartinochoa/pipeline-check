@@ -1,4 +1,4 @@
-"""GL-003 — `variables:` blocks must not hold literal credential values."""
+"""GL-003, `variables:` blocks must not hold literal credential values."""
 from __future__ import annotations
 
 from typing import Any

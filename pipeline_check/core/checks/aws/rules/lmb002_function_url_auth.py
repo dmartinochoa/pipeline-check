@@ -1,4 +1,4 @@
-"""LMB-002 — Lambda function URL configured with AuthType=NONE."""
+"""LMB-002. Lambda function URL configured with AuthType=NONE."""
 from __future__ import annotations
 
 from botocore.exceptions import ClientError
@@ -23,7 +23,7 @@ RULE = Rule(
         "HTTPS endpoint. Anyone who knows the URL can invoke. This "
         "is sometimes deliberate (a webhook receiver) but the "
         "deliberate version typically signs / validates inside the "
-        "function — the rule fires regardless because the IAM-side "
+        "function, the rule fires regardless because the IAM-side "
         "control isn't there."
     ),
 )

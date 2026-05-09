@@ -1,4 +1,4 @@
-"""CC-012 — setup: true enables dynamic config generation (code injection risk)."""
+"""CC-012, setup: true enables dynamic config generation (code injection risk)."""
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +22,7 @@ RULE = Rule(
     ),
     docs_note=(
         "When `setup: true` is set at the top level, the config becomes "
-        "a setup workflow — it generates the real pipeline config "
+        "a setup workflow. It generates the real pipeline config "
         "dynamically (typically via the `circleci/continuation` orb). "
         "An attacker who controls the setup job (e.g. via a malicious "
         "PR in a fork) can inject arbitrary config for all subsequent "

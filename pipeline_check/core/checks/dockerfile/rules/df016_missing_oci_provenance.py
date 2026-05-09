@@ -1,4 +1,4 @@
-"""DF-016 — Image lacks OCI provenance labels."""
+"""DF-016. Image lacks OCI provenance labels."""
 from __future__ import annotations
 
 import re
@@ -33,7 +33,7 @@ RULE = Rule(
     ),
     known_fp=(
         "A multi-stage build's intermediate stages don't need "
-        "provenance labels — only the final image ships. The rule "
+        "provenance labels, only the final image ships. The rule "
         "fires per Dockerfile, not per stage; suppress for files "
         "where the final ``FROM`` is intentional throwaway scratch.",
     ),

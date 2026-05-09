@@ -174,7 +174,7 @@ def iter_docker_image_anchors(
     """Yield ``(image_string, source_dict)`` for every docker image.
 
     ``source_dict`` is the ``{image: ...}`` entry that produced the
-    string — line-aware loaders attach the source-line marker to it,
+    string, line-aware loaders attach the source-line marker to it,
     so callers can build a :class:`Location` via
     ``_line_of(source_dict)``. Falls back to the parent ``docker``
     block when the entry isn't a dict (defensive).

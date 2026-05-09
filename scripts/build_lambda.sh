@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a Lambda deployment package for PipelineGuard.
+# Build a Lambda deployment package for pipeline-check.
 #
 # Output: dist/pipeline_check-lambda.zip
 #
@@ -9,7 +9,7 @@ set -euo pipefail
 
 DIST="dist"
 PKG="$DIST/lambda_package"
-OUTPUT="$DIST/pipelineguard-lambda.zip"
+OUTPUT="$DIST/pipeline_check-lambda.zip"
 
 echo "Cleaning previous build..."
 rm -rf "$PKG" "$OUTPUT"
@@ -18,7 +18,7 @@ mkdir -p "$PKG"
 echo "Installing dependencies into package directory..."
 pip install -r requirements.txt --target "$PKG" --quiet --upgrade
 
-echo "Copying pipelineguard source..."
+echo "Copying pipeline-check source..."
 cp -r pipeline_check "$PKG/"
 
 echo "Zipping package..."

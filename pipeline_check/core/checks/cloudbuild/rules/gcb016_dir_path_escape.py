@@ -1,4 +1,4 @@
-"""GCB-016 — Step ``dir:`` field contains a parent-directory escape (``..``)."""
+"""GCB-016. Step ``dir:`` field contains a parent-directory escape (``..``)."""
 from __future__ import annotations
 
 from typing import Any

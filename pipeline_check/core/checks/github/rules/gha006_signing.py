@@ -1,4 +1,4 @@
-"""GHA-006 — workflow should sign artifacts (cosign / sigstore / …)."""
+"""GHA-006, workflow should sign artifacts (cosign / sigstore / …)."""
 from __future__ import annotations
 
 from typing import Any
@@ -15,7 +15,7 @@ RULE = Rule(
     esf=("ESF-D-SIGN-ARTIFACTS",),
     cwe=("CWE-345",),
     recommendation=(
-        "Add a signing step — e.g. `sigstore/cosign-installer` followed "
+        "Add a signing step, e.g. `sigstore/cosign-installer` followed "
         "by `cosign sign`, or `slsa-framework/slsa-github-generator` "
         "for keyless SLSA provenance. Publish the signature alongside "
         "the artifact and verify it at consumption time."
@@ -35,7 +35,7 @@ def _has_pypi_pep740_attestations(doc: dict[str, Any]) -> bool:
 
     PEP 740 attestations are sigstore-backed signatures published
     alongside the artifact. Detection mirrors the structural shape
-    used by GHA-024 — the boolean ``true`` value can't be matched via
+    used by GHA-024, the boolean ``true`` value can't be matched via
     blob tokens because YAML parses it as a Python bool.
     """
     for _, job in iter_jobs(doc):
@@ -57,7 +57,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

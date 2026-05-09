@@ -1,4 +1,4 @@
-"""GCB-021 — Build runs on the shared default Cloud Build worker pool."""
+"""GCB-021. Build runs on the shared default Cloud Build worker pool."""
 from __future__ import annotations
 
 from typing import Any
@@ -8,7 +8,7 @@ from ...rule import Rule
 
 RULE = Rule(
     id="GCB-021",
-    title="No private worker pool — build runs on the shared default pool",
+    title="No private worker pool, build runs on the shared default pool",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-7",),
     esf=("ESF-D-NETWORK-SEG", "ESF-D-ISOLATION"),
@@ -72,7 +72,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path,
         description=(
             "No ``options.pool.name`` (or legacy ``options.workerPool``) "
-            "set — the build runs on Google's shared default pool with "
+            "set, the build runs on Google's shared default pool with "
             "public-internet egress and no VPC perimeter."
         ),
         recommendation=RULE.recommendation, passed=False,

@@ -1,4 +1,4 @@
-"""GCB-019 — Shell entrypoint inlines a user substitution into args."""
+"""GCB-019. Shell entrypoint inlines a user substitution into args."""
 from __future__ import annotations
 
 import re
@@ -31,7 +31,7 @@ RULE = Rule(
         "a shell as its entrypoint AND a ``$_USER_VAR`` token lands "
         "inside ``args``: Cloud Build expands the substitution before "
         "the step runs, and the shell then interprets any metacharacters "
-        "the substitution carried — straight command injection through "
+        "the substitution carried, straight command injection through "
         "trigger configuration."
     ),
 )

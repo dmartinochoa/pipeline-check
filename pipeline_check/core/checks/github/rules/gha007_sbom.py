@@ -1,4 +1,4 @@
-"""GHA-007 — workflow should produce an SBOM."""
+"""GHA-007, workflow should produce an SBOM."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-D-SBOM",),
     cwe=("CWE-1104",),
     recommendation=(
-        "Add an SBOM generation step — `anchore/sbom-action`, "
+        "Add an SBOM generation step, `anchore/sbom-action`, "
         "`syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, "
         "or Microsoft's `sbom-tool`. Attach the SBOM to the release "
         "so consumers can ingest it into their vuln-management "
@@ -37,7 +37,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

@@ -27,7 +27,7 @@
 
 Each row below pairs a `check_id` with the SSDF tasks its passing state
 evidences. Source of truth:
-`pipeline_check/core/standards/data/nist_ssdf.py` — regenerate with
+`pipeline_check/core/standards/data/nist_ssdf.py`, regenerate with
 `python scripts/gen_standards_mappings.py nist_ssdf`.
 
 | Check | Control(s) |

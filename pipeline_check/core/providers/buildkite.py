@@ -1,8 +1,8 @@
-"""Buildkite provider — scans ``.buildkite/pipeline.yml`` on disk.
+"""Buildkite provider, scans ``.buildkite/pipeline.yml`` on disk.
 
     pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
 
-Only YAML parsing is required — no Buildkite API token, no agent
+Only YAML parsing is required, no Buildkite API token, no agent
 credentials.
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .base import BaseProvider
 
 
 class BuildkiteProvider(BaseProvider):
-    """Buildkite provider — parses pipeline.yml documents."""
+    """Buildkite provider, parses pipeline.yml documents."""
 
     NAME = "buildkite"
 

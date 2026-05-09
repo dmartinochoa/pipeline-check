@@ -1,4 +1,4 @@
-"""ARGO-004 — Volumes / podSpecPatch grant host-namespace access."""
+"""ARGO-004. Volumes / podSpecPatch grant host-namespace access."""
 from __future__ import annotations
 
 import json

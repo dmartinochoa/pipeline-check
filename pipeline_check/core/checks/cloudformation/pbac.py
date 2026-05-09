@@ -1,4 +1,4 @@
-"""CloudFormation PBAC checks — PBAC-001 (VPC), PBAC-002 (shared role)."""
+"""CloudFormation PBAC checks. PBAC-001 (VPC), PBAC-002 (shared role)."""
 from __future__ import annotations
 
 from collections import defaultdict

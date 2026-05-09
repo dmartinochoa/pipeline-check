@@ -1,7 +1,7 @@
 # Output formats
 
 `pipeline_check --output <format>` selects the report format. Every
-format carries the same finding set — only the rendering differs.
+format carries the same finding set, only the rendering differs.
 
 | Format     | Where it lands               | Use case                                             |
 |------------|------------------------------|------------------------------------------------------|
@@ -45,7 +45,7 @@ Shape:
   new optional field does not require a bump; renaming or removing one
   does. Consumers should branch on the major component.
 - **`tool_version`** is the `pipeline_check` release that produced the
-  report — useful for attributing baseline drift to a specific upgrade.
+  report, useful for attributing baseline drift to a specific upgrade.
 
 The JSON schema used by `--output json` is committed as
 `tests/report_schema.json` and exercised by `tests/test_json_schema.py`
@@ -55,7 +55,7 @@ on every run.
 
 SARIF is the OASIS standard consumed by GitHub Advanced Security, GitLab
 SAST, Azure DevOps, and most SAST aggregators. Emitting SARIF turns
-every failing finding into a code-scanning alert — inline on the pull
+every failing finding into a code-scanning alert, inline on the pull
 request, no custom integration needed.
 
 ```bash
@@ -75,17 +75,17 @@ pipeline_check --pipeline github --gha-path .github/workflows \
   resources share the rule and emit separate results.
 - Severity is expressed two ways:
   - `level`: `error` (CRITICAL / HIGH), `warning` (MEDIUM / LOW), `note` (INFO)
-  - `security-severity` (0.0–10.0 CVSS-style): `9.5` / `7.5` / `5.5` / `3.0` / `1.0` respectively — this is the field GitHub's code-scanning alert filter uses.
+  - `security-severity` (0.0–10.0 CVSS-style): `9.5` / `7.5` / `5.5` / `3.0` / `1.0` respectively: this is the field GitHub's code-scanning alert filter uses.
 - Compliance controls are surfaced two ways:
-  - `rule.properties.tags` — a flat list including `"security"`, the
+  - `rule.properties.tags`: a flat list including `"security"`, the
     standard slugs, and every control ID mapped to the check.
     Searchable in the GitHub code-scanning UI.
-  - `result.properties.controls` — the structured `ControlRef` list for
+  - `result.properties.controls`: the structured `ControlRef` list for
     programmatic consumers.
 - Locations:
   - File-path resources (YAML paths) become `artifactLocation.uri`.
   - For file-based findings, a best-effort `physicalLocation.region.startLine`
-    is emitted — per-check regexes grep the source for the signature line
+    is emitted, per-check regexes grep the source for the signature line
     so GitHub PR annotations land on the offending line, not just the file
     header. Supported today: `GHA-001/002/003/008`, `GL-001/008`,
     `BB-001/008`, `ADO-001/005/008`. When no pattern matches, the region
@@ -125,7 +125,7 @@ annotate diffs on every PR.
 pipeline_check --output html --output-file report.html
 ```
 
-Standalone HTML — embedded CSS and JavaScript, no external CDN calls.
+Standalone HTML, embedded CSS and JavaScript, no external CDN calls.
 The report ships with:
 
 - **Filter bar** (severity / standard / provider / status / free-text)
@@ -133,7 +133,7 @@ The report ships with:
   actually present in the result set, so an all-AWS scan doesn't show
   a phantom "github" option.
 - **"copy ignore" button** on every finding that copies the flat
-  `CHECK_ID:RESOURCE` ignore-file line to the clipboard — paste
+  `CHECK_ID:RESOURCE` ignore-file line to the clipboard, paste
   straight into `.pipelinecheckignore` to suppress.
 
 See [scoring_model.md](scoring_model.md) for how the grade and severity
@@ -150,5 +150,5 @@ Regardless of output format, the process exits with:
 | `2`  | Scanner error        |
 | `3`  | Usage / config error |
 
-Gating is governed by the CI gate, not by the output format — see
+Gating is governed by the CI gate, not by the output format, see
 [ci_gate.md](ci_gate.md).

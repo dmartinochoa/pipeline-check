@@ -1,4 +1,4 @@
-"""K8S-002 — Pod ``hostNetwork: true`` shares the host's network stack."""
+"""K8S-002. Pod ``hostNetwork: true`` shares the host's network stack."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

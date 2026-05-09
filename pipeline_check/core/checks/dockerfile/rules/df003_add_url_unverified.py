@@ -1,4 +1,4 @@
-"""DF-003 — ``ADD <url>`` pulls remote content without integrity verification."""
+"""DF-003, ``ADD <url>`` pulls remote content without integrity verification."""
 from __future__ import annotations
 
 import re
@@ -19,7 +19,7 @@ RULE = Rule(
         "download the file with ``curl -fsSLo``, verify a known-good "
         "checksum (``sha256sum -c``) or signature (``cosign verify-"
         "blob``), then extract / install. Better still: download the "
-        "artifact in a builder stage and ``COPY`` it across — that "
+        "artifact in a builder stage and ``COPY`` it across. That "
         "way the verifier runs once at build time, not per-pull."
     ),
     docs_note=(
@@ -34,7 +34,7 @@ RULE = Rule(
 
 _URL_RE = re.compile(r"\bhttps?://\S+", re.IGNORECASE)
 # An ADD line that looks like ``ADD --checksum=sha256:<hex> URL DEST``
-# is OK — the ``--checksum`` flag is BuildKit's native integrity check.
+# is OK, the ``--checksum`` flag is BuildKit's native integrity check.
 _CHECKSUM_FLAG_RE = re.compile(r"--checksum\s*=\s*sha256:[0-9a-f]{64}")
 
 

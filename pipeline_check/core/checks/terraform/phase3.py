@@ -81,7 +81,7 @@ def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
     for p in ctx.resources("aws_codepipeline"):
         pipeline_role = p.values.get("role_arn", "")
         stages = p.values.get("stage") or []
-        # PBAC-005 — any stage action with its own role_arn passes.
+        # PBAC-005, any stage action with its own role_arn passes.
         has_scoped = False
         total_actions = 0
         for stage in stages:
@@ -104,7 +104,7 @@ def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
                 recommendation="Assign per-action role_arn values.",
                 passed=has_scoped,
             ))
-        # CP-005 — production deploy stages need a preceding ManualApproval.
+        # CP-005, production deploy stages need a preceding ManualApproval.
         missing: list[str] = []
         for idx, stage in enumerate(stages):
             s_name = (stage.get("name") or "").lower()
@@ -135,7 +135,7 @@ def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
                 recommendation="Insert a Manual Approval action before production deploys.",
                 passed=False,
             ))
-        # CP-007 — V2 pipelines with unrestricted PR triggers.
+        # CP-007. V2 pipelines with unrestricted PR triggers.
         if p.values.get("pipeline_type") == "V2":
             open_triggers = []
             for idx, trig in enumerate(p.values.get("trigger") or []):

@@ -1,4 +1,4 @@
-"""JF-003 — pipeline must not use bare `agent any`."""
+"""JF-003, pipeline must not use bare `agent any`."""
 from __future__ import annotations
 
 import re
@@ -21,7 +21,7 @@ RULE = Rule(
         "agents for jobs that genuinely need them."
     ),
     docs_note=(
-        "`agent any` is the broadest possible executor scope — any "
+        "`agent any` is the broadest possible executor scope, any "
         "registered executor can be picked, including ones with "
         "broader IAM / file-system access than this build needs. A "
         "compromise of one job blast-radiates across every pool."

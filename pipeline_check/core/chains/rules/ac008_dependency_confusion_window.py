@@ -1,4 +1,4 @@
-"""AC-008 — Dependency Confusion Window.
+"""AC-008. Dependency Confusion Window.
 
 A workflow installs packages without a lockfile AND skips integrity
 verification, leaving a window for dependency-confusion / typosquatting
@@ -16,8 +16,8 @@ RULE = ChainRule(
     summary=(
         "A workflow installs packages without a lockfile AND without "
         "integrity verification. On every run the dependency resolver "
-        "picks the highest-version match across configured registries "
-        "— ideal conditions for a dependency-confusion / typosquatting "
+        "picks the highest-version match across configured registries, "
+        "ideal conditions for a dependency-confusion / typosquatting "
         "attack to land in the build."
     ),
     mitre_attack=(
@@ -47,10 +47,10 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"In `{resource}`:\n"
             "  1. Package install runs without lockfile enforcement "
-            "(GHA-021) — `npm install`, `pip install <pkg>` (no -r), "
+            "(GHA-021), `npm install`, `pip install <pkg>` (no -r), "
             "`yarn install` (no `--frozen-lockfile`).\n"
             "  2. Install commands also bypass source-integrity "
-            "verification (GHA-029) — git URL installs, local-path "
+            "verification (GHA-029), git URL installs, local-path "
             "installs, or tarball-URL installs.\n"
             "  3. Each run resolves to whatever the registry currently "
             "serves. An attacker publishing a higher-version package "

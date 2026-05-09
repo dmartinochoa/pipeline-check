@@ -1,4 +1,4 @@
-"""CC-016 — remote script piped to shell interpreter."""
+"""CC-016, remote script piped to shell interpreter."""
 from __future__ import annotations
 
 from typing import Any
@@ -27,11 +27,19 @@ RULE = Rule(
         "endpoint (or poisons DNS / CDN) gains arbitrary code "
         "execution in the CI runner."
     ),
+    known_fp=(
+        "Established vendor installers (get.docker.com, sh.rustup.rs, "
+        "bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) "
+        "ship via HTTPS from their own CDN and are idiomatic. This "
+        "rule defaults to LOW confidence so CI gates can ignore them "
+        "with --min-confidence MEDIUM; the finding still surfaces so "
+        "teams that want cryptographic verification can audit.",
+    ),
 )
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    # Document-level blob scan — keeps the legacy detection surface
+    # Document-level blob scan, keeps the legacy detection surface
     # so a curl-pipe in a top-level command alias or a parameter
     # default still trips the rule.
     hits = remote_script_exec.scan(blob_lower(doc))

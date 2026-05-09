@@ -1,8 +1,8 @@
-"""Azure DevOps Pipelines provider — scans ``azure-pipelines.yml``.
+"""Azure DevOps Pipelines provider, scans ``azure-pipelines.yml``.
 
     pipeline_check --pipeline azure --azure-path azure-pipelines.yml
 
-Only YAML parsing is required — no network calls, no ADO PAT.
+Only YAML parsing is required, no network calls, no ADO PAT.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import BaseProvider
 
 
 class AzureProvider(BaseProvider):
-    """Azure DevOps Pipelines provider — parses pipeline YAML from disk."""
+    """Azure DevOps Pipelines provider, parses pipeline YAML from disk."""
 
     NAME = "azure"
 

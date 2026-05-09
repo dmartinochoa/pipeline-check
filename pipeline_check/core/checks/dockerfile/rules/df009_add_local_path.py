@@ -1,4 +1,4 @@
-"""DF-009 — ``ADD <local-path>`` should be ``COPY``."""
+"""DF-009, ``ADD <local-path>`` should be ``COPY``."""
 from __future__ import annotations
 
 import re
@@ -15,7 +15,7 @@ RULE = Rule(
     cwe=("CWE-1357",),
     recommendation=(
         "Replace ``ADD ./local`` with ``COPY ./local``. ``ADD`` has "
-        "two implicit behaviors that make it the wrong default — it "
+        "two implicit behaviors that make it the wrong default. It "
         "fetches HTTP(S) URLs and it auto-extracts ``.tar`` / "
         "``.tar.gz`` archives. Both are easy to invoke accidentally "
         "and neither is reproducible. Reserve ``ADD`` for a deliberate "
@@ -44,7 +44,7 @@ def _has_url_or_tarball(args: str) -> bool:
     if _URL_RE.search(args):
         return True
     # Skip any ``--checksum=`` flag tokens before checking for tarball
-    # extension — the flag value itself can contain dots that would
+    # extension, the flag value itself can contain dots that would
     # confuse the suffix match.
     cleaned = re.sub(r"--\w+=\S+", "", args)
     return bool(_TARBALL_RE.search(cleaned))

@@ -1,4 +1,4 @@
-"""CloudFormation provider — scans a CFN template (or directory).
+"""CloudFormation provider, scans a CFN template (or directory).
 
 Templates are either YAML (short-form intrinsics supported) or JSON.
 Input is resolved via ``--cfn-template``; auto-detects common
@@ -67,7 +67,7 @@ class CloudFormationProvider(BaseProvider):
         out: list[Component] = []
         for r in context.resources():
             metadata: dict[str, Any] = {}
-            # Lifecycle attributes — protection on stack delete/replace,
+            # Lifecycle attributes, protection on stack delete/replace,
             # and conditional-resource gates.
             for key in ("DeletionPolicy", "UpdateReplacePolicy", "Condition"):
                 if key in r.attributes:
@@ -97,7 +97,7 @@ def _cfn_metadata(resource_type: str, props: dict[str, Any]) -> dict[str, Any]:
 
     Only fields that characterize security posture without running the
     checks. Intrinsics (``{"Ref": ...}``, ``{"Fn::GetAtt": ...}``)
-    pass through as-is — consumers that understand CFN can resolve
+    pass through as-is, consumers that understand CFN can resolve
     them; those that don't can flag the entry for manual review.
     """
     meta: dict[str, Any] = {}

@@ -1,4 +1,4 @@
-"""ADO-005 — container images must be pinned to a version or digest."""
+"""ADO-005, container images must be pinned to a version or digest."""
 from __future__ import annotations
 
 from typing import Any

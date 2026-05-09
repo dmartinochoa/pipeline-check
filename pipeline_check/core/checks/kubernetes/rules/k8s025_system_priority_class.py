@@ -1,4 +1,4 @@
-"""K8S-025 — System priority class used outside kube-system."""
+"""K8S-025. System priority class used outside kube-system."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

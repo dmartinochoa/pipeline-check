@@ -60,7 +60,7 @@ Every rule must define:
 
 | Field | Purpose |
 |-------|---------|
-| `id` | Stable check ID. Format: `^[A-Z][A-Z0-9]{1,9}-\d{3}$`, e.g. `ACME-001`, `ORG7-014`. Must not collide with a built-in (`GHA-*`, `K8S-*`, `GCB-*`, …) — the loader rejects collisions at load time. |
+| `id` | Stable check ID. Format: `^[A-Z][A-Z0-9]{1,9}-\d{3}$`, e.g. `ACME-001`, `ORG7-014`. Must not collide with a built-in (`GHA-*`, `K8S-*`, `GCB-*`, …), the loader rejects collisions at load time. |
 | `title` | One-line summary shown in reports. |
 | `severity` | One of `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`. |
 | `provider` | One of `github`, `gitlab`, `bitbucket`, `azure`, `circleci`, `cloudbuild`, `kubernetes`. (AWS/Terraform/CloudFormation/Dockerfile aren't supported in v0.5.0.) Helm rules use `provider: kubernetes` because the Helm provider reuses the K8s rule pack on rendered manifests. |
@@ -93,7 +93,7 @@ $               root document
 ```
 
 Anything else (recursive descent `..`, filters `?`, slicing `[a:b]`,
-unions `,`) is intentionally out — when you need them, write the
+unions `,`) is intentionally out, when you need them, write the
 rule in Python.
 
 Inside `assert.<op>.path`, the path is rooted at the iterated node
@@ -147,11 +147,11 @@ takes a single child predicate.
 The description is a string with `{{ ... }}` placeholders. Two
 forms:
 
-- **`{{ name }}`** — bare name. Resolves first against the iterated
+- **`{{ name }}`**: bare name. Resolves first against the iterated
   node's `$.name`, then against ambient context (provider-specific:
   `kind`, `namespace`, etc. for Kubernetes; `path`, `job`, `step` for
   GHA). Missing → `?`.
-- **`{{ $.foo.bar }}`** — explicit jsonpath. Always resolves against
+- **`{{ $.foo.bar }}`**: explicit jsonpath. Always resolves against
   the iterated node, no ambient fallback.
 
 Render errors fall back to a literal `?` rather than aborting the
@@ -183,7 +183,7 @@ Ambient: `path` (workflow file path).
 ### GitLab CI / Bitbucket / Azure DevOps / CircleCI / Cloud Build
 
 The parsed pipeline file rooted at `$`. Each provider has its own
-canonical shape — see the upstream YAML schema documentation for
+canonical shape, see the upstream YAML schema documentation for
 field names.
 
 ### Kubernetes / Helm (`provider: kubernetes`)
@@ -231,7 +231,7 @@ automatically applies to Helm-deployed workloads.
   are a prefix of your choosing (org / team / project) and the
   trailing 3 digits are a sequence.
 - The loader rejects IDs that match any built-in check ID. Pick a
-  prefix that's clearly yours — `ACME`, `ORG`, `MYCO7` — to keep
+  prefix that's clearly yours, `ACME`, `ORG`, `MYCO7`, to keep
   custom rules unambiguous in reports.
 - Duplicate IDs across rule files are also rejected.
 
@@ -241,7 +241,7 @@ automatically applies to Helm-deployed workloads.
   for v0.5.x; for now, write a quick fixture and run the rule
   through the Scanner manually to verify.
 - **Standards mapping.** Custom rules can declare `owasp:` / `esf:` /
-  `cwe:` lists, but those are doc-only — the standards registry
+  `cwe:` lists, but those are doc-only, the standards registry
   doesn't pick them up automatically. Custom findings appear in
   reports without compliance-control attribution.
 - **Custom autofix.** A custom rule can flag, not patch.

@@ -1,100 +1,26 @@
-"""Suggest concrete source edits to remediate a finding.
+"""Implementation of the 100+ pipeline-check autofixers.
 
-Each fixer takes the raw YAML text of a workflow file plus the relevant
-finding and returns the edited text, or ``None`` if the fixer can't
-safely generate a patch (e.g. the file has already been fixed by hand,
-or the issue requires data the scanner doesn't have).
+Imported as a side effect from ``pipeline_check.core.autofix.__init__``
+so every ``@register(...)`` decorator runs at package import time.
+External callers should import names from ``pipeline_check.core.autofix``
+(the package), not from here.
 
-Design rules:
-
-- Fixers never touch the filesystem. ``render_patch`` converts the
-  before/after pair into a unified diff; the CLI writes the patch to
-  stdout and the user decides whether to apply it.
-- Fixers must be *idempotent* — running one whose output is already
-  present returns ``None``, never a no-op patch.
-- Fixers operate on text, not the parsed YAML AST. Parsing and
-  re-serialising destroys comments, blank lines, and YAML style that
-  maintainers rely on; text patches preserve them.
-
-81 registered fixers covering 8 CI/CD providers plus Kubernetes
-manifests and Cloud Build. Key categories:
-
-- **Permissions** — ``GHA-004`` (contents: read), ``GHA-002``
-  (persist-credentials: false).
-- **Script injection** — ``GHA-003`` (env-var indirection for
-  untrusted GitHub context expressions in ``run:`` blocks).
-- **Secret redaction** — ``*-008`` across all 6 CI providers plus
-  ``JF-008`` (Groovy syntax).
-- **AWS key removal** — ``GHA-005`` / ``GL-013`` / ``BB-011`` /
-  ``ADO-014`` / ``CC-005`` / ``JF-004`` / ``JF-010``.
-- **Timeouts** — ``GHA-015``, ``GL-015``, ``ADO-015``, ``BB-005``,
-  ``JF-015``, ``CC-015``.
-- **Curl-pipe** — ``*-016`` across all 6 CI providers.
-- **Docker insecure** — ``*-017`` across all 6 CI providers.
-- **Package insecure** — ``*-018`` across all 6 CI providers.
-- **Token persistence** — ``GHA-019``, ``GL-020``, ``BB-017``.
-- **Deploy environment** — ``GHA-014`` (environment: stub).
-- **Lockfile** — ``*-021`` npm install → npm ci across all providers.
-- **Dep update** — ``*-022`` comment-out across all providers.
-- **TLS bypass** — ``*-023`` comment-out across all providers.
-- **Pinning TODOs** — ``GHA-001``, ``GL-001``, ``BB-001``,
-  ``ADO-001``, ``CC-001``, ``JF-011`` (buildDiscarder).
+This module's split is mechanical at the moment . one container for
+every fixer the scanner ships. Future hygiene work can break it apart
+by category (one module per provider, plus shared regex helpers); the
+package facade in ``__init__.py`` already supports that pattern.
 """
 from __future__ import annotations
 
-import difflib
 import re
-from collections.abc import Callable
 
-from .checks.base import Finding
+from ..checks.base import Finding
+from . import _FIXERS, register
 
-Fixer = Callable[[str, Finding], "str | None"]
-
-_FIXERS: dict[str, Fixer] = {}
-
-
-def register(check_id: str) -> Callable[[Fixer], Fixer]:
-    """Decorator used by fixers to register themselves under a check ID."""
-    def _wrap(fn: Fixer) -> Fixer:
-        _FIXERS[check_id.upper()] = fn
-        return fn
-    return _wrap
-
-
-def available_fixers() -> list[str]:
-    return sorted(_FIXERS.keys())
-
-
-def generate_fix(finding: Finding, content: str) -> str | None:
-    """Run the registered fixer for ``finding.check_id`` against ``content``.
-
-    Returns the edited text, or ``None`` if no fixer is registered or
-    the fixer decided the content already satisfies the check.
-
-    Fixer exceptions propagate — the CLI catches at the call site so a
-    single broken fixer doesn't abort a batch run, but a bug in a
-    fixer surfaces instead of being silently swallowed.
-    """
-    fn = _FIXERS.get(finding.check_id.upper())
-    if fn is None:
-        return None
-    out = fn(content, finding)
-    if out is None or out == content:
-        return None
-    return out
-
-
-def render_patch(path: str, before: str, after: str) -> str:
-    """Unified diff between ``before`` and ``after`` for *path*."""
-    return "".join(
-        difflib.unified_diff(
-            before.splitlines(keepends=True),
-            after.splitlines(keepends=True),
-            fromfile=f"a/{path}",
-            tofile=f"b/{path}",
-        )
-    )
-
+# Used by helpers below that bind their callable into ``_FIXERS`` for
+# multiple check IDs in a single ``for`` loop. ``Finding`` is referenced
+# in fixer signatures.
+_ = (_FIXERS, Finding)
 
 # ── Fixers ────────────────────────────────────────────────────────────────
 
@@ -203,6 +129,9 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 @register("BB-008")
 @register("ADO-008")
 @register("CC-008")
+@register("BK-002")
+@register("TKN-005")
+@register("ARGO-006")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -217,7 +146,7 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
     YAML dialects. Jenkins (JF-008) is excluded — Groovy syntax
     needs a different approach.
     """
-    from .checks._patterns import SECRET_VALUE_RE
+    from ..checks._patterns import SECRET_VALUE_RE
     out_lines: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -233,10 +162,10 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
                 # alongside our TODO marker — throwing it away loses
                 # ticket numbers, blame context, or other hints that
                 # the original author left in the file.
-                todo = "# TODO(pipelineguard): rotate and wire up a secret"
+                todo = "# TODO(pipeline-check): rotate and wire up a secret"
                 if comment:
                     original = comment.lstrip("#").strip()
-                    todo = f"# {original} -- TODO(pipelineguard): rotate and wire up a secret"
+                    todo = f"# {original} -- TODO(pipeline-check): rotate and wire up a secret"
                 new_line = (
                     f"{prefix}\"<REDACTED>\"{trailing_ws or ''}"
                     f"  {todo}\n"
@@ -470,7 +399,7 @@ _CURL_PIPE_LINE_RE = re.compile(
     r"|(?:curl|wget)\s+[^\n|]*\|\s*(?:python|perl|ruby)\b",
 )
 
-_TODO_CURL = "TODO(pipelineguard): download, verify checksum, then execute"
+_TODO_CURL = "TODO(pipeline-check): download, verify checksum, then execute"
 
 
 def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
@@ -498,7 +427,12 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016"):
+for _cid in (
+    "GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016",
+    # Buildkite has a dedicated curl-pipe rule (BK-004); the heuristic
+    # is provider-agnostic so the same comment-out fixer applies.
+    "BK-004",
+):
     register(_cid)(_comment_curl_pipe)
 
 
@@ -531,7 +465,13 @@ def _strip_docker_flags(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017", "CC-017"):
+for _cid in (
+    "GHA-017", "GL-017", "ADO-017", "BB-013", "JF-017", "CC-017",
+    # Buildkite's docker-insecure rule (BK-005) flags the same
+    # ``--privileged`` / ``--cap-add`` / host-bind shapes; reuse the
+    # shared flag-stripping fixer.
+    "BK-005",
+):
     register(_cid)(_strip_docker_flags)
 
 
@@ -577,7 +517,7 @@ def _fix_jf008(content: str, finding: Finding) -> str | None:
 
     Handles ``VAR = "AKIA..."`` and ``def x = "ghp_..."`` patterns.
     """
-    from .checks._patterns import SECRET_VALUE_RE
+    from ..checks._patterns import SECRET_VALUE_RE
 
     out: list[str] = []
     changed = False
@@ -593,7 +533,7 @@ def _fix_jf008(content: str, finding: Finding) -> str | None:
         if m:
             prefix, value, rest = m.groups()
             if SECRET_VALUE_RE.fullmatch(value) or value.startswith("AKIA"):
-                todo = "// TODO(pipelineguard): rotate and wire up a credential"
+                todo = "// TODO(pipeline-check): rotate and wire up a credential"
                 new_line = f'{prefix}"<REDACTED>"  {todo}\n'
                 out.append(new_line)
                 changed = True
@@ -650,7 +590,7 @@ def _fix_jf015(content: str, finding: Finding) -> str | None:
     Jenkins timeout is Groovy syntax ``timeout(time: N, unit: 'MINUTES')``
     which can't be safely inserted by a text fixer, so we add a comment.
     """
-    marker = "// TODO(pipelineguard): wrap with timeout(time: 30, unit: 'MINUTES')"
+    marker = "// TODO(pipeline-check): wrap with timeout(time: 30, unit: 'MINUTES')"
     if marker in content:
         return None
     # Find `pipeline {` and insert after it.
@@ -714,8 +654,8 @@ def _fix_jf011(content: str, finding: Finding) -> str | None:
 
 # ── Pinning TODO comments ────────────────────────────────────────────
 
-_TODO_PIN = "TODO(pipelineguard): pin to commit SHA"
-_TODO_PIN_IMG = "TODO(pipelineguard): pin to digest"
+_TODO_PIN = "TODO(pipeline-check): pin to commit SHA"
+_TODO_PIN_IMG = "TODO(pipeline-check): pin to digest"
 
 
 @register("GHA-001")
@@ -830,10 +770,10 @@ def _fix_gha003(content: str, finding: Finding) -> str | None:
     environment variable binding (safe — GitHub sets the env var as a
     single string, not subject to shell parsing).
     """
-    from .checks.github.rules._helpers import UNTRUSTED_CONTEXT_RE
+    from ..checks.github.rules._helpers import UNTRUSTED_CONTEXT_RE
 
     _RUN_RE = re.compile(r"^(\s*-?\s*run:\s*[|>]?\s*)$|^(\s*-?\s*run:\s+)(\S.*)$")
-    _TODO_INJECT = "TODO(pipelineguard): moved untrusted expression to env var"
+    _TODO_INJECT = "TODO(pipeline-check): moved untrusted expression to env var"
 
     lines = content.splitlines(keepends=True)
     out: list[str] = []
@@ -893,7 +833,7 @@ def _expr_to_env_name(expr: str) -> str:
 
 # ── CC-001 CircleCI orb pinning TODO ────────────────────────────────
 
-_TODO_ORB = "TODO(pipelineguard): pin to exact semver (e.g. @5.1.0)"
+_TODO_ORB = "TODO(pipeline-check): pin to exact semver (e.g. @5.1.0)"
 
 
 @register("CC-001")
@@ -960,14 +900,14 @@ def _fix_cc015(content: str, finding: Finding) -> str | None:
 
 # ── Token persistence comment-out ────────────────────────────────────
 
-_TODO_TOKEN = "WARNING(pipelineguard): token written to persistent storage — remove this line"
+_TODO_TOKEN = "WARNING(pipeline-check): token written to persistent storage — remove this line"
 
 
 def _comment_token_persist(content: str, finding: Finding) -> str | None:
     """Comment out lines that persist tokens to files/env."""
-    from .checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
-    from .checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
-    from .checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
+    from ..checks.bitbucket.rules.bb017_token_persistence import _TOKEN_PERSIST_RE as BB_RE
+    from ..checks.github.rules.gha019_token_persistence import _TOKEN_PERSIST_RE as GHA_RE
+    from ..checks.gitlab.rules.gl020_token_persistence import _TOKEN_PERSIST_RE as GL_RE
 
     persist_re = {"GHA-019": GHA_RE, "GL-020": GL_RE, "BB-017": BB_RE}
     pattern = persist_re.get(finding.check_id.upper())
@@ -1001,7 +941,7 @@ for _cid in ("GHA-019", "GL-020", "BB-017"):
 
 # ── *-005 AWS long-lived key comment-out ──────────────────────────────
 
-_TODO_AWS = "TODO(pipelineguard): switch to OIDC / IAM role — remove static AWS keys"
+_TODO_AWS = "TODO(pipeline-check): switch to OIDC / IAM role — remove static AWS keys"
 _AWS_KEY_LINE_RE = re.compile(
     r"(?:AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|aws_access_key_id|aws_secret_access_key)"
 )
@@ -1037,7 +977,7 @@ for _cid in ("GHA-005", "GL-013", "BB-011", "ADO-014", "CC-005", "JF-004", "JF-0
 
 # ── Deploy environment stubs ─────────────────────────────────────────
 
-_TODO_ENV = "TODO(pipelineguard): configure deployment environment"
+_TODO_ENV = "TODO(pipeline-check): configure deployment environment"
 _DEPLOY_NAME_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
 
 
@@ -1108,12 +1048,12 @@ for _cid in ("GHA-021", "GL-021", "ADO-021", "BB-021", "JF-021", "CC-021"):
 
 # ── *-022 dependency-update command comment-out ──────────────────────
 
-_TODO_DEP_UPDATE = "TODO(pipelineguard): remove dependency update command; use lockfile-pinned install"
+_TODO_DEP_UPDATE = "TODO(pipeline-check): remove dependency update command; use lockfile-pinned install"
 
 
 def _comment_dep_update(content: str, finding: Finding) -> str | None:
     """Comment out dependency-update commands."""
-    from .checks.base import _DEP_UPDATE_TOOL_EXEMPT_RE, DEP_UPDATE_RE
+    from ..checks.base import _DEP_UPDATE_TOOL_EXEMPT_RE, DEP_UPDATE_RE
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -1141,12 +1081,21 @@ for _cid in ("GHA-022", "GL-022", "ADO-022", "BB-022", "JF-022", "CC-022"):
 
 # ── *-023 TLS bypass comment-out ─────────────────────────────────────
 
-_TODO_TLS = "TODO(pipelineguard): remove TLS/SSL verification bypass"
+_TODO_TLS = "TODO(pipeline-check): remove TLS/SSL verification bypass"
 
 
 def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
-    """Comment out TLS verification bypass lines."""
-    from .checks.base import TLS_BYPASS_RE
+    """Comment out TLS verification bypass lines.
+
+    ``TLS_BYPASS_RE`` is the same case-sensitive lowercase pattern the
+    detection rules use against ``blob_lower(doc)``. Matching the raw
+    line directly used to skip uppercase env-var assignments
+    (``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``GIT_SSL_NO_VERIFY=1``);
+    lowercase the search input so the fixer's recall matches what
+    detection saw, while still emitting the operator's original case
+    in the commented-out output.
+    """
+    from ..checks.base import TLS_BYPASS_RE
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -1154,7 +1103,7 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
         if _TODO_TLS in line or stripped.startswith("#") or stripped.startswith("//"):
             out.append(line)
             continue
-        if TLS_BYPASS_RE.search(line):
+        if TLS_BYPASS_RE.search(line.lower()):
             indent = line[: len(line) - len(line.lstrip())]
             out.append(f"{indent}# {_TODO_TLS}\n")
             out.append(f"{indent}# {stripped}")
@@ -1168,12 +1117,43 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-for _cid in ("GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023"):
+for _cid in (
+    "GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023",
+    # Buildkite's TLS-bypass rule covers the same flags / env vars.
+    "BK-008",
+):
     register(_cid)(_comment_tls_bypass)
 
 
 # Cloud Build TLS bypass reuses the same heuristic as the CI providers.
 register("GCB-011")(_comment_tls_bypass)
+
+
+# ── Tekton / Argo combined curl-pipe + TLS-bypass fixer ──────────────
+#
+# TKN-008 and ARGO-008 each fire on EITHER a curl-pipe-shell or a TLS-
+# bypass idiom inside a step script. Each underlying primitive has its
+# own comment-out fixer above; chain them so the rule's autofix
+# handles both shapes in one pass.
+def _comment_curl_pipe_and_tls(
+    content: str, finding: Finding,
+) -> str | None:
+    """Apply both the curl-pipe and the TLS-bypass comment-out fixers.
+
+    Each leg is idempotent and operates line-by-line, so running them
+    in sequence on the cumulative output is safe. Returns the changed
+    text only if at least one of the two legs found something to
+    comment out.
+    """
+    curl = _comment_curl_pipe(content, finding)
+    tls = _comment_tls_bypass(curl or content, finding)
+    if curl is None and tls is None:
+        return None
+    return tls or curl
+
+
+for _cid in ("TKN-008", "ARGO-008"):
+    register(_cid)(_comment_curl_pipe_and_tls)
 
 
 # ── Kubernetes drop-line fixers (K8S-002/003/004/005) ────────────────
@@ -1261,7 +1241,7 @@ for _cid in _K8S_FLIP_VALUE:
 # above the offending line so the change is visible in review.
 
 _TODO_K8S_HOSTPATH = (
-    "TODO(pipelineguard K8S-013): replace hostPath with a "
+    "TODO(pipeline-check K8S-013): replace hostPath with a "
     "persistentVolumeClaim referencing a PVC scoped to this namespace"
 )
 
@@ -1285,7 +1265,7 @@ def _fix_k8s013_hostpath(content: str, finding: Finding) -> str | None:
 
 
 _TODO_K8S_CLUSTER_ADMIN = (
-    "TODO(pipelineguard K8S-020): replace cluster-admin binding with "
+    "TODO(pipeline-check K8S-020): replace cluster-admin binding with "
     "a least-privilege Role + RoleBinding scoped to a namespace"
 )
 
@@ -1321,7 +1301,7 @@ def _fix_k8s020_cluster_admin(content: str, finding: Finding) -> str | None:
 # The TODO sits above each unpinned ``image:`` line.
 
 _TODO_K8S_IMAGE_PIN = (
-    "TODO(pipelineguard K8S-001): pin to a sha256 digest "
+    "TODO(pipeline-check K8S-001): pin to a sha256 digest "
     "(``image: repo@sha256:<digest>``) — resolve via "
     "``crane digest <ref>`` or ``docker buildx imagetools inspect``"
 )
@@ -1387,7 +1367,7 @@ def _fix_k8s028_host_port(content: str, finding: Finding) -> str | None:
 # ── K8S-029 default-SA binding TODO ──────────────────────────────────
 
 _TODO_K8S_DEFAULT_SA = (
-    "TODO(pipelineguard K8S-029): bind permissions to a dedicated "
+    "TODO(pipeline-check K8S-029): bind permissions to a dedicated "
     "ServiceAccount, not 'default'. Every untargeted pod inherits "
     "this SA's grants — create a named SA and reference it explicitly"
 )
@@ -1424,7 +1404,7 @@ def _fix_k8s029_default_sa(content: str, finding: Finding) -> str | None:
 # ── K8S-030 control-plane scheduling TODO ────────────────────────────
 
 _TODO_K8S_CTRL_PLANE = (
-    "TODO(pipelineguard K8S-030): drop control-plane "
+    "TODO(pipeline-check K8S-030): drop control-plane "
     "nodeSelector / tolerations from non-system workloads. App pods "
     "belong on dedicated worker nodes, not on the API/etcd host"
 )
@@ -1468,7 +1448,7 @@ def _fix_k8s030_control_plane(content: str, finding: Finding) -> str | None:
 # ── GHA-034 reusable-workflow secrets: inherit TODO ──────────────────
 
 _TODO_GHA_INHERIT = (
-    "TODO(pipelineguard GHA-034): replace 'secrets: inherit' with an "
+    "TODO(pipeline-check GHA-034): replace 'secrets: inherit' with an "
     "explicit allowlist (secrets: { NPM_TOKEN: ${{ secrets.NPM_TOKEN }} }) "
     "so a compromised callee can't reach unrelated credentials"
 )
@@ -1578,7 +1558,7 @@ def _fix_gcb022_subopt_loose(content: str, finding: Finding) -> str | None:
 # ── GCB-021 worker-pool TODO ─────────────────────────────────────────
 
 _TODO_GCB_POOL = (
-    "TODO(pipelineguard GCB-021): add a private worker pool — "
+    "TODO(pipeline-check GCB-021): add a private worker pool — "
     "pool: { name: 'projects/<PROJECT>/locations/<REGION>/workerPools/<NAME>' } "
     "— so the build runs inside your VPC instead of Google's shared "
     "default pool"
@@ -1609,7 +1589,7 @@ def _fix_gcb021_worker_pool(content: str, finding: Finding) -> str | None:
 
 
 _TODO_GCB_PIN = (
-    "TODO(pipelineguard GCB-001): pin step image to a digest "
+    "TODO(pipeline-check GCB-001): pin step image to a digest "
     "(``gcr.io/.../foo@sha256:<digest>``) instead of a mutable tag"
 )
 
@@ -1667,44 +1647,44 @@ def _fix_gcb001_pin_todo(content: str, finding: Finding) -> str | None:
 # can supply the right value.
 
 _TODO_DF_PIN = (
-    "TODO(pipelineguard DF-001): pin base image by digest "
+    "TODO(pipeline-check DF-001): pin base image by digest "
     "(``FROM image@sha256:...``) — `docker pull image:tag && "
     "docker images --digests` to get the digest"
 )
 
 _TODO_DF_USER = (
-    "TODO(pipelineguard DF-002): drop to a non-root user before the "
+    "TODO(pipeline-check DF-002): drop to a non-root user before the "
     "final CMD (``RUN useradd --uid 1001 --create-home appuser`` "
     "+ ``USER appuser``)"
 )
 
 _TODO_DF_HEALTHCHECK = (
-    "TODO(pipelineguard DF-007): add a HEALTHCHECK so the orchestrator "
+    "TODO(pipeline-check DF-007): add a HEALTHCHECK so the orchestrator "
     "can detect a hung container (``HEALTHCHECK CMD curl -fsS "
     "http://localhost:<port>/healthz || exit 1``)"
 )
 
 _TODO_DF_EXPOSE_SSH = (
-    "TODO(pipelineguard DF-013): drop EXPOSE 22 — containers should "
+    "TODO(pipeline-check DF-013): drop EXPOSE 22 — containers should "
     "not run sshd. Use ``docker exec`` / ``kubectl exec`` for shell "
     "access instead"
 )
 
 _TODO_DF_PATH = (
-    "TODO(pipelineguard DF-017): drop the world-writable prefix "
+    "TODO(pipeline-check DF-017): drop the world-writable prefix "
     "(/tmp, /var/tmp, /dev/shm, /run/lock) from PATH, or move it "
     "to the tail so system bins shadow it"
 )
 
 _TODO_DF_COPY_CRED = (
-    "TODO(pipelineguard DF-019): replace this COPY/ADD with a "
+    "TODO(pipeline-check DF-019): replace this COPY/ADD with a "
     "build-time mount (``RUN --mount=type=secret,id=<name>``) — the "
     "file's contents are otherwise baked into the image layer and "
     "recoverable by anyone who can pull the image"
 )
 
 _TODO_DF_ARG_CRED = (
-    "TODO(pipelineguard DF-020): drop this credential-named ARG and "
+    "TODO(pipeline-check DF-020): drop this credential-named ARG and "
     "use ``RUN --mount=type=secret,id=<name>`` instead. ``--build-arg`` "
     "values land in ``docker history`` even when the ARG has no default"
 )
@@ -1931,7 +1911,7 @@ def _fix_df020_arg_cred_todo(content: str, finding: Finding) -> str | None:
 
 
 _TODO_GCB_LATEST = (
-    "TODO(pipelineguard GCB-007): pin secret to a specific Secret "
+    "TODO(pipeline-check GCB-007): pin secret to a specific Secret "
     "Manager version (``versions/<N>``) — ``versions/latest`` "
     "rotates silently and bypasses change review"
 )
@@ -1966,7 +1946,7 @@ def _fix_gcb007_latest_todo(content: str, finding: Finding) -> str | None:
 # can synthesize, so the TODO marker points at the canonical shape.
 
 _TODO_GHA_036 = (
-    "TODO(pipelineguard GHA-036): hard-code ``runs-on:`` or validate "
+    "TODO(pipeline-check GHA-036): hard-code ``runs-on:`` or validate "
     "the input against an allowlist before the job runs. Inlining "
     "${{ inputs.* }} / ${{ github.event.* }} lets a caller route the "
     "job onto any self-hosted runner the org owns"
@@ -2006,7 +1986,7 @@ def _fix_gha036_runs_on_todo(content: str, finding: Finding) -> str | None:
 
 
 _TODO_GL_032 = (
-    "TODO(pipelineguard GL-032): hard-code ``tags:`` to a specific "
+    "TODO(pipeline-check GL-032): hard-code ``tags:`` to a specific "
     "runner-tag list, or validate the value against an allowlist in "
     "a ``rules:`` guard. Inlining $CI_COMMIT_* / $CI_MERGE_REQUEST_* "
     "lets a pipeline trigger pick which runner pool the job runs on"
@@ -2042,7 +2022,7 @@ def _fix_gl032_tags_todo(content: str, finding: Finding) -> str | None:
 
 
 _TODO_ADO_030 = (
-    "TODO(pipelineguard ADO-030): hard-code ``pool:`` (or its "
+    "TODO(pipeline-check ADO-030): hard-code ``pool:`` (or its "
     "``name:`` / ``demands:`` sub-fields), or validate the value "
     "against an allowlist via a ``condition:`` guard. Inlining "
     "$(Build.*) / $(System.PullRequest.*) / ${{ parameters.X }} lets "
@@ -2085,7 +2065,7 @@ def _fix_ado030_pool_todo(content: str, finding: Finding) -> str | None:
 
 
 _TODO_JF_032 = (
-    "TODO(pipelineguard JF-032): hard-code agent labels to a "
+    "TODO(pipeline-check JF-032): hard-code agent labels to a "
     "specific pool name, or validate ${params.X} against an "
     "allowlist via a Groovy ``if`` guard before the build starts. "
     "Inlining ${env.BRANCH_NAME} / ${env.CHANGE_BRANCH} / "
@@ -2146,7 +2126,7 @@ def _fix_jf032_label_todo(content: str, finding: Finding) -> str | None:
 
 
 _TODO_HELM_001 = (
-    "TODO(pipelineguard HELM-001): bump to ``apiVersion: v2`` and "
+    "TODO(pipeline-check HELM-001): bump to ``apiVersion: v2`` and "
     "migrate any sibling ``requirements.yaml`` entries into the "
     "``dependencies:`` list, then run ``helm dependency update``"
 )
@@ -2180,7 +2160,7 @@ def _fix_helm001_api_version(content: str, finding: Finding) -> str | None:
 
 
 _TODO_HELM_002 = (
-    "TODO(pipelineguard HELM-002): commit a ``Chart.lock`` with a "
+    "TODO(pipeline-check HELM-002): commit a ``Chart.lock`` with a "
     "``sha256:`` digest per entry — re-run ``helm dependency update`` "
     "after every change to this list"
 )
@@ -2217,7 +2197,7 @@ def _fix_helm002_dependencies_lock(content: str, finding: Finding) -> str | None
 
 
 _TODO_HELM_003 = (
-    "TODO(pipelineguard HELM-003): switch this repository to "
+    "TODO(pipeline-check HELM-003): switch this repository to "
     "``https://``, ``oci://``, or a ``file://`` sibling; plaintext "
     "fetch lets an on-path attacker swap the dependency tarball"
 )

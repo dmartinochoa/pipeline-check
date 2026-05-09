@@ -1,4 +1,4 @@
-"""GHA-002 — pull_request_target must not check out the PR head."""
+"""GHA-002, pull_request_target must not check out the PR head."""
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +24,7 @@ RULE = Rule(
     ),
     docs_note=(
         "`pull_request_target` runs with a write-scope GITHUB_TOKEN "
-        "and access to repository secrets — deliberately so, since "
+        "and access to repository secrets, deliberately so, since "
         "it's how labeling and comment-bot workflows work. When the "
         "same workflow then explicitly checks out the PR head "
         "(`ref: ${{ github.event.pull_request.head.sha }}` or `.ref`) "

@@ -1,4 +1,4 @@
-"""CC-006 — Pipeline should invoke a signing tool (cosign / sigstore / ...)."""
+"""CC-006. Pipeline should invoke a signing tool (cosign / sigstore / ...)."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-D-SIGN-ARTIFACTS",),
     cwe=("CWE-345",),
     recommendation=(
-        "Add a signing step to the pipeline — e.g. install cosign and "
+        "Add a signing step to the pipeline, e.g. install cosign and "
         "run `cosign sign`, or use the `sigstore` CLI. Publish the "
         "signature alongside the artifact and verify it at consumption "
         "time."
@@ -34,7 +34,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

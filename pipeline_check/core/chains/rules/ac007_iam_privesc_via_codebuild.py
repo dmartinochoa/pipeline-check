@@ -1,4 +1,4 @@
-"""AC-007 — IAM Privilege Escalation via CodeBuild.
+"""AC-007. IAM Privilege Escalation via CodeBuild.
 
 A CodeBuild project that runs in privileged mode AND has an attached
 service role with `iam:PassRole` + wildcard actions lets a malicious
@@ -43,7 +43,7 @@ RULE = ChainRule(
 
 def match(findings: list[Finding]) -> list[Chain]:
     # AWS findings on different resources (a CodeBuild project ARN vs
-    # an IAM role ARN) — match by presence, not by shared resource.
+    # an IAM role ARN), match by presence, not by shared resource.
     if not has_failing(findings, "CB-002"):
         return []
     if not (has_failing(findings, "IAM-002") or has_failing(findings, "IAM-004")):
@@ -62,14 +62,14 @@ def match(findings: list[Finding]) -> list[Chain]:
     narrative = (
         "In this AWS account:\n"
         f"  1. CodeBuild project(s) {', '.join(cb_resources)} run in "
-        "privileged mode (CB-002) — buildspec processes can call the "
+        "privileged mode (CB-002), buildspec processes can call the "
         "Docker daemon, mount the host fs, and intercept other jobs.\n"
         f"  2. An IAM role in scope ({', '.join(iam_resources)}) "
         f"grants {', '.join(iam_check_ids)} (wildcard action and/or "
         "unconstrained PassRole).\n"
         "  3. A malicious buildspec (planted via a PR or via a "
         "compromised dependency) calls `aws sts assume-role` against "
-        "any target role and pivots — privileged mode means the "
+        "any target role and pivots, privileged mode means the "
         "isolation guarantees normally provided by the build sandbox "
         "are absent."
     )

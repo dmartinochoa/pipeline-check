@@ -1,4 +1,4 @@
-"""ADO-011 — PR-validated pipelines must not include local templates."""
+"""ADO-011. PR-validated pipelines must not include local templates."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +23,7 @@ RULE = Rule(
     docs_note=(
         "`template: <relative-path>` includes another YAML from the "
         "CURRENT repo. On PR validation builds, the repo content is "
-        "the PR branch — letting the PR author swap the template "
+        "the PR branch, letting the PR author swap the template "
         "body. Cross-repo templates (`template: foo.yml@my-repo`) "
         "are version-pinned and not affected."
     ),

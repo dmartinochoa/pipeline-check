@@ -1,4 +1,4 @@
-"""JF-026 — ``build job:`` trigger must wait for and propagate downstream results."""
+"""JF-026, ``build job:`` trigger must wait for and propagate downstream results."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -55,7 +55,7 @@ def check(jf: Jenkinsfile) -> Finding:
         f"Pipeline triggers downstream job(s) ({', '.join(sorted(set(jobs))[:3])}"
         f"{'…' if len(set(jobs)) > 3 else ''}) but waits for and propagates their result."
         if passed else
-        f"Pipeline triggers downstream job(s) with {', '.join(problems)} — "
+        f"Pipeline triggers downstream job(s) with {', '.join(problems)}, "
         "downstream failures won't abort the upstream pipeline."
     )
     return Finding(

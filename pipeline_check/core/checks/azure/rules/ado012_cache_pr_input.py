@@ -1,4 +1,4 @@
-"""ADO-012 — Cache@2 keys must not derive from PR-controlled variables."""
+"""ADO-012. Cache@2 keys must not derive from PR-controlled variables."""
 from __future__ import annotations
 
 from typing import Any

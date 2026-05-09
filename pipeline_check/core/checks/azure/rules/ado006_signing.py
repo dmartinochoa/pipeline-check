@@ -1,4 +1,4 @@
-"""ADO-006 — artifact signing."""
+"""ADO-006, artifact signing."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,7 +14,7 @@ RULE = Rule(
     esf=("ESF-D-SIGN-ARTIFACTS",),
     cwe=("CWE-345",),
     recommendation=(
-        "Add a task that runs `cosign sign` or `notation sign` — "
+        "Add a task that runs `cosign sign` or `notation sign`, "
         "Azure Pipelines' workload identity federation enables "
         "keyless signing. Publish the signature to the artifact "
         "feed and verify it at deploy time."
@@ -32,7 +32,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected — check not applicable.",
+            description="No artifact production detected, check not applicable.",
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

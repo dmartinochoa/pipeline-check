@@ -1,4 +1,4 @@
-"""CT-002 — CloudTrail log-file integrity validation disabled."""
+"""CT-002. CloudTrail log-file integrity validation disabled."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

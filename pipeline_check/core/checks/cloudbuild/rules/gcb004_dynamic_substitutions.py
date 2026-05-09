@@ -1,4 +1,4 @@
-"""GCB-004 — ``dynamicSubstitutions: true`` with user-controllable substitution.
+"""GCB-004, ``dynamicSubstitutions: true`` with user-controllable substitution.
 
 Cloud Build substitutes ``$PROJECT_ID`` / ``$COMMIT_SHA`` /
 ``$_USER_VAR`` tokens in step ``args`` at build time. When
@@ -9,7 +9,7 @@ user-supplied substitution (``_*`` prefix, overridable from a build
 trigger's settings or from ``gcloud builds submit --substitutions=``)
 is interpolated into a step's ``args`` or ``entrypoint``, an attacker
 controlling the trigger configuration can inject shell syntax or
-command arguments — the Cloud Build analogue of GHA's
+command arguments, the Cloud Build analogue of GHA's
 ``${{ github.event.* }}`` script-injection pattern.
 
 Rule fires when:
@@ -38,7 +38,7 @@ RULE = Rule(
     recommendation=(
         "Either disable ``options.dynamicSubstitutions`` (it defaults "
         "to false) or move user substitutions (``$_FOO``) out of "
-        "step ``args`` — pass them through ``env:`` and reference "
+        "step ``args``, pass them through ``env:`` and reference "
         "them inside a shell script the builder runs. Dynamic "
         "substitution re-evaluates bash syntax after variable "
         "expansion, giving trigger-config editors a script-"
@@ -55,7 +55,7 @@ RULE = Rule(
     ),
 )
 
-# ``$_FOO`` or ``${_FOO}`` — the leading underscore distinguishes user
+# ``$_FOO`` or ``${_FOO}``, the leading underscore distinguishes user
 # substitutions from Cloud Build built-ins (``$PROJECT_ID``, etc.).
 _USER_SUB_RE = re.compile(r"\$\{?_[A-Z][A-Z0-9_]*\}?")
 

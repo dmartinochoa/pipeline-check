@@ -1,4 +1,4 @@
-"""K8S-013 — Pod uses a ``hostPath`` volume."""
+"""K8S-013. Pod uses a ``hostPath`` volume."""
 from __future__ import annotations
 
 from ..._yaml_lines import line_of as _line_of

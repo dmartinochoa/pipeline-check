@@ -1,4 +1,4 @@
-"""GHA-019 — GITHUB_TOKEN written to persistent storage."""
+"""GHA-019. GITHUB_TOKEN written to persistent storage."""
 from __future__ import annotations
 
 import re
@@ -34,7 +34,7 @@ RULE = Rule(
         "environment files (`$GITHUB_ENV`), or piped through `tee`. "
         "Persisted tokens survive the step boundary and can be "
         "exfiltrated by later steps, uploaded artifacts, or cache "
-        "entries — turning a scoped credential into a long-lived one."
+        "entries, turning a scoped credential into a long-lived one."
     ),
 )
 

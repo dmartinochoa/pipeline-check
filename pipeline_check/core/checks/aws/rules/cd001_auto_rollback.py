@@ -1,4 +1,4 @@
-"""CD-001 — CodeDeploy deployment group has no auto-rollback on failure."""
+"""CD-001. CodeDeploy deployment group has no auto-rollback on failure."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -19,7 +19,7 @@ RULE = Rule(
     docs_note=(
         "Without ``autoRollbackConfiguration``, a CodeDeploy "
         "deployment that fails leaves the failed revision live until "
-        "an operator notices. The default is opt-in, not opt-out — "
+        "an operator notices. The default is opt-in, not opt-out, "
         "deployments fail-open, not fail-back."
     ),
 )

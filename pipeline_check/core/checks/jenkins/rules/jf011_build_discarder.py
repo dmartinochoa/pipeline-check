@@ -1,4 +1,4 @@
-"""JF-011 — pipeline must declare a buildDiscarder / logRotator retention policy."""
+"""JF-011, pipeline must declare a buildDiscarder / logRotator retention policy."""
 from __future__ import annotations
 
 from ...base import Finding, Severity

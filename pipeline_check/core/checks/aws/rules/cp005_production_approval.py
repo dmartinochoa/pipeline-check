@@ -1,4 +1,4 @@
-"""CP-005 — CodePipeline production deploy stage missing manual approval."""
+"""CP-005. CodePipeline production deploy stage missing manual approval."""
 from __future__ import annotations
 
 from typing import Any

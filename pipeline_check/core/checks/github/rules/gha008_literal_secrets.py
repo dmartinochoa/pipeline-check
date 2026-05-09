@@ -1,4 +1,4 @@
-"""GHA-008 — workflow must not contain credential-shaped literals."""
+"""GHA-008, workflow must not contain credential-shaped literals."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,16 +23,16 @@ RULE = Rule(
     docs_note=(
         "Every string in the workflow is scanned against a set of "
         "credential patterns (AWS access keys, GitHub tokens, Slack "
-        "tokens, JWTs, Stripe, Google, Anthropic, etc. — see "
+        "tokens, JWTs, Stripe, Google, Anthropic, etc., see "
         "`--man secrets` for the full catalog). A match means a "
-        "secret was pasted into YAML — the value is visible in every "
+        "secret was pasted into YAML, the value is visible in every "
         "fork and every build log and must be treated as compromised."
     ),
     known_fp=(
         "Test fixtures and documentation blobs sometimes embed "
         "credential-shaped strings (JWT samples, AKIAI... examples). "
         "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
-        "deliberately NOT suppressed — if it appears in a real "
+        "deliberately NOT suppressed, if it appears in a real "
         "workflow it almost always means a copy-paste from docs was "
         "never substituted. Defaults to LOW confidence.",
     ),

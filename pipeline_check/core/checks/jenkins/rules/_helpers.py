@@ -2,7 +2,7 @@
 
 Jenkins rules take a single ``Jenkinsfile`` object (carrying ``.path``,
 ``.text``, ``.library_refs``, ``.stages``) rather than the ``(path,
-doc)`` pair the YAML providers use — Groovy's not parsable as a dict
+doc)`` pair the YAML providers use. Groovy's not parsable as a dict
 so the orchestrator hands the whole parsed blob to each rule.
 """
 from __future__ import annotations
@@ -62,7 +62,7 @@ UNTRUSTED_ENV_RE = re.compile(
 #: Matches Groovy ``${...}`` interpolations whose body resolves to an
 #: attacker-controllable value: any ``env.*`` reference from the
 #: existing UNTRUSTED_ENV_RE catalog, OR ``params.X`` (build
-#: parameters set by whoever queued the run — Jenkins's analogue to
+#: parameters set by whoever queued the run. Jenkins's analogue to
 #: GHA ``inputs.X`` / ADO ``parameters.X``). Used by JF-032 to flag
 #: ``agent { label "..." }`` strings whose body lets the triggerer
 #: pick which agent label / pool the build runs on. Static label
@@ -97,7 +97,7 @@ AWS_KEY_VAR_RE = re.compile(
     r"(?:accessKeyVariable|secretKeyVariable|aws_access_key_id|aws_secret_access_key)",
     re.IGNORECASE,
 )
-#: ``withAWS(credentials: 'id')`` — the AWS Steps plugin with long-lived
+#: ``withAWS(credentials: 'id')``, the AWS Steps plugin with long-lived
 #: credentials.  ``withAWS(role: '…')`` is the safe IAM-role pattern and
 #: is NOT matched.
 WITH_AWS_CREDS_RE = re.compile(
@@ -149,17 +149,17 @@ K8S_AGENT_RE = re.compile(r"\bkubernetes\s*\{", re.MULTILINE)
 K8S_PRIVILEGED_RE = re.compile(
     r"(?m)^\s*privileged\s*:\s*true\b"
 )
-#: ``hostPath:`` volume in the embedded pod YAML — mounts a host
+#: ``hostPath:`` volume in the embedded pod YAML, mounts a host
 #: filesystem path, allowing container escape.
 K8S_HOSTPATH_RE = re.compile(r"(?m)^\s*hostPath\s*:")
-#: ``hostNetwork: true`` or ``hostPID: true`` — share host
+#: ``hostNetwork: true`` or ``hostPID: true``, share host
 #: namespaces.
 K8S_HOSTNS_RE = re.compile(
     r"(?m)^\s*host(?:Network|PID|IPC)\s*:\s*true\b"
 )
 
 # ── JF-026: build job trigger without result check ────────────────────
-#: Matches ``build job: '<name>'`` — the Pipeline-plugin step that
+#: Matches ``build job: '<name>'``, the Pipeline-plugin step that
 #: triggers a downstream job.
 BUILD_JOB_RE = re.compile(
     r"\bbuild\s+(?:job\s*:|\(\s*job\s*:)\s*['\"]([^'\"]+)['\"]"
@@ -183,7 +183,7 @@ BUILD_PROPAGATE_FALSE_RE = re.compile(
 ARCHIVE_ARTIFACTS_RE = re.compile(
     r"\barchiveArtifacts\b"
 )
-#: ``fingerprint: true`` — instructs Jenkins to record the artifact
+#: ``fingerprint: true``, instructs Jenkins to record the artifact
 #: digest so consumers of ``copyArtifacts`` can verify provenance.
 FINGERPRINT_TRUE_RE = re.compile(
     r"\bfingerprint\s*:\s*true\b"

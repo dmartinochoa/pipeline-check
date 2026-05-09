@@ -1,4 +1,4 @@
-"""AC-019 — Lambda env-secret meets a CI/CD role with PassRole *.
+"""AC-019. Lambda env-secret meets a CI/CD role with PassRole *.
 
 Two AWS-side findings that look harmless apart and are decisive
 together:
@@ -13,7 +13,7 @@ together:
 
 - **IAM-004.** The CI/CD service role grants ``iam:PassRole`` with
   ``Resource: '*'``. Any principal that holds the role can hand
-  any IAM role to any service that calls ``iam:PassRole`` — Lambda
+  any IAM role to any service that calls ``iam:PassRole``. Lambda
   itself, Glue, EC2, CodeBuild, SageMaker.
 
 Combined: an attacker who lands code in the build pipeline (or
@@ -26,7 +26,7 @@ the role-hop. Each is bad alone; the combination is the canonical
 
 The chain fires when both findings appear in the same scan,
 regardless of whether the Lambda function and the CI/CD role
-sit in different AWS services — the pivot crosses service lines.
+sit in different AWS services, the pivot crosses service lines.
 """
 from __future__ import annotations
 
@@ -87,19 +87,19 @@ def match(findings: list[Finding]) -> list[Chain]:
         "  1. At least one Lambda function carries a credential-"
         "shaped literal in its env vars (LMB-003). Lambda env "
         "vars are visible to anyone with "
-        "``lambda:GetFunctionConfiguration`` — a strictly wider "
+        "``lambda:GetFunctionConfiguration``, a strictly wider "
         "audience than the principal that can invoke the "
         "function. The value also persists in CloudFormation "
         "drift, change-sets, and CloudTrail events.\n"
         "  2. A CI/CD service role grants ``iam:PassRole`` with "
         "``Resource: '*'`` (IAM-004). Any holder of the role can "
         "hand any IAM role in the account to any service that "
-        "calls ``iam:PassRole`` — including Lambda itself.\n"
+        "calls ``iam:PassRole``, including Lambda itself.\n"
         "  3. An attacker who reads the Lambda env (a "
         "compromised CI runner, a misattached IAM policy, an "
         "engineer with broad read access) gets the credential. "
-        "If that credential is the CI/CD principal — or if "
-        "they can reach the principal via separate means — the "
+        "If that credential is the CI/CD principal, or if "
+        "they can reach the principal via separate means, the "
         "PassRole wildcard lets them launch a Lambda / EC2 / "
         "CodeBuild instance under any role in the account, "
         "running code under whatever identity they choose. "
