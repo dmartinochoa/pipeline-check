@@ -1,4 +1,4 @@
-"""AC-021 — Argo default-SA workflow lands in a namespace where the
+"""AC-021. Argo default-SA workflow lands in a namespace where the
 default SA has a RoleBinding.
 
 Two findings that are each individually wrong but become a concrete
@@ -10,8 +10,8 @@ privilege-escalation primitive together:
 
 - **K8S-029.** A RoleBinding (or ClusterRoleBinding) grants
   permissions to that ``default`` ServiceAccount. The binding may
-  look innocuous in isolation — a CI namespace that reads a
-  ConfigMap, an integration namespace that lists Pods — but each
+  look innocuous in isolation, a CI namespace that reads a
+  ConfigMap, an integration namespace that lists Pods, but each
   verb the binding grants becomes part of the workflow's authority.
 
 Combined: anyone who can submit a Workflow (a Git push to the
@@ -24,7 +24,7 @@ where the default-SA path becomes a credentials-laundering
 shortcut into the cluster API.
 
 The chain fires when both findings appear in the same scan, even
-across separate Argo and Kubernetes manifest sets — the cluster
+across separate Argo and Kubernetes manifest sets, the cluster
 configuration is what matters, not which file declares it.
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ RULE = ChainRule(
         "(ARGO-003) AND a RoleBinding grants permissions to that "
         "default SA (K8S-029). Anyone who can submit a Workflow into "
         "the namespace runs code under whatever verbs the binding "
-        "grants — turning ARGO-003 from a hygiene gap into a concrete "
+        "grants, turning ARGO-003 from a hygiene gap into a concrete "
         "privilege-escalation primitive."
     ),
     mitre_attack=(
@@ -58,7 +58,7 @@ RULE = ChainRule(
         "On the Argo side: set ``spec.serviceAccountName: "
         "<workflow-runner>`` on every Workflow / WorkflowTemplate "
         "and bind that SA to a least-privilege Role. On the "
-        "Kubernetes side: never grant verbs to ``default`` — every "
+        "Kubernetes side: never grant verbs to ``default``, every "
         "RoleBinding's ``subjects`` should name a workflow-specific "
         "SA. The fix on either side breaks the chain. Best is both: "
         "explicit per-workflow SAs across every namespace, plus "
@@ -84,13 +84,13 @@ def match(findings: list[Finding]) -> list[Chain]:
         "In this scan:\n"
         "  1. At least one Argo Workflow / WorkflowTemplate doesn't "
         "set ``spec.serviceAccountName`` (ARGO-003), so every "
-        "TaskRun the workflow kicks off authenticates against the "
-        "Kubernetes API as the namespace's ``default`` "
+        "workflow pod the workflow kicks off authenticates against "
+        "the Kubernetes API as the namespace's ``default`` "
         "ServiceAccount.\n"
         "  2. A RoleBinding or ClusterRoleBinding grants verbs to "
-        "the ``default`` SA (K8S-029) — read Secrets, list Pods, "
+        "the ``default`` SA (K8S-029), read Secrets, list Pods, "
         "create deployments, whatever the binding scope is.\n"
-        "  3. Whoever can submit a Workflow into that namespace — "
+        "  3. Whoever can submit a Workflow into that namespace, "
         "a Git push to the GitOps repo, a fork-PR-triggered Argo "
         "Events sensor, a developer with ``kubectl create`` rights "
         "— runs code under those granted verbs without an explicit "

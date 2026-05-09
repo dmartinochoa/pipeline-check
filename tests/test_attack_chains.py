@@ -862,6 +862,7 @@ class TestChainAC020:
         ])
         chain = next(c for c in out if c.chain_id == "AC-020")
         assert set(chain.resources) == {self.TASK, self.BINDING}
+        assert len(chain.resources) == len(set(chain.resources))
 
 
 class TestChainAC021:

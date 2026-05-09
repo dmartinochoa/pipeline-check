@@ -644,6 +644,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   test ``test_arn_fingerprint_is_cross_platform_stable`` patches
   ``os.name`` and asserts the same ARN produces the same
   fingerprint on either platform.
+- **AC-021 narrative no longer says "TaskRun".** The AC-021
+  ("Argo default-SA workflow lands on a default-SA RoleBinding")
+  prose was using Tekton terminology, TaskRun is a Tekton CRD,
+  not an Argo concept. Replaced with "workflow pod", which is
+  what an Argo Workflow / WorkflowTemplate actually spawns. Pure
+  prose change; the chain match logic and severity were unaffected.
+- **AC-020 / AC-021 attack-chain table now links the per-rule
+  anchors.** ``docs/attack_chains.md`` rendered ``TKN-004`` and
+  ``ARGO-003`` as plain code spans for the two newest chains
+  while every prior row linked through to the rule's section in
+  the provider doc. Now consistent with AC-001..AC-019.
 - **`ControlRef` re-export now explicit in ``checks.base``.**
   ``pipeline_check.__init__`` re-exports ``ControlRef`` from
   ``pipeline_check.core.checks.base``, but the latter only had it

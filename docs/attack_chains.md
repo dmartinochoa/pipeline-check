@@ -35,8 +35,8 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-017`](#ac-017) | Build cache poisoning that lands on a mutable ECR tag | <span class="pg-sev pg-sev--high">HIGH</span> | github / aws | [`GHA-011`](providers/github.md#gha-011) + [`ECR-002`](providers/aws.md) |
 | [`AC-018`](#ac-018) | Unpinned action lands on deploy job with no environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-001`](providers/github.md#gha-001) + [`GHA-014`](providers/github.md#gha-014) |
 | [`AC-019`](#ac-019) | Lambda env-secret meets a CI/CD role with PassRole * | <span class="pg-sev pg-sev--critical">CRITICAL</span> | aws | [`LMB-003`](providers/aws.md) + [`IAM-004`](providers/aws.md) |
-| [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | `TKN-004` + [`K8S-020`](providers/kubernetes.md#k8s-020) |
-| [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | `ARGO-003` + [`K8S-029`](providers/kubernetes.md#k8s-029) |
+| [`AC-020`](#ac-020) | Tekton hostPath build workload meets cluster-admin RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | tekton / kubernetes | [`TKN-004`](providers/tekton.md#tkn-004) + [`K8S-020`](providers/kubernetes.md#k8s-020) |
+| [`AC-021`](#ac-021) | Argo default-SA workflow lands on a default-SA RoleBinding | <span class="pg-sev pg-sev--high">HIGH</span> | argo / kubernetes | [`ARGO-003`](providers/argo.md#argo-003) + [`K8S-029`](providers/kubernetes.md#k8s-029) |
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference
