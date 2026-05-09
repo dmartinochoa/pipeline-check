@@ -184,10 +184,6 @@ Not committed yet. Scoping is open. Listed in rough impact order
   loader + evaluator + provider runners; inline tests, the `rules
   check` subcommand, and standards-mapping for user rules are
   deferred to v0.5.x.
-- **GitHub App.** PR-comment integration with diff-level finding
-  placement, instead of the current SARIF-into-code-scanning flow.
-  Most users already live in GitHub; the SARIF flow is the floor,
-  not the ceiling, on review UX.
 - **OCI artifact provider.** *Landed on dev.* `--pipeline oci
   --oci-manifest <file>` parses an OCI image manifest / image-index
   JSON captured via ``docker buildx imagetools inspect --raw <ref>``
@@ -231,6 +227,45 @@ the candidates above. Grouped by priority within v0.5.0.
   existing provider), `writing_a_provider.md` (full new-provider
   walkthrough). Wired into the mkdocs nav under a "Contributing"
   section.
+- **Auto-baseline / SARIF differential mode.** `--baseline PATH`
+  (or `--baseline auto` to read `.pipeline-check-baseline.sarif`)
+  suppresses any finding present in the baseline so the gate only
+  fails on new issues. `--write-baseline` snapshots current
+  findings on first run. Solves the "scanner adopted on a
+  5-year-old repo returns 800 findings" problem that keeps every
+  comparable tool on the shelf for legacy codebases. Same idea
+  ruff used to make noqa migrations bearable; mostly absent from
+  the CI/CD-scanner peer set.
+- **Auto-detect / no-args mode.** `pipeline-check` with no flags
+  walks the working tree, identifies every supported file by name
+  and shape (`.github/workflows/*.yml`, `Dockerfile*`,
+  `Chart.yaml`, K8s manifests by `apiVersion:` + `kind:`, etc.),
+  and runs the matching provider scan on each. Replaces the
+  current `--pipeline X --X-path Y` ceremony for the common case;
+  explicit flags stay for power users. Lowest-friction first-run
+  experience available without changing any rule code.
+- **Per-finding real-world incident references.** Each rule gains
+  an optional `incident_refs:` field. `--explain` and the HTML
+  report render a "seen in the wild" footer linking to CVEs and
+  breach postmortems where the same pattern caused damage
+  (`GHA-001` to Codecov, `GHA-016` to SolarWinds, `XPC-002` to
+  tag-mutability incidents, `K8S-013` to hostPath escapes,
+  `DF-002` to root-container CVE classes). Anchors abstract
+  security debt to a concrete cost the operator's manager has
+  heard of.
+- **Close the two known taint resolver gaps.** GitLab `include:`
+  cross-pipeline file inclusion (mirrors `--resolve-remote` on
+  the GHA side: per-ref cache, cycle detection, on-disk fallback)
+  and Tekton `taskRef:` cross-document resolution (already
+  flagged as the next gap in the TAINT-006 description). Both
+  lift existing TAINT rules from single-document to multi-
+  document, which is where most real CI repos sit. Highest
+  detection-power gain per line of code on the table.
+- **Suppression-with-expiry on `--ignore-file`.** Each entry can
+  carry `# expires: 2026-08-01`; past the date the suppression
+  flips to a warning the next run, then a hard finding. Forces
+  revisit instead of letting one-off "ignore for the demo"
+  entries calcify into permanent blind spots.
 
 #### Medium impact
 
@@ -259,6 +294,30 @@ the candidates above. Grouped by priority within v0.5.0.
   fetches. Only SHA-pinned refs are followed (tag refs would defeat
   GHA-025). ``GHA-004`` and ``GHA-019`` updated to read inheritance
   metadata.
+- **Distribution beyond `pip install`.** A standalone shiv or
+  PyInstaller binary attached to every GitHub release plus a
+  `ghcr.io/<owner>/pipeline-check` container image. Removes the
+  Python-install friction for shops whose CI containers don't
+  ship Python (Go-shop CI, JVM-shop CI, container-only build
+  environments). Pure packaging move, no rule code change. The
+  marketplace `action.yml` already shipped is the GHA half of
+  this; the binary + container image cover every other CI.
+- **Reproducible build with SLSA provenance on the wheel.**
+  Releases ship via `slsa-github-generator`, with a verification
+  snippet in the README showing how to confirm the wheel's
+  provenance before installing. The scanner that flags missing
+  SLSA provenance shipping its own attested wheel is the
+  cheapest trust signal available, costs roughly a day of CI
+  plumbing, and gives the README a live screenshot of what good
+  looks like.
+- **Rule-pack confidence calibration loop.** `--annotate-fp
+  <CHECK_ID> <PATH>` records a confirmed false positive into a
+  per-repo learn file. On subsequent runs the same rule firing
+  on the same file shape (hashed AST anchor, not literal text)
+  drops one confidence rung. Optional `pipeline-check fp-stats`
+  surfaces which rules accumulate the most FP votes across a
+  repo, feeding rule-author triage. Keeps the no-telemetry
+  promise (file is local) while still building a feedback loop.
 
 #### Landed early
 
@@ -279,6 +338,15 @@ the candidates above. Grouped by priority within v0.5.0.
 - **VS Code extension or LSP.** Adoption multiplier in the style
   of `ruff` / `black`, but a new surface to maintain. Worth
   scoping, not v0.5.0.
+- **GitHub App.** *Eventually, low priority.* PR-comment
+  integration with diff-level finding placement instead of the
+  current SARIF-into-code-scanning flow. SARIF already reaches
+  the GitHub Code Scanning UI on every push, so a separate App
+  duplicates a path that mostly exists, takes on ongoing review
+  surface, and competes with native SARIF for adoption attention.
+  Revisit if SARIF feedback proves consistently inadequate in
+  practice or if multiple users explicitly ask for inline diff
+  comments.
 
 ## v0.6.0 vision
 
@@ -480,6 +548,96 @@ Doesn't change *what* the scanner finds; changes *how
 clearly* the operator sees the blast radius. Adds a real
 "wow" factor for executive-level reports without diluting
 the no-telemetry / no-SaaS posture.
+
+### Attestation content checks (not just presence)
+
+`OCI-002` today flags missing attestation manifests. The next
+layer parses the manifest content: SLSA provenance JSON,
+in-toto envelopes, SPDX / CycloneDX SBOMs.
+
+- Builder identity verification. Does the `builder.id` claim
+  resolve to a trusted endpoint (`https://github.com/actions/
+  runner` etc.) or an unknown one?
+- Source-repo claim consistency. Does `materials[].uri` match
+  the repository the operator believes built the image, or has
+  drift snuck in?
+- SBOM integrity. Are declared dependencies digest-pinned, or
+  are floating versions sitting inside a signed envelope that
+  makes the rot look authoritative?
+
+New rule family `ATTEST-NNN`. First three rules:
+`ATTEST-001` (untrusted builder identity), `ATTEST-002`
+(source-repo mismatch), `ATTEST-003` (SBOM contains
+floating-version dependencies).
+
+No OSS scanner does pipeline-side attestation content analysis
+today; they verify *something* was attested, not *what* was
+attested. Strong differentiator and a natural extension of the
+OCI provider work already on dev.
+
+### Reachability-aware attack chains
+
+The chain engine today fires on co-occurrence: an `AC-NNN`
+chain emits when both anchor rules emit findings, regardless
+of whether the same execution path connects them. The next
+iteration walks the dataflow graph between the two anchor
+findings and only fires when an executable connection exists.
+
+Cuts the chain-engine false-positive rate, promotes confidence
+on every path that does fire to HIGH, and reuses the v0.6.0
+taint DAG once it's built (no separate machinery). Closes the
+biggest legitimate criticism of the AC-* family: that
+co-occurrence is a weaker claim than reachability.
+
+### Vulnerable-by-design benchmark suite
+
+A companion `pipeline-check-bench` repo holding intentionally-
+vulnerable pipeline configs, one folder per CVE / risk class.
+Every release runs a comparison harness (pipeline-check vs.
+Checkov, Trivy, Zizmor, Poutine, KICS) and publishes a
+confusion matrix per scanner. Reproducible, public,
+citation-safe.
+
+The "this scanner finds more than its peers" claim becomes a
+``make bench`` away rather than a marketing sentence. Likely
+the single biggest credibility move available to a low-
+popularity OSS scanner: adopters can verify the wedge claim
+themselves before installing, and the matrix gives reviewers
+something concrete to cite.
+
+### Pluggable LLM-assisted triage (opt-in, local)
+
+A `--triage` flag pipes each finding through a local-only LLM
+(Ollama, llama.cpp, LM Studio) plus the surrounding pipeline
+snippet, asking for a short "is this actually exploitable in
+this repo's context" verdict. Three labels: `confirmed`,
+`needs_review`, `likely_fp`. Strict no-network default; remote
+endpoints require an explicit `--triage-endpoint URL` flag and
+print a one-line warning before sending. Output is advisory,
+never gates the build, and is rendered as a separate column
+beside the rule-engine confidence so the two signals stay
+distinguishable.
+
+Opt-in by design: keeps the no-telemetry promise intact,
+gives users with already-running local LLMs a high-leverage
+adoption hook, and stays out of the rule-engine path so a
+hallucinating model can't change a HIGH into a LOW.
+
+### Per-rule policy-as-code overlay
+
+Beyond the v0.5.0 severity / confidence overrides: a `policies/`
+directory of YAML files that compose rule subsets into named
+policies (`pci-only.yml`, `pre-merge.yml`, `release-gate.yml`)
+with their own gating thresholds and standards filters.
+`--policy pre-merge` runs that subset; `--list-policies` prints
+the catalog. Lets a single repo wire up different scan profiles
+for pre-commit (fast, HIGH-only), PR (full pack, HIGH-fail), and
+release (full pack, MEDIUM-fail with attestation rules forced
+on) without flag soup in the CI YAML.
+
+Costs nothing in detection power but makes the scanner
+deployable in the way real teams deploy linters: tiered, named,
+reviewed.
 
 ## Non-goals
 

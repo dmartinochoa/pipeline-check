@@ -24,12 +24,19 @@ import pytest
 
 from pipeline_check.mcp_server import tools as _tools
 
-# The harness import is conditional, the suite still passes on a
-# bare install that doesn't have ``mcp`` available.
-mcp = pytest.importorskip("mcp", reason="mcp SDK not installed")
-import mcp.types as mcp_types  # noqa: E402
+# The harness layer (``server_app`` + the MCP types) is only used by
+# ``TestServerRegistration``. Importing it conditionally lets the
+# bulk of this file (the tools-layer tests, ten classes) run on a
+# bare install that doesn't carry the optional ``[mcp]`` extra.
+try:
+    import mcp.types as mcp_types  # noqa: E402
 
-from pipeline_check.mcp_server.server import server_app  # noqa: E402
+    from pipeline_check.mcp_server.server import server_app  # noqa: E402
+    _HAS_MCP = True
+except Exception:  # pragma: no cover - environment-dependent
+    _HAS_MCP = False
+    mcp_types = None  # type: ignore[assignment]
+    server_app = None  # type: ignore[assignment]
 
 GITLAB_FIXTURE = Path(
     "tests/fixtures/workflows/gitlab/insecure.gitlab-ci.yml"
@@ -275,6 +282,7 @@ def _drive(handler, request):
     return asyncio.new_event_loop().run_until_complete(handler(request))
 
 
+@pytest.mark.skipif(not _HAS_MCP, reason="mcp SDK not installed")
 class TestServerRegistration:
     def test_list_tools_handler_returns_every_spec(self):
         server = server_app()

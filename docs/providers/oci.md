@@ -69,7 +69,7 @@ authoring-time gaps that don't survive into the manifest.
 | [OCI-005](#oci-005) | Image manifest is missing the ``image.licenses`` annotation | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [OCI-006](#oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [OCI-007](#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [OCI-008](#oci-008) | Manifest references digest using non-sha256 hash | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [OCI-008](#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -245,7 +245,7 @@ Rebuild and re-push the image with a current builder (``docker buildx build`` / 
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## OCI-008: Manifest references digest using non-sha256 hash { #oci-008 }
+## OCI-008: Manifest references digest using unsupported hash algorithm { #oci-008 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-327</span> <span class="pg-tag pg-tag--cwe">CWE-328</span>

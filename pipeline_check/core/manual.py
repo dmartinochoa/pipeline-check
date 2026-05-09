@@ -468,8 +468,8 @@ TOPIC: output
               ``jq`` while still seeing a human report.
 
 --output-file PATH
-    REQUIRED for --output html. Optional for --output sarif (default
-    is stdout).
+    REQUIRED for --output html. Optional for --output sarif /
+    junit / markdown / threatmodel (default is stdout).
 
 --severity-threshold SEV
     Minimum severity to include in the rendered report (e.g. HIGH

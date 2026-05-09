@@ -157,6 +157,12 @@ def check(pipeline: Pipeline) -> Finding:
         settings = step.get("settings")
         if not isinstance(settings, dict):
             continue
+        # One offender per step keeps the description's
+        # ``N cache plugin step(s)`` count semantically correct
+        # (N steps, not N tainted fields). The first hit per
+        # step is enough to surface the issue; the remaining
+        # tainted fields on the same step share the same fix.
+        step_hit = False
         for field, value in _flatten_settings_strings(
             settings, _CACHE_KEY_FIELDS,
         ):
@@ -165,7 +171,10 @@ def check(pipeline: Pipeline) -> Finding:
                     f"steps.{step_label(step, idx)}."
                     f"settings.{field}: ${m.group('name')}"
                 )
-                break  # one finding per (step, field) is enough
+                step_hit = True
+                break
+            if step_hit:
+                break
     passed = not offenders
     desc = (
         "No cache plugin embeds a tainted Drone variable in "

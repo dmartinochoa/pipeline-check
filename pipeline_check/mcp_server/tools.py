@@ -125,19 +125,32 @@ def list_providers() -> dict[str, Any]:
 # ── Tool: list_checks ───────────────────────────────────────────────
 
 
-def _gen_module() -> Any:
-    """Lazy-load the doc-generator module.
-
-    The provider catalog (``SUPPORTED_PROVIDERS``) is the same one
-    ``scripts/gen_provider_docs.py`` uses, so the rule discovery
-    here matches the registry the docs site is built from.
-    """
-    return importlib.import_module("scripts.gen_provider_docs")
+# Rules-package FQN per provider that exposes a discoverable
+# ``rules/`` subpackage. Aligns with ``scripts/gen_provider_docs.py``'s
+# ``SUPPORTED_PROVIDERS`` but lives here directly so the MCP tools
+# don't depend on the ``scripts/`` directory, which is excluded from
+# the pip distribution (``MANIFEST.in`` ``prune scripts``).
+_RULES_FQN: dict[str, str] = {
+    "github":     "pipeline_check.core.checks.github.rules",
+    "gitlab":     "pipeline_check.core.checks.gitlab.rules",
+    "bitbucket":  "pipeline_check.core.checks.bitbucket.rules",
+    "azure":      "pipeline_check.core.checks.azure.rules",
+    "jenkins":    "pipeline_check.core.checks.jenkins.rules",
+    "circleci":   "pipeline_check.core.checks.circleci.rules",
+    "cloudbuild": "pipeline_check.core.checks.cloudbuild.rules",
+    "kubernetes": "pipeline_check.core.checks.kubernetes.rules",
+    "buildkite":  "pipeline_check.core.checks.buildkite.rules",
+    "tekton":     "pipeline_check.core.checks.tekton.rules",
+    "argo":       "pipeline_check.core.checks.argo.rules",
+    "drone":      "pipeline_check.core.checks.drone.rules",
+    "oci":        "pipeline_check.core.checks.oci.rules",
+    "dockerfile": "pipeline_check.core.checks.dockerfile.rules",
+}
 
 
 def _discover(fqn: str) -> list[Any]:
     """Return ``[(rule, check_fn), ...]`` for an importable rules
-    package via the same helper the doc generator uses."""
+    package."""
     discover = importlib.import_module(
         "pipeline_check.core.checks.rule"
     ).discover_rules
@@ -169,23 +182,18 @@ def list_checks(provider: str | None = None) -> dict[str, Any]:
     If *provider* is given, scope the result to that provider's
     rule pack. If omitted, walk every supported provider.
     """
-    catalog = _gen_module().SUPPORTED_PROVIDERS  # {name: (...)}
-    out: list[dict[str, Any]] = []
-    targets = (
-        [(provider, catalog[provider])]
-        if provider in catalog
-        else (
-            sorted(catalog.items())
-            if provider is None
-            else []
-        )
-    )
-    if provider is not None and provider not in catalog:
+    if provider is not None and provider not in _RULES_FQN:
         raise ValueError(
             f"unknown provider {provider!r}. Valid: "
-            + ", ".join(sorted(catalog))
+            + ", ".join(sorted(_RULES_FQN))
         )
-    for name, (_title, fqn, _doc, _header) in targets:
+    targets: list[tuple[str, str]]
+    if provider is not None:
+        targets = [(provider, _RULES_FQN[provider])]
+    else:
+        targets = sorted(_RULES_FQN.items())
+    out: list[dict[str, Any]] = []
+    for name, fqn in targets:
         for rule, _ in _discover(fqn):
             out.append({
                 "id":       rule.id,
@@ -201,9 +209,8 @@ def list_checks(provider: str | None = None) -> dict[str, Any]:
 
 def explain_check(check_id: str) -> dict[str, Any]:
     """Return the full reference for one check id."""
-    catalog = _gen_module().SUPPORTED_PROVIDERS
     target = check_id.upper().strip()
-    for name, (_title, fqn, _doc, _header) in sorted(catalog.items()):
+    for name, fqn in sorted(_RULES_FQN.items()):
         for rule, _ in _discover(fqn):
             if rule.id.upper() == target:
                 return _rule_to_dict(rule, name)

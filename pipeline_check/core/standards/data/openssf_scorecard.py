@@ -275,6 +275,7 @@ STANDARD = Standard(
         "BK-001":   ["Pinned-Dependencies"],                           # plugin not pinned
         "BK-002":   ["Token-Permissions"],                             # leaked creds in env
         "BK-003":   ["Dangerous-Workflow"],                            # untrusted variable injection
+        "BK-015":   ["Dangerous-Workflow"],                            # agents map runner targeting via tainted vars
         "BK-004":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # curl | bash
         "BK-005":   ["Dangerous-Workflow"],                            # Docker privileged
         "BK-007":   ["Code-Review"],                                   # deploy not gated

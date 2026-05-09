@@ -204,14 +204,20 @@ def stride_for_finding(f: Finding) -> tuple[str, ...]:
         for code in _OWASP_TO_STRIDE.get(ref.control_id, ()):
             _add(code)
 
-    # 2. CWE refinements. Walk in declaration order so the first
-    #    CWE wins the head slot when multiple apply.
+    # 2. CWE refinements. Walk in declaration order and only
+    #    prepend the first matching CWE so the head slot stays
+    #    deterministic when a finding declares multiple CWEs in
+    #    the prepend table. Without this break, a later CWE in
+    #    the list would overwrite the earlier one's primary
+    #    classification because each prepend pushes onto the
+    #    head.
     for cwe in f.cwe:
         # CWE numbers in the registry come as ``CWE-NNN``.
         normalized = cwe.upper().strip()
         prepend_code = _CWE_PREPEND.get(normalized)
         if prepend_code is not None:
             _add(prepend_code, prepend=True)
+            break
 
     if not seen:
         # 3. Default for findings with no OWASP / CWE tags

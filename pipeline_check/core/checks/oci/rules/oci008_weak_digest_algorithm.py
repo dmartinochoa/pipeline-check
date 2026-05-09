@@ -7,7 +7,7 @@ from ..base import OCIManifest
 
 RULE = Rule(
     id="OCI-008",
-    title="Manifest references digest using non-sha256 hash",
+    title="Manifest references digest using unsupported hash algorithm",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-3", "CICD-SEC-9"),
     esf=("ESF-S-IMMUTABLE", "ESF-S-PROVENANCE"),
@@ -50,14 +50,23 @@ RULE = Rule(
 _ACCEPTED_PREFIXES: tuple[str, ...] = ("sha256:", "sha512:")
 
 
-def _is_weak(digest: str) -> bool:
-    if not digest:
-        return False
+def _is_weak(digest: object) -> bool:
+    """True when *digest* doesn't carry an accepted-algorithm prefix.
+
+    Treats ``None``, non-string values, and empty strings as weak
+    rather than as passes, malformed descriptors that drop the
+    digest field entirely should fail this rule, not silently
+    bypass it.
+    """
+    if not isinstance(digest, str) or not digest:
+        return True
     return not digest.startswith(_ACCEPTED_PREFIXES)
 
 
-def _digest_algo(digest: str) -> str:
-    return digest.split(":", 1)[0] if ":" in digest else "(missing)"
+def _digest_algo(digest: object) -> str:
+    if isinstance(digest, str) and ":" in digest:
+        return digest.split(":", 1)[0]
+    return "(missing)"
 
 
 def check(manifest: OCIManifest) -> Finding:
@@ -75,7 +84,7 @@ def check(manifest: OCIManifest) -> Finding:
             )
         for idx, layer in enumerate(manifest.layers):
             digest = layer.get("digest") if isinstance(layer, dict) else None
-            if isinstance(digest, str) and _is_weak(digest):
+            if _is_weak(digest):
                 offenders.append(
                     f"layers[{idx}]: {_digest_algo(digest)}"
                 )

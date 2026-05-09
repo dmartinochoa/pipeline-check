@@ -92,7 +92,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses")
-            if not isinstance(uses, str) or not uses.startswith(
+            # ``owner/repo`` portion of a GitHub Actions ``uses:``
+            # ref is case-insensitive (``Actions/Checkout@v4`` and
+            # ``actions/checkout@v4`` resolve to the same action),
+            # so lowercase before matching to catch case-variant
+            # workflows.
+            if not isinstance(uses, str) or not uses.lower().startswith(
                 "actions/checkout@"
             ):
                 continue
