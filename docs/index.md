@@ -1,5 +1,5 @@
 ---
-title: Pipeline-Check: CI/CD Security Posture Scanner
+title: "Pipeline-Check: CI/CD Security Posture Scanner"
 template: home.html
 hide:
   - navigation
