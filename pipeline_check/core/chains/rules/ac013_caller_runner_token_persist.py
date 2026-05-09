@@ -21,9 +21,9 @@ Distinct from:
     workflow.
 
 The chain fires when both GHA-036 and GHA-019 fire on the *same*
-workflow file. A different-workflow combo is not the same threat. The runner-targeting decision and the token-persistence step
-
-have to be in the same execution.
+workflow file. A different-workflow combo is not the same threat.
+The runner-targeting decision and the token-persistence step have
+to be in the same execution.
 """
 from __future__ import annotations
 

@@ -92,23 +92,45 @@ def _count_rule_files() -> int:
     return n
 
 
+_CHECK_ID_LITERAL = re.compile(r'check_id="([A-Z]+-\d+)"')
+
+
+def _count_class_based_check_ids(provider: str) -> int:
+    """Count distinct ``check_id="..."`` literals under one provider's
+    class-based modules (Terraform / CloudFormation).
+
+    Skips ``rules/`` subpackages, which the file-counter already covers,
+    and skips dunder / private modules.
+    """
+    prov_dir = REPO / "pipeline_check" / "core" / "checks" / provider
+    if not prov_dir.is_dir():
+        return 0
+    ids: set[str] = set()
+    for f in prov_dir.rglob("*.py"):
+        if "rules" in f.parts:
+            continue
+        if f.name.startswith("_") or f.name == "__init__.py":
+            continue
+        ids.update(_CHECK_ID_LITERAL.findall(f.read_text(encoding="utf-8")))
+    return len(ids)
+
+
 def _count_total_checks() -> int:
     """Best-effort total of every check ID a full scan can emit.
 
-    Equals: rule-pattern files (workflow providers + cloudbuild +
-    dockerfile + kubernetes) + the AWS / Terraform / CloudFormation
-    catalog (which carries its checks as class methods, not files).
-    The AWS / TF / CFN tally is taken from the README provider table
-    so the source-of-truth is the same place a reader would compute
-    it from.
+    Equals: rule-pattern files (one per check, found under every
+    provider's ``rules/`` subpackage, AWS included) + Terraform's
+    class-based check IDs + CloudFormation's class-based check IDs.
+    Both class-based packs reuse AWS IDs for parity, but emit findings
+    on Terraform plans / CFN templates respectively, so they're
+    counted toward the realistic catalog floor a doc claim is
+    measuring.
     """
-    return _count_rule_files() + _AWSLIKE_TOTAL
-
-
-# AWS, Terraform, CloudFormation per the README provider table.
-# AWS = 71, CFN ≈ 63 (Terraform parity reuses AWS rules so doesn't
-# add to the unique-ID count). Bump these when README:54-56 changes.
-_AWSLIKE_TOTAL = 71 + 63
+    return (
+        _count_rule_files()
+        + _count_class_based_check_ids("terraform")
+        + _count_class_based_check_ids("cloudformation")
+    )
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -237,8 +259,12 @@ def test_total_check_floor(doc: Path):
         )
         # Claim should be a sensible approximation: not absurdly low.
         # Catch the case where the catalog grew significantly but
-        # the doc still says an old, much-smaller number.
-        assert n >= actual - 50, (
+        # the doc still says an old, much-smaller number. Tightened
+        # from 50 to 20 once ``_count_total_checks`` switched to a
+        # filesystem-derived count: the prior tolerance was padding
+        # for a hand-maintained ``_AWSLIKE_TOTAL`` literal that no
+        # longer exists.
+        assert n >= actual - 20, (
             f"{doc.relative_to(REPO)}: claims '{n}+ checks' but the "
             f"catalog has grown to {actual}. Bump the claim to a "
             f"current floor (rounded down to a multiple of 10)."

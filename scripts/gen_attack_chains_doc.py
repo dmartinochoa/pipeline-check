@@ -57,7 +57,7 @@ def _severity_chip(severity: str) -> str:
     return f'<span class="pg-sev pg-sev--{sev_lc}">{severity}</span>'
 
 
-def _render_chain(rule) -> str:  # noqa: ANN001. ChainRule is dataclass
+def _render_chain(rule) -> str:  # noqa: ANN001  ChainRule is a dataclass
     """One ``<div class="pg-rule pg-rule--<sev>">`` card per chain."""
     sev = rule.severity.value
     sev_lc = sev.lower()

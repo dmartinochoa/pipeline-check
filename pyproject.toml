@@ -29,6 +29,22 @@ dependencies = [
     "rich>=13.0.0",
 ]
 
+# Floor versions only — the hash-locked, reproducible dev install lives
+# in ``requirements-dev.txt``. Install via ``make install`` or
+# ``pip install --require-hashes -r requirements-dev.txt``. This extra
+# is provided so ad-hoc ``pip install -e ".[dev]"`` works for
+# contributors who don't want the locked tree.
+[project.optional-dependencies]
+dev = [
+    "jsonschema>=4.0",
+    "mypy>=1.8.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.8.0",
+    "types-PyYAML>=6.0",
+    "typing-extensions>=4.4.0",
+]
+
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
 

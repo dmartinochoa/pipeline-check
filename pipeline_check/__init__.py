@@ -19,12 +19,14 @@ The CLI entry point is :func:`pipeline_check.cli.main`; the AWS Lambda
 entry point is :func:`pipeline_check.lambda_handler.handler`. Both of
 those drive the same :class:`Scanner` you see above.
 """
-from importlib.metadata import PackageNotFoundError, version
-
-try:
-    __version__ = version("pipeline_check")
-except PackageNotFoundError:
-    __version__ = "0.4.2"
+# Single source of truth for the package version. The release script
+# (see CLAUDE.md) bumps this literal alongside ``[project] version``
+# in ``pyproject.toml`` and the ``vX.Y.Z`` git tag. We deliberately do
+# NOT read ``importlib.metadata.version("pipeline_check")``: the
+# installed dist-info goes stale on editable installs whenever
+# someone bumps the version without re-running ``pip install -e .``,
+# producing a misleading ``--version`` for contributors.
+__version__ = "0.4.2"
 
 # ── Public API surface ─────────────────────────────────────────────
 #
