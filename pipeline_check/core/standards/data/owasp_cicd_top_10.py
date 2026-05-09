@@ -172,6 +172,7 @@ STANDARD = Standard(
         "GHA-036":  ["CICD-SEC-7"],   # runs-on interpolates untrusted context
         "GHA-037":  ["CICD-SEC-6", "CICD-SEC-4"],  # checkout persists token (Artipacked)
         "GHA-038":  ["CICD-SEC-4", "CICD-SEC-7"],  # ACTIONS_ALLOW_UNSECURE_COMMANDS
+        "GHA-039":  ["CICD-SEC-6"],   # services / container creds literal
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

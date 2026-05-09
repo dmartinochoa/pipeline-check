@@ -358,8 +358,8 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 # ``CheckCase`` or a ``KNOWN_UNCOVERED`` entry trips
 # ``test_every_workflow_check_has_a_case``, which is the point.
 KNOWN_UNCOVERED: frozenset[str] = frozenset({
-    # GitHub Actions — GHA-028..038
-    *(f"GHA-{i:03d}" for i in range(28, 39)),
+    # GitHub Actions — GHA-028..039
+    *(f"GHA-{i:03d}" for i in range(28, 40)),
     # GitLab CI — GL-026..032
     *(f"GL-{i:03d}" for i in range(26, 33)),
     # Bitbucket — BB-026..029

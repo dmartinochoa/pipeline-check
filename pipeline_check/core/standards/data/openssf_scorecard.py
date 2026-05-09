@@ -161,6 +161,7 @@ STANDARD = Standard(
         "GHA-008":  ["Token-Permissions"],
         "GHA-019":  ["Token-Permissions"],
         "GHA-037":  ["Token-Permissions"],          # actions/checkout persist-credentials
+        "GHA-039":  ["Token-Permissions"],          # services / container creds literal
         "GL-003":   ["Token-Permissions"],
         "GL-008":   ["Token-Permissions"],
         "GL-013":   ["Token-Permissions"],

@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-039 services / container credentials literal.** New
+  rule, peer-tool gap closure (Zizmor's
+  ``hardcoded-container-credentials``). Flags any literal
+  value in a job-level ``container.credentials.{username,
+  password}`` field or a ``services.<name>.credentials.{
+  username, password}`` field. GHA-008 catches credential
+  **shapes** (AWS keys, JWTs, Slack tokens) but not generic
+  passwords like ``hunter2`` or registry usernames; GHA-039
+  catches them by **position**, anything literal in those
+  fields is by definition a leaked credential. Empty strings
+  and the documented ``anonymous`` / ``guest`` / ``public``
+  / ``noauth`` sentinel usernames are treated as safe.
+  ``${{ secrets.* }}`` references (full-string or inline)
+  pass. Severity CRITICAL because the value lands in the
+  runner's start banner of every build log.
+
+  GHA catalog: 38 -> 39.
+
 - **GHA-037 / GHA-038. Peer-tool gap closure.** Two new GHA
   rules covering exploit classes that Zizmor / Checkov /
   StepSecurity audit but pipeline-check missed.
