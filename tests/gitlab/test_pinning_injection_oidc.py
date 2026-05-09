@@ -337,3 +337,96 @@ class TestGL032TagsInjection:
         """
         f = run_check(cfg, "GL-032")
         assert f.passed
+
+
+# ── GL-033 global before_script / after_script taint ─────────────────
+
+
+class TestGL033GlobalScriptTaint:
+    def test_passes_with_safe_global_before_script(self):
+        cfg = """
+        stages: [build]
+        before_script:
+          - echo "Static banner"
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert f.passed
+
+    def test_fails_when_root_before_script_uses_commit_title(self):
+        cfg = """
+        stages: [build]
+        before_script:
+          - echo Building ${CI_COMMIT_TITLE}
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert not f.passed
+        assert "before_script" in f.description
+        assert "CI_COMMIT_TITLE" in f.description
+
+    def test_fails_when_default_before_script_uses_mr_title(self):
+        cfg = """
+        stages: [build]
+        default:
+          before_script:
+            - echo MR ${CI_MERGE_REQUEST_TITLE}
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert not f.passed
+        assert "default.before_script" in f.description
+
+    def test_fails_when_root_after_script_uses_commit_message(self):
+        cfg = """
+        stages: [build]
+        after_script:
+          - logger -p user.notice "Build for $CI_COMMIT_MESSAGE finished"
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert not f.passed
+        assert "after_script" in f.description
+
+    def test_passes_when_no_global_scripts_declared(self):
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert f.passed
+
+    def test_fails_on_string_form_of_before_script(self):
+        # ``before_script:`` accepts a single-string scalar form
+        # alongside the list form; both are flattened to lines.
+        cfg = """
+        stages: [build]
+        before_script: 'echo Building $CI_COMMIT_REF_NAME'
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-033")
+        assert not f.passed

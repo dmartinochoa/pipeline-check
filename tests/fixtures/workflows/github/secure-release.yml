@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout tagged commit
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        # GHA-037 safe: persist-credentials: false so the
+        # GITHUB_TOKEN doesn't get written into .git/config.
+        with:
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8

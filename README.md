@@ -10,9 +10,9 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
-Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
+Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**530+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
+**550+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -20,6 +20,7 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 [How it works](#how-it-works) |
 [CI integration](#ci-integration) |
 [Compliance](#compliance-standards) |
+[vs. Checkov / KICS / Semgrep](docs/comparison.md) |
 [Docs](docs/)
 
 </div>
@@ -83,21 +84,21 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 36 checks (`GHA-001`--`036`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 32 checks (`GL-001`--`032`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 39 checks (`GHA-001`--`039`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 33 checks (`GL-001`--`033`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 13 checks (`BK-001`--`013`) |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 7 checks (`DR-001`--`007`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 13 checks (`TKN-001`--`013`) |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 13 checks (`ARGO-001`--`013`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 15 checks (`BK-001`--`015`) |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 15 checks (`TKN-001`--`015`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 15 checks (`ARGO-001`--`015`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
-| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 6 checks (`OCI-001`--`006`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene |
+| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 8 checks (`OCI-001`--`008`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -119,7 +120,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   530+ checks across 18 providers
+  Config files   |  Scanner  |   550+ checks across 18 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -157,6 +158,8 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
 | **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
+| **STRIDE threat model** | `--output threatmodel` emits a self-contained Markdown threat-model document populated from the scan + inventory: assets, trust boundaries, findings grouped by STRIDE category, implemented controls, top-25 risk register. Mapping is derived from each rule's existing OWASP / CWE tags so re-policing is one table swap. Shaped for SOC 2 / PCI / NIST SSDF evidence packages. |
+| **MCP server** | `pipeline_check --serve` runs as a Model Context Protocol server on stdio so AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) can drive scans and introspect the rule catalog directly. Ten tools advertised: scan / inventory / explain_check / list_chains / threat_model / etc. The `mcp` SDK is an optional `[mcp]` extra so the default install stays slim. See [docs/mcp.md](docs/mcp.md). |
 
 ---
 
@@ -165,8 +168,10 @@ standards, so a single scan satisfies multiple audit frameworks.
 ```bash
 pipeline_check --output terminal            # rich table to stdout (default)
 pipeline_check --output json                # machine-readable JSON
-pipeline_check --output html --output-file report.html  # self-contained HTML
-pipeline_check --output sarif --output-file scan.sarif  # SARIF 2.1.0 for GitHub/GitLab
+pipeline_check --output html --output-file report.html       # self-contained HTML
+pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
+pipeline_check --output markdown            # PR-comment shape (GFM)
+pipeline_check --output threatmodel --output-file threats.md # STRIDE threat model
 pipeline_check --output both                # terminal on stderr + JSON on stdout
 ```
 
@@ -176,16 +181,42 @@ pipeline_check --output both                # terminal on stderr + JSON on stdou
 
 ### GitHub Actions
 
-```yaml
-- name: Scan CI/CD security posture
-  run: |
-    pip install pipeline-check
-    pipeline_check --pipeline github \
-      --output sarif --output-file pipeline-check.sarif \
-      --fail-on HIGH
+The marketplace action wraps install, scan, gate, and SARIF upload in
+one step. Findings show up in the GitHub Security tab.
 
-- name: Upload SARIF
-  if: always()
+```yaml
+permissions:
+  contents: read
+  security-events: write   # required by upload-sarif
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dmartinochoa/pipeline-check@v1
+        with:
+          pipeline: auto       # or: github, gitlab, terraform, k8s, ...
+          fail-on: HIGH
+```
+
+Inputs (all optional): `pipeline`, `path`, `fail-on`, `min-grade`,
+`max-failures`, `severity-threshold`, `baseline`, `baseline-from-git`,
+`diff-base`, `standard`, `output`, `output-file`, `upload-sarif`,
+`pipeline-check-version`, `python-version`, `resolve-remote`,
+`extra-args`. Outputs: `exit-code`, `findings-count`, `failed-count`,
+`score`, `grade`, `sarif-file`. See [`action.yml`](action.yml) for the
+full surface.
+
+For PR review comments on the changed lines, see the companion
+[pipeline-check-pr action](.github/actions/pipeline-check-pr/README.md).
+
+For finer control, the manual three-step form still works:
+
+```yaml
+- run: pip install pipeline-check
+- run: pipeline_check --pipeline github --output sarif --output-file pipeline-check.sarif --fail-on HIGH
+- if: always()
   uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: pipeline-check.sarif
@@ -366,13 +397,18 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-036
-        ├── gitlab/rules/      # GL-001 .. GL-032
+        ├── github/rules/      # GHA-001 .. GHA-039
+        ├── gitlab/rules/      # GL-001 .. GL-033
         ├── bitbucket/rules/   # BB-001 .. BB-029
         ├── azure/rules/       # ADO-001 .. ADO-030
         ├── jenkins/rules/     # JF-001 .. JF-032
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
+        ├── buildkite/rules/   # BK-001 .. BK-015
+        ├── drone/rules/       # DR-001 .. DR-011
+        ├── tekton/rules/      # TKN-001 .. TKN-015
+        ├── argo/rules/        # ARGO-001 .. ARGO-015
+        ├── oci/rules/         # OCI-001 .. OCI-008
         ├── dockerfile/rules/  # DF-001 .. DF-020
         ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack

@@ -8,6 +8,14 @@ include:
 
 image: python:latest
 
+# GL-033 — document-root before_script interpolates the
+# pusher-controlled commit title. Every job in the pipeline
+# inherits this script line and runs it verbatim, so a single
+# malicious commit message is N injections at once. iter_jobs
+# skips this top-level keyword so GL-002 misses it.
+before_script:
+  - echo "Build for ${CI_COMMIT_TITLE}"
+
 # GL-028 — top-level services image not pinned.
 services:
   - postgres:latest
@@ -138,3 +146,19 @@ taint-build:
   needs: [taint-extract]
   script:
     - echo Building tagged $TITLE
+
+# TAINT-008: extends-chain taint propagation. ``.tainted-base``
+# is a hidden template that pipes ``$CI_COMMIT_REF_NAME`` into a
+# variables: entry; ``deploy-from-extends`` extends it and
+# references ``$BRANCH`` unquoted in its script. GL-002 misses
+# this because its iter_jobs skips hidden templates; TAINT-008
+# walks the extends chain to surface the inherited taint.
+.tainted-base:
+  variables:
+    BRANCH: $CI_COMMIT_REF_NAME
+
+deploy-from-extends:
+  stage: test
+  extends: .tainted-base
+  script:
+    - echo Deploying branch $BRANCH

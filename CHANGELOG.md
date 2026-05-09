@@ -12,6 +12,279 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **MCP (Model Context Protocol) server (``--serve``).** Locally-
+  running MCP server that lets AI clients (Claude Desktop,
+  Claude Code, Cursor, Continue, Zed) drive scans and
+  introspect the rule catalog directly. stdio transport, ten
+  tools advertised: ``list_providers``, ``list_checks``,
+  ``explain_check``, ``list_chains``, ``explain_chain``,
+  ``list_standards``, ``scan``, ``inventory``, ``threat_model``,
+  ``scan_markdown``. Every tool returns JSON-serializable data
+  with input schemas validated on each call; errors come back
+  as ``{"error": ...}`` payloads, never as raw stack traces.
+
+  The ``mcp`` Python SDK is an *optional* extra to keep the
+  default install slim. Install with
+  ``pip install 'pipeline-check[mcp]'``. The CLI flag fails with
+  exit 3 + an actionable message when the extra is missing.
+
+  Architecture splits ``pipeline_check/mcp_server/tools.py``
+  (pure functions wrapping the existing Scanner / registries,
+  no SDK import) from ``pipeline_check/mcp_server/server.py``
+  (binds tool functions to MCP request types, runs the asyncio
+  stdio loop). The split keeps tool logic unit-testable without
+  spinning up an MCP loop and lets future transports (HTTP+SSE,
+  streamable-http) reuse the same tool surface.
+
+  Claude Desktop / Claude Code config snippets in ``docs/mcp.md``.
+
+- **STRIDE threat-model generator (``--output threatmodel``).**
+  New output format that emits a self-contained Markdown
+  threat-model document populated from the same scan output
+  the JSON / HTML / SARIF reporters consume: findings,
+  optional inventory components, optional attack chains.
+  Document sections: Scope, Trust boundaries (heuristics keyed
+  on the provider mix in inventory), Assets (the inventory
+  itself), STRIDE analysis (failing findings grouped by
+  category), Implemented controls (passing-check counts per
+  STRIDE bucket), Risk register (top 25 failures), and a
+  Methodology footer. Selecting ``--output threatmodel``
+  auto-runs the inventory pass so a one-flag invocation
+  produces a populated document.
+
+  The OWASP CICD Top 10 -> STRIDE mapping is policy in
+  ``threatmodel_reporter.py``: each OWASP control maps to one
+  or more STRIDE codes (e.g. CICD-SEC-6 -> Information
+  Disclosure + Spoofing), and a small CWE prepend table
+  refines the head when an exact CWE is more specific than
+  the OWASP fallback (CWE-200 -> Information Disclosure;
+  CWE-269 -> Elevation of Privilege; CWE-778 -> Repudiation).
+  No rule registry changes. Re-policing is a pure-function
+  swap.
+
+  Output is shaped for SOC 2 / PCI / NIST SSDF evidence
+  packages and architecture-review docs; the risk register
+  caps at 25 rows so the document stays printable, while the
+  JSON output remains unbounded for downstream tooling.
+
+- **GL-033 global before_script / after_script taint
+  propagation.** New rule. ``iter_jobs`` deliberately skips
+  top-level keywords (``before_script``, ``after_script``,
+  ``default``, ``image``, ``services``, ``variables``,
+  ``stages``, ``workflow``, ``include``, ...), which means
+  GL-002's per-job injection scan never sees a tainted
+  ``$CI_COMMIT_TITLE`` interpolation in a document-root
+  ``before_script:`` or ``default.before_script:`` even
+  though it propagates to every job in the pipeline. GL-033
+  closes that gap by scanning document-root ``before_script:``,
+  ``after_script:``, and ``default.before_script:`` /
+  ``default.after_script:`` for the same attacker-
+  controllable predefined CI variables tracked by GL-002.
+  Severity HIGH because the injection reach is N times the
+  per-job equivalent (one global script line is N injections
+  in N jobs at once).
+
+  GitLab catalog: 32 -> 33.
+
+- **GHA-039 services / container credentials literal.** New
+  rule, peer-tool gap closure (Zizmor's
+  ``hardcoded-container-credentials``). Flags any literal
+  value in a job-level ``container.credentials.{username,
+  password}`` field or a ``services.<name>.credentials.{
+  username, password}`` field. GHA-008 catches credential
+  **shapes** (AWS keys, JWTs, Slack tokens) but not generic
+  passwords like ``hunter2`` or registry usernames; GHA-039
+  catches them by **position**, anything literal in those
+  fields is by definition a leaked credential. Empty strings
+  and the documented ``anonymous`` / ``guest`` / ``public``
+  / ``noauth`` sentinel usernames are treated as safe.
+  ``${{ secrets.* }}`` references (full-string or inline)
+  pass. Severity CRITICAL because the value lands in the
+  runner's start banner of every build log.
+
+  GHA catalog: 38 -> 39.
+
+- **GHA-037 / GHA-038. Peer-tool gap closure.** Two new GHA
+  rules covering exploit classes that Zizmor / Checkov /
+  StepSecurity audit but pipeline-check missed.
+
+  - **GHA-037 actions/checkout persist-credentials.** Flags
+    ``actions/checkout`` steps that omit ``persist-credentials:
+    false`` (the v3 / v4 default of ``true``) or set it to
+    ``true`` explicitly. The default writes the GITHUB_TOKEN
+    into ``.git/config`` as an
+    ``http.https://github.com/.extraheader`` line, where any
+    subsequent ``run:`` step in the same job can read it via
+    ``git config --get http.https://github.com/.extraheader``
+    and exfiltrate. Real-world exploit chains (Ultralytics
+    2024 RCE, multiple Mend / Snyk advisories) leverage
+    exactly this primitive. Sister rule GHA-019 catches the
+    explicit ``echo $GITHUB_TOKEN > file`` shape; GHA-037
+    catches the implicit checkout-default that doesn't go
+    through a ``run:`` line at all. Zizmor calls this
+    failure pattern *Artipacked*.
+  - **GHA-038 ACTIONS_ALLOW_UNSECURE_COMMANDS.** Flags
+    workflows that set ``ACTIONS_ALLOW_UNSECURE_COMMANDS=true``
+    at the workflow / job / step env level. The flag re-
+    enables the retired ``::set-env::`` / ``::add-path::``
+    workflow commands which inject through the runner's
+    stdout, any tool's diagnostic line starting with ``::``
+    becomes an injection vector. Sister rule GHA-031
+    catches direct uses of ``::set-output::`` /
+    ``::save-state::`` in step scripts; GHA-038 catches the
+    explicit re-enable flag, which is strictly worse because
+    it accepts every ``::set-env::`` line on stdout, not just
+    the workflow author's own ``echo`` commands.
+
+  GHA catalog: 36 -> 38.
+
+- **DR-011 Drone node-map runner targeting.** New rule.
+  Flags Drone pipelines whose ``node:`` map (the runner-
+  selection block) interpolates a pusher-controllable Drone
+  variable (``${DRONE_BRANCH}`` / ``${DRONE_PULL_REQUEST_*}``
+  / ``${DRONE_COMMIT_AUTHOR}`` / ``${DRONE_COMMIT_MESSAGE}``
+  / ``${DRONE_TAG}`` etc.). The pusher controls which runner
+  pool the pipeline lands on, including a privileged pool
+  reserved for deploys. Closes Drone's parity with the same
+  pattern in BK-015 / GHA-036 / GL-032 / JF-032 / ADO-030 /
+  CC-031. Drone catalog: 10 -> 11.
+
+- **BK-015 / TKN-015 / ARGO-015.** Three follow-on rules
+  closing distinct gaps:
+
+  - **BK-015 agents-map interpolation.** Flags Buildkite
+    pipelines whose top-level ``agents:`` map or per-step
+    ``agents:`` override interpolates a pusher-controllable
+    Buildkite variable (``$BUILDKITE_BRANCH`` /
+    ``$BUILDKITE_TAG`` / ``$BUILDKITE_PULL_REQUEST_*`` /
+    ``$BUILDKITE_BUILD_AUTHOR`` etc.). The pusher gets to
+    pick which runner pool runs the build; closes parity
+    with GHA-036, GL-032, JF-032, ADO-030, CC-031.
+  - **TKN-015 workspace subPath param injection.** Flags
+    Tekton steps that interpolate ``$(params.x)`` into a
+    workspace ``subPath:``. A parameter-driven sub-path lets
+    a pusher traverse outside the shared workspace mount
+    (``../../../etc`` substitutes literally before the
+    volume mount happens). TKN-003 catches the same param
+    in script bodies; TKN-015 covers the file-system
+    breakout vector that script-only detection misses.
+  - **ARGO-015 insecure artifact URL.** Flags Argo template
+    inputs that pull artifacts over plain HTTP, the legacy
+    git:// protocol, or S3 with ``insecure: true``. Argo
+    runs whatever bytes arrive without an integrity check
+    unless the source provides one, so cleartext fetches
+    let an on-path attacker swap the payload.
+
+  Catalog: Buildkite 14 -> 15, Tekton 14 -> 15, Argo 14 -> 15.
+
+- **OCI manifest coverage 6 -> 8.** Two new manifest-only
+  rules:
+
+  - **OCI-007 legacy schemaVersion 1.** Flags Docker
+    Distribution v1 manifests (anything with
+    ``schemaVersion`` not equal to 2). v1 manifests predate
+    content-addressed layer descriptors, so a pull has no
+    way to detect tampering between the registry and the
+    runtime. Registries have been refusing v1 pushes for
+    years, but a pre-existing v1 image can still sit in a
+    private registry and get promoted; this catches it.
+  - **OCI-008 weak digest algorithm.** Flags any descriptor
+    (config / layer / sub-manifest) whose ``digest:`` uses
+    something other than ``sha256:`` or ``sha512:``. ``sha1:``
+    and ``md5:`` were never permitted by the OCI spec but
+    occasionally show up in mirror exports and forensic JSON;
+    a manifest that pins a layer by sha1 lets a colliding
+    blob be substituted without changing the manifest.
+
+- **Cross-provider lockfile-bypass parity (BK-014, TKN-014,
+  ARGO-014).** Three new rules port the unpinned-package-
+  install detection (already shipping for GHA / GitLab /
+  Bitbucket / Azure / Jenkins / CircleCI / Cloud Build /
+  Drone) to the three remaining container-flavored
+  providers. All three reuse the cross-provider primitives
+  ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE`` from
+  ``checks/base.py`` so detection stays consistent: bare
+  ``npm install`` (should be ``npm ci``), ``pip install
+  --trusted-host``, ``yarn install`` without ``--frozen-
+  lockfile``, ``cargo install`` / ``go install`` without a
+  pin, etc. Buildkite walks command steps, Tekton walks
+  step scripts on Task / ClusterTask docs only, and Argo
+  walks ``script.source`` plus joined ``container.args`` /
+  ``container.command`` per template.
+
+  Catalog: Buildkite 13 -> 14, Tekton 13 -> 14, Argo 13 -> 14.
+  OpenSSF Scorecard ``Pinned-Dependencies`` coverage now
+  includes every provider's lockfile-bypass rule (was a
+  60% gap before, hits 100% with this).
+
+- **Drone CI coverage 7 -> 10.** Three new rules close
+  long-standing gaps relative to the GHA / GitLab packs:
+
+  - **DR-008 pull: never policy.** Flags steps and services
+    declaring ``pull: never`` (or the deprecated boolean
+    ``pull: false`` synonym Drone treats as ``never``). The
+    policy tells the Drone agent to skip the registry round-
+    trip and run cached image bytes without re-verifying the
+    digest, so any image that ever landed in the local cache
+    keeps running until manual intervention. ``pull: always``
+    (the Drone default) and ``pull: if-not-exists`` are
+    treated as acceptable; the latter pairs naturally with
+    DR-001's digest pinning.
+  - **DR-009 tainted cache key.** Flags cache-plugin steps
+    (``meltwater/drone-cache``, ``drillster/drone-volume-
+    cache``, etc.) whose ``settings.cache_key`` /
+    ``restore_keys`` interpolate attacker-controllable Drone
+    variables (``$DRONE_BRANCH``, ``$DRONE_PULL_REQUEST_*``,
+    ``$DRONE_COMMIT_MESSAGE``, ``$DRONE_TAG``, …). A pusher
+    that controls the cache key controls which cache slot
+    they read from, enabling cache poisoning. Trusted vars
+    (``DRONE_BUILD_NUMBER``, ``DRONE_REPO_*``) are allow-
+    listed; static keys pass.
+  - **DR-010 unpinned package install.** Reuses the cross-
+    provider ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE``
+    primitives to flag bare ``npm install`` (should be
+    ``npm ci``), ``pip install --trusted-host`` /
+    ``--index-url http://``, ``yarn install`` without
+    ``--frozen-lockfile``, ``bundle install`` without
+    ``--frozen``, ``cargo install`` / ``go install`` without
+    a tag/commit pin, and similar shapes. Closes parity with
+    GHA-021/022, GL-021/022 (and the same pack across
+    Bitbucket / Azure / Jenkins / CircleCI / Cloud Build /
+    Buildkite / Tekton / Argo).
+
+- **TAINT-008 GitLab extends-chain taint.** New rule. GL-002
+  catches direct interpolation when the tainted variable is
+  declared on the consuming job (or globally), but it doesn't
+  follow GitLab's ``extends:`` template-inheritance channel.
+  Pattern this rule covers:
+
+      .base:
+        variables:
+          TITLE: $CI_COMMIT_TITLE         # tainted, hidden template
+
+      build:
+        extends: .base
+        script:
+          - echo Building $TITLE          # GL-002 misses; TITLE
+                                          # not in this job's
+                                          # variables block
+
+  ``iter_jobs`` skips hidden templates (the ``.``-prefix
+  convention), so the tainted ``variables:`` block in
+  ``.base`` is invisible to single-job rules. TAINT-008
+  resolves each non-hidden job's ``extends:`` chain
+  transitively (handling list-form ``extends: [a, b]``,
+  multi-level chains, and pathological cycles via a visited
+  set), gathers tainted variables from every link, and walks
+  the consuming job's ``before_script:`` / ``script:`` /
+  ``after_script:`` for unquoted references. Quote-state
+  aware: ``"$TITLE"`` consumers pass; only unquoted
+  references fire. v1 limitations: ``include:`` cross-
+  pipeline file inclusion isn't tracked yet.
+
+  GitLab provider catalog: 33 -> 34. The TAINT-NNN family
+  now spans 8 rules across 5 providers (GHA: 1/2/3, GitLab:
+  4/8, Buildkite: 5, Tekton: 6, Argo: 7).
 - **TAINT-003 resolver-coupled callee analysis.** TAINT-003
   now does cross-workflow analysis when the callee body is
   loaded into the same scan (local references via

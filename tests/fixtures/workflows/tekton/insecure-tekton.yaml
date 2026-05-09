@@ -32,6 +32,12 @@ spec:
     - name: build
       # TKN-001: tag-only image, no @sha256 digest.
       image: alpine:3.18
+      # TKN-015: workspace subPath interpolates a Task parameter,
+      # so a pusher-controlled value can traverse outside the
+      # shared workspace mount (``../../`` in ``$(params.ref)``).
+      workspaces:
+        - name: source
+          subPath: $(params.ref)
       # TKN-002: privileged step running as root.
       securityContext:
         privileged: true
@@ -49,6 +55,8 @@ spec:
         set -e
         echo Building $(params.ref)
         curl https://example.com/install.sh | sh
+        npm install
+        pip install --trusted-host pypi.internal package
         docker build -t internal/app:latest .
         docker push internal/app:latest
 ---

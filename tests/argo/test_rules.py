@@ -664,3 +664,253 @@ class TestARGO013AutomountToken:
         """
         f = run_check(cfg, "ARGO-013")
         assert not f.passed
+
+
+# ── ARGO-014 unpinned package install ──────────────────────────────────
+
+
+class TestARGO014PkgUnpinned:
+    def test_passes_with_npm_ci(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: |
+                  npm ci
+                  npm test
+        """
+        f = run_check(cfg, "ARGO-014")
+        assert f.passed
+
+    def test_fails_on_bare_npm_install(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: npm install
+        """
+        f = run_check(cfg, "ARGO-014")
+        assert not f.passed
+        assert "unpinned" in f.description
+
+    def test_fails_on_pip_trusted_host(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: pip install --trusted-host pypi.local pkg
+        """
+        f = run_check(cfg, "ARGO-014")
+        assert not f.passed
+
+    def test_fails_on_container_args(self):
+        # Argo supports container.args plus container.command (not
+        # just script.source); the joined-text walker scans both.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              container:
+                image: alpine:3
+                command: [sh, -c]
+                args:
+                  - npm install
+        """
+        f = run_check(cfg, "ARGO-014")
+        assert not f.passed
+
+    def test_passes_with_pip_lockfile(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [bash]
+                source: pip install -r requirements.txt
+        """
+        f = run_check(cfg, "ARGO-014")
+        assert f.passed
+
+
+# ── ARGO-015 insecure artifact URL ─────────────────────────────────────
+
+
+class TestARGO015ArtifactInsecureURL:
+    def test_passes_with_https_http_artifact(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              inputs:
+                artifacts:
+                  - name: tarball
+                    path: /tmp/x.tar
+                    http:
+                      url: https://example.com/x.tar
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert f.passed
+
+    def test_fails_on_http_url(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              inputs:
+                artifacts:
+                  - name: tarball
+                    path: /tmp/x.tar
+                    http:
+                      url: http://internal/x.tar
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert not f.passed
+        assert "http.url" in f.description
+
+    def test_fails_on_git_protocol_repo(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              inputs:
+                artifacts:
+                  - name: src
+                    path: /src
+                    git:
+                      repo: git://gitserver.local/x.git
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert not f.passed
+        assert "git.repo" in f.description
+
+    def test_fails_on_s3_with_insecure_true(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              inputs:
+                artifacts:
+                  - name: data
+                    path: /data
+                    s3:
+                      endpoint: minio.local
+                      bucket: x
+                      key: data.tar
+                      insecure: true
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert not f.passed
+        assert "s3 insecure" in f.description
+
+    def test_passes_on_https_git_repo(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              inputs:
+                artifacts:
+                  - name: src
+                    path: /src
+                    git:
+                      repo: https://github.com/example/x.git
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert f.passed
+
+    def test_passes_when_no_artifacts(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: build
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              script:
+                image: alpine:3
+                command: [sh]
+                source: ls
+        """
+        f = run_check(cfg, "ARGO-015")
+        assert f.passed

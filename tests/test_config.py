@@ -255,7 +255,10 @@ class TestCliIntegration:
         # Config-supplied `pipeline: gitlab` actually took effect — only
         # GitLab check IDs should be emitted.
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}
+        assert emitted == (
+            {f"GL-{i:03d}" for i in range(1, 34)}
+            | {"TAINT-004", "TAINT-008"}
+        )
 
     def test_cli_flag_overrides_config(self, tmp_path, monkeypatch):
         import json
@@ -305,7 +308,10 @@ class TestCliIntegration:
         # GitLab provider actually ran — AWS would need real creds and
         # emit CB-*/IAM-*/etc. ids, none of which should appear here.
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}
+        assert emitted == (
+            {f"GL-{i:03d}" for i in range(1, 34)}
+            | {"TAINT-004", "TAINT-008"}
+        )
 
     def test_gate_config_file_tightens_gate(self, tmp_path, monkeypatch):
         from click.testing import CliRunner

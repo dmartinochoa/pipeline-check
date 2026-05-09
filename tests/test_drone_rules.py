@@ -30,6 +30,18 @@ from pipeline_check.core.checks.drone.rules import (
 from pipeline_check.core.checks.drone.rules import (
     dr007_host_path_mount as r7,
 )
+from pipeline_check.core.checks.drone.rules import (
+    dr008_pull_never as r8,
+)
+from pipeline_check.core.checks.drone.rules import (
+    dr009_cache_key_taint as r9,
+)
+from pipeline_check.core.checks.drone.rules import (
+    dr010_pkg_unpinned as r10,
+)
+from pipeline_check.core.checks.drone.rules import (
+    dr011_node_targeting as r11,
+)
 
 _DIGEST = "@sha256:" + "0" * 64
 
@@ -41,12 +53,15 @@ def _pipeline(
     services: list[dict[str, Any]] | None = None,
     environment: dict[str, Any] | None = None,
     volumes: list[dict[str, Any]] | None = None,
+    node: dict[str, Any] | None = None,
 ) -> Pipeline:
     data: dict[str, Any] = {
         "kind": "pipeline",
         "type": type_,
         "name": "default",
     }
+    if node is not None:
+        data["node"] = node
     if steps is not None:
         data["steps"] = steps
     if services is not None:
@@ -532,3 +547,230 @@ class TestDR007HostPathMount:
             volumes=[{"name": "v", "host": {"path": "/var-foo"}}],
         )
         assert r7.check(p).passed
+
+
+# ── DR-008 ───────────────────────────────────────────────────────────
+
+
+class TestDR008PullNever:
+    def test_passes_when_no_pull_directive(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}"},
+        ])
+        assert r8.check(p).passed
+
+    def test_passes_on_pull_always(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}", "pull": "always"},
+        ])
+        assert r8.check(p).passed
+
+    def test_passes_on_pull_if_not_exists(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "pull": "if-not-exists"},
+        ])
+        assert r8.check(p).passed
+
+    def test_fails_on_pull_never(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}", "pull": "never"},
+        ])
+        f = r8.check(p)
+        assert not f.passed
+        assert "steps.build" in f.description
+
+    def test_fails_on_pull_never_in_service(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "ok", "image": f"x{_DIGEST}"}],
+            services=[
+                {"name": "redis", "image": f"redis:7{_DIGEST}",
+                 "pull": "never"},
+            ],
+        )
+        f = r8.check(p)
+        assert not f.passed
+        assert "services.redis" in f.description
+
+    def test_fails_on_boolean_false_synonym(self) -> None:
+        # ``pull: false`` is the deprecated synonym Drone treats as
+        # ``never``. Tolerate native bool type.
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}", "pull": False},
+        ])
+        assert not r8.check(p).passed
+
+    def test_passes_on_non_container_pipeline(self) -> None:
+        p = _pipeline(type_="exec", steps=[{"name": "x"}])
+        assert r8.check(p).passed
+
+
+# ── DR-009 ───────────────────────────────────────────────────────────
+
+
+class TestDR009CacheKeyTaint:
+    def test_passes_when_no_cache_plugin(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "settings": {"cache_key": "${DRONE_BRANCH}"}},
+        ])
+        # Non-cache plugin → rule skips. Tainted ``cache_key`` only
+        # matters on a cache plugin step.
+        assert r9.check(p).passed
+
+    def test_fails_on_drone_branch_in_cache_key(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "cache", "image": "meltwater/drone-cache:1.0.0",
+             "settings": {"cache_key": "${DRONE_BRANCH}-build"}},
+        ])
+        f = r9.check(p)
+        assert not f.passed
+        assert "$DRONE_BRANCH" in f.description
+
+    def test_fails_on_drone_pull_request_in_restore_keys(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "cache",
+             "image": "drillster/drone-volume-cache:1.0.0",
+             "settings": {
+                 "restore_keys": [
+                     "build-${DRONE_PULL_REQUEST_TITLE}-x",
+                 ],
+             }},
+        ])
+        assert not r9.check(p).passed
+
+    def test_fails_on_bare_dollar_drone_commit_message(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "cache", "image": "meltwater/drone-cache:1.0.0",
+             "settings": {"cache_key": "build-$DRONE_COMMIT_MESSAGE"}},
+        ])
+        assert not r9.check(p).passed
+
+    def test_passes_on_trusted_drone_var(self) -> None:
+        # ``DRONE_BUILD_NUMBER`` is operator-controlled, not user-
+        # controllable; shouldn't poison the cache.
+        p = _pipeline(steps=[
+            {"name": "cache", "image": "meltwater/drone-cache:1.0.0",
+             "settings": {"cache_key": "build-${DRONE_BUILD_NUMBER}"}},
+        ])
+        assert r9.check(p).passed
+
+    def test_passes_on_static_cache_key(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "cache", "image": "meltwater/drone-cache:1.0.0",
+             "settings": {"cache_key": "v1-deps"}},
+        ])
+        assert r9.check(p).passed
+
+    def test_passes_on_non_container_pipeline(self) -> None:
+        p = _pipeline(type_="exec", steps=[{"name": "x"}])
+        assert r9.check(p).passed
+
+
+# ── DR-010 ───────────────────────────────────────────────────────────
+
+
+class TestDR010PkgUnpinned:
+    def test_passes_when_no_install(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "commands": ["go build", "echo done"]},
+        ])
+        assert r10.check(p).passed
+
+    def test_fails_on_bare_npm_install(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "commands": ["npm install"]},
+        ])
+        f = r10.check(p)
+        assert not f.passed
+        assert "steps.build" in f.description
+
+    def test_passes_on_npm_ci(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "commands": ["npm ci"]},
+        ])
+        assert r10.check(p).passed
+
+    def test_fails_on_pip_trusted_host(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "commands": ["pip install --trusted-host pypi.local x"]},
+        ])
+        assert not r10.check(p).passed
+
+    def test_passes_on_pip_with_lockfile(self) -> None:
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"x{_DIGEST}",
+             "commands": ["pip install -r requirements.txt"]},
+        ])
+        assert r10.check(p).passed
+
+    def test_passes_on_non_container_pipeline(self) -> None:
+        p = _pipeline(type_="exec", steps=[{"name": "x"}])
+        assert r10.check(p).passed
+
+
+# ── DR-011 ───────────────────────────────────────────────────────────
+
+
+class TestDR011NodeTargeting:
+    def test_passes_when_no_node_block(self) -> None:
+        p = _pipeline(steps=[{"name": "build", "image": f"x{_DIGEST}"}])
+        f = r11.check(p)
+        assert f.passed
+        assert "no ``node:`` map" in f.description
+
+    def test_passes_with_static_node_map(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={"instance": "ci-prod-amd64"},
+        )
+        assert r11.check(p).passed
+
+    def test_fails_when_node_uses_drone_branch(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={"instance": "build-${DRONE_BRANCH}"},
+        )
+        f = r11.check(p)
+        assert not f.passed
+        assert "DRONE_BRANCH" in f.description
+
+    def test_fails_on_pull_request_var(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={"role": "$DRONE_PULL_REQUEST"},
+        )
+        assert not r11.check(p).passed
+
+    def test_fails_on_commit_author(self) -> None:
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={"team": "team-${DRONE_COMMIT_AUTHOR}"},
+        )
+        assert not r11.check(p).passed
+
+    def test_passes_on_trusted_var(self) -> None:
+        # ``DRONE_BUILD_NUMBER`` is server-controlled; not on the
+        # tainted list.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={"label": "build-$DRONE_BUILD_NUMBER"},
+        )
+        assert r11.check(p).passed
+
+    def test_handles_nested_node_map(self) -> None:
+        # Drone's ``node:`` is flat in practice; tolerate nested
+        # dict / list shapes the recursive walker handles.
+        p = _pipeline(
+            steps=[{"name": "build", "image": f"x{_DIGEST}"}],
+            node={
+                "selectors": [
+                    {"key": "branch", "value": "${DRONE_BRANCH}"},
+                ],
+            },
+        )
+        assert not r11.check(p).passed

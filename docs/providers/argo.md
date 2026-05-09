@@ -31,7 +31,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-14 checks · 2 have an autofix patch (``--fix``).
+16 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -48,6 +48,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGO-011](#argo-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGO-012](#argo-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGO-013](#argo-013) | Argo workflow does not opt out of SA token automount | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ARGO-014](#argo-014) | Argo template script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ARGO-015](#argo-015) | Input artifact pulls from an insecure (non-HTTPS) URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-007](#taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -311,6 +313,62 @@ Companion to ARGO-003 (default ServiceAccount). The default SA only matters when
 **Recommended action**
 
 Set ``spec.automountServiceAccountToken: false`` on the Workflow / WorkflowTemplate, or per-template (``templates[].automountServiceAccountToken: false``) on any template that doesn't need to talk to the Kubernetes API. An explicit ``false`` keeps a compromised step from using the workflow's SA token to escalate inside the cluster, even when the SA itself is hardened (ARGO-003), a token automounted into every pod widens the leak surface.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ARGO-014: Argo template script runs unpinned package install { #argo-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Detection reuses the cross-provider primitives ``PKG_INSECURE_RE`` and ``PKG_NO_LOCKFILE_RE`` from ``checks/base.py``. Same rule pack already exists for GHA (``GHA-021`` / ``GHA-022``), GitLab (``GL-021`` / ``GL-022``), Bitbucket / Azure DevOps / Jenkins / CircleCI / Cloud Build / Buildkite / Tekton / Drone. Argo was a gap; this closes it.
+
+Walks ``script.source`` plus joined ``container.args`` / ``container.command`` text per template. Steps and tasks across DAG / steps templates are equally in scope because they all reduce to a container with a shell payload.
+
+**Known false-positive modes**
+
+- Bootstrap-stage installs that intentionally pull latest (``apt-get install -y curl`` for a tooling image rebuild) sometimes legitimately bypass the lockfile. Suppress via ignore-file scoped to the specific template name.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every package install to a lockfile or a checksum-verified version. ``npm ci`` (not ``npm install``), ``yarn install --frozen-lockfile``, ``pip install -r requirements.txt --require-hashes``, ``bundle install --frozen``. Don't use ``--trusted-host`` / ``--no-verify`` / a non-HTTPS index URL — those bypass TLS or trust validation entirely (ARGO-008 covers the TLS subset; this rule covers the lockfile subset).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGO-015: Input artifact pulls from an insecure (non-HTTPS) URL { #argo-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-D-COMMS-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Argo Workflows resolves input artifacts before the template's container starts. The source can be ``http``, ``git``, ``s3``, ``gcs``, ``azure``, ``hdfs``, ``oss``, or ``raw``. The rule fires when:
+
+- ``http.url`` starts with ``http://`` (cleartext fetch)
+- ``git.repo`` starts with ``git://`` (legacy unauthenticated git protocol, no integrity)
+- ``s3.endpoint`` is set with ``insecure: true`` (explicit TLS bypass)
+
+Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integrity / signing posture that lives outside this rule.
+
+**Known false-positive modes**
+
+- Local-mirror development workflows occasionally use ``http://`` against an internal registry that's only reachable from a private network. The integrity guarantee still relies on network isolation rather than transport encryption; suppress on the specific template name when this is the deliberate shape.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pull every input artifact over HTTPS. Replace ``http://`` with ``https://`` in any ``http.url:`` block, and use ``https://`` git remote URLs instead of ``git://``, ``ssh://``-without-key-pinning, or anonymous-cleartext access. Plain HTTP fetches let any on-path attacker swap the artifact bytes for a different payload, and Argo will execute whatever bytes arrive without an integrity check unless the artifact source provides one (S3 + checksum, OCI + digest). If the artifact source genuinely doesn't ship over HTTPS (a legacy internal mirror), wrap it in a CDN or proxy that adds TLS, then pin the artifact by checksum on the consuming side.
 
 </div>
 

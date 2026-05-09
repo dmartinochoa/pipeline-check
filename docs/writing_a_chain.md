@@ -280,7 +280,7 @@ committed. Two checks enforce currency:
 The top-of-README tagline counts attack chains:
 
 ```markdown
-**530+ checks** across **18 providers**, ..., plus **N attack chains** ...
+**550+ checks** across **18 providers**, ..., plus **N attack chains** ...
 ```
 
 Bump `N` to match the new catalog size. `tests/test_doc_claims.py`

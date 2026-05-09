@@ -167,7 +167,9 @@ nav:
       - Scoring model: scoring_model.md
       - CI gate: ci_gate.md
   - Output formats: output.md
+  - Threat-model generator: threatmodel.md
   - Attack chains: attack_chains.md
+  - MCP server: mcp.md
   - Contributing:
       - Architecture: architecture.md
       - Adding a rule: writing_a_rule.md

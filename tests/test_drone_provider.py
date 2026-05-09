@@ -120,6 +120,7 @@ class TestDronePipelineChecksOrchestrator:
         assert ids == [
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
+            "DR-008", "DR-009", "DR-010", "DR-011",
         ]
         # Every rule passes on the hardened fixture.
         assert all(f.passed for f in findings), [
@@ -133,9 +134,10 @@ class TestDronePipelineChecksOrchestrator:
         _write(f, _VULNERABLE)
         ctx = DroneContext.from_path(f)
         findings = DronePipelineChecks(ctx).run()
-        # DR-005 only fires on plugin steps and DR-007 only fires on
-        # sensitive host-path mounts; the vulnerable fixture has
-        # neither, so every other rule fires.
+        # DR-005 only fires on plugin steps, DR-007 only on sensitive
+        # host-path mounts, DR-008 only on ``pull: never``, DR-009
+        # only on cache-plugin steps; the vulnerable fixture lacks
+        # those shapes. Every other rule fires.
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",
@@ -180,9 +182,12 @@ class TestScannerWiring:
         assert ids == [
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
+            "DR-008", "DR-009", "DR-010", "DR-011",
         ]
-        # Vulnerable fixture trips 5 of 7 (DR-005 needs a plugin,
-        # DR-007 needs a host-path volume).
+        # Vulnerable fixture trips 5 of 10 (DR-005 needs a plugin,
+        # DR-007 a host-path volume, DR-008 a ``pull: never``
+        # directive, DR-009 a cache-plugin step, DR-010 an unpinned
+        # package install).
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",

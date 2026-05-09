@@ -53,7 +53,7 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 37)}
+        {f"GHA-{i:03d}" for i in range(1, 40)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
@@ -87,7 +87,10 @@ class TestGitHubFixtures:
 
 
 class TestGitLabFixtures:
-    EXPECTED_IDS = {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}
+    EXPECTED_IDS = (
+        {f"GL-{i:03d}" for i in range(1, 34)}
+        | {"TAINT-004", "TAINT-008"}
+    )
 
     def _scan(self, filename: str):
         ctx = GitLabContext.from_path(FIXTURES / "gitlab" / filename)
@@ -280,7 +283,7 @@ class TestCloudBuildFixtures:
 
 
 class TestBuildkiteFixtures:
-    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 14)} | {"TAINT-005"}
+    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 16)} | {"TAINT-005"}
 
     def _scan(self, filename: str):
         ctx = BuildkiteContext.from_path(FIXTURES / "buildkite" / filename)
@@ -376,7 +379,7 @@ class TestKubernetesFixtures:
 
 
 class TestTektonFixtures:
-    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 14)} | {"TAINT-006"}
+    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 16)} | {"TAINT-006"}
 
     def _scan(self, filename: str):
         ctx = TektonContext.from_path(FIXTURES / "tekton" / filename)
@@ -408,7 +411,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 14)} | {"TAINT-007"}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 16)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)
@@ -441,9 +444,9 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 37)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 40)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}),
+     {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 30)}),
@@ -456,13 +459,13 @@ class TestArgoFixtures:
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("buildkite", "buildkite/insecure-pipeline.yml",
      BuildkiteContext, BuildkitePipelineChecks,
-     {f"BK-{i:03d}" for i in range(1, 14)} | {"TAINT-005"}),
+     {f"BK-{i:03d}" for i in range(1, 16)} | {"TAINT-005"}),
     ("tekton", "tekton/insecure-tekton.yaml",
      TektonContext, TektonChecks,
-     {f"TKN-{i:03d}" for i in range(1, 14)} | {"TAINT-006"}),
+     {f"TKN-{i:03d}" for i in range(1, 16)} | {"TAINT-006"}),
     ("argo", "argo/insecure-argo.yaml",
      ArgoContext, ArgoChecks,
-     {f"ARGO-{i:03d}" for i in range(1, 14)} | {"TAINT-007"}),
+     {f"ARGO-{i:03d}" for i in range(1, 16)} | {"TAINT-007"}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
      {f"GCB-{i:03d}" for i in range(1, 27)}),

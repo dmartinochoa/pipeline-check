@@ -90,6 +90,10 @@ STANDARD = Standard(
         "JF-031":   ["Pinned-Dependencies"],
         "CC-021":   ["Pinned-Dependencies"],
         "CC-028":   ["Pinned-Dependencies"],
+        "BK-014":   ["Pinned-Dependencies"],                           # bk lockfile-bypass / insecure pkg install
+        "TKN-014":  ["Pinned-Dependencies"],                           # tkn lockfile-bypass / insecure pkg install
+        "ARGO-014": ["Pinned-Dependencies"],                           # argo lockfile-bypass / insecure pkg install
+        "DR-010":   ["Pinned-Dependencies"],                           # drone lockfile-bypass / insecure pkg install
 
         # ── Dangerous-Workflow ───────────────────────────────────────
         "CB-010":   ["Dangerous-Workflow"],                            # fork PR builds without actor filter
@@ -106,12 +110,14 @@ STANDARD = Standard(
         "GHA-026":  ["Dangerous-Workflow"],
         "GHA-027":  ["Dangerous-Workflow"],
         "GHA-028":  ["Dangerous-Workflow"],
+        "GHA-038":  ["Dangerous-Workflow"],                            # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GL-002":   ["Dangerous-Workflow"],
         "GL-011":   ["Dangerous-Workflow"],
         "GL-012":   ["Dangerous-Workflow"],
         "GL-023":   ["Dangerous-Workflow"],
         "GL-025":   ["Dangerous-Workflow"],                            # malicious activity
         "GL-026":   ["Dangerous-Workflow"],
+        "GL-033":   ["Dangerous-Workflow"],                            # global before_script taint
         "BB-002":   ["Dangerous-Workflow"],
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
@@ -155,6 +161,8 @@ STANDARD = Standard(
         "GHA-005":  ["Token-Permissions"],
         "GHA-008":  ["Token-Permissions"],
         "GHA-019":  ["Token-Permissions"],
+        "GHA-037":  ["Token-Permissions"],          # actions/checkout persist-credentials
+        "GHA-039":  ["Token-Permissions"],          # services / container creds literal
         "GL-003":   ["Token-Permissions"],
         "GL-008":   ["Token-Permissions"],
         "GL-013":   ["Token-Permissions"],
@@ -267,6 +275,7 @@ STANDARD = Standard(
         "BK-001":   ["Pinned-Dependencies"],                           # plugin not pinned
         "BK-002":   ["Token-Permissions"],                             # leaked creds in env
         "BK-003":   ["Dangerous-Workflow"],                            # untrusted variable injection
+        "BK-015":   ["Dangerous-Workflow"],                            # agents map runner targeting via tainted vars
         "BK-004":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # curl | bash
         "BK-005":   ["Dangerous-Workflow"],                            # Docker privileged
         "BK-007":   ["Code-Review"],                                   # deploy not gated
@@ -299,6 +308,22 @@ STANDARD = Standard(
         "ARGO-010": ["SBOM"],                                          # SBOM
         "ARGO-011": ["Signed-Releases", "SBOM"],                       # SLSA provenance
         "ARGO-012": ["Vulnerabilities", "SAST"],                       # vuln scanning
+        # ── Drone CI ─────────────────────────────────────────────────
+        "DR-001":   ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "DR-002":   ["Dangerous-Workflow"],                            # privileged step
+        "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
+        "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag
+        "DR-006":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # TLS bypass in commands
+        "DR-007":   ["Dangerous-Workflow"],                            # sensitive host-path mount
+        "DR-008":   ["Pinned-Dependencies"],                           # ``pull: never`` skips registry verify
+        "DR-009":   ["Dangerous-Workflow"],                            # tainted cache key
+        "DR-011":   ["Dangerous-Workflow"],                            # node map runner targeting
+        # ── OCI image manifest ───────────────────────────────────────
+        "OCI-001":  ["SBOM"],                                          # provenance annotations
+        "OCI-002":  ["Signed-Releases", "SBOM"],                       # build attestation manifest
+        "OCI-004":  ["Pinned-Dependencies"],                           # foreign-URL layer = no content pin
+        "OCI-007":  ["Pinned-Dependencies"],                           # legacy schemaVersion 1
+        "OCI-008":  ["Pinned-Dependencies"],                           # non-sha256 digest
         # ── Helm chart-supply-chain ──────────────────────────────────
         # Chart deps ARE pinned dependencies in the Scorecard sense —
         # an unlocked Chart.lock is a Pinned-Dependencies failure.

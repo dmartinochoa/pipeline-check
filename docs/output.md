@@ -11,6 +11,7 @@ format carries the same finding set, only the rendering differs.
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
 | `markdown` | stdout                       | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
 | `junit`    | `--output-file` (required)   | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
+| `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
 ## JSON
@@ -176,6 +177,72 @@ The report ships with:
 
 See [scoring_model.md](scoring_model.md) for how the grade and severity
 breakdown are computed.
+
+## Threat model
+
+```bash
+pipeline_check --pipeline gitlab --gitlab-path .gitlab-ci.yml \
+    --output threatmodel --output-file threatmodel.md
+```
+
+Self-contained Markdown threat-model document. Selecting
+`--output threatmodel` auto-enables the inventory pass so the
+Assets and trust-boundary sections are populated.
+
+Section layout:
+
+- **Scope** — providers in scope (from inventory), region / target,
+  scorer summary (grade, score, severity breakdown).
+- **Trust boundaries** — heuristic list keyed off the provider mix
+  (e.g. "PR author → CI runner" surfaces whenever a Git-hosted CI
+  provider is in scope; "CI identity → cloud account" surfaces
+  whenever AWS / Terraform / CloudFormation are).
+- **Assets** — the inventory itself, grouped by `(provider, type)`.
+- **STRIDE analysis** — failing findings grouped under one of six
+  categories (Spoofing / Tampering / Repudiation / Information
+  Disclosure / Denial of Service / Elevation of Privilege).
+- **Implemented controls** — passing-check counts per STRIDE bucket,
+  evidence that the corresponding controls are in place.
+- **Risk register** — top-25 failing findings as a flat table with
+  severity, STRIDE codes, check id, resource. The unbounded set
+  lives in `--output json`.
+- **Methodology** — short footer that points readers at the
+  classification policy and capping rules.
+
+### How STRIDE classification works
+
+The OWASP CICD Top 10 mapping every rule already carries is the
+right vocabulary for a CI/CD audience but not the one auditors /
+threat modelers prefer. STRIDE has been the lingua franca of
+threat-modeling docs since Microsoft introduced it in 1999, and
+most compliance frameworks (SOC 2 CC, PCI 6.5, NIST SSDF PW.1)
+speak it natively.
+
+The mapping is mechanical:
+
+1. Each OWASP CICD-SEC-N maps to one or more STRIDE codes
+   (e.g. `CICD-SEC-6` → `Information Disclosure` + `Spoofing`).
+2. A small CWE prepend table refines the head when an exact CWE
+   is more specific than the OWASP fallback (`CWE-200` → `I`,
+   `CWE-269` → `E`, `CWE-778` → `R`, `CWE-345` → `T`).
+3. Findings with no OWASP and no CWE tags default to Tampering,
+   the most common CI/CD failure mode.
+
+Both tables live in
+`pipeline_check/core/threatmodel_reporter.py`. Re-policing is a
+pure-function swap, no rule registry changes.
+
+### Use cases
+
+- **SOC 2 / PCI evidence package**: attach `threatmodel.md` next
+  to the scan JSON. Auditors get a STRIDE-shaped narrative they
+  can read directly; engineers get the JSON for tooling.
+- **Architecture review**: paste into a Confluence / Notion
+  page as a starting draft. The Assets and trust-boundary
+  sections give reviewers a concrete map of what's in scope.
+- **Quarterly posture review**: regenerate against the latest
+  scan, diff against the prior quarter to see which STRIDE
+  buckets gained / lost open risks.
 
 ## Exit codes are independent of format
 

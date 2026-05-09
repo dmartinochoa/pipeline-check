@@ -29,6 +29,24 @@ jobs:
     # GHA-012: self-hosted runner with no `ephemeral` label. State
     # leaks across jobs (PR -> deploy).
     runs-on: self-hosted
+    # GHA-038: re-enables retired ::set-env / ::add-path workflow
+    # commands across every step in the job.
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+    # GHA-039: registry credentials embedded as literals in
+    # services and container blocks. The values land in the
+    # runner start banner of every build log.
+    container:
+      image: internal.registry/build:latest
+      credentials:
+        username: ci-deploy-bot
+        password: hunter2-rotate-me
+    services:
+      postgres:
+        image: postgres:14
+        credentials:
+          username: postgres
+          password: postgres-literal-password
     steps:
       - name: Checkout PR head (unsafe)
         uses: actions/checkout@v4

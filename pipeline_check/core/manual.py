@@ -453,12 +453,23 @@ TOPIC: output
               to disk. Best-effort startLine annotations land
               GitHub PR comments on the offending line; AWS ARN
               and region are exposed as result properties.
+    threatmodel
+              STRIDE-mapped threat-model Markdown document on
+              stdout (or to --output-file). Auto-runs the inventory
+              pass so the Assets and trust-boundary sections are
+              populated. Failing findings group by STRIDE category
+              (Spoofing / Tampering / Repudiation / Information
+              Disclosure / DoS / Elevation of Privilege); mapping
+              is derived from each rule's OWASP CICD Top 10 + CWE
+              tags. Shaped for SOC 2 / PCI evidence packages and
+              architecture-review docs; the risk register caps at
+              the top 25 failures (the JSON output is unbounded).
     both      Terminal report -> stderr, JSON -> stdout. Pipe
               ``jq`` while still seeing a human report.
 
 --output-file PATH
-    REQUIRED for --output html. Optional for --output sarif (default
-    is stdout).
+    REQUIRED for --output html. Optional for --output sarif /
+    junit / markdown / threatmodel (default is stdout).
 
 --severity-threshold SEV
     Minimum severity to include in the rendered report (e.g. HIGH

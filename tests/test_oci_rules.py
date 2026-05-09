@@ -31,6 +31,12 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     oci006_excessive_layer_count as r6,
 )
+from pipeline_check.core.checks.oci.rules import (
+    oci007_legacy_schema_v1 as r7,
+)
+from pipeline_check.core.checks.oci.rules import (
+    oci008_weak_digest_algorithm as r8,
+)
 
 
 def _index(
@@ -466,4 +472,130 @@ class TestOCI006ExcessiveLayerCount:
         # Index has no layers of its own.
         m = _index(entries=[_platform_entry()])
         f = r6.check(m)
+        assert f.passed
+
+
+# ── OCI-007 ───────────────────────────────────────────────────────────
+
+
+class TestOCI007LegacySchemaV1:
+    def test_passes_on_v2_index(self) -> None:
+        f = r7.check(_index())
+        assert f.passed
+
+    def test_passes_on_v2_single_image(self) -> None:
+        f = r7.check(_single())
+        assert f.passed
+
+    def test_fails_on_schema_v1(self) -> None:
+        # Build a manifest with schemaVersion: 1, parsed via the
+        # public path so the dataclass reflects what _parse_manifest
+        # would produce on a real v1 doc.
+        doc: dict[str, Any] = {
+            "schemaVersion": 1,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {
+                "mediaType": "application/vnd.oci.image.config.v1+json",
+                "digest": "sha256:cfg",
+                "size": 100,
+            },
+            "layers": [],
+        }
+        parsed = _parse_manifest("manifest.json", doc)
+        assert parsed is not None
+        f = r7.check(parsed)
+        assert not f.passed
+        assert "schemaVersion: 1" in f.description
+
+    def test_fails_on_schema_v0_garbage(self) -> None:
+        # ``schemaVersion: 0`` (or absent) lands on the rule too —
+        # anything that isn't strictly 2 fails.
+        doc: dict[str, Any] = {
+            "schemaVersion": 0,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {
+                "mediaType": "application/vnd.oci.image.config.v1+json",
+                "digest": "sha256:cfg",
+                "size": 100,
+            },
+            "layers": [],
+        }
+        parsed = _parse_manifest("manifest.json", doc)
+        assert parsed is not None
+        f = r7.check(parsed)
+        assert not f.passed
+
+
+# ── OCI-008 ───────────────────────────────────────────────────────────
+
+
+class TestOCI008WeakDigestAlgorithm:
+    def test_passes_on_default_sha256_single_image(self) -> None:
+        f = r8.check(_single())
+        assert f.passed
+
+    def test_passes_on_sha512(self) -> None:
+        m = _single(layers=[
+            {
+                "mediaType":
+                    "application/vnd.oci.image.layer.v1.tar+gzip",
+                "digest": "sha512:" + "0" * 128,
+                "size": 100,
+            },
+        ])
+        f = r8.check(m)
+        assert f.passed
+
+    def test_fails_on_sha1_layer(self) -> None:
+        m = _single(layers=[
+            {
+                "mediaType":
+                    "application/vnd.oci.image.layer.v1.tar+gzip",
+                "digest": "sha1:" + "0" * 40,
+                "size": 100,
+            },
+        ])
+        f = r8.check(m)
+        assert not f.passed
+        assert "sha1" in f.description
+
+    def test_fails_on_md5_config(self) -> None:
+        # Build a manifest whose config uses md5 (impossible per
+        # spec; the test exercises the detection).
+        doc: dict[str, Any] = {
+            "schemaVersion": 2,
+            "mediaType":
+                "application/vnd.oci.image.manifest.v1+json",
+            "config": {
+                "mediaType":
+                    "application/vnd.oci.image.config.v1+json",
+                "digest": "md5:abcd1234",
+                "size": 100,
+            },
+            "layers": [],
+        }
+        parsed = _parse_manifest("manifest.json", doc)
+        assert parsed is not None
+        f = r8.check(parsed)
+        assert not f.passed
+        assert "md5" in f.description
+
+    def test_fails_on_index_entry_with_weak_digest(self) -> None:
+        m = _index(entries=[
+            {
+                "mediaType":
+                    "application/vnd.oci.image.manifest.v1+json",
+                "digest": "sha1:" + "0" * 40,
+                "size": 100,
+                "platform": {"architecture": "amd64", "os": "linux"},
+            },
+        ])
+        f = r8.check(m)
+        assert not f.passed
+
+    def test_passes_on_empty_layers(self) -> None:
+        # Single-image manifest with no layers, just a sha256 config:
+        # nothing to flag.
+        m = _single(layers=[])
+        f = r8.check(m)
         assert f.passed

@@ -427,13 +427,18 @@ class TestCliIntegration:
     def _setup_wf(self, tmp_path):
         wf = tmp_path / "wf"
         wf.mkdir()
+        # ``persist-credentials: false`` keeps GHA-037 from firing on
+        # the same step, so only the GHA-001 (tag-not-SHA) finding
+        # exercises the ignore-file gate.
         (wf / "c.yml").write_text(
             "on: push\n"
             "jobs:\n"
             "  b:\n"
             "    runs-on: ubuntu-latest\n"
             "    steps:\n"
-            "      - uses: actions/checkout@v4\n"  # GHA-001 will fail (tag not SHA)
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          persist-credentials: false\n"
         )
         return wf
 

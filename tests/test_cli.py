@@ -145,7 +145,10 @@ class TestAutoDetect:
         # resolved path was actually loaded and scanned.
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"GL-{i:03d}" for i in range(1, 33)} | {"TAINT-004"}
+        assert emitted == (
+            {f"GL-{i:03d}" for i in range(1, 34)}
+            | {"TAINT-004", "TAINT-008"}
+        )
 
     def test_bitbucket_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -173,7 +176,7 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GHA-{i:03d}" for i in range(1, 37)}
+            {f"GHA-{i:03d}" for i in range(1, 40)}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 

@@ -471,3 +471,123 @@ class TestBK013DeployBranchFilter:
         """
         f = run_check(cfg, "BK-013")
         assert f.passed
+
+
+# ── BK-014 unpinned package install ─────────────────────────────────────
+
+
+class TestBK014PkgUnpinned:
+    def test_passes_with_npm_ci(self):
+        cfg = """
+        steps:
+          - command: |
+              npm ci
+              npm test
+        """
+        f = run_check(cfg, "BK-014")
+        assert f.passed
+
+    def test_fails_on_bare_npm_install(self):
+        cfg = """
+        steps:
+          - command: npm install
+        """
+        f = run_check(cfg, "BK-014")
+        assert not f.passed
+        assert "unpinned" in f.description
+
+    def test_fails_on_pip_trusted_host(self):
+        cfg = """
+        steps:
+          - command: pip install --trusted-host pypi.local pkg
+        """
+        f = run_check(cfg, "BK-014")
+        assert not f.passed
+        assert "insecure" in f.description
+
+    def test_passes_on_pip_with_lockfile(self):
+        cfg = """
+        steps:
+          - command: pip install -r requirements.txt
+        """
+        f = run_check(cfg, "BK-014")
+        assert f.passed
+
+    def test_passes_when_no_package_install(self):
+        cfg = """
+        steps:
+          - command: make build
+        """
+        f = run_check(cfg, "BK-014")
+        assert f.passed
+
+
+# ── BK-015 agents-map interpolation ────────────────────────────────────
+
+
+class TestBK015AgentsTargeting:
+    def test_passes_with_static_agents_map(self):
+        cfg = """
+        agents:
+          queue: linux-amd64
+        steps:
+          - command: make build
+        """
+        f = run_check(cfg, "BK-015")
+        assert f.passed
+
+    def test_fails_when_pipeline_agents_uses_branch(self):
+        cfg = """
+        agents:
+          queue: build-${BUILDKITE_BRANCH}
+        steps:
+          - command: make build
+        """
+        f = run_check(cfg, "BK-015")
+        assert not f.passed
+        assert "pipeline.agents" in f.description
+
+    def test_fails_when_step_agents_uses_tag(self):
+        cfg = """
+        steps:
+          - label: deploy
+            agents:
+              queue: deploy-$BUILDKITE_TAG
+            command: kubectl apply -f deploy/
+        """
+        f = run_check(cfg, "BK-015")
+        assert not f.passed
+        assert "deploy.agents" in f.description
+
+    def test_passes_when_step_agents_uses_trusted_var(self):
+        # ``BUILDKITE_PIPELINE_SLUG`` isn't on the tainted list (set
+        # by the pipeline definition, not the pusher).
+        cfg = """
+        steps:
+          - label: build
+            agents:
+              queue: build-$BUILDKITE_PIPELINE_SLUG
+            command: make
+        """
+        f = run_check(cfg, "BK-015")
+        assert f.passed
+
+    def test_fails_on_pull_request_var(self):
+        cfg = """
+        steps:
+          - label: build
+            agents:
+              queue: build
+              os: $BUILDKITE_PULL_REQUEST
+            command: make
+        """
+        f = run_check(cfg, "BK-015")
+        assert not f.passed
+
+    def test_passes_when_no_agents_anywhere(self):
+        cfg = """
+        steps:
+          - command: make build
+        """
+        f = run_check(cfg, "BK-015")
+        assert f.passed

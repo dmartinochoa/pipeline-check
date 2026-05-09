@@ -207,3 +207,159 @@ class TestGHA033SecretEchoed:
         """
         f = run_check(wf, "GHA-033")
         assert f.passed
+
+
+# ── GHA-039 services / container credentials literal ────────────────
+
+
+class TestGHA039ContainerCredentials:
+    def test_passes_with_secret_reference(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            container:
+              image: internal/build:1.2.3
+              credentials:
+                username: ${{ secrets.REGISTRY_USERNAME }}
+                password: ${{ secrets.REGISTRY_PASSWORD }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert f.passed
+
+    def test_fails_on_literal_container_password(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            container:
+              image: internal/build:1.2.3
+              credentials:
+                username: ci-bot
+                password: hunter2-rotate-me
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert not f.passed
+        assert "container.credentials.username" in f.description
+        assert "container.credentials.password" in f.description
+
+    def test_fails_on_literal_service_password(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            services:
+              postgres:
+                image: postgres:14
+                credentials:
+                  username: postgres
+                  password: literal-postgres-pw
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert not f.passed
+        assert "services.postgres.credentials.password" in f.description
+
+    def test_passes_on_anonymous_username(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            container:
+              image: public.ecr.aws/x/y:1.0
+              credentials:
+                username: anonymous
+                password: ""
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert f.passed
+
+    def test_passes_with_inline_secret_reference_template(self):
+        # ``prefix-${{ secrets.X }}`` shape is occasionally used so
+        # the runner can pull from a tenant-scoped registry path;
+        # the secret bytes still resolve at runtime.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            services:
+              cache:
+                image: internal/cache:7
+                credentials:
+                  username: tenant-${{ secrets.TENANT_USERNAME }}
+                  password: ${{ secrets.TENANT_PASSWORD }}
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert f.passed
+
+    def test_passes_when_no_credentials_block(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            container:
+              image: alpine:3
+            services:
+              redis:
+                image: redis:7
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert f.passed
+
+    def test_fails_on_non_string_password(self):
+        # YAML loaders sometimes yield ``true`` / numbers when the
+        # field was ``password: true`` (config bug); rule treats
+        # this as unsafe to force a fix.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            container:
+              image: x/y:1
+              credentials:
+                username: bot
+                password: 12345
+            steps:
+              - run: make
+        """
+        f = run_check(wf, "GHA-039")
+        assert not f.passed

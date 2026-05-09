@@ -7,8 +7,11 @@ env:
   GITHUB_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   DEPLOY_API_KEY: "supersecret-prod-key-please-rotate-me"
 
+# BK-015: agents.queue interpolates the pusher-controllable
+# branch name, so the pusher chooses which runner pool runs the
+# build.
 agents:
-  queue: default
+  queue: default-${BUILDKITE_BRANCH}
 
 steps:
   - label: ":docker: Build image"
@@ -27,9 +30,13 @@ steps:
   - label: ":package: Install"
     # BK-004: remote install script piped into bash.
     # BK-008: curl --insecure disables TLS verification.
+    # BK-014: bare ``npm install`` (should be ``npm ci``) plus
+    # ``pip install --trusted-host`` (insecure index).
     command: |
       curl https://example.com/install.sh | bash
       curl --insecure https://internal/registry/info
+      npm install
+      pip install --trusted-host pypi.internal package
 
   # BK-006: no timeout_in_minutes anywhere in this step.
   - label: ":hammer: Long build"

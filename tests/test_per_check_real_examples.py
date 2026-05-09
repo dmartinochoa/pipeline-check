@@ -358,10 +358,10 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 # ``CheckCase`` or a ``KNOWN_UNCOVERED`` entry trips
 # ``test_every_workflow_check_has_a_case``, which is the point.
 KNOWN_UNCOVERED: frozenset[str] = frozenset({
-    # GitHub Actions — GHA-028..036
-    *(f"GHA-{i:03d}" for i in range(28, 37)),
-    # GitLab CI — GL-026..032
-    *(f"GL-{i:03d}" for i in range(26, 33)),
+    # GitHub Actions — GHA-028..039
+    *(f"GHA-{i:03d}" for i in range(28, 40)),
+    # GitLab CI — GL-026..033
+    *(f"GL-{i:03d}" for i in range(26, 34)),
     # Bitbucket — BB-026..029
     *(f"BB-{i:03d}" for i in range(26, 30)),
     # Azure DevOps — ADO-027..030
@@ -380,10 +380,12 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     "TAINT-002",
     "TAINT-003",
     "TAINT-004",
-    # TAINT-005 lives under ``buildkite.rules``; the meta-test
-    # only tracks providers in ``_PROVIDER_BY_PREFIX`` (GHA / GL /
-    # BB / ADO / JF / CC) so it never enters ``expected_ids`` and
-    # doesn't need a KNOWN_UNCOVERED entry.
+    "TAINT-008",
+    # TAINT-005..007 live under buildkite.rules / tekton.rules /
+    # argo.rules; the meta-test only tracks providers in
+    # ``_PROVIDER_BY_PREFIX`` (GHA / GL / BB / ADO / JF / CC) so
+    # they never enter ``expected_ids`` and don't need a
+    # KNOWN_UNCOVERED entry.
 })
 
 
