@@ -462,6 +462,33 @@ class TestPartialFingerprints:
             == b["runs"][0]["results"][0]["partialFingerprints"]
         )
 
+    def test_arn_fingerprint_is_cross_platform_stable(self, monkeypatch):
+        # Resource-only findings (no Location) carry AWS ARNs / IAM
+        # role names whose case is meaningful. The Windows branch of
+        # _normalize_path lowercases its input, so passing an ARN
+        # through it would produce a Windows-only fingerprint that
+        # disagrees with the Linux scan and breaks GHCS dedup.
+        # Drive the os.name switch directly so the assertion runs the
+        # same way on every CI runner.
+        from pipeline_check.core import sarif_reporter as sr
+
+        arn = "arn:aws:lambda:US-EAST-1:1234:function:Foo"
+
+        monkeypatch.setattr(sr.os, "name", "posix")
+        linux = json.loads(report_sarif([_f(resource=arn)], _score()))
+
+        monkeypatch.setattr(sr.os, "name", "nt")
+        windows = json.loads(report_sarif([_f(resource=arn)], _score()))
+
+        assert (
+            linux["runs"][0]["results"][0]["partialFingerprints"]
+            == windows["runs"][0]["results"][0]["partialFingerprints"]
+        ), (
+            "ARN fingerprints must not depend on os.name — Windows "
+            "case-folding would otherwise diverge from Linux scans of "
+            "the same AWS account and break GHCS dedup."
+        )
+
 
 class TestChainFingerprints:
     """Same dedup behavior for attack-chain results."""

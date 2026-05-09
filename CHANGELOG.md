@@ -629,6 +629,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **SARIF fingerprint stability for AWS-resource findings on
+  Windows.** ``_finding_fingerprints`` previously routed every
+  ``f.resource`` value through ``_normalize_path``, which
+  lowercases on Windows because the local filesystem is case-
+  insensitive. AWS findings carry ARNs / IAM role names in
+  ``f.resource`` (no ``Location``), and ARN case is meaningful
+  ("``us-east-1``" vs "``US-EAST-1``"), so a Windows-hosted scan
+  hashed those resources to a different fingerprint than the same
+  AWS account scanned on Linux. GHCS dedup broke whenever a
+  customer alternated the runner OS. The reporter now normalizes
+  only when the finding has a file-backed primary ``Location``;
+  resource-only findings hash ``f.resource`` raw. New regression
+  test ``test_arn_fingerprint_is_cross_platform_stable`` patches
+  ``os.name`` and asserts the same ARN produces the same
+  fingerprint on either platform.
 - **`ControlRef` re-export now explicit in ``checks.base``.**
   ``pipeline_check.__init__`` re-exports ``ControlRef`` from
   ``pipeline_check.core.checks.base``, but the latter only had it
