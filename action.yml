@@ -1,0 +1,323 @@
+name: 'pipeline-check'
+description: >
+  CI/CD pipeline security scanner. 550+ checks across 18 providers
+  (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps,
+  Bitbucket, Buildkite, Drone, Tekton, Argo, Cloud Build, Terraform,
+  CloudFormation, Kubernetes, Helm, Dockerfile, OCI, AWS), mapped to
+  14 compliance standards, with SARIF output for GitHub code scanning.
+author: 'Pipeline-Check'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  pipeline:
+    description: >
+      Provider to scan. ``auto`` detects the right provider from the
+      workspace. Pass an explicit name (``github``, ``gitlab``,
+      ``terraform``, ``kubernetes``, ``helm``, ``dockerfile``,
+      ``aws``, ...) or a comma-separated list (``github,oci``) to
+      activate cross-provider attack chains.
+    required: false
+    default: 'auto'
+  path:
+    description: >
+      Workspace path to scan. Forwarded to the matching ``--<provider>-
+      path`` flag. Defaults to the repo root.
+    required: false
+    default: '.'
+  fail-on:
+    description: >
+      Fail the build if any finding meets or exceeds this severity.
+      One of CRITICAL, HIGH, MEDIUM, LOW. Empty string disables
+      severity gating.
+    required: false
+    default: 'HIGH'
+  min-grade:
+    description: >
+      Fail if the scan grades worse than this letter (A, B, C, D).
+      Empty disables grade gating.
+    required: false
+    default: ''
+  max-failures:
+    description: >
+      Fail if more than N effective findings are emitted. Empty
+      disables the cap.
+    required: false
+    default: ''
+  fail-on-check:
+    description: >
+      Comma-separated list of check IDs that should always trip the
+      gate (e.g. ``GHA-002,GL-007``). Repeats of the underlying CLI
+      flag are emitted automatically.
+    required: false
+    default: ''
+  severity-threshold:
+    description: >
+      Minimum severity to report. INFO, LOW, MEDIUM, HIGH, CRITICAL.
+    required: false
+    default: 'INFO'
+  baseline:
+    description: >
+      Path to a prior JSON report. Existing findings won't gate the
+      build; only new findings count.
+    required: false
+    default: ''
+  baseline-from-git:
+    description: >
+      ``REF:PATH`` (e.g. ``origin/main:baseline.json``). Resolves the
+      baseline via ``git show`` instead of reading from disk.
+    required: false
+    default: ''
+  diff-base:
+    description: >
+      Only scan files changed vs this git ref (e.g. ``origin/main``).
+      Pairs naturally with PR builds.
+    required: false
+    default: ''
+  standard:
+    description: >
+      Comma-separated standards to annotate findings with
+      (``owasp_cicd_top_10,nist_ssdf``). Empty enables all.
+    required: false
+    default: ''
+  output:
+    description: >
+      Output format. ``sarif`` is the default so findings flow into
+      the GitHub Security tab via the upload-sarif step. Other
+      options: ``terminal``, ``json``, ``html``, ``junit``,
+      ``markdown``, ``both``.
+    required: false
+    default: 'sarif'
+  output-file:
+    description: >
+      Path to write the report. Defaults to ``pipeline-check.sarif``
+      for SARIF output.
+    required: false
+    default: 'pipeline-check.sarif'
+  upload-sarif:
+    description: >
+      When ``true`` and ``output`` is ``sarif``, upload the SARIF
+      file to GitHub code scanning. Requires ``security-events:
+      write`` on the calling job.
+    required: false
+    default: 'true'
+  ignore-file:
+    description: >
+      Path to a ``.pipelinecheckignore`` file (flat or YAML with
+      ``expires:`` dates).
+    required: false
+    default: ''
+  pipeline-check-version:
+    description: >
+      Pin to a specific pipeline-check release. Defaults to the
+      latest version on PyPI.
+    required: false
+    default: ''
+  python-version:
+    description: 'Python version installed for running the scanner.'
+    required: false
+    default: '3.12'
+  resolve-remote:
+    description: >
+      Pass ``--resolve-remote`` to scan reusable workflow callees
+      over HTTPS. Off by default.
+    required: false
+    default: 'false'
+  extra-args:
+    description: >
+      Free-form CLI flags appended to the scanner invocation. Useful
+      for ``--checks``, ``--secret-pattern``, ``--custom-rules``, and
+      similar flags not represented above. Quoted as a single string.
+    required: false
+    default: ''
+
+outputs:
+  exit-code:
+    description: 'Scanner exit code. 0=pass, 1=gate failed, 2=scanner error, 3=config error.'
+    value: ${{ steps.run.outputs.exit-code }}
+  findings-count:
+    description: 'Total findings emitted by the scanner.'
+    value: ${{ steps.run.outputs.findings-count }}
+  failed-count:
+    description: 'Findings whose passed=false (matches --fail-on logic).'
+    value: ${{ steps.run.outputs.failed-count }}
+  score:
+    description: 'Severity-weighted score, 0-100.'
+    value: ${{ steps.run.outputs.score }}
+  grade:
+    description: 'Letter grade A through D.'
+    value: ${{ steps.run.outputs.grade }}
+  sarif-file:
+    description: 'Path of the SARIF file written when output=sarif.'
+    value: ${{ steps.run.outputs.sarif-file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install pipeline-check
+      shell: bash
+      env:
+        VERSION: ${{ inputs.pipeline-check-version }}
+      run: |
+        if [ -n "$VERSION" ]; then
+          pip install "pipeline-check==$VERSION"
+        else
+          pip install pipeline-check
+        fi
+
+    - name: Run pipeline-check
+      id: run
+      shell: bash
+      env:
+        PIPELINE: ${{ inputs.pipeline }}
+        WORKSPACE_PATH: ${{ inputs.path }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        MIN_GRADE: ${{ inputs.min-grade }}
+        MAX_FAILURES: ${{ inputs.max-failures }}
+        FAIL_ON_CHECK: ${{ inputs.fail-on-check }}
+        SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+        BASELINE: ${{ inputs.baseline }}
+        BASELINE_FROM_GIT: ${{ inputs.baseline-from-git }}
+        DIFF_BASE: ${{ inputs.diff-base }}
+        STANDARD: ${{ inputs.standard }}
+        OUTPUT_FORMAT: ${{ inputs.output }}
+        OUTPUT_FILE: ${{ inputs.output-file }}
+        IGNORE_FILE: ${{ inputs.ignore-file }}
+        RESOLVE_REMOTE: ${{ inputs.resolve-remote }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+      run: |
+        set +e
+        args=()
+
+        if [[ "$PIPELINE" == *,* ]]; then
+          args+=(--pipelines "$PIPELINE")
+        elif [ -n "$PIPELINE" ]; then
+          args+=(--pipeline "$PIPELINE")
+        fi
+
+        # ``WORKSPACE_PATH`` is a workspace-relative path (e.g.
+        # ``charts/api`` for a non-root Helm chart). Map it onto
+        # the per-provider path flag so we don't fight the CLI's
+        # auto-detect logic. ``auto`` and the no-path AWS / live
+        # modes don't take a path; for ``auto`` we ``cd`` into the
+        # directory so the CLI's own auto-detect runs there.
+        if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "." ]; then
+          case "$PIPELINE" in
+            github)         args+=(--gha-path        "$WORKSPACE_PATH") ;;
+            gitlab)         args+=(--gitlab-path     "$WORKSPACE_PATH") ;;
+            bitbucket)      args+=(--bitbucket-path  "$WORKSPACE_PATH") ;;
+            azure)          args+=(--azure-path      "$WORKSPACE_PATH") ;;
+            jenkins)        args+=(--jenkinsfile-path "$WORKSPACE_PATH") ;;
+            circleci)       args+=(--circleci-path   "$WORKSPACE_PATH") ;;
+            cloudformation) args+=(--cfn-template    "$WORKSPACE_PATH") ;;
+            terraform)      args+=(--tf-plan         "$WORKSPACE_PATH") ;;
+            cloudbuild)     args+=(--cloudbuild-path "$WORKSPACE_PATH") ;;
+            buildkite)      args+=(--buildkite-path  "$WORKSPACE_PATH") ;;
+            drone)          args+=(--drone-path      "$WORKSPACE_PATH") ;;
+            tekton)         args+=(--tekton-path     "$WORKSPACE_PATH") ;;
+            argo)           args+=(--argo-path       "$WORKSPACE_PATH") ;;
+            dockerfile)     args+=(--dockerfile-path "$WORKSPACE_PATH") ;;
+            kubernetes)     args+=(--k8s-path        "$WORKSPACE_PATH") ;;
+            helm)           args+=(--helm-path       "$WORKSPACE_PATH") ;;
+            oci)            args+=(--oci-manifest    "$WORKSPACE_PATH") ;;
+            auto|"")        cd "$WORKSPACE_PATH" || exit 3 ;;
+            aws)            : ;;  # AWS scans the live account, no path
+            *,*)            : ;;  # multi-pipeline, leave each provider on auto-detect
+          esac
+        fi
+
+        [ -n "$FAIL_ON" ]            && args+=(--fail-on "$FAIL_ON")
+        [ -n "$MIN_GRADE" ]          && args+=(--min-grade "$MIN_GRADE")
+        [ -n "$MAX_FAILURES" ]       && args+=(--max-failures "$MAX_FAILURES")
+        [ -n "$SEVERITY_THRESHOLD" ] && args+=(--severity-threshold "$SEVERITY_THRESHOLD")
+        [ -n "$BASELINE" ]           && args+=(--baseline "$BASELINE")
+        [ -n "$BASELINE_FROM_GIT" ]  && args+=(--baseline-from-git "$BASELINE_FROM_GIT")
+        [ -n "$DIFF_BASE" ]          && args+=(--diff-base "$DIFF_BASE")
+        [ -n "$IGNORE_FILE" ]        && args+=(--ignore-file "$IGNORE_FILE")
+        [ -n "$OUTPUT_FORMAT" ]      && args+=(--output "$OUTPUT_FORMAT")
+        [ -n "$OUTPUT_FILE" ]        && args+=(--output-file "$OUTPUT_FILE")
+        [ "$RESOLVE_REMOTE" = "true" ] && args+=(--resolve-remote)
+
+        if [ -n "$STANDARD" ]; then
+          IFS=',' read -ra STDS <<< "$STANDARD"
+          for s in "${STDS[@]}"; do
+            args+=(--standard "$s")
+          done
+        fi
+
+        if [ -n "$FAIL_ON_CHECK" ]; then
+          IFS=',' read -ra IDS <<< "$FAIL_ON_CHECK"
+          for c in "${IDS[@]}"; do
+            args+=(--fail-on-check "$c")
+          done
+        fi
+
+        if [ -n "$EXTRA_ARGS" ]; then
+          # shellcheck disable=SC2206
+          extra=($EXTRA_ARGS)
+          args+=("${extra[@]}")
+        fi
+
+        echo "::group::pipeline_check ${args[*]}"
+        pipeline_check "${args[@]}"
+        ec=$?
+        echo "::endgroup::"
+
+        echo "exit-code=$ec" >> "$GITHUB_OUTPUT"
+        echo "sarif-file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
+
+        if [ "$OUTPUT_FORMAT" = "sarif" ] && [ -f "$OUTPUT_FILE" ]; then
+          # Re-scan with ``--output json`` to extract score / grade /
+          # finding counts as action outputs. Cheaper than parsing
+          # SARIF + computing severity rollups by hand. Build the
+          # stats invocation by stripping any output / output-file /
+          # gate flags from the original args, then add the json
+          # output explicitly.
+          stats="$(mktemp)"
+          stats_args=()
+          skip_next=0
+          for tok in "${args[@]}"; do
+            if [ "$skip_next" -eq 1 ]; then
+              skip_next=0
+              continue
+            fi
+            case "$tok" in
+              --output|--output-file|--fail-on|--min-grade|--max-failures|--fail-on-check)
+                skip_next=1 ;;
+              *) stats_args+=("$tok") ;;
+            esac
+          done
+          stats_args+=(--output json --output-file "$stats")
+          pipeline_check "${stats_args[@]}" >/dev/null 2>&1 || true
+          if [ -s "$stats" ]; then
+            python - "$stats" <<'PY' >> "$GITHUB_OUTPUT"
+        import json, sys
+        with open(sys.argv[1]) as fh:
+            data = json.load(fh)
+        findings = data.get("findings") or []
+        failed = sum(1 for f in findings if not f.get("passed", True))
+        score = data.get("score") or {}
+        if not isinstance(score, dict):
+            score = {}
+        print(f"findings-count={len(findings)}")
+        print(f"failed-count={failed}")
+        print(f"score={score.get('score', '')}")
+        print(f"grade={score.get('grade', '')}")
+        PY
+          fi
+        fi
+
+        # Re-raise the original exit code so the job reflects the gate.
+        exit $ec
+
+    - name: Upload SARIF
+      if: ${{ inputs.upload-sarif == 'true' && inputs.output == 'sarif' && always() }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output-file }}
