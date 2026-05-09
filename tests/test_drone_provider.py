@@ -120,7 +120,7 @@ class TestDronePipelineChecksOrchestrator:
         assert ids == [
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
-            "DR-008", "DR-009", "DR-010",
+            "DR-008", "DR-009", "DR-010", "DR-011",
         ]
         # Every rule passes on the hardened fixture.
         assert all(f.passed for f in findings), [
@@ -182,7 +182,7 @@ class TestScannerWiring:
         assert ids == [
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
-            "DR-008", "DR-009", "DR-010",
+            "DR-008", "DR-009", "DR-010", "DR-011",
         ]
         # Vulnerable fixture trips 5 of 10 (DR-005 needs a plugin,
         # DR-007 a host-path volume, DR-008 a ``pull: never``

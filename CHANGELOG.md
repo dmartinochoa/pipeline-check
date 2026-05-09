@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DR-011 Drone node-map runner targeting.** New rule.
+  Flags Drone pipelines whose ``node:`` map (the runner-
+  selection block) interpolates a pusher-controllable Drone
+  variable (``${DRONE_BRANCH}`` / ``${DRONE_PULL_REQUEST_*}``
+  / ``${DRONE_COMMIT_AUTHOR}`` / ``${DRONE_COMMIT_MESSAGE}``
+  / ``${DRONE_TAG}`` etc.). The pusher controls which runner
+  pool the pipeline lands on, including a privileged pool
+  reserved for deploys. Closes Drone's parity with the same
+  pattern in BK-015 / GHA-036 / GL-032 / JF-032 / ADO-030 /
+  CC-031. Drone catalog: 10 -> 11.
+
 - **BK-015 / TKN-015 / ARGO-015.** Three follow-on rules
   closing distinct gaps:
 

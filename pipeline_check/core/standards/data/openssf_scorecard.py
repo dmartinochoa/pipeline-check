@@ -312,6 +312,7 @@ STANDARD = Standard(
         "DR-007":   ["Dangerous-Workflow"],                            # sensitive host-path mount
         "DR-008":   ["Pinned-Dependencies"],                           # ``pull: never`` skips registry verify
         "DR-009":   ["Dangerous-Workflow"],                            # tainted cache key
+        "DR-011":   ["Dangerous-Workflow"],                            # node map runner targeting
         # ── OCI image manifest ───────────────────────────────────────
         "OCI-001":  ["SBOM"],                                          # provenance annotations
         "OCI-002":  ["Signed-Releases", "SBOM"],                       # build attestation manifest

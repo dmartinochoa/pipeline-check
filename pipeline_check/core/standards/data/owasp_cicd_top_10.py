@@ -498,6 +498,7 @@ STANDARD = Standard(
         "DR-008":   ["CICD-SEC-3"],                 # pull: never policy
         "DR-009":   ["CICD-SEC-1", "CICD-SEC-3"],   # cache key tainted
         "DR-010":   ["CICD-SEC-3"],                 # unpinned package install
+        "DR-011":   ["CICD-SEC-7", "CICD-SEC-1"],   # node map interpolation
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation

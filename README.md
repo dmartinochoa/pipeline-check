@@ -10,9 +10,9 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
-Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
+Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**550+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
+**550+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -20,6 +20,7 @@ Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https
 [How it works](#how-it-works) |
 [CI integration](#ci-integration) |
 [Compliance](#compliance-standards) |
+[vs. Checkov / KICS / Semgrep](docs/comparison.md) |
 [Docs](docs/)
 
 </div>
@@ -91,7 +92,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 15 checks (`BK-001`--`015`) |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 10 checks (`DR-001`--`010`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 15 checks (`TKN-001`--`015`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 15 checks (`ARGO-001`--`015`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
@@ -176,16 +177,42 @@ pipeline_check --output both                # terminal on stderr + JSON on stdou
 
 ### GitHub Actions
 
-```yaml
-- name: Scan CI/CD security posture
-  run: |
-    pip install pipeline-check
-    pipeline_check --pipeline github \
-      --output sarif --output-file pipeline-check.sarif \
-      --fail-on HIGH
+The marketplace action wraps install, scan, gate, and SARIF upload in
+one step. Findings show up in the GitHub Security tab.
 
-- name: Upload SARIF
-  if: always()
+```yaml
+permissions:
+  contents: read
+  security-events: write   # required by upload-sarif
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dmartinochoa/pipeline-check@v1
+        with:
+          pipeline: auto       # or: github, gitlab, terraform, k8s, ...
+          fail-on: HIGH
+```
+
+Inputs (all optional): `pipeline`, `path`, `fail-on`, `min-grade`,
+`max-failures`, `severity-threshold`, `baseline`, `baseline-from-git`,
+`diff-base`, `standard`, `output`, `output-file`, `upload-sarif`,
+`pipeline-check-version`, `python-version`, `resolve-remote`,
+`extra-args`. Outputs: `exit-code`, `findings-count`, `failed-count`,
+`score`, `grade`, `sarif-file`. See [`action.yml`](action.yml) for the
+full surface.
+
+For PR review comments on the changed lines, see the companion
+[pipeline-check-pr action](.github/actions/pipeline-check-pr/README.md).
+
+For finer control, the manual three-step form still works:
+
+```yaml
+- run: pip install pipeline-check
+- run: pipeline_check --pipeline github --output sarif --output-file pipeline-check.sarif --fail-on HIGH
+- if: always()
   uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: pipeline-check.sarif
