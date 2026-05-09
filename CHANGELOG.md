@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Three more OCI manifest rules.** ``OCI-004`` flags layers
+  that declare a ``urls:`` field or use a foreign-layer media
+  type (``vnd.docker.image.rootfs.foreign.diff.tar.gzip``,
+  ``vnd.oci.image.layer.nondistributable.v1.tar+gzip``).
+  Foreign-layer references pull blobs from arbitrary HTTP
+  endpoints at image-pull time, bypassing the registry's
+  content-addressed store; HIGH severity since an attacker who
+  controls the URL endpoint can cloak content per-client or
+  break image pulls. ``OCI-005`` flags missing
+  ``org.opencontainers.image.licenses`` annotations (LOW; SBOM
+  / registry-UI hygiene). ``OCI-006`` flags single-image
+  manifests with more than 40 layers (LOW; flags Dockerfile
+  RUN-step sprawl, indexes pass-by-default since they have no
+  layers themselves). OCI catalog: 3 to 6.
 - **OCI image manifest provider.** New ``--pipeline oci
   --oci-manifest <file>`` reads an OCI image manifest /
   image-index JSON document captured via

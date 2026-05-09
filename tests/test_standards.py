@@ -384,7 +384,7 @@ class TestPerFrameworkCoverageFloor:
         # rules can map to it, and not all of them have a CIS
         # Foundations analog. The floor caps catalog-wide coverage
         # at the AWS-pack share, not the full 363 rules.
-        "cis_aws_foundations":  10,
+        "cis_aws_foundations":   9,
         # cis_kubernetes is also intentionally narrow: only the K8s
         # pack (and a few Helm-rendered K8s rules) map to it. The
         # floor caps coverage at the K8s-pack share — most of the

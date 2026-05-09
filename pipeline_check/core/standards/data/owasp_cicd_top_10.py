@@ -475,5 +475,8 @@ STANDARD = Standard(
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation
         "OCI-003":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing image.created
+        "OCI-004":  ["CICD-SEC-3", "CICD-SEC-9"],   # foreign-layer URL reference
+        "OCI-005":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing image.licenses annotation
+        "OCI-006":  ["CICD-SEC-3"],                 # excessive layer count
     },
 )

@@ -81,12 +81,13 @@ class TestOCIContextLoading:
 
 
 class TestOCIManifestChecksOrchestrator:
-    def test_runs_three_rules_per_manifest(self, tmp_path: Path) -> None:
+    def test_runs_every_rule_per_manifest(self, tmp_path: Path) -> None:
         idx = tmp_path / "index.json"
         _write_index(idx, annotations={
             "org.opencontainers.image.source": "https://github.com/x/y",
             "org.opencontainers.image.revision": "abc",
             "org.opencontainers.image.created": "2025-05-09T12:00:00Z",
+            "org.opencontainers.image.licenses": "Apache-2.0",
         }, entries=[
             {
                 "mediaType": "application/vnd.oci.image.manifest.v1+json",
@@ -108,7 +109,13 @@ class TestOCIManifestChecksOrchestrator:
         ctx = OCIContext.from_path(idx)
         findings = OCIManifestChecks(ctx).run()
         ids = sorted(f.check_id for f in findings)
-        assert ids == ["OCI-001", "OCI-002", "OCI-003"]
+        assert ids == [
+            "OCI-001", "OCI-002", "OCI-003",
+            "OCI-004", "OCI-005", "OCI-006",
+        ]
+        # Every rule passes on this fully-stamped index (foreign-layer
+        # / layer-count rules pass-by-default on indexes since they
+        # have no layers of their own).
         assert all(f.passed for f in findings), [
             (f.check_id, f.description) for f in findings if not f.passed
         ]
@@ -171,7 +178,15 @@ class TestScannerWiring:
         scanner = Scanner(pipeline="oci", oci_manifest=str(idx))
         findings = scanner.run()
         ids = sorted(f.check_id for f in findings)
-        assert ids == ["OCI-001", "OCI-002", "OCI-003"]
-        # Without provenance annotations, attestation manifest, or
-        # ``image.created``, every rule fires.
-        assert all(not f.passed for f in findings)
+        assert ids == [
+            "OCI-001", "OCI-002", "OCI-003",
+            "OCI-004", "OCI-005", "OCI-006",
+        ]
+        # OCI-001..003 + OCI-005 fire on a bare index (no
+        # provenance / attestation / created / licenses annotations).
+        # OCI-004 (foreign-layer) and OCI-006 (excessive layer count)
+        # pass-by-default on indexes since the index has no layers.
+        failed_ids = sorted(f.check_id for f in findings if not f.passed)
+        assert failed_ids == [
+            "OCI-001", "OCI-002", "OCI-003", "OCI-005",
+        ]
