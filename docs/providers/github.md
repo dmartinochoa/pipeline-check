@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-38 checks · 17 have an autofix patch (``--fix``).
+39 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -114,6 +114,7 @@ Resolution rules:
 | [GHA-036](#gha-036) | runs-on interpolates untrusted context | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -933,6 +934,32 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 **Recommended action**
 
 Sanitise the value at the producer step *before* it lands in ``$GITHUB_OUTPUT``. Once the value is in a job output the consuming job has no expression-level escaping pass left, ``${{ needs.<job>.outputs.<name> }}`` substitutes the string verbatim into the consumer's shell. The canonical safe pattern is to copy the untrusted source into the producer step's ``env:`` block, reference the env var quoted in ``echo "name=$VAR" >> $GITHUB_OUTPUT``, and only then surface it through the job output. The consuming job should still treat the value as tainted (use it in env-var form, not interpolated directly into shell).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TAINT-003: Untrusted input forwarded into reusable workflow ``with:`` { #taint-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Detection is caller-side: walk every ``jobs.<id>.uses: <callee>`` reference, find every ``with:`` value that interpolates an attacker-controllable source (direct ``${{ github.event.* }}``, a tainted step output via ``${{ steps.<id>.outputs.<name> }}``, or a cross-job ``${{ needs.<job>.outputs.<name> }}``), and flag the forward.
+
+v1 doesn't load the callee body, so the rule can't tell whether the callee actually uses the input in a sink. Confirming end-to-end injection is the next engine extension; for now the caller-side surface is where the operator who controls the caller can fix the issue without coordinating with the callee's owner.
+
+**Known false-positive modes**
+
+- Callees that wrap the input safely (immediately copy into env, sanitise before use) make the caller-side forward harmless. The rule has no way to read the callee body for v1; suppress via ignore-file scoped to the caller workflow when the callee's handling is audited and sound.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Sanitise the value at the caller before forwarding it across the reusable-workflow boundary. The canonical safe pattern is to copy the untrusted source into a step's ``env:`` block, run a sanitiser (``tr -dc 'a-zA-Z0-9 '`` is enough for a freeform title), surface the sanitised result via ``echo "name=$VAR" >> $GITHUB_OUTPUT``, then forward ``${{ steps.<id>.outputs.<name> }}`` as the ``with:`` input. The callee then sees a string-typed value with no expression-evaluation pass left to exploit. If the callee is under your control, also handle the input via env in the callee's ``run:`` body (not direct ``${{ inputs.<name> }}`` interpolation).
 
 </div>
 

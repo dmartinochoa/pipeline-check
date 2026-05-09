@@ -94,9 +94,13 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     # TAINT-001 is the single-job case: source step output -> sink
     # step in the same job. Cross-job propagation is TAINT-002's
-    # territory. The path classifier here is the ``hops`` length:
-    # single-hop paths only.
-    same_job_paths = [p for p in analyze_workflow(doc) if len(p.hops) == 1]
+    # territory; reusable-workflow forwarding is TAINT-003's. The
+    # path classifier here is hop length plus the absence of the
+    # ``with.`` marker that TAINT-003's pass-4 emits.
+    same_job_paths = [
+        p for p in analyze_workflow(doc)
+        if len(p.hops) == 1 and not p.hops[0].startswith("jobs.")
+    ]
     if not same_job_paths:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

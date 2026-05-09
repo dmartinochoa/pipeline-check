@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TAINT-003 reusable-workflow input forwarding.** The GHA
+  dataflow engine now flags caller workflows that pipe an
+  attacker-controllable source into a reusable workflow's
+  ``with:`` block. ``jobs.<id>.uses: <callee>`` references with
+  tainted ``with:`` values (direct ``${{ github.event.* }}``
+  interpolation, or a forwarded tainted step output / cross-job
+  ``needs.<id>.outputs.<name>``) emit one ``TAINT-003`` finding
+  per tainted input, naming the callee so the operator can
+  audit the matching ``inputs.<name>`` consumer. Caller-side
+  detection only in v1; coupling to the callee body's actual
+  consumption sites is the next engine extension. The three
+  TAINT rules are mutually exclusive on a given path: TAINT-001
+  for same-job step-output flow, TAINT-002 for cross-job
+  ``jobs.<id>.outputs:`` propagation, TAINT-003 for tainted
+  ``with:`` forwards into reusable workflows.
+- **XPC-003 unverified Helm release flow.** Third XPC chain.
+  Fires when ``HELM-002`` (Chart.lock missing per-dependency
+  digests) and ``OCI-002`` (image manifest lacks attestation
+  manifest) both fail in the same scan run. Composite says:
+  chart contents AND image bytes are independently mutable;
+  consumers running ``helm install`` have no signed chain of
+  custody at either boundary. One chain entry per ``(chart,
+  manifest)`` cross-product pair. Roadmap originally proposed
+  pairing HELM-002 with a "helm-upgrade step" rule that doesn't
+  exist; OCI-002 ended up the cleaner second leg because both
+  rules are squarely about provenance gaps.
 - **TAINT-002 cross-job output propagation.** The GHA dataflow
   engine now follows ``jobs.<id>.outputs:`` declarations so a
   step output that surfaces as a job output and is consumed in a

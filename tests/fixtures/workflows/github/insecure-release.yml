@@ -208,3 +208,14 @@ jobs:
     steps:
       - run: |
           echo "Branch label: ${{ needs.branch-extract.outputs.label }}"
+
+  # TAINT-003: forward a PR-controlled context expression
+  # straight into a reusable workflow's ``with:`` block. The
+  # callee receives the raw ``github.event.issue.title`` value
+  # via ``${{ inputs.title }}`` and gets to decide whether to
+  # sanitise it or not, audit responsibility shifts across the
+  # caller-callee boundary that single-rule scanners can't see.
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}

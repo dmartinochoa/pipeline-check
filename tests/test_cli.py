@@ -174,7 +174,7 @@ class TestAutoDetect:
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
             {f"GHA-{i:03d}" for i in range(1, 37)}
-            | {"TAINT-001", "TAINT-002"}
+            | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 
     def test_gitlab_missing_file_raises_usage_error(self, runner, tmp_path, monkeypatch):

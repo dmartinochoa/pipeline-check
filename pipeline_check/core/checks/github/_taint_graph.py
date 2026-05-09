@@ -397,6 +397,65 @@ def analyze_workflow(
                                 f"needs.{ref_job}.outputs.{ref_output}"
                             ),
                         ))
+
+    # ── Pass 4: detect tainted ``with:`` forward into reusable
+    # workflows. A job that uses ``uses: <callee>.yml`` and passes
+    # ``${{ github.event.* }}`` (or a tainted step / job output) as
+    # a ``with:`` input value is forwarding tainted data across the
+    # reusable-workflow boundary. The callee may consume it via
+    # ``${{ inputs.<name> }}`` in a ``run:`` body, which is the
+    # actual injection sink, but caller-side analysis is enough to
+    # flag the surface for review even when the callee body isn't
+    # in the scan. ``hops`` carries a synthetic
+    # ``with.<input>@uses:<callee>`` marker so TAINT-003's rule
+    # layer can partition these paths from same-job / cross-job
+    # ones (hop count == 1, but the synthetic ``uses:`` tag in the
+    # sink_consumer string lets the rule key off the prefix).
+    for job_id, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        callee = job.get("uses")
+        if not isinstance(callee, str) or not callee.strip():
+            continue
+        with_block = job.get("with")
+        if not isinstance(with_block, dict):
+            continue
+        for input_name, expression in with_block.items():
+            if not isinstance(input_name, str):
+                continue
+            if not isinstance(expression, str):
+                continue
+            forward_sources: list[TaintSource] = []
+            # Direct ``${{ github.event.* }}`` interpolation in the
+            # forwarded value.
+            for m in UNTRUSTED_CONTEXT_RE.finditer(expression):
+                forward_sources.append(TaintSource(
+                    expr=_strip_braces(m.group(0)),
+                    location=f"{job_id}.with.{input_name}",
+                ))
+            # Indirect: forwarding a tainted step output or
+            # cross-job ``needs.<job>.outputs.<name>``. Both
+            # channels are already mapped in the engine state.
+            for ref_step, ref_output in _iter_step_output_refs(expression):
+                forward_sources.extend(
+                    state.lookup_output(str(job_id), ref_step, ref_output),
+                )
+            for ref_job, ref_output in _iter_needs_output_refs(expression):
+                forward_sources.extend(
+                    state.lookup_job_output(ref_job, ref_output),
+                )
+            for src in forward_sources:
+                paths.append(TaintPath(
+                    source=src,
+                    hops=(
+                        f"jobs.{job_id}.with.{input_name}",
+                    ),
+                    sink_location=f"uses:{callee.strip()}",
+                    sink_consumer=(
+                        f"inputs.{input_name}@{callee.strip()}"
+                    ),
+                ))
+
     return paths
 
 

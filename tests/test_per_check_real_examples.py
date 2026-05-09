@@ -378,6 +378,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # cleanly without dragging in unrelated rules.
     "TAINT-001",
     "TAINT-002",
+    "TAINT-003",
 })
 
 

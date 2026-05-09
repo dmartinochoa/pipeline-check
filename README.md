@@ -12,7 +12,7 @@
 
 Scans CI/CD configurations against the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/) and twelve other compliance frameworks. Scores findings A through D so you can gate merges on the result.
 
-**530+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **29 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
+**530+ checks** across **18 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. The dataflow taint engine (TAINT-NNN) catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |

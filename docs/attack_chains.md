@@ -864,5 +864,30 @@ Pin both ends to ``@sha256:<digest>``. In the Dockerfile, rewrite ``FROM python:
 
 </div>
 
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-003: Unverified Helm release flow (chart + image) { #xpc-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">package -> distribution -> deploy (no provenance link at any of the three boundaries)</span> <span class="pg-tag pg-tag--owasp">helm</span> <span class="pg-tag pg-tag--owasp">oci</span>
+</div>
+
+The Helm chart's ``Chart.lock`` doesn't pin per-dependency digests AND the image the chart deploys lacks a build attestation manifest. Neither the chart contents nor the image bytes are independently verifiable, so a downstream consumer running ``helm install`` has no signed chain of custody between chart authoring and image runtime.
+
+**References**
+
+- <https://helm.sh/docs/topics/chart_repository/#provenance-and-integrity>
+- <https://slsa.dev/spec/v1.0/levels#build-l2>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin both ends of the release flow. In the Helm chart, regenerate ``Chart.lock`` after every dependency update so every entry carries a digest, and gate consumers behind ``helm install --verify`` to enforce the lock at install time. In the image build, pass ``--attest=type=provenance,mode=max`` to ``docker buildx build`` so the manifest carries a BuildKit attestation manifest. Verify post-deploy with ``cosign verify-attestation`` against the workflow's OIDC identity. Both legs together close the producer-to-verifier loop the chart-image pipeline currently has open at every step.
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

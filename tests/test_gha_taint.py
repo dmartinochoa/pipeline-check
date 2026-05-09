@@ -26,6 +26,9 @@ from pipeline_check.core.checks.github.rules import (
 from pipeline_check.core.checks.github.rules import (
     taint002_cross_job_output_taint as t2,
 )
+from pipeline_check.core.checks.github.rules import (
+    taint003_reusable_workflow_taint as t3,
+)
 
 
 def _doc(yaml_text: str) -> dict:
@@ -398,4 +401,113 @@ jobs:
     steps:
       - run: echo "${{ needs.extract.outputs.title }}"
 """)
+        assert t2.check("wf.yml", doc).passed
+
+
+# ── TAINT-003 rule wrapper ─────────────────────────────────────────
+
+
+class TestTAINT003:
+    def test_passes_when_no_uses_block(self) -> None:
+        doc = _doc("""
+on: push
+jobs:
+  build:
+    steps:
+      - run: echo hello
+""")
+        assert t3.check("wf.yml", doc).passed
+
+    def test_passes_when_with_block_has_no_taint(self) -> None:
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      version: v1.2.3
+      static-flag: true
+""")
+        assert t3.check("wf.yml", doc).passed
+
+    def test_fails_on_direct_github_event_forward(self) -> None:
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        f = t3.check("wf.yml", doc)
+        assert not f.passed
+        assert "github.event.issue.title" in f.description
+        assert "./.github/workflows/build.yml" in f.description
+        assert "1 reusable-workflow forward" in f.description
+
+    def test_fails_on_head_ref_forward(self) -> None:
+        # ``github.head_ref`` is also user-controllable (fork-PR
+        # branch names contain attacker text).
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      branch: ${{ github.head_ref }}
+""")
+        assert not t3.check("wf.yml", doc).passed
+
+    def test_fails_when_step_output_forward(self) -> None:
+        # The forwarded value is itself a tainted step output
+        # (one job extracts, another forward).
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  prep:
+    runs-on: ubuntu-latest
+    outputs:
+      title: ${{ steps.x.outputs.title }}
+    steps:
+      - id: x
+        run: echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+  call:
+    needs: prep
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ needs.prep.outputs.title }}
+""")
+        f = t3.check("wf.yml", doc)
+        assert not f.passed
+        assert "github.event.issue.title" in f.description
+
+    def test_emits_one_finding_per_tainted_input(self) -> None:
+        # Two distinct tainted inputs forwarded into the callee.
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+      branch: ${{ github.head_ref }}
+      static: hardcoded
+""")
+        f = t3.check("wf.yml", doc)
+        assert not f.passed
+        assert "2 reusable-workflow forward" in f.description
+
+    def test_does_not_double_fire_with_taint001(self) -> None:
+        # A workflow with a uses-forward but no same-job step
+        # output flow should fire TAINT-003 only.
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        assert not t3.check("wf.yml", doc).passed
+        assert t1.check("wf.yml", doc).passed
         assert t2.check("wf.yml", doc).passed

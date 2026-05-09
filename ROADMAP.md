@@ -285,10 +285,14 @@ to an emergent path-finder over a per-pipeline dataflow graph.
   description carries the *concrete* path detected on this
   scan.
 
-Pilot scope: GitHub Actions only (``${{ github.event.* }}``
-sources, ``env:`` / ``steps.*.outputs`` propagators,
-``run:`` sinks). Extends to GitLab CI, Drone, Tekton, Argo,
-Buildkite once the engine shape is validated.
+Pilot scope: GitHub Actions. ``TAINT-001`` covers same-job
+step-output flow (*landed*); ``TAINT-002`` covers cross-job
+flow via ``jobs.<id>.outputs:`` (*landed on dev*). Reusable-
+workflow input/output forwarding is the next gap inside GHA.
+After that the engine extends to GitLab CI, Drone, Tekton,
+Argo, Buildkite — every provider with the same producer/
+consumer shape (a structured way to surface a step value to
+a downstream stage).
 
 This is the move that distinguishes pipeline-check from the
 common per-rule local matching that mainstream commercial CI/CD
@@ -303,17 +307,29 @@ provider boundaries. The chains today match within a single
 provider's findings list; this extends matching to the union
 across every provider scanned in the same run.
 
-- **Initial pair**: ``GHA-006`` (workflow doesn't emit
-  provenance attestation) + ``OCI-002`` (image ships without
-  attestation manifest) → composite ``XPC-001`` *deploy
-  without verifiable provenance*.
-- **Second pair**: ``DF-001`` (Dockerfile floating tag) +
-  ``K8S-001`` (Deployment uses the same floating tag) →
-  ``XPC-002`` *tag mutability across pipeline + runtime*.
-- **Third pair**: ``HELM-002`` (missing ``Chart.lock``
-  digests) + ``GCB-013`` / ``GHA-009`` (helm-upgrade step in
-  the build pipeline) → ``XPC-003`` *unverified Helm release
-  flow*.
+- **XPC-001** *deploy without verifiable provenance*. **Landed
+  on dev** alongside multi-provider scan mode (below). Fires
+  when ``GHA-006`` (workflow doesn't emit SLSA provenance) and
+  ``OCI-002`` (image ships without attestation manifest) both
+  fail in the same scan.
+- **XPC-002** *tag mutability across pipeline + runtime*.
+  **Landed on dev**. Fires when ``DF-001`` (Dockerfile floating
+  ``FROM`` tag) and ``K8S-001`` (Kubernetes workload uses a
+  floating-tag image) both fail in a multi-provider run. One
+  chain instance per ``(dockerfile, manifest)`` cross-product
+  pair so the operator can audit each producer-consumer link
+  individually.
+- **XPC-003** *unverified Helm release flow*. **Landed on
+  dev**. Fires when ``HELM-002`` (Chart.lock missing
+  per-dependency digests) and ``OCI-002`` (image manifest
+  lacks attestation manifest) both fail in a multi-provider
+  run. The composite says: chart contents AND image bytes
+  are independently mutable; consumers running ``helm
+  install`` have no signed chain of custody at either
+  boundary. (The roadmap originally proposed pairing
+  HELM-002 with a "helm-upgrade step" rule that doesn't
+  exist; OCI-002 turned out to be the cleaner second leg
+  because both rules are squarely about provenance gaps.)
 
 Each composite carries its own severity (often higher than
 its parts because the cross-cut means there's no
@@ -323,20 +339,54 @@ prose. Engine reuses the existing
 is a chain rule that takes findings from multiple providers'
 result sets.
 
+### Multi-provider scan mode
+
+*Landed on dev.* New ``--pipelines github,oci`` (plural,
+comma-separated) scans every named provider in one
+invocation and evaluates the chain engine once over the
+union of all findings. That's what activates cross-provider
+chains (the ``XPC-NNN`` family) — single-provider runs of
+``--pipeline github`` or ``--pipeline oci`` alone never see
+both check IDs in the chain engine's input. Mutually
+exclusive with the single-valued ``--pipeline`` flag;
+backward-compatible (existing ``--pipeline X`` invocations
+behave unchanged). Each provider's path flag (``--gha-path``,
+``--oci-manifest``, etc.) is auto-detected the same way as
+in single-provider mode. Implementation: a new
+:class:`MultiScanner` in ``pipeline_check.core.scanner`` that
+delegates per-provider sub-scans to :class:`Scanner` (with
+each sub-scanner's chain pass suppressed), then runs the
+chain engine once on the unified findings list. Aggregate
+``ScanMetadata`` and ``inventory()`` are exposed on the
+multi-scanner so reporters consume the same shape regardless
+of single- vs multi-mode.
+
 ### Pipeline graph visualization in HTML report
 
-The HTML report ships an interactive findings table today.
-Layer a pipeline-DAG view on top: steps as nodes, ``needs:``
-/ ``depends_on:`` / sequence as edges, findings rendered as
-severity-colored badges on each node. Steps with attestation
-attached show a small chain icon; steps that are taint-engine
-sinks (above) get a flame icon when an active path lands on
-them.
+**v1 — blast-radius heatmap.** *Landed on dev.* A grid of
+inline-SVG tiles between the attack-chains panel and the
+findings table, one tile per resource carrying at least one
+failing finding. Tile color encodes worst severity, tile
+size scales with the resource's total failing count
+(sqrt-scaled so a 50-finding resource doesn't dwarf a
+5-finding one). Hovering a tile reveals the per-severity
+breakdown via the SVG ``<title>`` element. Sorted
+CRITICAL-first, then desc-by-count, then resource name.
+Pure inline SVG so the report stays a single offline HTML
+file (no CDN, no JS framework). Reuses the existing
+severity color tokens so the visual matches the findings
+table.
 
-Renders as embedded SVG so the report stays a single offline
-HTML file (no CDN, no JS framework dependency). Uses the
-existing severity color tokens so the visual matches the
-findings table.
+**v2 — true pipeline DAG.** *Deferred.* Lifts the heatmap to
+step-level granularity: steps as nodes, ``needs:`` /
+``depends_on:`` / sequence as edges, findings rendered as
+severity-colored badges on each node. Steps with
+attestation attached show a small chain icon; steps that
+are taint-engine sinks (TAINT-NNN family) get a flame icon
+when an active path lands on them. Requires extending the
+Scanner-to-reporter API so the parsed pipeline structure
+flows through; the v1 heatmap intentionally avoids that
+plumbing change.
 
 Doesn't change *what* the scanner finds; changes *how
 clearly* the operator sees the blast radius. Adds a real
