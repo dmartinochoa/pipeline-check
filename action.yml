@@ -1,10 +1,5 @@
 name: 'pipeline-check'
-description: >
-  CI/CD pipeline security scanner. 550+ checks across 18 providers
-  (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps,
-  Bitbucket, Buildkite, Drone, Tekton, Argo, Cloud Build, Terraform,
-  CloudFormation, Kubernetes, Helm, Dockerfile, OCI, AWS), mapped to
-  14 compliance standards, with SARIF output for GitHub code scanning.
+description: 'CI/CD pipeline security scanner. 550+ checks across 18 providers, 14 compliance standards. SARIF output for code scanning.'
 author: 'Pipeline-Check'
 branding:
   icon: 'shield'
