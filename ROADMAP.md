@@ -271,18 +271,20 @@ the candidates above. Grouped by priority within v0.5.0.
   orchestrator backfills it from the rule, the same way
   ``cwe`` is backfilled. Anchors abstract security debt to a
   concrete cost the operator's manager has already heard of.
-- **Close the two known taint resolver gaps.** GitLab ``include:``
-  *landed on dev*: local ``include:`` directives are followed at
-  load time, jobs and variables from included files merge into the
-  parent pipeline, TAINT-008 (``extends:`` taint) now walks chains
-  across the boundary. Cycle detection + 10-level depth cap; parent
-  wins on conflict; remote / project / template / component forms
-  emit a warning (no network fetch). Tekton ``taskRef:`` cross-
-  document resolution (already flagged as the next gap in the
-  TAINT-006 description) still open. Both lift existing TAINT
-  rules from single-document to multi-document, which is where
-  most real CI repos sit. Highest detection-power gain per line
-  of code on the table.
+- **Close the two known taint resolver gaps.** *Both landed on dev.*
+  GitLab ``include:`` follows local-include directives at load
+  time so jobs and variables from included files merge into the
+  parent pipeline, TAINT-008 (``extends:`` taint) now walks
+  chains across the boundary. Tekton ``taskRef:`` resolves
+  against ``Task`` / ``ClusterTask`` documents loaded into the
+  same ``TektonContext`` so TAINT-006 walks producer / consumer
+  bodies that live in separate files. Both have cycle detection
+  / depth caps; remote forms (``remote:`` / ``project:`` /
+  ``template:`` / ``component:`` for GitLab; ``bundle:`` /
+  ``resolver:`` for Tekton) emit warnings rather than fetching
+  over the network. Lifts existing TAINT rules from single-
+  document to multi-document, which is where most real CI repos
+  sit.
 - **Suppression-with-expiry on `--ignore-file`.** *Landed on dev.*
   YAML ignore-file entries carry an ``expires: YYYY-MM-DD`` field;
   past the date the suppression no longer applies and a ``[gate]

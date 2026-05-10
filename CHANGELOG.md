@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Tekton ``taskRef:`` cross-document resolution for TAINT-006.**
+  When a ``Pipeline`` task uses ``taskRef: { name: <X> }`` instead
+  of inlining a ``taskSpec:`` block, the taint graph now resolves
+  ``X`` against ``Task`` / ``ClusterTask`` documents loaded into
+  the same ``TektonContext`` and treats the resolved ``spec`` as
+  if it were inline. Closes the v1 limitation called out in
+  TAINT-006's docs_note: a Pipeline that splits the producer /
+  consumer task definitions across separate files now trips the
+  rule the same way a fully-inline Pipeline does. ``bundle:`` /
+  ``resolver:`` (remote OCI / Tekton-resolver-framework
+  references) stay unresolved, the scanner deliberately doesn't
+  fetch over the network. The ``analyze_pipeline_doc(doc)`` API
+  gains an optional ``ctx`` parameter; legacy callers passing
+  only ``doc`` keep the pre-resolver behavior (``taskRef:``
+  silently skipped) for backward compatibility.
+
 - **GitLab ``include:`` cross-document resolver.** Local ``include:``
   directives in ``.gitlab-ci.yml`` are now followed at load time so
   cross-job rules see jobs and variables defined in included files.

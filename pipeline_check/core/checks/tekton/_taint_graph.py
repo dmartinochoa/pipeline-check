@@ -31,12 +31,17 @@ reference looks like an ordinary param substitution until you
 trace the ``tasks.<producer>.results.<output>`` chain. The
 engine here closes that gap.
 
-Scope: same-document Pipeline analysis (the ``Pipeline`` kind
-with inline ``taskSpec:`` definitions). v1 limitations:
+Scope: same-context Pipeline analysis. Both inline ``taskSpec:``
+and ``taskRef:`` references to ``Task`` / ``ClusterTask``
+documents loaded into the same :class:`TektonContext` are
+walked: when a Pipeline task uses ``taskRef: { name: <X> }``,
+the resolver looks up ``X`` in the context's Task index and
+treats the resolved ``spec`` as if it were the inline
+``taskSpec``. ``bundle:`` / ``resolver:`` (remote OCI / Tekton-
+resolver-framework references) are not resolved, the scanner
+deliberately doesn't fetch over the network. Remaining
+limitations:
 
-  * ``taskRef:`` references to externally-defined Tasks aren't
-    followed (would need cross-document resolution like the
-    GHA ``--resolve-remote`` flow);
   * ``finally:`` task blocks aren't walked yet (same shape but
     less common);
   * ``when:`` / ``conditions:`` aren't sinks; Tekton's
@@ -47,8 +52,9 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import Any
 
-from .base import TektonDoc
+from .base import TektonContext, TektonDoc
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,14 +163,70 @@ class _GraphState:
 # ── Public API ────────────────────────────────────────────────────
 
 
-def analyze_pipeline_doc(doc: TektonDoc) -> list[TaintPath]:
+def _build_task_index(ctx: TektonContext | None) -> dict[str, dict[str, Any]]:
+    """Return ``name -> spec`` for every ``Task`` / ``ClusterTask``
+    document in *ctx*. Used to resolve ``taskRef:`` references in a
+    Pipeline against locally-loaded task definitions.
+
+    When *ctx* is None (legacy callers, isolated unit tests that pass
+    a single doc), the index is empty and ``taskRef:`` references
+    silently fall through, matching the pre-resolver behavior.
+
+    Name collisions (multiple Tasks with the same name across
+    namespaces) keep the first occurrence; this matches Tekton's
+    runtime semantics in a single namespace and is the conservative
+    pick for static analysis.
+    """
+    if ctx is None:
+        return {}
+    index: dict[str, dict[str, Any]] = {}
+    for d in ctx.docs:
+        if d.kind not in ("Task", "ClusterTask"):
+            continue
+        spec = d.data.get("spec")
+        if not isinstance(spec, dict):
+            continue
+        if d.name and d.name not in index:
+            index[d.name] = spec
+    return index
+
+
+def _resolve_task_body(
+    task: dict[str, Any],
+    task_index: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Return the spec body backing a Pipeline task, or None.
+
+    Inline ``taskSpec:`` wins. Falls back to ``taskRef:`` resolution
+    against *task_index* (built from sibling ``Task`` /
+    ``ClusterTask`` documents). ``bundle:`` and ``resolver:``
+    references aren't followed; they require network fetches the
+    scanner deliberately avoids.
+    """
+    ts = task.get("taskSpec")
+    if isinstance(ts, dict):
+        return ts
+    ref = task.get("taskRef")
+    if isinstance(ref, dict):
+        ref_name = ref.get("name")
+        if isinstance(ref_name, str) and ref_name in task_index:
+            return task_index[ref_name]
+    return None
+
+
+def analyze_pipeline_doc(
+    doc: TektonDoc,
+    ctx: TektonContext | None = None,
+) -> list[TaintPath]:
     """Build a taint graph for *doc* and return every source-to-sink path.
 
     The doc must be a ``Pipeline``; other kinds (Task / TaskRun /
-    PipelineRun / ClusterTask) return ``[]``. Pipelines with
-    ``taskRef:`` references to external Tasks are still walked,
-    only inline ``taskSpec:`` definitions contribute to the
-    producer pass.
+    PipelineRun / ClusterTask) return ``[]``. ``taskRef:`` references
+    are resolved against *ctx* if provided, treating the referenced
+    Task's ``spec`` as if it were the inline ``taskSpec``. Without
+    *ctx* the resolver is empty and ``taskRef:`` paths are skipped
+    silently (legacy behavior, kept for callers that already pass a
+    bare doc).
     """
     if doc.kind != "Pipeline":
         return []
@@ -175,12 +237,14 @@ def analyze_pipeline_doc(doc: TektonDoc) -> list[TaintPath]:
     if not isinstance(tasks, list):
         return []
 
+    task_index = _build_task_index(ctx)
     state = _GraphState()
     paths: list[TaintPath] = []
 
     # ── Pass 1: producers. ────────────────────────────────────
-    # A task is a producer when its inline ``taskSpec.steps[*]``
-    # has a ``script:`` that:
+    # A task is a producer when its body's ``steps[*]`` (resolved
+    # from inline ``taskSpec`` or a sibling Task's ``spec`` via
+    # ``taskRef:``) has a ``script:`` that:
     #   1. Mentions ``$(results.<X>.path)`` (write target),
     #   2. Interpolates a ``$(params.<Y>)`` reference (taint source).
     for task in tasks:
@@ -189,8 +253,8 @@ def analyze_pipeline_doc(doc: TektonDoc) -> list[TaintPath]:
         producer_name = task.get("name")
         if not isinstance(producer_name, str) or not producer_name:
             continue
-        task_spec = task.get("taskSpec")
-        if not isinstance(task_spec, dict):
+        task_spec = _resolve_task_body(task, task_index)
+        if task_spec is None:
             continue
         steps = task_spec.get("steps")
         if not isinstance(steps, list):
@@ -223,7 +287,7 @@ def analyze_pipeline_doc(doc: TektonDoc) -> list[TaintPath]:
     #   1. It has a param value of the form
     #      ``$(tasks.<producer>.results.<output>)`` AND that
     #      ``(producer, output)`` was recorded in pass 1;
-    #   2. Its inline ``taskSpec.steps[*].script`` references
+    #   2. Its resolved body's ``steps[*].script`` references
     #      ``$(params.<consumer-param-name>)`` for that param.
     for task in tasks:
         if not isinstance(task, dict):
@@ -253,9 +317,9 @@ def analyze_pipeline_doc(doc: TektonDoc) -> list[TaintPath]:
                         ).extend(sources)
         if not tainted_consumer_params:
             continue
-        # Walk the inline taskSpec for sinks.
-        task_spec = task.get("taskSpec")
-        if not isinstance(task_spec, dict):
+        # Walk the resolved body for sinks.
+        task_spec = _resolve_task_body(task, task_index)
+        if task_spec is None:
             continue
         steps = task_spec.get("steps")
         if not isinstance(steps, list):
