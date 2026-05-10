@@ -279,11 +279,16 @@ the candidates above. Grouped by priority within v0.5.0.
   lift existing TAINT rules from single-document to multi-
   document, which is where most real CI repos sit. Highest
   detection-power gain per line of code on the table.
-- **Suppression-with-expiry on `--ignore-file`.** Each entry can
-  carry `# expires: 2026-08-01`; past the date the suppression
-  flips to a warning the next run, then a hard finding. Forces
-  revisit instead of letting one-off "ignore for the demo"
-  entries calcify into permanent blind spots.
+- **Suppression-with-expiry on `--ignore-file`.** *Landed on dev.*
+  YAML ignore-file entries carry an ``expires: YYYY-MM-DD`` field;
+  past the date the suppression no longer applies and a ``[gate]
+  ignore rule expired on …`` line surfaces in the gate summary.
+  ``GateResult`` also exposes ``expiring_soon`` for entries within
+  ``EXPIRY_WARNING_DAYS`` (14 by default), rendered as ``[gate]
+  ignore rule expires in N day(s) on …`` so the operator gets a
+  forewarning before the gate flips. Forces revisit instead of
+  letting one-off "ignore for the demo" entries calcify into
+  permanent blind spots.
 
 #### Medium impact
 

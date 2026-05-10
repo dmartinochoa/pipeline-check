@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Soon-to-expire suppression forewarning.** ``GateResult`` gains
+  ``expiring_soon: list[IgnoreRule]`` populated for any ignore-file
+  entry whose ``expires:`` date falls within
+  :data:`pipeline_check.core.gate.EXPIRY_WARNING_DAYS` (14 days
+  default) of the current run. The CLI renders each as ``[gate]
+  ignore rule expires in N day(s) on YYYY-MM-DD: CHECK-ID:resource
+  (still suppressing, but plan to revisit)`` so the team sees the
+  forewarning in regular scan output before the suppression
+  actually flips to a hard finding. Rounds out the partially-
+  landed suppression-with-expiry feature: previously the gate
+  only surfaced rules already expired (the suppression already
+  gone); now operators get a 14-day heads-up so they schedule a
+  revisit before CI fails.
+
 - **Per-rule real-world incident references (``incident_refs``).**
   New optional field on ``Rule`` that anchors a check to concrete
   CVEs and breach postmortems where the same pattern caused

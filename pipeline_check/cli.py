@@ -2559,6 +2559,18 @@ def _emit_gate_summary(gate: Any) -> None:
                 f"[gate] ignore rule expired on {r.expires}: "
                 f"{r.check_id}{scope} (no longer suppressing)"
             )
+    if gate.expiring_soon:
+        # Forewarn before expiry so the team schedules a revisit
+        # rather than discovering the lapsed suppression in CI.
+        for r in gate.expiring_soon:
+            scope = f":{r.resource}" if r.resource else ""
+            days = r.days_until_expiry()
+            day_word = "day" if days == 1 else "days"
+            when = "today" if days == 0 else f"in {days} {day_word}"
+            msg_lines.append(
+                f"[gate] ignore rule expires {when} on {r.expires}: "
+                f"{r.check_id}{scope} (still suppressing, but plan to revisit)"
+            )
     for line in msg_lines:
         click.echo(line, err=True)
 
