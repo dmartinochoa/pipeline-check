@@ -7,7 +7,9 @@ Usage
 
 Examples
 --------
-    # Auto-detect the provider from cwd (default).
+    # Auto-detect every supported provider in cwd and scan each.
+    # Single match = single-provider scan; multiple matches = automatic
+    # multi-provider run with cross-provider chain correlation.
     pipeline_check
 
     # Scaffold a starter config file pre-filled from cwd.
@@ -438,53 +440,89 @@ def _resolve_provider_path(
     return value
 
 
+# Provider detection table. Each entry maps a provider name to the list
+# of cwd-relative paths whose presence signals "this provider should
+# scan here". File entries use ``os.path.isfile``; directory entries use
+# ``os.path.isdir``. Iterated by both :func:`_detect_pipeline_from_cwd`
+# (first-match-wins single-provider detection) and
+# :func:`_detect_all_pipelines_from_cwd` (multi-provider walk that
+# returns every provider whose canonical path is present).
+#
+# Order matters: helm before kubernetes because a ``Chart.yaml`` at
+# the repo root is an unambiguous signal, whereas the k8s indicators
+# (``kubernetes/``, ``k8s/``, ``manifests/``) are generic directory
+# names that helm charts often use too. Multi-detect drops the
+# ambiguous-k8s case when helm already matched (see below).
+_PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
+    # (provider, files, directories)
+    ("github", (), (".github/workflows",)),
+    ("gitlab", (".gitlab-ci.yml",), ()),
+    ("circleci", (".circleci/config.yml",), ()),
+    ("jenkins", ("Jenkinsfile",), ()),
+    ("azure", ("azure-pipelines.yml",), ()),
+    ("bitbucket", ("bitbucket-pipelines.yml",), ()),
+    ("cloudbuild", ("cloudbuild.yaml", "cloudbuild.yml"), ()),
+    ("buildkite", (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"), ()),
+    ("drone", (".drone.yml", ".drone.yaml"), ()),
+    ("dockerfile", ("Dockerfile", "Containerfile"), ()),
+    (
+        "cloudformation",
+        (
+            "template.yml", "template.yaml", "template.json",
+            "cloudformation.yml", "cloudformation.yaml",
+            "cfn.yml", "cfn.yaml",
+        ),
+        (),
+    ),
+    # OCI deliberately omitted from auto-detect: ``index.json`` is too
+    # generic a filename to promote on presence alone (Backstage,
+    # Sphinx, and various Node tooling produce unrelated index.json
+    # files at repo roots). ``--pipeline oci`` still auto-resolves
+    # ``index.json`` when explicitly selected; multi-provider runs
+    # that want OCI in scope use ``--pipelines github,oci``.
+    ("helm", ("Chart.yaml",), ()),
+    ("kubernetes", (), ("kubernetes", "k8s", "manifests")),
+)
+
+
+def _provider_present(files: tuple[str, ...], dirs: tuple[str, ...]) -> bool:
+    return any(os.path.isfile(f) for f in files) or any(os.path.isdir(d) for d in dirs)
+
+
 def _detect_pipeline_from_cwd() -> str | None:
     """Return the best-guess pipeline name based on files present at cwd.
 
     First match wins. Returns None when nothing recognizable is found;
     the caller then falls back to ``aws`` (preserves prior default).
     """
-    if os.path.isdir(".github/workflows"):
-        return "github"
-    if os.path.isfile(".gitlab-ci.yml"):
-        return "gitlab"
-    if os.path.isfile(".circleci/config.yml"):
-        return "circleci"
-    if os.path.isfile("Jenkinsfile"):
-        return "jenkins"
-    if os.path.isfile("azure-pipelines.yml"):
-        return "azure"
-    if os.path.isfile("bitbucket-pipelines.yml"):
-        return "bitbucket"
-    if os.path.isfile("cloudbuild.yaml") or os.path.isfile("cloudbuild.yml"):
-        return "cloudbuild"
-    if (
-        os.path.isfile(".buildkite/pipeline.yml")
-        or os.path.isfile(".buildkite/pipeline.yaml")
-    ):
-        return "buildkite"
-    if os.path.isfile(".drone.yml") or os.path.isfile(".drone.yaml"):
-        return "drone"
-    if os.path.isfile("Dockerfile") or os.path.isfile("Containerfile"):
-        return "dockerfile"
-    for _cfn in (
-        "template.yml", "template.yaml", "template.json",
-        "cloudformation.yml", "cloudformation.yaml",
-        "cfn.yml", "cfn.yaml",
-    ):
-        if os.path.isfile(_cfn):
-            return "cloudformation"
-    # Helm is detected before kubernetes because a Chart.yaml at the
-    # repo root is an unambiguous signal, whereas k8s falls back to
-    # generic directory names that helm charts often use too.
-    if os.path.isfile("Chart.yaml"):
-        return "helm"
-    # Kubernetes is detected last because its indicators are
-    # generic directory names that other providers might use too.
-    for _k8s in ("kubernetes", "k8s", "manifests"):
-        if os.path.isdir(_k8s):
-            return "kubernetes"
+    for name, files, dirs in _PROVIDER_DETECT_FILES:
+        if _provider_present(files, dirs):
+            return name
     return None
+
+
+def _detect_all_pipelines_from_cwd() -> list[str]:
+    """Return every provider whose canonical path is present at cwd.
+
+    Used by the no-args / ``--pipeline auto`` flow to switch into
+    multi-provider mode automatically when a repo carries more than
+    one pipeline-shape file (e.g. ``.github/workflows`` and a
+    ``Dockerfile``). Order follows :data:`_PROVIDER_DETECT_FILES` so
+    multi-mode runs sub-scanners in a stable, repeatable sequence.
+
+    Helm / Kubernetes disambiguation: a Helm chart's templates often
+    sit under ``charts/`` next to a ``Chart.yaml``, so when both helm
+    and kubernetes match at cwd, kubernetes is dropped to avoid
+    rendering the same charts twice (helm renders templates and
+    feeds them to the K8s rule pack already).
+    """
+    detected: list[str] = []
+    for name, files, dirs in _PROVIDER_DETECT_FILES:
+        if _provider_present(files, dirs):
+            detected.append(name)
+    if "helm" in detected and "kubernetes" in detected:
+        detected.remove("kubernetes")
+    return detected
 
 
 _CHECK_IDS_CACHE: list[str] | None = None
@@ -673,10 +711,16 @@ def _install_completion_callback(
     help=(
         "Pipeline environment to scan. One of: "
         + ", ".join(_PIPELINE_CHOICES)
-        + ". ``auto`` (default) picks a provider by scanning cwd for a "
-        "recognized CI file (``.github/workflows``, ``.gitlab-ci.yml``, "
-        "``Jenkinsfile``, etc.) and falls back to ``aws`` when nothing "
-        "matches. Each provider has a companion path flag "
+        + ". ``auto`` (default) walks cwd for recognized CI files "
+        "(``.github/workflows``, ``.gitlab-ci.yml``, ``Jenkinsfile``, "
+        "``Dockerfile``, ``Chart.yaml``, etc.). One match runs a "
+        "single-provider scan; two or more matches automatically "
+        "switch to multi-provider mode (equivalent to ``--pipelines "
+        "X,Y,Z``) so cross-provider attack chains (``XPC-NNN``) fire. "
+        "OCI is not auto-detected because ``index.json`` is too "
+        "generic; pass ``--pipeline oci`` or ``--pipelines github,oci`` "
+        "explicitly. Falls back to ``aws`` when nothing matches. "
+        "Each provider has a companion path flag "
         "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
@@ -1739,10 +1783,23 @@ def scan(
 
     pipeline_lc = pipeline.lower()
     if not pipelines_list and pipeline_lc == "auto":
-        detected = _detect_pipeline_from_cwd()
-        if detected:
-            click.echo(f"[auto] detected --pipeline {detected}", err=True)
-            pipeline_lc = detected
+        detected_all = _detect_all_pipelines_from_cwd()
+        if len(detected_all) >= 2:
+            # Multi-provider repo: route through MultiScanner so
+            # cross-provider attack chains (XPC-NNN) fire on the
+            # union of every sub-scan's findings. Each provider's
+            # path flag is auto-detected by the per-provider
+            # resolver below, the same way --pipelines does.
+            pipelines_list = detected_all
+            click.echo(
+                "[auto] detected providers: "
+                f"{', '.join(detected_all)} (running --pipelines "
+                f"{','.join(detected_all)})",
+                err=True,
+            )
+        elif detected_all:
+            pipeline_lc = detected_all[0]
+            click.echo(f"[auto] detected --pipeline {pipeline_lc}", err=True)
         else:
             click.echo(
                 "[auto] no CI files found at cwd; using --pipeline aws",
@@ -2501,6 +2558,18 @@ def _emit_gate_summary(gate: Any) -> None:
             msg_lines.append(
                 f"[gate] ignore rule expired on {r.expires}: "
                 f"{r.check_id}{scope} (no longer suppressing)"
+            )
+    if gate.expiring_soon:
+        # Forewarn before expiry so the team schedules a revisit
+        # rather than discovering the lapsed suppression in CI.
+        for r in gate.expiring_soon:
+            scope = f":{r.resource}" if r.resource else ""
+            days = r.days_until_expiry()
+            day_word = "day" if days == 1 else "days"
+            when = "today" if days == 0 else f"in {days} {day_word}"
+            msg_lines.append(
+                f"[gate] ignore rule expires {when} on {r.expires}: "
+                f"{r.check_id}{scope} (still suppressing, but plan to revisit)"
             )
     for line in msg_lines:
         click.echo(line, err=True)

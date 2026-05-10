@@ -131,6 +131,11 @@ Resolution rules:
 
 Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch refs (`@v4`, `@main`) can be silently moved to malicious commits by whoever controls the upstream repository, a third-party action compromise will propagate into the pipeline on the next run.
 
+**Seen in the wild**
+
+- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): a malicious commit retagged behind ``@v1`` / ``@v45`` shipped CI-secret exfiltration to roughly 23,000 repos that had pinned the action to a mutable tag instead of a commit SHA. https://www.cve.org/CVERecord?id=CVE-2025-30066
+- reviewdog/action-setup compromise (CVE-2025-30154, March 2025): same week, similar mechanism. Tag-pinned consumers auto-pulled the malicious version; SHA-pinned consumers were unaffected. https://www.cve.org/CVERecord?id=CVE-2025-30154
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -170,6 +175,11 @@ Use `pull_request` instead of `pull_request_target` for any workflow that must r
 </div>
 
 Interpolating attacker-controlled context fields (PR title/body, issue body, comment body, commit message, discussion body, head branch name, `github.ref_name`, `inputs.*`, release metadata, deployment payloads) directly into a `run:` block is shell injection. GitHub expands `${{ ... }}` BEFORE shell quoting, so any backtick, `$()`, or `;` in the source field executes.
+
+**Seen in the wild**
+
+- GitHub Security Lab disclosure (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI. https://securitylab.github.com/research/github-actions-untrusted-input/
+- Trail of Bits ``pwn-request`` research (2021): demonstrated the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR could exfiltrate every secret the workflow could see. Mitigation is the same: never interpolate context into shell, route through ``env:``.
 
 <div class="pg-rule__rec" markdown>
 
@@ -237,7 +247,12 @@ Use `aws-actions/configure-aws-credentials` with `role-to-assume` + `permissions
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools.
+Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools.
+
+**Seen in the wild**
+
+- SolarWinds Orion compromise (December 2020): SUNBURST trojanized builds shipped to ~18,000 customers because no post-build signature could be checked against a trusted signing identity. Cryptographic signing on every release would have given downstream consumers a verifiable break with the upstream key, the absence of which was the ambient signal of compromise. https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a
+- PyTorch nightly compromise (December 2022): the ``torchtriton`` dependency was hijacked via PyPI dependency-confusion. Sigstore-style attestation tied to the official publisher would have made the impostor build fail verification rather than silently install. https://pytorch.org/blog/compromised-nightly-dependency/
 
 <div class="pg-rule__rec" markdown>
 
@@ -282,6 +297,11 @@ Every string in the workflow is scanned against a set of credential patterns (AW
 **Known false-positive modes**
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real workflow it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+
+**Seen in the wild**
+
+- Uber 2016 GitHub leak: an AWS access key embedded in a private GitHub repo was reachable to attackers who got at the repo and used it to download driver / rider PII for 57 million accounts. Credential-shaped literals in any source control system (public or private) are one credential-leak away from the same outcome.
+- GitGuardian's annual State of Secrets Sprawl reports consistently find millions of fresh credential leaks per year across public commits, with a median time-to-revocation after disclosure of days, not minutes. Pinning secrets to ``${{ secrets.* }}`` removes the artifact from source control entirely.
 
 <div class="pg-rule__rec" markdown>
 
@@ -454,6 +474,11 @@ Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote conten
 **Known false-positive modes**
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
+
+**Seen in the wild**
+
+- Codecov Bash uploader compromise (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s https://codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery. https://about.codecov.io/security-update/
+- Bitwarden / npm install scripts (CVE-2018-7536-class incidents): remote-script execution in CI is the same primitive. The attacker controls bytes the runner executes. Pinning a digest or hosting a vendored copy turns a perpetual ambient risk into a one-time review.
 
 <div class="pg-rule__rec" markdown>
 

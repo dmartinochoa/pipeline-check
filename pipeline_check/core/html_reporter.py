@@ -6,6 +6,7 @@ PyYAML is installed; the report degrades gracefully without it.
 """
 
 import html
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -462,6 +463,34 @@ def _e(text: str) -> str:
     return html.escape(str(text))
 
 
+# Match an https:// URL in an incident-ref string. Conservative: only
+# https, no userinfo, stop at whitespace / quote / closing punctuation
+# so the URL stays clickable without dragging the trailing period of
+# the sentence into the anchor.
+_URL_RE = re.compile(r"https://[^\s<>\"')]+")
+
+
+def _autolink(text: str) -> str:
+    """HTML-escape *text* and turn embedded https URLs into anchors.
+
+    Used by the "Seen in the wild" footer to render incident-ref
+    citations with clickable links to CVEs / postmortems while
+    keeping the surrounding prose escaped.
+    """
+    parts: list[str] = []
+    last = 0
+    for m in _URL_RE.finditer(text):
+        parts.append(_e(text[last:m.start()]))
+        url = m.group(0)
+        parts.append(
+            f'<a href="{_e(url)}" target="_blank" rel="noopener noreferrer">'
+            f'{_e(url)}</a>'
+        )
+        last = m.end()
+    parts.append(_e(text[last:]))
+    return "".join(parts)
+
+
 def _severity_badge(severity: Severity) -> str:
     cls = f"b-{severity.value.lower()}"
     return f'<span class="badge {cls}">{_e(severity.value)}</span>'
@@ -566,6 +595,22 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
             f'<div class="d-section">'
             f'<div class="d-label">CWE</div>'
             f'<div class="d-value">{cwe_tags}</div>'
+            f'</div>'
+        )
+
+    # Real-world incidents this rule is anchored to. Anchors abstract
+    # security debt to a concrete cost the operator's manager has heard
+    # of. Citations are populated on the rule (RULE.incident_refs) and
+    # backfilled to the finding by the provider orchestrator.
+    if finding.incident_refs:
+        items = "".join(
+            f"<li>{_autolink(ref)}</li>" for ref in finding.incident_refs
+        )
+        sections.append(
+            f'<div class="d-section">'
+            f'<div class="d-label">Seen in the wild</div>'
+            f'<div class="d-value"><ul style="margin:4px 0 0 18px;padding:0">'
+            f'{items}</ul></div>'
             f'</div>'
         )
 

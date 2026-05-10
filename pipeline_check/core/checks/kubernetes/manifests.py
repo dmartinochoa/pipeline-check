@@ -32,5 +32,7 @@ class KubernetesManifestChecks(KubernetesBaseCheck):
         for rule, check_fn in self._rules:
             finding = check_fn(self.ctx)
             finding.cwe = list(rule.cwe)
+            if not finding.incident_refs:
+                finding.incident_refs = list(rule.incident_refs)
             findings.append(finding)
         return findings

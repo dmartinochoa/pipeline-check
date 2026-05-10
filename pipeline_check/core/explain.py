@@ -382,6 +382,11 @@ def _render_meta(meta: _CheckMeta) -> str:
             for para in rule.recommendation.strip().splitlines():
                 lines.append(f"  {para}" if para else "")
             lines.append("")
+        if rule.incident_refs:
+            lines.append("[Seen in the wild]")
+            for ref in rule.incident_refs:
+                lines.append(f"  * {ref}")
+            lines.append("")
     else:
         # Class-based fallback, the docstring table we matched the
         # row from is the most reliable thing we have.

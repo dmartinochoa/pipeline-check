@@ -34,6 +34,20 @@ RULE = Rule(
         "`${{ ... }}` BEFORE shell quoting, so any backtick, `$()`, "
         "or `;` in the source field executes."
     ),
+    incident_refs=(
+        "GitHub Security Lab disclosure (2020): a sweep of public "
+        "Actions found dozens of widely-used workflows interpolating "
+        "``github.event.issue.title`` / ``pull_request.title`` "
+        "directly into shell. Any commenter or PR author could run "
+        "arbitrary commands in the maintainer's CI. "
+        "https://securitylab.github.com/research/github-actions-untrusted-input/",
+        "Trail of Bits ``pwn-request`` research (2021): demonstrated "
+        "the same primitive against ``pull_request_target`` workflows "
+        "where the runner has secrets and a write-scope token; one "
+        "fork PR could exfiltrate every secret the workflow could "
+        "see. Mitigation is the same: never interpolate context into "
+        "shell, route through ``env:``.",
+    ),
 )
 
 

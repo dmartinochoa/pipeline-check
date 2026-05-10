@@ -32,17 +32,20 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 ```bash
 pip install pipeline-check          # Python >= 3.10
 
-pipeline_check                      # auto-detects the provider from cwd
+pipeline_check                      # auto-detects every provider in cwd
 pipeline_check init                 # scaffold .pipeline-check.yml
 pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
 
-Run `pipeline_check` with no flags in any supported repo. It inspects
-the working directory (`.github/workflows/`, `.gitlab-ci.yml`,
-`Jenkinsfile`, `cloudbuild.yaml`, `Chart.yaml`, `template.yml`, …),
-picks the matching provider, and falls back to `aws` when nothing
-recognizable is found.
+Run `pipeline_check` with no flags in any supported repo. It walks
+the working directory for every supported provider's canonical file
+(`.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`,
+`cloudbuild.yaml`, `Chart.yaml`, `template.yml`, `Dockerfile`, …).
+One match runs a single-provider scan; two or more matches
+automatically switch to multi-provider mode (equivalent to
+`--pipelines X,Y,Z`) so cross-provider attack chains (`XPC-NNN`)
+fire. Falls back to `aws` (live account scan) when nothing matches.
 
 No API tokens required. CI configs are parsed from disk; AWS uses the
 standard boto3 credential chain. The GitHub Actions provider can

@@ -58,6 +58,13 @@ from .scorer import ScoreResult
 # from the scorer so this module has no upward coupling.
 _GRADES = ("A", "B", "C", "D")
 
+#: Forewarning window for soon-to-expire suppressions. An ignore rule
+#: with ``expires`` within this many days of today shows up under
+#: :attr:`GateResult.expiring_soon` so the operator schedules a revisit
+#: before the gate flips. Two-week default chosen so a Friday afternoon
+#: scan still gives the team a sprint's notice.
+EXPIRY_WARNING_DAYS = 14
+
 
 @dataclass(frozen=True, slots=True)
 class IgnoreRule:
@@ -79,6 +86,20 @@ class IgnoreRule:
             return False
         ref = today or _dt.date.today()
         return ref > self.expires
+
+    def days_until_expiry(self, today: _dt.date | None = None) -> int | None:
+        """Days remaining before this suppression expires.
+
+        Returns None for rules without an ``expires`` date. Negative
+        values mean the rule is already expired (caller should usually
+        prefer :py:meth:`is_expired` for that check). Used by the CLI
+        to forewarn users when a suppression is approaching its
+        expiry date so they revisit it before the gate flips.
+        """
+        if self.expires is None:
+            return None
+        ref = today or _dt.date.today()
+        return (self.expires - ref).days
 
 
 @dataclass(slots=True)
@@ -136,6 +157,12 @@ class GateResult:
     #: Ignore rules whose ``expires`` date has passed. Reported to the
     #: user so stale suppressions surface instead of rotting silently.
     expired_rules: list[IgnoreRule] = field(default_factory=list)
+    #: Ignore rules whose ``expires`` date falls within
+    #: :data:`EXPIRY_WARNING_DAYS` of today (14 days by default).
+    #: Reported as a forewarning so the operator schedules a revisit
+    #: before the suppression starts failing the gate. Distinct from
+    #: ``expired_rules``: these still suppress, but soon won't.
+    expiring_soon: list[IgnoreRule] = field(default_factory=list)
     #: Human-readable labels for every gate condition that was evaluated.
     conditions_evaluated: list[str] = field(default_factory=list)
     #: Attack chains that tripped a chain gate condition. Empty when
@@ -468,6 +495,13 @@ def evaluate_gate(
                 )
 
     expired_rules = [r for r in config.ignore_rules if r.is_expired(today)]
+    expiring_soon: list[IgnoreRule] = []
+    for r in config.ignore_rules:
+        if r.expires is None or r.is_expired(today):
+            continue
+        days = r.days_until_expiry(today)
+        if days is not None and days <= EXPIRY_WARNING_DAYS:
+            expiring_soon.append(r)
 
     return GateResult(
         passed=not reasons,
@@ -476,6 +510,7 @@ def evaluate_gate(
         suppressed=suppressed,
         baseline_matched=baseline_matched,
         expired_rules=expired_rules,
+        expiring_soon=expiring_soon,
         conditions_evaluated=conditions,
         tripped_chains=tripped_chains,
     )

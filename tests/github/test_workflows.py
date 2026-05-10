@@ -39,6 +39,25 @@ class TestGHA001PinnedActions:
         assert not f.passed
         assert f.severity == Severity.HIGH
 
+    def test_finding_carries_incident_refs_from_rule(self):
+        """The orchestrator backfills ``finding.incident_refs`` from
+        the rule's ``incident_refs`` so reporters and ``--explain``
+        consumers see the same citations regardless of which rule
+        path emitted the finding."""
+        f = _run(
+            """
+            on: push
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+            """,
+            "GHA-001",
+        )
+        assert f.incident_refs, "GHA-001 should carry populated incident_refs"
+        assert any("tj-actions" in ref for ref in f.incident_refs)
+
     def test_sha_ref_passes(self):
         sha = "a" * 40
         f = _run(

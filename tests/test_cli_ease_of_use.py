@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import (
+    _detect_all_pipelines_from_cwd,
     _detect_pipeline_from_cwd,
     init_cmd,
     main,
@@ -90,6 +91,64 @@ class TestAutoDetect:
         assert result.exit_code == 0
         assert "no CI files found at cwd; using --pipeline aws" in result.stderr
         assert MS.call_args.kwargs["pipeline"] == "aws"
+
+
+class TestMultiAutoDetect:
+    """``--pipeline auto`` (default) walks every provider's canonical
+    files at cwd and switches to multi-provider mode when more than one
+    matches, so cross-provider chains (XPC-NNN) fire automatically.
+    """
+
+    def test_all_returns_each_match(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / "Dockerfile").write_text("FROM scratch\n")
+        detected = _detect_all_pipelines_from_cwd()
+        assert "github" in detected
+        assert "dockerfile" in detected
+
+    def test_all_returns_empty_for_empty_dir(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        assert _detect_all_pipelines_from_cwd() == []
+
+    def test_helm_drops_kubernetes_when_both_match(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "Chart.yaml").write_text("name: x\n")
+        (tmp_path / "kubernetes").mkdir()
+        detected = _detect_all_pipelines_from_cwd()
+        assert "helm" in detected
+        assert "kubernetes" not in detected
+
+    def test_scan_routes_two_matches_to_multiscanner(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / "Dockerfile").write_text("FROM scratch\n")
+        with patch("pipeline_check.cli.MultiScanner") as MS:
+            MS.return_value.run.return_value = []
+            MS.return_value.metadata_by_provider = {}
+            MS.return_value.metadata = _mock_meta()
+            MS.return_value.chains = []
+            result = runner.invoke(scan, [])
+        assert result.exit_code == 0
+        assert "[auto] detected providers" in result.stderr
+        assert "github" in result.stderr
+        assert "dockerfile" in result.stderr
+        assert MS.call_args.kwargs["pipelines"] == ["github", "dockerfile"]
+
+    def test_scan_routes_single_match_to_scanner(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "Dockerfile").write_text("FROM scratch\n")
+        with patch("pipeline_check.cli.Scanner") as MS:
+            MS.return_value.run.return_value = []
+            MS.return_value.metadata = _mock_meta()
+            result = runner.invoke(scan, [])
+        assert result.exit_code == 0
+        assert "[auto] detected --pipeline dockerfile" in result.stderr
+        assert MS.call_args.kwargs["pipeline"] == "dockerfile"
 
 
 # ── grouped help ────────────────────────────────────────────────────────────

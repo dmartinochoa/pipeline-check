@@ -131,6 +131,13 @@ longer applies and the gate summary emits:
 [gate] ignore rule expired on 2026-06-30: GHA-001:.github/workflows/release.yml (no longer suppressing)
 ```
 
+Suppressions within 14 days of expiry surface a forewarning in the
+same place so the team schedules a revisit before the gate flips:
+
+```
+[gate] ignore rule expires in 5 days on 2026-06-30: GHA-001:.github/workflows/release.yml (still suppressing, but plan to revisit)
+```
+
 This forces a review rather than letting suppressions rot silently.
 `reason` is free-form metadata for reviewers.
 

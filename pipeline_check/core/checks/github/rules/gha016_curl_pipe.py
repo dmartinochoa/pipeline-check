@@ -33,6 +33,20 @@ RULE = Rule(
         "with --min-confidence MEDIUM; the finding still surfaces so "
         "teams that want cryptographic verification can audit.",
     ),
+    incident_refs=(
+        "Codecov Bash uploader compromise (April 2021): an attacker "
+        "modified the codecov.io/bash uploader script (commonly fetched "
+        "via ``curl -s https://codecov.io/bash | bash``) to exfiltrate "
+        "environment variables from CI runners (AWS keys, GitHub "
+        "tokens, signing keys) at thousands of customers for over two "
+        "months before discovery. "
+        "https://about.codecov.io/security-update/",
+        "Bitwarden / npm install scripts (CVE-2018-7536-class incidents): "
+        "remote-script execution in CI is the same primitive. The "
+        "attacker controls bytes the runner executes. Pinning a digest "
+        "or hosting a vendored copy turns a perpetual ambient risk "
+        "into a one-time review.",
+    ),
 )
 
 
