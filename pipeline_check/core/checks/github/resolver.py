@@ -1,12 +1,18 @@
-"""Remote-ref resolver for GitHub Actions reusable workflows.
+"""Remote-ref resolver for GitHub Actions reusable workflows AND
+composite actions.
 
 When a caller workflow declares
 ``jobs.build.uses: owner/repo/.github/workflows/release.yml@v1``, the
 called workflow's body is what actually runs with the caller's token
-and secrets. By default pipeline-check stops at the call site. It
-flags an unpinned ref (GHA-025) and goes no further. This module
-adds an opt-in path that fetches the called body and feeds it back
-through the rule pack.
+and secrets. Same applies to ``steps[].uses: owner/repo@v1`` — when
+the referenced action is a composite action, its inner ``runs.steps``
+execute inside the calling job's context, with the same secrets and
+``GITHUB_TOKEN`` permissions. By default pipeline-check stops at the
+call site (it flags an unpinned ref via GHA-001 / GHA-025 and goes
+no further). This module adds an opt-in path that fetches both
+called workflow bodies AND composite action bodies, then feeds them
+back through the GHA rule pack so issues hidden inside a third-party
+composite show up exactly as if the caller had written them inline.
 
 Architecture
 ------------
@@ -26,7 +32,10 @@ Architecture
   - :class:`Resolver` walks the loaded workflows, follows remote
     ``uses:`` refs up to ``max_depth``, detects cycles, parses each
     fetched body into a :class:`Workflow`, and tags it with
-    ``source_ref`` / ``caller_path`` / inheritance metadata.
+    ``source_ref`` / ``caller_path`` / inheritance metadata. Composite
+    action bodies are synthesized into a single-job ``Workflow``
+    (one fake job named ``__composite__``) so the same rule pack
+    runs against them without a second orchestrator.
 
 The resolver never raises on a network error or a malformed body —
 it appends to ``GitHubContext.warnings`` and returns. Resolution is
@@ -281,7 +290,20 @@ def default_cache_dir() -> Path:
 
 @dataclass(slots=True)
 class _Pending:
-    """Internal queue item: a ref to fetch, with its provenance."""
+    """Internal queue item: a ref to fetch, with its provenance.
+
+    ``kind`` discriminates two fetch flavors that share the cache,
+    fetcher, dedup, and concurrency machinery:
+
+      - ``"workflow"`` — caller's ``jobs.<id>.uses:`` points at a
+        reusable workflow YAML file. Fetched verbatim.
+      - ``"action"`` — caller's ``steps[].uses:`` points at an action
+        repo. Fetched as ``action.yml`` (or ``action.yaml`` on
+        fallback). Only composite actions produce a synthesized
+        workflow downstream — JavaScript / Docker actions ship as
+        opaque blobs that can't be statically scanned with the
+        workflow rule pack.
+    """
 
     ref: UsesRef
     caller_path: str
@@ -289,6 +311,7 @@ class _Pending:
     inherited_secret_names: frozenset[str]
     inherits_secrets: bool
     depth: int
+    kind: str = "workflow"
 
 
 @dataclass(slots=True)
@@ -299,6 +322,15 @@ class ResolverStats:
     cache_hits: int = 0
     failures: list[str] = field(default_factory=list)
     skipped_unpinned_warning: list[str] = field(default_factory=list)
+    #: Composite-action refs the resolver successfully fetched and
+    #: synthesized into scannable workflow bodies. Reported alongside
+    #: the workflow stats in the per-scan warnings stream so users see
+    #: the composite-action path is doing work.
+    composite_actions_resolved: int = 0
+    #: Action refs fetched whose ``runs.using`` was not ``composite``
+    #: (typically ``node20`` or ``docker``). Counted but not scanned —
+    #: their executable surface is outside the workflow YAML rule pack.
+    non_composite_actions_skipped: int = 0
 
 
 class Resolver:
@@ -325,10 +357,27 @@ class Resolver:
         self.stats = ResolverStats()
 
     def resolve(self, ctx: GitHubContext) -> None:
-        """Mutate *ctx* in place: append every reachable callee."""
+        """Mutate *ctx* in place: append every reachable callee.
+
+        Walks two parallel surfaces in lock-step:
+
+          - Reusable workflow callees referenced by ``jobs.<id>.uses:``.
+          - Composite action bodies referenced by ``steps[].uses:``
+            whose fetched ``action.yml`` declares ``runs.using:
+            composite``.
+
+        Both paths share the cache, fetcher, dedup table, and
+        depth counter. Composite-of-composite recursion just falls
+        out of the wave loop because a synthesized composite
+        workflow's ``steps[]`` entries flow back through
+        ``_collect_remote_uses`` on the next wave.
+        """
         # ``visited`` keys ride the four-tuple identity. Cycle
         # detection uses it so an "a uses b uses a" pair stops at
-        # depth 2 with a clear warning.
+        # depth 2 with a clear warning. Workflow and action fetches
+        # naturally don't collide because action refs have empty
+        # ``ref.path`` (or a subdir path) and workflow refs always
+        # carry a ``.yml`` / ``.yaml`` path.
         visited: set[tuple[str, str, str, str]] = set()
         # Seed the queue from each loaded caller. Callers are the
         # things originally on disk; resolver-added workflows have
@@ -368,6 +417,19 @@ class Resolver:
                 f"[gha-resolver] skipped {len(self.stats.skipped_unpinned_warning)} "
                 f"unpinned remote ref(s); pin to a SHA to enable resolution."
             )
+        if self.stats.composite_actions_resolved:
+            ctx.warnings.append(
+                f"[gha-resolver] resolved "
+                f"{self.stats.composite_actions_resolved} composite "
+                f"action(s); rule pack ran against their bodies."
+            )
+        if self.stats.non_composite_actions_skipped:
+            ctx.warnings.append(
+                f"[gha-resolver] skipped "
+                f"{self.stats.non_composite_actions_skipped} non-composite "
+                f"action(s) (JavaScript / Docker); their executable "
+                f"surface is outside the workflow YAML rule pack."
+            )
         for failure in self.stats.failures[:5]:
             ctx.warnings.append(f"[gha-resolver] {failure}")
         if len(self.stats.failures) > 5:
@@ -392,7 +454,20 @@ class Resolver:
     def _collect_remote_uses(
         self, wf: Workflow, depth: int,
     ) -> list[_Pending]:
-        """Yield one :class:`_Pending` per remote-workflow ``uses:`` in *wf*."""
+        """Yield one :class:`_Pending` per remote ``uses:`` in *wf*.
+
+        Covers both surfaces:
+
+          - ``jobs.<id>.uses:`` pointing at a remote reusable workflow
+            (``kind="workflow"``).
+          - ``steps[].uses:`` pointing at a remote action repo
+            (``kind="action"``). The fetch reads ``action.yml`` and
+            only synthesizes a workflow when ``runs.using == composite``.
+
+        Both surfaces share dedup via the wave's ``visited`` set so a
+        workflow that uses the same composite action in N steps fetches
+        once.
+        """
         out: list[_Pending] = []
         jobs = wf.data.get("jobs")
         if not isinstance(jobs, dict):
@@ -407,26 +482,59 @@ class Resolver:
             if not isinstance(job, dict):
                 continue
             ref = parse_uses(job.get("uses"))
-            if ref is None or ref.kind != "remote-workflow":
+            if ref is not None and ref.kind == "remote-workflow":
+                if not ref.is_pinned_to_sha:
+                    # We *could* resolve unpinned refs by treating the
+                    # tag as a ref token, but doing so silently would
+                    # defeat GHA-025's value. Mark it skipped and let
+                    # the user opt back in by pinning.
+                    self.stats.skipped_unpinned_warning.append(ref.raw)
+                else:
+                    inherited_secrets, inherits = _secrets_visible_to_callee(
+                        job, wf,
+                    )
+                    out.append(_Pending(
+                        ref=ref,
+                        caller_path=_synthesized_caller_path(wf),
+                        inherited_permissions=caller_permissions,
+                        inherited_secret_names=inherited_secrets,
+                        inherits_secrets=inherits,
+                        depth=depth,
+                        kind="workflow",
+                    ))
+            # Composite-action surface. Composite actions execute in
+            # the calling job's process — same secrets, same token,
+            # same runner — so the inherited context is the caller's
+            # job permissions and the full caller-secret horizon.
+            steps = job.get("steps")
+            if not isinstance(steps, list):
                 continue
-            if not ref.is_pinned_to_sha:
-                # We *could* resolve unpinned refs by treating the tag
-                # as a ref token, but doing so silently would defeat
-                # GHA-025's value. Mark it skipped and let the user
-                # opt back in by pinning.
-                self.stats.skipped_unpinned_warning.append(ref.raw)
-                continue
-            inherited_secrets, inherits = _secrets_visible_to_callee(
-                job, wf,
-            )
-            out.append(_Pending(
-                ref=ref,
-                caller_path=_synthesized_caller_path(wf),
-                inherited_permissions=caller_permissions,
-                inherited_secret_names=inherited_secrets,
-                inherits_secrets=inherits,
-                depth=depth,
-            ))
+            for step in steps:
+                if not isinstance(step, dict):
+                    continue
+                step_ref = parse_uses(step.get("uses"))
+                if step_ref is None or step_ref.kind != "remote-action":
+                    continue
+                if not step_ref.is_pinned_to_sha:
+                    # Same logic as workflow refs: don't follow tag
+                    # pins silently. GHA-001 already flagged the
+                    # unpinned ref at the call site.
+                    self.stats.skipped_unpinned_warning.append(step_ref.raw)
+                    continue
+                # Composite-action callees inherit the caller's full
+                # secret horizon (the action runs in-process). We
+                # don't enumerate names here; mark "inherits" so the
+                # synthesized workflow's rules see the same
+                # conservative assumption as ``secrets: inherit``.
+                out.append(_Pending(
+                    ref=step_ref,
+                    caller_path=_synthesized_caller_path(wf),
+                    inherited_permissions=caller_permissions,
+                    inherited_secret_names=frozenset(),
+                    inherits_secrets=True,
+                    depth=depth,
+                    kind="action",
+                ))
         return out
 
     def _fetch_wave(
@@ -438,9 +546,12 @@ class Resolver:
         """Fetch *pendings* concurrently and turn each hit into a Workflow."""
         # Dedup within the wave so two callers referencing the same
         # callee fetch once. ``visited`` carries dedup across waves.
+        # Workflow and action keys naturally don't collide (workflow
+        # refs always have a ``.yml`` / ``.yaml`` path; action refs
+        # have ``""`` or a subdir).
         unique: dict[tuple[str, str, str, str], _Pending] = {}
         for p in pendings:
-            key = (p.ref.owner, p.ref.repo, p.ref.ref, p.ref.path)
+            key = self._dedup_key(p)
             if key in visited:
                 continue
             unique.setdefault(key, p)
@@ -450,30 +561,11 @@ class Resolver:
             return results
 
         def _do_one(p: _Pending) -> tuple[_Pending, bytes | None]:
-            ref = p.ref
-            cache_hit: bytes | None = None
-            if self.cache is not None:
-                cache_hit = self.cache.get(
-                    ref.owner, ref.repo, ref.ref, ref.path,
-                )
-                if cache_hit is not None:
-                    self.stats.cache_hits += 1
-                    return p, cache_hit
-            data = self.fetcher.fetch(
-                ref.owner, ref.repo, ref.ref, ref.path,
-            )
-            if data is not None:
-                self.stats.fetched += 1
-                if self.cache is not None:
-                    self.cache.put(
-                        ref.owner, ref.repo, ref.ref, ref.path, data,
-                    )
-            return p, data
+            return p, self._fetch_one(p)
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
             for p, data in pool.map(_do_one, unique.values()):
-                key = (p.ref.owner, p.ref.repo, p.ref.ref, p.ref.path)
-                visited.add(key)
+                visited.add(self._dedup_key(p))
                 if data is None:
                     self.stats.failures.append(
                         f"could not fetch {p.ref.raw} "
@@ -484,6 +576,53 @@ class Resolver:
                 if wf is not None:
                     results.append(wf)
         return results
+
+    @staticmethod
+    def _dedup_key(p: _Pending) -> tuple[str, str, str, str]:
+        """Cache key incorporates kind so a workflow ``foo.yml@SHA`` and
+        an action subpath ``foo`` at the same SHA don't collide."""
+        return (p.ref.owner, p.ref.repo, p.ref.ref, f"{p.kind}:{p.ref.path}")
+
+    def _fetch_one(self, p: _Pending) -> bytes | None:
+        """Single-pending fetch with cache and per-kind path resolution."""
+        ref = p.ref
+        if p.kind == "workflow":
+            return self._fetch_with_cache(
+                ref.owner, ref.repo, ref.ref, ref.path,
+            )
+        # Composite-action: try ``<path>/action.yml`` then
+        # ``<path>/action.yaml``. The action's repo-relative path is
+        # ``ref.path`` (empty string for repo-root actions, e.g.
+        # ``actions/checkout``; ``lib`` for ``actions/setup-node/lib``).
+        candidates: tuple[str, ...]
+        if ref.path:
+            base = ref.path.rstrip("/")
+            candidates = (f"{base}/action.yml", f"{base}/action.yaml")
+        else:
+            candidates = ("action.yml", "action.yaml")
+        for candidate in candidates:
+            data = self._fetch_with_cache(
+                ref.owner, ref.repo, ref.ref, candidate,
+            )
+            if data is not None:
+                return data
+        return None
+
+    def _fetch_with_cache(
+        self, owner: str, repo: str, ref: str, path: str,
+    ) -> bytes | None:
+        """Cache-aware single-path fetch. Internal helper."""
+        if self.cache is not None:
+            cache_hit = self.cache.get(owner, repo, ref, path)
+            if cache_hit is not None:
+                self.stats.cache_hits += 1
+                return cache_hit
+        data = self.fetcher.fetch(owner, repo, ref, path)
+        if data is not None:
+            self.stats.fetched += 1
+            if self.cache is not None:
+                self.cache.put(owner, repo, ref, path, data)
+        return data
 
     def _build_workflow(
         self, pending: _Pending, raw: bytes,
@@ -505,6 +644,8 @@ class Resolver:
             return None
         if not isinstance(doc, dict):
             return None
+        if pending.kind == "action":
+            return self._build_composite_workflow(pending, doc)
         synthetic_path = (
             f"{pending.caller_path} -> "
             f"{pending.ref.owner}/{pending.ref.repo}/"
@@ -517,6 +658,72 @@ class Resolver:
                 f"{pending.ref.owner}/{pending.ref.repo}/"
                 f"{pending.ref.path}@{pending.ref.ref}"
             ),
+            caller_path=pending.caller_path,
+            inherited_permissions=pending.inherited_permissions,
+            inherited_secret_names=pending.inherited_secret_names,
+            inherits_secrets=pending.inherits_secrets,
+        )
+
+    def _build_composite_workflow(
+        self, pending: _Pending, action_doc: dict[str, Any],
+    ) -> Workflow | None:
+        """Synthesize a Workflow from a composite action's body.
+
+        The transformation is mechanical:
+
+          * ``runs.using`` must be ``"composite"``. JavaScript and
+            Docker actions are counted as skipped — their executable
+            surface is bytecode / OCI image, not workflow YAML.
+          * ``runs.steps`` becomes the body of a single fake job named
+            ``__composite__`` with a synthetic ``runs-on``. The fake
+            job structure means every existing GHA rule that iterates
+            ``iter_jobs`` + ``iter_steps`` (the bulk of the rule pack)
+            fires on the composite body without modification.
+          * The synthetic workflow gets ``source_ref`` =
+            ``composite:<owner>/<repo>/<path>@<sha>`` so reporters
+            attribute findings to the composite action.
+
+        Returns ``None`` for non-composite actions, for actions
+        missing a ``runs.steps`` list, or for malformed bodies.
+        """
+        runs = action_doc.get("runs")
+        if not isinstance(runs, dict):
+            return None
+        using = runs.get("using")
+        if not isinstance(using, str) or using.lower() != "composite":
+            # JavaScript (``node20``, ``node16``) and Docker actions
+            # don't ship inspectable workflow YAML. Count and move on.
+            self.stats.non_composite_actions_skipped += 1
+            return None
+        steps = runs.get("steps")
+        if not isinstance(steps, list):
+            return None
+        synthetic_doc: dict[str, Any] = {
+            "name": str(action_doc.get("name") or pending.ref.raw),
+            # ``on:`` doesn't apply to composite actions; the rule
+            # pack tolerates this absence (workflow_triggers returns
+            # ``[]``). Setting an explicit synthetic value would
+            # falsely trigger event-shaped rules.
+            "jobs": {
+                "__composite__": {
+                    "runs-on": "ubuntu-latest",
+                    "steps": steps,
+                },
+            },
+        }
+        attribution = (
+            f"composite:{pending.ref.owner}/{pending.ref.repo}/"
+            f"{pending.ref.path}@{pending.ref.ref}"
+            if pending.ref.path else
+            f"composite:{pending.ref.owner}/{pending.ref.repo}@"
+            f"{pending.ref.ref}"
+        )
+        synthetic_path = f"{pending.caller_path} -> {attribution}"
+        self.stats.composite_actions_resolved += 1
+        return Workflow(
+            path=synthetic_path,
+            data=synthetic_doc,
+            source_ref=attribution,
             caller_path=pending.caller_path,
             inherited_permissions=pending.inherited_permissions,
             inherited_secret_names=pending.inherited_secret_names,

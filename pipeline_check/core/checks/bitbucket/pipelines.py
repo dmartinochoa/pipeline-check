@@ -40,5 +40,7 @@ class BitbucketPipelineChecks(BitbucketBaseCheck):
                 finding.cwe = list(rule.cwe)
                 if not finding.incident_refs:
                     finding.incident_refs = list(rule.incident_refs)
+                if finding.exploit_example is None:
+                    finding.exploit_example = rule.exploit_example
                 findings.append(finding)
         return findings

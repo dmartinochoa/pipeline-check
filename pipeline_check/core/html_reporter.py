@@ -614,6 +614,23 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
             f'</div>'
         )
 
+    # Concrete proof-of-exploit snippet for HIGH / CRITICAL rules.
+    # Pre-formatted so multi-line payloads (issue-title injection
+    # strings, manifest fragments, attack sequences) render verbatim.
+    if finding.exploit_example:
+        sections.append(
+            f'<div class="d-section">'
+            f'<div class="d-label">Proof of exploit</div>'
+            f'<div class="d-value">'
+            f'<pre style="background:var(--light-detail-bg);'
+            f'border:1px solid var(--light-border);'
+            f'padding:8px;border-radius:4px;'
+            f'font-family:var(--font-mono);font-size:12px;'
+            f'overflow-x:auto;white-space:pre-wrap;margin:4px 0 0 0">'
+            f'{_e(finding.exploit_example)}</pre>'
+            f'</div></div>'
+        )
+
     # Compliance controls, one tag per ControlRef, grouped by standard.
     if finding.controls:
         by_std: dict[str, list[Any]] = {}

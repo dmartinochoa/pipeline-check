@@ -189,6 +189,13 @@ class Finding:
     #: under a "Seen in the wild" footer; empty for rules whose risk
     #: has no public incident on record.
     incident_refs: list[str] = field(default_factory=list)
+    #: Proof-of-exploit snippet copied from the rule's
+    #: ``exploit_example`` field by the orchestrators. Surfaced in
+    #: ``pipeline_check --explain`` and the HTML report under a
+    #: "Proof of exploit" section. ``None`` for rules where the bad
+    #: pattern is itself the exploit, or where no public exploitation
+    #: primitive exists.
+    exploit_example: str | None = None
     #: How strongly the check's evidence supports this finding. Rules
     #: that leave this at the default (HIGH) are asserting their match
     #: is structural/unambiguous. Heuristic rules, blob-search pattern
@@ -228,6 +235,8 @@ class Finding:
         }
         if self.incident_refs:
             out["incident_refs"] = list(self.incident_refs)
+        if self.exploit_example is not None:
+            out["exploit_example"] = self.exploit_example
         if self.locations:
             out["locations"] = [loc.to_dict() for loc in self.locations]
         return out

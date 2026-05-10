@@ -78,6 +78,8 @@ def make_custom_rules_check(
                     finding.cwe = list(compiled.rule.cwe)
                     if not finding.incident_refs:
                         finding.incident_refs = list(compiled.rule.incident_refs)
+                    if finding.exploit_example is None:
+                        finding.exploit_example = compiled.rule.exploit_example
                     findings.append(finding)
                 return findings
             if doc_attr is None:
@@ -97,6 +99,8 @@ def make_custom_rules_check(
                     finding.cwe = list(compiled.rule.cwe)
                     if not finding.incident_refs:
                         finding.incident_refs = list(compiled.rule.incident_refs)
+                    if finding.exploit_example is None:
+                        finding.exploit_example = compiled.rule.exploit_example
                     findings.append(finding)
             return findings
 

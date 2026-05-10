@@ -12,6 +12,69 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM posture provider (`--pipeline scm`).** New provider that
+  scans GitHub repository governance via the REST API: branch
+  protection, required pull-request reviews, default code scanning,
+  and (in subsequent waves) secret scanning, Dependabot status,
+  CODEOWNERS coverage, runner-group restrictions, OIDC trust
+  policies. Token comes from ``--gh-token`` or ``$GITHUB_TOKEN``;
+  zero telemetry. ``--scm-fixture-dir DIR`` reads JSON responses
+  from disk for offline / CI test runs that don't hold a token.
+  First wave ships three rules: ``SCM-001`` (default branch has no
+  protection rule), ``SCM-002`` (protection rule but no required
+  reviews), ``SCM-003`` (default code scanning not enabled). Each
+  rule is anchored to OWASP CICD-SEC top-10 controls, carries
+  ``incident_refs`` for the SCM-related package compromise pattern,
+  and ``SCM-001`` ships with an ``exploit_example`` showing the
+  unprotected-default-branch attack sequence. Closes the largest
+  competitive gap with Legitify and OpenSSF Scorecard, neither of
+  which scans pipeline-config files. Provider catalog: 18 -> 19.
+
+- **Composite-action body resolution in ``--resolve-remote``.** The
+  GHA resolver now walks ``steps[].uses:`` references in addition to
+  the existing ``jobs.<id>.uses:`` walk. SHA-pinned remote action
+  refs (``owner/repo@<sha>`` or ``owner/repo/subdir@<sha>``) trigger
+  a fetch of ``action.yml`` (with ``action.yaml`` fallback) at the
+  pinned commit. When the parsed body declares ``runs.using:
+  composite``, its ``runs.steps`` are synthesized into a one-job
+  ``Workflow`` (the fake job is named ``__composite__`` with a
+  synthetic ``runs-on``). The synthesized workflow flows through the
+  existing rule pack, so issues hidden inside a third-party
+  composite — unpinned ``actions/checkout``, curl-pipe install
+  scripts, literal AWS keys — light up exactly as if the caller
+  wrote them inline. JavaScript (``node20``, ``node16``) and Docker
+  actions are fetched and parsed but not synthesized (their
+  executable surface is bytecode / OCI, outside the YAML rule
+  pack); the count surfaces in the per-scan warnings stream as
+  ``[gha-resolver] skipped N non-composite action(s)``. Composite-
+  of-composite recursion falls out of the wave queue automatically:
+  a synthesized composite's ``steps[]`` flow back through
+  ``_collect_remote_uses`` on the next wave, bounded by the same
+  ``--gha-resolve-depth``. The resolver dedup key now incorporates
+  fetch kind so a workflow ``foo.yml@SHA`` and an action subpath
+  ``foo`` at the same SHA don't collide. Closes the largest
+  parity gap with Zizmor / Poutine for GitHub Actions analysis.
+
+- **Proof-of-exploit snippets on rules (``Rule.exploit_example``).**
+  New optional ``exploit_example: str | None`` field on the rule
+  dataclass carries the minimal payload, manifest fragment, or
+  attack sequence that demonstrably triggers the failure mode the
+  rule detects. Surfaced by ``pipeline_check --explain`` under a new
+  ``[Proof of exploit]`` section (multi-line code blocks render
+  verbatim) and by the HTML report drawer in a monospace
+  pre-formatted block. The orchestrator backfills
+  ``Finding.exploit_example`` from the rule the same way it already
+  backfills ``incident_refs`` and ``cwe`` (every YAML / Dockerfile /
+  K8s / OCI / Helm / AWS / custom-rule provider). Initial population
+  covers the same five marquee rules already carrying
+  ``incident_refs``: ``GHA-001`` (tag-pinned action force-move),
+  ``GHA-008`` (literal AWS key + post-leak rotation cost),
+  ``GHA-016`` (curl-pipe payload swap), ``K8S-013`` (hostPath /
+  read of kubelet credentials), ``DF-002`` (root-container path to
+  CVE-2019-5736 and CVE-2022-0492). Distinguishes the catalog from
+  generic recommendation prose by giving every reviewer the
+  concrete attack instead of asking them to infer it.
+
 - **Attestation content checks (``ATTEST-NNN`` family, phase 1 +
   ``ATTEST-001``).** The OCI provider now reads in-toto Statement
   content from attestation manifests when the input is an OCI

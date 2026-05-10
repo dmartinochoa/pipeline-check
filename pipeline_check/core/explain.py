@@ -69,6 +69,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.helm.rules",
     "pipeline_check.core.checks.oci.rules",
     "pipeline_check.core.checks.drone.rules",
+    "pipeline_check.core.checks.scm.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.
@@ -386,6 +387,11 @@ def _render_meta(meta: _CheckMeta) -> str:
             lines.append("[Seen in the wild]")
             for ref in rule.incident_refs:
                 lines.append(f"  * {ref}")
+            lines.append("")
+        if rule.exploit_example:
+            lines.append("[Proof of exploit]")
+            for line in rule.exploit_example.strip().splitlines():
+                lines.append(f"  {line}" if line else "")
             lines.append("")
     else:
         # Class-based fallback, the docstring table we matched the

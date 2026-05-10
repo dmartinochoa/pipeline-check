@@ -50,6 +50,40 @@ RULE = Rule(
         "``${{ secrets.* }}`` removes the artifact from source "
         "control entirely.",
     ),
+    exploit_example=(
+        "# Vulnerable: AWS access key pasted into the workflow body.\n"
+        "env:\n"
+        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_SECRET_ACCESS_KEY: wJalrXUtnnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "\n"
+        "# Attack chain:\n"
+        "#  1. Attacker clones/forks the repo or pulls from a public\n"
+        "#     mirror. The literal is in plain text — no credentials\n"
+        "#     needed to read it.\n"
+        "#  2. Attacker uses the key against the AWS account it\n"
+        "#     belongs to. With AmazonEC2FullAccess this is\n"
+        "#     immediate compute hijack; with broader IAM it is\n"
+        "#     full data exfiltration.\n"
+        "#  3. Even after rotation, every git revision and every\n"
+        "#     CI build log retains the value — pull-request\n"
+        "#     mirrors, logging back-ends, and forks all have to\n"
+        "#     be scrubbed.\n"
+        "\n"
+        "# Safe: reference a stored secret. The value never lives in\n"
+        "# source control or build logs (GitHub redacts it from output).\n"
+        "env:\n"
+        "  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}\n"
+        "  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}\n"
+        "\n"
+        "# Better: use OIDC federation. No long-lived key exists.\n"
+        "permissions:\n"
+        "  id-token: write\n"
+        "steps:\n"
+        "  - uses: aws-actions/configure-aws-credentials@<sha>\n"
+        "    with:\n"
+        "      role-to-assume: arn:aws:iam::123456789012:role/CIRole\n"
+        "      aws-region: us-east-1"
+    ),
 )
 
 

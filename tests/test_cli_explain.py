@@ -65,6 +65,39 @@ def test_explain_omits_seen_in_the_wild_section_when_no_refs():
     assert "[Seen in the wild]" not in body
 
 
+def test_explain_renders_proof_of_exploit_when_present():
+    """Marquee HIGH/CRITICAL rules carry an ``exploit_example`` that
+    --explain surfaces under a "Proof of exploit" section so reviewers
+    see the concrete attack rather than inferring from prose."""
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "[Proof of exploit]" in body
+    # GHA-001's example shows the tag-pinned vulnerable form and the
+    # SHA-pinned safe form back-to-back.
+    assert "tj-actions/changed-files@v45" in body
+    assert "tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93" in body
+
+
+def test_explain_proof_of_exploit_preserves_multi_line_layout():
+    """The exploit_example field carries multi-line code blocks; the
+    renderer should preserve their line structure verbatim (each line
+    indented to match the section body)."""
+    body, code = render("K8S-013")
+    assert code == 0
+    assert "[Proof of exploit]" in body
+    # The K8S-013 sample includes a manifest fragment with hostPath at /
+    assert "hostPath:" in body
+    assert "path: /" in body
+
+
+def test_explain_omits_proof_of_exploit_when_unset():
+    """A rule without ``exploit_example`` populated should not render
+    the section header at all."""
+    body, code = render("GHA-024")
+    assert code == 0
+    assert "[Proof of exploit]" not in body
+
+
 # ─── Renderer — AWS rule-based check (post-migration) ─────────────────────
 #
 # Every AWS check is now a rule module under ``aws/rules/``; the

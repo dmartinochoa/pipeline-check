@@ -29,6 +29,7 @@ from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
 from .oci import OCIProvider
+from .scm import SCMProvider
 from .tekton import TektonProvider
 from .terraform import TerraformProvider
 
@@ -71,3 +72,4 @@ register(KubernetesProvider())
 register(HelmProvider())
 register(OCIProvider())
 register(DroneProvider())
+register(SCMProvider())
