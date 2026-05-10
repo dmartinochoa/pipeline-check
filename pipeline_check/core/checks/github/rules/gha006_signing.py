@@ -23,9 +23,25 @@ RULE = Rule(
     docs_note=(
         "Unsigned artifacts cannot be verified downstream, so a "
         "tampered build is indistinguishable from a legitimate one. "
-        "The check recognises cosign, sigstore, slsa-github-"
+        "The check recognizes cosign, sigstore, slsa-github-"
         "generator, slsa-framework, and notation-sign as signing "
         "tools."
+    ),
+    incident_refs=(
+        "SolarWinds Orion compromise (December 2020): SUNBURST "
+        "trojanized builds shipped to ~18,000 customers because no "
+        "post-build signature could be checked against a trusted "
+        "signing identity. Cryptographic signing on every release "
+        "would have given downstream consumers a verifiable break "
+        "with the upstream key, the absence of which was the "
+        "ambient signal of compromise. "
+        "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a",
+        "PyTorch nightly compromise (December 2022): the "
+        "``torchtriton`` dependency was hijacked via PyPI dependency-"
+        "confusion. Sigstore-style attestation tied to the official "
+        "publisher would have made the impostor build fail "
+        "verification rather than silently install. "
+        "https://pytorch.org/blog/compromised-nightly-dependency/",
     ),
 )
 

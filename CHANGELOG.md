@@ -36,15 +36,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   autolinks embedded ``https://`` URLs so CVE links stay
   clickable.
 
-  Initial population covers five marquee rules: ``GHA-001``
-  (tj-actions/changed-files CVE-2025-30066, reviewdog/action-setup
-  CVE-2025-30154), ``GHA-008`` (Uber 2016 access-key leak,
-  GitGuardian secrets-sprawl reports), ``GHA-016`` (Codecov 2021
-  Bash uploader compromise), ``K8S-013`` (CVE-2021-25741
-  hostPath subpath escape, TeamTNT/Kinsing campaigns),
-  ``DF-002`` (CVE-2019-5736 runC escape, CVE-2022-0492 cgroups
-  v1 release_agent escape). Anchors abstract security debt to a
-  concrete cost the operator's manager has already heard of.
+  Initial population covers nine marquee rules:
+
+  - ``GHA-001`` (tj-actions/changed-files CVE-2025-30066,
+    reviewdog/action-setup CVE-2025-30154)
+  - ``GHA-003`` (GitHub Security Lab disclosure, Trail of Bits
+    pwn-request research)
+  - ``GHA-006`` (SolarWinds Orion compromise, PyTorch
+    torchtriton hijack)
+  - ``GHA-008`` (Uber 2016 access-key leak, GitGuardian
+    secrets-sprawl reports)
+  - ``GHA-016`` (Codecov 2021 Bash uploader compromise)
+  - ``K8S-013`` (CVE-2021-25741 hostPath subpath escape,
+    TeamTNT/Kinsing campaigns)
+  - ``K8S-020`` (Tesla 2018 dashboard compromise, Argo CD
+    CVE-2022-24348/24768 chain)
+  - ``DF-001`` (Docker Hub typosquatting, codecov-action tag
+    mutation post-incident)
+  - ``DF-002`` (CVE-2019-5736 runC escape, CVE-2022-0492
+    cgroups v1 release_agent escape)
+
+  Anchors abstract security debt to a concrete cost the
+  operator's manager has already heard of.
 
   Mechanically: the ``Rule`` dataclass gains an
   ``incident_refs: tuple[str, ...]`` field; ``Finding`` mirrors

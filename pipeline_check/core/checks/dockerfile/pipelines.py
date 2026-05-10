@@ -27,6 +27,7 @@ class DockerfileChecks(DockerfileBaseCheck):
             for rule, check_fn in self._rules:
                 finding = check_fn(df)
                 finding.cwe = list(rule.cwe)
-                finding.incident_refs = list(rule.incident_refs)
+                if not finding.incident_refs:
+                    finding.incident_refs = list(rule.incident_refs)
                 findings.append(finding)
         return findings

@@ -76,7 +76,8 @@ def make_custom_rules_check(
                     k8s_fn = make_kubernetes_check(compiled)
                     finding = k8s_fn(self.ctx)
                     finding.cwe = list(compiled.rule.cwe)
-                    finding.incident_refs = list(compiled.rule.incident_refs)
+                    if not finding.incident_refs:
+                        finding.incident_refs = list(compiled.rule.incident_refs)
                     findings.append(finding)
                 return findings
             if doc_attr is None:
@@ -94,7 +95,8 @@ def make_custom_rules_check(
                         continue
                     finding = yaml_fn(path, data)
                     finding.cwe = list(compiled.rule.cwe)
-                    finding.incident_refs = list(compiled.rule.incident_refs)
+                    if not finding.incident_refs:
+                        finding.incident_refs = list(compiled.rule.incident_refs)
                     findings.append(finding)
             return findings
 
