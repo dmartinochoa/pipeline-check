@@ -48,8 +48,38 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   attestation content analysis today; they verify *something*
   was attested, not *what* was attested.
 
-  Phase 2 (deferred): ATTEST-002 source-repo claim consistency,
-  ATTEST-003 SBOM floating-version detection.
+  ``ATTEST-002`` (source-repo claim consistency, *landed*) reads
+  the source URI + digest from the predicate. v0.2:
+  ``predicate.invocation.configSource``. v1.0:
+  ``buildDefinition.externalParameters`` (canonical GHA path
+  ``.workflow.repository``; alternative ``.source.uri``; fallback
+  walks every string for a VCS URI shape) +
+  ``resolvedDependencies[*].digest``. Fires when the URI is
+  missing, a placeholder (``unknown``, ``n/a``, ``tbd``, etc.),
+  malformed (no scheme), or when the digest is missing or
+  all-zeros (the bytes aren't pinned). Anchored to SolarWinds
+  2020: the build system pulled tampered source from an
+  unauthorized branch via SUNSPOT, producing 'authentic' signed
+  builds for code the team never wrote. A pinned, verified
+  source-repo claim is the SLSA L2+ control specifically meant
+  to detect that shape.
+
+  ``ATTEST-003`` (SBOM floating-version detection, *landed*)
+  walks every SBOM attestation (predicate types under
+  ``https://spdx.dev/Document`` or ``https://cyclonedx.org/bom``)
+  and classifies each declared package's version as pinned or
+  floating. Floating shapes: empty / missing / ``latest`` / ``*``
+  / branch names (``main``, ``master``, ``head``, ``stable``,
+  ``edge``, ``rolling``) / bare-major (``v1``, ``42``).
+  Pinned shapes: semver, calver, hex digests (32+ chars), and
+  any string with at least one numeric component for best-effort
+  release tags. A signed SBOM declaring ``openssl@latest`` is
+  worse than no SBOM, vulnerability-scanning tooling produces
+  false negatives because the version it queries CVE databases
+  for is unstable. Anchored to Log4Shell (CVE-2021-44228):
+  organizations with pinned SBOMs shipped patches in hours;
+  those without spent days auditing builds to discover what
+  they actually shipped.
 
 - **Per-repo false-positive annotation store (``--annotate-fp``).**
   ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` records a

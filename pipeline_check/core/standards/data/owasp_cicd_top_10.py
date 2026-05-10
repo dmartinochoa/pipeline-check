@@ -512,7 +512,8 @@ STANDARD = Standard(
         "OCI-006":  ["CICD-SEC-3"],                 # excessive layer count
         "OCI-007":  ["CICD-SEC-3", "CICD-SEC-9"],   # legacy schemaVersion 1
         "OCI-008":  ["CICD-SEC-3", "CICD-SEC-9"],   # weak digest algorithm
-        "ATTEST-001": ["CICD-SEC-2", "CICD-SEC-3", "CICD-SEC-9"],  # untrusted SLSA builder
-        "ATTEST-002": ["CICD-SEC-3", "CICD-SEC-9"],                # source-repo claim missing/unverifiable
+        "ATTEST-001": ["CICD-SEC-2", "CICD-SEC-3", "CICD-SEC-9"],   # untrusted SLSA builder
+        "ATTEST-002": ["CICD-SEC-3", "CICD-SEC-9"],                 # source-repo claim missing/unverifiable
+        "ATTEST-003": ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # SBOM floating versions
     },
 )

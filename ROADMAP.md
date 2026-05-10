@@ -606,15 +606,17 @@ shapes are recognized; predicate types are kept verbatim.
   self-hosted runner can emit a syntactically-valid
   attestation for the wrong source, so passing OCI-002 isn't
   the same thing as a trustworthy attestation.
-- ``ATTEST-002`` *deferred to phase 2* — Source-repo claim
-  consistency. Does `invocation.configSource.uri` (SLSA v0.2)
-  / ``buildDefinition.externalParameters`` (v1) match the
-  repository the operator believes built the image, or has
-  drift snuck in?
-- ``ATTEST-003`` *deferred to phase 2* — SBOM integrity. Are
-  declared dependencies digest-pinned, or are floating
-  versions sitting inside a signed envelope that makes the
-  rot look authoritative?
+- ``ATTEST-002`` (*landed*) — Source-repo claim consistency.
+  Reads ``predicate.invocation.configSource`` (v0.2) or the
+  v1 ``buildDefinition.externalParameters`` /
+  ``resolvedDependencies`` shape and fires when the URI is
+  missing, a placeholder, malformed, or when the digest is
+  missing / zero. Anchored to SolarWinds 2020.
+- ``ATTEST-003`` (*landed*) — SBOM integrity. Walks SPDX /
+  CycloneDX SBOM attestations and fires on floating-version
+  components (``latest``, ``*``, branch names, bare majors,
+  empty). Anchored to Log4Shell, where SBOM completeness
+  bought hours-vs-days response time.
 
 No OSS scanner does pipeline-side attestation content analysis
 today; they verify *something* was attested, not *what* was

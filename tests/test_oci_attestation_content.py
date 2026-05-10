@@ -18,6 +18,9 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     attest002_source_repo_mismatch as a2,
 )
+from pipeline_check.core.checks.oci.rules import (
+    attest003_sbom_floating_versions as a3,
+)
 
 # ── Layout-dir fixture builder ─────────────────────────────────────
 
@@ -524,3 +527,155 @@ class TestATTEST002:
         attest_findings = [f for f in findings if f.check_id == "ATTEST-002"]
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed
+
+
+# ── ATTEST-003 SBOM floating-version detection ─────────────────────
+
+
+class TestATTEST003ClassifyVersion:
+    """Direct unit coverage of the version-classifier so the rule's
+    decision boundary is locked."""
+
+    def test_pinned_semvers(self):
+        for v in (
+            "1.2.3", "v1.2.3", "1.2", "1.2.3-rc4",
+            "1.2.3+build.5", "v3.12.1-slim",
+        ):
+            assert a3._classify_version(v) == "pinned", v
+
+    def test_pinned_calver(self):
+        for v in ("2026.05", "2026.05.10", "20260510"):
+            assert a3._classify_version(v) == "pinned", v
+
+    def test_pinned_hex_digest(self):
+        assert a3._classify_version("a" * 40) == "pinned"
+        assert a3._classify_version("0123456789abcdef" * 2) == "pinned"
+
+    def test_floating_tokens(self):
+        for v in (
+            "latest", "*", "master", "main", "head", "stable",
+            "edge", "rolling", "", "develop",
+        ):
+            assert a3._classify_version(v) == "floating", v
+
+    def test_floating_bare_major(self):
+        for v in ("v1", "1", "v42"):
+            assert a3._classify_version(v) == "floating", v
+
+    def test_floating_none(self):
+        assert a3._classify_version(None) == "floating"
+
+    def test_pinned_unknown_shape_with_digit(self):
+        """A non-semver string that contains a digit (e.g. a date-stamped
+        release tag) is best-effort treated as pinned. Conservative:
+        better to false-negative than to FP-flood every release name."""
+        assert a3._classify_version("release-2025-Q1-rc7") == "pinned"
+
+    def test_floating_unknown_shape_no_digit(self):
+        assert a3._classify_version("unknown-build") == "floating"
+
+
+class TestATTEST003Rule:
+    def _spdx_attestation(self, *packages: dict) -> Attestation:
+        return _att(
+            {"packages": list(packages)},
+            pt="https://spdx.dev/Document/v2.3",
+        )
+
+    def _cyclonedx_attestation(self, *components: dict) -> Attestation:
+        return _att(
+            {"components": list(components)},
+            pt="https://cyclonedx.org/bom",
+        )
+
+    def test_passes_when_every_spdx_package_pinned(self):
+        att = self._spdx_attestation(
+            {"name": "openssl", "versionInfo": "3.2.1"},
+            {"name": "zlib", "versionInfo": "1.3.1"},
+        )
+        f = a3.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_when_spdx_package_uses_latest(self):
+        att = self._spdx_attestation(
+            {"name": "openssl", "versionInfo": "latest"},
+            {"name": "zlib", "versionInfo": "1.3.1"},
+        )
+        f = a3.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "openssl@latest" in f.description
+
+    def test_fails_when_spdx_versioninfo_missing(self):
+        att = self._spdx_attestation(
+            {"name": "mystery"},  # no versionInfo
+        )
+        f = a3.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "mystery@<empty>" in f.description
+
+    def test_passes_when_every_cyclonedx_component_pinned(self):
+        att = self._cyclonedx_attestation(
+            {"name": "express", "version": "4.19.2"},
+            {"name": "lodash", "version": "v4.17.21"},
+        )
+        f = a3.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_when_cyclonedx_component_floats(self):
+        att = self._cyclonedx_attestation(
+            {"name": "express", "version": "*"},
+        )
+        f = a3.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "express@*" in f.description
+
+    def test_fails_for_empty_packages_list(self):
+        """An SBOM attestation with no packages defeats the SBOM's
+        purpose. Surface as a finding so the operator knows the
+        emitter wired in produces nothing usable."""
+        att = self._spdx_attestation()  # zero packages
+        f = a3.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "no enumerable packages" in f.description.lower()
+
+    def test_passes_when_no_sbom_attestations(self):
+        """SLSA-only attestations don't trip ATTEST-003; the rule has
+        nothing to check."""
+        slsa = _att({"builder": {"id": "x"}})
+        f = a3.check(_index_with_attestations(slsa))
+        assert f.passed
+        assert "no sbom" in f.description.lower()
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a3.check(manifest)
+        assert f.passed
+
+    def test_orchestrator_runs_attest003_end_to_end(self, tmp_path: Path):
+        """Layout dir whose attestation Statement is an SPDX SBOM with
+        a floating-version package. Exercises the full pipeline:
+        layout-dir blob load -> Statement parse -> SBOM predicate
+        dispatch -> floating-version classification."""
+        spdx_statement = {
+            "_type": "https://in-toto.io/Statement/v0.1",
+            "subject": [{"name": "image", "digest": {"sha256": "0" * 64}}],
+            "predicateType": "https://spdx.dev/Document/v2.3",
+            "predicate": {
+                "spdxVersion": "SPDX-2.3",
+                "packages": [
+                    {"name": "openssl", "versionInfo": "latest"},
+                    {"name": "zlib", "versionInfo": "1.3.1"},
+                ],
+            },
+        }
+        index_path = _build_layout(tmp_path, statement=spdx_statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        attest_findings = [f for f in findings if f.check_id == "ATTEST-003"]
+        assert len(attest_findings) == 1
+        assert not attest_findings[0].passed
+        assert "openssl@latest" in attest_findings[0].description
