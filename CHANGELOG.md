@@ -53,6 +53,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   only ``doc`` keep the pre-resolver behavior (``taskRef:``
   silently skipped) for backward compatibility.
 
+  The task index is keyed on the composite ``(kind, name)`` so a
+  ``Task`` and a ``ClusterTask`` with the same metadata name stay
+  distinct (they're separate Tekton resources and the rule must
+  pick the one matching ``taskRef.kind``). ``taskRef.kind``
+  defaults to ``"Task"`` per Tekton's webhook-defaulting
+  behavior; explicit ``kind: ClusterTask`` looks up the cluster-
+  scoped variant. If the explicit-kind lookup misses, the
+  resolver falls back to the other Tekton kind so a refactor
+  (Task -> ClusterTask) keeps resolving without every consumer
+  updating its ``taskRef.kind``.
+
 - **GitLab ``include:`` cross-document resolver.** Local ``include:``
   directives in ``.gitlab-ci.yml`` are now followed at load time so
   cross-job rules see jobs and variables defined in included files.
@@ -78,6 +89,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   the parent dict in place rather than copying it (preserves the
   ``LineDict`` subclass that carries line numbers for every
   ``Location`` reporters render).
+
+  Path-traversal guard: ``--gitlab-path`` (or its parent for a
+  single-file path) is the fixed scan root. Leading-``/`` paths
+  anchor to that root (matches GitLab's "full path relative to the
+  repository root" semantics) rather than to the changing
+  ``base_dir`` during recursion, so deeply-nested includes still
+  resolve repo-root paths correctly. Any include whose resolved
+  path escapes the scan root via ``..`` traversal is rejected with
+  a warning rather than read, so a malicious ``.gitlab-ci.yml`` in
+  an untrusted repo can't make the scanner read arbitrary host
+  files. ``..`` segments that resolve back inside the scan root
+  (a common monorepo pattern) are still allowed.
 
 - **Soon-to-expire suppression forewarning.** ``GateResult`` gains
   ``expiring_soon: list[IgnoreRule]`` populated for any ignore-file

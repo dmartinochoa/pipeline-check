@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -19,7 +18,6 @@ from pipeline_check.core.fp_annotations import (
     load_annotations,
 )
 from pipeline_check.core.scanner import ScanMetadata
-
 
 # ── Demotion math ──────────────────────────────────────────────────
 
@@ -277,11 +275,17 @@ class TestScannerDemotion:
         monkeypatch.chdir(tmp_path)
         append_annotation("FAKE-1", "fake-resource")
 
+        from pipeline_check.core import providers as _providers
         from pipeline_check.core.checks.base import (
-            BaseCheck, Confidence as Cf, Severity as Sv,
+            BaseCheck,
+        )
+        from pipeline_check.core.checks.base import (
+            Confidence as Cf,
+        )
+        from pipeline_check.core.checks.base import (
+            Severity as Sv,
         )
         from pipeline_check.core.providers.base import BaseProvider
-        from pipeline_check.core import providers as _providers
 
         class _FakeCheck(BaseCheck):
             PROVIDER = "fake-provider-fp"

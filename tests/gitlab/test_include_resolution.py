@@ -156,6 +156,71 @@ class TestUnsupportedIncludeForms:
         assert any("not found" in w for w in ctx.warnings)
 
 
+class TestPathTraversalProtection:
+    """A malicious ``.gitlab-ci.yml`` checked into an untrusted repo
+    must not be able to make the scanner read arbitrary host files.
+    The resolver rejects any include whose resolved path escapes the
+    scan root."""
+
+    def test_dotdot_traversal_rejected(self, tmp_path: Path):
+        # Layout:
+        #   tmp_path/repo/.gitlab-ci.yml  (the scan target)
+        #   tmp_path/secret.txt            (outside the repo)
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (tmp_path / "secret.yml").write_text(".secret-template: {}\n")
+        (repo / ".gitlab-ci.yml").write_text(
+            "include: ../secret.yml\n"
+            "build: {script: [echo]}\n"
+        )
+        ctx = GitLabContext.from_path(repo / ".gitlab-ci.yml")
+        # Scan root is the repo dir; the include resolves above it.
+        assert any("escapes scan root" in w for w in ctx.warnings)
+        # And the secret template was NOT merged in.
+        assert ".secret-template" not in ctx.pipelines[0].data
+
+    def test_in_bound_dotdot_allowed(self, tmp_path: Path):
+        """A ``..`` segment that resolves back inside the scan root
+        is fine. Authors sometimes write ``../shared/build.yml`` to
+        navigate within a monorepo."""
+        repo = tmp_path
+        (repo / "shared").mkdir()
+        (repo / "shared" / "build.yml").write_text(".base: {}\n")
+        (repo / "ci").mkdir()
+        (repo / "ci" / ".gitlab-ci.yml").write_text(
+            "include: ../shared/build.yml\n"
+            "build: {script: [echo]}\n"
+        )
+        ctx = GitLabContext.from_path(repo)
+        # No "escapes scan root" warning; the include resolves into
+        # ``shared/`` which is under the scan root.
+        assert not any("escapes scan root" in w for w in ctx.warnings)
+        # And the merge happened.
+        # The from_path call walks every .gitlab-ci.yml under the
+        # directory; pick the one we wrote.
+        ours = next(p for p in ctx.pipelines if p.path.endswith(".gitlab-ci.yml"))
+        assert ".base" in ours.data
+
+    def test_leading_slash_anchored_to_scan_root(self, tmp_path: Path):
+        """A ``/``-prefixed path resolves against the scan root, not
+        against the current file's directory. Matches GitLab's
+        "full path relative to the repository root" semantics."""
+        repo = tmp_path
+        (repo / "templates").mkdir()
+        (repo / "templates" / "shared.yml").write_text(".base: {}\n")
+        (repo / "ci").mkdir()
+        (repo / "ci" / ".gitlab-ci.yml").write_text(
+            "include: /templates/shared.yml\n"
+            "build: {script: [echo]}\n"
+        )
+        ctx = GitLabContext.from_path(repo)
+        ours = next(p for p in ctx.pipelines if p.path.endswith(".gitlab-ci.yml"))
+        # The leading-slash path resolved correctly against the scan
+        # root; the template was merged in.
+        assert ".base" in ours.data
+        assert not any("escapes scan root" in w for w in ctx.warnings)
+
+
 class TestTaintAcrossIncludes:
     """The original detection-power case: TAINT-008 walks ``extends:``
     chains and only fires when the tainted template is reachable. With

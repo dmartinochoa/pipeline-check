@@ -163,55 +163,88 @@ class _GraphState:
 # ── Public API ────────────────────────────────────────────────────
 
 
-def _build_task_index(ctx: TektonContext | None) -> dict[str, dict[str, Any]]:
-    """Return ``name -> spec`` for every ``Task`` / ``ClusterTask``
-    document in *ctx*. Used to resolve ``taskRef:`` references in a
-    Pipeline against locally-loaded task definitions.
+def _build_task_index(
+    ctx: TektonContext | None,
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """Return ``(kind, name) -> spec`` for every ``Task`` /
+    ``ClusterTask`` document in *ctx*. Used to resolve ``taskRef:``
+    references in a Pipeline against locally-loaded task definitions.
+
+    Keying by the composite ``(kind, name)`` rather than just ``name``
+    keeps a ``Task`` and a ``ClusterTask`` with the same metadata
+    name distinct (Tekton supports both kinds in the same cluster
+    via ``taskRef.kind``). Without this disambiguation the index
+    would silently shadow one with the other, making TAINT-006
+    nondeterministic on repos that ship both kinds for the same
+    workflow name.
+
+    Namespace is intentionally not part of the key. In practice
+    Tekton manifests checked into source control rarely set
+    ``metadata.namespace`` (the namespace is bound at deploy time),
+    so adding namespace to the key would index everything under the
+    empty string and gain nothing. If a repo does ship two same-
+    named ``Task`` documents in distinct namespaces, the first-
+    occurrence wins, lexically by file path because the context
+    sorts inputs.
 
     When *ctx* is None (legacy callers, isolated unit tests that pass
     a single doc), the index is empty and ``taskRef:`` references
     silently fall through, matching the pre-resolver behavior.
-
-    Name collisions (multiple Tasks with the same name across
-    namespaces) keep the first occurrence; this matches Tekton's
-    runtime semantics in a single namespace and is the conservative
-    pick for static analysis.
     """
     if ctx is None:
         return {}
-    index: dict[str, dict[str, Any]] = {}
+    index: dict[tuple[str, str], dict[str, Any]] = {}
     for d in ctx.docs:
         if d.kind not in ("Task", "ClusterTask"):
             continue
         spec = d.data.get("spec")
         if not isinstance(spec, dict):
             continue
-        if d.name and d.name not in index:
-            index[d.name] = spec
+        key = (d.kind, d.name)
+        if d.name and key not in index:
+            index[key] = spec
     return index
 
 
 def _resolve_task_body(
     task: dict[str, Any],
-    task_index: dict[str, dict[str, Any]],
+    task_index: dict[tuple[str, str], dict[str, Any]],
 ) -> dict[str, Any] | None:
     """Return the spec body backing a Pipeline task, or None.
 
     Inline ``taskSpec:`` wins. Falls back to ``taskRef:`` resolution
     against *task_index* (built from sibling ``Task`` /
-    ``ClusterTask`` documents). ``bundle:`` and ``resolver:``
-    references aren't followed; they require network fetches the
-    scanner deliberately avoids.
+    ``ClusterTask`` documents). ``taskRef.kind`` defaults to
+    ``"Task"`` per Tekton's webhook-defaulting behavior; explicit
+    ``kind: ClusterTask`` looks up the cluster-scoped variant. If
+    the explicit-kind lookup misses, fall back to ``Task`` so a
+    repo that ships only one kind under a given name still resolves
+    the way the operator intended.
+
+    ``bundle:`` and ``resolver:`` references aren't followed; they
+    require network fetches the scanner deliberately avoids.
     """
     ts = task.get("taskSpec")
     if isinstance(ts, dict):
         return ts
     ref = task.get("taskRef")
-    if isinstance(ref, dict):
-        ref_name = ref.get("name")
-        if isinstance(ref_name, str) and ref_name in task_index:
-            return task_index[ref_name]
-    return None
+    if not isinstance(ref, dict):
+        return None
+    ref_name = ref.get("name")
+    if not isinstance(ref_name, str):
+        return None
+    kind_val = ref.get("kind", "Task")
+    ref_kind = kind_val if isinstance(kind_val, str) else "Task"
+    body = task_index.get((ref_kind, ref_name))
+    if body is not None:
+        return body
+    # Resilience fallback: if the explicit-kind lookup misses, try
+    # the other Tekton kind. Most repos ship one kind per name; the
+    # fallback keeps resolution working when an author refactors
+    # ``Task`` to ``ClusterTask`` (or vice versa) without updating
+    # every consumer's ``taskRef.kind``.
+    other_kind = "Task" if ref_kind == "ClusterTask" else "ClusterTask"
+    return task_index.get((other_kind, ref_name))
 
 
 def analyze_pipeline_doc(

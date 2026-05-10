@@ -77,6 +77,16 @@ class GitLabContext:
                     p for p in root.rglob("*")
                     if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
                 )
+        # The "scan root" is the user-supplied ``--gitlab-path`` (or its
+        # parent if a single file was passed). Used for two purposes by
+        # the include resolver:
+        #   1. anchor leading-`/` paths to it (matching GitLab's
+        #      "full path relative to the repository root" semantics),
+        #   2. reject any resolved include path outside it
+        #      (path-traversal protection: a malicious
+        #      ``.gitlab-ci.yml`` in an untrusted repo can't make the
+        #      scanner read ``../../../etc/passwd``).
+        scan_root = (root if root.is_dir() else root.parent).resolve()
         pipelines: list[Pipeline] = []
         warnings: list[str] = []
         skipped = 0
@@ -102,7 +112,9 @@ class GitLabContext:
             # so include-pinning rules (GL-005, GL-011, GL-030) still
             # see the original directive.
             data, include_warnings = _resolve_local_includes(
-                data, base_dir=f.resolve().parent,
+                data,
+                base_dir=f.resolve().parent,
+                scan_root=scan_root,
             )
             warnings.extend(f"{f}: {w}" for w in include_warnings)
             pipelines.append(Pipeline(path=str(f), data=data))
@@ -126,6 +138,7 @@ def _resolve_local_includes(
     data: dict[str, Any],
     *,
     base_dir: Path,
+    scan_root: Path,
     visited: frozenset[Path] = frozenset(),
     depth: int = 0,
 ) -> tuple[dict[str, Any], list[str]]:
@@ -147,6 +160,20 @@ def _resolve_local_includes(
     ``component:``) are surfaced as warnings so the operator knows
     the scan ignored a directive. Network resolution is deliberately
     out of scope, the scanner is a no-token, no-network tool.
+
+    Path resolution rules:
+
+    - Paths starting with ``/`` are anchored to *scan_root* (the
+      ``--gitlab-path`` value passed by the user, or its parent when
+      a single file was passed). Matches GitLab's "full path relative
+      to the repository root" semantics.
+    - Other paths resolve relative to the file currently being merged
+      (*base_dir*).
+    - After resolution, every include path must be a descendant of
+      *scan_root*. Includes that escape via ``..`` traversal are
+      rejected with a warning rather than read, so a malicious
+      ``.gitlab-ci.yml`` in an untrusted repo can't make the scanner
+      read arbitrary host files.
 
     Cycle detection: a *visited* set of resolved file paths is
     threaded through the recursion. Re-entering a path emits a
@@ -198,11 +225,30 @@ def _resolve_local_includes(
         if ref is None:
             continue
 
-        # GitLab paths starting with '/' are repo-root-relative. Without
-        # a known repo root, treat them as relative to base_dir; that
-        # preserves prior behavior where the scanner can't always
-        # locate the git root from --gitlab-path.
-        ref_path = (base_dir / ref.lstrip("/")).resolve()
+        # Anchor leading-`/` paths to the fixed scan root (GitLab's
+        # repo-root-relative semantics); other paths resolve against
+        # the current file's directory. ``scan_root`` is fixed across
+        # the recursion so a deep include can still address a sibling
+        # of the entry file via a `/`-prefixed reference, matching
+        # what GitLab itself does.
+        if ref.startswith("/"):
+            anchor = scan_root
+        else:
+            anchor = base_dir
+        ref_path = (anchor / ref.lstrip("/")).resolve()
+
+        # Path-traversal guard: a malicious ``.gitlab-ci.yml`` in an
+        # untrusted repo could try ``include: '../../../etc/passwd'``
+        # to make the scanner read arbitrary host files. Reject any
+        # resolved path that escapes the scan root before opening it.
+        try:
+            ref_path.relative_to(scan_root)
+        except ValueError:
+            warnings.append(
+                f"include path escapes scan root, refused: {ref_path} "
+                f"(scan root: {scan_root})"
+            )
+            continue
 
         if ref_path in visited:
             warnings.append(f"include cycle detected at {ref_path}")
@@ -226,10 +272,14 @@ def _resolve_local_includes(
             continue
 
         # Recurse into the included file's own includes before merging
-        # so transitively-included keys also flow up.
+        # so transitively-included keys also flow up. ``scan_root``
+        # stays fixed across the recursion; ``base_dir`` updates so
+        # relative refs in the included file resolve against its own
+        # directory.
         included, sub_warnings = _resolve_local_includes(
             included,
             base_dir=ref_path.parent,
+            scan_root=scan_root,
             visited=visited | {ref_path},
             depth=depth + 1,
         )

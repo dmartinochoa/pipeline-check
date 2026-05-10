@@ -415,3 +415,153 @@ spec:
         # Without ctx, no resolver, no cross-document analysis.
         paths = analyze_pipeline_doc(pipeline)
         assert paths == []
+
+
+class TestTaskRefKindDisambiguation:
+    """Tekton's ``taskRef.kind`` distinguishes namespace-scoped
+    ``Task`` from cluster-scoped ``ClusterTask``. The resolver must
+    key the index on ``(kind, name)`` so a same-named pair doesn't
+    silently shadow each other and produce nondeterministic
+    bindings."""
+
+    def _pipeline_with_explicit_kind(self, kind: str) -> str:
+        return f"""
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: p
+spec:
+  tasks:
+    - name: extract
+      taskRef:
+        name: extract-task
+        kind: {kind}
+      params:
+        - name: title
+          value: $(params.pr-title)
+    - name: build
+      runAfter: [extract]
+      params:
+        - name: title
+          value: $(tasks.extract.results.clean)
+      taskSpec:
+        params:
+          - name: title
+        steps:
+          - script: echo $(params.title)
+"""
+
+    def _producer_body(self, kind: str) -> str:
+        return f"""
+apiVersion: tekton.dev/v1beta1
+kind: {kind}
+metadata:
+  name: extract-task
+spec:
+  params:
+    - name: title
+  results:
+    - name: clean
+  steps:
+    - script: |
+        echo "$(params.title)" > $(results.clean.path)
+"""
+
+    def test_explicit_kind_task_picks_task(self) -> None:
+        pipeline = _pipeline_doc(self._pipeline_with_explicit_kind("Task"))
+        task = _pipeline_doc(self._producer_body("Task"))
+        # A different ClusterTask with the SAME name shouldn't be picked.
+        clustertask = _pipeline_doc("""
+apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
+metadata:
+  name: extract-task
+spec:
+  params:
+    - name: title
+  steps:
+    - script: echo "safe; no taint here"
+""")
+        f = t6.check(_ctx(pipeline, task, clustertask))
+        # The Task body has the tainted write; if the resolver picked
+        # ClusterTask instead, no taint would be detected.
+        assert not f.passed
+
+    def test_explicit_kind_clustertask_picks_clustertask(self) -> None:
+        pipeline = _pipeline_doc(
+            self._pipeline_with_explicit_kind("ClusterTask"),
+        )
+        # Task with same name has NO taint; ClusterTask has the taint.
+        task = _pipeline_doc("""
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: extract-task
+spec:
+  params:
+    - name: title
+  steps:
+    - script: echo "safe; no taint here"
+""")
+        clustertask = _pipeline_doc(self._producer_body("ClusterTask"))
+        f = t6.check(_ctx(pipeline, task, clustertask))
+        # Resolver picked ClusterTask; the taint write is detected.
+        assert not f.passed
+
+    def test_kind_omitted_defaults_to_task(self) -> None:
+        """``taskRef.kind`` defaults to ``Task`` per Tekton's
+        webhook-defaulting behavior. A bare ``taskRef: { name: ... }``
+        looks up the ``Task``-kind document, not ``ClusterTask``."""
+        pipeline = _pipeline_doc("""
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: p
+spec:
+  tasks:
+    - name: extract
+      taskRef:
+        name: extract-task
+      params:
+        - name: title
+          value: $(params.pr-title)
+    - name: build
+      params:
+        - name: title
+          value: $(tasks.extract.results.clean)
+      taskSpec:
+        params:
+          - name: title
+        steps:
+          - script: echo $(params.title)
+""")
+        # Tainted body lives under kind: Task. ClusterTask exists with
+        # the same name but no taint. With (kind, name) keying and
+        # default kind = Task, the resolver should pick the Task body.
+        task = _pipeline_doc(self._producer_body("Task"))
+        clustertask = _pipeline_doc("""
+apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
+metadata:
+  name: extract-task
+spec:
+  steps:
+    - script: echo "safe"
+""")
+        f = t6.check(_ctx(pipeline, task, clustertask))
+        assert not f.passed
+
+    def test_fallback_when_only_other_kind_present(self) -> None:
+        """When ``taskRef`` requests one kind but only the other is
+        in the context, the resolver falls back to whichever kind
+        ships the body. Lets a refactor (Task -> ClusterTask) keep
+        working without updating every consumer's ``kind:``."""
+        pipeline = _pipeline_doc(
+            self._pipeline_with_explicit_kind("Task"),
+        )
+        # Only ClusterTask present — no Task-kind doc.
+        clustertask = _pipeline_doc(
+            self._producer_body("ClusterTask"),
+        )
+        f = t6.check(_ctx(pipeline, clustertask))
+        assert not f.passed
