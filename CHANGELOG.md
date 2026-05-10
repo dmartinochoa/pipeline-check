@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Per-repo false-positive annotation store (``--annotate-fp``).**
+  ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` records a
+  confirmed false positive into a local ``.pipeline-check-fp.json``
+  file and exits without scanning. Subsequent scans demote that
+  ``(check_id, resource)`` pair's confidence one rung (HIGH ->
+  MEDIUM, MEDIUM -> LOW), keeping the finding visible in reports
+  while letting ``--min-confidence MEDIUM`` filter it out at the
+  gate. Idempotent: re-running with the same args is a no-op so
+  CI scripts can call it without accumulating duplicates.
+
+  ``--fp-file PATH`` overrides the annotation file location.
+  ``pipeline_check fp-stats`` (new subcommand) prints rule -> vote
+  totals so rule authors see which rules accumulate the most
+  false-positive votes across the repo, feeding triage prioritization.
+
+  Distinct from ``--ignore-file``: suppression *removes* the finding
+  from reports entirely; FP annotation *demotes confidence* so the
+  finding stays visible (audit trail) but defaults to filtered at
+  realistic gate thresholds. The annotation file is local and
+  travels with the repo, so demotion is a property of the codebase
+  rather than any one developer's machine. No telemetry, no
+  upload. ``confidence_locked`` rules opt out of FP demotion: rules
+  emitting confidence with intent (e.g. CB-005 two-versions-behind
+  HIGH) shouldn't be calibrated by user feedback.
+
 - **Tekton ``taskRef:`` cross-document resolution for TAINT-006.**
   When a ``Pipeline`` task uses ``taskRef: { name: <X> }`` instead
   of inlining a ``taskSpec:`` block, the taint graph now resolves
