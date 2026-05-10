@@ -89,5 +89,6 @@ class WorkflowChecks(GitHubBaseCheck):
                 else:
                     finding = check_fn(wf.path, wf.data)
                 finding.cwe = list(rule.cwe)
+                finding.incident_refs = list(rule.incident_refs)
                 findings.append(finding)
         return findings

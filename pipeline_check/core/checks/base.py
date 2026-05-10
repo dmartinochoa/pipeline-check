@@ -183,6 +183,12 @@ class Finding:
     #: CWE identifiers (e.g. ``["CWE-78"]``). Populated by the
     #: workflow-provider orchestrators from the rule's ``cwe`` field.
     cwe: list[str] = field(default_factory=list)
+    #: Real-world incident references the rule is anchored to.
+    #: Populated by the workflow-provider orchestrators from the
+    #: rule's ``incident_refs`` field. Surfaced in the HTML report
+    #: under a "Seen in the wild" footer; empty for rules whose risk
+    #: has no public incident on record.
+    incident_refs: list[str] = field(default_factory=list)
     #: How strongly the check's evidence supports this finding. Rules
     #: that leave this at the default (HIGH) are asserting their match
     #: is structural/unambiguous. Heuristic rules, blob-search pattern
@@ -220,6 +226,8 @@ class Finding:
             "controls": [c.to_dict() for c in self.controls],
             "cwe": self.cwe,
         }
+        if self.incident_refs:
+            out["incident_refs"] = list(self.incident_refs)
         if self.locations:
             out["locations"] = [loc.to_dict() for loc in self.locations]
         return out

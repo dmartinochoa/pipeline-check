@@ -236,23 +236,41 @@ the candidates above. Grouped by priority within v0.5.0.
   comparable tool on the shelf for legacy codebases. Same idea
   ruff used to make noqa migrations bearable; mostly absent from
   the CI/CD-scanner peer set.
-- **Auto-detect / no-args mode.** `pipeline-check` with no flags
-  walks the working tree, identifies every supported file by name
-  and shape (`.github/workflows/*.yml`, `Dockerfile*`,
-  `Chart.yaml`, K8s manifests by `apiVersion:` + `kind:`, etc.),
-  and runs the matching provider scan on each. Replaces the
-  current `--pipeline X --X-path Y` ceremony for the common case;
-  explicit flags stay for power users. Lowest-friction first-run
-  experience available without changing any rule code.
-- **Per-finding real-world incident references.** Each rule gains
-  an optional `incident_refs:` field. `--explain` and the HTML
-  report render a "seen in the wild" footer linking to CVEs and
-  breach postmortems where the same pattern caused damage
-  (`GHA-001` to Codecov, `GHA-016` to SolarWinds, `XPC-002` to
-  tag-mutability incidents, `K8S-013` to hostPath escapes,
-  `DF-002` to root-container CVE classes). Anchors abstract
-  security debt to a concrete cost the operator's manager has
-  heard of.
+- **Auto-detect / no-args mode.** *Landed on dev.* `pipeline-check`
+  with no flags walks cwd for every provider's canonical file
+  (``.github/workflows``, ``.gitlab-ci.yml``, ``Jenkinsfile``,
+  ``Dockerfile``, ``Chart.yaml``, etc.) and routes one match to a
+  single-provider :class:`Scanner`, two or more matches to
+  :class:`MultiScanner` so cross-provider chains (``XPC-NNN``)
+  fire automatically. Explicit ``--pipeline`` / ``--pipelines``
+  flags stay for power users. Helm + Kubernetes disambiguation:
+  when ``Chart.yaml`` is present alongside a ``kubernetes/`` /
+  ``k8s/`` / ``manifests/`` directory the Kubernetes provider is
+  dropped (helm renders templates and feeds them to the K8s rule
+  pack already, scanning both would double-count). OCI is
+  deliberately omitted from the table because ``index.json`` is
+  too generic a filename to promote on presence alone; users who
+  want OCI in scope pass ``--pipeline oci`` (single) or
+  ``--pipelines github,oci`` (multi) explicitly. True manifest-
+  shape detection (parse ``apiVersion:`` + ``kind:`` headers) is
+  deferred; canonical-path detection covers the common case at
+  zero parse cost.
+- **Per-finding real-world incident references.** *Landed on dev.*
+  Each rule gains an optional ``incident_refs: tuple[str, ...]``
+  field. ``--explain``, the HTML report drawer, and the
+  auto-generated provider reference doc all render a "Seen in
+  the wild" section linking to CVEs and breach postmortems
+  where the same pattern caused damage. Initial population
+  covers five marquee rules: ``GHA-001`` (tj-actions /
+  reviewdog 2025 compromises), ``GHA-008`` (Uber 2016 GitHub
+  leak + GitGuardian sprawl reports), ``GHA-016`` (Codecov
+  2021 Bash uploader), ``K8S-013`` (CVE-2021-25741 +
+  TeamTNT/Kinsing), ``DF-002`` (CVE-2019-5736 runC escape +
+  CVE-2022-0492 release_agent escape). Mechanically the
+  ``Finding`` dataclass mirrors the field and every provider
+  orchestrator backfills it from the rule, the same way
+  ``cwe`` is backfilled. Anchors abstract security debt to a
+  concrete cost the operator's manager has already heard of.
 - **Close the two known taint resolver gaps.** GitLab `include:`
   cross-pipeline file inclusion (mirrors `--resolve-remote` on
   the GHA side: per-ref cache, cycle detection, on-disk fallback)

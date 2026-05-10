@@ -864,6 +864,16 @@ def _render_rule(rule: Rule) -> str:
             parts.append(f"- {mode.strip()}\n")
         parts.append("\n")
 
+    # ── Real-world incident citations. Anchors the rule to concrete
+    # incidents (CVEs, breach postmortems) so the operator's manager
+    # has heard of the cost. Rendered as a bullet list; the prose
+    # itself carries any URLs that mkdocs will autolink. ──
+    if rule.incident_refs:
+        parts.append("**Seen in the wild**\n\n")
+        for ref in rule.incident_refs:
+            parts.append(f"- {ref.strip()}\n")
+        parts.append("\n")
+
     # ── Recommendation: framed block so it stands out from the body
     # narrative. Marked with ``markdown`` so embedded code blocks /
     # bullet lists in the recommendation render. ──

@@ -36,6 +36,20 @@ RULE = Rule(
         "workflow it almost always means a copy-paste from docs was "
         "never substituted. Defaults to LOW confidence.",
     ),
+    incident_refs=(
+        "Uber 2016 GitHub leak: an AWS access key embedded in a "
+        "private GitHub repo was reachable to attackers who got at "
+        "the repo and used it to download driver / rider PII for 57 "
+        "million accounts. Credential-shaped literals in any source "
+        "control system (public or private) are one credential-leak "
+        "away from the same outcome.",
+        "GitGuardian's annual State of Secrets Sprawl reports "
+        "consistently find millions of fresh credential leaks per "
+        "year across public commits, with a median time-to-revocation "
+        "after disclosure of days, not minutes. Pinning secrets to "
+        "``${{ secrets.* }}`` removes the artifact from source "
+        "control entirely.",
+    ),
 )
 
 

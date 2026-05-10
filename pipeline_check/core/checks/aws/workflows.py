@@ -153,6 +153,8 @@ class AWSRuleChecks(AWSBaseCheck):
             for finding in batch:
                 if not finding.cwe:
                     finding.cwe = list(rule.cwe)
+                if not finding.incident_refs:
+                    finding.incident_refs = list(rule.incident_refs)
             pending.append((rule.id, batch))
 
         findings: list[Finding] = []

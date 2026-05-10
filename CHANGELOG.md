@@ -12,6 +12,60 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Per-rule real-world incident references (``incident_refs``).**
+  New optional field on ``Rule`` that anchors a check to concrete
+  CVEs and breach postmortems where the same pattern caused
+  damage in the wild. Surfaced under a "Seen in the wild"
+  section in three places: ``pipeline_check --explain CHECK_ID``,
+  the per-finding HTML report drawer, and the auto-generated
+  ``docs/providers/<name>.md`` reference. The HTML reporter
+  autolinks embedded ``https://`` URLs so CVE links stay
+  clickable.
+
+  Initial population covers five marquee rules: ``GHA-001``
+  (tj-actions/changed-files CVE-2025-30066, reviewdog/action-setup
+  CVE-2025-30154), ``GHA-008`` (Uber 2016 access-key leak,
+  GitGuardian secrets-sprawl reports), ``GHA-016`` (Codecov 2021
+  Bash uploader compromise), ``K8S-013`` (CVE-2021-25741
+  hostPath subpath escape, TeamTNT/Kinsing campaigns),
+  ``DF-002`` (CVE-2019-5736 runC escape, CVE-2022-0492 cgroups
+  v1 release_agent escape). Anchors abstract security debt to a
+  concrete cost the operator's manager has already heard of.
+
+  Mechanically: the ``Rule`` dataclass gains an
+  ``incident_refs: tuple[str, ...]`` field; ``Finding`` mirrors
+  it as ``list[str]``; every provider orchestrator backfills the
+  finding's copy from the rule the same way it already backfills
+  ``cwe``. Empty for rules without a public incident on record;
+  the section silently disappears in those cases.
+
+- **Auto-detect / no-args mode.** ``pipeline-check`` with no flags
+  now walks cwd for every provider's canonical file (``.github/
+  workflows``, ``.gitlab-ci.yml``, ``Jenkinsfile``, ``Dockerfile``,
+  ``Chart.yaml``, ``template.yml``, etc.) and routes the scan
+  accordingly: a single match runs through :class:`Scanner`
+  unchanged; two or more matches automatically switch to
+  :class:`MultiScanner` so cross-provider attack chains
+  (``XPC-NNN``) fire on the union of every sub-scan's findings,
+  the same way ``--pipelines github,oci`` did when invoked
+  explicitly. Emits ``[auto] detected providers: github, dockerfile
+  (running --pipelines github,dockerfile)`` to stderr so the
+  routing decision is visible. Helm + Kubernetes disambiguation:
+  when ``Chart.yaml`` is present alongside a ``kubernetes/`` /
+  ``k8s/`` / ``manifests/`` directory the Kubernetes provider is
+  dropped (helm renders templates and feeds them to the K8s rule
+  pack, scanning both would double-count). OCI is deliberately
+  omitted from the auto-detect table because ``index.json`` is
+  too generic a filename to promote on presence alone; pass
+  ``--pipeline oci`` or ``--pipelines github,oci`` explicitly to
+  bring an OCI manifest into the scan.
+
+  Replaces the ``--pipeline X --X-path Y`` ceremony for the
+  common case; explicit flags stay for power users. The
+  underlying detection table is shared between single- and
+  multi-detect (``_PROVIDER_DETECT_FILES``) so a new provider
+  hooks into both detection modes by adding one row.
+
 - **MCP (Model Context Protocol) server (``--serve``).** Locally-
   running MCP server that lets AI clients (Claude Desktop,
   Claude Code, Cursor, Continue, Zed) drive scans and

@@ -27,6 +27,17 @@ RULE = Rule(
         "repository, a third-party action compromise will propagate "
         "into the pipeline on the next run."
     ),
+    incident_refs=(
+        "tj-actions/changed-files compromise (CVE-2025-30066, March "
+        "2025): a malicious commit retagged behind ``@v1`` / ``@v45`` "
+        "shipped CI-secret exfiltration to roughly 23,000 repos that "
+        "had pinned the action to a mutable tag instead of a commit "
+        "SHA. https://www.cve.org/CVERecord?id=CVE-2025-30066",
+        "reviewdog/action-setup compromise (CVE-2025-30154, March "
+        "2025): same week, similar mechanism. Tag-pinned consumers "
+        "auto-pulled the malicious version; SHA-pinned consumers "
+        "were unaffected. https://www.cve.org/CVERecord?id=CVE-2025-30154",
+    ),
 )
 
 

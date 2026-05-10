@@ -16,22 +16,39 @@ keeps the CLI out of your project environment.
 ## First scan (auto-detect)
 
 Run with no flags in any supported repo, the working directory is
-inspected and the matching provider is selected:
+walked for every supported provider's canonical file:
 
 ```bash
 cd your-repo
 pipeline_check
 ```
 
-Auto-detect looks for, in order: `.github/workflows/`, `.gitlab-ci.yml`,
+Auto-detect looks for: `.github/workflows/`, `.gitlab-ci.yml`,
 `bitbucket-pipelines.yml`, `azure-pipelines.yml`, `Jenkinsfile`,
 `.circleci/config.yml`, `cloudbuild.yaml`, `.buildkite/pipeline.yml`,
 `.drone.yml` / `.drone.yaml`, `Dockerfile`/`Containerfile`,
 CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
 a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
-Tekton / Argo manifests, Helm `Chart.yaml`, an OCI image manifest
-(`index.json`), Terraform plan JSON, and falls back to `aws` (live
-account scan) when nothing matches.
+Helm `Chart.yaml`, and falls back to `aws` (live account scan) when
+nothing matches. OCI manifests (`index.json`) are not auto-detected
+because the filename is too generic; pass `--pipeline oci` or
+`--pipelines github,oci` explicitly.
+
+A single match runs through `Scanner` unchanged. Two or more matches
+automatically switch to `MultiScanner` (the same engine
+`--pipelines github,oci` activates) so cross-provider attack chains
+in the `XPC-NNN` family fire on the union of every sub-scan's
+findings. The routing decision is announced on stderr so it stays
+visible in CI logs:
+
+```text
+[auto] detected providers: github, dockerfile (running --pipelines github,dockerfile)
+```
+
+When `Chart.yaml` is present alongside a `kubernetes/` /
+`k8s/` / `manifests/` directory the Kubernetes provider is dropped,
+helm renders the templates and feeds them to the K8s rule pack
+already, so scanning both would double-count.
 
 ## Scan a specific provider
 

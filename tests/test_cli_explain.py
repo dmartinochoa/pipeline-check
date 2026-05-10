@@ -45,6 +45,26 @@ def test_explain_rule_without_known_fp_omits_section():
     assert "[Known false-positive modes]" not in body
 
 
+def test_explain_renders_incident_refs_when_present():
+    """Marquee rules carry ``incident_refs`` citations that
+    ``--explain`` surfaces under a "Seen in the wild" section."""
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "[Seen in the wild]" in body
+    # GHA-001 cites tj-actions/changed-files (CVE-2025-30066).
+    assert "tj-actions" in body
+    assert "CVE-2025-30066" in body
+
+
+def test_explain_omits_seen_in_the_wild_section_when_no_refs():
+    """A rule without ``incident_refs`` populated should not render
+    the section header at all (no empty list, no placeholder)."""
+    # GHA-024 has no incident_refs populated.
+    body, code = render("GHA-024")
+    assert code == 0
+    assert "[Seen in the wild]" not in body
+
+
 # ─── Renderer — AWS rule-based check (post-migration) ─────────────────────
 #
 # Every AWS check is now a rule module under ``aws/rules/``; the

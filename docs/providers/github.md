@@ -131,6 +131,11 @@ Resolution rules:
 
 Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch refs (`@v4`, `@main`) can be silently moved to malicious commits by whoever controls the upstream repository, a third-party action compromise will propagate into the pipeline on the next run.
 
+**Seen in the wild**
+
+- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): a malicious commit retagged behind ``@v1`` / ``@v45`` shipped CI-secret exfiltration to roughly 23,000 repos that had pinned the action to a mutable tag instead of a commit SHA. https://www.cve.org/CVERecord?id=CVE-2025-30066
+- reviewdog/action-setup compromise (CVE-2025-30154, March 2025): same week, similar mechanism. Tag-pinned consumers auto-pulled the malicious version; SHA-pinned consumers were unaffected. https://www.cve.org/CVERecord?id=CVE-2025-30154
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -282,6 +287,11 @@ Every string in the workflow is scanned against a set of credential patterns (AW
 **Known false-positive modes**
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real workflow it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+
+**Seen in the wild**
+
+- Uber 2016 GitHub leak: an AWS access key embedded in a private GitHub repo was reachable to attackers who got at the repo and used it to download driver / rider PII for 57 million accounts. Credential-shaped literals in any source control system (public or private) are one credential-leak away from the same outcome.
+- GitGuardian's annual State of Secrets Sprawl reports consistently find millions of fresh credential leaks per year across public commits, with a median time-to-revocation after disclosure of days, not minutes. Pinning secrets to ``${{ secrets.* }}`` removes the artifact from source control entirely.
 
 <div class="pg-rule__rec" markdown>
 
@@ -454,6 +464,11 @@ Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote conten
 **Known false-positive modes**
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
+
+**Seen in the wild**
+
+- Codecov Bash uploader compromise (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s https://codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery. https://about.codecov.io/security-update/
+- Bitwarden / npm install scripts (CVE-2018-7536-class incidents): remote-script execution in CI is the same primitive. The attacker controls bytes the runner executes. Pinning a digest or hosting a vendored copy turns a perpetual ambient risk into a one-time review.
 
 <div class="pg-rule__rec" markdown>
 

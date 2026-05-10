@@ -70,6 +70,16 @@ class Rule:
     #: is known to misfire on specific legitimate patterns so the user
     #: can see the escape hatch before dismissing the whole check.
     known_fp: tuple[str, ...] = ()
+    #: Real-world incident references — CVEs, breach postmortems,
+    #: vendor disclosures where the same pattern this rule detects
+    #: caused damage in the wild. Each entry is a one-line citation,
+    #: optionally containing an HTTPS URL. Surfaced in
+    #: ``pipeline_check --explain`` and the HTML report under a
+    #: "Seen in the wild" footer so the rule is anchored to a
+    #: concrete cost rather than abstract security debt. Empty for
+    #: rules whose risk is hypothetical or who have no public
+    #: incident on record.
+    incident_refs: tuple[str, ...] = ()
 
 
 _RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}
