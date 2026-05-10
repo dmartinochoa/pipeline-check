@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: default
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: api } }
+  template:
+    metadata:
+      labels: { app: api }
+    spec:
+      containers:
+        - name: api
+          # K8S-001: floating-tag image. The cluster pulls
+          # whatever bytes the upstream registry currently serves
+          # under ``my-org/api:1`` on every fresh pod schedule;
+          # a tag rewrite at the registry propagates automatically.
+          image: my-org/api:1
+          ports: [{ containerPort: 8080 }]

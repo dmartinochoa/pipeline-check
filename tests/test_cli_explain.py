@@ -98,6 +98,48 @@ def test_explain_omits_proof_of_exploit_when_unset():
     assert "[Proof of exploit]" not in body
 
 
+def test_explain_renders_proof_of_exploit_for_pwn_request():
+    """GHA-002 (pull_request_target + checkout PR head) is the
+    canonical pwn-request primitive driving XPC-006. The exploit
+    snippet must show both the vulnerable single-workflow form and
+    the safe split-workflow remediation."""
+    body, code = render("GHA-002")
+    assert code == 0
+    assert "[Proof of exploit]" in body
+    # Vulnerable form: single workflow with both pull_request_target
+    # and the PR-head checkout.
+    assert "pull_request_target" in body
+    assert "github.event.pull_request.head.sha" in body
+    # Safe remediation: split into labeler + builder.
+    assert "split" in body.lower() or "labeler" in body.lower() or \
+        "triage" in body.lower()
+
+
+def test_explain_renders_proof_of_exploit_for_script_injection():
+    """GHA-003 (script injection via untrusted context) is one half
+    of the GitHub Security Lab pwn-request research. The snippet
+    must show the title-injection payload pattern."""
+    body, code = render("GHA-003")
+    assert code == 0
+    assert "[Proof of exploit]" in body
+    # Vulnerable interpolation pattern.
+    assert "github.event.pull_request.title" in body
+    # Safe env-routing pattern.
+    assert "PR_TITLE" in body or "env:" in body
+
+
+def test_explain_renders_proof_of_exploit_for_token_persistence():
+    """GHA-019 (token persistence) drives XPC-004. The snippet
+    must show the artifact-exfil loop the chain is built around."""
+    body, code = render("GHA-019")
+    assert code == 0
+    assert "[Proof of exploit]" in body
+    # Vulnerable persistence pattern.
+    assert "GITHUB_TOKEN" in body
+    # Reference to the artifact-download exfil mechanism.
+    assert "upload-artifact" in body or "download" in body.lower()
+
+
 # ─── Renderer — AWS rule-based check (post-migration) ─────────────────────
 #
 # Every AWS check is now a rule module under ``aws/rules/``; the

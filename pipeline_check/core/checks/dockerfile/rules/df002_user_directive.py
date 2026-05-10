@@ -50,7 +50,7 @@ RULE = Rule(
         "#\n"
         "#   # CVE-2019-5736 path: overwrite /proc/self/exe to corrupt\n"
         "#   # the host's runC binary — every container on the node\n"
-        "#   # the next launch gets executes attacker code on the host:\n"
+        "#   # the next launch executes attacker code on the host:\n"
         "#   echo '#!/bin/sh\\n/attacker_payload' > /proc/self/exe\n"
         "#\n"
         "#   # CVE-2022-0492 path: cgroup release_agent escape:\n"

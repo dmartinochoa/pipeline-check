@@ -206,21 +206,26 @@ class SCMContext:
                 f"[scm] repos/{owner}/{name} returned non-object body."
             )
             repo_meta = None
-        default_branch = "main"
+        # When repo_meta failed we don't know the default branch
+        # name; probing ``branches/main/protection`` would FP for
+        # any repo whose default branch is not literally ``main``.
+        # Skip downstream probes entirely; the rules detect
+        # ``repo_meta is None`` and pass with an unavailable note.
+        protection: dict[str, Any] | None = None
+        code_scanning: dict[str, Any] | None = None
         if isinstance(repo_meta, dict):
             db = repo_meta.get("default_branch")
-            if isinstance(db, str) and db:
-                default_branch = db
-        protection = fetcher.fetch(
-            f"repos/{owner}/{name}/branches/{default_branch}/protection"
-        )
-        if protection is not None and not isinstance(protection, dict):
-            protection = None
-        code_scanning = fetcher.fetch(
-            f"repos/{owner}/{name}/code-scanning/default-setup"
-        )
-        if code_scanning is not None and not isinstance(code_scanning, dict):
-            code_scanning = None
+            default_branch = db if isinstance(db, str) and db else "main"
+            raw_protection = fetcher.fetch(
+                f"repos/{owner}/{name}/branches/{default_branch}/protection"
+            )
+            if isinstance(raw_protection, dict):
+                protection = raw_protection
+            raw_cs = fetcher.fetch(
+                f"repos/{owner}/{name}/code-scanning/default-setup"
+            )
+            if isinstance(raw_cs, dict):
+                code_scanning = raw_cs
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -264,3 +269,112 @@ def default_branch_name(snapshot: SCMRepoSnapshot) -> str:
     if isinstance(name, str) and name:
         return name
     return "main"
+
+
+def is_archived(snapshot: SCMRepoSnapshot) -> bool:
+    """Whether the repo is archived (read-only).
+
+    GitHub auto-disables Dependabot, secret scanning, secret-scanning
+    push protection, and code scanning on archived repos. Without
+    this guard, every ``security_and_analysis``-driven rule would
+    misfire on every archived repo regardless of historical posture.
+
+    The signal is ``repo_meta.archived: true``. Returns ``False``
+    when ``repo_meta`` is missing — failed-fetch shouldn't be
+    treated as archived.
+    """
+    meta = snapshot.repo_meta
+    if not isinstance(meta, dict):
+        return False
+    return bool(meta.get("archived"))
+
+
+def is_disabled(snapshot: SCMRepoSnapshot) -> bool:
+    """Whether the repo is administratively disabled.
+
+    GitHub disables a repo (TOS, billing, abuse) by setting
+    ``repo_meta.disabled: true``. Reads against a disabled repo
+    are partial; we treat them the same as archived for guard
+    purposes.
+    """
+    meta = snapshot.repo_meta
+    if not isinstance(meta, dict):
+        return False
+    return bool(meta.get("disabled"))
+
+
+def is_empty_repo(snapshot: SCMRepoSnapshot) -> bool:
+    """Whether the repo has no commits / no default branch yet.
+
+    Two production signals concur:
+
+      * ``repo_meta.size == 0`` (disk usage in KB; a brand-new repo
+        with no commits has size 0).
+      * The branch-protection endpoint returned 404 — caught by
+        ``snapshot.default_branch_protection is None``. We don't
+        rely on this alone because a non-empty repo with no
+        protection rule produces the same shape; the size signal
+        disambiguates.
+
+    Returns ``True`` only when both hold. Without this guard,
+    ``SCM-001`` (default branch unprotected) misfires on every
+    fresh repo with the "no protection rule" message even though
+    there is no commit to protect.
+    """
+    meta = snapshot.repo_meta
+    if not isinstance(meta, dict):
+        return False
+    size = meta.get("size")
+    if not isinstance(size, int) or size != 0:
+        return False
+    return snapshot.default_branch_protection is None
+
+
+def archived_state_label(snapshot: SCMRepoSnapshot) -> str | None:
+    """Return ``"archived"`` / ``"disabled"`` if applicable, else ``None``.
+
+    Single read-only helper that rules call to decide whether a
+    GitHub-auto-disabled feature should suppress their failure
+    signal. Returns ``None`` when neither flag is set so callers
+    use ``if label := archived_state_label(snap): ...`` for the
+    early-skip pattern.
+    """
+    if is_archived(snapshot):
+        return "archived"
+    if is_disabled(snapshot):
+        return "disabled"
+    return None
+
+
+def security_feature_state(
+    snapshot: SCMRepoSnapshot, feature: str,
+) -> str | None:
+    """Read ``security_and_analysis.<feature>.status`` from repo meta.
+
+    Returns the status string (``"enabled"`` / ``"disabled"``) or
+    ``None`` when the data is unavailable. Three production cases
+    produce ``None``:
+
+      * The token lacks ``admin`` scope on the repo — GitHub omits
+        the entire ``security_and_analysis`` block.
+      * The repo is on a plan that doesn't expose the feature
+        (e.g. private-repo Dependabot on a free org).
+      * The repo metadata fetch itself failed.
+
+    Rules that map to these features should add a ``known_fp`` note
+    explaining the scope-omission case so the user can distinguish
+    "really disabled" from "I lacked visibility."
+    """
+    meta = snapshot.repo_meta
+    if not isinstance(meta, dict):
+        return None
+    sa = meta.get("security_and_analysis")
+    if not isinstance(sa, dict):
+        return None
+    feat = sa.get(feature)
+    if not isinstance(feat, dict):
+        return None
+    status = feat.get("status")
+    if isinstance(status, str):
+        return status
+    return None

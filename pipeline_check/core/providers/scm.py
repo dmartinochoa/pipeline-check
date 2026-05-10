@@ -93,6 +93,19 @@ class SCMProvider(BaseProvider):
                     metadata["private"] = meta["private"]
                 if isinstance(meta.get("visibility"), str):
                     metadata["visibility"] = meta["visibility"]
+                # Archived / disabled state is the dominant context
+                # for posture interpretation: the security-feature
+                # rules skip these repos because the underlying
+                # platform auto-disables the features. Surface the
+                # state in inventory so the operator can correlate.
+                # Use isinstance to match the other typed-metadata
+                # fields above — a malformed payload (e.g. the string
+                # ``"false"``) should not be silently coerced to
+                # ``True``, and an explicit ``False`` should survive.
+                if isinstance(meta.get("archived"), bool):
+                    metadata["archived"] = meta["archived"]
+                if isinstance(meta.get("disabled"), bool):
+                    metadata["disabled"] = meta["disabled"]
             metadata["branch_protection_enabled"] = (
                 snapshot.default_branch_protection is not None
             )

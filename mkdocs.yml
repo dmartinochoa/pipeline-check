@@ -146,6 +146,7 @@ nav:
       - Kubernetes: providers/kubernetes.md
       - Helm: providers/helm.md
       - OCI image manifest: providers/oci.md
+      - SCM (GitHub) posture: providers/scm.md
   - Standards:
       - Overview: standards/README.md
       - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

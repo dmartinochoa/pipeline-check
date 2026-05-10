@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: default
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: app } }
+  template:
+    metadata:
+      labels: { app: app }
+    spec:
+      # K8S-013: hostPath mounts the host's root filesystem into
+      # the pod. A container compromise reads kubelet credentials,
+      # other pods' service-account tokens, and pivots to the API
+      # server (CVE-2021-25741 family). TeamTNT / Kinsing crypto-
+      # jacking campaigns trace every confirmed cluster compromise
+      # to this primitive.
+      volumes:
+        - name: host-root
+          hostPath: { path: / }
+      containers:
+        - name: app
+          # K8S-001: floating-tag image. The cluster pulls whatever
+          # bytes the upstream registry currently serves under
+          # ``app:1`` on every pod restart.
+          image: my-org/app:1
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+          securityContext:
+            # K8S-005: privileged container — full access to the
+            # host's devices and capabilities; node escape is
+            # trivial.
+            privileged: true
+          # K8S-006 (allowPrivilegeEscalation true / unset).
+          # K8S-007 (readOnlyRootFilesystem unset).
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-binding
+# K8S-020: binding the workload's service account to cluster-admin
+# means the in-pod token has full cluster authority. Combined with
+# the hostPath escape above, the attacker exits the pod with the
+# keys to the kingdom.
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default

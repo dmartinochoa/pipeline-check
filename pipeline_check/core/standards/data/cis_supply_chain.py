@@ -16,8 +16,14 @@ STANDARD = Standard(
     url="https://www.cisecurity.org/insights/white-papers/cis-software-supply-chain-security-guide",
     controls={
         # 1. Source Code
+        "1.1.5": "Ensure any change to code requires the review of additional strong authenticators",
+        "1.1.6": "Ensure any change to code is signed",
+        "1.1.7": "Ensure any change to code is automatically scanned for risks (SAST)",
+        "1.1.8": "Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA)",
+        "1.1.17": "Ensure default branches' commits are protected from being deleted/rewritten",
         "1.3.4": "Ensure organization identity is required for contribution (no long-lived personal tokens)",
         "1.4.1": "Ensure third-party artifacts and open-source libraries are verified",
+        "1.5.1": "Ensure scanners are in place to identify and prevent sensitive data in code",
         # 2. Build Pipelines
         "2.1.3": "Ensure the build environment is hardened",
         "2.1.6": "Ensure build workers have minimal network connectivity",
@@ -88,6 +94,7 @@ STANDARD = Standard(
         "GHA-005":  ["1.3.4"],                           # long-lived AWS keys
         "GHA-006":  ["4.1.1"],                           # artifact signing
         "GHA-007":  ["4.4.1"],                           # SBOM
+        "GHA-040":  ["1.4.1", "3.1.3"],                  # known-compromised action ref
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],
@@ -243,5 +250,22 @@ STANDARD = Standard(
         "GCB-024": ["4.4.1"],                      # no provenance labels
         "GCB-025": ["1.4.1"],                      # outdated runner image
         "GCB-026": ["2.4.3"],                      # public storage bucket
+        # SCM posture (governance scanned via the GitHub REST API)
+        "SCM-001":  ["1.1.17"],                     # default branch unprotected
+        "SCM-002":  ["1.1.5"],                      # required reviews missing
+        "SCM-003":  ["1.1.7"],                      # default code scanning disabled (SAST)
+        "SCM-004":  ["1.5.1"],                      # secret scanning disabled
+        "SCM-005":  ["1.1.8"],                      # Dependabot security updates off (SCA)
+        "SCM-006":  ["1.1.6"],                      # signed commits not required
+        "SCM-007":  ["1.1.17"],                     # force-push allowed
+        "SCM-008":  ["1.1.5", "1.1.7"],             # required status checks missing
+        "SCM-009":  ["1.1.17"],                     # branch deletions allowed
+        "SCM-010":  ["1.1.5"],                      # admin bypass allowed
+        "SCM-011":  ["1.1.5"],                      # CODEOWNERS reviews not required
+        "SCM-012":  ["1.1.5"],                      # stale reviews not dismissed
+        "SCM-013":  ["1.1.5"],                      # conversation resolution not required
+        "SCM-014":  ["1.1.5"],                      # last-push approval not required
+        "SCM-015":  ["1.5.1"],                      # secret scanning push protection off
+        "SCM-016":  ["1.4.1"],                      # private vulnerability reporting off
     },
 )

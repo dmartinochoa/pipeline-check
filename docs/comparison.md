@@ -30,17 +30,19 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (39 rules) | Partial | Yes | Partial | No | No |
-| GitLab CI | Yes (33) | No | Partial | No | No | No |
+| GitHub Actions | Yes (43 rules) | Partial | Yes | Partial | No | No |
+| GitLab CI | Yes (35) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (32) | No | No | Partial | No | No |
 | CircleCI | Yes (31) | No | Partial | No | No | No |
 | Azure DevOps | Yes (30) | No | Partial | No | No | No |
 | Bitbucket Pipelines | Yes (29) | No | No | No | No | No |
 | Google Cloud Build | Yes (26) | No | Partial | No | No | No |
-| Buildkite | Yes (15) | No | No | No | No | No |
+| Buildkite | Yes (16) | No | No | No | No | No |
 | Drone CI | Yes (11) | No | No | No | No | No |
-| Tekton | Yes (15) | No | Partial | No | No | No |
-| Argo Workflows | Yes (15) | No | Partial | No | No | No |
+| Tekton | Yes (16) | No | Partial | No | No | No |
+| Argo Workflows | Yes (16) | No | Partial | No | No | No |
+| **SCM posture (governance)** | | | | | | |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (16, `SCM-001..016`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
@@ -49,10 +51,12 @@ missing major surfaces or requires extra config. No = not in scope.
 | Dockerfile | Yes (20) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
-| OCI image manifests (provenance, SLSA) | Yes (8) | No | No | No | No | Partial |
+| OCI image manifests (provenance, SLSA) | Yes (11, incl. ATTEST-001..003 attestation content) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
-| Dataflow taint, multi-step / cross-job | Yes (TAINT-NNN) | No | No | Rules-only | No | No |
-| Cross-provider attack chains (MITRE ATT&CK) | Yes (XPC-NNN, 30 chains) | No | No | No | No | No |
+| Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
+| Cross-provider attack chains (MITRE ATT&CK) | Yes (36 chains: 27 AC + 9 XPC) | No | No | No | No | No |
+| Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
+| Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, 100% recall, CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
 | Compliance frameworks (per-finding controls) | 14 (OWASP, SLSA, NIST SSDF, NIST 800-53/190, NIST CSF, CIS, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |

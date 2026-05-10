@@ -12,7 +12,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**550+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**570+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -87,21 +87,22 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 39 checks (`GHA-001`--`039`) |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 33 checks (`GL-001`--`033`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 43 checks (`GHA-001`--`040`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 33 checks (`GL-001`--`033`, plus `TAINT-004` and `TAINT-008`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 15 checks (`BK-001`--`015`) |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks (`BK-001`--`015`, plus `TAINT-005`) |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 15 checks (`TKN-001`--`015`) |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 15 checks (`ARGO-001`--`015`) |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks (`TKN-001`--`015`, plus `TAINT-006`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 16 checks (`ARGO-001`--`015`, plus `TAINT-007`) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
-| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 8 checks (`OCI-001`--`008`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest |
+| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 11 checks (`OCI-001`--`008` plus `ATTEST-001..003`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions |
+| **SCM (GitHub)** | GitHub REST API (`--scm-platform github --scm-repo owner/name`) | `--scm-repo` | 16 checks (`SCM-001`--`016`): branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting. Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -123,7 +124,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   550+ checks across 19 providers
+  Config files   |  Scanner  |   570+ checks across 19 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -163,6 +164,8 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
 | **STRIDE threat model** | `--output threatmodel` emits a self-contained Markdown threat-model document populated from the scan + inventory: assets, trust boundaries, findings grouped by STRIDE category, implemented controls, top-25 risk register. Mapping is derived from each rule's existing OWASP / CWE tags so re-policing is one table swap. Shaped for SOC 2 / PCI / NIST SSDF evidence packages. |
 | **MCP server** | `pipeline_check --serve` runs as a Model Context Protocol server on stdio so AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) can drive scans and introspect the rule catalog directly. Ten tools advertised: scan / inventory / explain_check / list_chains / threat_model / etc. The `mcp` SDK is an optional `[mcp]` extra so the default install stays slim. See [docs/mcp.md](docs/mcp.md). |
+| **Multi-scanner SARIF ingest** | `--ingest <file>.sarif` (repeatable) absorbs findings from Trivy / Checkov / Snyk / KICS / CodeQL / any conformant scanner. External rules become `INGEST-<tool>-<rule-id>` `Finding` rows; the chain engine RE-EVALUATES over the union, so cross-tool chains (e.g. `XPC-009` — ingested CVE finding + `DF-001` mutable runtime image) fire on compositions no individual scanner would surface. Caps: 25 MiB / 5,000 results per file. |
+| **Vulnerable-by-design benchmark** | `bench/` ships intentionally-vulnerable fixtures (one folder per attack pattern, anchored to a real-world incident) plus a runner that asserts pipeline-check fires on every expected check ID. `python bench/run.py` prints a recall table; the same harness gates the CI suite. Demonstrates 100 % recall across the OWASP CICD-SEC top patterns; future cross-scanner matrix vs Zizmor / Poutine / Checkov / KICS / Trivy is tracked under `bench/COMPARISON.md`. |
 
 ---
 
@@ -173,6 +176,7 @@ pipeline_check --output terminal            # rich table to stdout (default)
 pipeline_check --output json                # machine-readable JSON
 pipeline_check --output html --output-file report.html       # self-contained HTML
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
+pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
 pipeline_check --output markdown            # PR-comment shape (GFM)
 pipeline_check --output threatmodel --output-file threats.md # STRIDE threat model
 pipeline_check --output both                # terminal on stderr + JSON on stdout
@@ -261,7 +265,7 @@ providers your repo ships through:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/dmartinochoa/pipeline-check
-    rev: v0.3.3   # pin to a release tag
+    rev: v0.5.0   # pin to a release tag
     hooks:
       - id: pipeline-check-github
       - id: pipeline-check-dockerfile
@@ -331,7 +335,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
@@ -354,6 +358,12 @@ See [docs/standards/](docs/standards/).
 | `--inventory` | | Emit scanned-component inventory alongside findings |
 | `--inventory-type` | | Glob pattern to scope inventory by type (repeatable, implies `--inventory`) |
 | `--inventory-only` | | Skip checks; emit inventory only (implies `--inventory`) |
+| `--ingest` | | SARIF 2.1.0 file from another scanner (Trivy, Checkov, Snyk, KICS, CodeQL, …). External rules become `INGEST-<tool>-<rule-id>` findings; chain engine re-evaluates over the union. Repeatable. |
+| `--scm-platform` | | SCM platform for `--pipeline scm` (only `github` supported today; GitLab and Bitbucket queued) |
+| `--scm-repo` | | Repository to scan in `OWNER/NAME` form (required when `--pipeline scm`) |
+| `--scm-fixture-dir` | | Read SCM API responses from JSON files under DIR instead of hitting the network. Useful for offline tests / CI runs without a token. |
+| `--gh-token` | `$GITHUB_TOKEN` | Token for the GHA reusable-workflow resolver and the SCM provider's REST API calls |
+| `--resolve-remote` | | Follow remote `uses:` refs (reusable workflows + composite actions) over HTTPS. Off by default — opt in to take on the network surface. |
 | `--config` | auto | Config file path (TOML or YAML) |
 | `--config-check` | | Validate config, exit non-zero on unknown keys |
 | `--man [TOPIC]` | | Extended docs (`gate`, `autofix`, `diff`, `secrets`, `standards`, `config`, `output`, `lambda`, `recipes`) |
@@ -369,7 +379,9 @@ Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`,
 `--dockerfile-path`, `--k8s-path`, `--helm-path`, `--oci-manifest`) are
 auto-detected from the working directory when omitted. The Helm provider also
 takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
-forwarded to `helm template`.
+forwarded to `helm template`. The SCM provider is API-only and takes
+`--scm-platform github --scm-repo owner/name` (plus `--gh-token` or
+`$GITHUB_TOKEN`); no on-disk path flag.
 
 Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
 to the current directory, pre-filling the `pipeline:` key based on what it
@@ -400,21 +412,22 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-039
-        ├── gitlab/rules/      # GL-001 .. GL-033
+        ├── github/rules/      # GHA-001 .. GHA-040 + TAINT-001..003
+        ├── gitlab/rules/      # GL-001 .. GL-033 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-029
         ├── azure/rules/       # ADO-001 .. ADO-030
         ├── jenkins/rules/     # JF-001 .. JF-032
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
-        ├── buildkite/rules/   # BK-001 .. BK-015
+        ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-011
-        ├── tekton/rules/      # TKN-001 .. TKN-015
-        ├── argo/rules/        # ARGO-001 .. ARGO-015
-        ├── oci/rules/         # OCI-001 .. OCI-008
+        ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
+        ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
+        ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..003
         ├── dockerfile/rules/  # DF-001 .. DF-020
         ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack
+        ├── scm/rules/         # SCM-001 .. SCM-016 (GitHub governance via REST API)
         └── custom/            # YAML rule loader + predicate engine
 ```
 

@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import SCMRepoSnapshot, repo_resource
+from ..base import (
+    SCMRepoSnapshot,
+    archived_state_label,
+    repo_resource,
+)
 
 RULE = Rule(
     id="SCM-003",
@@ -35,10 +39,10 @@ RULE = Rule(
         "endpoint (``GET /repos/{owner}/{repo}/code-scanning/"
         "default-setup``). Fires when ``state`` is anything other "
         "than ``configured`` (``not-configured``, missing, or 404). "
-        "Does NOT fire when default setup is off but a CodeQL "
-        "workflow is configured — a future SCM-NNN rule keyed off "
-        "the workflow-uploaded code-scanning results endpoint will "
-        "cover that path."
+        "This check only evaluates the default-setup endpoint. Repos "
+        "running hand-authored CodeQL workflows or third-party SARIF "
+        "uploads can still fail SCM-003; suppress per repo via "
+        "ignore-file when that alternative coverage is intentional."
     ),
     known_fp=(
         "Repos that ship a hand-authored CodeQL workflow (or use "
@@ -47,10 +51,40 @@ RULE = Rule(
         "without enabling default setup. Suppress via ignore-file "
         "rather than removing the rule.",
     ),
+    exploit_example=(
+        "# Without code scanning, the only signal that a PR\n"
+        "# introduces (e.g.) a SQL injection or hardcoded secret\n"
+        "# comes from the human reviewer:\n"
+        "#\n"
+        "#   - def lookup(user_id):\n"
+        "#   -     return db.query(\"SELECT * FROM u WHERE id = ?\", user_id)\n"
+        "#   + def lookup(user_id):\n"
+        "#   +     return db.query(f\"SELECT * FROM u WHERE id = {user_id}\")\n"
+        "#\n"
+        "# A reviewer skimming a 400-line PR misses this. Default\n"
+        "# CodeQL setup catches the same change as a CWE-89 finding\n"
+        "# in the PR check, surfaces it inline in the diff, and\n"
+        "# blocks the merge if the protection rule wires it up as\n"
+        "# a required status check (see SCM-008)."
+    ),
 )
 
 
 def check(snapshot: SCMRepoSnapshot) -> Finding:
+    # Archived/disabled-repo guard: GitHub auto-disables code
+    # scanning runs on archived or admin-disabled repos. Without
+    # this guard SCM-003 would FP on every archived repo regardless
+    # of historical scanning posture.
+    if state_label := archived_state_label(snapshot):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"Repo is {state_label}; GitHub auto-disables code "
+                f"scanning on {state_label} repos. Skipped."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     setup = snapshot.code_scanning_default_setup
     state = ""
     if isinstance(setup, dict):

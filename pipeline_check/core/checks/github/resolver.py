@@ -481,6 +481,14 @@ class Resolver:
         for _job_id, job in jobs.items():
             if not isinstance(job, dict):
                 continue
+            # Job-level ``permissions:`` overrides the workflow-level
+            # block for that job's GITHUB_TOKEN scope, including for
+            # composite actions executed as steps in it. Fall back to
+            # the workflow-level (or inherited) permissions when the
+            # job doesn't declare its own.
+            job_permissions = job.get("permissions")
+            if job_permissions is None:
+                job_permissions = caller_permissions
             ref = parse_uses(job.get("uses"))
             if ref is not None and ref.kind == "remote-workflow":
                 if not ref.is_pinned_to_sha:
@@ -496,7 +504,7 @@ class Resolver:
                     out.append(_Pending(
                         ref=ref,
                         caller_path=_synthesized_caller_path(wf),
-                        inherited_permissions=caller_permissions,
+                        inherited_permissions=job_permissions,
                         inherited_secret_names=inherited_secrets,
                         inherits_secrets=inherits,
                         depth=depth,
@@ -529,7 +537,7 @@ class Resolver:
                 out.append(_Pending(
                     ref=step_ref,
                     caller_path=_synthesized_caller_path(wf),
-                    inherited_permissions=caller_permissions,
+                    inherited_permissions=job_permissions,
                     inherited_secret_names=frozenset(),
                     inherits_secrets=True,
                     depth=depth,
@@ -544,37 +552,45 @@ class Resolver:
         visited: set[tuple[str, str, str, str]],
     ) -> list[Workflow]:
         """Fetch *pendings* concurrently and turn each hit into a Workflow."""
-        # Dedup within the wave so two callers referencing the same
-        # callee fetch once. ``visited`` carries dedup across waves.
-        # Workflow and action keys naturally don't collide (workflow
-        # refs always have a ``.yml`` / ``.yaml`` path; action refs
-        # have ``""`` or a subdir).
-        unique: dict[tuple[str, str, str, str], _Pending] = {}
+        # Dedup the *fetch* within the wave so two callers referencing
+        # the same callee hit the network once, but keep every caller's
+        # ``_Pending`` so each gets its own synthesized workflow with
+        # the correct caller_path / inherited permissions / secret
+        # horizon. ``visited`` carries dedup across waves. Workflow and
+        # action keys naturally don't collide (workflow refs always
+        # have a ``.yml`` / ``.yaml`` path; action refs have ``""`` or
+        # a subdir).
+        unique: dict[tuple[str, str, str, str], list[_Pending]] = {}
         for p in pendings:
             key = self._dedup_key(p)
             if key in visited:
                 continue
-            unique.setdefault(key, p)
+            unique.setdefault(key, []).append(p)
 
         results: list[Workflow] = []
         if not unique:
             return results
 
-        def _do_one(p: _Pending) -> tuple[_Pending, bytes | None]:
-            return p, self._fetch_one(p)
+        def _do_one(
+            item: tuple[tuple[str, str, str, str], list[_Pending]],
+        ) -> tuple[list[_Pending], bytes | None]:
+            _, callers = item
+            return callers, self._fetch_one(callers[0])
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-            for p, data in pool.map(_do_one, unique.values()):
-                visited.add(self._dedup_key(p))
+            for callers, data in pool.map(_do_one, unique.items()):
+                visited.add(self._dedup_key(callers[0]))
                 if data is None:
-                    self.stats.failures.append(
-                        f"could not fetch {p.ref.raw} "
-                        f"(referenced from {p.caller_path})"
-                    )
+                    for p in callers:
+                        self.stats.failures.append(
+                            f"could not fetch {p.ref.raw} "
+                            f"(referenced from {p.caller_path})"
+                        )
                     continue
-                wf = self._build_workflow(p, data)
-                if wf is not None:
-                    results.append(wf)
+                for p in callers:
+                    wf = self._build_workflow(p, data)
+                    if wf is not None:
+                        results.append(wf)
         return results
 
     @staticmethod

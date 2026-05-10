@@ -1,0 +1,21 @@
+# Expected check_ids for unprotected-mutable-image.
+#
+# This case combines SCM posture (an unprotected default branch)
+# with a Dockerfile-side mutability gap (floating-tag FROM).
+# Each leg is a separate provider — the SCM provider hits the
+# GitHub REST API in production; bench mode reads JSON fixtures
+# under scm/ via DiskSCMFetcher, so the case stays hermetic.
+
+# SCM side: the scm/ fixture directory has the repo metadata
+# (size > 0, default_branch = "main") but NO branches/main/
+# protection JSON file, so the protection probe returns None
+# and SCM-001 fires.
+SCM-001
+
+# Dockerfile side: floating-tag base image.
+DF-001
+
+# Cross-provider chain: XPC-008 (unreviewed source ships
+# mutable runtime image). Composed of SCM-001 + DF-001 — the
+# entire reason the case exists.
+XPC-008

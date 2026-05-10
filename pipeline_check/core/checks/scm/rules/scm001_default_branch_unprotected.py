@@ -11,7 +11,12 @@ from __future__ import annotations
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import SCMRepoSnapshot, default_branch_name, repo_resource
+from ..base import (
+    SCMRepoSnapshot,
+    default_branch_name,
+    is_empty_repo,
+    repo_resource,
+)
 
 RULE = Rule(
     id="SCM-001",
@@ -70,6 +75,41 @@ RULE = Rule(
 
 
 def check(snapshot: SCMRepoSnapshot) -> Finding:
+    # Repo-meta-unavailable guard: the repo metadata fetch failed
+    # (token without read access on a private repo, repo deleted,
+    # network failure). Without this, the protection probe falls
+    # back to ``branches/main/protection`` regardless of the actual
+    # default branch and would FP for any repo whose default branch
+    # is not literally ``main``.
+    if snapshot.repo_meta is None:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "Repo metadata is unavailable (token may lack read "
+                "access on this repo, the repo may be deleted, or "
+                "the API call failed). Branch protection cannot be "
+                "evaluated without knowing the default branch name. "
+                "See ctx.warnings for the underlying fetch failure."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    # Empty-repo guard: a brand-new repo with no commits has no
+    # default branch to protect. The branch-protection endpoint
+    # legitimately 404s; without this guard SCM-001 would FP on
+    # every fresh repo with the misleading "no protection rule"
+    # message.
+    if is_empty_repo(snapshot):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "Repo is empty (no commits, no default branch). "
+                "Branch protection does not apply yet; configure it "
+                "before the first push lands on the default branch."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     branch = default_branch_name(snapshot)
     has_protection = isinstance(snapshot.default_branch_protection, dict)
     passed = has_protection

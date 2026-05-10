@@ -1,0 +1,21 @@
+# Expected check_ids for cross-provider-floating-image.
+#
+# The case combines a floating-tag Dockerfile FROM with a
+# floating-tag Kubernetes deployment image. Each on its own is
+# DF-001 / K8S-001 territory. Together they cross the build /
+# runtime boundary, which is what the cross-provider chain
+# XPC-002 is built around.
+
+# Build-side floating tag.
+DF-001
+# (DF-002 also fires — root user — but it's not the case's
+# headline. We don't assert it here so the case stays
+# narrow-by-purpose.)
+
+# Runtime-side floating tag.
+K8S-001
+
+# Cross-provider chain: tag mutability spans build + runtime.
+# XPC-002 fires on the (DF-001, K8S-001) pair and is the
+# composite the case exists to demonstrate.
+XPC-002

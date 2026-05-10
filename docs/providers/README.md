@@ -78,6 +78,10 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>OCI image manifest</h3>
     <p>Parses <code>docker buildx imagetools inspect --raw</code> JSON. Provenance annotations, build attestations (SLSA / SBOM), <code>image.created</code> timestamp.</p>
   </a>
+  <a class="pg-doc-card" href="scm/">
+    <h3>SCM (GitHub) posture</h3>
+    <p>Hits the GitHub REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits. Closes the gap with Legitify and OpenSSF Scorecard.</p>
+  </a>
 </div>
 
 ## Adding a new provider
