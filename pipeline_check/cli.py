@@ -1038,6 +1038,41 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--scm-platform",
+    "scm_platform",
+    default=None,
+    metavar="PLATFORM",
+    help=(
+        "SCM platform for the posture scanner (required when "
+        "--pipeline scm). Only ``github`` is supported in this "
+        "release; GitLab and Bitbucket are roadmap items."
+    ),
+)
+@click.option(
+    "--scm-repo",
+    "scm_repo",
+    default=None,
+    metavar="OWNER/NAME",
+    help=(
+        "Repository to scan (required when --pipeline scm), e.g. "
+        "``--scm-repo octocat/hello-world``. Token comes from "
+        "``--gh-token`` or ``$GITHUB_TOKEN``; without one only "
+        "public-repo endpoints succeed (rate-limited to 60 req/hr)."
+    ),
+)
+@click.option(
+    "--scm-fixture-dir",
+    "scm_fixture_dir",
+    default=None,
+    metavar="DIR",
+    help=(
+        "Read SCM API responses from JSON files under DIR instead of "
+        "hitting the network. Each endpoint maps to "
+        "``<endpoint-with-slashes-as-underscores>.json``. Useful for "
+        "offline tests and CI runs that don't hold an API token."
+    ),
+)
+@click.option(
     "--inventory",
     "inventory_flag",
     is_flag=True,
@@ -1527,6 +1562,9 @@ def scan(
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
     drone_path: str | None,
+    scm_platform: str | None,
+    scm_repo: str | None,
+    scm_fixture_dir: str | None,
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -2107,6 +2145,9 @@ def scan(
         helm_set=list(helm_set) or None,
         oci_manifest=oci_manifest,
         drone_path=drone_path,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
     )
 
     scanner: Scanner | MultiScanner

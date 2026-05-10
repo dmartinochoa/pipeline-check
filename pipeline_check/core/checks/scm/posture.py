@@ -1,31 +1,32 @@
-"""Cloud Build pipeline orchestrator.
+"""SCM posture orchestrator.
 
-Each GCB-* rule lives in its own module under ``rules/``. This
+Each ``SCM-*`` rule lives in its own module under ``rules/``. This
 orchestrator auto-discovers them and runs each against every loaded
-Cloud Build document.
+repo snapshot. Mirrors :class:`OCIManifestChecks` and the rest of
+the rule-based provider orchestrators.
 """
 from __future__ import annotations
 
 from ..base import Finding
 from ..rule import discover_rules
-from .base import CloudBuildBaseCheck, CloudBuildContext
+from .base import SCMBaseCheck, SCMContext
 
 
-class CloudBuildPipelineChecks(CloudBuildBaseCheck):
+class SCMPostureChecks(SCMBaseCheck):
 
     def __init__(
-        self, ctx: CloudBuildContext, target: str | None = None,
+        self, ctx: SCMContext, target: str | None = None,
     ) -> None:
         super().__init__(ctx, target)
         self._rules = discover_rules(
-            "pipeline_check.core.checks.cloudbuild.rules"
+            "pipeline_check.core.checks.scm.rules"
         )
 
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
-        for p in self.ctx.pipelines:
+        for snapshot in self.ctx.repos:
             for rule, check_fn in self._rules:
-                finding = check_fn(p.path, p.data)
+                finding = check_fn(snapshot)
                 finding.cwe = list(rule.cwe)
                 if not finding.incident_refs:
                     finding.incident_refs = list(rule.incident_refs)

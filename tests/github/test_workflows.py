@@ -58,6 +58,30 @@ class TestGHA001PinnedActions:
         assert f.incident_refs, "GHA-001 should carry populated incident_refs"
         assert any("tj-actions" in ref for ref in f.incident_refs)
 
+    def test_finding_carries_exploit_example_from_rule(self):
+        """Same backfill machinery that copies ``incident_refs`` also
+        copies ``exploit_example`` from the rule into the finding so
+        the JSON / HTML / SARIF reporters can render the proof-of-
+        exploit snippet without re-resolving the rule."""
+        f = _run(
+            """
+            on: push
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+            """,
+            "GHA-001",
+        )
+        assert f.exploit_example is not None, (
+            "GHA-001 should carry a populated exploit_example"
+        )
+        # Snippet shows both the vulnerable tag-pinned ref and the safe
+        # SHA-pinned ref so a reviewer can see the diff.
+        assert "tj-actions/changed-files@v45" in f.exploit_example
+        assert "tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93" in f.exploit_example
+
     def test_sha_ref_passes(self):
         sha = "a" * 40
         f = _run(

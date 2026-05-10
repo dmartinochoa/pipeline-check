@@ -93,8 +93,14 @@ class GitHubProvider(BaseProvider):
 
     @staticmethod
     def _warn_unresolved(context: GitHubContext) -> None:
-        """Surface a one-line stderr nudge if remote refs are skipped."""
-        skipped = 0
+        """Surface a one-line stderr nudge if remote refs are skipped.
+
+        Counts both reusable workflow callees (``jobs.<id>.uses:``) and
+        composite-action callees (``steps[].uses:``) so the nudge
+        accurately reflects what ``--resolve-remote`` would unlock.
+        """
+        skipped_workflows = 0
+        skipped_actions = 0
         for wf in context.workflows:
             jobs = wf.data.get("jobs")
             if not isinstance(jobs, dict):
@@ -104,11 +110,27 @@ class GitHubProvider(BaseProvider):
                     continue
                 ref = parse_uses(job.get("uses"))
                 if ref is not None and ref.kind == "remote-workflow":
-                    skipped += 1
-        if skipped:
+                    skipped_workflows += 1
+                steps = job.get("steps")
+                if not isinstance(steps, list):
+                    continue
+                for step in steps:
+                    if not isinstance(step, dict):
+                        continue
+                    step_ref = parse_uses(step.get("uses"))
+                    if step_ref is not None and step_ref.kind == "remote-action":
+                        skipped_actions += 1
+        if skipped_workflows or skipped_actions:
+            parts: list[str] = []
+            if skipped_workflows:
+                parts.append(
+                    f"{skipped_workflows} reusable workflow(s)"
+                )
+            if skipped_actions:
+                parts.append(f"{skipped_actions} action ref(s)")
             context.warnings.append(
-                f"[gha] {skipped} reusable workflow(s) reference remote "
-                f"refs; rerun with --resolve-remote to scan them."
+                f"[gha] {' and '.join(parts)} reference remote refs; "
+                f"rerun with --resolve-remote to scan their bodies."
             )
 
     def inventory(self, context: GitHubContext) -> list[Component]:

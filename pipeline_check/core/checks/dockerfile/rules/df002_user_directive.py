@@ -37,6 +37,37 @@ RULE = Rule(
         "exploit class entirely. "
         "https://www.cve.org/CVERecord?id=CVE-2022-0492",
     ),
+    exploit_example=(
+        "# Vulnerable: image runs as root by default (no USER set).\n"
+        "FROM ubuntu:22.04\n"
+        "RUN apt-get update && apt-get install -y python3\n"
+        "COPY app.py /app/\n"
+        "CMD [\"python3\", \"/app/app.py\"]\n"
+        "\n"
+        "# Attack: when the container is breached (RCE in the app, a\n"
+        "# kernel CVE, a misconfigured mount), the attacker runs as\n"
+        "# UID 0. From there:\n"
+        "#\n"
+        "#   # CVE-2019-5736 path: overwrite /proc/self/exe to corrupt\n"
+        "#   # the host's runC binary — every container on the node\n"
+        "#   # the next launch gets executes attacker code on the host:\n"
+        "#   echo '#!/bin/sh\\n/attacker_payload' > /proc/self/exe\n"
+        "#\n"
+        "#   # CVE-2022-0492 path: cgroup release_agent escape:\n"
+        "#   mkdir /tmp/cg && mount -t cgroup -o memory cgroup /tmp/cg\n"
+        "#   echo '/payload' > /tmp/cg/release_agent\n"
+        "#   echo 1 > /tmp/cg/notify_on_release\n"
+        "#\n"
+        "# A non-root UID makes both paths fail at the first syscall.\n"
+        "\n"
+        "# Safe: drop to a dedicated unprivileged user.\n"
+        "FROM ubuntu:22.04\n"
+        "RUN apt-get update && apt-get install -y python3 \\\n"
+        "  && useradd --uid 1001 --create-home app\n"
+        "COPY --chown=app:app app.py /app/\n"
+        "USER 1001\n"
+        "CMD [\"python3\", \"/app/app.py\"]"
+    ),
 )
 
 

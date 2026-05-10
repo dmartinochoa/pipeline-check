@@ -14,6 +14,138 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM posture provider (`--pipeline scm`).** New provider that
+  scans GitHub repository governance via the REST API: branch
+  protection, required pull-request reviews, default code scanning,
+  and (in subsequent waves) secret scanning, Dependabot status,
+  CODEOWNERS coverage, runner-group restrictions, OIDC trust
+  policies. Token comes from ``--gh-token`` or ``$GITHUB_TOKEN``;
+  zero telemetry. ``--scm-fixture-dir DIR`` reads JSON responses
+  from disk for offline / CI test runs that don't hold a token.
+  First wave ships three rules: ``SCM-001`` (default branch has no
+  protection rule), ``SCM-002`` (protection rule but no required
+  reviews), ``SCM-003`` (default code scanning not enabled). Each
+  rule is anchored to OWASP CICD-SEC top-10 controls, carries
+  ``incident_refs`` for the SCM-related package compromise pattern,
+  and ``SCM-001`` ships with an ``exploit_example`` showing the
+  unprotected-default-branch attack sequence. Closes the largest
+  competitive gap with Legitify and OpenSSF Scorecard, neither of
+  which scans pipeline-config files. Provider catalog: 18 -> 19.
+
+- **Composite-action body resolution in ``--resolve-remote``.** The
+  GHA resolver now walks ``steps[].uses:`` references in addition to
+  the existing ``jobs.<id>.uses:`` walk. SHA-pinned remote action
+  refs (``owner/repo@<sha>`` or ``owner/repo/subdir@<sha>``) trigger
+  a fetch of ``action.yml`` (with ``action.yaml`` fallback) at the
+  pinned commit. When the parsed body declares ``runs.using:
+  composite``, its ``runs.steps`` are synthesized into a one-job
+  ``Workflow`` (the fake job is named ``__composite__`` with a
+  synthetic ``runs-on``). The synthesized workflow flows through the
+  existing rule pack, so issues hidden inside a third-party
+  composite — unpinned ``actions/checkout``, curl-pipe install
+  scripts, literal AWS keys — light up exactly as if the caller
+  wrote them inline. JavaScript (``node20``, ``node16``) and Docker
+  actions are fetched and parsed but not synthesized (their
+  executable surface is bytecode / OCI, outside the YAML rule
+  pack); the count surfaces in the per-scan warnings stream as
+  ``[gha-resolver] skipped N non-composite action(s)``. Composite-
+  of-composite recursion falls out of the wave queue automatically:
+  a synthesized composite's ``steps[]`` flow back through
+  ``_collect_remote_uses`` on the next wave, bounded by the same
+  ``--gha-resolve-depth``. The resolver dedup key now incorporates
+  fetch kind so a workflow ``foo.yml@SHA`` and an action subpath
+  ``foo`` at the same SHA don't collide. Closes the largest
+  parity gap with Zizmor / Poutine for GitHub Actions analysis.
+
+- **Proof-of-exploit snippets on rules (``Rule.exploit_example``).**
+  New optional ``exploit_example: str | None`` field on the rule
+  dataclass carries the minimal payload, manifest fragment, or
+  attack sequence that demonstrably triggers the failure mode the
+  rule detects. Surfaced by ``pipeline_check --explain`` under a new
+  ``[Proof of exploit]`` section (multi-line code blocks render
+  verbatim) and by the HTML report drawer in a monospace
+  pre-formatted block. The orchestrator backfills
+  ``Finding.exploit_example`` from the rule the same way it already
+  backfills ``incident_refs`` and ``cwe`` (every YAML / Dockerfile /
+  K8s / OCI / Helm / AWS / custom-rule provider). Initial population
+  covers the same five marquee rules already carrying
+  ``incident_refs``: ``GHA-001`` (tag-pinned action force-move),
+  ``GHA-008`` (literal AWS key + post-leak rotation cost),
+  ``GHA-016`` (curl-pipe payload swap), ``K8S-013`` (hostPath /
+  read of kubelet credentials), ``DF-002`` (root-container path to
+  CVE-2019-5736 and CVE-2022-0492). Distinguishes the catalog from
+  generic recommendation prose by giving every reviewer the
+  concrete attack instead of asking them to infer it.
+
+- **Attestation content checks (``ATTEST-NNN`` family, phase 1 +
+  ``ATTEST-001``).** The OCI provider now reads in-toto Statement
+  content from attestation manifests when the input is an OCI
+  image-layout directory (the ``blobs/<algo>/<digest>``
+  filesystem layout the spec defines). For each attestation
+  manifest entry, the resolver follows the layer digests into the
+  ``blobs/`` tree, parses each ``application/vnd.in-toto+json``
+  payload as an in-toto Statement, optionally unwraps a DSSE
+  envelope (cosign-attested case), and surfaces the parsed result
+  on ``OCIManifest.attestations``. Both v0.1 and v1 Statement
+  shapes are recognized; predicate types (SLSA provenance v0.2 /
+  v1, SPDX, CycloneDX) are kept verbatim so the rule layer can
+  dispatch.
+
+  ``ATTEST-001`` checks the SLSA provenance ``builder.id`` claim
+  against an allowlist of recognized hosted-CI builders
+  (slsa-github-generator, GitHub-hosted runners, Buildkite,
+  Cloud Build, GitLab SaaS, CircleCI, Buildx). Fires when the
+  builder is self-hosted (``/self-hosted``, ``localhost``,
+  ``127.0.0.1`` markers) or unknown, because a tampered
+  self-hosted runner can emit a syntactically-valid attestation
+  for the wrong source. Reads ``predicate.builder.id`` (SLSA
+  v0.2) or ``predicate.runDetails.builder.id`` (SLSA v1) so both
+  spec versions resolve.
+
+  Distinct from OCI-002 (presence): OCI-002 fires when no
+  attestation manifest is attached at all; ATTEST-001 fires when
+  the attestation IS present but names an untrusted builder.
+  Operators landing on a passing OCI-002 + failing ATTEST-001
+  see "the bytes are attested but by a builder I shouldn't
+  trust", which is meaningfully different from "no attestation
+  at all". The roadmap calls this out as the strongest
+  differentiator from peers, no OSS scanner does pipeline-side
+  attestation content analysis today; they verify *something*
+  was attested, not *what* was attested.
+
+  ``ATTEST-002`` (source-repo claim consistency, *landed*) reads
+  the source URI + digest from the predicate. v0.2:
+  ``predicate.invocation.configSource``. v1.0:
+  ``buildDefinition.externalParameters`` (canonical GHA path
+  ``.workflow.repository``; alternative ``.source.uri``; fallback
+  walks every string for a VCS URI shape) +
+  ``resolvedDependencies[*].digest``. Fires when the URI is
+  missing, a placeholder (``unknown``, ``n/a``, ``tbd``, etc.),
+  malformed (no scheme), or when the digest is missing or
+  all-zeros (the bytes aren't pinned). Anchored to SolarWinds
+  2020: the build system pulled tampered source from an
+  unauthorized branch via SUNSPOT, producing 'authentic' signed
+  builds for code the team never wrote. A pinned, verified
+  source-repo claim is the SLSA L2+ control specifically meant
+  to detect that shape.
+
+  ``ATTEST-003`` (SBOM floating-version detection, *landed*)
+  walks every SBOM attestation (predicate types under
+  ``https://spdx.dev/Document`` or ``https://cyclonedx.org/bom``)
+  and classifies each declared package's version as pinned or
+  floating. Floating shapes: empty / missing / ``latest`` / ``*``
+  / branch names (``main``, ``master``, ``head``, ``stable``,
+  ``edge``, ``rolling``) / bare-major (``v1``, ``42``).
+  Pinned shapes: semver, calver, hex digests (32+ chars), and
+  any string with at least one numeric component for best-effort
+  release tags. A signed SBOM declaring ``openssl@latest`` is
+  worse than no SBOM, vulnerability-scanning tooling produces
+  false negatives because the version it queries CVE databases
+  for is unstable. Anchored to Log4Shell (CVE-2021-44228):
+  organizations with pinned SBOMs shipped patches in hours;
+  those without spent days auditing builds to discover what
+  they actually shipped.
+
 - **Per-repo false-positive annotation store (``--annotate-fp``).**
   ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` records a
   confirmed false positive into a local ``.pipeline-check-fp.json``

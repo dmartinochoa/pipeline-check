@@ -38,6 +38,22 @@ RULE = Rule(
         "auto-pulled the malicious version; SHA-pinned consumers "
         "were unaffected. https://www.cve.org/CVERecord?id=CVE-2025-30154",
     ),
+    exploit_example=(
+        "# Tag-pinned reference (vulnerable):\n"
+        "- uses: tj-actions/changed-files@v45\n"
+        "\n"
+        "# Attack: the upstream maintainer (or anyone who compromises\n"
+        "# the upstream repo) force-moves the v45 tag to a malicious\n"
+        "# commit:\n"
+        "#   git tag -f v45 <attacker-controlled-sha>\n"
+        "#   git push --force origin v45\n"
+        "# Every consumer's next workflow run pulls the new code\n"
+        "# automatically, executing the attacker's payload with the\n"
+        "# job's secrets and GITHUB_TOKEN in scope.\n"
+        "\n"
+        "# Safe: pin to a 40-char commit SHA (immutable):\n"
+        "- uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0"
+    ),
 )
 
 

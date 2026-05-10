@@ -80,6 +80,16 @@ class Rule:
     #: rules whose risk is hypothetical or who have no public
     #: incident on record.
     incident_refs: tuple[str, ...] = ()
+    #: Concrete proof-of-exploit snippet for HIGH / CRITICAL rules:
+    #: the minimal payload, manifest fragment, or attack sequence
+    #: that demonstrably triggers the failure mode the rule detects.
+    #: Surfaced in ``pipeline_check --explain`` and the HTML report
+    #: under a "Proof of exploit" section so reviewers see the
+    #: concrete attack instead of inferring it from prose. Multi-line
+    #: code blocks are rendered verbatim. Empty for rules where the
+    #: bad pattern is itself the exploit (e.g. a hardcoded credential
+    #: literal) or where no public exploitation primitive exists.
+    exploit_example: str | None = None
 
 
 _RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}

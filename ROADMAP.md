@@ -148,6 +148,107 @@ of v0.2.x to v0.3.x left behind.
 Not committed yet. Scoping is open. Listed in rough impact order
 (top first).
 
+### Competitive-gap pulls (May 2026 review)
+
+Items added after a peer-tool review (Zizmor, Poutine, Raven,
+Legitify, OpenSSF Scorecard, Trivy, Checkov, KICS). They close the
+loudest competitive gaps without compromising the no-telemetry,
+no-SaaS posture.
+
+#### Tier 1 — close the gaps peers exploit
+
+- **SCM posture provider (`--pipeline scm --scm-platform github
+  --scm-repo owner/name`).** *Phase 1 landed on dev.* New provider
+  that hits the GitHub REST API and scores governance settings
+  the workflow rule pack can't see. First wave: ``SCM-001``
+  (default branch has no protection rule), ``SCM-002`` (protection
+  rule but zero required approving reviews), ``SCM-003`` (default
+  code scanning not enabled). Token comes from ``--gh-token`` or
+  ``$GITHUB_TOKEN``; ``--scm-fixture-dir DIR`` reads JSON
+  responses from disk for offline / CI test runs that don't hold
+  a token. Closes the largest gap vs Legitify and OpenSSF
+  Scorecard, neither of which scans pipeline configs themselves.
+  Subsequent waves: secret scanning, Dependabot, CODEOWNERS
+  coverage, runner-group restrictions, OIDC trust-policy hygiene,
+  GitLab + Bitbucket platform parity.
+- **Vulnerable-by-design benchmark (`pipeline-check-bench`).**
+  *Pulled forward from v0.6.0 vision.* Companion repo of intentionally
+  vulnerable CI/CD configs, one folder per CVE / risk class, scored
+  by pipeline-check, Zizmor, Poutine, Checkov, KICS, Trivy on every
+  release. Confusion matrix published as a static page so adopters
+  can verify the wedge claim before installing. Single highest-leverage
+  credibility move available to a low-popularity OSS scanner.
+- **Composite-action body resolution.** *Landed on dev.*
+  ``--resolve-remote`` now follows ``steps[].uses:`` references
+  into composite action repositories, parses ``action.yml`` (with
+  ``action.yaml`` fallback) at the SHA-pinned commit, and synthesizes
+  a fake one-job workflow (named ``__composite__``) from
+  ``runs.steps`` when ``runs.using == composite``. The existing GHA
+  rule pack iterates the synthesized workflow exactly the same way
+  it iterates an on-disk one, so issues hidden inside a third-party
+  composite (unpinned actions, curl-pipe scripts, literal AWS keys)
+  light up with attribution ``<caller> ->
+  composite:<owner>/<repo>@<sha>``. JavaScript / Docker actions
+  fetch but don't synthesize (their executable surface is
+  bytecode / OCI, outside the YAML rule pack); the count surfaces
+  through the per-scan warnings stream. Composite-of-composite
+  recursion rides the existing wave queue and depth cap; the dedup
+  key incorporates fetch kind so workflow / action refs at the
+  same SHA don't collide. Closes the largest Zizmor / Poutine
+  parity gap for GitHub Actions analysis.
+- **Action marketplace reputation rule pack (GHA-04x).** New rules
+  flagging single-maintainer actions, very-young repositories,
+  actions referenced after a published compromise advisory, and
+  low-star + sensitive-permission actions. Backs up `incident_refs`
+  with proactive signals rather than only post-incident anchors.
+  Mirrors Poutine's `unverified` signal family. Optional
+  `--action-reputation-cache` so the lookup is offline-friendly.
+
+#### Tier 2 — differentiation no OSS peer is doing
+
+- **Multi-scanner SARIF ingest + correlation
+  (`--ingest <file>.sarif`).** Repeatable flag that accepts SARIF
+  output from Trivy / Checkov / Snyk / KICS and runs the chain and
+  XPC engines over the union of pipeline-check's findings plus the
+  ingested ones. Composite findings like
+  "Checkov: container runs as root + DF-001 floating tag +
+  ATTEST-002 missing source repo claim" become a single chain
+  emission. Turns pipeline-check into a correlation tier even where
+  another tool owns primary detection. Nobody in the OSS space does
+  this end-to-end today.
+- **Proof-of-exploit snippets on `--explain` for HIGH / CRITICAL.**
+  New `exploit_example: str | None` field on `RULE`, rendered by
+  `--explain`, the HTML drawer, and the auto-generated provider
+  reference doc. For GHA-001 the snippet shows the minimal issue
+  title that triggers RCE; for TAINT-006 the param + result chain;
+  for K8S-013 the hostPath manifest that escapes. Standardizes
+  what the gha-security-review skill calls "concrete exploitation
+  scenario" as a first-class output, distinguishing the catalog
+  from generic recommendation prose. Initial population covers the
+  same five marquee rules already carrying `incident_refs`.
+- **Self-hosted findings-history dashboard
+  (`pipeline-check dashboard`).** Tiny FastAPI + static-HTML app
+  that reads a local `.pipeline-check-history/` directory of past
+  scan JSON outputs and renders trend graphs, per-rule burn-down,
+  and resource-level heatmap progression. Stays no-SaaS / no-
+  telemetry but gives teams the visibility they currently leave the
+  scanner to get from a SaaS competitor. No DB; just a directory of
+  timestamped JSON files the user already produces from CI.
+
+#### Tier 3 — adoption multipliers (elevated from lower-priority)
+
+- **VS Code extension / LSP.** *Promoted from v0.6.0+ to v0.5.0
+  candidate.* Thin LSP wrapping the existing `--explain` output and
+  per-rule findings. The ruff lesson is that an editor surface
+  drives more adoption than any new rule pack. A few weeks of work
+  to ship the MVP.
+- **Live Azure + GCP posture (parity with the 71-rule AWS pack).**
+  `--cloud azure --subscription ...` and `--cloud gcp --project ...`
+  using the official SDKs. AWS-only live cloud scanning is a
+  glaring multi-cloud asymmetry; closing it removes one of the most
+  obvious "but does it cover us?" objections. Phased: ship 10 to 15
+  core rules per cloud first, expand.
+
 - **Helm chart provider.** *Landed on dev.* `--pipeline helm
   --helm-path <chart>` shells out to `helm template` (Helm 3) and
   runs the existing 30 K8S-* rules on the rendered manifests.
@@ -588,20 +689,35 @@ the no-telemetry / no-SaaS posture.
 layer parses the manifest content: SLSA provenance JSON,
 in-toto envelopes, SPDX / CycloneDX SBOMs.
 
-- Builder identity verification. Does the `builder.id` claim
-  resolve to a trusted endpoint (`https://github.com/actions/
-  runner` etc.) or an unknown one?
-- Source-repo claim consistency. Does `materials[].uri` match
-  the repository the operator believes built the image, or has
-  drift snuck in?
-- SBOM integrity. Are declared dependencies digest-pinned, or
-  are floating versions sitting inside a signed envelope that
-  makes the rot look authoritative?
+**Phase 1 *landed on dev*.** OCI image-layout directories
+(``blobs/<algo>/<digest>`` filesystem) get full attestation
+content parsing. Each attestation manifest's in-toto layer
+blob is read, optionally DSSE-unwrapped, projected onto a
+typed ``Attestation`` dataclass, and surfaced on
+``OCIManifest.attestations``. Both Statement v0.1 and v1
+shapes are recognized; predicate types are kept verbatim.
 
-New rule family `ATTEST-NNN`. First three rules:
-`ATTEST-001` (untrusted builder identity), `ATTEST-002`
-(source-repo mismatch), `ATTEST-003` (SBOM contains
-floating-version dependencies).
+- ``ATTEST-001`` (*landed*) — Builder identity verification.
+  Reads the SLSA provenance ``builder.id`` claim (v0.2 at
+  ``predicate.builder.id``, v1 at
+  ``predicate.runDetails.builder.id``) and matches against an
+  allowlist of recognized hosted-CI builders. Fires on
+  self-hosted (``/self-hosted``, ``localhost``,
+  ``127.0.0.1``) or unknown builder URIs; a tampered
+  self-hosted runner can emit a syntactically-valid
+  attestation for the wrong source, so passing OCI-002 isn't
+  the same thing as a trustworthy attestation.
+- ``ATTEST-002`` (*landed*) — Source-repo claim consistency.
+  Reads ``predicate.invocation.configSource`` (v0.2) or the
+  v1 ``buildDefinition.externalParameters`` /
+  ``resolvedDependencies`` shape and fires when the URI is
+  missing, a placeholder, malformed, or when the digest is
+  missing / zero. Anchored to SolarWinds 2020.
+- ``ATTEST-003`` (*landed*) — SBOM integrity. Walks SPDX /
+  CycloneDX SBOM attestations and fires on floating-version
+  components (``latest``, ``*``, branch names, bare majors,
+  empty). Anchored to Log4Shell, where SBOM completeness
+  bought hours-vs-days response time.
 
 No OSS scanner does pipeline-side attestation content analysis
 today; they verify *something* was attested, not *what* was
@@ -624,19 +740,7 @@ co-occurrence is a weaker claim than reachability.
 
 ### Vulnerable-by-design benchmark suite
 
-A companion `pipeline-check-bench` repo holding intentionally-
-vulnerable pipeline configs, one folder per CVE / risk class.
-Every release runs a comparison harness (pipeline-check vs.
-Checkov, Trivy, Zizmor, Poutine, KICS) and publishes a
-confusion matrix per scanner. Reproducible, public,
-citation-safe.
-
-The "this scanner finds more than its peers" claim becomes a
-``make bench`` away rather than a marketing sentence. Likely
-the single biggest credibility move available to a low-
-popularity OSS scanner: adopters can verify the wedge claim
-themselves before installing, and the matrix gives reviewers
-something concrete to cite.
+*Pulled forward to v0.5.0 — see "Competitive-gap pulls" above.*
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 

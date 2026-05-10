@@ -248,6 +248,175 @@ class TestSecretsInherit:
         assert "MY_SECRET" in callee.inherited_secret_names
 
 
+# ── Composite-action resolution ──────────────────────────────────────
+
+
+# A composite action body, as it would live at action.yml in a third-party repo.
+COMPOSITE_ACTION_BODY = """
+name: My Composite
+description: Demonstrates composite-action resolution.
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v3
+    - run: curl -sL https://example.com/install.sh | bash
+      shell: bash
+    - run: echo "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE" >> $GITHUB_ENV
+      shell: bash
+"""
+
+JS_ACTION_BODY = """
+name: JS Action
+runs:
+  using: node20
+  main: dist/index.js
+"""
+
+DOCKER_ACTION_BODY = """
+name: Docker Action
+runs:
+  using: docker
+  image: Dockerfile
+"""
+
+CALLER_WITH_COMPOSITE_USE = f"""
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@{_SHA}
+      - uses: thirdparty/composite@{_SHA}
+"""
+
+
+class TestResolverCompositeAction:
+    def test_fetches_composite_action_yml_and_synthesizes_workflow(self):
+        ctx = _ctx([_wf(".github/workflows/main.yml", CALLER_WITH_COMPOSITE_USE)])
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yml"):
+                COMPOSITE_ACTION_BODY.encode("utf-8"),
+        })
+        Resolver(fetcher=fetcher).resolve(ctx)
+        # Composite body appended as a synthesized workflow.
+        assert len(ctx.workflows) == 2
+        composite = ctx.workflows[1]
+        assert composite.source_ref == f"composite:thirdparty/composite@{_SHA}"
+        assert composite.caller_path == ".github/workflows/main.yml"
+        # Synthetic single-job structure with the composite's steps.
+        jobs = composite.data["jobs"]
+        assert "__composite__" in jobs
+        assert len(jobs["__composite__"]["steps"]) == 3
+
+    def test_falls_back_to_action_yaml_when_action_yml_missing(self):
+        ctx = _ctx([_wf("main.yml", CALLER_WITH_COMPOSITE_USE)])
+        # Only the .yaml variant exists.
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yaml"):
+                COMPOSITE_ACTION_BODY.encode("utf-8"),
+        })
+        Resolver(fetcher=fetcher).resolve(ctx)
+        assert len(ctx.workflows) == 2
+
+    def test_subpath_action_uses_subdir_action_yml(self):
+        # uses: actions/setup-node/lib@<sha> -> fetch lib/action.yml
+        body = f"""
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/setup-node/lib@{_SHA}
+        """
+        ctx = _ctx([_wf("main.yml", body)])
+        fetcher = FakeFetcher({
+            ("actions", "setup-node", _SHA, "lib/action.yml"):
+                COMPOSITE_ACTION_BODY.encode("utf-8"),
+        })
+        Resolver(fetcher=fetcher).resolve(ctx)
+        # Confirm we asked for lib/action.yml first.
+        assert ("actions", "setup-node", _SHA, "lib/action.yml") in fetcher.calls
+
+    def test_javascript_action_fetched_but_not_synthesized(self):
+        ctx = _ctx([_wf("main.yml", CALLER_WITH_COMPOSITE_USE)])
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yml"):
+                JS_ACTION_BODY.encode("utf-8"),
+        })
+        r = Resolver(fetcher=fetcher)
+        r.resolve(ctx)
+        # Fetched and parsed but not synthesized — a JS action's
+        # bytecode isn't analyzable from its action.yml.
+        assert len(ctx.workflows) == 1
+        assert r.stats.non_composite_actions_skipped == 1
+        assert r.stats.composite_actions_resolved == 0
+
+    def test_docker_action_fetched_but_not_synthesized(self):
+        ctx = _ctx([_wf("main.yml", CALLER_WITH_COMPOSITE_USE)])
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yml"):
+                DOCKER_ACTION_BODY.encode("utf-8"),
+        })
+        r = Resolver(fetcher=fetcher)
+        r.resolve(ctx)
+        assert len(ctx.workflows) == 1
+        assert r.stats.non_composite_actions_skipped == 1
+
+    def test_unpinned_action_ref_skipped_with_warning(self):
+        body = """
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: thirdparty/composite@v1
+        """
+        ctx = _ctx([_wf("main.yml", body)])
+        fetcher = FakeFetcher({})
+        Resolver(fetcher=fetcher).resolve(ctx)
+        # Unpinned: no fetch, warning surfaces same skipped-unpinned message.
+        assert fetcher.calls == []
+        assert any("unpinned" in w for w in ctx.warnings)
+
+    def test_composite_steps_run_through_existing_rule_pack(self):
+        """The synthesized composite workflow should be visible to the
+        existing rule pack so issues hidden inside a third-party
+        composite show up exactly as if the caller wrote them inline."""
+        from pipeline_check.core.checks.github.workflows import WorkflowChecks
+
+        ctx = _ctx([_wf(".github/workflows/main.yml", CALLER_WITH_COMPOSITE_USE)])
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yml"):
+                COMPOSITE_ACTION_BODY.encode("utf-8"),
+        })
+        Resolver(fetcher=fetcher).resolve(ctx)
+        findings = WorkflowChecks(ctx).run()
+        # GHA-001 fires on the composite body's unpinned ``actions/checkout@v3``.
+        gha001 = [f for f in findings if f.check_id == "GHA-001" and not f.passed]
+        assert any(
+            "composite:thirdparty/composite" in f.resource for f in gha001
+        ), "GHA-001 should fire on the composite's unpinned actions/checkout@v3"
+        # GHA-016 (curl-pipe) fires on the composite's run step.
+        gha016 = [f for f in findings if f.check_id == "GHA-016" and not f.passed]
+        assert any(
+            "composite:thirdparty/composite" in f.resource for f in gha016
+        ), "GHA-016 should fire on the composite's curl-pipe payload"
+
+    def test_resolver_stats_count_composite_resolutions(self):
+        ctx = _ctx([_wf("main.yml", CALLER_WITH_COMPOSITE_USE)])
+        fetcher = FakeFetcher({
+            ("thirdparty", "composite", _SHA, "action.yml"):
+                COMPOSITE_ACTION_BODY.encode("utf-8"),
+        })
+        r = Resolver(fetcher=fetcher)
+        r.resolve(ctx)
+        assert r.stats.composite_actions_resolved == 1
+        # The summary line shows up in ctx.warnings.
+        assert any(
+            "composite action" in w for w in ctx.warnings
+        )
+
+
 # ── Cache ────────────────────────────────────────────────────────────
 
 
