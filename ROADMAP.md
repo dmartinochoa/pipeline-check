@@ -588,20 +588,33 @@ the no-telemetry / no-SaaS posture.
 layer parses the manifest content: SLSA provenance JSON,
 in-toto envelopes, SPDX / CycloneDX SBOMs.
 
-- Builder identity verification. Does the `builder.id` claim
-  resolve to a trusted endpoint (`https://github.com/actions/
-  runner` etc.) or an unknown one?
-- Source-repo claim consistency. Does `materials[].uri` match
-  the repository the operator believes built the image, or has
-  drift snuck in?
-- SBOM integrity. Are declared dependencies digest-pinned, or
-  are floating versions sitting inside a signed envelope that
-  makes the rot look authoritative?
+**Phase 1 *landed on dev*.** OCI image-layout directories
+(``blobs/<algo>/<digest>`` filesystem) get full attestation
+content parsing. Each attestation manifest's in-toto layer
+blob is read, optionally DSSE-unwrapped, projected onto a
+typed ``Attestation`` dataclass, and surfaced on
+``OCIManifest.attestations``. Both Statement v0.1 and v1
+shapes are recognized; predicate types are kept verbatim.
 
-New rule family `ATTEST-NNN`. First three rules:
-`ATTEST-001` (untrusted builder identity), `ATTEST-002`
-(source-repo mismatch), `ATTEST-003` (SBOM contains
-floating-version dependencies).
+- ``ATTEST-001`` (*landed*) — Builder identity verification.
+  Reads the SLSA provenance ``builder.id`` claim (v0.2 at
+  ``predicate.builder.id``, v1 at
+  ``predicate.runDetails.builder.id``) and matches against an
+  allowlist of recognized hosted-CI builders. Fires on
+  self-hosted (``/self-hosted``, ``localhost``,
+  ``127.0.0.1``) or unknown builder URIs; a tampered
+  self-hosted runner can emit a syntactically-valid
+  attestation for the wrong source, so passing OCI-002 isn't
+  the same thing as a trustworthy attestation.
+- ``ATTEST-002`` *deferred to phase 2* — Source-repo claim
+  consistency. Does `invocation.configSource.uri` (SLSA v0.2)
+  / ``buildDefinition.externalParameters`` (v1) match the
+  repository the operator believes built the image, or has
+  drift snuck in?
+- ``ATTEST-003`` *deferred to phase 2* — SBOM integrity. Are
+  declared dependencies digest-pinned, or are floating
+  versions sitting inside a signed envelope that makes the
+  rot look authoritative?
 
 No OSS scanner does pipeline-side attestation content analysis
 today; they verify *something* was attested, not *what* was

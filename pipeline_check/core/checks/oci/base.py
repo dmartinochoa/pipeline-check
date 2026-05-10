@@ -13,9 +13,19 @@ digests against the registry, and it does NOT execute any
 the manifest *shape* so per-rule logic (provenance annotations,
 attestation-manifest entries, image-creation timestamp) doesn't
 reimplement JSON loading, encoding, or media-type classification.
+
+Attestation content (SLSA provenance, SBOMs) is parsed when the
+input is an OCI image-layout directory (``blobs/<algo>/<digest>``
+filesystem layout per the OCI image-layout spec). The
+attestation-manifest sub-entries' layer blobs are read, parsed as
+in-toto Statements, and surfaced on
+:attr:`OCIManifest.attestations`. Single ``index.json`` inputs
+without sibling blobs see attestation-manifest *entries* but no
+parsed *content*; the ``ATTEST-NNN`` rules degrade gracefully.
 """
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -47,6 +57,23 @@ _MANIFEST_MEDIA_TYPES: frozenset[str] = frozenset({
 _ATTESTATION_REF_TYPE_KEY = "vnd.docker.reference.type"
 _ATTESTATION_REF_TYPE_VALUE = "attestation-manifest"
 
+# Layer mediaType BuildKit emits for in-toto Statement payloads. The
+# blob content is the bare Statement JSON, not a DSSE envelope.
+_INTOTO_LAYER_MEDIA_TYPE = "application/vnd.in-toto+json"
+
+# Minimal predicate-type prefixes the parser recognizes. The rule
+# layer interprets the full predicate type; the parser just keeps
+# whatever string the Statement carries. Listed here for reference:
+#
+#   https://slsa.dev/provenance/v0.2          (SLSA Build L2)
+#   https://slsa.dev/provenance/v1            (SLSA L3+)
+#   https://spdx.dev/Document                 (SPDX SBOM)
+#   https://cyclonedx.org/bom                 (CycloneDX SBOM)
+#
+# Layer ``annotations.in-toto.io/predicate-type`` is the BuildKit-side
+# hint; the Statement's ``predicateType`` field is the canonical
+# source. The two should agree; rules read the Statement field.
+
 
 @dataclass(frozen=True, slots=True)
 class IndexEntry:
@@ -73,6 +100,53 @@ class IndexEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class Attestation:
+    """A parsed in-toto Statement extracted from an attestation
+    manifest's layer blob.
+
+    BuildKit / SLSA-github-generator emit the Statement as a bare
+    JSON document under media type ``application/vnd.in-toto+json``;
+    the parser also accepts DSSE-wrapped Statements and unwraps the
+    base64 ``payload`` field automatically.
+
+    ``predicate_type`` is the canonical URI from the Statement's
+    own ``predicateType`` field (e.g.
+    ``https://slsa.dev/provenance/v1``). Rules dispatch on this
+    string to decide which predicate shape to walk.
+
+    ``predicate`` is the parsed predicate body. The shape varies by
+    predicate type (SLSA provenance has ``builder``, ``buildType``;
+    SPDX SBOM has ``packages``; CycloneDX has ``components``). Rules
+    that don't recognize a predicate type leave the attestation
+    alone.
+
+    ``manifest_path`` is the source layout's manifest file (so
+    findings can be anchored to a real path), and ``layer_digest``
+    is the blob's content-addressable digest for cross-finding
+    correlation.
+    """
+
+    predicate_type: str
+    predicate: dict[str, Any]
+    statement_type: str
+    subject: tuple[dict[str, Any], ...]
+    manifest_path: str
+    layer_digest: str
+    raw_statement: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_slsa_provenance(self) -> bool:
+        return self.predicate_type.startswith("https://slsa.dev/provenance/")
+
+    @property
+    def is_sbom(self) -> bool:
+        return self.predicate_type.startswith((
+            "https://spdx.dev/Document",
+            "https://cyclonedx.org/bom",
+        ))
+
+
+@dataclass(frozen=True, slots=True)
 class OCIManifest:
     """A parsed OCI image manifest or image index loaded from disk."""
 
@@ -91,6 +165,14 @@ class OCIManifest:
     #: entry is a dict with ``mediaType`` / ``digest`` / ``size``
     #: at minimum. Empty for image indexes.
     layers: tuple[dict[str, Any], ...] = ()
+    #: Parsed in-toto Statements extracted from this manifest's
+    #: attestation sub-manifests, when the input is an OCI image-
+    #: layout directory whose ``blobs/`` tree contains the layer
+    #: blobs. Empty for single-file ``index.json`` inputs (the
+    #: scanner can see the *entries* but not their *content*) and
+    #: for non-attested images. ``ATTEST-NNN`` rules read this
+    #: field directly.
+    attestations: tuple[Attestation, ...] = ()
     #: Original parsed JSON, for rules that need to reach into a
     #: less-common field without having to round-trip through this
     #: dataclass's structured view.
@@ -122,6 +204,10 @@ class OCIContext:
             )
         if root.is_file():
             files = [root]
+            # When pointed at a single index.json, sibling blobs
+            # under ``blobs/sha256/`` (the OCI image-layout
+            # convention) are still useful for attestation parsing.
+            blob_root = root.parent
         else:
             # ``index.json`` is the canonical name used by the OCI
             # image-layout spec; pick that up first so a layout
@@ -137,6 +223,12 @@ class OCIContext:
                 if p.is_file() and p not in preferred_set
             )
             files = preferred + others
+            blob_root = root
+        # Build a digest -> blob-path index once so attestation
+        # resolution is O(1). When no ``blobs/`` tree is present the
+        # index is empty; ATTEST-NNN rules degrade to "no attestation
+        # content available" silently.
+        blob_index = _build_blob_index(blob_root)
         manifests: list[OCIManifest] = []
         warnings: list[str] = []
         skipped = 0
@@ -166,11 +258,207 @@ class OCIContext:
                 # doesn't drown out real warnings.
                 skipped += 1
                 continue
+            # Hydrate attestation content from blob_index. A manifest
+            # with no attestation entries gets ``attestations=()``;
+            # an entry whose layer blob is missing gets a warning and
+            # is skipped, so the rule layer can't false-positive on
+            # incomplete inputs.
+            attestations, attest_warnings = _resolve_attestations(
+                parsed, blob_index,
+            )
+            warnings.extend(f"{f}: {w}" for w in attest_warnings)
+            if attestations:
+                parsed = OCIManifest(
+                    path=parsed.path,
+                    media_type=parsed.media_type,
+                    schema_version=parsed.schema_version,
+                    annotations=parsed.annotations,
+                    entries=parsed.entries,
+                    config_digest=parsed.config_digest,
+                    config_media_type=parsed.config_media_type,
+                    layers=parsed.layers,
+                    attestations=attestations,
+                    raw=parsed.raw,
+                )
             manifests.append(parsed)
         ctx = cls(manifests)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
+
+
+def _build_blob_index(root: Path) -> dict[str, Path]:
+    """Return ``digest -> blob-file`` for every blob under *root*.
+
+    The OCI image-layout spec stores blobs at
+    ``blobs/<algorithm>/<encoded-digest>``. When *root* contains a
+    ``blobs/`` directory we walk its content and key the result by
+    ``"<algorithm>:<encoded-digest>"`` so callers can look up a
+    blob by the same digest string the manifest itself uses
+    (``"sha256:abc..."``).
+
+    Empty when no ``blobs/`` directory exists; the attestation
+    resolver then degrades to "no content available".
+    """
+    blobs_dir = root / "blobs"
+    if not blobs_dir.is_dir():
+        return {}
+    out: dict[str, Path] = {}
+    for algo_dir in blobs_dir.iterdir():
+        if not algo_dir.is_dir():
+            continue
+        algo = algo_dir.name
+        for blob in algo_dir.iterdir():
+            if not blob.is_file():
+                continue
+            out[f"{algo}:{blob.name}"] = blob
+    return out
+
+
+def _decode_dsse_payload(doc: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the inner Statement when *doc* is a DSSE envelope.
+
+    DSSE wraps a Statement under a base64-encoded ``payload`` field.
+    BuildKit emits bare Statements (no DSSE), but cosign-attested
+    Statements use this envelope. Detection: ``payloadType`` +
+    ``payload`` keys present, no ``_type`` at the top level.
+
+    Returns ``None`` if *doc* doesn't look like a DSSE envelope or
+    if the payload doesn't decode to JSON. Defensive: a malformed
+    envelope shouldn't abort the scan, just skip the attestation.
+    """
+    if "_type" in doc:
+        return None
+    payload = doc.get("payload")
+    if not isinstance(payload, str):
+        return None
+    if not isinstance(doc.get("payloadType"), str):
+        return None
+    try:
+        decoded = base64.b64decode(payload, validate=False)
+        statement = json.loads(decoded)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    return statement if isinstance(statement, dict) else None
+
+
+def _statement_to_attestation(
+    statement: dict[str, Any],
+    *,
+    manifest_path: str,
+    layer_digest: str,
+) -> Attestation | None:
+    """Validate the in-toto Statement shape and project it onto an
+    :class:`Attestation`. Returns ``None`` for unrecognized shapes.
+
+    Both v0.1 (``https://in-toto.io/Statement/v0.1``) and v1
+    (``https://in-toto.io/Statement/v1``) Statements are accepted;
+    they share the required fields the rule layer reads
+    (``predicateType``, ``predicate``, ``subject``).
+    """
+    statement_type = statement.get("_type")
+    predicate_type = statement.get("predicateType")
+    predicate = statement.get("predicate")
+    subject = statement.get("subject")
+    if not isinstance(statement_type, str):
+        return None
+    if not isinstance(predicate_type, str):
+        return None
+    if not isinstance(predicate, dict):
+        return None
+    if not isinstance(subject, list):
+        subject = []
+    typed_subject = tuple(s for s in subject if isinstance(s, dict))
+    return Attestation(
+        predicate_type=predicate_type,
+        predicate=predicate,
+        statement_type=statement_type,
+        subject=typed_subject,
+        manifest_path=manifest_path,
+        layer_digest=layer_digest,
+        raw_statement=statement,
+    )
+
+
+def _resolve_attestations(
+    manifest: OCIManifest,
+    blob_index: dict[str, Path],
+) -> tuple[tuple[Attestation, ...], list[str]]:
+    """Walk attestation-manifest entries and return parsed Statements.
+
+    Each attestation entry's layer-blob digests are looked up in
+    *blob_index*; the blob is read as JSON, optionally unwrapped from
+    a DSSE envelope, and projected to an :class:`Attestation`.
+    Missing blobs and malformed payloads accumulate warnings rather
+    than raising, so a partial layout doesn't abort the scan.
+    """
+    if not blob_index:
+        return ((), [])
+    if not manifest.is_index:
+        return ((), [])
+    attestations: list[Attestation] = []
+    warnings: list[str] = []
+    for entry in manifest.entries:
+        if not entry.is_attestation_manifest:
+            continue
+        # The entry's digest points at the attestation manifest blob;
+        # that manifest's layers point at the actual Statement blobs.
+        attest_manifest_blob = blob_index.get(entry.digest)
+        if attest_manifest_blob is None:
+            warnings.append(
+                f"attestation manifest blob {entry.digest} not found in "
+                f"blobs/ tree; skipping content parse"
+            )
+            continue
+        try:
+            attest_doc = json.loads(
+                attest_manifest_blob.read_text(encoding="utf-8")
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            warnings.append(
+                f"attestation manifest {entry.digest} parse error: {exc}"
+            )
+            continue
+        if not isinstance(attest_doc, dict):
+            continue
+        for layer in attest_doc.get("layers") or []:
+            if not isinstance(layer, dict):
+                continue
+            if layer.get("mediaType") != _INTOTO_LAYER_MEDIA_TYPE:
+                continue
+            layer_digest = layer.get("digest")
+            if not isinstance(layer_digest, str):
+                continue
+            blob_path = blob_index.get(layer_digest)
+            if blob_path is None:
+                warnings.append(
+                    f"in-toto layer blob {layer_digest} not found; "
+                    f"attestation skipped"
+                )
+                continue
+            try:
+                payload_doc = json.loads(
+                    blob_path.read_text(encoding="utf-8")
+                )
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                warnings.append(
+                    f"in-toto blob {layer_digest} parse error: {exc}"
+                )
+                continue
+            if not isinstance(payload_doc, dict):
+                continue
+            # DSSE-wrapped Statements unwrap to the inner Statement;
+            # bare Statements pass through.
+            inner = _decode_dsse_payload(payload_doc)
+            statement = inner if inner is not None else payload_doc
+            att = _statement_to_attestation(
+                statement,
+                manifest_path=manifest.path,
+                layer_digest=layer_digest,
+            )
+            if att is not None:
+                attestations.append(att)
+    return tuple(attestations), warnings
 
 
 def _parse_manifest(path: str, doc: dict[str, Any]) -> OCIManifest | None:
@@ -323,6 +611,7 @@ def primary_image_annotations(manifest: OCIManifest) -> dict[str, str]:
 
 
 __all__ = [
+    "Attestation",
     "IndexEntry",
     "OCIBaseCheck",
     "OCIContext",

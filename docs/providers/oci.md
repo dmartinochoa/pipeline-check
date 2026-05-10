@@ -58,10 +58,12 @@ authoring-time gaps that don't survive into the manifest.
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
+| [ATTEST-001](#attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ATTEST-002](#attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [OCI-001](#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [OCI-002](#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [OCI-003](#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> |  |
@@ -72,6 +74,77 @@ authoring-time gaps that don't survive into the manifest.
 | [OCI-008](#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ATTEST-001: SLSA provenance attests an untrusted builder identity { #attest-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads the SLSA provenance from each in-toto Statement carried in the image's attestation manifests, then checks ``predicate.builder.id`` (SLSA v0.2) / ``predicate.runDetails.builder.id`` (SLSA v1) against an allowlist of URI prefixes for hosted CI builders. Fires when the attested builder is unknown or matches a self-hosted-runner shape.
+
+Triggering this rule means the bytes of the runtime image were produced by a builder identity the SLSA contract cannot vouch for. A compromised self-hosted runner can produce a perfectly-formed, signature-valid attestation for a tampered image, so a passing OCI-002 (attestation present) is not the same thing as a trustworthy attestation, this rule is the difference.
+
+**Known false-positive modes**
+
+- Some teams run their own SLSA-conformant builders for policy reasons (air-gapped builds, regulated workloads, FedRAMP environments). Add the builder's URI prefix to a future allowlist override (deferred to v2) or suppress via ignore-file when the team has a documented review of the builder's isolation posture.
+- Older BuildKit versions emitted a generic placeholder (``https://github.com/docker/buildx@v0.X``) without tying the identity to the runner. Modern Buildx writes a concrete builder URI; if the scan flags a placeholder, upgrade Buildx and rebuild before treating it as a real incident.
+
+**Seen in the wild**
+
+- SLSA threat-model v1.0: untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source. https://slsa.dev/spec/v1.0/threats
+- GitHub self-hosted runner advisory (CVE-2024-32004 et al.): self-hosted runners default to non-ephemeral, persisted state; a single fork-PR run gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build. SLSA's isolation requirement (L2+) explicitly excludes this shape.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Re-run the build on a recognized hosted CI builder (GitHub-hosted runners, slsa-github-generator, Cloud Build, GitLab SaaS, Buildkite, or BuildKit attesting via Docker Hub) so the SLSA ``builder.id`` claim resolves to an isolated, publicly-auditable build environment. Self-hosted runners and unknown builder identities defeat the SLSA L2+ isolation guarantee, the supply-chain trust chain only extends as far as the *builder* the attestation names.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ATTEST-002: SLSA provenance source-repo claim is missing or unverifiable { #attest-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+The ``builder.id`` claim that ATTEST-001 verifies tells you *who* built the image. The source-repo claim ATTEST-002 verifies tells you *what* they built. Both are required for the SLSA chain to be meaningful: a trusted builder running an unknown source produces a signed attestation for code you can't audit.
+
+The rule walks the SLSA provenance predicate for a source URI. Path varies by spec version:
+  - v0.2: ``predicate.invocation.configSource.uri``
+  - v1.0: ``predicate.buildDefinition.externalParameters`` (builder-specific, commonly ``.workflow.repository`` or ``.source.uri``)
+Fires when:
+  - no URI is present anywhere on the expected paths;
+  - the URI is a known placeholder (empty, ``?``, ``unknown``, ``n/a``);
+  - the URI doesn't parse as a recognizable VCS / HTTPS shape;
+  - a URI is present but the corresponding digest field is missing or all-zeros (the bytes aren't actually pinned).
+
+**Known false-positive modes**
+
+- Some SLSA Phase-0 attestations omit the digest field on purpose, the build was reproducible-by-source rather than pinned to a commit. Suppress via ignore-file when the team has documented this trade-off; the default expectation for any image promoted to a production registry is a concrete commit pin.
+- Builders that emit free-form ``externalParameters`` shapes (some self-hosted SLSA implementations) may carry the source URI under a non-canonical key. The rule walks every string value in ``externalParameters`` looking for a VCS URI; if none is found, the finding fires. Add the builder to a future allowlist override (deferred) when the shape is intentional.
+
+**Seen in the wild**
+
+- SLSA threat-model v1.0, Source-track Threat #4 ('Build uses unauthorized source'): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. https://slsa.dev/spec/v1.0/threats
+- SolarWinds Orion compromise (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape. https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Ensure the build emits SLSA provenance with a concrete source-repo URI plus a commit-level digest. For SLSA v0.2 that's ``predicate.invocation.configSource.uri`` + ``configSource.digest`` (typically ``sha1`` for git refs). For SLSA v1, ``predicate.buildDefinition.externalParameters`` should name the workflow's source repository, and ``predicate.buildDefinition.resolvedDependencies`` should include the same source pinned by digest. A missing or placeholder URI ('', 'unknown', 'n/a') leaves consumers unable to confirm what code produced the image.
+
+</div>
+
+</div>
 
 <div class="pg-rule pg-rule--medium" markdown>
 

@@ -12,6 +12,45 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Attestation content checks (``ATTEST-NNN`` family, phase 1 +
+  ``ATTEST-001``).** The OCI provider now reads in-toto Statement
+  content from attestation manifests when the input is an OCI
+  image-layout directory (the ``blobs/<algo>/<digest>``
+  filesystem layout the spec defines). For each attestation
+  manifest entry, the resolver follows the layer digests into the
+  ``blobs/`` tree, parses each ``application/vnd.in-toto+json``
+  payload as an in-toto Statement, optionally unwraps a DSSE
+  envelope (cosign-attested case), and surfaces the parsed result
+  on ``OCIManifest.attestations``. Both v0.1 and v1 Statement
+  shapes are recognized; predicate types (SLSA provenance v0.2 /
+  v1, SPDX, CycloneDX) are kept verbatim so the rule layer can
+  dispatch.
+
+  ``ATTEST-001`` checks the SLSA provenance ``builder.id`` claim
+  against an allowlist of recognized hosted-CI builders
+  (slsa-github-generator, GitHub-hosted runners, Buildkite,
+  Cloud Build, GitLab SaaS, CircleCI, Buildx). Fires when the
+  builder is self-hosted (``/self-hosted``, ``localhost``,
+  ``127.0.0.1`` markers) or unknown, because a tampered
+  self-hosted runner can emit a syntactically-valid attestation
+  for the wrong source. Reads ``predicate.builder.id`` (SLSA
+  v0.2) or ``predicate.runDetails.builder.id`` (SLSA v1) so both
+  spec versions resolve.
+
+  Distinct from OCI-002 (presence): OCI-002 fires when no
+  attestation manifest is attached at all; ATTEST-001 fires when
+  the attestation IS present but names an untrusted builder.
+  Operators landing on a passing OCI-002 + failing ATTEST-001
+  see "the bytes are attested but by a builder I shouldn't
+  trust", which is meaningfully different from "no attestation
+  at all". The roadmap calls this out as the strongest
+  differentiator from peers, no OSS scanner does pipeline-side
+  attestation content analysis today; they verify *something*
+  was attested, not *what* was attested.
+
+  Phase 2 (deferred): ATTEST-002 source-repo claim consistency,
+  ATTEST-003 SBOM floating-version detection.
+
 - **Per-repo false-positive annotation store (``--annotate-fp``).**
   ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` records a
   confirmed false positive into a local ``.pipeline-check-fp.json``
