@@ -23,6 +23,11 @@ from .checks._confidence import confidence_for
 from .checks.base import Finding, Severity, clear_blob_cache
 from .checks.custom.loader import LoadedCustomRules, load_custom_rules
 from .checks.custom.runner import make_custom_rules_check
+from .fp_annotations import (
+    annotation_index,
+    demote_one_rung,
+    load_annotations,
+)
 from .inventory import Component
 
 
@@ -65,11 +70,18 @@ class Scanner:
         chains_enabled: bool = True,
         overrides: dict[str, dict[str, str]] | None = None,
         custom_rules: list[str] | tuple[str, ...] | None = None,
+        fp_annotations_path: str | None = None,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
         self._log = log
         self._chains_enabled = chains_enabled
+        # Per-repo false-positive annotation store. ``None`` means
+        # "use the default path if it exists at cwd". The Scanner
+        # reads this once per run() and demotes matching findings'
+        # confidence one rung. Keeps the no-telemetry promise intact
+        # because the file is local and travels with the repo.
+        self._fp_annotations_path: str | None = fp_annotations_path
         # Per-rule severity overrides applied after confidence resolution.
         # The value mapping currently only carries ``"severity"`` (other
         # knobs may follow). Keys are upper-cased here so programmatic
@@ -297,6 +309,15 @@ class Scanner:
                 if any(fnmatch.fnmatchcase(f.check_id.upper(), p) for p in patterns)
             ]
 
+        # Build the FP-annotation index once per scan; the lookup is
+        # ``O(1)`` per finding. ``getattr`` guards against callers that
+        # bypass ``__init__`` (legacy tests construct via ``__new__``).
+        fp_path = getattr(self, "_fp_annotations_path", None)
+        from .fp_annotations import DEFAULT_FP_PATH as _DEFAULT_FP_PATH
+        fp_index = annotation_index(load_annotations(
+            fp_path if fp_path is not None else _DEFAULT_FP_PATH
+        ))
+
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
@@ -308,6 +329,15 @@ class Scanner:
             # specific findings they want to preserve.
             if not f.confidence_locked:
                 f.confidence = confidence_for(f.check_id)
+            # Apply per-repo false-positive annotations: demote one
+            # confidence rung when a previous run was tagged as a
+            # confirmed FP via ``--annotate-fp``. ``confidence_locked``
+            # rules opt out of this demotion too, the lock means the
+            # rule emitted the confidence with intent and shouldn't
+            # be calibrated by FP feedback.
+            if not f.confidence_locked:
+                if (f.check_id.upper(), f.resource) in fp_index:
+                    f.confidence = demote_one_rung(f.confidence)
             # Apply user-configured per-rule overrides last so they
             # win over both the rule-default severity and any rule-set
             # confidence. Unknown check IDs are silently ignored, the

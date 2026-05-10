@@ -14,6 +14,96 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Per-repo false-positive annotation store (``--annotate-fp``).**
+  ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` records a
+  confirmed false positive into a local ``.pipeline-check-fp.json``
+  file and exits without scanning. Subsequent scans demote that
+  ``(check_id, resource)`` pair's confidence one rung (HIGH ->
+  MEDIUM, MEDIUM -> LOW), keeping the finding visible in reports
+  while letting ``--min-confidence MEDIUM`` filter it out at the
+  gate. Idempotent: re-running with the same args is a no-op so
+  CI scripts can call it without accumulating duplicates.
+
+  ``--fp-file PATH`` overrides the annotation file location.
+  ``pipeline_check fp-stats`` (new subcommand) prints rule -> vote
+  totals so rule authors see which rules accumulate the most
+  false-positive votes across the repo, feeding triage prioritization.
+
+  Distinct from ``--ignore-file``: suppression *removes* the finding
+  from reports entirely; FP annotation *demotes confidence* so the
+  finding stays visible (audit trail) but defaults to filtered at
+  realistic gate thresholds. The annotation file is local and
+  travels with the repo, so demotion is a property of the codebase
+  rather than any one developer's machine. No telemetry, no
+  upload. ``confidence_locked`` rules opt out of FP demotion: rules
+  emitting confidence with intent (e.g. CB-005 two-versions-behind
+  HIGH) shouldn't be calibrated by user feedback.
+
+- **Tekton ``taskRef:`` cross-document resolution for TAINT-006.**
+  When a ``Pipeline`` task uses ``taskRef: { name: <X> }`` instead
+  of inlining a ``taskSpec:`` block, the taint graph now resolves
+  ``X`` against ``Task`` / ``ClusterTask`` documents loaded into
+  the same ``TektonContext`` and treats the resolved ``spec`` as
+  if it were inline. Closes the v1 limitation called out in
+  TAINT-006's docs_note: a Pipeline that splits the producer /
+  consumer task definitions across separate files now trips the
+  rule the same way a fully-inline Pipeline does. ``bundle:`` /
+  ``resolver:`` (remote OCI / Tekton-resolver-framework
+  references) stay unresolved, the scanner deliberately doesn't
+  fetch over the network. The ``analyze_pipeline_doc(doc)`` API
+  gains an optional ``ctx`` parameter; legacy callers passing
+  only ``doc`` keep the pre-resolver behavior (``taskRef:``
+  silently skipped) for backward compatibility.
+
+  The task index is keyed on the composite ``(kind, name)`` so a
+  ``Task`` and a ``ClusterTask`` with the same metadata name stay
+  distinct (they're separate Tekton resources and the rule must
+  pick the one matching ``taskRef.kind``). ``taskRef.kind``
+  defaults to ``"Task"`` per Tekton's webhook-defaulting
+  behavior; explicit ``kind: ClusterTask`` looks up the cluster-
+  scoped variant. If the explicit-kind lookup misses, the
+  resolver falls back to the other Tekton kind so a refactor
+  (Task -> ClusterTask) keeps resolving without every consumer
+  updating its ``taskRef.kind``.
+
+- **GitLab ``include:`` cross-document resolver.** Local ``include:``
+  directives in ``.gitlab-ci.yml`` are now followed at load time so
+  cross-job rules see jobs and variables defined in included files.
+  Closes the long-standing TAINT-008 ``extends:`` taint gap: a hidden
+  template (``.base``) defined in an included file is now reachable
+  from the parent's ``extends:`` chain and the taint analyzer walks
+  through it correctly. Prior behavior would silently miss taint
+  flowing across the include boundary because the hidden template
+  was invisible to the rule engine.
+
+  Supported forms: ``include: foo.yml``, ``include: [a.yml, b.yml]``,
+  ``include: { local: foo.yml }``, ``include: [{local: a}, ...]``.
+  Other forms (``remote:``, ``project:``, ``template:``,
+  ``component:``) emit a warning and the scan continues; the
+  scanner deliberately does not fetch over the network.
+
+  Cycle detection (visited-set), depth cap (10 levels), parent-wins
+  on key conflicts (matches GitLab's "consumer overrides include"
+  semantics for jobs). The original ``include:`` block is preserved
+  in the merged data so include-pinning rules (GL-005, GL-011,
+  GL-030) continue to fire on the original directive. Per-line
+  source positions survive the merge because the resolver mutates
+  the parent dict in place rather than copying it (preserves the
+  ``LineDict`` subclass that carries line numbers for every
+  ``Location`` reporters render).
+
+  Path-traversal guard: ``--gitlab-path`` (or its parent for a
+  single-file path) is the fixed scan root. Leading-``/`` paths
+  anchor to that root (matches GitLab's "full path relative to the
+  repository root" semantics) rather than to the changing
+  ``base_dir`` during recursion, so deeply-nested includes still
+  resolve repo-root paths correctly. Any include whose resolved
+  path escapes the scan root via ``..`` traversal is rejected with
+  a warning rather than read, so a malicious ``.gitlab-ci.yml`` in
+  an untrusted repo can't make the scanner read arbitrary host
+  files. ``..`` segments that resolve back inside the scan root
+  (a common monorepo pattern) are still allowed.
+
 - **Soon-to-expire suppression forewarning.** ``GateResult`` gains
   ``expiring_soon: list[IgnoreRule]`` populated for any ignore-file
   entry whose ``expires:`` date falls within

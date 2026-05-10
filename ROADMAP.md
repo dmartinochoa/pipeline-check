@@ -271,14 +271,20 @@ the candidates above. Grouped by priority within v0.5.0.
   orchestrator backfills it from the rule, the same way
   ``cwe`` is backfilled. Anchors abstract security debt to a
   concrete cost the operator's manager has already heard of.
-- **Close the two known taint resolver gaps.** GitLab `include:`
-  cross-pipeline file inclusion (mirrors `--resolve-remote` on
-  the GHA side: per-ref cache, cycle detection, on-disk fallback)
-  and Tekton `taskRef:` cross-document resolution (already
-  flagged as the next gap in the TAINT-006 description). Both
-  lift existing TAINT rules from single-document to multi-
-  document, which is where most real CI repos sit. Highest
-  detection-power gain per line of code on the table.
+- **Close the two known taint resolver gaps.** *Both landed on dev.*
+  GitLab ``include:`` follows local-include directives at load
+  time so jobs and variables from included files merge into the
+  parent pipeline, TAINT-008 (``extends:`` taint) now walks
+  chains across the boundary. Tekton ``taskRef:`` resolves
+  against ``Task`` / ``ClusterTask`` documents loaded into the
+  same ``TektonContext`` so TAINT-006 walks producer / consumer
+  bodies that live in separate files. Both have cycle detection
+  / depth caps; remote forms (``remote:`` / ``project:`` /
+  ``template:`` / ``component:`` for GitLab; ``bundle:`` /
+  ``resolver:`` for Tekton) emit warnings rather than fetching
+  over the network. Lifts existing TAINT rules from single-
+  document to multi-document, which is where most real CI repos
+  sit.
 - **Suppression-with-expiry on `--ignore-file`.** *Landed on dev.*
   YAML ignore-file entries carry an ``expires: YYYY-MM-DD`` field;
   past the date the suppression no longer applies and a ``[gate]
@@ -333,14 +339,18 @@ the candidates above. Grouped by priority within v0.5.0.
   cheapest trust signal available, costs roughly a day of CI
   plumbing, and gives the README a live screenshot of what good
   looks like.
-- **Rule-pack confidence calibration loop.** `--annotate-fp
-  <CHECK_ID> <PATH>` records a confirmed false positive into a
-  per-repo learn file. On subsequent runs the same rule firing
-  on the same file shape (hashed AST anchor, not literal text)
-  drops one confidence rung. Optional `pipeline-check fp-stats`
-  surfaces which rules accumulate the most FP votes across a
-  repo, feeding rule-author triage. Keeps the no-telemetry
-  promise (file is local) while still building a feedback loop.
+- **Rule-pack confidence calibration loop.** *Landed on dev.*
+  ``pipeline_check --annotate-fp CHECK_ID RESOURCE`` writes the
+  pair into a local ``.pipeline-check-fp.json`` file and exits.
+  Subsequent scans demote matching findings one confidence rung
+  (HIGH -> MEDIUM, MEDIUM -> LOW). ``pipeline_check fp-stats``
+  prints rule -> vote totals for rule-author triage.
+  ``confidence_locked`` rules opt out of demotion. v1 matches on
+  literal ``(check_id, resource)``; the AST-anchor refinement
+  the original entry sketched is deferred (literal match covers
+  every existing provider's resource format and is cheaper to
+  reason about). No telemetry, the file lives in the repo and
+  travels with the code.
 
 #### Landed early
 

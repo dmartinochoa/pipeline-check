@@ -1424,6 +1424,36 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--annotate-fp",
+    "annotate_fp",
+    nargs=2,
+    default=None,
+    metavar="CHECK_ID RESOURCE",
+    help=(
+        "Record a confirmed false positive into the local "
+        "``.pipeline-check-fp.json`` annotation file and exit. "
+        "Subsequent scans demote that ``(check_id, resource)`` "
+        "pair's confidence one rung (HIGH -> MEDIUM, MEDIUM -> "
+        "LOW), keeping the finding visible while letting "
+        "``--min-confidence MEDIUM`` filter it out at the gate. "
+        "Idempotent: re-running with the same args is a no-op. "
+        "No scan is performed in this mode. Run "
+        "``pipeline_check fp-stats`` to print rule -> vote "
+        "totals."
+    ),
+)
+@click.option(
+    "--fp-file",
+    "fp_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the false-positive annotation file. Defaults to "
+        "``.pipeline-check-fp.json`` at cwd. Read on every scan to "
+        "demote annotated findings; written by ``--annotate-fp``."
+    ),
+)
+@click.option(
     "--serve",
     is_flag=True,
     default=False,
@@ -1531,6 +1561,8 @@ def scan(
     quiet: bool,
     no_chains: bool,
     list_chains: bool,
+    annotate_fp: tuple[str, str] | None,
+    fp_path: str | None,
     explain_chain_id: str | None,
     fail_on_chain_ids: tuple[str, ...],
     fail_on_any_chain: bool,
@@ -1597,6 +1629,34 @@ def scan(
 
     if list_checks:
         _list_checks_for_pipeline(pipeline.lower())
+        return
+
+    if annotate_fp:
+        # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
+        # annotation file and exits without scanning. Idempotent.
+        from .core.fp_annotations import (
+            DEFAULT_FP_PATH,
+            append_annotation,
+        )
+
+        cid, resource = annotate_fp
+        target_path = fp_path or DEFAULT_FP_PATH
+        try:
+            wrote = append_annotation(cid, resource, path=target_path)
+        except (OSError, ValueError) as exc:
+            raise click.UsageError(
+                f"could not write {target_path}: {exc}"
+            ) from exc
+        if wrote:
+            click.echo(
+                f"[annotate-fp] recorded {cid.upper()}:{resource} "
+                f"in {target_path}"
+            )
+        else:
+            click.echo(
+                f"[annotate-fp] {cid.upper()}:{resource} already "
+                f"present in {target_path} (no change)"
+            )
         return
 
     if list_chains:
@@ -2021,6 +2081,7 @@ def scan(
         detect_entropy=detect_entropy,
         overrides=cli_overrides or None,
         custom_rules=list(custom_rules) or None,
+        fp_annotations_path=fp_path,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
         gha_path=gha_path,
@@ -2620,6 +2681,55 @@ def init_cmd(target_path: str, force: bool) -> None:
     click.echo(f"[init] wrote {target_path}{suffix}")
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# `fp-stats` subcommand, print false-positive annotation totals.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="fp-stats")
+@click.option(
+    "--fp-file",
+    "fp_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the false-positive annotation file. Defaults to "
+        "``.pipeline-check-fp.json`` at cwd."
+    ),
+)
+def fp_stats_cmd(fp_path: str | None) -> None:
+    """Print rule -> FP-vote totals from the local annotation file.
+
+    Surfaces which rules accumulate the most ``--annotate-fp``
+    annotations across the repo so rule authors can prioritize
+    triage. Rules with the highest counts are likely candidates for
+    re-tuning, narrower heuristics, or a default-confidence
+    demotion.
+    """
+    from .core.fp_annotations import (
+        DEFAULT_FP_PATH,
+        fp_stats,
+        load_annotations,
+    )
+
+    path = fp_path or DEFAULT_FP_PATH
+    annotations = load_annotations(path)
+    if not annotations:
+        click.echo(
+            f"[fp-stats] no annotations found in {path} "
+            f"(file missing or empty)",
+            err=True,
+        )
+        return
+
+    stats = fp_stats(annotations)
+    width = max((len(cid) for cid, _ in stats), default=0)
+    click.echo(f"[fp-stats] {len(annotations)} annotation(s) in {path}")
+    for cid, count in stats:
+        suffix = "vote" if count == 1 else "votes"
+        click.echo(f"  {cid:<{width}}  {count} {suffix}")
+
+
 def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
@@ -2631,5 +2741,9 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "init":
         sys.argv.pop(1)
         init_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "fp-stats":
+        sys.argv.pop(1)
+        fp_stats_cmd()
         return
     scan()
