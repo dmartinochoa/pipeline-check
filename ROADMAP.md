@@ -271,14 +271,18 @@ the candidates above. Grouped by priority within v0.5.0.
   orchestrator backfills it from the rule, the same way
   ``cwe`` is backfilled. Anchors abstract security debt to a
   concrete cost the operator's manager has already heard of.
-- **Close the two known taint resolver gaps.** GitLab `include:`
-  cross-pipeline file inclusion (mirrors `--resolve-remote` on
-  the GHA side: per-ref cache, cycle detection, on-disk fallback)
-  and Tekton `taskRef:` cross-document resolution (already
-  flagged as the next gap in the TAINT-006 description). Both
-  lift existing TAINT rules from single-document to multi-
-  document, which is where most real CI repos sit. Highest
-  detection-power gain per line of code on the table.
+- **Close the two known taint resolver gaps.** GitLab ``include:``
+  *landed on dev*: local ``include:`` directives are followed at
+  load time, jobs and variables from included files merge into the
+  parent pipeline, TAINT-008 (``extends:`` taint) now walks chains
+  across the boundary. Cycle detection + 10-level depth cap; parent
+  wins on conflict; remote / project / template / component forms
+  emit a warning (no network fetch). Tekton ``taskRef:`` cross-
+  document resolution (already flagged as the next gap in the
+  TAINT-006 description) still open. Both lift existing TAINT
+  rules from single-document to multi-document, which is where
+  most real CI repos sit. Highest detection-power gain per line
+  of code on the table.
 - **Suppression-with-expiry on `--ignore-file`.** *Landed on dev.*
   YAML ignore-file entries carry an ``expires: YYYY-MM-DD`` field;
   past the date the suppression no longer applies and a ``[gate]

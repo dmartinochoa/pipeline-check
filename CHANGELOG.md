@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GitLab ``include:`` cross-document resolver.** Local ``include:``
+  directives in ``.gitlab-ci.yml`` are now followed at load time so
+  cross-job rules see jobs and variables defined in included files.
+  Closes the long-standing TAINT-008 ``extends:`` taint gap: a hidden
+  template (``.base``) defined in an included file is now reachable
+  from the parent's ``extends:`` chain and the taint analyzer walks
+  through it correctly. Prior behavior would silently miss taint
+  flowing across the include boundary because the hidden template
+  was invisible to the rule engine.
+
+  Supported forms: ``include: foo.yml``, ``include: [a.yml, b.yml]``,
+  ``include: { local: foo.yml }``, ``include: [{local: a}, ...]``.
+  Other forms (``remote:``, ``project:``, ``template:``,
+  ``component:``) emit a warning and the scan continues; the
+  scanner deliberately does not fetch over the network.
+
+  Cycle detection (visited-set), depth cap (10 levels), parent-wins
+  on key conflicts (matches GitLab's "consumer overrides include"
+  semantics for jobs). The original ``include:`` block is preserved
+  in the merged data so include-pinning rules (GL-005, GL-011,
+  GL-030) continue to fire on the original directive. Per-line
+  source positions survive the merge because the resolver mutates
+  the parent dict in place rather than copying it (preserves the
+  ``LineDict`` subclass that carries line numbers for every
+  ``Location`` reporters render).
+
 - **Soon-to-expire suppression forewarning.** ``GateResult`` gains
   ``expiring_soon: list[IgnoreRule]`` populated for any ignore-file
   entry whose ``expires:`` date falls within
