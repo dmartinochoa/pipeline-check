@@ -252,7 +252,7 @@ class TestSecretsInherit:
 
 
 # A composite action body, as it would live at action.yml in a third-party repo.
-COMPOSITE_ACTION_BODY = f"""
+COMPOSITE_ACTION_BODY = """
 name: My Composite
 description: Demonstrates composite-action resolution.
 runs:
