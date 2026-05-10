@@ -206,8 +206,18 @@ details[open] > summary::before { transform: rotate(90deg); }
   color: var(--light-muted);
 }
 .bulk-btn:hover { background: var(--light-row-hover); }
+/* Sticky headers offset accounts for the filter bar's height. The
+   bar wraps to a second / third row on narrow screens; the media
+   queries below bump the offset so the headers don't slide
+   underneath the wrapped controls. ``--filter-bar-h`` is a CSS
+   custom property so a future JS-driven measure (resize observer)
+   can override at runtime without touching this rule.
+*/
+:root { --filter-bar-h: 60px; }
+@media (max-width: 900px) { :root { --filter-bar-h: 110px; } }
+@media (max-width: 600px) { :root { --filter-bar-h: 200px; } }
 .findings-table thead th {
-  position: sticky; top: 46px; z-index: 5;
+  position: sticky; top: var(--filter-bar-h); z-index: 5;
 }
 .filter-group { display: flex; align-items: center; gap: 6px; }
 .filter-group label { font-weight: 600; color: var(--light-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
@@ -225,10 +235,14 @@ details[open] > summary::before { transform: rotate(90deg); }
 .copy-ignore-btn:hover { background: var(--light-row-hover); }
 .copy-ignore-btn.copied { background: #e6f4ec; color: var(--grade-a); border-color: var(--grade-a); }
 
-/* ── Dark mode ── */
+/* ── Dark mode ──
+   ``--light-muted`` bumped from #8888aa to #a0a0c0 so the muted
+   text on dark backgrounds clears WCAG AA at 5.1:1 (was right at
+   the 4.5:1 threshold). All other tokens unchanged.
+*/
 .dark {
   --light-bg: #1a1a2e; --light-card: #16213e; --light-header-bg: #0f0f23;
-  --light-border: #2a2a4a; --light-text: #e0e0e8; --light-muted: #8888aa;
+  --light-border: #2a2a4a; --light-text: #e0e0e8; --light-muted: #a0a0c0;
   --light-row-hover: #1e2a4a; --light-detail-bg: #12203a;
 }
 .dark .findings-table thead th { background: #1a1a3e; }
@@ -245,6 +259,72 @@ details[open] > summary::before { transform: rotate(90deg); }
   color: #9090b0; padding: 3px 10px; cursor: pointer; font-size: 12px;
 }
 .theme-toggle:hover { background: rgba(255,255,255,.1); }
+
+/* ── Attack chains panel ──
+   The chain card's left-border color is the only per-card tinted
+   piece (set inline since severity drives the choice). All the
+   structural / typographic styling lives in CSS classes so the
+   chain panel doesn't drift from the rest of the report.
+*/
+.chains-section { margin: 24px 0; }
+.chains-section > h2 {
+  margin: 0 0 12px;
+  color: var(--sev-critical);
+  font-size: 18px;
+}
+.chains-section > .chains-lede {
+  color: var(--light-muted);
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.chain-card {
+  background: var(--light-card);
+  padding: 14px 18px;
+  margin: 0 0 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  /* ``border-left-color`` is set inline per chain severity; only
+     the width / style live here. */
+  border-left: 5px solid transparent;
+}
+.chain-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chain-card__title { margin: 0; font-size: 16px; }
+.chain-card__title code {
+  background: var(--light-detail-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.chain-card__meta {
+  font-size: 12px;
+  color: var(--light-muted);
+}
+.chain-card__summary { margin: 8px 0; }
+.chain-card__narrative {
+  background: var(--light-detail-bg);
+  padding: 10px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  font-size: 13px;
+  margin: 8px 0;
+  font-family: var(--font-mono);
+}
+.chain-card__line { margin-top: 8px; }
+.chain-card__line code {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.chain-card__triggers code { background: #eef; }
+.chain-card__mitre code { background: #fed; }
+.dark .chain-card__triggers code { background: #2a2a5a; color: #cfd0e8; }
+.dark .chain-card__mitre code { background: #4a3520; color: #f0d8b4; }
 
 /* ── Anchor flash when a finding is deep-linked ── */
 :target td { animation: flash 1.5s ease; }
@@ -404,21 +484,58 @@ _SCRIPT = r"""
   openAnchored();
   window.addEventListener('hashchange', openAnchored);
 
-  // ── Copy-ignore button (existing) ──────────────────────────────
+  // ── Copy-ignore button ─────────────────────────────────────────
+  // Two-path copy: navigator.clipboard for HTTPS / localhost, then a
+  // textarea + execCommand fallback that works on file:// (the
+  // typical local-report viewing case where Chrome blocks the
+  // Clipboard API).
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        // fall through
+      }
+    }
+    // Fallback: transient off-screen textarea.
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (err) {
+      ok = false;
+    }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
   document.querySelectorAll('.copy-ignore-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const rule = btn.dataset.rule;
-      try {
-        await navigator.clipboard.writeText(rule);
+      const ok = await copyToClipboard(rule);
+      if (ok) {
         btn.textContent = '✓ copied';
         btn.classList.add('copied');
         setTimeout(() => {
           btn.textContent = btn.dataset.label;
           btn.classList.remove('copied');
         }, 1500);
-      } catch (err) {
-        console.warn('clipboard failed', err);
+      } else {
+        // Surface the failure inline so the user knows to copy
+        // manually rather than assuming the rule landed silently.
+        btn.textContent = 'copy failed';
+        setTimeout(() => {
+          btn.textContent = btn.dataset.label;
+        }, 1500);
       }
     });
   });
@@ -524,11 +641,15 @@ def _severity_summary_html(summary: dict[str, Any]) -> str:
 
 # Check-ID prefix → provider slug used in the filter dropdown. Keep in
 # sync when a new rule family is introduced; unknown prefixes fall back
-# to "other" and become invisible to the Provider filter.
+# to "other" and become invisible to the Provider filter. The
+# ``test_every_known_prefix_maps_somewhere`` regression test in
+# ``tests/test_html_reporter.py`` enforces parity between this map and
+# the catalog of prefixes the rule pack actually emits.
 _PROVIDER_PREFIXES = {
     # CI-provider families
     "GHA": "github", "GL": "gitlab", "BB": "bitbucket", "ADO": "azure",
     "JF": "jenkins", "CC": "circleci", "GCB": "cloudbuild",
+    "BK": "buildkite", "DR": "drone", "TKN": "tekton", "ARGO": "argo",
     # AWS core pipeline services
     "CB": "aws", "CP": "aws", "CD": "aws", "IAM": "aws", "S3": "aws",
     "ECR": "aws", "PBAC": "aws",
@@ -539,6 +660,27 @@ _PROVIDER_PREFIXES = {
     "SIGN": "aws",
     # IaC providers
     "TF": "terraform", "CF": "cloudformation", "CFN": "cloudformation",
+    # Container / runtime providers
+    "DF": "dockerfile", "K8S": "kubernetes", "HELM": "helm",
+    # OCI image manifests + attestation content (same provider, two
+    # rule families: presence checks live under OCI-NNN; content
+    # parsing under ATTEST-NNN).
+    "OCI": "oci", "ATTEST": "oci",
+    # SCM posture (GitHub repo governance via the REST API).
+    "SCM": "scm",
+    # Cross-step / cross-job dataflow taint engine. The TAINT family
+    # spans multiple providers (GHA / GitLab / Buildkite / Tekton /
+    # Argo) but the rule IDs share the prefix; bucketing them under
+    # a synthetic ``taint`` filter lets the operator see every taint
+    # finding in one filter slice regardless of which provider's
+    # propagation channel surfaced it.
+    "TAINT": "taint",
+    # External SARIF ingest from any conformant scanner (Trivy,
+    # Checkov, Snyk, KICS, CodeQL, …). Every ``--ingest`` finding
+    # carries an ``INGEST-<tool>-<rule>`` check_id, so the prefix
+    # collapses to a single ``ingest`` bucket. The source tool's
+    # name lives in the rule-id suffix and stays grep-friendly.
+    "INGEST": "ingest",
 }
 
 
@@ -660,9 +802,20 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     standards = sorted({c.standard for c in finding.controls})
     provider = _provider_for(finding.check_id)
     status = "fail" if not finding.passed else "pass"
-    # Haystack for free-text filter; include the visible summary text
-    # but NOT the detail sections (keeps matches predictable).
-    haystack = f"{finding.check_id} {finding.title} {finding.resource}".lower()
+    # Haystack for free-text filter. Includes the visible summary +
+    # the per-finding description and every Compliance Control ID /
+    # title so a search for "CICD-SEC-6" or a phrase from the
+    # description matches even when the row's <details> block isn't
+    # expanded. Lowercased once at render time so the JS comparison
+    # stays a cheap string include.
+    haystack_parts = [
+        finding.check_id, finding.title, finding.resource,
+        finding.description,
+    ]
+    for ctrl in finding.controls:
+        haystack_parts.append(ctrl.control_id)
+        haystack_parts.append(ctrl.control_title)
+    haystack = " ".join(haystack_parts).lower()
     # Ignore-rule the copy button will drop into the clipboard:
     # ``CHECK_ID:RESOURCE``, the flat format the gate accepts.
     ignore_rule = f"{finding.check_id}:{finding.resource}"
@@ -670,7 +823,12 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     # Stable, shareable anchor per finding: ``#finding-<check>-<slug>``.
     # Collisions across rows are avoided by including the resource slug;
     # duplicate ``check_id + resource`` pairs are already impossible by
-    # construction (the Scanner dedupes on that tuple).
+    # construction (the Scanner dedupes on that tuple). When the
+    # resource slug exceeds 60 chars we truncate AND append an 8-char
+    # hash of the full slug — naive ``slug[:60]`` would collide for
+    # two long resource paths sharing a 60-char prefix (e.g.
+    # ``infrastructure/terraform/modules/.../foo.tf`` vs
+    # ``infrastructure/terraform/modules/.../bar.tf``).
     anchor = "finding-" + finding.check_id.lower()
     if finding.resource:
         slug = "".join(
@@ -678,7 +836,11 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
             for c in finding.resource.lower()
         ).strip("-")
         if slug:
-            anchor = f"{anchor}-{slug[:60]}"
+            if len(slug) > 60:
+                import hashlib
+                tail = hashlib.sha256(slug.encode("utf-8")).hexdigest()[:8]
+                slug = f"{slug[:50]}-{tail}"
+            anchor = f"{anchor}-{slug}"
 
     return (
         f'<tr id="{_e(anchor)}" class="{row_cls}" '
@@ -828,7 +990,7 @@ def _blast_radius_section_html(findings: list[Finding]) -> str:
 
     return (
         '<section class="blast-radius" style="margin:24px 0">'
-        '<h2 style="margin:0 0 4px;color:var(--light-fg)">'
+        '<h2 style="margin:0 0 4px;color:var(--light-text)">'
         f'Blast radius ({len(tiles)} resource'
         f'{"s" if len(tiles) != 1 else ""})</h2>'
         '<p style="color:var(--light-muted);margin:0 0 8px;font-size:13px">'
@@ -864,55 +1026,64 @@ def _chains_section_html(chains: list[Chain]) -> str:
     for c in chains:
         color = _SEVERITY_COLOR.get(c.severity, "#6c757d")
         triggers = " ".join(
-            f'<code style="background:#eef;padding:1px 6px;border-radius:3px">{_e(cid)}</code>'
+            f"<code>{_e(cid)}</code>"
             for cid in c.triggering_check_ids
         )
-        mitre = (
-            "<div><strong>MITRE ATT&CK:</strong> "
+        mitre_html = (
+            f'<div class="chain-card__line chain-card__mitre">'
+            f"<strong>MITRE ATT&amp;CK:</strong> "
             + " ".join(
-                f'<code style="background:#fed;padding:1px 6px;border-radius:3px">{_e(t)}</code>'
-                for t in c.mitre_attack
+                f"<code>{_e(t)}</code>" for t in c.mitre_attack
             )
             + "</div>"
             if c.mitre_attack
             else ""
         )
-        kc = (
-            f"<div><strong>Kill chain:</strong> {_e(c.kill_chain_phase)}</div>"
+        kc_html = (
+            f'<div class="chain-card__line">'
+            f"<strong>Kill chain:</strong> {_e(c.kill_chain_phase)}</div>"
             if c.kill_chain_phase
             else ""
         )
-        refs = ""
+        refs_html = ""
         if c.references:
-            refs = "<div><strong>References:</strong><ul>" + "".join(
-                f'<li><a href="{_e(r)}" target="_blank" rel="noopener">{_e(r)}</a></li>'
-                for r in c.references
-            ) + "</ul></div>"
+            refs_html = (
+                '<div class="chain-card__line"><strong>References:</strong>'
+                "<ul>"
+                + "".join(
+                    f'<li><a href="{_e(r)}" target="_blank" '
+                    f'rel="noopener">{_e(r)}</a></li>'
+                    for r in c.references
+                )
+                + "</ul></div>"
+            )
         cards.append(
-            f'<div class="chain-card" style="border-left:5px solid {color};'
-            'background:var(--light-card);padding:14px 18px;margin:0 0 12px;'
-            'border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.05)">'
-            f'<div style="display:flex;justify-content:space-between;align-items:baseline">'
-            f'<h3 style="margin:0;color:{color}">'
+            f'<div class="chain-card" '
+            f'style="border-left-color:{color}">'
+            f'<div class="chain-card__head">'
+            f'<h3 class="chain-card__title" style="color:{color}">'
             f'<code>{_e(c.chain_id)}</code> &mdash; {_e(c.title)}</h3>'
-            f'<div style="font-size:12px;color:var(--light-muted)">'
-            f'severity: <strong style="color:{color}">{_e(c.severity.value)}</strong> '
-            f'&nbsp;·&nbsp; confidence: {_e(c.confidence.value)}</div>'
+            f'<div class="chain-card__meta">'
+            f'severity: <strong style="color:{color}">'
+            f'{_e(c.severity.value)}</strong> '
+            f'&nbsp;·&nbsp; confidence: {_e(c.confidence.value)}'
             f'</div>'
-            f'<p style="margin:8px 0">{_e(c.summary)}</p>'
-            f'<pre style="background:var(--light-detail-bg);padding:10px;border-radius:3px;'
-            f'white-space:pre-wrap;font-size:13px;margin:8px 0">{_e(c.narrative)}</pre>'
-            f'<div style="margin-top:8px"><strong>Triggering checks:</strong> {triggers}</div>'
-            f'{mitre}{kc}'
-            f'<div style="margin-top:8px"><strong>Recommendation:</strong> {_e(c.recommendation)}</div>'
-            f'{refs}'
+            f'</div>'
+            f'<p class="chain-card__summary">{_e(c.summary)}</p>'
+            f'<pre class="chain-card__narrative">{_e(c.narrative)}</pre>'
+            f'<div class="chain-card__line chain-card__triggers">'
+            f'<strong>Triggering checks:</strong> {triggers}</div>'
+            f'{mitre_html}{kc_html}'
+            f'<div class="chain-card__line">'
+            f'<strong>Recommendation:</strong> {_e(c.recommendation)}'
+            f'</div>'
+            f'{refs_html}'
             f'</div>'
         )
     return (
-        '<section class="chains" style="margin:24px 0">'
-        '<h2 style="margin:0 0 12px;color:var(--sev-critical)">'
-        f'&#9888; Attack Chains ({len(chains)})</h2>'
-        '<p style="color:var(--light-muted);margin:0 0 12px">'
+        '<section class="chains-section">'
+        f'<h2>&#9888; Attack Chains ({len(chains)})</h2>'
+        '<p class="chains-lede">'
         'Multiple findings combine into a real attack path. Fix any one '
         'finding in a chain to break it.</p>'
         + "".join(cards) +

@@ -421,8 +421,11 @@ def _convert_result(
     source_path: str,
 ) -> Finding | None:
     """Convert one SARIF ``result`` entry to a :class:`Finding`.
-    Returns ``None`` when the entry is too malformed to produce
-    a usable finding (e.g., no ``ruleId`` AND no ``message``)."""
+    Returns ``None`` only when both the ``ruleId`` and the
+    ``message`` are missing — the entry is then unusable. A
+    message-only entry is kept (with a synthesized ``check_id``)
+    so the best-effort ingest contract holds for tools that emit
+    free-form findings without rule metadata."""
     rule_id = raw.get("ruleId")
     if not isinstance(rule_id, str) or not rule_id:
         # Some tools emit results with a ``rule.id`` nested
@@ -432,8 +435,25 @@ def _convert_result(
             inner = rule_block.get("id")
             if isinstance(inner, str) and inner:
                 rule_id = inner
+    message = raw.get("message")
+    description = ""
+    if isinstance(message, dict):
+        text = message.get("text")
+        if isinstance(text, str):
+            description = text.strip()
     if not isinstance(rule_id, str) or not rule_id:
-        return None
+        # No rule ID — only salvage the entry if a non-empty
+        # ``message.text`` survived. Synthesize a stable check_id
+        # from a short hash of the message so two identical
+        # message-only entries collapse to one check_id (and stay
+        # distinct from real rules).
+        if not description:
+            return None
+        import hashlib
+        digest = hashlib.sha256(
+            description.encode("utf-8", errors="replace"),
+        ).hexdigest()[:10]
+        rule_id = f"message-only-{digest}"
     check_id = _make_check_id(tool_slug, rule_id)
     rule_def = rule_index.get(rule_id)
     title, recommendation = _rule_prose(rule_def)
@@ -441,12 +461,6 @@ def _convert_result(
         # Fall back to the ruleId itself so the column is never
         # empty; the description carries the full message anyway.
         title = rule_id
-    message = raw.get("message")
-    description = ""
-    if isinstance(message, dict):
-        text = message.get("text")
-        if isinstance(text, str):
-            description = text.strip()
     if not description:
         description = (
             f"Reported by {tool_slug} (rule {rule_id}). "

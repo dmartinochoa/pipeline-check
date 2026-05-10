@@ -311,7 +311,7 @@ In the default-branch protection rule, enable ``Require signed commits``. Config
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-471</span>
 </div>
 
-Reads ``allow_force_pushes.enabled`` from the branch protection payload. Fires when the value is True. The complementary deletion-protection knob is covered by a future SCM-NNN rule; this one focuses on the rewrite-history attack class because force-push is the primitive every post-incident rewrite uses to clean up after itself.
+Reads ``allow_force_pushes.enabled`` from the branch protection payload. Fires when the value is True. The complementary deletion-protection knob is covered by ``SCM-009``; this rule focuses on the rewrite-history attack class because force-push is the primitive every post-incident rewrite uses to clean up after itself.
 
 <div class="pg-rule__rec" markdown>
 

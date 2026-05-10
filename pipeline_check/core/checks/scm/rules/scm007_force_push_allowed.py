@@ -29,8 +29,8 @@ RULE = Rule(
     docs_note=(
         "Reads ``allow_force_pushes.enabled`` from the branch "
         "protection payload. Fires when the value is True. The "
-        "complementary deletion-protection knob is covered by a "
-        "future SCM-NNN rule; this one focuses on the rewrite-history "
+        "complementary deletion-protection knob is covered by "
+        "``SCM-009``; this rule focuses on the rewrite-history "
         "attack class because force-push is the primitive every "
         "post-incident rewrite uses to clean up after itself."
     ),

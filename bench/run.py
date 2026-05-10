@@ -186,12 +186,15 @@ def _scan_case(case_dir: Path) -> list[str]:
     try:
         for chain in _chains.evaluate(findings):
             fired.add(chain.chain_id)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         # The chain engine should never raise on well-formed
-        # findings, but if a future chain rule introduces a bug we
-        # don't want to crash the whole bench run; per-rule scan
-        # output is already in ``fired`` and meaningful.
-        pass
+        # findings. If a chain rule introduces a regression that
+        # crashes evaluation, the bench gate has to fail loudly —
+        # silently passing here masks the regression and lets
+        # broken chain rules ship.
+        raise RuntimeError(
+            f"[{case_dir.name}] chain evaluation failed"
+        ) from exc
 
     return sorted(fired)
 

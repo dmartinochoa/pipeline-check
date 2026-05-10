@@ -75,6 +75,22 @@ pipeline_check --pipeline oci --oci-manifest index.json
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
+
+# SCM posture (GitHub repo governance via the REST API).
+# Token comes from --gh-token or $GITHUB_TOKEN. Without admin
+# scope on the repo, the ``security_and_analysis``-driven rules
+# (SCM-004 / -005 / -015 / -016) cannot tell ``disabled`` from
+# ``unknown`` -- re-run with admin scope to confirm those
+# rules' verdicts.
+pipeline_check --pipeline scm --scm-platform github \
+    --scm-repo octocat/hello-world
+
+# Hermetic mode: read SCM API responses from JSON fixtures
+# under DIR. Useful for offline tests and CI runs that don't
+# hold a token.
+pipeline_check --pipeline scm --scm-platform github \
+    --scm-repo octocat/hello-world \
+    --scm-fixture-dir ./scm-fixtures/
 ```
 
 Full per-provider reference: [providers/](providers/README.md).
@@ -254,6 +270,7 @@ native cross-step propagation channel:
 | `TAINT-005`  | Buildkite    | `$BUILDKITE_*` flowing through the per-build `buildkite-agent meta-data` store to a downstream step |
 | `TAINT-006`  | Tekton       | `$(params.<X>)` flowing into `$(results.<Y>.path)` then read via `$(tasks.<producer>.results.<Y>)` in a consumer task's script |
 | `TAINT-007`  | Argo Workflows | `{{inputs.parameters.<X>}}` flowing through `outputs.parameters` then read via `{{tasks.<producer>.outputs.parameters.<X>}}` in a consumer template |
+| `TAINT-008`  | GitLab CI    | `extends:` job-template inheritance carrying tainted `variables:` into a consumer job's scripts. Quote-state aware; transitive across the extends chain with cycle detection. |
 
 Each finding carries the full source-to-sink chain in its
 description. Single-rule scanners stop at the producer's
@@ -308,6 +325,70 @@ pipeline_check --inventory                       # alongside findings
 pipeline_check --inventory-only                   # skip checks entirely
 pipeline_check --inventory-type 'AWS::IAM::*'     # glob filter (repeatable)
 ```
+
+## Multi-scanner SARIF ingest
+
+`--ingest <file>.sarif` (repeatable) absorbs findings from any
+SARIF 2.1.0-conformant scanner (Trivy, Checkov, Snyk, KICS,
+CodeQL, …) into the same scan output as pipeline-check's native
+findings. External rules become `INGEST-<tool>-<rule-id>`
+`Finding` rows; the chain engine RE-EVALUATES over the union, so
+cross-tool chains (e.g. `XPC-009` — ingested CVE finding +
+`DF-001` mutable runtime image) fire on compositions no
+individual scanner would surface alone.
+
+```bash
+# Run pipeline-check natively + ingest a Trivy report
+trivy fs --format sarif --output trivy.sarif ./
+pipeline_check --pipeline auto --ingest trivy.sarif --output sarif \
+    --output-file combined.sarif
+
+# Multiple feeds compose cleanly
+pipeline_check --ingest trivy.sarif --ingest checkov.sarif \
+    --ingest snyk.sarif
+
+# Ingest-only (pipe one tool's output through pipeline-check's
+# correlation engine without running any native rules):
+pipeline_check --pipeline auto --checks 'INGEST-*' --ingest trivy.sarif
+```
+
+Severity reads from `properties.security-severity` (the
+GitHub-Code-Scanning CVSS-like 0..10 score) when present,
+falling back to the SARIF `level` enum (`error` -> HIGH,
+`warning` -> MEDIUM, `note` -> LOW, otherwise INFO). Failures
+to parse a feed surface as warnings on stderr; the rest of the
+scan keeps going. Caps: 25 MiB per file, 5,000 results per file
+(both configurable via the public Python API in
+`pipeline_check.core.sarif_ingest`).
+
+## Vulnerable-by-design benchmark
+
+`bench/` ships intentionally-vulnerable fixture sets (one folder
+per attack pattern, anchored to a real-world incident) plus a
+runner that asserts pipeline-check fires on every expected check
+ID for each case. Used as a CI regression gate AND as
+verifiable coverage proof for adopters.
+
+```bash
+# Run all cases, recall table to stdout
+python bench/run.py
+
+# One case
+python bench/run.py --case unpinned-supply-chain
+
+# Machine-readable JSON
+python bench/run.py --json
+
+# Pre-populate expected.txt for a new case from current scan output
+python bench/run.py --case <slug> --suggest
+```
+
+Exit code is zero only when every case hits 100 % recall.
+`tests/test_bench.py` runs the harness as part of the CI suite.
+The eventual cross-scanner comparison matrix (vs Zizmor /
+Poutine / Checkov / KICS / Trivy) is tracked under
+`bench/COMPARISON.md` with the trade-offs that justify deferring
+its build.
 
 ## Environment variables
 

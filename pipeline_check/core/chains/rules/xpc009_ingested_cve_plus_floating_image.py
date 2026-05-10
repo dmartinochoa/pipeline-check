@@ -108,6 +108,25 @@ RULE = ChainRule(
 )
 
 
+def _tool_slug_from_check_id(check_id: str) -> str:
+    """Recover the source-tool slug from an ingested ``INGEST-*``
+    check_id by matching against the known prefix set, so hyphenated
+    tool names (``codeql-cli``, future ``grype-db``, etc.) round-trip
+    instead of collapsing to their first segment. Falls back to a
+    tool-neutral phrase when the check_id doesn't fit the convention.
+    """
+    for prefix in _CVE_PREFIXES:
+        if check_id.startswith(prefix):
+            # Prefix shape is ``INGEST-<tool>-<id-marker>-`` —
+            # strip ``INGEST-`` and the trailing ``-<id-marker>-`` to
+            # recover ``<tool>`` verbatim, hyphens intact.
+            inner = prefix[len("INGEST-"):].rstrip("-")
+            tool, _, _ = inner.rpartition("-")
+            if tool:
+                return tool
+    return "an ingested scanner"
+
+
 def match(findings: list[Finding]) -> list[Chain]:
     """Match when at least one CVE-shaped ingested finding AND one
     DF-001 fail in the same run.
@@ -126,14 +145,7 @@ def match(findings: list[Finding]) -> list[Chain]:
     for cve_finding in cve_legs:
         for df_finding in df_legs:
             triggers = [cve_finding, df_finding]
-            # Pull the source-tool slug out of the ingested check_id
-            # (``INGEST-trivy-CVE-2024-12345`` -> ``trivy``) for the
-            # narrative; falls back to "an ingested scanner" if the
-            # check_id shape doesn't fit the convention.
-            tool = "an ingested scanner"
-            parts = cve_finding.check_id.split("-", 2)
-            if len(parts) >= 2 and parts[0] == "INGEST":
-                tool = parts[1]
+            tool = _tool_slug_from_check_id(cve_finding.check_id)
             narrative = (
                 f"Cross-tool chain:\n"
                 f"  1. {tool} reports CVE-shaped finding "
@@ -151,9 +163,9 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"digest keeps the vulnerability snapshot "
                 f"reproducible and lets the team track "
                 f"remediation as a deliberate digest update; "
-                f"without it, ``trivy scan`` results carry an "
-                f"asterisk because the next build won't necessarily "
-                f"have the same layers."
+                f"without it, the ingested-scanner results carry "
+                f"an asterisk because the next build won't "
+                f"necessarily have the same layers."
             )
             out.append(Chain(
                 chain_id=RULE.id,

@@ -17,9 +17,10 @@ CI/CD Top 10. Each case ships:
     alongside the rules. Asserting the chain proves the case
     exercises pipeline-check's correlation tier — the project's
     wedge — not just the rule pack.
-  * (Optional) `notes.md` — narrative explaining the vulnerability,
-    the real-world incident the case is anchored to, and what a
-    fix would look like.
+  * `notes.md` — narrative explaining the vulnerability, the
+    real-world incident the case is anchored to, and what a fix
+    would look like. Required: `tests/test_bench.py` fails any
+    case that's missing it.
   * (Optional) `scm_config.json` + `scm/` directory — SCM provider
     fixtures for cases that exercise the GitHub-API-driven
     rules. `scm_config.json` declares
@@ -73,8 +74,9 @@ this directory; tracking under `COMPARISON.md`.
 3. Hand-edit `expected.txt` to keep ONLY the check IDs the case
    is intended to demonstrate (drop incidental fires from
    unrelated rules).
-4. Add a `notes.md` if the vulnerability has a real-world
-   anchor worth citing.
+4. Add a `notes.md` describing the vulnerability and a
+   real-world anchor worth citing (required — the bench test
+   gate fails any case without one).
 5. Open a PR. The `tests/test_bench.py` regression test will
    auto-pick the new case up.
 

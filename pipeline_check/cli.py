@@ -1857,6 +1857,12 @@ def scan(
             "--baseline cannot be combined with --inventory-only "
             "(baselines gate findings; --inventory-only emits no findings)."
         )
+    if inventory_only and ingest_paths:
+        raise click.UsageError(
+            "--ingest cannot be combined with --inventory-only "
+            "(inventory-only emits no findings or chains for the "
+            "ingested SARIF to merge into)."
+        )
 
     # Validate --baseline early so a typo'd path doesn't surface as
     # "no regressions found" after a full scan completes.

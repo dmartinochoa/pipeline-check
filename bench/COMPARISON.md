@@ -20,7 +20,7 @@ percentage for that scanner on that case's expected check IDs
 taxonomy — neither Trivy's `AVD-AWS-*` nor Checkov's `CKV2_*`
 match pipeline-check's `GHA-001` directly).
 
-```
+```text
 Case                          PC%  Zizmor%  Poutine%  Checkov%  KICS%  Trivy%
 unpinned-supply-chain         100  …
 pwn-request                   100
