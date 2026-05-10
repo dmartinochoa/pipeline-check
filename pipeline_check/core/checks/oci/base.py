@@ -360,14 +360,21 @@ def _statement_to_attestation(
     predicate_type = statement.get("predicateType")
     predicate = statement.get("predicate")
     subject = statement.get("subject")
-    if not isinstance(statement_type, str):
+    # Only accept canonical in-toto Statement types; anything else
+    # (truncated, mistyped, attacker-supplied JSON masquerading as a
+    # Statement) takes the skip path so the attestation rules don't
+    # ingest a payload they can't reason about.
+    if statement_type not in {
+        "https://in-toto.io/Statement/v0.1",
+        "https://in-toto.io/Statement/v1",
+    }:
         return None
     if not isinstance(predicate_type, str):
         return None
     if not isinstance(predicate, dict):
         return None
     if not isinstance(subject, list):
-        subject = []
+        return None
     typed_subject = tuple(s for s in subject if isinstance(s, dict))
     return Attestation(
         predicate_type=predicate_type,

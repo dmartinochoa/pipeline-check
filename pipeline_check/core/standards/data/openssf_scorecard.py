@@ -9,17 +9,17 @@ largely 1:1.
 
 Scorecard checks we do NOT evidence (require repo/registry introspection
 outside this scanner's scope):
-  Binary-Artifacts, Branch-Protection, CI-Tests, CII-Best-Practices,
-  Contributors, Fuzzing, License, Maintained, Packaging,
-  Security-Policy, Webhooks.
+  Binary-Artifacts, CI-Tests, CII-Best-Practices, Contributors,
+  Fuzzing, License, Maintained, Packaging, Security-Policy, Webhooks.
 
-Code-Review is partially evidenced. Scorecard defines it as "PR review
-required before merge", which we can't see, but pipeline-level approval
-gates (CICD-SEC-1 flow-control rules) and SCM-side approval-rule
-templates (CCM-001) are the closest CI/CD analogue and are included
-here. SAST is partially evidenced via registry/build-side vulnerability
-scanning rules (ECR-001, GCB-008, and the per-provider `vuln_scanning`
-rules).
+Branch-Protection is now evidenced directly by the SCM provider's
+``SCM-001`` / ``SCM-002`` / ``SCM-006`` / ``SCM-007`` / ``SCM-008``
+rules, which read the GitHub REST API's ``branches/.../protection``
+endpoint. ``Code-Review`` upgrades from "partially evidenced" to
+"evidenced" via ``SCM-002``. ``SAST`` adds ``SCM-003`` (default
+code scanning) to the registry/build-side vulnerability scanning
+already covered. ``Dependency-Update-Tool`` and ``Vulnerabilities``
+are evidenced by ``SCM-005`` (Dependabot security updates).
 """
 from __future__ import annotations
 
@@ -31,6 +31,10 @@ STANDARD = Standard(
     version="5",
     url="https://github.com/ossf/scorecard/blob/main/docs/checks.md",
     controls={
+        "Branch-Protection": (
+            "Default branch is protected against force-push, "
+            "deletion, and direct push without review"
+        ),
         "Code-Review":            "Changes merged to the default branch require review",
         "Dangerous-Workflow":     "No dangerous patterns in CI workflows (untrusted checkout, script injection)",
         "Dependency-Update-Tool": "Project uses an automated dependency-update tool (Dependabot / Renovate)",
@@ -52,6 +56,7 @@ STANDARD = Standard(
         "ECR-006":  ["Pinned-Dependencies"],                           # ECR pull-through untrusted upstream
         "CA-002":   ["Pinned-Dependencies"],                           # CodeArtifact public upstream
         "GHA-001":  ["Pinned-Dependencies"],
+        "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
         "GL-001":   ["Pinned-Dependencies"],
@@ -346,5 +351,23 @@ STANDARD = Standard(
         "DF-016": ["SBOM"],                                             # missing OCI provenance
         "DF-019": ["Token-Permissions"],                                # COPY credential file
         "DF-020": ["Token-Permissions"],                                # credential ARG
+        # ── SCM posture (governance via the GitHub REST API) ────────
+        # The SCM provider is the first surface that can evidence the
+        # platform-side controls Scorecard built its model on.
+        "SCM-001": ["Branch-Protection"],
+        "SCM-002": ["Branch-Protection", "Code-Review"],
+        "SCM-003": ["SAST"],
+        "SCM-005": ["Dependency-Update-Tool", "Vulnerabilities"],
+        "SCM-006": ["Branch-Protection"],
+        "SCM-007": ["Branch-Protection"],
+        "SCM-008": ["Branch-Protection"],
+        "SCM-009": ["Branch-Protection"],
+        "SCM-010": ["Branch-Protection"],
+        "SCM-011": ["Code-Review"],
+        "SCM-012": ["Code-Review"],
+        "SCM-013": ["Code-Review"],
+        "SCM-014": ["Code-Review"],
+        # SCM-015 (push protection) and SCM-016 (private vuln reporting)
+        # don't have direct Scorecard analogs.
     },
 )

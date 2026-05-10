@@ -99,6 +99,26 @@ def failing(findings: list[Finding], *check_ids: str) -> list[Finding]:
     return [f for f in findings if (not f.passed) and f.check_id in wanted]
 
 
+def failing_prefix(
+    findings: list[Finding], *prefixes: str,
+) -> list[Finding]:
+    """Return failing findings whose check_id starts with any of
+    *prefixes* (case-sensitive).
+
+    Built for cross-tool chains that fire on *any* finding from a
+    given source — e.g., a chain that wants "any Trivy CVE
+    finding" pairs ``failing_prefix(findings, "INGEST-trivy-CVE-")``
+    with a native check. Native rules use exact-match
+    :func:`failing`; the prefix variant is reserved for ingested
+    findings where the per-rule cardinality can be high (one
+    SARIF feed can carry hundreds of distinct CVE IDs)."""
+    return [
+        f for f in findings
+        if (not f.passed)
+        and any(f.check_id.startswith(p) for p in prefixes)
+    ]
+
+
 def has_failing(findings: list[Finding], check_id: str) -> bool:
     """Return True if any failing finding matches *check_id*."""
     return any((not f.passed) and f.check_id == check_id for f in findings)

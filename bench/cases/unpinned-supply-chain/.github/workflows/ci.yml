@@ -1,0 +1,15 @@
+name: ci
+on: push
+permissions: { contents: read }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # GHA-001: tag-pinned third-party action; an upstream
+      # maintainer compromise propagates to every consumer's next
+      # workflow run automatically. tj-actions/changed-files March
+      # 2025 (CVE-2025-30066) is the canonical instance.
+      - uses: actions/checkout@v4
+      - uses: tj-actions/changed-files@v45
+      - uses: actions/setup-node@v4
+      - run: npm ci && npm test

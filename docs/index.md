@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 19 providers, graded against 14 compliance frameworks. 
-111 of the 550+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+111 of the 570+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,7 +55,7 @@ A read-only scanner for 19 providers, graded against 14 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">550+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">570+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">19</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
@@ -111,7 +111,7 @@ the default; turning it off is opt-in.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-30 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+36 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
 findings line up in one scan. The `TAINT-NNN` dataflow engine follows
 attacker-controllable input across cross-step boundaries on five providers
@@ -175,6 +175,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">40 checks</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 40 K8S-* rules + 10 HELM-*</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">8 checks</span></a>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub)</span><span class="pg-provider__count">8 checks</span></a>
 </div>
 </section>
 
@@ -226,7 +227,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "19 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "550+ checks emit findings with severity, location, fix"
+    click C "attack_chains/" "570+ checks emit findings with severity, location, fix"
     click D "standards/" "14 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

@@ -606,6 +606,147 @@ authoring-time gaps that don't survive into the manifest.
   blob.
 """,
     ),
+    "scm": (
+        "SCM (GitHub) posture",
+        "pipeline_check.core.checks.scm.rules",
+        _REPO_ROOT / "docs" / "providers" / "scm.md",
+        """\
+# SCM (source control management) posture provider
+
+Scans GitHub repository governance via the REST API: branch
+protection, required reviews, code scanning, secret scanning,
+Dependabot, signed commits, and the rest of the controls that
+live at the repo / org settings layer rather than in workflow YAML.
+Maps each rule to the OpenSSF Scorecard check it evidences and to
+the CIS Software Supply Chain Security Guide section it satisfies.
+
+Closes the gap between this scanner and Legitify / OpenSSF
+Scorecard, neither of which scan pipeline-config files. Together
+with the GitHub Actions provider, the posture coverage spans both
+the repo settings and the workflows the repo runs.
+
+## Producer workflow
+
+```bash
+# Token comes from --gh-token or $GITHUB_TOKEN. Without admin
+# scope on the repo, security_and_analysis features (SCM-004 /
+# SCM-005 / SCM-015 / SCM-016) cannot distinguish "really
+# disabled" from "I lacked visibility" — re-run with admin scope
+# to confirm those rules' verdicts.
+pipeline_check --pipeline scm --scm-platform github \\
+    --scm-repo octocat/hello-world
+
+# Offline / CI mode: read JSON responses from disk instead of
+# hitting the network. Each endpoint maps to
+# <endpoint-with-slashes-as-underscores>.json under DIR.
+pipeline_check --pipeline scm --scm-platform github \\
+    --scm-repo octocat/hello-world \\
+    --scm-fixture-dir ./scm-fixtures/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### What the rules expect
+
+The provider hits three endpoints per repo:
+
+  * ``GET /repos/{owner}/{repo}`` — repo metadata, default
+    branch name, ``security_and_analysis`` feature states.
+  * ``GET /repos/{owner}/{repo}/branches/{default}/protection`` —
+    branch protection rule (404 = no rule).
+  * ``GET /repos/{owner}/{repo}/code-scanning/default-setup`` —
+    default code scanning state.
+
+Three production cases produce ``security_and_analysis``-omitted
+responses (which the rules treat as "not enabled" but flag in the
+description):
+
+  * The token lacks ``admin`` scope on the repo.
+  * The repo is on a plan that doesn't expose the feature
+    (e.g. private-repo Dependabot on a free org).
+  * The repo metadata fetch itself failed.
+
+Three FP-prevention guards keep noise out of the report:
+
+  * **Empty repos** (``repo_meta.size == 0`` and no protection
+    rule). SCM-001 passes with an "Empty repo" note rather than
+    fail "no protection rule" on a brand-new repo with no commits.
+  * **Archived / disabled repos**. GitHub auto-disables
+    Dependabot, secret scanning, push protection, code scanning,
+    and private vulnerability reporting on archived repos.
+    SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016 detect the
+    archive flag and pass with a "Skipped: archived repo" note.
+    Branch-protection rules deliberately still evaluate — the
+    audit-trail signal stays meaningful even when the repo is
+    read-only.
+  * **Repo-metadata-unavailable**. When the
+    ``repos/{owner}/{repo}`` fetch fails, the provider does NOT
+    probe ``branches/main/protection`` (which would FP for any
+    repo whose default branch is not literally ``main``).
+    SCM-001 surfaces a "Repo metadata unavailable" finding so
+    the gap is visible rather than silent.
+
+### SCM-specific checks
+
+- **SCM-001 / SCM-007 / SCM-009**, branch protection presence,
+  force-push denial, and deletion denial. Together they cover
+  the rewrite-history attack class — without them, every other
+  branch-protection knob the team configured can be erased
+  after the fact.
+- **SCM-002 / SCM-011 / SCM-012 / SCM-013 / SCM-014**, the review
+  side of branch protection. Required count, CODEOWNERS
+  routing, stale-review dismissal on force-push, conversation
+  resolution, last-push approval. SCM-014 is the one that blocks
+  the two-account collab review bypass.
+- **SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016**, the
+  ``security_and_analysis``-driven feature checks: code
+  scanning, secret scanning, Dependabot security updates, secret-
+  scanning push protection, private vulnerability reporting.
+  All five share the archived-repo skip behavior.
+- **SCM-006**, signed-commit enforcement on the default branch.
+  Pairs with GHA-006 in the **XPC-005** chain to flag end-to-end
+  provenance gaps (source unsigned + artifact unsigned = no
+  cryptographic chain of custody).
+- **SCM-010**, the meta-rule: branch protection enforces against
+  administrators. Without it, every other protection knob is
+  advisory rather than enforced.
+
+### Cross-provider chains
+
+When ``--pipelines github,scm`` (or ``--pipelines dockerfile,scm``)
+is used together, five attack-chain rules in the ``XPC-NNN`` family
+compose SCM findings with workflow / Dockerfile findings:
+
+- **XPC-004**, ``SCM-001 ∨ SCM-007`` + ``GHA-019`` → token
+  persistence on an unprotected default branch. CRITICAL composite
+  because the attacker primitive collapses from "compromise the
+  build runtime" to "open a PR, fetch the next build's
+  artifacts."
+- **XPC-005**, ``SCM-006`` + ``GHA-006`` → end-to-end provenance
+  gap. Source unsigned and artifact unsigned together mean
+  consumers can't verify what built from what, anywhere along
+  the pipeline.
+- **XPC-006**, ``SCM-002`` + ``GHA-002`` → unreviewed fork-PR
+  privilege escalation. The pwn-request primitive (workflow uses
+  ``pull_request_target`` and checks out PR head) plus a
+  protection rule with no required reviews means a single
+  insider can introduce or maintain the vulnerability without
+  any human-review gate. CRITICAL composite.
+- **XPC-007**, ``SCM-005`` + ``GHA-001`` → unpinned actions with
+  no automated remediation. Tag-pinned ``uses:`` references plus
+  Dependabot disabled means an upstream maintainer compromise
+  propagates immediately to every workflow run AND there's no
+  automated PR to move the team off the malicious version when
+  the public CVE drops. The tj-actions/changed-files
+  CVE-2025-30066 incident is the canonical instance.
+- **XPC-008**, ``SCM-001 ∨ SCM-007`` + ``DF-001`` → unreviewed
+  source ships a mutable runtime image. Insider-introducible
+  Dockerfile change AND floating-tag base image: the team has
+  two unrelated trust boundaries open at once and no compensating
+  control to break the chain at.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -722,6 +863,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "DR", "prefix_lc": "dr", "pkg": "drone",
         "signature": "check(pipeline: Pipeline) -> Finding",
         "arg_kind": "``Pipeline``",
+    },
+    "scm": {
+        "prefix": "SCM", "prefix_lc": "scm", "pkg": "scm",
+        "signature": "check(snapshot: SCMRepoSnapshot) -> Finding",
+        "arg_kind": "``SCMRepoSnapshot``",
     },
 }
 

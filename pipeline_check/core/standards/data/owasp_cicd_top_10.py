@@ -173,6 +173,7 @@ STANDARD = Standard(
         "GHA-037":  ["CICD-SEC-6", "CICD-SEC-4"],  # checkout persists token (Artipacked)
         "GHA-038":  ["CICD-SEC-4", "CICD-SEC-7"],  # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GHA-039":  ["CICD-SEC-6"],   # services / container creds literal
+        "GHA-040":  ["CICD-SEC-3"],   # known-compromised action ref
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -519,5 +520,18 @@ STANDARD = Standard(
         "SCM-001":  ["CICD-SEC-1"],                # default branch unprotected
         "SCM-002":  ["CICD-SEC-1"],                # required reviews missing
         "SCM-003":  ["CICD-SEC-10"],               # default code scanning disabled
+        "SCM-004":  ["CICD-SEC-6"],                # secret scanning disabled
+        "SCM-005":  ["CICD-SEC-3", "CICD-SEC-10"], # Dependabot security updates off
+        "SCM-006":  ["CICD-SEC-1", "CICD-SEC-6"],  # signed commits not required
+        "SCM-007":  ["CICD-SEC-1"],                # force-push allowed
+        "SCM-008":  ["CICD-SEC-1", "CICD-SEC-10"], # required status checks missing
+        "SCM-009":  ["CICD-SEC-1"],                # branch deletions allowed
+        "SCM-010":  ["CICD-SEC-1"],                # admin bypass allowed
+        "SCM-011":  ["CICD-SEC-1"],                # CODEOWNERS reviews not required
+        "SCM-012":  ["CICD-SEC-1"],                # stale reviews not dismissed
+        "SCM-013":  ["CICD-SEC-1"],                # conversation resolution not required
+        "SCM-014":  ["CICD-SEC-1"],                # last-push approval not required
+        "SCM-015":  ["CICD-SEC-6"],                # secret scanning push protection off
+        "SCM-016":  ["CICD-SEC-10"],               # private vulnerability reporting off
     },
 )

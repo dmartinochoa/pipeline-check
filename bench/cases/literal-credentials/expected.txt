@@ -1,0 +1,15 @@
+# Expected check_ids for the literal-credentials case.
+
+# Headline: AWS keys + GitHub PAT pasted into workflow env.
+GHA-008
+
+# Compounding: install script piped to bash.
+GHA-016
+
+# Cross-finding chain: literal credentials in env + a workflow
+# that runs untrusted install scripts compose into AC-005,
+# "Unsigned Artifact to Production." The deploy job ships
+# without signing AND has compromisable credentials in scope,
+# so a tampered build flows straight to prod with no break-the-
+# chain step.
+AC-005

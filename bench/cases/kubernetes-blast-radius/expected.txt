@@ -1,0 +1,20 @@
+# Expected check_ids for the kubernetes-blast-radius case.
+
+# Container hardening:
+K8S-001
+K8S-005
+K8S-006
+K8S-007
+
+# Host exposure:
+K8S-013
+
+# RBAC blast radius:
+K8S-020
+
+# Cross-finding chain: K8S-013 (hostPath) + K8S-020 (cluster-admin
+# binding) compose into AC-011, the Kubernetes Cluster Takeover
+# attack chain. Asserting the chain check_id alongside the rule
+# IDs proves the bench surface includes pipeline-check's
+# correlation tier, not just the rule pack.
+AC-011

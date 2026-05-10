@@ -617,7 +617,7 @@ def _finding_row(finding: Finding, rule: dict[str, Any]) -> str:
     # Concrete proof-of-exploit snippet for HIGH / CRITICAL rules.
     # Pre-formatted so multi-line payloads (issue-title injection
     # strings, manifest fragments, attack sequences) render verbatim.
-    if finding.exploit_example:
+    if (not finding.passed) and finding.exploit_example:
         sections.append(
             f'<div class="d-section">'
             f'<div class="d-label">Proof of exploit</div>'

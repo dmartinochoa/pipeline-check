@@ -900,5 +900,176 @@ Pin both ends of the release flow. In the Helm chart, regenerate ``Chart.lock`` 
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### XPC-004: Token persistence on an unprotected default branch { #xpc-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="kill-chain phase">credential-access -> persistence (write to default branch -> harvest from artifact)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">scm</span>
+</div>
+
+A workflow persists a CI token or secret into build artifacts (or logs, cache, ``$GITHUB_OUTPUT``) on a repo whose default branch is either unprotected (no protection rule) or allows force-pushes. The combination collapses the attack primitive from 'compromise the build runtime' to 'open a PR that lands a malicious change on main, then fetch the next build's artifacts.' Either leg alone is fixable in isolation; together, the secret is reachable to anyone with write access to the repo.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-1>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-6>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes, either alone breaks the chain:
+  1. Add a branch protection rule on the default branch with required pull-request reviews and force-push denial (SCM-001 + SCM-007). This forces any change to go through review before it can run with full CI permissions.
+  2. Stop persisting tokens to build artifacts (GHA-019). Use OIDC federation with short-lived credentials, mask secret values in logs, and audit any ``::set-output::`` / ``$GITHUB_OUTPUT`` write that includes ``${{ secrets.* }}`` or ``${{ github.token }}``.
+Best to fix both — branch protection is the durable control even when a future workflow change reintroduces credential persistence.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-005: End-to-end provenance gap: source unsigned, artifact unsigned { #xpc-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1554</span> <span class="pg-tag" title="kill-chain phase">supply-chain (source tampering -> build tampering, no compensating control at either boundary)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">scm</span>
+</div>
+
+The repo doesn't require signed commits AND the workflow doesn't sign release artifacts. There is no cryptographic chain of custody at either boundary: a tampered commit can land under any contributor's name, and a tampered artifact can ship from any compromised build runtime. Consumers downstream cannot verify what built from what — every release is trust-on-first-use.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-9>
+- <https://slsa.dev/spec/v1.0/levels>
+- <https://slsa.dev/spec/v1.0/requirements>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Enable ``Require signed commits`` on the default branch protection rule (SCM-006). Configure GPG / SSH / S/MIME signing for every contributor so commits land with a verifiable identity.
+  2. Add a signing step to the release workflow (GHA-006). ``slsa-framework/slsa-github-generator`` produces a verifiable SLSA L3 provenance attestation; ``sigstore/cosign`` signs the artifact with a keyless Fulcio identity. Publish the signature alongside the artifact and document the verification command in the release notes.
+Best to fix both: a signed commit landing in an unsigned release still leaves the build-runtime tampering vector open, and a signed artifact built from unsigned commits still has provenance ambiguity at the source boundary.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### XPC-006: Unreviewed fork-PR privilege escalation { #xpc-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution (single-identity introduction of the pwn-request primitive; ongoing fork-PR exploitation)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">scm</span>
+</div>
+
+A workflow uses ``pull_request_target`` and checks out the PR head (CRITICAL fork-PR privilege escalation primitive) AND the default branch's protection rule does not require approving reviews. A single insider can introduce or keep the vulnerability alive solo — there is no review gate between a compromised maintainer account and a fork-PR-exploitable workflow on the default branch.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-1>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-4>
+- <https://securitylab.github.com/research/github-actions-preventing-pwn-requests/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Replace ``pull_request_target`` with ``pull_request`` for any workflow that runs fork-PR code, OR split the workflow so the privileged half (write-scope token, secrets) does NOT check out the PR head and the build half runs in the unprivileged ``pull_request`` context (GHA-002).
+  2. Set ``required_approving_review_count >= 1`` in the default branch protection rule so a second identity must acknowledge any change to the workflow file before it merges (SCM-002). Pair with ``require_last_push_approval`` (SCM-014) so a force-push after approval doesn't smuggle the malicious diff back in.
+Best to fix both: GHA-002 is the active exploit primitive (every fork PR is a trigger), SCM-002 is the durable control that prevents reintroduction. Without the second, a future commit can reopen the door silently.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-007: Unpinned actions with no automated remediation { #xpc-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">supply-chain (mutable ingestion -> no automated detection / patch path; manual triage measured in days)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">scm</span>
+</div>
+
+Workflow ``uses:`` references aren't SHA-pinned (so an upstream maintainer compromise propagates to the next workflow run automatically) AND the repo has Dependabot security updates disabled (so the team has no automated alert + PR when the public CVE lands). The exposure window between upstream compromise and remediation is maximized.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3>
+- <https://www.cve.org/CVERecord?id=CVE-2025-30066>
+- <https://www.cve.org/CVERecord?id=CVE-2025-30154>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Pin every ``uses:`` reference to a 40-char commit SHA (GHA-001). The Renovate / Dependabot ``version-update`` config keeps the pins fresh while preserving review of every move. Tag pins (``@v4``, ``@main``) accept silent upstream rewrites; SHA pins do not.
+  2. Enable Dependabot security updates on the repo (SCM-005). The bot opens a PR with the minimum-required upgrade against every open advisory on an in-use dependency, so a maintainer is paged within hours of the CVE landing instead of days when someone notices.
+Best to fix both: SHA pins remove the *immediate* exposure to upstream tag rewrites; Dependabot remediation closes the *post-disclosure* window during which a CVE is published but no fix is in flight. The tj-actions March 2025 compromise demonstrated both halves of the failure mode in the same incident.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-008: Unreviewed source ships a mutable runtime image { #xpc-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">supply-chain (insider source change -> mutable upstream ingestion at build-time)</span> <span class="pg-tag pg-tag--owasp">dockerfile</span> <span class="pg-tag pg-tag--owasp">scm</span>
+</div>
+
+The repo's default branch is unprotected (or allows force-pushes) AND the Dockerfile pulls its base image by floating tag rather than digest. An insider can land a tampered ``FROM`` reference change in a single self-merge, AND every subsequent build inherits whatever bytes the upstream registry currently serves under the named tag. Neither the team's review process nor any lockfile has visibility into the runtime image's actual content.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-1>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Add a branch protection rule on the default branch with required pull-request reviews and force-push denial (SCM-001 / SCM-007). This forces any change to the Dockerfile (and every other source file) to go through review before it can affect the build.
+  2. Pin the Dockerfile's ``FROM`` to a digest (``FROM python:3.12@sha256:<hex>``) (DF-001). The build then uses the exact bytes the digest names; an upstream tag rewrite has no effect until a maintainer deliberately updates the digest in the Dockerfile.
+Best to fix both: branch protection is the durable control preventing the insider-introduction half, and digest pinning is the durable control preventing the upstream-ingestion half. Either alone leaves the other open.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-009: Ingested CVE finding plus mutable runtime image reference { #xpc-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1525</span> <span class="pg-tag" title="kill-chain phase">supply-chain (current-image vulnerability + unbounded future-image content)</span> <span class="pg-tag pg-tag--owasp">dockerfile</span>
+</div>
+
+A SARIF feed (Trivy, Grype, Snyk, etc.) reports at least one CVE against the current image AND the Dockerfile pins its base by floating tag rather than digest. Today's vulnerability set is known; tomorrow's is unbounded. Pinning to a digest keeps the vulnerability snapshot reproducible across builds; updating the digest is then a deliberate, auditable action.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-3>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-10>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; both are needed to close the chain:
+  1. Pin the Dockerfile's ``FROM`` to a digest (``FROM python:3.12@sha256:<hex>``) (DF-001). The build then uses the exact bytes the digest names; no upstream tag-rewrite changes the vulnerability set.
+  2. Update the digest to a known-clean upstream version the SARIF scanner clears. Capture the digest with ``crane digest`` or ``docker buildx imagetools inspect`` and update the ``FROM`` line in version control. The next build then uses the patched image AND keeps the snapshot consistent across subsequent runs.
+Optional but valuable: wire Dependabot or Renovate to auto-PR the digest update when a new clean version publishes (SCM-005 + this chain together close the loop).
+
+</div>
+
+</div>
+
 
 <!-- chain-catalog:end -->

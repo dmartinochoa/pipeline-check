@@ -1,0 +1,9 @@
+# Expected check_ids for the pwn-request case.
+
+# Headline: pull_request_target + PR-head checkout.
+GHA-002
+
+# Compounding primitives the workflow ships alongside the
+# pwn-request trigger.
+GHA-003
+GHA-019

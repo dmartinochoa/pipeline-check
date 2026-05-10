@@ -1,0 +1,25 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # GHA-008: AWS access key pasted into the workflow body.
+      # The literal lands in every fork, every clone, every build
+      # log, and persists in git history indefinitely.
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      DEPLOY_TOKEN: ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: |
+          aws s3 sync ./dist s3://prod-releases/
+          # GHA-016: install script piped straight to bash. Anyone
+          # who controls the install.sh endpoint (CDN compromise,
+          # account takeover) drops a payload that runs in the
+          # runner with full secret access.
+          curl -sL https://example.com/notify.sh | bash

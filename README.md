@@ -12,7 +12,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**550+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **30 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**570+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -102,6 +102,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 8 checks (`OCI-001`--`008`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest |
+| **SCM (GitHub)** | GitHub REST API (`--scm-platform github --scm-repo owner/name`) | `--scm-repo` | 8 checks (`SCM-001`--`008`): default-branch protection, required reviews, default code scanning, secret scanning, Dependabot updates, signed-commit enforcement, force-push allowance, required status checks |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -123,7 +124,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   550+ checks across 19 providers
+  Config files   |  Scanner  |   570+ checks across 19 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -331,7 +332,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` |
@@ -369,7 +370,9 @@ Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`,
 `--dockerfile-path`, `--k8s-path`, `--helm-path`, `--oci-manifest`) are
 auto-detected from the working directory when omitted. The Helm provider also
 takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
-forwarded to `helm template`.
+forwarded to `helm template`. The SCM provider is API-only and takes
+`--scm-platform github --scm-repo owner/name` (plus `--gh-token` or
+`$GITHUB_TOKEN`); no on-disk path flag.
 
 Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
 to the current directory, pre-filling the `pipeline:` key based on what it
@@ -415,6 +418,7 @@ pipeline_check/
         ├── dockerfile/rules/  # DF-001 .. DF-020
         ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack
+        ├── scm/rules/         # SCM-001 .. SCM-008 (GitHub governance via REST API)
         └── custom/            # YAML rule loader + predicate engine
 ```
 

@@ -1,0 +1,12 @@
+# Expected check_ids for the unpinned-supply-chain case. Each
+# line is one rule pipeline-check is asserted to fire on against
+# this case's fixtures. Comments and blank lines are ignored.
+
+# Workflow side: tag-pinned actions (GHA-001) is the headline
+# vulnerability for this case. The workflow itself sets a
+# scoped ``permissions:`` block, so GHA-004 is not in scope here.
+GHA-001
+
+# Dockerfile side: floating-tag base image + root user.
+DF-001
+DF-002

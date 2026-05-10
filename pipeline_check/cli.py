@@ -1073,6 +1073,23 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--ingest",
+    "ingest_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "Ingest a SARIF 2.1.0 file from another scanner (Trivy, "
+        "Checkov, Snyk, KICS, …). Findings are merged into this "
+        "scan's output before the chain engine runs, so the existing "
+        "``XPC-NNN`` chains can fire on the union. Repeatable for "
+        "multiple feeds. Ingested findings carry the synthesized "
+        "check_id ``INGEST-<tool>-<rule_id>`` so they're "
+        "distinguishable from native findings at a glance. Failures "
+        "to parse a feed surface as warnings; the rest of the scan "
+        "continues."
+    ),
+)
+@click.option(
     "--inventory",
     "inventory_flag",
     is_flag=True,
@@ -1565,6 +1582,7 @@ def scan(
     scm_platform: str | None,
     scm_repo: str | None,
     scm_fixture_dir: str | None,
+    ingest_paths: tuple[str, ...],
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
     inventory_only: bool,
@@ -2205,6 +2223,49 @@ def scan(
             click.echo(f"[error] Scan failed: {exc}", err=True)
             click.echo(traceback.format_exc(), err=True, nl=False)
             sys.exit(2)
+
+    # External SARIF ingest. ``--ingest`` (repeatable) loads each
+    # SARIF file, converts every result to a Finding, and merges
+    # the union into the scan output. The chain engine then
+    # re-runs over the combined set so ``XPC-NNN`` chains can fire
+    # on cross-tool compositions (e.g. an ingested Trivy finding +
+    # a native pipeline-check finding). Failures to parse a feed
+    # surface as warnings; the scan keeps going.
+    if ingest_paths and not inventory_only:
+        from .core import chains as _chains
+        from .core.sarif_ingest import parse_sarif_file
+        ingested_total = 0
+        for sarif_path in ingest_paths:
+            result = parse_sarif_file(sarif_path)
+            for warning in result.warnings:
+                click.echo(warning, err=True)
+            findings.extend(result.findings)
+            ingested_total += len(result.findings)
+            if not quiet and result.findings:
+                click.echo(
+                    f"[ingest] {sarif_path}: loaded "
+                    f"{len(result.findings)} finding(s) from "
+                    f"{result.source or 'unknown tool'}"
+                    + (f" {result.source_version}"
+                       if result.source_version else ""),
+                    err=True,
+                )
+        # Re-evaluate the chain engine over the union so XPC-NNN
+        # rules can fire on cross-tool compositions. Only when at
+        # least one ingested finding landed and chains haven't been
+        # globally disabled — ``--no-chains`` is honored by leaving
+        # the scanner's evaluated chain list untouched.
+        if ingested_total > 0 and not no_chains:
+            try:
+                # Replace scanner.chains with the union evaluation so
+                # downstream readers (terminal report, JSON, gate)
+                # see chains over the merged findings list.
+                scanner.chains = _chains.evaluate(findings)
+            except Exception as exc:  # noqa: BLE001
+                click.echo(
+                    f"[ingest] chain re-evaluation failed: {exc}",
+                    err=True,
+                )
 
     if not quiet:
         _emit_scan_summary(scanner.metadata)
