@@ -23,6 +23,14 @@ except ImportError:
 
 _RULES_DIR = Path(__file__).parent / "checks" / "aws" / "rules"
 
+# Shared design tokens (severity scale, grade scale, light-mode
+# surfaces). One file, two consumers — this module inlines it
+# below; ``docs/stylesheets/extra.css`` ``@imports`` the same file
+# so a palette edit can't desync the report and the docs site.
+_DESIGN_TOKENS_CSS = (Path(__file__).parent / "_design_tokens.css").read_text(
+    encoding="utf-8",
+)
+
 _SEVERITY_COLOR: dict[Severity, str] = {
     Severity.CRITICAL: "#dc3545",
     Severity.HIGH:     "#fd7e14",
@@ -253,12 +261,28 @@ details[open] > summary::before { transform: rotate(90deg); }
 .dark .b-medium { background: #3a3a1a; } .dark .b-low { background: #1a2a3a; }
 .dark .b-info { background: #2a2a2a; color: #aaa; }
 
-/* ── Theme toggle ── */
+/* ── Theme toggle ──
+   Sun on light, moon on dark. ``aria-pressed`` doubles as the
+   state hook the CSS reads (no extra class needed). Icons are
+   inline SVGs sized via ``em`` so they scale with the header
+   font-size if the operator zooms in.
+*/
 .theme-toggle {
-  background: none; border: 1px solid #555; border-radius: 4px;
-  color: #9090b0; padding: 3px 10px; cursor: pointer; font-size: 12px;
+  background: none; border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px; color: #cfd6e4;
+  width: 32px; height: 32px; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.theme-toggle:hover { background: rgba(255,255,255,.1); }
+.theme-toggle:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,0.35);
+  color: #ffffff;
+}
+.theme-toggle svg { width: 16px; height: 16px; display: block; }
+.theme-toggle .icon-moon { display: none; }
+.theme-toggle[aria-pressed="true"] .icon-sun  { display: none; }
+.theme-toggle[aria-pressed="true"] .icon-moon { display: block; }
 
 /* ── Attack chains panel ──
    The chain card's left-border color is the only per-card tinted
@@ -359,12 +383,17 @@ _SCRIPT = r"""
 (function () {
   // ── Theme: honor saved choice → OS preference → light default ──
   const THEME_KEY = 'pipelinecheck.theme';
+  function syncToggleState(isDark) {
+    const btn = document.querySelector('.theme-toggle');
+    if (btn) btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  }
   function initTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     const prefersDark = window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     const useDark = saved === 'dark' || (saved === null && prefersDark);
     document.body.classList.toggle('dark', useDark);
+    syncToggleState(useDark);
   }
   initTheme();
   const themeBtn = document.querySelector('.theme-toggle');
@@ -373,6 +402,7 @@ _SCRIPT = r"""
       const nowDark = !document.body.classList.contains('dark');
       document.body.classList.toggle('dark', nowDark);
       localStorage.setItem(THEME_KEY, nowDark ? 'dark' : 'light');
+      syncToggleState(nowDark);
     });
   }
 
@@ -1161,8 +1191,22 @@ def report_html(
     grade_color = _GRADE_COLOR.get(grade, "#6c757d")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    # ``region`` defaults to ``us-east-1`` for every scan, but only AWS-
+    # family providers (live AWS + Terraform/CloudFormation plans) actually
+    # honor it. Showing "Region: us-east-1" on a GitHub Actions report
+    # confuses readers and clutters the meta line. Surface region only
+    # when at least one finding came from an AWS-family rule pack, or
+    # when the operator explicitly picked a non-default region.
+    _AWS_PROVIDERS = {"aws", "terraform", "cloudformation"}
+    has_aws_findings = any(
+        _provider_for(f.check_id) in _AWS_PROVIDERS for f in findings
+    )
+    region_relevant = bool(region) and (
+        has_aws_findings or region.lower() != "us-east-1"
+    )
+
     meta_parts: list[str] = []
-    if region:
+    if region_relevant:
         meta_parts.append(f"Region: {_e(region)}")
     if target:
         meta_parts.append(f"Target: {_e(target)}")
@@ -1189,7 +1233,7 @@ def report_html(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PipelineCheck Security Report</title>
+  <title>Pipeline-Check Security Report</title>
   <style>{_CSS}</style>
 </head>
 <body>
@@ -1197,11 +1241,25 @@ def report_html(
 <header>
   <div class="header-inner">
     <div>
-      <h1>PipelineCheck<span class="header-sub">CI/CD Security Report</span></h1>
+      <h1>Pipeline-Check<span class="header-sub">CI/CD Security Report</span></h1>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-meta">{meta_str}</div>
-      <button class="theme-toggle" type="button" aria-label="Toggle dark mode">dark/light</button>
+      <button class="theme-toggle" type="button"
+              aria-label="Toggle dark mode" aria-pressed="false"
+              title="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
     </div>
   </div>
 </header>
@@ -1248,7 +1306,7 @@ def report_html(
 </main>
 
 <footer>
-  <p>Generated by <strong>PipelineCheck</strong> &mdash; OWASP Top 10 CI/CD Security Risks</p>
+  <p>Generated by <strong>Pipeline-Check</strong> &middot; OWASP Top 10 CI/CD Security Risks</p>
 </footer>
 
 <script>{_SCRIPT}</script>

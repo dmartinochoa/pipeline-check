@@ -112,7 +112,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     sns_topic_arn: str | None = os.environ.get("PIPELINE_CHECK_SNS_TOPIC_ARN")
 
     logger.info(
-        "Starting PipelineCheck scan: provider=%s region=%s", provider, region
+        "Starting Pipeline-Check scan: provider=%s region=%s", provider, region
     )
 
     # Run scan
@@ -167,7 +167,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             for f in critical_failures
         )
         message = (
-            f"PipelineCheck detected {len(critical_failures)} CRITICAL finding(s) "
+            f"Pipeline-Check detected {len(critical_failures)} CRITICAL finding(s) "
             f"in region {region}.\n\n"
             f"Grade : {score_result['grade']}\n"
             f"Score : {score_result['score']}/100\n\n"
@@ -181,7 +181,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             sns.publish(
                 TopicArn=sns_topic_arn,
                 Subject=(
-                    f"[PipelineCheck] CRITICAL alert -- "
+                    f"[Pipeline-Check] CRITICAL alert -- "
                     f"Grade {score_result['grade']} in {region}"
                 ),
                 Message=message,

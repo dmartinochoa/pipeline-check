@@ -111,7 +111,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses")
-            if not isinstance(uses, str) or not uses.startswith("actions/checkout@"):
+            if not isinstance(uses, str) or not uses.lower().startswith(
+                "actions/checkout@"
+            ):
                 continue
             ref = ((step.get("with") or {}).get("ref") or "")
             if isinstance(ref, str) and PR_HEAD_REF_RE.search(ref):

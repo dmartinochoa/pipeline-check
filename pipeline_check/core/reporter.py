@@ -113,7 +113,7 @@ def report_terminal(
     console.print(
         Panel(
             "\n".join(header_lines),
-            title="[bold]PipelineCheck[/bold]",
+            title="[bold]Pipeline-Check[/bold]",
             border_style="blue",
             padding=(0, 2),
         )

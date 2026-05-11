@@ -124,7 +124,7 @@ class TestSmoke:
         assert html.startswith("<!DOCTYPE html>")
         assert "<html" in html
         assert "</html>" in html
-        assert "PipelineCheck" in html
+        assert "Pipeline-Check" in html
 
     def test_all_findings_rendered_as_rows(self):
         findings = [
@@ -454,14 +454,28 @@ class TestChainsPanel:
         than reverting to inline styles. Catches regressions where
         a styling tweak silently re-inlines the block."""
         html = report_html([_f()], _score(), chains=[self._chain()])
+        # Match each class as a token rather than as the full
+        # ``class="..."`` attribute, so multi-class attrs
+        # (``class="chain-card__line chain-card__triggers"``) still
+        # satisfy the assertion. The verbatim form would miss any
+        # element that combines a layout class with the semantic one.
         for cls in (
-            'class="chain-card"',
-            'class="chain-card__head"',
-            'class="chain-card__title"',
-            'class="chain-card__narrative"',
-            'class="chain-card__triggers"',
+            "chain-card",
+            "chain-card__head",
+            "chain-card__title",
+            "chain-card__narrative",
+            "chain-card__triggers",
         ):
-            assert cls in html, f"missing chain-card CSS class: {cls}"
+            found = any(
+                token in html
+                for token in (
+                    f' {cls} ',
+                    f'"{cls} ',
+                    f' {cls}"',
+                    f'"{cls}"',
+                )
+            )
+            assert found, f"missing chain-card CSS class: {cls}"
 
 
 class TestClipboardFallback:

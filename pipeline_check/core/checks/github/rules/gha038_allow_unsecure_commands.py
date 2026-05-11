@@ -58,10 +58,16 @@ _FLAG_NAME = "ACTIONS_ALLOW_UNSECURE_COMMANDS"
 
 
 def _is_truthy(raw: Any) -> bool:
-    if raw is True:
+    # GitHub's runner reads the flag as a shell env var, so any of the
+    # conventional truthy spellings re-opens the injection channel,
+    # not just the YAML boolean ``true``. ``1`` (int or string), ``yes``,
+    # and the YAML 1.1 boolean alias ``on`` all count.
+    if raw is True or raw == 1:
         return True
-    if isinstance(raw, str) and raw.strip().strip('"').strip("'").lower() == "true":
-        return True
+    if isinstance(raw, str):
+        token = raw.strip().strip('"').strip("'").lower()
+        if token in {"true", "1", "yes", "on"}:
+            return True
     return False
 
 
