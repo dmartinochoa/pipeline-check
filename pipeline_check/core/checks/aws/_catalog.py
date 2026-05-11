@@ -437,6 +437,80 @@ class ResourceCatalog:
             return out
         return self._memo("codeartifact:repositories", _load)
 
+    def codeartifact_package_versions(
+        self,
+        repositories: list[tuple[str, str]],
+        *,
+        only_external: bool = False,
+        max_versions_per_package: int = 10,
+    ) -> list[dict]:
+        """Return per-version metadata for *repositories*.
+
+        Each element of *repositories* is a ``(domainName, repoName)``
+        tuple. The method paginates ``list_packages`` and
+        ``list_package_versions`` per repo, then calls
+        ``describe_package_version`` for each ``Published`` version to
+        get the ``publishedTime``. Result shape per element:
+
+            {
+              "domain": str, "repository": str, "format": str,
+              "namespace": str | None, "package": str,
+              "version": str, "status": str,
+              "publishedTime": datetime | None,
+              "originType": str | None,    # "EXTERNAL" | "INTERNAL" | None
+              "originName": str | None,    # e.g. "public:npmjs" when external
+            }
+
+        Foundation for cooldown-style rules (CA-005 fresh-public-fetch,
+        future CA-0xx variants). The freshness math itself sits on the
+        caller — the catalog stays an inventory primitive. The
+        *only_external* flag pushes the public-upstream filter into the
+        loader so callers focused on dependency-confusion exposure
+        don't pay for the internal-publish fanout.
+
+        Each ``describe_package_version`` call is bounded by
+        *max_versions_per_package* (default 10, ordered newest-first by
+        the API's default sort) so the worst case for an account with
+        many long-history packages stays linear in
+        ``packages * max_versions_per_package`` API calls. Versions
+        whose status is not ``Published`` are skipped before the
+        describe call to bound the cost further (yanked / disposed
+        versions are not in scope for cooldown checks).
+
+        Memoized by the full argument tuple, so two callers with
+        different filter shapes don't collide. ``ClientError`` on any
+        per-repo step records a service-tag error and continues; the
+        caller sees a (possibly empty) result and the orchestrator
+        emits the degraded finding.
+        """
+        memo_key = (
+            "codeartifact:versions:"
+            f"{tuple(sorted(repositories))}:{only_external}:"
+            f"{max_versions_per_package}"
+        )
+
+        def _load() -> list[dict]:
+            client = self.client("codeartifact")
+            out: list[dict] = []
+            for domain, repo in repositories:
+                try:
+                    for pkg_page in client.get_paginator(
+                        "list_packages",
+                    ).paginate(domain=domain, repository=repo):
+                        for pkg in pkg_page.get("packages", []):
+                            out.extend(
+                                _walk_package_versions(
+                                    client, domain, repo, pkg,
+                                    only_external=only_external,
+                                    cap=max_versions_per_package,
+                                ),
+                            )
+                except ClientError as exc:
+                    self.errors.setdefault("codeartifact", str(exc))
+                    continue
+            return out
+        return self._memo(memo_key, _load)
+
     # ------------------------------------------------------------------
     # CodeCommit
     # ------------------------------------------------------------------
@@ -559,6 +633,88 @@ class ResourceCatalog:
                         continue
             return out
         return self._memo("codepipeline:pipelines", _load)
+
+
+def _walk_package_versions(
+    client: Any,
+    domain: str,
+    repo: str,
+    pkg: dict,
+    *,
+    only_external: bool,
+    cap: int,
+) -> list[dict]:
+    """Walk versions for one ``list_packages`` entry.
+
+    Issued one ``list_package_versions`` paginator + one
+    ``describe_package_version`` per surviving version. Returns the
+    flat per-version dicts that
+    :meth:`ResourceCatalog.codeartifact_package_versions` collects.
+
+    Bounded by *cap* on the describe-call fanout — the API returns
+    versions newest-first by default, so a cap of 10 captures the
+    recent slice that cooldown rules care about and leaves long
+    historical version trees alone.
+    """
+    out: list[dict] = []
+    fmt = pkg.get("format", "")
+    namespace = pkg.get("namespace")
+    package = pkg.get("package", "")
+    if not package:
+        return out
+    described = 0
+    try:
+        version_pages = client.get_paginator(
+            "list_package_versions",
+        ).paginate(
+            domain=domain, repository=repo,
+            format=fmt, package=package,
+            **({"namespace": namespace} if namespace else {}),
+        )
+    except ClientError:
+        return out
+    for vpage in version_pages:
+        for v in vpage.get("versions", []):
+            if described >= cap:
+                return out
+            if v.get("status") != "Published":
+                continue
+            version = v.get("version")
+            if not version:
+                continue
+            try:
+                detail = client.describe_package_version(
+                    domain=domain, repository=repo,
+                    format=fmt, package=package,
+                    packageVersion=version,
+                    **({"namespace": namespace} if namespace else {}),
+                )
+            except ClientError:
+                continue
+            described += 1
+            pv = detail.get("packageVersion") or {}
+            origin = pv.get("origin") or {}
+            origin_type = origin.get("originType")
+            origin_name = None
+            entry = origin.get("domainEntryPoint") or {}
+            ext_name = entry.get("externalConnectionName")
+            if isinstance(ext_name, str):
+                origin_name = ext_name
+            if only_external and origin_type != "EXTERNAL":
+                continue
+            out.append({
+                "domain": domain,
+                "repository": repo,
+                "format": fmt,
+                "namespace": namespace,
+                "package": package,
+                "version": version,
+                "status": v.get("status"),
+                "publishedTime": pv.get("publishedTime"),
+                "originType": origin_type,
+                "originName": origin_name,
+            })
+    return out
 
 
 class _ClientHost(AWSBaseCheck):
