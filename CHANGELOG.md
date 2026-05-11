@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Per-rule policy-as-code overlay (`--policy NAME` /
+  `--list-policies`).** New `pipeline_check/core/policies.py`
+  module loads named scan profiles from `./policies/<NAME>.yml` or
+  `./.pipeline-check/policies/<NAME>.yml`. Each policy bundles a
+  `checks:` whitelist, a `standards:` filter, gate thresholds
+  (`gate.fail_on` / `gate.min_grade` / `gate.max_failures` /
+  `gate.fail_on_checks`), and per-rule severity overrides
+  (`overrides:`). Policy values feed click's `default_map`, so the
+  config file, env vars, and explicit CLI flags continue to win on
+  conflicts (precedence: defaults < policy < config file < env <
+  CLI). `--list-policies` enumerates every discoverable policy
+  and exits 0; exits 3 when no policies are found. The `--policy`
+  argument is sanitized to reject path traversal (`..` and path
+  separators); pass a literal file path to bypass the lookup.
+  Per-rule `overrides` merge with the existing
+  `tool.pipeline_check.overrides` config block (config-file
+  overrides win per-key). Closes the v0.6.0 "deployable in the way
+  real teams deploy linters" item from the roadmap. 34 unit tests
+  + 9 CLI integration tests lock the contract.
+- **`--write-baseline PATH` companion to `--baseline`.** Snapshots
+  the current scan's findings to a JSON file in the same shape
+  `--output json` emits, so the next run can gate only on new
+  issues via `--baseline PATH`. Independent of `--output`: a CI
+  lane can emit SARIF for code-scanning while simultaneously
+  writing the JSON baseline. Logs `[baseline] wrote N failing
+  finding(s) to PATH` to stderr unless `--quiet` is set. Closes
+  the missing half of the v0.5.0 auto-baseline item.
+
 ## [1.0.1] - 2026-05-11
 
 Skipped v1.0.0 — that tag is locked against re-use by the

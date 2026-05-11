@@ -63,7 +63,7 @@ Every rule must define:
 | `id` | Stable check ID. Format: `^[A-Z][A-Z0-9]{1,9}-\d{3}$`, e.g. `ACME-001`, `ORG7-014`. Must not collide with a built-in (`GHA-*`, `K8S-*`, `GCB-*`, …), the loader rejects collisions at load time. |
 | `title` | One-line summary shown in reports. |
 | `severity` | One of `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`. |
-| `provider` | One of `github`, `gitlab`, `bitbucket`, `azure`, `circleci`, `cloudbuild`, `kubernetes`. (AWS/Terraform/CloudFormation/Dockerfile aren't supported in v0.5.0.) Helm rules use `provider: kubernetes` because the Helm provider reuses the K8s rule pack on rendered manifests. |
+| `provider` | One of `github`, `gitlab`, `bitbucket`, `azure`, `circleci`, `cloudbuild`, `kubernetes`. AWS / Terraform / CloudFormation / Dockerfile aren't supported in 1.x. Helm rules use `provider: kubernetes` because the Helm provider reuses the K8s rule pack on rendered manifests. |
 | `description` | Per-offender description template. `{{ name }}` placeholders interpolate fields from the iterated node first, falling back to ambient context. |
 | `recommendation` | What to do to fix the violation. Shown in reports and `--explain`. |
 | `for_each` | A jsonpath into the doc selecting nodes to evaluate. Each match is one potential offender. |
@@ -75,7 +75,7 @@ Optional:
 |-------|---------|
 | `docs_note` | Multi-paragraph extended explanation surfaced by `--explain`. |
 | `cwe` | List of CWE identifiers (e.g. `["CWE-829"]`). |
-| `owasp` | List of OWASP CICD-SEC controls. Doc-only (no automatic standards-registry mapping in v0.5.0). |
+| `owasp` | List of OWASP CICD-SEC controls. Doc-only; no automatic standards-registry mapping for custom rules in 1.x. |
 | `esf` | List of NSA/CISA ESF controls. Same caveat. |
 
 ## jsonpath subset
@@ -235,11 +235,11 @@ automatically applies to Helm-deployed workloads.
   custom rules unambiguous in reports.
 - Duplicate IDs across rule files are also rejected.
 
-## What's not in v0.5.0
+## What's not in the custom-rule DSL today
 
-- **Inline tests.** A `tests:` block on the rule is on the roadmap
-  for v0.5.x; for now, write a quick fixture and run the rule
-  through the Scanner manually to verify.
+- **Inline tests.** A `tests:` block on the rule is on the roadmap;
+  for now, write a quick fixture and run the rule through the
+  Scanner manually to verify.
 - **Standards mapping.** Custom rules can declare `owasp:` / `esf:` /
   `cwe:` lists, but those are doc-only, the standards registry
   doesn't pick them up automatically. Custom findings appear in
@@ -327,6 +327,6 @@ runs once per matched node, per scanned manifest. Rules that touch
 every node in every doc on a 5000-line repo are noticeable; rules
 that walk one container or one step typically aren't.
 
-There's no hard cap on rule cost in v0.5.0. If you're seeing scan
+There's no hard cap on rule cost today. If you're seeing scan
 slowdowns after adding custom rules, narrow the `for_each` path so
 the predicate runs fewer times.

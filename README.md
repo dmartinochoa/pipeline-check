@@ -54,7 +54,7 @@ docker run --rm -v "$PWD:/scan" ghcr.io/dmartinochoa/pipeline-check
 
 The image is multi-arch (`linux/amd64` + `linux/arm64`), ships with
 SLSA build provenance and an SBOM attached to the manifest, and is
-tagged per release (`:0.5.0`), per commit (`:sha-<short>`), and
+tagged per release (`:1.0.1`), per commit (`:sha-<short>`), and
 `:latest` on master. `/scan` is the image working directory, so
 mounting your repo there lets auto-detect Just Work.
 
@@ -285,7 +285,7 @@ providers your repo ships through:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/dmartinochoa/pipeline-check
-    rev: v0.5.0   # pin to a release tag
+    rev: v1.0.1   # pin to a release tag
     hooks:
       - id: pipeline-check-github
       - id: pipeline-check-dockerfile
@@ -528,7 +528,7 @@ go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@v2.7.0
 
 # 2. Download the wheel and the matching provenance file from the
 #    GitHub release for the version you want.
-TAG=v0.5.0
+TAG=v1.0.1
 gh release download "$TAG" \
   --repo dmartinochoa/pipeline-check \
   --pattern '*.whl' \

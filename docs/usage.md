@@ -25,7 +25,7 @@ docker run --rm -v "$PWD:/scan" ghcr.io/dmartinochoa/pipeline-check
 ```
 
 Both registries publish the same digest; pick whichever your platform
-already pulls from. Tag flavors are `:<version>` (e.g. `:0.5.0`),
+already pulls from. Tag flavors are `:<version>` (e.g. `:1.0.1`),
 `:sha-<short>` for a commit-specific *tag* (mutable: still resolves
 through Docker Hub / GHCR), and `:latest` on master. For true
 *immutable* pinning, append the manifest digest:
