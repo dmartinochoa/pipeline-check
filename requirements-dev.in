@@ -6,7 +6,7 @@ jsonschema>=4.0
 # ``checks/base.py``. Lift this pin together with the annotations
 # fix as a separate change — out of scope for the lockfile-hygiene
 # PR that first added mypy to ``requirements-dev.txt``.
-mypy>=1.8.0,<2.0
+mypy>=1.8.0,<3.0
 pytest>=7.4.0
 pytest-benchmark>=5.0.0
 pytest-cov>=4.1.0
