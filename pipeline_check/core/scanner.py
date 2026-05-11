@@ -321,7 +321,7 @@ class Scanner:
         active_standards = _standards.resolve(standards)
         for f in findings:
             f.controls = _standards.resolve_for_check(f.check_id, active_standards)
-            # Apply the centralised confidence default unless the rule
+            # Apply the centralized confidence default unless the rule
             # opted out by setting ``confidence_locked=True`` on the
             # Finding. Rules that want per-finding control (e.g. CB-005
             # emitting HIGH for two-versions-behind even though the

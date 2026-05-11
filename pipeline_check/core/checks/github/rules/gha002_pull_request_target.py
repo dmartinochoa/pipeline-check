@@ -31,12 +31,12 @@ RULE = Rule(
         "it executes attacker-controlled code with those privileges."
     ),
     incident_refs=(
-        "GitHub Security Lab: ``Preventing pwn requests`` (2020), "
-        "the canonical write-up. Demonstrates how a fork PR that "
-        "lands in a ``pull_request_target`` workflow with the PR "
-        "head checked out runs in the base repo's privileged "
-        "context. https://securitylab.github.com/research/"
-        "github-actions-preventing-pwn-requests/",
+        "GitHub Security Lab: "
+        "[Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) "
+        "(2020), the canonical write-up. Demonstrates how a fork "
+        "PR that lands in a ``pull_request_target`` workflow with "
+        "the PR head checked out runs in the base repo's "
+        "privileged context.",
         "Trail of Bits ``Codecov-style supply chain via pwn "
         "requests`` (2021): showed the primitive against widely-"
         "used Actions workflows. The fix pattern (split the "
@@ -111,7 +111,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses")
-            if not isinstance(uses, str) or not uses.startswith("actions/checkout@"):
+            if not isinstance(uses, str) or not uses.lower().startswith(
+                "actions/checkout@"
+            ):
                 continue
             ref = ((step.get("with") or {}).get("ref") or "")
             if isinstance(ref, str) and PR_HEAD_REF_RE.search(ref):

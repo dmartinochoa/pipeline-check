@@ -35,12 +35,12 @@ RULE = Rule(
         "or `;` in the source field executes."
     ),
     incident_refs=(
-        "GitHub Security Lab disclosure (2020): a sweep of public "
-        "Actions found dozens of widely-used workflows interpolating "
-        "``github.event.issue.title`` / ``pull_request.title`` "
-        "directly into shell. Any commenter or PR author could run "
-        "arbitrary commands in the maintainer's CI. "
-        "https://securitylab.github.com/research/github-actions-untrusted-input/",
+        "[GitHub Security Lab disclosure](https://securitylab.github.com/research/github-actions-untrusted-input/) "
+        "(2020): a sweep of public Actions found dozens of widely-"
+        "used workflows interpolating ``github.event.issue.title`` "
+        "/ ``pull_request.title`` directly into shell. Any "
+        "commenter or PR author could run arbitrary commands in "
+        "the maintainer's CI.",
         "Trail of Bits ``pwn-request`` research (2021): demonstrated "
         "the same primitive against ``pull_request_target`` workflows "
         "where the runner has secrets and a write-scope token; one "

@@ -1,3 +1,8 @@
+/* Severity / grade / surface tokens (single source of truth shared
+   with the HTML reporter). The @import must come before any other
+   rule per CSS spec, hence the position above the comment block. */
+@import "_design_tokens.css";
+
 /* ============================================================
    Pipeline-Check — refined theme (modern, editorial)
 
@@ -46,36 +51,12 @@
 
   /* ============================================================
      DESIGN SYSTEM TOKENS (additive)
-     Mirrors .claude/design_system/colors_and_type.css so the
-     site, the HTML report, and the portable Skill share a
-     single token vocabulary. New work should reach for these
-     names; the --pg-* entries above are kept for back-compat
-     with existing selectors and will retire as call sites move
-     over.
+     Severity / grade / surface tokens live in
+     pipeline_check/core/_design_tokens.css and arrive here via
+     the @import at the top of this file. The --pg-* entries
+     above are kept for back-compat with existing selectors and
+     will retire as call sites move to the un-prefixed names.
      ============================================================ */
-
-  /* Severity scale (HTML reporter palette) ------------------ */
-  --sev-critical: #dc3545;
-  --sev-high:     #fd7e14;
-  --sev-medium:   #d4930a;
-  --sev-low:      #0d6efd;
-  --sev-info:     #6c757d;
-
-  /* Grade scale (scorer / report) --------------------------- */
-  --grade-a: #198754;
-  --grade-b: #0d9488;
-  --grade-c: #d4930a;
-  --grade-d: #dc3545;
-
-  /* Light-mode tokens (HTML report only — docs site is slate-only) */
-  --light-bg:         #f0f2f5;
-  --light-card:       #ffffff;
-  --light-header-bg:  #1a1a2e;
-  --light-border:     #dee2e6;
-  --light-text:       #212529;
-  --light-muted:      #6c757d;
-  --light-row-hover:  #f8f9fa;
-  --light-detail-bg:  #f8f9fa;
 
   /* Type families ------------------------------------------- */
   /* Mona Sans is the brand body face — see ``mkdocs.yml`` font.text

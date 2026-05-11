@@ -474,6 +474,17 @@ def _convert_result(
     # fall back to the source SARIF file path so the finding has
     # a stable group key for the heatmap and reporters.
     resource = locations[0].path if locations else source_path
+    # SARIF has no standard exploit-example slot, but several tools
+    # (and native pipeline-check rules round-tripped through SARIF)
+    # carry one under ``properties.exploit_example``. Preserve it so
+    # --explain and the HTML reporter surface it the same way they
+    # do for native findings.
+    exploit_example: str | None = None
+    props = raw.get("properties")
+    if isinstance(props, dict):
+        candidate = props.get("exploit_example")
+        if isinstance(candidate, str) and candidate.strip():
+            exploit_example = candidate
     return Finding(
         check_id=check_id,
         title=title,
@@ -484,4 +495,5 @@ def _convert_result(
         passed=False,
         confidence=Confidence.MEDIUM,
         locations=locations,
+        exploit_example=exploit_example,
     )

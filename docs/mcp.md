@@ -1,6 +1,6 @@
 # MCP server (`--serve`)
 
-Pipeline-check ships a [Model Context Protocol](https://modelcontextprotocol.io/) server that lets MCP-aware AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) drive scans and introspect the rule catalog directly. The server runs **locally on stdio** — it never reaches the network on its own, never sends telemetry, and exits when the client disconnects.
+Pipeline-check ships a [Model Context Protocol](https://modelcontextprotocol.io/) server that lets MCP-aware AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) drive scans and introspect the rule catalog directly. The server runs **locally on stdio**. It never reaches the network on its own, never sends telemetry, and exits when the client disconnects.
 
 ## Install
 
@@ -16,7 +16,7 @@ pip install 'pipeline-check[mcp]'
 pipeline_check --serve
 ```
 
-The process blocks until stdin closes. No scan flags are honored in this mode — each scan is an MCP `tools/call` request.
+The process blocks until stdin closes. No scan flags are honored in this mode; each scan is an MCP `tools/call` request.
 
 ## Tools
 

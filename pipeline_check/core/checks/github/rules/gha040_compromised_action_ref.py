@@ -49,16 +49,18 @@ RULE = Rule(
         "network registry to avoid taking on a telemetry surface."
     ),
     incident_refs=(
-        "tj-actions/changed-files compromise (CVE-2025-30066, "
+        "tj-actions/changed-files compromise "
+        "([CVE-2025-30066](https://www.cve.org/CVERecord?id=CVE-2025-30066), "
         "March 2025): the canonical case the registry was built "
         "for. Roughly 23,000 tag-pinned repos shipped CI secrets "
         "to an exfiltration endpoint over a ~24-hour window before "
         "GitHub blocked the malicious commits.",
-        "reviewdog/action-setup compromise (CVE-2025-30154, March "
-        "2025): same week as tj-actions; smaller blast radius but "
-        "identical mechanism. Tag-pinned consumers were affected; "
-        "SHA-pinned consumers who happened to match the malicious "
-        "commit were also affected.",
+        "reviewdog/action-setup compromise "
+        "([CVE-2025-30154](https://www.cve.org/CVERecord?id=CVE-2025-30154), "
+        "March 2025): same week as tj-actions; smaller blast "
+        "radius but identical mechanism. Tag-pinned consumers "
+        "were affected; SHA-pinned consumers who happened to "
+        "match the malicious commit were also affected.",
     ),
     known_fp=(
         "The registry covers only public, advisory-confirmed "

@@ -1,0 +1,46 @@
+/* ============================================================
+   Pipeline-Check design tokens — single source of truth.
+
+   Two consumers read this file:
+     - pipeline_check/core/html_reporter.py inlines the contents
+       into every HTML report at module-import time.
+     - docs/stylesheets/extra.css @imports it so the mkdocs site
+       inherits the same severity / grade / surface palette.
+
+   Tokens are scoped to ``:root`` so consumer stylesheets can
+   override per-mode (the docs site's slate scheme; the report's
+   ``.dark`` class) without touching this file. Type families
+   are deliberately omitted — the report uses Inter (system-safe)
+   and the docs use Mona Sans (editorial); that drift is by
+   design until both surfaces commit to a single typeface.
+   ============================================================ */
+
+:root {
+  /* Severity scale — used by both the report's badges/tiles and
+     the docs site's admonitions / table accents. */
+  --sev-critical: #dc3545;
+  --sev-high:     #fd7e14;
+  --sev-medium:   #d4930a;
+  --sev-low:      #0d6efd;
+  --sev-info:     #6c757d;
+
+  /* Grade scale — the scorer's A/B/C/D verdict, surfaced in the
+     report card and on the docs site's hero stat block. */
+  --grade-a: #198754;
+  --grade-b: #0d9488;
+  --grade-c: #d4930a;
+  --grade-d: #dc3545;
+
+  /* Surface palette (light) — the report's default theme. The
+     docs site is dark-only (slate scheme) but the token names
+     are kept generic so a future light-mode docs theme can reuse
+     them without renaming. */
+  --light-bg:         #f0f2f5;
+  --light-card:       #ffffff;
+  --light-header-bg:  #1a1a2e;
+  --light-border:     #dee2e6;
+  --light-text:       #212529;
+  --light-muted:      #6c757d;
+  --light-row-hover:  #f8f9fa;
+  --light-detail-bg:  #f8f9fa;
+}

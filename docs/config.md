@@ -4,7 +4,7 @@ Every CLI flag can be set in a config file so CI invocations stay short
 and repo policy lives alongside the code. Both TOML (inside
 `pyproject.toml`) and YAML (`.pipeline-check.yml`) are supported.
 
-## Precedence
+## 📊 Precedence
 
 Highest wins, matches every standard tool (ruff, mypy, pytest):
 
@@ -13,7 +13,7 @@ Highest wins, matches every standard tool (ruff, mypy, pytest):
 3. **Config file**: `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml`
 4. **Built-in defaults**
 
-## File discovery
+## 🔍 File discovery
 
 Without `--config`, the first file that exists wins:
 
@@ -23,7 +23,7 @@ Without `--config`, the first file that exists wins:
 Pass `--config PATH` to select an explicit file (a missing path raises
 a UsageError, no silent fallback).
 
-## Schema
+## 📋 Schema
 
 Every CLI flag maps to a key with `-` → `_`. Gate settings live under a
 nested `gate` sub-section.
@@ -92,7 +92,7 @@ gate:
   ignore_file: .pipelinecheckignore
 ```
 
-## Per-rule overrides
+## 🎚️ Per-rule overrides
 
 The `overrides:` block demotes or promotes a rule's severity without
 disabling it. A rule that's intentionally noisy in your environment
@@ -128,14 +128,14 @@ Rules
 - Unknown check IDs are silently ignored: the override simply never
   matches anything. Bad severities are dropped with a `[config]`
   warning at load time.
-- Overrides are applied **after** centralised confidence demotion, so
+- Overrides are applied **after** centralized confidence demotion, so
   the rule's confidence score is preserved even when its severity is
   changed.
 - Suppression is still done through `--ignore-file` /
   `.pipelinecheckignore`. Overrides change severity; they don't
   suppress the finding.
 
-## Environment variables
+## 🌳 Environment variables
 
 Upper-snake-case of the option name, prefixed with `PIPELINE_CHECK_`.
 Gate settings use the `PIPELINE_CHECK_GATE_` prefix.
@@ -155,7 +155,7 @@ Env vars override config-file values for the same key, useful in CI
 where the file encodes repo policy but a specific job (e.g. a nightly
 deep scan) needs to tighten a single setting.
 
-## Unknown keys
+## ❓ Unknown keys
 
 Unknown top-level or gate keys are **ignored with a stderr warning**
 rather than raising:
@@ -197,7 +197,7 @@ on the cause:
 # ↑ fails the job immediately on any unknown key
 ```
 
-## Tips
+## 💡 Tips
 
 - Keep `pyproject.toml` as the single source of truth for Python projects;
   it's already the standard place to find `[tool.ruff]` / `[tool.mypy]`.

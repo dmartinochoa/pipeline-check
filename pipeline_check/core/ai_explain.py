@@ -416,7 +416,7 @@ def render_section(client_name: str, body: str) -> str:
 
     Output goes through this helper (rather than being printed
     directly by the caller) so the "this section is non-deterministic"
-    contract is centralised. A reader pasting the response into a
+    contract is centralized. A reader pasting the response into a
     PR comment sees the banner; a future change to that contract
     happens in one place.
     """

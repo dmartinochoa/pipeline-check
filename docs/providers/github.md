@@ -134,8 +134,8 @@ Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch
 
 **Seen in the wild**
 
-- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): a malicious commit retagged behind ``@v1`` / ``@v45`` shipped CI-secret exfiltration to roughly 23,000 repos that had pinned the action to a mutable tag instead of a commit SHA. https://www.cve.org/CVERecord?id=CVE-2025-30066
-- reviewdog/action-setup compromise (CVE-2025-30154, March 2025): same week, similar mechanism. Tag-pinned consumers auto-pulled the malicious version; SHA-pinned consumers were unaffected. https://www.cve.org/CVERecord?id=CVE-2025-30154
+- tj-actions/changed-files compromise ([CVE-2025-30066](https://www.cve.org/CVERecord?id=CVE-2025-30066), March 2025): a malicious commit retagged behind ``@v1`` / ``@v45`` shipped CI-secret exfiltration to roughly 23,000 repos that had pinned the action to a mutable tag instead of a commit SHA.
+- reviewdog/action-setup compromise ([CVE-2025-30154](https://www.cve.org/CVERecord?id=CVE-2025-30154), March 2025): same week, similar mechanism. Tag-pinned consumers auto-pulled the malicious version; SHA-pinned consumers were unaffected.
 
 <div class="pg-rule__rec" markdown>
 
@@ -159,7 +159,7 @@ Replace tag/branch references (`@v4`, `@main`) with the full 40-char commit SHA.
 
 **Seen in the wild**
 
-- GitHub Security Lab: ``Preventing pwn requests`` (2020), the canonical write-up. Demonstrates how a fork PR that lands in a ``pull_request_target`` workflow with the PR head checked out runs in the base repo's privileged context. https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+- GitHub Security Lab: [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) (2020), the canonical write-up. Demonstrates how a fork PR that lands in a ``pull_request_target`` workflow with the PR head checked out runs in the base repo's privileged context.
 - Trail of Bits ``Codecov-style supply chain via pwn requests`` (2021): showed the primitive against widely-used Actions workflows. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
 
 <div class="pg-rule__rec" markdown>
@@ -184,7 +184,7 @@ Interpolating attacker-controlled context fields (PR title/body, issue body, com
 
 **Seen in the wild**
 
-- GitHub Security Lab disclosure (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI. https://securitylab.github.com/research/github-actions-untrusted-input/
+- [GitHub Security Lab disclosure](https://securitylab.github.com/research/github-actions-untrusted-input/) (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI.
 - Trail of Bits ``pwn-request`` research (2021): demonstrated the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR could exfiltrate every secret the workflow could see. Mitigation is the same: never interpolate context into shell, route through ``env:``.
 
 <div class="pg-rule__rec" markdown>
@@ -257,8 +257,8 @@ Unsigned artifacts cannot be verified downstream, so a tampered build is indisti
 
 **Seen in the wild**
 
-- SolarWinds Orion compromise (December 2020): SUNBURST trojanized builds shipped to ~18,000 customers because no post-build signature could be checked against a trusted signing identity. Cryptographic signing on every release would have given downstream consumers a verifiable break with the upstream key, the absence of which was the ambient signal of compromise. https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a
-- PyTorch nightly compromise (December 2022): the ``torchtriton`` dependency was hijacked via PyPI dependency-confusion. Sigstore-style attestation tied to the official publisher would have made the impostor build fail verification rather than silently install. https://pytorch.org/blog/compromised-nightly-dependency/
+- [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): SUNBURST trojanized builds shipped to ~18,000 customers because no post-build signature could be checked against a trusted signing identity. Cryptographic signing on every release would have given downstream consumers a verifiable break with the upstream key, the absence of which was the ambient signal of compromise.
+- [PyTorch nightly compromise](https://pytorch.org/blog/compromised-nightly-dependency/) (December 2022): the ``torchtriton`` dependency was hijacked via PyPI dependency-confusion. Sigstore-style attestation tied to the official publisher would have made the impostor build fail verification rather than silently install.
 
 <div class="pg-rule__rec" markdown>
 
@@ -483,7 +483,7 @@ Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote conten
 
 **Seen in the wild**
 
-- Codecov Bash uploader compromise (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s https://codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery. https://about.codecov.io/security-update/
+- [Codecov Bash uploader compromise](https://about.codecov.io/security-update/) (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery.
 - Bitwarden / npm install scripts (CVE-2018-7536-class incidents): remote-script execution in CI is the same primitive. The attacker controls bytes the runner executes. Pinning a digest or hosting a vendored copy turns a perpetual ambient risk into a one-time review.
 
 <div class="pg-rule__rec" markdown>
@@ -931,7 +931,7 @@ Hard-code ``runs-on:`` to a specific runner label or list of labels. If the choi
 
 Detection fires on any step whose ``uses:`` starts with ``actions/checkout@`` and whose ``with:`` block either omits ``persist-credentials`` (the unsafe default) or sets it to ``true`` explicitly.
 
-This is the failure pattern Zizmor calls *Artipacked* and the StepSecurity / harden-runner audit set tracks as ``persist-credentials``-default. Real-world exploit chains (the ``ultralytics`` 2024 RCE, multiple Mend / Snyk advisories) leverage exactly this primitive: a first checkout step persists the token, a later ``run:`` step (often a build script the attacker can influence via PR contents) reads ``.git/config`` and ships the token out.
+This is the failure pattern Zizmor calls *Artipacked* and the StepSecurity / harden-runner audit set tracks as ``persist-credentials``-default. Real-world exploit chains (the ``ultralytics`` 2024 RCE, multiple Mend / Snyk advisories) exploit exactly this primitive: a first checkout step persists the token, a later ``run:`` step (often a build script the attacker can influence via PR contents) reads ``.git/config`` and ships the token out.
 
 Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; GHA-037 catches the implicit checkout-default that doesn't go through a ``run:`` line at all.
 
@@ -1017,8 +1017,8 @@ Walks every workflow's ``steps[].uses:`` and ``jobs.<id>.uses:`` references agai
 
 **Seen in the wild**
 
-- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): the canonical case the registry was built for. Roughly 23,000 tag-pinned repos shipped CI secrets to an exfiltration endpoint over a ~24-hour window before GitHub blocked the malicious commits.
-- reviewdog/action-setup compromise (CVE-2025-30154, March 2025): same week as tj-actions; smaller blast radius but identical mechanism. Tag-pinned consumers were affected; SHA-pinned consumers who happened to match the malicious commit were also affected.
+- tj-actions/changed-files compromise ([CVE-2025-30066](https://www.cve.org/CVERecord?id=CVE-2025-30066), March 2025): the canonical case the registry was built for. Roughly 23,000 tag-pinned repos shipped CI secrets to an exfiltration endpoint over a ~24-hour window before GitHub blocked the malicious commits.
+- reviewdog/action-setup compromise ([CVE-2025-30154](https://www.cve.org/CVERecord?id=CVE-2025-30154), March 2025): same week as tj-actions; smaller blast radius but identical mechanism. Tag-pinned consumers were affected; SHA-pinned consumers who happened to match the malicious commit were also affected.
 
 <div class="pg-rule__rec" markdown>
 

@@ -23,6 +23,23 @@ except ImportError:
 
 _RULES_DIR = Path(__file__).parent / "checks" / "aws" / "rules"
 
+# Shared design tokens (severity scale, grade scale, light-mode
+# surfaces). One file, two consumers — this module inlines it
+# below; ``docs/stylesheets/extra.css`` ``@imports`` the same file
+# so a palette edit can't desync the report and the docs site.
+#
+# Read defensively: the asset is ``package-data`` and ships in the
+# wheel, but a partial install, test environment that mocks the
+# package, or an accidental delete must not crash the module import
+# (and with it, every reporter consumer). Missing → empty string;
+# the inline ``<style>`` block then just omits the cross-surface
+# tokens, and consumers fall back on their own per-tier defaults.
+_DESIGN_TOKENS_PATH = Path(__file__).parent / "_design_tokens.css"
+try:
+    _DESIGN_TOKENS_CSS = _DESIGN_TOKENS_PATH.read_text(encoding="utf-8")
+except OSError:
+    _DESIGN_TOKENS_CSS = ""
+
 _SEVERITY_COLOR: dict[Severity, str] = {
     Severity.CRITICAL: "#dc3545",
     Severity.HIGH:     "#fd7e14",
@@ -35,36 +52,15 @@ _GRADE_COLOR = {"A": "#198754", "B": "#0d9488", "C": "#d4930a", "D": "#dc3545"}
 
 _CSS = """
 /* ============================================================
-   Token block mirrors .claude/design_system/colors_and_type.css
-   so the report stays in lock-step with the docs site and the
-   portable design Skill. The --light-* names are the canonical
-   light-mode tokens; .dark below redefines them for dark mode.
+   Severity / grade / surface tokens are loaded from
+   _design_tokens.css (single source of truth shared with the
+   docs site). The block below adds the report-only tokens that
+   don't belong in the cross-surface palette: type families,
+   which legitimately differ between the report (Inter) and
+   the docs site (Mona Sans).
    ============================================================ */
+__DESIGN_TOKENS__
 :root {
-  /* Severity scale */
-  --sev-critical: #dc3545;
-  --sev-high:     #fd7e14;
-  --sev-medium:   #d4930a;
-  --sev-low:      #0d6efd;
-  --sev-info:     #6c757d;
-
-  /* Grade scale */
-  --grade-a: #198754;
-  --grade-b: #0d9488;
-  --grade-c: #d4930a;
-  --grade-d: #dc3545;
-
-  /* Light mode (report's default) */
-  --light-bg:         #f0f2f5;
-  --light-card:       #ffffff;
-  --light-header-bg:  #1a1a2e;
-  --light-border:     #dee2e6;
-  --light-text:       #212529;
-  --light-muted:      #6c757d;
-  --light-row-hover:  #f8f9fa;
-  --light-detail-bg:  #f8f9fa;
-
-  /* Type families */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -116,16 +112,49 @@ main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
 .c-pass  { color: var(--grade-a); font-weight: 600; }
 .c-sep   { color: var(--light-muted); margin: 0 4px; }
 .c-total { color: var(--light-muted); font-size: 13px; margin-left: 4px; }
-.sev-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.sev-pill {
-  display: flex; align-items: center; gap: 5px;
-  background: var(--light-detail-bg); border: 1px solid var(--light-border);
-  border-radius: 20px; padding: 3px 10px; font-size: 12px;
+/* Severity profile: one stacked bar + a compact legend row. The
+   bar segments are flex items; sizing them by ``flex:<count>``
+   lets the browser do the proportional math and keeps the markup
+   free of percentage arithmetic. A hover tooltip surfaces the
+   exact per-severity counts so the bar can stay numeric-free. */
+.sev-bar {
+  display: flex; height: 12px; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--light-border); background: var(--light-detail-bg);
+  margin-top: 4px;
+}
+.sev-bar__seg { display: block; transition: filter .15s ease; }
+.sev-bar__seg:hover { filter: brightness(1.08); cursor: help; }
+.sev-bar__seg + .sev-bar__seg { border-left: 1px solid var(--light-card); }
+.sev-legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.sev-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.sev-name { font-weight: 600; }
-.sev-cnt  { color: var(--light-muted); }
+.sev-legend__item {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--light-muted);
+}
+.sev-legend__swatch {
+  width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0;
+}
+.sev-legend__label {
+  font-weight: 600; letter-spacing: .04em;
+  font-size: 10px; text-transform: uppercase;
+  color: var(--light-text);
+}
+.sev-legend__count {
+  font-weight: 700; color: var(--light-text);
+}
+.sev-empty {
+  margin-top: 4px; font-size: 13px; color: var(--light-muted);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.sev-empty__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: color-mix(in oklab, var(--grade-a) 18%, transparent);
+  color: var(--grade-a); font-weight: 700; font-size: 11px;
+}
 
 /* ── Findings table ── */
 .findings-table {
@@ -253,12 +282,28 @@ details[open] > summary::before { transform: rotate(90deg); }
 .dark .b-medium { background: #3a3a1a; } .dark .b-low { background: #1a2a3a; }
 .dark .b-info { background: #2a2a2a; color: #aaa; }
 
-/* ── Theme toggle ── */
+/* ── Theme toggle ──
+   Sun on light, moon on dark. ``aria-pressed`` doubles as the
+   state hook the CSS reads (no extra class needed). Icons are
+   inline SVGs sized via ``em`` so they scale with the header
+   font-size if the operator zooms in.
+*/
 .theme-toggle {
-  background: none; border: 1px solid #555; border-radius: 4px;
-  color: #9090b0; padding: 3px 10px; cursor: pointer; font-size: 12px;
+  background: none; border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px; color: #cfd6e4;
+  width: 32px; height: 32px; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.theme-toggle:hover { background: rgba(255,255,255,.1); }
+.theme-toggle:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,0.35);
+  color: #ffffff;
+}
+.theme-toggle svg { width: 16px; height: 16px; display: block; }
+.theme-toggle .icon-moon { display: none; }
+.theme-toggle[aria-pressed="true"] .icon-sun  { display: none; }
+.theme-toggle[aria-pressed="true"] .icon-moon { display: block; }
 
 /* ── Attack chains panel ──
    The chain card's left-border color is the only per-card tinted
@@ -359,12 +404,17 @@ _SCRIPT = r"""
 (function () {
   // ── Theme: honor saved choice → OS preference → light default ──
   const THEME_KEY = 'pipelinecheck.theme';
+  function syncToggleState(isDark) {
+    const btn = document.querySelector('.theme-toggle');
+    if (btn) btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  }
   function initTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     const prefersDark = window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     const useDark = saved === 'dark' || (saved === null && prefersDark);
     document.body.classList.toggle('dark', useDark);
+    syncToggleState(useDark);
   }
   initTheme();
   const themeBtn = document.querySelector('.theme-toggle');
@@ -373,6 +423,7 @@ _SCRIPT = r"""
       const nowDark = !document.body.classList.contains('dark');
       document.body.classList.toggle('dark', nowDark);
       localStorage.setItem(THEME_KEY, nowDark ? 'dark' : 'light');
+      syncToggleState(nowDark);
     });
   }
 
@@ -448,7 +499,7 @@ _SCRIPT = r"""
   const collapseBtn = document.getElementById('f-collapse');
   function setAll(open) {
     document.querySelectorAll('tr[data-check-id] details').forEach(d => {
-      // Only toggle rows currently visible after filtering, honours the
+      // Only toggle rows currently visible after filtering, honors the
       // user's "show me what's failing" filter even when they expand all.
       if (d.closest('tr').style.display !== 'none') d.open = open;
     });
@@ -580,32 +631,63 @@ def _e(text: str) -> str:
     return html.escape(str(text))
 
 
-# Match an https:// URL in an incident-ref string. Conservative: only
-# https, no userinfo, stop at whitespace / quote / closing punctuation
-# so the URL stays clickable without dragging the trailing period of
-# the sentence into the anchor.
+# Two citation forms are supported inside an ``incident_refs`` string:
+#
+#   1. Markdown link syntax — ``[CVE-2025-30066](https://www.cve.org/...)``.
+#      Preferred. The visible text reads as a compact identifier and the
+#      raw URL stays out of body prose. Detected first so the bare-URL
+#      regex doesn't match the URL inside the parentheses.
+#
+#   2. Bare ``https://...`` — legacy form, still accepted for incidents
+#      whose citation hasn't been migrated yet. The whole URL surfaces
+#      as anchor text, which is verbose but functional.
+#
+# Both patterns stop at whitespace / quote / closing punctuation so the
+# anchor doesn't drag a trailing period of the sentence into the link.
+_MD_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https://[^\s<>\"')]+)\)")
 _URL_RE = re.compile(r"https://[^\s<>\"')]+")
 
 
 def _autolink(text: str) -> str:
-    """HTML-escape *text* and turn embedded https URLs into anchors.
+    """HTML-escape *text* and turn embedded URL citations into anchors.
 
-    Used by the "Seen in the wild" footer to render incident-ref
-    citations with clickable links to CVEs / postmortems while
-    keeping the surrounding prose escaped.
+    Supports both inline-markdown links (``[text](https://…)``) and
+    bare ``https://`` URLs. Used by the "Seen in the wild" footer
+    to render incident-ref citations with clickable links to CVEs /
+    postmortems while keeping the surrounding prose escaped.
     """
-    parts: list[str] = []
-    last = 0
-    for m in _URL_RE.finditer(text):
-        parts.append(_e(text[last:m.start()]))
-        url = m.group(0)
-        parts.append(
-            f'<a href="{_e(url)}" target="_blank" rel="noopener noreferrer">'
-            f'{_e(url)}</a>'
-        )
-        last = m.end()
-    parts.append(_e(text[last:]))
-    return "".join(parts)
+    out: list[str] = []
+    cursor = 0
+    # Walk the string left-to-right, taking whichever pattern matches
+    # next at each position. ``finditer`` won't help here because the
+    # two regexes overlap (a markdown link contains a bare URL inside
+    # the parens); we resolve by always preferring the markdown form
+    # when both could match the same byte range.
+    while cursor < len(text):
+        md = _MD_LINK_RE.search(text, cursor)
+        url = _URL_RE.search(text, cursor)
+        # Pick whichever match starts first; break ties in favor of
+        # the markdown form so we don't half-consume one of its bytes.
+        if md and (not url or md.start() <= url.start()):
+            out.append(_e(text[cursor:md.start()]))
+            label, href = md.group(1), md.group(2)
+            out.append(
+                f'<a href="{_e(href)}" target="_blank" '
+                f'rel="noopener noreferrer">{_e(label)}</a>'
+            )
+            cursor = md.end()
+        elif url:
+            out.append(_e(text[cursor:url.start()]))
+            href = url.group(0)
+            out.append(
+                f'<a href="{_e(href)}" target="_blank" '
+                f'rel="noopener noreferrer">{_e(href)}</a>'
+            )
+            cursor = url.end()
+        else:
+            out.append(_e(text[cursor:]))
+            break
+    return "".join(out)
 
 
 def _severity_badge(severity: Severity) -> str:
@@ -622,21 +704,77 @@ def _status_badge(passed: bool) -> str:
 
 
 def _severity_summary_html(summary: dict[str, Any]) -> str:
-    pills: list[str] = []
-    for sev in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO):
-        data = summary.get(sev.value, {"passed": 0, "failed": 0})
-        total = data["passed"] + data["failed"]
-        if total == 0:
+    """Render the failing-finding severity profile.
+
+    A single segmented bar across the card width, ordered worst-to-
+    least-bad, with one segment per severity tier sized by failure
+    count. A compact legend row underneath lists the counts. When
+    nothing failed we render a single muted "no failures" line — the
+    bar would be a flat empty rectangle otherwise.
+
+    The bar reads as one glance: the size and color of each segment
+    tells the reader where their fires are without scanning text.
+    Pass counts are deliberately omitted from the bar (the bar is
+    about *what's broken*) and re-surfaced in the legend tooltip.
+    """
+    severities = (
+        Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM,
+        Severity.LOW, Severity.INFO,
+    )
+    fails = {
+        sev: summary.get(sev.value, {"passed": 0, "failed": 0})["failed"]
+        for sev in severities
+    }
+    total_fails = sum(fails.values())
+
+    if total_fails == 0:
+        return (
+            '<div class="sev-empty">'
+            '<span class="sev-empty__icon">&#10003;</span>'
+            ' No failing findings in scope.</div>'
+        )
+
+    segments: list[str] = []
+    for sev in severities:
+        n = fails[sev]
+        if n == 0:
             continue
         color = _SEVERITY_COLOR[sev]
-        pills.append(
-            f'<div class="sev-pill">'
-            f'<span class="sev-dot" style="background:{color}"></span>'
-            f'<span class="sev-name">{sev.value}</span>'
-            f'<span class="sev-cnt">{data["failed"]}✗&nbsp;{data["passed"]}✓</span>'
-            f'</div>'
+        passes = summary.get(sev.value, {}).get("passed", 0)
+        tip = f"{sev.value}: {n} failing"
+        if passes:
+            tip += f" / {passes} passing"
+        segments.append(
+            f'<span class="sev-bar__seg" '
+            f'style="flex:{n};background:{color}" '
+            f'title="{_e(tip)}" '
+            f'aria-label="{_e(tip)}"></span>'
         )
-    return f'<div class="sev-row">{"".join(pills)}</div>'
+
+    legend_items: list[str] = []
+    for sev in severities:
+        n = fails[sev]
+        if n == 0:
+            continue
+        color = _SEVERITY_COLOR[sev]
+        legend_items.append(
+            f'<span class="sev-legend__item">'
+            f'<span class="sev-legend__swatch" '
+            f'style="background:{color}"></span>'
+            f'<span class="sev-legend__label">{sev.value}</span>'
+            f'<span class="sev-legend__count">{n}</span>'
+            f'</span>'
+        )
+
+    return (
+        '<div class="sev-bar" role="img" '
+        f'aria-label="Severity breakdown: {total_fails} failing finding(s)">'
+        + "".join(segments) +
+        '</div>'
+        '<div class="sev-legend">'
+        + "".join(legend_items) +
+        '</div>'
+    )
 
 
 # Check-ID prefix → provider slug used in the filter dropdown. Keep in
@@ -1030,8 +1168,8 @@ def _chains_section_html(chains: list[Chain]) -> str:
             for cid in c.triggering_check_ids
         )
         mitre_html = (
-            f'<div class="chain-card__line chain-card__mitre">'
-            f"<strong>MITRE ATT&amp;CK:</strong> "
+            '<div class="chain-card__line chain-card__mitre">'
+            "<strong>MITRE ATT&amp;CK:</strong> "
             + " ".join(
                 f"<code>{_e(t)}</code>" for t in c.mitre_attack
             )
@@ -1161,8 +1299,22 @@ def report_html(
     grade_color = _GRADE_COLOR.get(grade, "#6c757d")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    # ``region`` defaults to ``us-east-1`` for every scan, but only AWS-
+    # family providers (live AWS + Terraform/CloudFormation plans) actually
+    # honor it. Showing "Region: us-east-1" on a GitHub Actions report
+    # confuses readers and clutters the meta line. Surface region only
+    # when at least one finding came from an AWS-family rule pack, or
+    # when the operator explicitly picked a non-default region.
+    _AWS_PROVIDERS = {"aws", "terraform", "cloudformation"}
+    has_aws_findings = any(
+        _provider_for(f.check_id) in _AWS_PROVIDERS for f in findings
+    )
+    region_relevant = bool(region) and (
+        has_aws_findings or region.lower() != "us-east-1"
+    )
+
     meta_parts: list[str] = []
-    if region:
+    if region_relevant:
         meta_parts.append(f"Region: {_e(region)}")
     if target:
         meta_parts.append(f"Target: {_e(target)}")
@@ -1189,19 +1341,33 @@ def report_html(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PipelineCheck Security Report</title>
-  <style>{_CSS}</style>
+  <title>Pipeline-Check Security Report</title>
+  <style>{_CSS.replace("__DESIGN_TOKENS__", _DESIGN_TOKENS_CSS)}</style>
 </head>
 <body>
 
 <header>
   <div class="header-inner">
     <div>
-      <h1>PipelineCheck<span class="header-sub">CI/CD Security Report</span></h1>
+      <h1>Pipeline-Check<span class="header-sub">CI/CD Security Report</span></h1>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-meta">{meta_str}</div>
-      <button class="theme-toggle" type="button" aria-label="Toggle dark mode">dark/light</button>
+      <button class="theme-toggle" type="button"
+              aria-label="Toggle dark mode" aria-pressed="false"
+              title="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
     </div>
   </div>
 </header>
@@ -1248,7 +1414,7 @@ def report_html(
 </main>
 
 <footer>
-  <p>Generated by <strong>PipelineCheck</strong> &mdash; OWASP Top 10 CI/CD Security Risks</p>
+  <p>Generated by <strong>Pipeline-Check</strong> &middot; OWASP Top 10 CI/CD Security Risks</p>
 </footer>
 
 <script>{_SCRIPT}</script>

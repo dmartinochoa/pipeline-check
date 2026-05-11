@@ -60,14 +60,14 @@ RULE = Rule(
         "tag+digest pinning before suppressing.",
     ),
     incident_refs=(
-        "Log4Shell (CVE-2021-44228) downstream impact: organizations "
-        "with SBOMs at the ready could ship patches in hours; those "
-        "without (or with floating-version SBOMs) spent days "
-        "auditing builds to discover what they actually shipped. "
-        "The ``log4j-core@latest`` shape was the worst case, the "
+        "[Log4Shell downstream impact](https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a) "
+        "(CVE-2021-44228): organizations with SBOMs at the ready "
+        "could ship patches in hours; those without (or with "
+        "floating-version SBOMs) spent days auditing builds to "
+        "discover what they actually shipped. The "
+        "``log4j-core@latest`` shape was the worst case — the "
         "SBOM said the right name but no consumer could pin which "
-        "exact bytes were in production. "
-        "https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a",
+        "exact bytes were in production.",
         "Common SBOM-quality findings (NTIA SBOM Minimum Elements "
         "report, 2021): version completeness consistently the "
         "lowest-scoring dimension across producers. Floating "

@@ -1629,7 +1629,7 @@ def scan(
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
-    """PipelineCheck. CI/CD Security Posture Scanner.
+    """Pipeline-Check. CI/CD Security Posture Scanner.
 
     Analyzes CI/CD configurations and scores them against the
     OWASP Top 10 CI/CD Security Risks framework.

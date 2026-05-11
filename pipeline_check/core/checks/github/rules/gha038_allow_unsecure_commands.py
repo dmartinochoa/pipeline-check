@@ -30,9 +30,12 @@ RULE = Rule(
     ),
     docs_note=(
         "Detection fires when ``ACTIONS_ALLOW_UNSECURE_COMMANDS`` "
-        "is set to ``true`` (or the string ``\"true\"``) at the "
-        "workflow ``env:`` level, the job ``env:`` level, or any "
-        "step's ``env:`` block.\n\n"
+        "is set to any truthy value at the workflow ``env:`` "
+        "level, the job ``env:`` level, or any step's ``env:`` "
+        "block. Accepted truthy spellings: ``true`` / ``1`` / "
+        "``yes`` / ``on`` (including quoted forms like "
+        "``\"true\"`` and case-insensitive variants like "
+        "``YES`` / ``On``).\n\n"
         "Sister rule GHA-031 catches direct uses of ``::set-"
         "output::`` / ``::save-state::`` in step scripts. "
         "GHA-038 catches the explicit re-enable flag, which is "
@@ -58,10 +61,22 @@ _FLAG_NAME = "ACTIONS_ALLOW_UNSECURE_COMMANDS"
 
 
 def _is_truthy(raw: Any) -> bool:
-    if raw is True:
+    # GitHub's runner reads the flag as a shell env var, so any of the
+    # conventional truthy spellings re-opens the injection channel,
+    # not just the YAML boolean ``true``. ``1`` (int or string), ``yes``,
+    # and the YAML 1.1 boolean alias ``on`` all count.
+    #
+    # ``raw == 1`` would also match ``1.0`` (Python evaluates
+    # ``1.0 == 1`` as True), so the int check is type-narrowed via
+    # ``type(raw) is int`` rather than ``isinstance``: a ``bool`` is
+    # an ``int`` subclass, but we already handle ``True`` explicitly
+    # above and ``False`` must not pass.
+    if raw is True or (type(raw) is int and raw == 1):
         return True
-    if isinstance(raw, str) and raw.strip().strip('"').strip("'").lower() == "true":
-        return True
+    if isinstance(raw, str):
+        token = raw.strip().strip('"').strip("'").lower()
+        if token in {"true", "1", "yes", "on"}:
+            return True
     return False
 
 

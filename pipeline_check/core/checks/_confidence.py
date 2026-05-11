@@ -1,4 +1,4 @@
-"""Centralised confidence defaults for every check.
+"""Centralized confidence defaults for every check.
 
 Rules default to ``Confidence.HIGH`` at the Finding dataclass layer.
 This registry demotes specific check IDs to ``MEDIUM`` or ``LOW``

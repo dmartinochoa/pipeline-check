@@ -32,7 +32,7 @@ Two subtractive filters narrow what "effective" means:
 
 Exit codes are unchanged: `0` pass, `1` gate fail, `2` scanner error.
 
-## Recipes
+## 📖 Recipes
 
 ### Block CRITICAL only (lenient rollout)
 
@@ -53,7 +53,7 @@ pipeline_check --pipeline github --gha-path .github/workflows \
     --fail-on-check GHA-002 --fail-on-check GHA-005
 ```
 
-### Cap total failures while the team paydown debt
+### Cap total failures while the team pays down debt
 
 ```bash
 pipeline_check --pipeline aws --max-failures 5
@@ -131,8 +131,8 @@ longer applies and the gate summary emits:
 [gate] ignore rule expired on 2026-06-30: GHA-001:.github/workflows/release.yml (no longer suppressing)
 ```
 
-Suppressions within 14 days of expiry surface a forewarning in the
-same place so the team schedules a revisit before the gate flips:
+Suppressions within 14 days of expiry surface an advance warning in
+the same place so the team schedules a revisit before the gate flips:
 
 ```
 [gate] ignore rule expires in 5 days on 2026-06-30: GHA-001:.github/workflows/release.yml (still suppressing, but plan to revisit)
@@ -157,7 +157,7 @@ Evaluation order:
 4. Remaining findings are the **effective** set.
 5. Gate conditions evaluate against that set.
 
-## Gate summary on stderr
+## 📣 Gate summary on stderr
 
 Unless `--output json` is active (stdout must stay clean), every run
 prints a short summary to **stderr**:
@@ -172,7 +172,7 @@ prints a short summary to **stderr**:
 
 This makes failure diagnosis immediate without parsing the full JSON.
 
-## How the default interacts with filters
+## 🎛️ How the default interacts with filters
 
 The default `--fail-on CRITICAL` applies to the **effective** set,
 after baseline + ignore-file filtering. So a CRITICAL already in the
@@ -183,7 +183,7 @@ As soon as any of `--fail-on`, `--min-grade`, `--max-failures`, or
 `--fail-on-check` is passed, those govern and the implicit default is
 suppressed.
 
-## Scoping to changed files: `--diff-base`
+## 🔀 Scoping to changed files: `--diff-base`
 
 PR pipelines often only want to scan workflows the PR actually touches.
 `--diff-base REF` runs `git diff --name-only <REF>...HEAD` and filters
@@ -209,7 +209,7 @@ everything in CI.
 - **`aws`**: rejected with a clear error. Live AWS resources aren't
   bound to git refs; narrow the scope with `--target NAME` instead.
 
-## Baseline from a git ref: `--baseline-from-git REF:PATH`
+## 📌 Baseline from a git ref: `--baseline-from-git REF:PATH`
 
 `--baseline` reads a JSON report from disk. When baselines are stored
 in the repo itself (committed artifact) or on a merge-base branch,
@@ -226,7 +226,7 @@ Mirrors `--diff-base`: a git failure (unreachable ref, missing path)
 degrades to "no baseline" instead of raising. `--baseline` (file path)
 takes precedence if both are set.
 
-## Autofix: `--fix`
+## 🩹 Autofix: `--fix`
 
 For a subset of checks, `pipeline_check` can emit the exact source
 edit that would remediate the finding. The output is a standard
@@ -277,7 +277,7 @@ When `--output` is `json`, `sarif`, `html`, or `both`, patches from
 plain `--fix` (without `--apply`) route to stderr automatically so
 the machine-readable stream on stdout stays valid.
 
-## Selecting checks: globs
+## 🎯 Selecting checks: globs
 
 `--checks` accepts glob patterns (`fnmatch` syntax), not just exact IDs:
 
@@ -294,7 +294,7 @@ pipeline_check --pipeline gitlab --checks 'GL-00[12]'
 
 Exact IDs (`--checks GHA-001`) still work unchanged.
 
-## Custom secret patterns
+## 🔐 Custom secret patterns
 
 The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
 `JF-008`, `CC-008`, `DR-004`, …) ship with **46 named vendor-token
