@@ -174,6 +174,9 @@ STANDARD = Standard(
         "GHA-038":  ["CICD-SEC-4", "CICD-SEC-7"],  # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GHA-039":  ["CICD-SEC-6"],   # services / container creds literal
         "GHA-040":  ["CICD-SEC-3"],   # known-compromised action ref
+        "GHA-041":  ["CICD-SEC-3"],   # single-maintainer action
+        "GHA-042":  ["CICD-SEC-3"],   # very-young action repo
+        "GHA-043":  ["CICD-SEC-3", "CICD-SEC-5"],  # low-star + sensitive perms
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -533,5 +536,8 @@ STANDARD = Standard(
         "SCM-014":  ["CICD-SEC-1"],                # last-push approval not required
         "SCM-015":  ["CICD-SEC-6"],                # secret scanning push protection off
         "SCM-016":  ["CICD-SEC-10"],               # private vulnerability reporting off
+        "SCM-017":  ["CICD-SEC-1"],                # CODEOWNERS file missing
+        "SCM-018":  ["CICD-SEC-1"],                # PR review bypass allowed
+        "SCM-019":  ["CICD-SEC-1"],                # push-restriction allowlist names users
     },
 )

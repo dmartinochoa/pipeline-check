@@ -1044,8 +1044,9 @@ def _install_completion_callback(
     metavar="PLATFORM",
     help=(
         "SCM platform for the posture scanner (required when "
-        "--pipeline scm). Only ``github`` is supported in this "
-        "release; GitLab and Bitbucket are roadmap items."
+        "--pipeline scm). Supported: ``github`` (full rule pack), "
+        "``gitlab`` and ``bitbucket`` (universal subset of seven "
+        "rules: SCM-001/002/006/007/008/009/017)."
     ),
 )
 @click.option(

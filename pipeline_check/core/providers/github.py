@@ -14,6 +14,10 @@ from pathlib import Path
 from typing import Any
 
 from ..checks.base import BaseCheck
+from ..checks.github._action_reputation import (
+    ActionMetadataFetcher,
+    populate_action_metadata,
+)
 from ..checks.github.base import GitHubContext
 from ..checks.github.resolver import (
     CompositeFetcher,
@@ -25,6 +29,7 @@ from ..checks.github.resolver import (
 )
 from ..checks.github.uses_parser import parse_uses
 from ..checks.github.workflows import WorkflowChecks
+from ..checks.scm.base import HttpSCMFetcher
 from ..inventory import Component
 from .base import BaseProvider
 
@@ -90,6 +95,15 @@ class GitHubProvider(BaseProvider):
             max_depth=gha_resolve_depth,
         )
         resolver.resolve(context)
+        # Populate per-action repo metadata for the GHA-04x
+        # reputation rules. Failures land in ``ctx.warnings``; the
+        # rules themselves pass silently when metadata is missing,
+        # so a private repo or rate-limit response doesn't break
+        # the scan.
+        metadata_fetcher = ActionMetadataFetcher(
+            HttpSCMFetcher(token=gh_token),
+        )
+        populate_action_metadata(context, metadata_fetcher)
 
     @staticmethod
     def _warn_unresolved(context: GitHubContext) -> None:

@@ -95,6 +95,9 @@ STANDARD = Standard(
         "GHA-006":  ["4.1.1"],                           # artifact signing
         "GHA-007":  ["4.4.1"],                           # SBOM
         "GHA-040":  ["1.4.1", "3.1.3"],                  # known-compromised action ref
+        "GHA-041":  ["3.1.3"],                           # single-maintainer action
+        "GHA-042":  ["3.1.3"],                           # very-young action repo
+        "GHA-043":  ["3.1.3"],                           # low-star + sensitive perms
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],
@@ -267,5 +270,8 @@ STANDARD = Standard(
         "SCM-014":  ["1.1.5"],                      # last-push approval not required
         "SCM-015":  ["1.5.1"],                      # secret scanning push protection off
         "SCM-016":  ["1.4.1"],                      # private vulnerability reporting off
+        "SCM-017":  ["1.1.5"],                      # CODEOWNERS file missing
+        "SCM-018":  ["1.1.5"],                      # PR review bypass allowed
+        "SCM-019":  ["1.1.17"],                     # push-restriction allowlist names users
     },
 )

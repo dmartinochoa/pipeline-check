@@ -1,0 +1,32 @@
+# Keep the build context small and free of dev cruft. The wheel build
+# only needs ``pyproject.toml``, ``README.md``, and the ``pipeline_check``
+# package. Everything else is excluded here; README.md is whitelisted
+# back in because ``pyproject.toml`` references it as the long
+# description and ``python -m build`` will fail without it.
+
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+dist
+build
+*.egg-info
+bench
+docs
+site
+tests
+scripts
+sbom
+.claude
+.env*
+
+# Top-level markdown files (CHANGELOG.md etc.) — README.md is
+# whitelisted on the next line because the wheel build needs it.
+*.md
+!README.md

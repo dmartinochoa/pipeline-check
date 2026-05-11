@@ -1,11 +1,19 @@
 # SCM (source control management) posture provider
 
-Scans GitHub repository governance via the REST API: branch
+Scans repository governance via the platform's REST API: branch
 protection, required reviews, code scanning, secret scanning,
 Dependabot, signed commits, and the rest of the controls that
 live at the repo / org settings layer rather than in workflow YAML.
 Maps each rule to the OpenSSF Scorecard check it evidences and to
 the CIS Software Supply Chain Security Guide section it satisfies.
+
+Three platforms today: **GitHub** (full 19-rule pack), **GitLab**
+and **Bitbucket Cloud** (universal subset of seven rules:
+``SCM-001``, ``SCM-002``, ``SCM-006``, ``SCM-007``, ``SCM-008``,
+``SCM-009``, ``SCM-017``). GitHub-only rules pass on the other
+platforms with a "not applicable on PLATFORM" note in the
+description so the operator sees the deliberate skip rather than
+a silent absence.
 
 Closes the gap between this scanner and Legitify / OpenSSF
 Scorecard, neither of which scan pipeline-config files. Together
@@ -15,21 +23,51 @@ the repo settings and the workflows the repo runs.
 ## Producer workflow
 
 ```bash
-# Token comes from --gh-token or $GITHUB_TOKEN. Without admin
-# scope on the repo, security_and_analysis features (SCM-004 /
-# SCM-005 / SCM-015 / SCM-016) cannot distinguish "really
-# disabled" from "I lacked visibility" — re-run with admin scope
-# to confirm those rules' verdicts.
+# GitHub. Token comes from --gh-token or $GITHUB_TOKEN. Without
+# admin scope on the repo, security_and_analysis features
+# (SCM-004 / SCM-005 / SCM-015 / SCM-016) cannot distinguish
+# "really disabled" from "I lacked visibility" — re-run with
+# admin scope to confirm those rules' verdicts.
 pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world
 
+# GitLab. Token comes from --gh-token (the flag is shared across
+# platforms) or $GITLAB_TOKEN; needs the ``read_api`` scope. Repo
+# spec is the full project path (nested subgroups allowed).
+pipeline_check --pipeline scm --scm-platform gitlab \
+    --scm-repo group/subgroup/project
+
+# Bitbucket Cloud. Token is ``user:app_password`` or the existing
+# ``Basic <b64>`` Authorization value; falls back to
+# $BITBUCKET_TOKEN. Repo spec is ``workspace/repo_slug``.
+pipeline_check --pipeline scm --scm-platform bitbucket \
+    --scm-repo acme/widget
+
 # Offline / CI mode: read JSON responses from disk instead of
 # hitting the network. Each endpoint maps to
-# <endpoint-with-slashes-as-underscores>.json under DIR.
+# <endpoint-with-slashes-as-underscores>.json under DIR. Works on
+# every platform.
 pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world \
     --scm-fixture-dir ./scm-fixtures/
 ```
+
+### Per-platform rule coverage
+
+| Rule | GitHub | GitLab | Bitbucket | Notes |
+|------|--------|--------|-----------|-------|
+| SCM-001 (branch protection presence) | yes | yes | yes | Universal |
+| SCM-002 (required reviews) | yes | yes | yes | GitLab: ``approvals_before_merge``; Bitbucket: ``require_approvals_to_merge`` |
+| SCM-003 (default code scanning) | yes | skip | skip | GitHub-only |
+| SCM-004 (secret scanning) | yes | skip | skip | GitHub-only |
+| SCM-005 (Dependabot updates) | yes | skip | skip | GitHub-only |
+| SCM-006 (signed commits required) | yes | yes | yes | GitLab: ``push_rules.reject_unsigned_commits``; Bitbucket: no enforcement, always fires |
+| SCM-007 (force push allowed) | yes | yes | yes | Universal |
+| SCM-008 (required status checks) | yes | yes | yes | GitLab: pipeline-must-succeed; Bitbucket: ``require_passing_builds_to_merge`` |
+| SCM-009 (branch deletion allowed) | yes | yes | yes | GitLab protected branches block deletion implicitly; Bitbucket ``delete`` restriction |
+| SCM-010..SCM-016 | yes | skip | skip | GitHub-only protection knobs / security features |
+| SCM-017 (CODEOWNERS file present) | yes | yes | yes | GitLab also probes ``.gitlab/CODEOWNERS``; Bitbucket probes ``.bitbucket/CODEOWNERS`` |
+| SCM-018, SCM-019 | yes | skip | skip | GitHub-only protection-payload shape |
 
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the other providers.
@@ -135,7 +173,7 @@ compose SCM findings with workflow / Dockerfile findings:
 
 ## What it covers
 
-16 checks · 0 have an autofix patch (``--fix``).
+19 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -155,6 +193,9 @@ compose SCM findings with workflow / Dockerfile findings:
 | [SCM-014](#scm-014) | Default branch protection does not require approval of the most recent push | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-015](#scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [SCM-016](#scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [SCM-017](#scm-017) | Repository has no CODEOWNERS file | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-018](#scm-018) | Required PR reviews can be bypassed by named identities | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-019](#scm-019) | Push restrictions allowlist names individual users | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -194,7 +235,7 @@ Reads ``required_pull_request_reviews.required_approving_review_count`` from the
 
 **Known false-positive modes**
 
-- ``required_pull_request_reviews.bypass_pull_request_allowances`` is not consulted today: a protection rule that requires reviews but lists every contributor in the bypass allowlist still passes this rule even though the control is unenforced in practice. A future SCM-NNN rule will key off the bypass list directly; until then, audit the allowlist in the GitHub UI when this rule passes on a high-trust repo.
+- ``required_pull_request_reviews.bypass_pull_request_allowances`` is covered by ``SCM-018``: a protection rule that requires reviews but lists every contributor in the bypass allowlist still passes this rule even though the control is unenforced in practice. Read SCM-002 + SCM-018 as a pair when auditing whether required review actually fires.
 
 <div class="pg-rule__rec" markdown>
 
@@ -522,9 +563,81 @@ Enable private vulnerability reporting under the repository's Settings -> Code s
 
 </div>
 
+<div class="pg-rule pg-rule--medium" markdown>
+
+## SCM-017: Repository has no CODEOWNERS file { #scm-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Probes the three canonical CODEOWNERS locations via ``GET /repos/{owner}/{repo}/contents/<path>``. Fires when none of the three returns a file response. Pairs with SCM-011 (the protection-rule toggle): SCM-011 covers intent, SCM-017 covers reality. A repo with both set is auditing the path-scoped review actually happens.
+
+**Known false-positive modes**
+
+- Single-team repos where every contributor is a code owner of every path may legitimately skip CODEOWNERS — the file adds no routing in that case. Suppress via ignore-file when the team intentionally stays flat. The same suppression applies to SCM-011.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a ``CODEOWNERS`` file at ``.github/CODEOWNERS`` (the GitHub-recommended location), ``CODEOWNERS`` at the repo root, or ``docs/CODEOWNERS``. Map directories to the team or individual responsible for them. With SCM-011's ``require_code_owner_reviews`` knob enabled, GitHub auto-requests review from the matched owners on every PR; without the file, the toggle is meaningless and any reviewer can approve any change.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## SCM-018: Required PR reviews can be bypassed by named identities { #scm-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Reads ``required_pull_request_reviews.bypass_pull_request_allowances`` from the branch protection payload. Fires when any of ``users`` / ``teams`` / ``apps`` is non-empty. Surfaces the counts so the operator can locate the bypass entries in the GitHub UI without re-running the audit manually.
+
+**Seen in the wild**
+
+- Multiple GitHub Security Lab writeups attribute post-incident review-control gaps to legacy bypass entries: a contractor onboarded years earlier is listed in the allowance, a compromise of that contractor account merges tampered code despite the team having added required reviews on the default branch.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+In the default-branch protection rule, clear ``Allow specified actors to bypass required pull requests`` (``required_pull_request_reviews.bypass_pull_request_allowances`` in the API). Required reviews are only as strong as the bypass list. If a release-bot account needs to merge automated PRs, prefer a separate protection rule for the bot's branch namespace rather than a bypass entry on the default branch.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## SCM-019: Push restrictions allowlist names individual users { #scm-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Reads ``restrictions.users`` from the branch protection payload. Fires when the list is non-empty. ``restrictions`` itself being absent is the default GitHub posture (no push allowlist; review gates govern access) and passes this rule. Teams and apps in ``restrictions`` are not flagged — the rule audits the personal-account subset specifically.
+
+**Known false-positive modes**
+
+- A break-glass admin account intentionally listed for incident response is a legitimate use case. Suppress via ignore-file once the account's access has been reviewed (MFA, hardware token, audit-logged use).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+In the default-branch protection rule, audit the ``Restrict who can push to matching branches`` allowlist (``restrictions`` in the API). Move each individual user into a GitHub team and add the team instead, or replace with a GitHub App / bot service account when the entry is an automation. Named user entries are personal-compromise vectors that bypass every PR-review gate on the branch.
+
+</div>
+
+</div>
+
 ---
 
-## Adding a new SCM (GitHub) posture check
+## Adding a new SCM (GitHub / GitLab / Bitbucket) posture check
 
 1. Create a new module at
    `pipeline_check/core/checks/scm/rules/scmNNN_<name>.py`

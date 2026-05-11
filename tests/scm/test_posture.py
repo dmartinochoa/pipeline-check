@@ -669,6 +669,311 @@ class TestSCM016:
         assert f.severity == Severity.LOW
 
 
+# ── SCM-017: CODEOWNERS file presence ───────────────────────────────
+
+
+class TestSCM017:
+    def test_present_at_github_dir_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 1024},
+            codeowners_path=".github/CODEOWNERS",
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+        assert ".github/CODEOWNERS" in f.description
+
+    def test_present_at_root_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 1024},
+            codeowners_path="CODEOWNERS",
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+
+    def test_present_at_docs_dir_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 1024},
+            codeowners_path="docs/CODEOWNERS",
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+
+    def test_absent_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 1024},
+            codeowners_path=None,
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "CODEOWNERS" in f.description
+
+    def test_empty_repo_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 0},
+            default_branch_protection=None,
+            codeowners_path=None,
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+        assert "empty" in f.description.lower()
+
+    def test_archived_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main", "size": 1024, "archived": True,
+            },
+            codeowners_path=None,
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+
+    def test_meta_unavailable_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta=None,
+            codeowners_path=None,
+        )
+        f = _by_id(_findings(snap), "SCM-017")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+
+# ── SCM-018: PR review bypass allowance ─────────────────────────────
+
+
+class TestSCM018:
+    def test_no_bypass_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                    "bypass_pull_request_allowances": {
+                        "users": [], "teams": [], "apps": [],
+                    },
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+        assert f.severity == Severity.MEDIUM
+
+    def test_users_in_bypass_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                    "bypass_pull_request_allowances": {
+                        "users": [{"login": "alice"}],
+                        "teams": [], "apps": [],
+                    },
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert not f.passed
+        assert "1 user(s)" in f.description
+
+    def test_teams_and_apps_in_bypass_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "bypass_pull_request_allowances": {
+                        "users": [],
+                        "teams": [{"slug": "ops"}, {"slug": "release"}],
+                        "apps": [{"slug": "renovate"}],
+                    },
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert not f.passed
+        assert "2 team(s)" in f.description
+        assert "1 app(s)" in f.description
+
+    def test_missing_bypass_block_passes(self):
+        """A protection rule without the bypass field at all is the
+        default GitHub posture (no bypass list); pass silently."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+
+    def test_no_protection_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", default_branch_protection=None,
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+        assert "See SCM-001" in f.description
+
+    def test_no_required_reviews_block_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_status_checks": {"strict": True},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+        assert "See SCM-002" in f.description
+
+    def test_malformed_bypass_payload_doesnt_crash(self):
+        """``bypass_pull_request_allowances`` value is a string
+        instead of a dict (malformed API response). Rule should
+        pass silently rather than raise; this is the FP/FN guard
+        pattern shared by the rest of the SCM pack."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                    "bypass_pull_request_allowances": "malformed",
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+
+    def test_non_list_user_slot_treated_as_empty(self):
+        """``users`` value isn't a list (could be ``null`` or a
+        dict on malformed responses). Treat as zero, don't crash."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "bypass_pull_request_allowances": {
+                        "users": None,
+                        "teams": "not-a-list",
+                        "apps": [{"slug": "ok-bot"}],
+                    },
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert not f.passed
+        assert "1 app(s)" in f.description
+        # The malformed user / teams slots don't crash and don't
+        # appear in the count.
+        assert "user(s)" not in f.description
+        assert "team(s)" not in f.description
+
+
+# ── SCM-019: push restrictions allowlist (individual users) ─────────
+
+
+class TestSCM019:
+    def test_no_restrictions_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert f.passed
+        assert "no push-restriction" in f.description.lower()
+
+    def test_teams_and_apps_only_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "restrictions": {
+                    "users": [],
+                    "teams": [{"slug": "ops"}],
+                    "apps": [{"slug": "release-bot"}],
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert f.passed
+        assert "teams / apps only" in f.description
+
+    def test_individual_users_fail(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "restrictions": {
+                    "users": [{"login": "alice"}, {"login": "bob"}],
+                    "teams": [], "apps": [],
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert not f.passed
+        assert f.severity == Severity.LOW
+        assert "@alice" in f.description
+        assert "@bob" in f.description
+
+    def test_large_user_list_truncates(self):
+        users = [{"login": f"u{i}"} for i in range(10)]
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "restrictions": {
+                    "users": users, "teams": [], "apps": [],
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert not f.passed
+        assert "10 individual user(s)" in f.description
+        assert "+5 more" in f.description
+
+    def test_bare_string_user_entries_accepted(self):
+        """Fixture writers sometimes shortcut a user entry to a bare
+        login string; the rule should handle that the same way."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "restrictions": {
+                    "users": ["alice"],
+                    "teams": [], "apps": [],
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert not f.passed
+        assert "@alice" in f.description
+
+    def test_no_protection_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", default_branch_protection=None,
+        )
+        f = _by_id(_findings(snap), "SCM-019")
+        assert f.passed
+        assert "See SCM-001" in f.description
+
+
 # ── security_feature_state helper ───────────────────────────────────
 
 
@@ -871,7 +1176,8 @@ class TestStandardsMapping:
         for cid in ("SCM-001", "SCM-002", "SCM-003", "SCM-004",
                     "SCM-005", "SCM-006", "SCM-007", "SCM-008",
                     "SCM-009", "SCM-010", "SCM-011", "SCM-012",
-                    "SCM-013", "SCM-014", "SCM-015", "SCM-016"):
+                    "SCM-013", "SCM-014", "SCM-015", "SCM-016",
+                    "SCM-017", "SCM-018", "SCM-019"):
             stds = {r.standard for r in resolve_for_check(cid)}
             assert "cis_supply_chain" in stds, (
                 f"{cid} missing cis_supply_chain mapping"
@@ -879,14 +1185,15 @@ class TestStandardsMapping:
 
     def test_scm_rules_map_to_openssf_scorecard(self):
         from pipeline_check.core.standards import resolve_for_check
-        # SCM-004 (secret scanning), SCM-015 (push protection) and
-        # SCM-016 (private vuln reporting) have no direct Scorecard
-        # equivalents; everything else should land a Scorecard
-        # control.
+        # SCM-004 (secret scanning), SCM-015 (push protection),
+        # SCM-016 (private vuln reporting), SCM-018 (bypass list) and
+        # SCM-019 (push-restriction allowlist) have no direct
+        # Scorecard equivalents; SCM-017 maps to Code-Review (the
+        # CODEOWNERS-file signal is one of Scorecard's evidences).
         for cid in ("SCM-001", "SCM-002", "SCM-003", "SCM-005",
                     "SCM-006", "SCM-007", "SCM-008", "SCM-009",
                     "SCM-010", "SCM-011", "SCM-012", "SCM-013",
-                    "SCM-014"):
+                    "SCM-014", "SCM-017"):
             stds = {r.standard for r in resolve_for_check(cid)}
             assert "openssf_scorecard" in stds, (
                 f"{cid} missing openssf_scorecard mapping"
@@ -920,6 +1227,63 @@ class TestSCMContextHydration:
         assert any(
             c.endswith("/branches/main/protection") for c in fetcher.calls
         )
+
+    def test_for_repo_probes_codeowners_locations(self):
+        """The hydration flow probes the three canonical CODEOWNERS
+        paths and records the first hit on the snapshot."""
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/contents/.github/CODEOWNERS": {
+                "type": "file", "name": "CODEOWNERS",
+            },
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert ctx.repos[0].codeowners_path == ".github/CODEOWNERS"
+
+    def test_for_repo_falls_through_to_root_codeowners(self):
+        """When ``.github/CODEOWNERS`` is absent the probe continues
+        to ``CODEOWNERS`` at the repo root."""
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/contents/CODEOWNERS": {
+                "type": "file", "name": "CODEOWNERS",
+            },
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert ctx.repos[0].codeowners_path == "CODEOWNERS"
+
+    def test_for_repo_falls_through_to_docs_codeowners(self):
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/contents/docs/CODEOWNERS": {
+                "type": "file", "name": "CODEOWNERS",
+            },
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert ctx.repos[0].codeowners_path == "docs/CODEOWNERS"
+
+    def test_for_repo_codeowners_none_when_all_paths_404(self):
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert ctx.repos[0].codeowners_path is None
+        # All three were probed.
+        for p in (".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"):
+            assert f"repos/o/r/contents/{p}" in fetcher.calls
+
+    def test_for_repo_codeowners_ignored_when_not_a_file(self):
+        """A 200 response with ``type != "file"`` (e.g., directory
+        listing) should not count as a CODEOWNERS file."""
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/contents/.github/CODEOWNERS": {"type": "dir"},
+            "repos/o/r/contents/CODEOWNERS": {
+                "type": "file", "name": "CODEOWNERS",
+            },
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert ctx.repos[0].codeowners_path == "CODEOWNERS"
 
     def test_meta_failure_records_warning_keeps_going(self):
         # Empty map: every fetch returns None.
@@ -984,6 +1348,7 @@ class TestWholePackBehavior:
                 "allow_deletions": {"enabled": False},
             },
             code_scanning_default_setup={"state": "configured"},
+            codeowners_path=".github/CODEOWNERS",
         )
         findings = _findings(snap)
         failures = [f.check_id for f in findings if not f.passed]
@@ -1008,10 +1373,12 @@ class TestWholePackBehavior:
         findings = _findings(snap)
         failures = sorted(f.check_id for f in findings if not f.passed)
         # Branch-protection root cause + the 5 security-feature
-        # rules that are independent of branch protection.
+        # rules that are independent of branch protection +
+        # SCM-017 (CODEOWNERS file presence, independent of
+        # protection).
         assert failures == [
             "SCM-001", "SCM-003", "SCM-004", "SCM-005",
-            "SCM-015", "SCM-016",
+            "SCM-015", "SCM-016", "SCM-017",
         ]
 
     def test_archived_snapshot_only_branch_protection_fires(self):
@@ -1116,12 +1483,15 @@ class TestSCMProvider:
             )
 
     def test_build_context_rejects_unsupported_platform(self):
+        """Unknown platform names still trip the explicit error. GitHub
+        / GitLab / Bitbucket are all supported now; anything else
+        falls through."""
         import pytest
 
         from pipeline_check.core.providers.scm import SCMProvider
         with pytest.raises(ValueError, match="Unsupported"):
             SCMProvider().build_context(
-                scm_platform="bitbucket", scm_repo="o/r",
+                scm_platform="hg-cloud", scm_repo="o/r",
             )
 
     def test_inventory_emits_repo_component(self):

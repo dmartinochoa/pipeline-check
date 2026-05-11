@@ -21,7 +21,12 @@ from pipeline_check.core.checks.base import Finding, Severity
 
 @pytest.fixture
 def runner():
-    return CliRunner()
+    """Click test runner pinned to an isolated empty cwd so the CLI's
+    auto-detect path falls back to the AWS single-Scanner branch
+    (see :mod:`tests.test_cli` for the full rationale)."""
+    cli_runner = CliRunner()
+    with cli_runner.isolated_filesystem():
+        yield cli_runner
 
 
 def _finding(
