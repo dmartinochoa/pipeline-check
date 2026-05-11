@@ -172,11 +172,29 @@ pipeline_check --min-grade B
 # Fail only on new findings vs a committed baseline
 pipeline_check --fail-on HIGH --baseline-from-git origin/main:baseline.json
 
+# Snapshot today's findings so future runs gate only on new issues
+pipeline_check --write-baseline baseline.json
+
 # Cap total failures
 pipeline_check --max-failures 10
 ```
 
-Gate details: [ci_gate.md](ci_gate.md).
+For multi-lane CI (pre-commit / PR / release-gate), bundle the gate
+flags into a named policy file under `policies/<name>.yml`:
+
+```bash
+# Pre-commit lane uses a HIGH-only profile
+pipeline_check --policy pre-commit
+
+# Release lane uses MEDIUM-fail + attestation rules forced
+pipeline_check --policy release-gate
+
+# Enumerate every discoverable policy
+pipeline_check --list-policies
+```
+
+Gate details: [ci_gate.md](ci_gate.md). Policy schema:
+[config.md](config.md#named-scan-profiles).
 
 ## 🔑 AWS live scans: credentials
 

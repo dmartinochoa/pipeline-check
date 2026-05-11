@@ -79,11 +79,18 @@ legs were each baselined separately. See
 
 ```bash
 # One-time: capture today's state as the baseline (run on main, store as artifact).
-pipeline_check --pipeline aws --output json > baseline.json
+pipeline_check --pipeline aws --write-baseline baseline.json
 
 # Per-PR: fail only on findings not present in the baseline.
 pipeline_check --pipeline aws --fail-on HIGH --baseline baseline.json
 ```
+
+`--write-baseline PATH` emits the same JSON shape `--output json`
+produces, so the resulting file feeds straight back into `--baseline`
+on subsequent runs. It is independent of `--output`, a CI lane can
+write the baseline AND emit SARIF for code-scanning in the same run.
+A `[baseline] wrote N failing finding(s) to PATH` line on stderr
+confirms the file landed.
 
 When a finding is in the baseline, it is still reported in the terminal
 / HTML / SARIF output, the baseline affects only the gate decision, so
@@ -156,6 +163,58 @@ Evaluation order:
 3. Ignore file suppresses curated entries.
 4. Remaining findings are the **effective** set.
 5. Gate conditions evaluate against that set.
+
+## 🗂️ Named scan profiles: `--policy`
+
+Real teams run the same scanner with different bars in different
+lanes: pre-commit needs to be fast and HIGH-only, the PR gate runs the
+full pack with HIGH-fail, the release gate runs the full pack with
+MEDIUM-fail and forces attestation rules on. Encoding that as flags
+balloons the CI YAML, so policies collapse each profile into one named
+YAML file the repo reviews like any other config:
+
+```yaml
+# policies/pre-merge.yml
+description: PR gate -- full pack, HIGH-fail
+gate:
+  fail_on: HIGH
+```
+
+```yaml
+# policies/release-gate.yml
+description: release-only profile, MEDIUM-fail, attestation rules forced
+standards: [owasp_cicd_top_10, slsa]
+gate:
+  fail_on: MEDIUM
+overrides:
+  ATTEST-001:
+    severity: CRITICAL
+```
+
+Then pick one per CI lane:
+
+```bash
+pipeline_check --policy pre-merge       # PR
+pipeline_check --policy release-gate    # release
+pipeline_check --list-policies          # enumerate everything discoverable
+```
+
+Files live under `./policies/<name>.yml` or
+`./.pipeline-check/policies/<name>.yml` (first directory found wins).
+A policy can carry any of: `checks` (whitelist), `standards` (filter),
+`gate.fail_on` / `gate.min_grade` / `gate.max_failures` /
+`gate.fail_on_checks`, and per-rule `overrides`. The `--policy`
+argument resolves bare names through the search path; an explicit file
+path bypasses the lookup. Path traversal in the name (`..`,
+separators) is rejected at the CLI boundary.
+
+**Precedence**: policy values are *defaults*. Anything set by the
+config file, environment variables, or explicit CLI flags wins over
+the policy, so `--policy pre-merge --max-failures 5` tightens the bar
+the policy declared without rewriting the YAML.
+
+When a policy loads, a `[policy] loaded '<name>' from <path>` line
+prints to stderr so the active profile is visible in CI logs.
 
 ## 📣 Gate summary on stderr
 

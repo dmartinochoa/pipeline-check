@@ -40,8 +40,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   finding(s) to PATH` to stderr unless `--quiet` is set. Closes
   the missing half of the v0.5.0 auto-baseline item.
 
-### Added
-
 - **`ATTEST-005` in-toto Statement subject is missing or unpinned.**
   Fifth rule in the attestation-content pack. Walks every parsed
   in-toto Statement (SLSA provenance + SBOM) and validates the

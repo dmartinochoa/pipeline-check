@@ -135,6 +135,40 @@ Rules
   `.pipelinecheckignore`. Overrides change severity; they don't
   suppress the finding.
 
+## 🗂️ Named scan profiles
+
+For teams that run the scanner in multiple lanes (pre-commit, PR
+gate, release gate), the per-lane settings collapse cleanly into
+*policy files* under `./policies/<name>.yml` (or
+`./.pipeline-check/policies/<name>.yml`). A policy bundles a rule
+filter, a standards filter, gate thresholds, and per-rule overrides:
+
+```yaml
+# policies/pre-merge.yml
+description: PR gate -- full pack, HIGH-fail
+gate:
+  fail_on: HIGH
+
+# policies/release-gate.yml
+description: release-only profile, MEDIUM-fail, attestation forced
+standards: [owasp_cicd_top_10, slsa]
+gate:
+  fail_on: MEDIUM
+overrides:
+  ATTEST-001:
+    severity: CRITICAL
+```
+
+Activate with `pipeline_check --policy pre-merge` (or
+`pipeline_check --list-policies` to enumerate everything
+discoverable). Policy values feed click's option defaults so the
+config file, env vars, and explicit CLI flags all override them
+where they overlap. Per-rule overrides merge with the config file's
+`overrides:` block on a per-key basis (config wins on conflicts).
+
+See [`ci_gate.md`](ci_gate.md#named-scan-profiles-policy) for the
+full schema + worked examples.
+
 ## 🌳 Environment variables
 
 Upper-snake-case of the option name, prefixed with `PIPELINE_CHECK_`.
