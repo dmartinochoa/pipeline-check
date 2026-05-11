@@ -75,22 +75,17 @@ _REGISTRY: tuple[CompromisedAction, ...] = (
     # tag-pinned consumer pulled the new bytes on the next workflow
     # run; SHA-pinned consumers were unaffected unless they happened
     # to be pinned to one of the two malicious commits.
-    # TODO: cross-verify malicious_refs against the GHSA advisory's
-    # IoC section before next release. A May 2026 audit flagged the
-    # SHAs below as differing from the advisory's published IoC by
-    # a few characters each (looks like an earlier transcription
-    # typo); needs human confirmation against
-    # https://github.com/advisories/GHSA-mrrh-fwg8-r2c3.
     CompromisedAction(
         owner="tj-actions",
         repo="changed-files",
         malicious_refs=(
-            # The two malicious commits the attacker landed under
-            # ``v1`` / ``v45`` and the cascading tag moves. Sourced
-            # from the GHSA advisory and StepSecurity write-up.
-            # Pending re-verification (see TODO above).
-            "0e58ed867288cdc3d92e6e2f9bb9b1bd0c4c78d2",
-            "9d4c1da89c5d4ad4b27d17f22d1ce19b1e6f9d8c",
+            # The malicious commit the attacker landed across all
+            # active tags. Cross-verified against the GHSA-mrrh-
+            # fwg8-r2c3 IoC section ("Malicious commit:
+            # 0e58ed8671d6b60d0890c21b07f8835ace038e67") and NVD's
+            # CVE-2025-30066 record (which cites the same prefix).
+            # The post-incident clean reference is v46.0.1.
+            "0e58ed8671d6b60d0890c21b07f8835ace038e67",
         ),
         advisory=(
             "CVE-2025-30066 / GHSA-mrrh-fwg8-r2c3: tj-actions/"
@@ -104,19 +99,18 @@ _REGISTRY: tuple[CompromisedAction, ...] = (
     # Same week as tj-actions; similar vector. The attacker pushed a
     # malicious commit and force-moved tags. Tag-pinned consumers
     # auto-pulled it.
-    #
-    # TODO: cross-verify malicious_refs against the GHSA advisory's
-    # IoC section before next release. A May 2026 audit flagged the
-    # SHA below as not matching the advisory's published IoC; needs
-    # human confirmation against
-    # https://github.com/advisories/GHSA-qmg3-hpqr-gqvc.
     CompromisedAction(
         owner="reviewdog",
         repo="action-setup",
         malicious_refs=(
-            # SHA the attacker landed under v1. Sourced from the
-            # GHSA advisory. Pending re-verification (see TODO above).
-            "f0d342625dac5d4d0d3e84f0f5a96b39b6fa1f80",
+            # The malicious commit the attacker landed under v1.
+            # Cross-verified against the GHSA-qmg3-hpqr-gqvc IoC
+            # section and the live commit URL
+            # github.com/reviewdog/action-setup/commit/<sha>, which
+            # still resolves to the malicious commit body. The
+            # post-incident clean reference is the retag at
+            # 3f401fe1d58fe77e10d665ab713057375e39b887.
+            "f0d342d24037bb11d26b9bd8496e0808ba32e9ec",
         ),
         advisory=(
             "CVE-2025-30154 / GHSA-qmg3-hpqr-gqvc: reviewdog/"

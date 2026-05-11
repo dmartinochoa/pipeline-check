@@ -27,6 +27,12 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     attest005_subject_unpinned as a5,
 )
+from pipeline_check.core.checks.oci.rules import (
+    attest006_missing_build_type as a6,
+)
+from pipeline_check.core.checks.oci.rules import (
+    attest007_sbom_missing_supplier as a7,
+)
 
 # ── Layout-dir fixture builder ─────────────────────────────────────
 
@@ -1170,3 +1176,291 @@ class TestATTEST005:
         f = a5.check(_index_with_attestations(att))
         assert not f.passed
         assert "no digest" in f.description.lower()
+
+
+# ── ATTEST-006 buildType completeness ──────────────────────────────
+
+
+class TestATTEST006:
+    def test_passes_for_v0_2_with_concrete_build_type(self):
+        att = _att({
+            "buildType": "https://github.com/slsa-framework/slsa-github-generator/generic@v2",
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+        })
+        f = a6.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_v1_with_concrete_build_type(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://slsa.dev/buildtypes/github-actions-workflow/v1",
+                "externalParameters": {},
+                "resolvedDependencies": [],
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_missing_build_type_v0_2(self):
+        att = _att({"builder": {"id": "..."}})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "missing" in f.description.lower()
+
+    def test_fails_for_missing_build_type_v1(self):
+        att = _att({
+            "buildDefinition": {
+                "externalParameters": {},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_placeholder_example_com(self):
+        """The ``example.com`` URI is a well-known placeholder some
+        experimental generators emit. Treat as missing."""
+        att = _att({
+            "buildType": "https://example.com/buildtype/v1",
+        })
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "placeholder" in f.description.lower()
+
+    def test_fails_for_unknown_token(self):
+        att = _att({"buildType": "unknown"})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_empty_string(self):
+        att = _att({"buildType": ""})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_non_uri_value(self):
+        """A bare repo name or unfilled template token isn't a URI."""
+        att = _att({"buildType": "github-actions-workflow"})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "not a uri" in f.description.lower()
+
+    def test_v1_path_preferred_when_both_present(self):
+        """A transitional Statement carries both v0.2 and v1
+        keys; the v1 path wins when buildDefinition is present
+        because that's the canonical location for SLSA v1."""
+        att = _att({
+            "buildDefinition": {
+                "buildType": "unknown",  # v1 path: placeholder
+            },
+            "buildType": "https://slsa.dev/buildtypes/foo/v1",  # v0.2 path: ok
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed  # v1 path wins, finds the placeholder
+
+    def test_passes_when_no_attestations(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a6.check(manifest)
+        assert f.passed
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a6.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_sbom_attestations_present(self):
+        """ATTEST-006 only reads SLSA provenance. An SBOM-only
+        image has nothing to verify; pass with the no-content
+        message."""
+        sbom_att = _att(
+            {"packages": []},
+            pt="https://spdx.dev/Document",
+        )
+        f = a6.check(_index_with_attestations(sbom_att))
+        assert f.passed
+
+
+# ── ATTEST-007 SBOM supplier completeness ──────────────────────────
+
+
+class TestATTEST007:
+    def test_passes_for_spdx_with_full_supplier_coverage(self):
+        att = _att({
+            "packages": [
+                {"name": "openssl", "supplier": "Organization: OpenSSL Foundation"},
+                {"name": "zlib", "supplier": "Person: Jean-loup Gailly"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_spdx_with_originator_fallback(self):
+        """SPDX permits either ``supplier`` OR ``originator`` as
+        attribution. The rule accepts either."""
+        att = _att({
+            "packages": [
+                {"name": "openssl",
+                 "originator": "Organization: OpenSSL Foundation"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_spdx_missing_supplier(self):
+        att = _att({
+            "packages": [
+                {"name": "openssl"},
+                {"name": "zlib", "supplier": "Organization: ZLib"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "openssl" in f.description
+
+    def test_fails_for_spdx_noassertion_supplier(self):
+        """``NOASSERTION`` is the SPDX sentinel meaning "producer
+        chose not to populate"; treat as missing for the rule's
+        purposes."""
+        att = _att({
+            "packages": [
+                {"name": "openssl", "supplier": "NOASSERTION"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_cyclonedx_with_supplier_object(self):
+        att = _att({
+            "components": [
+                {"name": "openssl", "supplier": {"name": "OpenSSL Foundation"}},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_cyclonedx_with_publisher_fallback(self):
+        """CycloneDX's ``publisher`` field is the fallback the rule
+        accepts when ``supplier`` is absent."""
+        att = _att({
+            "components": [
+                {"name": "openssl", "publisher": "OpenSSL Foundation"},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_cyclonedx_missing_supplier(self):
+        att = _att({
+            "components": [
+                {"name": "openssl"},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_cyclonedx_empty_supplier_name(self):
+        """An empty ``supplier.name`` is the same as missing; spec
+        says the name is the required-for-attribution field."""
+        att = _att({
+            "components": [
+                {"name": "openssl", "supplier": {"name": ""}},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_empty_sbom_packages(self):
+        """An SBOM with no enumerable packages is structurally
+        empty; ATTEST-003 covers the version-coverage angle, and
+        this rule pass-by-defaults rather than firing on the same
+        shape."""
+        att = _att({"packages": []}, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_when_no_attestations(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a7.check(manifest)
+        assert f.passed
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a7.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_provenance_attestations_present(self):
+        """ATTEST-007 only reads SBOM attestations. A provenance-only
+        image has nothing to verify; pass with the no-content message."""
+        prov_att = _att(
+            {"builder": {"id": "..."}},
+            pt="https://slsa.dev/provenance/v0.2",
+        )
+        f = a7.check(_index_with_attestations(prov_att))
+        assert f.passed
+
+    def test_mixed_attribution_in_multiple_packages(self):
+        """Some packages have suppliers, others don't. The rule
+        fires with a count summary listing the missing ones."""
+        att = _att({
+            "packages": [
+                {"name": "a", "supplier": "Organization: A"},
+                {"name": "b"},
+                {"name": "c", "supplier": "NOASSERTION"},
+                {"name": "d", "originator": "Person: D"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+        # 2 of 4 missing (b + c); description should list both names
+        assert "b" in f.description
+        assert "c" in f.description
+
+    def test_orchestrator_runs_attest006_and_007_end_to_end(self, tmp_path: Path):
+        """Build a layout dir with an SPDX SBOM lacking suppliers
+        AND a SLSA provenance lacking buildType. Both ATTEST-006 and
+        ATTEST-007 should fire through the orchestrator."""
+        # Use a fresh statement that lacks buildType + has an
+        # incomplete SBOM. The _build_layout helper writes one
+        # statement per layout, so this exercises ATTEST-006 only.
+        statement = {
+            "_type": "https://in-toto.io/Statement/v0.1",
+            "subject": [{"name": "image", "digest": {"sha256": "0" * 64}}],
+            "predicateType": "https://slsa.dev/provenance/v0.2",
+            "predicate": {
+                "builder": {
+                    "id": "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+                },
+                # no buildType key
+                "invocation": {
+                    "configSource": {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"sha1": "a" * 40},
+                    },
+                },
+                "materials": [
+                    {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+                ],
+            },
+        }
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        a6_findings = [f for f in findings if f.check_id == "ATTEST-006"]
+        assert len(a6_findings) == 1
+        assert not a6_findings[0].passed
