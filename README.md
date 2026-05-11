@@ -10,6 +10,8 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
+**Full documentation:** [https://dmartinochoa.github.io/pipeline-check/](https://dmartinochoa.github.io/pipeline-check/)
+
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
 **570+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
@@ -21,13 +23,13 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 [CI integration](#ci-integration) |
 [Compliance](#compliance-standards) |
 [vs. Checkov / KICS / Semgrep](docs/comparison.md) |
-[Docs](docs/)
+[Docs](https://dmartinochoa.github.io/pipeline-check/)
 
 </div>
 
 ---
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 pip install pipeline-check          # Python >= 3.10
@@ -80,7 +82,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 
 ---
 
-## Supported providers
+## 🧩 Supported providers
 
 | Provider | Input | Auto-detect | Checks |
 |----------|-------|-------------|--------|
@@ -120,7 +122,7 @@ for the full per-check reference.
 
 ---
 
-## How it works
+## ⚙️ How it works
 
 ```
                  +-----------+
@@ -148,7 +150,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 ---
 
-## Key features
+## ⭐ Key features
 
 | Feature | Description |
 |---------|-------------|
@@ -169,7 +171,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 ---
 
-## Output formats
+## 📤 Output formats
 
 ```bash
 pipeline_check --output terminal            # rich table to stdout (default)
@@ -184,7 +186,7 @@ pipeline_check --output both                # terminal on stderr + JSON on stdou
 
 ---
 
-## CI integration
+## 🔁 CI integration
 
 ### GitHub Actions
 
@@ -276,7 +278,7 @@ gate (e.g. `args: [--fail-on, CRITICAL]`).
 
 ---
 
-## Configuration
+## 🛠️ Configuration
 
 Every CLI flag can be set in `pyproject.toml`, `.pipeline-check.yml`, or
 environment variables. Precedence: CLI > env > file > defaults.
@@ -297,7 +299,7 @@ Full reference: [docs/config.md](docs/config.md).
 
 ---
 
-## Compliance standards
+## 📋 Compliance standards
 
 Each finding is tagged with controls from all enabled frameworks. One scan
 covers multiple audits.
@@ -331,7 +333,7 @@ See [docs/standards/](docs/standards/).
 
 ---
 
-## CLI reference
+## 💻 CLI reference
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -390,7 +392,7 @@ overwrite an existing file.
 
 ---
 
-## Architecture
+## 🏛️ Architecture
 
 ```
 pipeline_check/
@@ -436,7 +438,7 @@ See [docs/providers/](docs/providers/) for the full pattern.
 
 ---
 
-## Python API
+## 🐍 Python API
 
 Embed pipeline-check in your own tooling without `subprocess` + JSON
 parsing. The top-level surface is small and stable across minor
@@ -465,7 +467,7 @@ Public surface: `Scanner`, `Finding`, `Severity`, `Confidence`,
 
 ---
 
-## Lambda deployment
+## ☁️ Lambda deployment
 
 Pipeline-Check can run as an AWS Lambda for scheduled scans.
 Run `pipeline_check --man lambda` for packaging, IAM permissions, event
@@ -473,7 +475,7 @@ payload shapes, and SNS alerting.
 
 ---
 
-## Extending
+## 🔌 Extending
 
 **New check:** Drop a module in `checks/<provider>/rules/` exporting `RULE`
 and `check()`. The orchestrator auto-discovers it.
@@ -488,7 +490,7 @@ See [docs/providers/README.md](docs/providers/README.md) for the full contract.
 
 ---
 
-## License
+## 📜 License
 
 MIT. See [LICENSE](LICENSE).
 
