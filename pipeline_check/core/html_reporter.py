@@ -27,9 +27,18 @@ _RULES_DIR = Path(__file__).parent / "checks" / "aws" / "rules"
 # surfaces). One file, two consumers — this module inlines it
 # below; ``docs/stylesheets/extra.css`` ``@imports`` the same file
 # so a palette edit can't desync the report and the docs site.
-_DESIGN_TOKENS_CSS = (Path(__file__).parent / "_design_tokens.css").read_text(
-    encoding="utf-8",
-)
+#
+# Read defensively: the asset is ``package-data`` and ships in the
+# wheel, but a partial install, test environment that mocks the
+# package, or an accidental delete must not crash the module import
+# (and with it, every reporter consumer). Missing → empty string;
+# the inline ``<style>`` block then just omits the cross-surface
+# tokens, and consumers fall back on their own per-tier defaults.
+_DESIGN_TOKENS_PATH = Path(__file__).parent / "_design_tokens.css"
+try:
+    _DESIGN_TOKENS_CSS = _DESIGN_TOKENS_PATH.read_text(encoding="utf-8")
+except OSError:
+    _DESIGN_TOKENS_CSS = ""
 
 _SEVERITY_COLOR: dict[Severity, str] = {
     Severity.CRITICAL: "#dc3545",
