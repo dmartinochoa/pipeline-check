@@ -53,13 +53,60 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 41)}
+        {f"GHA-{i:03d}" for i in range(1, 44)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
     def _scan(self, filename: str):
+        from datetime import datetime, timedelta, timezone
+
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionRepoMetadata,
+            collect_referenced_actions,
+        )
+
         ctx = GitHubContext.from_path(FIXTURES / "github" / filename)
         assert ctx.workflows, f"fixture {filename} produced no parsed workflows"
+
+        # The GHA-04x reputation rules read ``ctx.action_metadata``;
+        # populate it synthetically here so the secure / insecure
+        # contract extends to the reputation pack. "insecure" fixtures
+        # mark every action as single-maintainer / very-young / low-
+        # star so all three rules fire; "secure" fixtures mark every
+        # action as well-maintained / aged / popular so all three pass.
+        is_secure = filename.startswith("secure")
+        if is_secure:
+            now = datetime.now(tz=timezone.utc) - timedelta(days=1000)
+            template = ActionRepoMetadata(
+                owner="x", repo="y",
+                contributor_count=42,
+                created_at=now.replace(microsecond=0).isoformat().replace(
+                    "+00:00", "Z",
+                ),
+                stargazers_count=5000,
+                owner_type="Organization",
+            )
+        else:
+            now = datetime.now(tz=timezone.utc) - timedelta(days=10)
+            template = ActionRepoMetadata(
+                owner="x", repo="y",
+                contributor_count=1,
+                created_at=now.replace(microsecond=0).isoformat().replace(
+                    "+00:00", "Z",
+                ),
+                stargazers_count=2,
+                owner_type="User",
+            )
+        meta: dict[str, ActionRepoMetadata] = {}
+        for owner, repo in collect_referenced_actions(ctx):
+            meta[f"{owner}/{repo}"] = ActionRepoMetadata(
+                owner=owner, repo=repo,
+                contributor_count=template.contributor_count,
+                created_at=template.created_at,
+                stargazers_count=template.stargazers_count,
+                owner_type=template.owner_type,
+            )
+        ctx.action_metadata = meta
         return _finding_map(WorkflowChecks(ctx).run())
 
     def test_insecure_release_fails_every_check(self):
@@ -444,7 +491,7 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 41)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 44)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",

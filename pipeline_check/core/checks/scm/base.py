@@ -150,6 +150,14 @@ class SCMRepoSnapshot:
 
     owner: str
     name: str
+    #: Platform this snapshot was hydrated from. ``"github"`` is the
+    #: default (covered by every rule); ``"gitlab"`` / ``"bitbucket"``
+    #: subset the rule pack to the universal rules (SCM-001, -002,
+    #: -006, -007, -008, -009, -017). Platform-specific rules
+    #: (``security_and_analysis``-driven, GitHub-only review knobs)
+    #: pass silently with a "not applicable on PLATFORM" note when
+    #: the snapshot platform is not GitHub.
+    platform: str = "github"
     #: ``GET /repos/{owner}/{repo}``. Carries ``default_branch``,
     #: ``private`` flag, ``security_and_analysis`` settings (when the
     #: token has admin scope), and the ``allow_*`` PR-merge knobs.
@@ -165,6 +173,13 @@ class SCMRepoSnapshot:
     #: code-scanning state requires the workflow-uploaded path which
     #: this snapshot doesn't try to enumerate.
     code_scanning_default_setup: dict[str, Any] | None = None
+    #: The canonical CODEOWNERS path that actually exists in the repo
+    #: (``.github/CODEOWNERS``, ``CODEOWNERS``, or ``docs/CODEOWNERS``),
+    #: or ``None`` when no CODEOWNERS file is present at any of the
+    #: three GitHub-recognized locations. ``SCM-017`` reads this slot.
+    #: Populated via ``GET /repos/{owner}/{repo}/contents/<path>`` —
+    #: the first 200 response wins.
+    codeowners_path: str | None = None
 
 
 @dataclass(slots=True)
@@ -213,6 +228,7 @@ class SCMContext:
         # ``repo_meta is None`` and pass with an unavailable note.
         protection: dict[str, Any] | None = None
         code_scanning: dict[str, Any] | None = None
+        codeowners_path: str | None = None
         if isinstance(repo_meta, dict):
             db = repo_meta.get("default_branch")
             default_branch = db if isinstance(db, str) and db else "main"
@@ -226,12 +242,28 @@ class SCMContext:
             )
             if isinstance(raw_cs, dict):
                 code_scanning = raw_cs
+            # GitHub recognizes CODEOWNERS in three canonical locations;
+            # the first one that responds 200 wins. The contents endpoint
+            # returns a dict with ``type: "file"`` for an existing file
+            # and 404 (→ ``None`` here) when absent.
+            for candidate in (
+                ".github/CODEOWNERS",
+                "CODEOWNERS",
+                "docs/CODEOWNERS",
+            ):
+                raw_co = fetcher.fetch(
+                    f"repos/{owner}/{name}/contents/{candidate}"
+                )
+                if isinstance(raw_co, dict) and raw_co.get("type") == "file":
+                    codeowners_path = candidate
+                    break
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
             repo_meta=repo_meta if isinstance(repo_meta, dict) else None,
             default_branch_protection=protection,
             code_scanning_default_setup=code_scanning,
+            codeowners_path=codeowners_path,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1
@@ -256,8 +288,8 @@ class SCMBaseCheck(BaseCheck):
 def repo_resource(snapshot: SCMRepoSnapshot) -> str:
     """Stable resource handle for SCM findings. Reporters group by
     ``resource`` for the heatmap so the value should be deterministic
-    and human-readable: ``github:owner/repo``."""
-    return f"github:{snapshot.owner}/{snapshot.name}"
+    and human-readable: ``<platform>:owner/repo``."""
+    return f"{snapshot.platform}:{snapshot.owner}/{snapshot.name}"
 
 
 def default_branch_name(snapshot: SCMRepoSnapshot) -> str:
@@ -344,6 +376,28 @@ def archived_state_label(snapshot: SCMRepoSnapshot) -> str | None:
     if is_disabled(snapshot):
         return "disabled"
     return None
+
+
+def github_only_skip(
+    snapshot: SCMRepoSnapshot,
+) -> str | None:
+    """Return a "not applicable on PLATFORM" note when the snapshot
+    came from a non-GitHub platform, else ``None``.
+
+    Platform-specific rules call this at the top of their ``check``
+    function and pass silently when the response is non-``None``.
+    The string content goes into the Finding description so the
+    operator sees the rule was deliberately skipped rather than
+    silently passing.
+    """
+    if snapshot.platform == "github":
+        return None
+    return (
+        f"Rule is GitHub-specific (relies on the "
+        f"``security_and_analysis`` block or a GitHub-only "
+        f"protection knob); skipped on the {snapshot.platform} "
+        f"snapshot."
+    )
 
 
 def security_feature_state(

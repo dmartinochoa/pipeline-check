@@ -9,13 +9,16 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from .._yaml_lines import line_of as _line_of
 from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck, Location
+
+if TYPE_CHECKING:
+    from ._action_reputation import ActionRepoMetadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +73,15 @@ class GitHubContext:
         self.files_scanned: int = len(workflows)
         self.files_skipped: int = 0
         self.warnings: list[str] = []
+        #: Per-action GitHub-API metadata, populated lazily by the
+        #: ``--resolve-remote`` path so the GHA-04x reputation rules
+        #: (GHA-041 single-maintainer / GHA-042 very-young /
+        #: GHA-043 low-star + sensitive-permission) have a dict to
+        #: consume. Keyed by ``"owner/repo"`` (both lower-cased) to
+        #: match :func:`collect_referenced_actions`. Empty when the
+        #: opt-in flag isn't set; the reputation rules pass silently
+        #: in that case rather than firing on missing data.
+        self.action_metadata: dict[str, ActionRepoMetadata] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> GitHubContext:

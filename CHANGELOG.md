@@ -12,6 +12,100 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM provider: GitLab + Bitbucket Cloud platform parity.** New
+  ``--scm-platform gitlab`` and ``--scm-platform bitbucket`` modes
+  extend the SCM provider beyond GitHub. Each platform ships its
+  own ``Http*SCMFetcher`` (stdlib urllib, like the existing
+  GitHub one) plus a hydrator that normalizes the platform's
+  protection / metadata payload into the GitHub-shaped slots the
+  universal rules consume. Universal rules (SCM-001 / -002 / -006
+  / -007 / -008 / -009 / -017) fire on every platform; the
+  remaining twelve GitHub-only rules (``security_and_analysis``-
+  driven, GitHub-only protection knobs) skip on non-GitHub
+  snapshots with a "not applicable on PLATFORM" note so the
+  operator sees the deliberate skip rather than a silent absence.
+  ``--gh-token`` plumbs through as the platform-agnostic token
+  override; env-var fallbacks are ``$GITLAB_TOKEN`` /
+  ``$BITBUCKET_TOKEN`` for their respective platforms. Resource
+  handles carry the platform prefix (``gitlab:group/project``,
+  ``bitbucket:workspace/repo``). Documentation table in
+  ``docs/providers/scm.md`` enumerates the per-platform rule
+  coverage.
+
+- **SCM-017 / SCM-018 / SCM-019: governance follow-up rules.**
+  Three new SCM rules close FP/FN gaps the existing pack
+  acknowledged:
+
+  * ``SCM-017`` (CODEOWNERS file missing) — pairs with SCM-011.
+    The protection-rule toggle is meaningless without a
+    CODEOWNERS file. Probes the three canonical paths
+    (``.github/CODEOWNERS``, ``CODEOWNERS``, ``docs/CODEOWNERS``)
+    via the GitHub contents endpoint.
+  * ``SCM-018`` (bypass allowance) — addresses SCM-002's known-FP
+    note directly. Fires when
+    ``required_pull_request_reviews.bypass_pull_request_allowances``
+    lists any users / teams / apps; surfaces the counts so the
+    operator can locate the bypass entries.
+  * ``SCM-019`` (push restrictions allowlist) — audit-style.
+    Fires when the ``restrictions.users`` list on the default
+    branch protection rule names individual user accounts (as
+    opposed to teams / apps). Personal-account compromise on a
+    listed user maps directly to a direct push on the protected
+    branch.
+
+  Catalog: SCM 16 → 19 rules.
+
+- **GHA-04x action-reputation pack: GHA-041 / GHA-042 / GHA-043.**
+  Three new GHA rules backed by a new ``--resolve-remote`` opt-in
+  fetcher path that pulls per-action GitHub repo metadata. The
+  fetcher (``_action_reputation.ActionMetadataFetcher``) wraps the
+  SCM provider's existing ``HttpSCMFetcher`` for the raw JSON
+  fetch, dedupes by ``owner/repo`` so a workflow that references
+  ``actions/checkout`` 20 times produces a single API call, and
+  populates ``GitHubContext.action_metadata`` for the rules to
+  consume.
+
+  * ``GHA-041`` (single-maintainer action) — fires when an action's
+    upstream repo has exactly one contributor. The single-
+    maintainer pattern was central to the blast radius of the
+    tj-actions / reviewdog March 2025 compromises.
+  * ``GHA-042`` (very-young action repo) — fires when the upstream
+    repo is younger than 90 days. Typosquat / impersonation
+    detection.
+  * ``GHA-043`` (low-star + sensitive permission) — fires when an
+    action with fewer than 25 stars runs in a job that grants
+    ``contents`` / ``packages`` / ``id-token`` / ``actions`` /
+    ``deployments`` write access. The combination is the
+    canonical compromised-action vector.
+
+  When ``--resolve-remote`` is off the rules pass silently with a
+  discovery nudge in the description; failed fetches per action
+  land in ``ctx.warnings`` and the corresponding rule skips that
+  action. Catalog: GHA 40 → 43 rules.
+
+- **Container image: manual publish to GHCR + Docker Hub.** New
+  ``Dockerfile`` (multi-stage, ``python:3.12-slim`` base, non-root
+  ``scanner`` user, ``ENTRYPOINT ["pipeline_check"]``) and matching
+  ``.dockerignore`` so the wheel build context stays under a few MB.
+  New ``.github/workflows/docker-publish.yml`` is ``workflow_dispatch``-
+  only and builds ``linux/amd64`` + ``linux/arm64`` via buildx +
+  QEMU. ``docker/metadata-action`` emits three tag flavors per image
+  (version from ``pyproject.toml``, short-SHA, and ``latest`` when
+  the run targets ``master``) and pushes them to
+  ``ghcr.io/dmartinochoa/pipeline-check`` and
+  ``docker.io/<DOCKERHUB_USERNAME>/pipeline-check`` in a single
+  build. SLSA build provenance and an SBOM are attached to each
+  manifest, keeping parity with ``release.yml``'s CycloneDX SBOM
+  for the wheel. After the push, ``docker/scout-action`` runs
+  ``docker scout cves`` against the pushed digest, fails the job
+  on any new critical or high CVE (mirroring ``release.yml``'s
+  ``pip-audit --strict`` posture for the wheel), and uploads
+  SARIF to the repo's Security tab via ``codeql-action/upload-sarif``.
+  GHCR auth uses the built-in ``GITHUB_TOKEN``; Docker Hub requires
+  two new repo secrets (``DOCKERHUB_USERNAME``, ``DOCKERHUB_TOKEN``)
+  before the first run, and Scout authenticates through the same
+  Docker Hub login.
+
 - **Bench: SCM provider routing + 6th case (cross-provider with
   SCM).** ``bench/run.py`` now detects ``scm_config.json`` +
   ``scm/`` fixture directories per case and routes the SCM

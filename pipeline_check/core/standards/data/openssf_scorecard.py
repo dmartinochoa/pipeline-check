@@ -369,5 +369,11 @@ STANDARD = Standard(
         "SCM-014": ["Code-Review"],
         # SCM-015 (push protection) and SCM-016 (private vuln reporting)
         # don't have direct Scorecard analogs.
+        "SCM-017": ["Code-Review"],
+        # SCM-018 (bypass list) and SCM-019 (push-restriction allowlist)
+        # describe weaknesses in a configured protection rule rather
+        # than the binary "protection present" Scorecard model; left
+        # off the explicit mapping to keep the Scorecard surface
+        # interpretable.
     },
 )

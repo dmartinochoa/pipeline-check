@@ -38,13 +38,12 @@ RULE = Rule(
     ),
     known_fp=(
         "``required_pull_request_reviews.bypass_pull_request_"
-        "allowances`` is not consulted today: a protection rule "
+        "allowances`` is covered by ``SCM-018``: a protection rule "
         "that requires reviews but lists every contributor in the "
         "bypass allowlist still passes this rule even though the "
-        "control is unenforced in practice. A future SCM-NNN rule "
-        "will key off the bypass list directly; until then, audit "
-        "the allowlist in the GitHub UI when this rule passes on a "
-        "high-trust repo.",
+        "control is unenforced in practice. Read SCM-002 + SCM-018 "
+        "as a pair when auditing whether required review actually "
+        "fires.",
     ),
     exploit_example=(
         "# With protection but no required reviews, a maintainer can\n"

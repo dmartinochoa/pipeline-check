@@ -1,0 +1,323 @@
+"""GitLab + Bitbucket platform parity tests for the SCM provider.
+
+The same SCM rule pack runs against three platforms. GitHub-specific
+rules pass silently on the other platforms; the universal subset
+(SCM-001 / -002 / -006 / -007 / -008 / -009 / -017) reads from
+normalized slots populated by the platform-specific hydrator.
+"""
+from __future__ import annotations
+
+from typing import Any
+
+from pipeline_check.core.checks.scm._platforms import (
+    bitbucket_context_for_repo,
+    gitlab_context_for_repo,
+)
+from pipeline_check.core.checks.scm.posture import SCMPostureChecks
+
+
+class FakeFetcher:
+    """In-memory fetcher: ``path -> body``."""
+
+    def __init__(self, mapping: dict[str, Any]):
+        self.mapping = mapping
+        self.calls: list[str] = []
+
+    def fetch(self, path: str) -> Any:
+        self.calls.append(path)
+        return self.mapping.get(path)
+
+
+def _findings_by_id(ctx) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for f in SCMPostureChecks(ctx).run():
+        out[f.check_id] = f
+    return out
+
+
+# ── GitLab ─────────────────────────────────────────────────────────
+
+
+class TestGitLabHydration:
+    def test_for_repo_populates_normalized_protection_slot(self):
+        f = FakeFetcher({
+            "projects/group%2Fproject": {
+                "default_branch": "main",
+                "approvals_before_merge": 2,
+                "only_allow_merge_if_pipeline_succeeds": True,
+                "visibility": "private",
+                "statistics": {"repository_size": 4096},
+            },
+            "projects/group%2Fproject/protected_branches": [
+                {
+                    "name": "main",
+                    "allow_force_push": False,
+                },
+            ],
+            "projects/group%2Fproject/push_rule": {
+                "reject_unsigned_commits": True,
+            },
+            "projects/group%2Fproject/repository/files/"
+            ".gitlab%2FCODEOWNERS?ref=main": {
+                "file_path": ".gitlab/CODEOWNERS",
+            },
+        })
+        ctx = gitlab_context_for_repo("group/project", f)
+        assert len(ctx.repos) == 1
+        snap = ctx.repos[0]
+        assert snap.platform == "gitlab"
+        assert snap.owner == "group"
+        assert snap.name == "project"
+        assert snap.codeowners_path == ".gitlab/CODEOWNERS"
+        proto = snap.default_branch_protection
+        assert isinstance(proto, dict)
+        assert proto["required_pull_request_reviews"][
+            "required_approving_review_count"
+        ] == 2
+        assert proto["required_signatures"]["enabled"] is True
+        assert proto["allow_force_pushes"]["enabled"] is False
+        assert proto["required_status_checks"]["contexts"] == ["pipeline"]
+
+    def test_unprotected_default_branch_fires_scm001(self):
+        f = FakeFetcher({
+            "projects/group%2Fproject": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/group%2Fproject/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("group/project", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-001"].passed
+
+    def test_protected_default_branch_passes_scm001(self):
+        f = FakeFetcher({
+            "projects/group%2Fproject": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "approvals_before_merge": 1,
+            },
+            "projects/group%2Fproject/protected_branches": [
+                {"name": "main", "allow_force_push": False},
+            ],
+            "projects/group%2Fproject/push_rule": {},
+        })
+        ctx = gitlab_context_for_repo("group/project", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-001"].passed
+        assert findings["SCM-002"].passed
+        assert findings["SCM-007"].passed
+        # GitHub-only rules skip with a clear note.
+        assert findings["SCM-003"].passed
+        assert "GitHub-specific" in findings["SCM-003"].description
+
+    def test_resource_handle_uses_platform_prefix(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-001"].resource == "gitlab:g/p"
+
+    def test_meta_fetch_failure_records_warning(self):
+        f = FakeFetcher({})
+        ctx = gitlab_context_for_repo("g/p", f)
+        assert any("GitLab" in w for w in ctx.warnings)
+        assert ctx.repos[0].repo_meta is None
+
+    def test_nested_subgroup_path(self):
+        """GitLab supports nested subgroups (``a/b/c/repo``). The
+        rule pack treats everything before the last ``/`` as the
+        owner."""
+        f = FakeFetcher({
+            "projects/a%2Fb%2Fc%2Frepo": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/a%2Fb%2Fc%2Frepo/protected_branches": [
+                {"name": "main", "allow_force_push": False},
+            ],
+            "projects/a%2Fb%2Fc%2Frepo/push_rule": {},
+        })
+        ctx = gitlab_context_for_repo("a/b/c/repo", f)
+        snap = ctx.repos[0]
+        assert snap.owner == "a/b/c"
+        assert snap.name == "repo"
+
+
+# ── Bitbucket ──────────────────────────────────────────────────────
+
+
+class TestBitbucketHydration:
+    def test_for_repo_populates_normalized_protection_slot(self):
+        f = FakeFetcher({
+            "repositories/acme/widget": {
+                "mainbranch": {"name": "main"},
+                "size": 4096,
+                "is_private": True,
+            },
+            "repositories/acme/widget/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main",
+                        "value": 2,
+                    },
+                    {"kind": "force", "pattern": "main"},
+                    {"kind": "delete", "pattern": "main"},
+                    {
+                        "kind": "require_passing_builds_to_merge",
+                        "pattern": "main",
+                    },
+                ],
+            },
+            "repositories/acme/widget/src/main/CODEOWNERS": {
+                "path": "CODEOWNERS",
+            },
+        })
+        ctx = bitbucket_context_for_repo("acme", "widget", f)
+        snap = ctx.repos[0]
+        assert snap.platform == "bitbucket"
+        assert snap.owner == "acme"
+        assert snap.name == "widget"
+        assert snap.codeowners_path == "CODEOWNERS"
+        proto = snap.default_branch_protection
+        assert isinstance(proto, dict)
+        assert proto["required_pull_request_reviews"][
+            "required_approving_review_count"
+        ] == 2
+        # ``force`` / ``delete`` restrictions present => those
+        # actions are disallowed (the SCM-007 / SCM-009 happy path).
+        assert proto["allow_force_pushes"]["enabled"] is False
+        assert proto["allow_deletions"]["enabled"] is False
+        assert proto["required_status_checks"]["contexts"] == ["pipeline"]
+
+    def test_no_restrictions_fires_scm001(self):
+        f = FakeFetcher({
+            "repositories/acme/widget": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/acme/widget/branch-restrictions": {
+                "values": [],
+            },
+        })
+        ctx = bitbucket_context_for_repo("acme", "widget", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-001"].passed
+
+    def test_force_restriction_absent_means_force_allowed(self):
+        f = FakeFetcher({
+            "repositories/acme/widget": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/acme/widget/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main",
+                        "value": 1,
+                    },
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("acme", "widget", f)
+        findings = _findings_by_id(ctx)
+        # SCM-007 fires when allow_force_pushes is True. With no
+        # ``force`` restriction in the branch-restrictions list,
+        # force push is allowed → rule fires.
+        assert not findings["SCM-007"].passed
+
+    def test_resource_handle_uses_platform_prefix(self):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-001"].resource == "bitbucket:w/r"
+
+    def test_meta_fetch_failure_records_warning(self):
+        f = FakeFetcher({})
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        assert any("Bitbucket" in s for s in ctx.warnings)
+        assert ctx.repos[0].repo_meta is None
+
+    def test_github_only_rules_skip_with_note(self):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main",
+                        "value": 1,
+                    },
+                    {"kind": "force", "pattern": "main"},
+                    {"kind": "delete", "pattern": "main"},
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        for gh_only in (
+            "SCM-003", "SCM-004", "SCM-005", "SCM-010",
+            "SCM-011", "SCM-012", "SCM-013", "SCM-014",
+            "SCM-015", "SCM-016", "SCM-018", "SCM-019",
+        ):
+            assert findings[gh_only].passed, (
+                f"{gh_only} should skip on bitbucket"
+            )
+            assert "GitHub-specific" in findings[gh_only].description
+
+
+# ── End-to-end provider routing ────────────────────────────────────
+
+
+class TestSCMProviderPlatformRouting:
+    def test_unknown_platform_raises_value_error(self):
+        from pipeline_check.core.providers.scm import SCMProvider
+        import pytest
+        provider = SCMProvider()
+        with pytest.raises(ValueError, match="Supported: github"):
+            provider.build_context(
+                scm_platform="hg-cloud", scm_repo="o/r",
+            )
+
+    def test_github_route_returns_github_snapshot(self, tmp_path):
+        """Fixture-mode GitHub flow still works after the platform
+        routing was added."""
+        from pipeline_check.core.providers.scm import SCMProvider
+        # Empty fixture dir: every fetch returns None; the snapshot
+        # still has platform="github".
+        provider = SCMProvider()
+        ctx = provider.build_context(
+            scm_platform="github", scm_repo="o/r",
+            scm_fixture_dir=str(tmp_path),
+        )
+        assert ctx.repos[0].platform == "github"
+
+    def test_missing_platform_raises(self):
+        from pipeline_check.core.providers.scm import SCMProvider
+        import pytest
+        provider = SCMProvider()
+        with pytest.raises(ValueError, match="--scm-platform"):
+            provider.build_context(scm_repo="o/r")
+
+    def test_missing_repo_raises(self):
+        from pipeline_check.core.providers.scm import SCMProvider
+        import pytest
+        provider = SCMProvider()
+        with pytest.raises(ValueError, match="--scm-repo"):
+            provider.build_context(scm_platform="github")
