@@ -268,5 +268,26 @@ STANDARD = Standard(
                     "Build.L2.Signed"],                            # build artifacts not signed
         "GCB-024": ["Build.L1.Provenance"],                        # missing provenance labels
         "GCB-025": ["Build.L3.NonFalsifiable"],                    # outdated runner image
+        # ── OCI image manifest + attestation content ───────────────
+        # OCI-002 detects whether *any* SLSA attestation is attached;
+        # the ATTEST-NNN rules verify the *content* of those
+        # attestations. Together they cover L1 (provenance exists) +
+        # L2 (provenance is authenticated) + L3 (provenance is
+        # non-falsifiable + names an isolated builder).
+        "OCI-001": ["Build.L1.Provenance"],                        # provenance annotations missing
+        "OCI-002": ["Build.L1.Provenance",
+                    "Build.L2.Signed"],                            # build attestation missing
+        "ATTEST-001": ["Build.L2.Hosted",
+                       "Build.L3.Isolated",
+                       "Build.L3.NonFalsifiable"],                 # untrusted builder identity
+        "ATTEST-002": ["Build.L1.Provenance",
+                       "Build.L3.NonFalsifiable"],                 # source-repo claim unverifiable
+        "ATTEST-003": ["Build.L1.Provenance"],                     # SBOM floating versions
+        "ATTEST-004": ["Build.L1.Provenance",
+                       "Build.L3.NonFalsifiable"],                 # provenance lacks materials
+        "ATTEST-005": ["Build.L2.Signed",
+                       "Build.L3.NonFalsifiable"],                 # subject digest unpinned
+        "ATTEST-006": ["Build.L1.Provenance"],                     # buildType missing
+        "ATTEST-007": ["Build.L1.Provenance"],                     # SBOM supplier missing
     },
 )
