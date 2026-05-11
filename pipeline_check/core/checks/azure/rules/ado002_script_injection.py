@@ -57,7 +57,7 @@ RULE = Rule(
         "# value's `\"` closes the echo and the rest becomes shell.\n"
         "# The PR-validated pipeline has the same service-connection\n"
         "# credentials a main-branch build would have, so the curl\n"
-        "# exfils every secret in scope. Trail-of-Bits-style pwn.\n"
+        "# exfils every secret in scope. Classic pwn-request shape.\n"
         "\n"
         "# Safe: route through env so the value is never interpolated\n"
         "# into the shell template.\n"

@@ -18,9 +18,12 @@ what source*. ATTEST-004 verifies *what build inputs were consumed*.
 ATTEST-005 verifies *that the attestation is actually bound to the
 image bytes it claims to describe*.
 
-Pairs with the upstream in-toto threat model: a statement with a
-placeholder subject is the canonical attestation-substitution surface,
-documented as Statement-Track Threat #2 in the SLSA spec.
+Pairs with the upstream in-toto threat model: a Statement with a
+placeholder subject is the canonical attestation-substitution surface.
+The SLSA spec's verification guidance is explicit: consumers MUST
+compare the subject digest against the artifact they're about to use,
+otherwise the signature only proves something was signed by the
+expected key, not that *this artifact* was signed.
 """
 from __future__ import annotations
 
@@ -91,11 +94,14 @@ RULE = Rule(
         "signed envelope and the artifact bytes. A placeholder "
         "value reduces the attestation to a free-floating "
         "signature attackers can re-attach.",
-        "[SLSA threat-model v1.0, Statement-Track Threats](https://slsa.dev/spec/v1.0/threats): "
-        "attestation substitution is called out as the primary "
-        "Statement-track threat. The mitigation listed is exactly "
-        "this rule: 'consumers MUST verify the subject digest "
-        "matches the artifact they are about to use'.",
+        "[SLSA v1.0 verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts): "
+        "consumers MUST compare the attestation's subject digest "
+        "against the artifact they're about to use. A signed "
+        "envelope whose subject is unbound to artifact bytes "
+        "passes signature verification but fails this comparison "
+        "step trivially — which is exactly what an attacker "
+        "exploits when re-attaching a valid signature to a "
+        "tampered image.",
     ),
     exploit_example=(
         "# Vulnerable: a Statement signed by a trusted builder but\n"

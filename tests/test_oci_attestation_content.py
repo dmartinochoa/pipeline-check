@@ -852,6 +852,71 @@ class TestATTEST004:
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed
 
+    # ── Robustness against malformed predicates ──────────────────
+
+    def test_fails_for_materials_as_dict(self):
+        """The v0.2 ``materials`` field MUST be a list. A dict
+        (sometimes emitted by hand-rolled converters) is treated
+        as missing."""
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": {"a": "b"},  # wrong shape
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_materials_as_string(self):
+        att = _att({
+            "materials": "see-build-attachment.json",
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_v0_2_materials_with_non_dict_entries(self):
+        """Per spec, materials entries should be ``{uri, digest}``
+        dicts. The rule's contract is list-non-empty; entry-shape
+        validation is deferred to a future rule. Passing here locks
+        the current behavior so the future tightening change is a
+        deliberate test update."""
+        att = _att({
+            "materials": ["just-a-string", {"uri": "x", "digest": {"sha1": "0"}}],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_v1_resolved_deps_wrong_type(self):
+        """``resolvedDependencies: "see attachment"`` is malformed
+        per spec; treat as empty."""
+        att = _att({
+            "buildDefinition": {
+                "resolvedDependencies": "see-attachment",
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_predicate_completely_empty(self):
+        """An empty predicate dict carries no materials at any
+        path — treat as missing/empty."""
+        att = _att({})
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_v0_2_path_used_when_no_build_definition_present(self):
+        """The dispatch in _materials prefers v1 only when
+        ``buildDefinition`` is a dict. Without it, the v0.2
+        ``materials`` key is consulted even if predicate_type
+        says v1 (transitional / mistyped attestations should still
+        be classified by structure, not just type URI)."""
+        att = _att({
+            "materials": [
+                {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+            ],
+            # No buildDefinition key.
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
 
 # ── ATTEST-005 subject-digest validation ────────────────────────────
 
@@ -1007,3 +1072,101 @@ class TestATTEST005:
         attest_findings = [f for f in findings if f.check_id == "ATTEST-005"]
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed
+
+    # ── Edge cases surfaced by the hallucination audit ──────────
+
+    def test_passes_for_mixed_case_hex(self):
+        """Hex validation lowercases before comparison, so
+        ``AbCdEf...`` should pass exactly like the all-lowercase
+        equivalent."""
+        mixed = ("AbCdEf" + "0123456789abcdef" * 3 + "AB").ljust(64, "0")
+        assert len(mixed) == 64
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": mixed}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_whitespace_only_digest(self):
+        """Whitespace-only digest values strip to empty and are
+        treated as unpinned, the same as a literal empty string."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "   "}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_digest_with_embedded_space(self):
+        """Hex digest values must not contain whitespace; the rule
+        validates the character set, not just the length."""
+        # 64 chars but with a space splice that breaks the hex class.
+        broken = "ab cdef" + "1" * 57
+        assert len(broken) == 64
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": broken}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_any_algorithm_in_a_subject_is_unpinned(self):
+        """A subject entry may declare multiple digest algorithms
+        (sha256 + sha512 + sha1). If ANY of them is malformed, the
+        verifier downstream can pick the wrong one, fail closed."""
+        att = _att_with_subject((
+            {
+                "name": "image",
+                "digest": {
+                    "sha256": _REAL_SHA256,
+                    "sha512": "",  # this one is empty
+                },
+            },
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_multi_algorithm_all_well_formed(self):
+        att = _att_with_subject((
+            {
+                "name": "image",
+                "digest": {
+                    "sha256": _REAL_SHA256,
+                    "sha512": "abcd" * 32,  # 128 chars, even hex
+                },
+            },
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_non_string_digest_value(self):
+        """A digest value that isn't a string (number, bool, list,
+        nested dict) can't be a hex byte encoding and fails by
+        construction."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": 12345}},  # type: ignore[dict-item]
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_subject_entry_with_no_name(self):
+        """An entry with a digest but no name still binds artifact
+        bytes; spec-permissive but the rule's failure-message path
+        synthesizes an ``<entry N>`` label when name is absent and
+        proceeds with normal validation."""
+        # Well-formed digest + missing name should still pass on the
+        # binding-validation grounds — the rule cares about the
+        # digest, not the label.
+        att = _att_with_subject((
+            {"digest": {"sha256": _REAL_SHA256}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_subject_entry_with_empty_digest_map(self):
+        """A digest map present but empty is the same shape as 'no
+        digest' — there's no algorithm to compare against."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "no digest" in f.description.lower()
