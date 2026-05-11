@@ -21,7 +21,12 @@ RUN pip install --no-cache-dir --upgrade pip build \
 FROM python:3.12-slim AS runtime
 RUN useradd --create-home --uid 1000 scanner
 COPY --from=builder /wheels/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl \
+# Upgrade pip before installing the wheel so the final image does not
+# ship the base ``python:3.12-slim`` pip, which trails several months
+# behind upstream and accumulates pip-side CVEs between python:slim
+# rebuilds (CVE-2025-8869 / CVE-2026-6357 / CVE-2026-1703).
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir /tmp/*.whl \
  && rm -rf /tmp/*.whl /root/.cache
 USER scanner
 WORKDIR /scan

@@ -18,9 +18,13 @@ on:
     workflows: ['Build']
     types: [completed]
   # GHA-036: caller picks the runner via workflow_dispatch input.
+  # GHA-045: caller also picks the ref a downstream checkout uses.
   workflow_dispatch:
     inputs:
       runner:
+        type: string
+        required: true
+      ref:
         type: string
         required: true
 
@@ -52,6 +56,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      # GHA-046: manual PR-head fetch from the shell, bypassing the
+      # actions/checkout detector. Same threat surface as GHA-002 but
+      # via ``gh pr checkout`` rather than ``ref:``.
+      - name: Materialize PR via shell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr checkout ${{ github.event.number }}
 
       # GHA-040: pinned to a SHA the attacker landed under @v45 in
       # the tj-actions/changed-files compromise (CVE-2025-30066).
@@ -96,10 +108,15 @@ jobs:
   # ``workflow_dispatch`` input — the caller picks which runner
   # label (potentially a privileged self-hosted fleet) the deploy
   # lands on.
+  # GHA-045: caller-controlled ``inputs.ref`` lands as the checkout
+  # ref, so the dispatcher picks which tree runs with secrets.
   deploy:
     runs-on: ${{ inputs.runner }}
     needs: build
     steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          ref: ${{ inputs.ref }}
       - run: echo "deploying to prod"
 
   # GHA-025: reusable-workflow ``uses:`` pinned to a floating tag.

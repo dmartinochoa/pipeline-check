@@ -13,6 +13,34 @@ pipeline_check --version         # command name: underscored
 Python 3.10+ is required. `pipx install pipeline-check` also works and
 keeps the CLI out of your project environment.
 
+### Container image
+
+Every release also publishes a multi-arch (`linux/amd64` +
+`linux/arm64`) image to Docker Hub and GHCR, with SLSA build
+provenance and an SBOM attached to the manifest:
+
+```bash
+docker run --rm -v "$PWD:/scan" dmartinochoa/pipeline-check
+docker run --rm -v "$PWD:/scan" ghcr.io/dmartinochoa/pipeline-check
+```
+
+Both registries publish the same digest; pick whichever your platform
+already pulls from. Tag flavors are `:<version>` (e.g. `:0.5.0`),
+`:sha-<short>` for digest-pinning to a specific build, and `:latest`
+on master. `/scan` is the image working directory, so a `-v
+"$PWD:/scan"` bind mount makes the auto-detect walk Just Work.
+Append CLI flags after the image reference:
+
+```bash
+docker run --rm -v "$PWD:/scan" dmartinochoa/pipeline-check \
+  --pipeline github --output json
+```
+
+For air-gapped or supply-chain-locked environments, pin the image by
+digest (`@sha256:…`) rather than tag. The digest for each release is
+visible on the [Docker Hub tags page](https://hub.docker.com/r/dmartinochoa/pipeline-check/tags)
+and on the [GHCR package page](https://github.com/dmartinochoa/pipeline-check/pkgs/container/pipeline-check).
+
 ## 🚀 First scan (auto-detect)
 
 Run with no flags in any supported repo, the working directory is

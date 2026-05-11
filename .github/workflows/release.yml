@@ -1,12 +1,17 @@
 name: Release
 
-# Publishing is manual for now: a tag push builds the sdist/wheel and
-# uploads them as a run artifact, but the TestPyPI / PyPI publish jobs
-# only run when an operator triggers the workflow via the Actions UI
-# (``workflow_dispatch``) with ``publish: true``. This keeps tag
-# creation — including ``gh release create`` — from accidentally
-# shipping to public indexes before the project is ready for a PyPI
-# debut.
+# Pushing a ``v*.*.*`` tag builds the sdist/wheel, runs SLSA
+# provenance, and ships to TestPyPI followed by real PyPI. The
+# "is this OK to ship" gate is the ``production`` GitHub environment
+# (configured under Settings -> Environments) which can require
+# reviewer approval before the publish-pypi job runs. That puts the
+# human checkpoint where it's auditable, instead of relying on an
+# operator remembering to toggle a workflow_dispatch input.
+#
+# ``workflow_dispatch`` is kept as a fallback for re-running the
+# pipeline against an existing tag, or for dry-run testing on a
+# branch (the ``publish`` input still gates the upload jobs in that
+# case so a dispatch from ``dev`` can't ship by accident).
 on:
   push:
     tags:
@@ -14,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish to TestPyPI and PyPI"
+        description: "Publish to TestPyPI and PyPI (workflow_dispatch only)"
         required: true
         default: "false"
         type: choice
@@ -28,11 +33,18 @@ permissions:
 jobs:
   # ---------------------------------------------------------------------------
   # Build: produce sdist + wheel and upload as a run artifact so the
-  # downstream publish jobs can consume the exact same files.
+  # downstream publish jobs can consume the exact same files. Also
+  # emits a base64-encoded SHA-256 hash list as a job output for the
+  # SLSA provenance generator to bind its attestation to.
   # ---------------------------------------------------------------------------
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      # base64-encoded ``sha256sum`` output covering both the sdist
+      # and the wheel. Consumed by the ``provenance`` job below as
+      # the in-toto subjects the SLSA Build L3 attestation binds to.
+      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -53,8 +65,11 @@ jobs:
 
       - name: Verify tag matches package version
         # Fail loudly if someone tagged v1.2.3 but shipped 1.2.4 in
-        # pyproject.toml — otherwise PyPI rejects the upload with a
+        # pyproject.toml. Otherwise PyPI rejects the upload with a
         # confusing 400 and the tag is already in public history.
+        # Skipped on workflow_dispatch runs that aren't tag-triggered
+        # (the build still produces artifacts for testing).
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           WHEEL=$(ls dist/*.whl)
@@ -62,6 +77,18 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match built wheel $WHEEL"
             exit 1
           fi
+
+      - name: Compute SHA-256 subject hashes
+        id: hash
+        # The SLSA generator's reusable workflow expects a single
+        # base64-encoded ``sha256sum`` output line covering every
+        # subject the attestation should bind to. ``sha256sum *``
+        # emits one ``<hash>  <filename>`` line per file under
+        # ``dist/``; ``base64 -w0`` collapses the whole block into
+        # one line so it survives transit through ``GITHUB_OUTPUT``.
+        working-directory: dist
+        run: |
+          echo "hashes=$(sha256sum * | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Vulnerability scan with pip-audit
         # Audits the project's resolved dependency tree against the
@@ -104,13 +131,64 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Publish to Test PyPI first — serves as a smoke test and lets us
+  # Provenance: SLSA Build L3 attestation for the sdist + wheel.
+  #
+  # Calls the slsa-framework/slsa-github-generator reusable workflow,
+  # which runs in an isolated builder GitHub maintains. The builder
+  # reads the ``base64-subjects`` (the SHA-256 hashes the ``build``
+  # job emitted), generates an in-toto SLSA Provenance v1.0
+  # predicate naming this workflow run, and signs it via Sigstore
+  # using the workflow's OIDC token. Output is a ``*.intoto.jsonl``
+  # file uploaded as a workflow run artifact (and, when the run is
+  # tag-triggered and a GitHub release for the tag already exists,
+  # attached as a release asset).
+  #
+  # Verification by downstream consumers, using slsa-verifier, is
+  # documented in the README under "Verifying a release". Verifies
+  # that the wheel they're about to install was built from this
+  # repository at the tagged commit, in CI, by this workflow.
+  #
+  # Note: the generator workflow is pinned by SHA (matching the
+  # project-wide SHA-pin convention enforced by GHA-001 / GHA-025).
+  # The comment names the corresponding release tag so the SLSA
+  # verifier's ``--source-tag`` matches at the consumer side.
+  # ---------------------------------------------------------------------------
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read       # read run metadata to embed in the predicate
+      id-token: write     # OIDC token used for Sigstore signing
+      contents: write     # upload the provenance file to the GH release
+    # Pin by SHA, not by tag, to match the project's SHA-pin posture.
+    # f7dd8c5 == v2.1.0 (2025-02-24); update both the SHA and the
+    # comment together when bumping the generator version.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a  # v2.1.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.hashes }}
+      provenance-name: pipeline-check.intoto.jsonl
+      # Only upload the provenance to a release when the workflow
+      # was triggered by a ``v*.*.*`` tag push and a matching
+      # GitHub release exists. workflow_dispatch runs still produce
+      # the provenance file as a workflow run artifact; uploading
+      # to a release without one existing is a generator error.
+      upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+  # ---------------------------------------------------------------------------
+  # Publish to Test PyPI first. Serves as a smoke test and lets us
   # verify the sdist/wheel install cleanly before hitting the real
-  # index.
+  # index. Gated on a successful provenance run so a Sigstore signing
+  # failure blocks the publish (consumers downloading from PyPI still
+  # rely on the matching GitHub-release provenance file).
   # ---------------------------------------------------------------------------
   publish-testpypi:
-    needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.publish == 'true'
+    needs: [build, provenance]
+    # Run automatically on any ``v*.*.*`` tag push. On
+    # workflow_dispatch the ``publish`` input still gates the upload
+    # so an operator running the workflow against a branch for testing
+    # can't ship to public indexes by accident.
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -143,7 +221,12 @@ jobs:
   # ---------------------------------------------------------------------------
   publish-pypi:
     needs: publish-testpypi
-    if: github.event_name == 'workflow_dispatch' && inputs.publish == 'true'
+    # Same gate as publish-testpypi: auto on tag push, opt-in on
+    # workflow_dispatch. The ``production`` environment configured
+    # below is the human-approval checkpoint for the real-index push.
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

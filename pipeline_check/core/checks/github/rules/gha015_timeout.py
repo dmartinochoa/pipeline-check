@@ -32,6 +32,13 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unbounded: list[str] = []
     for job_id, job in iter_jobs(doc):
+        # Reusable-workflow callers (``jobs.<id>.uses:``) cannot accept
+        # ``timeout-minutes:`` per the GitHub Actions schema. The
+        # called workflow's own jobs declare their timeouts. Skipping
+        # avoids a structural FP on every legitimate reusable-workflow
+        # call.
+        if isinstance(job.get("uses"), str):
+            continue
         if "timeout-minutes" not in job:
             unbounded.append(job_id)
     passed = not unbounded

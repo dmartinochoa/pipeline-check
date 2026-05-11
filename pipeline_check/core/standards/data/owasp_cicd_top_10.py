@@ -177,6 +177,9 @@ STANDARD = Standard(
         "GHA-041":  ["CICD-SEC-3"],   # single-maintainer action
         "GHA-042":  ["CICD-SEC-3"],   # very-young action repo
         "GHA-043":  ["CICD-SEC-3", "CICD-SEC-5"],  # low-star + sensitive perms
+        "GHA-044":  ["CICD-SEC-4"],   # build-tool PPE on untrusted trigger
+        "GHA-045":  ["CICD-SEC-4"],   # caller-ref input drives checkout
+        "GHA-046":  ["CICD-SEC-4"],   # manual PR-head fetch on untrusted trigger
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

@@ -5,12 +5,82 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master", "dev"]
+    # Skip the suite on PRs that don't touch executable code, tests,
+    # the lockfile, or this workflow itself. Docs / bench changes are
+    # covered by ``docs.yml`` (paths-gated) and don't need pytest.
+    paths-ignore:
+      - "docs/**"
+      - "bench/**"
+      - "**/*.md"
+      - "mkdocs.yml"
 
 permissions:
   contents: read
 
+# Cancel an in-flight PR run when a new commit lands on the same PR.
+# Master pushes keep the standard "don't cancel" posture so a green
+# build stays green even if a follow-up lands quickly.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  lint-and-test:
+  # Lint and mypy are invariant across the test matrix — running them
+  # 4x (3.11 / 3.12 / 3.13 / windows-3.12) only delays PR feedback.
+  # They both run against 3.12 once, in parallel with the pytest jobs.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --require-hashes -r requirements-dev.txt
+
+      - name: Lint with ruff
+        # ruff is hash-pinned in requirements-dev.txt.
+        run: ruff check pipeline_check/ tests/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --require-hashes -r requirements-dev.txt
+          pip install -e .
+
+      - name: Type check with mypy
+        # All nine ``mypy --strict`` flags are enabled in
+        # ``pyproject.toml``. The two narrow per-module overrides
+        # (boto3-leaning AWS modules + ``yaml.SafeLoader`` subclasses)
+        # are documented in the same block.
+        run: mypy pipeline_check/
+
+  test:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 
@@ -54,19 +124,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install --require-hashes -r requirements-dev.txt
           pip install -e .
-
-      - name: Lint with ruff
-        # ruff is hash-pinned in requirements-dev.txt; the install step
-        # above already supplied it. Don't re-install here unpinned.
-        run: ruff check pipeline_check/ tests/
-
-      - name: Type check with mypy
-        # All nine ``mypy --strict`` flags are enabled in
-        # ``pyproject.toml``. The two narrow per-module overrides
-        # (boto3-leaning AWS modules + ``yaml.SafeLoader`` subclasses)
-        # are documented in the same block. mypy is hash-pinned via
-        # requirements-dev.txt, so the install step above provides it.
-        run: mypy pipeline_check/
 
       - name: Test with pytest
         # --cov-fail-under gates the build on coverage regressions. Bump

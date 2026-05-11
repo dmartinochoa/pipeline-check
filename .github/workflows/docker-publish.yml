@@ -1,13 +1,20 @@
 name: Docker publish
 
-# Manual-only for now. The PyPI release flow (release.yml) handles
-# tagged source-distribution releases; this workflow lets an operator
-# publish a container image independently from any branch via the
-# Actions UI. Keeping the trigger to ``workflow_dispatch`` avoids
-# double-firing on ``v*.*.*`` tag pushes and keeps the container
-# release an explicit operator decision, matching the manual-publish
-# posture documented in release.yml.
+# Tag-driven: pushing a ``v*.*.*`` tag publishes the image alongside
+# the PyPI release. The ``container-registry`` GitHub environment
+# (configured under Settings -> Environments) is the human-approval
+# gate before the GHCR / Docker Hub push runs, matching the
+# ``production`` environment gate on the PyPI publish job.
+#
+# ``workflow_dispatch`` is kept so an operator can re-publish an
+# image without re-tagging (e.g. to refresh the multi-arch build
+# after a base-image security update) and so feature-branch preview
+# builds can ship under their version+sha tags without polluting
+# ``latest``.
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:

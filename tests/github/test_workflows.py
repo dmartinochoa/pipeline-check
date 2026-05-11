@@ -286,6 +286,31 @@ class TestGHA004Permissions:
         )
         assert f.passed
 
+    def test_reusable_workflow_caller_id_token_write_passes(self):
+        # Reusable-workflow callers (``jobs.<id>.uses:``) cannot
+        # carry ``steps:``. The id-token grant is forwarded to the
+        # called workflow, which is the actual OIDC consumer.
+        # GHA-004 must not flag the caller as "id-token: write with
+        # no OIDC step" or every legitimate slsa-github-generator /
+        # attest-build-provenance call would FP.
+        f = _run(
+            """
+            on: push
+            permissions:
+              contents: read
+            jobs:
+              provenance:
+                permissions:
+                  id-token: write
+                  contents: write
+                uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+                with:
+                  base64-subjects: deadbeef
+            """,
+            "GHA-004",
+        )
+        assert f.passed
+
 
 class TestGHA005AwsCredentials:
     def test_static_access_keys_in_with_fails(self):
