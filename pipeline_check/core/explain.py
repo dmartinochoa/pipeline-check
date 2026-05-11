@@ -34,6 +34,20 @@ if TYPE_CHECKING:
     from .chains.base import ChainRule
 
 
+_MD_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^\s<>\"')]+)\)")
+
+
+def _strip_markdown_links(text: str) -> str:
+    """Render ``[text](url)`` as ``text (url)`` for plain-text output.
+
+    Used by ``--explain`` so terminal readers see the link label and
+    URL without the markdown-bracket noise. The HTML reporter
+    consumes the same source field and emits real ``<a>`` anchors;
+    this is the terminal-side equivalent.
+    """
+    return _MD_LINK_RE.sub(r"\1 (\2)", text)
+
+
 @dataclass(frozen=True, slots=True)
 class _CheckMeta:
     """Everything ``explain`` needs to render a check, either derived
@@ -386,7 +400,7 @@ def _render_meta(meta: _CheckMeta) -> str:
         if rule.incident_refs:
             lines.append("[Seen in the wild]")
             for ref in rule.incident_refs:
-                lines.append(f"  * {ref}")
+                lines.append(f"  * {_strip_markdown_links(ref)}")
             lines.append("")
         if rule.exploit_example:
             lines.append("[Proof of exploit]")

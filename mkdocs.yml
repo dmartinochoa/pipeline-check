@@ -116,6 +116,11 @@ hooks:
   # tokens from the live standards data modules. Used by the
   # standards index to show per-framework coverage counts inline.
   - hooks/mkdocs_standards_stats.py
+  # Mirrors pipeline_check/core/_design_tokens.css into
+  # docs/stylesheets/_design_tokens.css so the package file stays
+  # the single source of truth for the severity / grade / surface
+  # palette shared by the HTML report and the docs site.
+  - hooks/mkdocs_design_tokens.py
 
 nav:
   # Order chosen by user-journey weight, not feature breadth:

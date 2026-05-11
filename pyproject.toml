@@ -72,6 +72,16 @@ Changelog = "https://github.com/dmartinochoa/pipeline-check/blob/master/CHANGELO
 [tool.setuptools.packages.find]
 include = ["pipeline_check*"]
 
+# Non-Python data files that must ship in the wheel. Without this
+# block the wheel carries only ``.py`` files, which silently
+# downgrades the HTML report (no rule docstrings, no shared design
+# tokens) and breaks ``html_reporter`` outright when the css file
+# is missing. ``package-data`` paths are relative to each package
+# root and accept globs.
+[tool.setuptools.package-data]
+"pipeline_check.core" = ["*.css"]
+"pipeline_check.core.checks.aws.rules" = ["*.yml"]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 120

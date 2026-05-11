@@ -29,12 +29,12 @@ RULE = Rule(
         "should never use hostPath."
     ),
     incident_refs=(
-        "CVE-2021-25741 (Kubernetes subpath symlink escape): a "
-        "container with ``hostPath`` plus subpath could traverse "
-        "outside the volume boundary and read or modify arbitrary "
-        "host files. Exploitable on any cluster permitting hostPath "
-        "to non-system workloads. "
-        "https://www.cve.org/CVERecord?id=CVE-2021-25741",
+        "[CVE-2021-25741](https://www.cve.org/CVERecord?id=CVE-2021-25741) "
+        "(Kubernetes subpath symlink escape): a container with "
+        "``hostPath`` plus subpath could traverse outside the "
+        "volume boundary and read or modify arbitrary host files. "
+        "Exploitable on any cluster permitting hostPath to "
+        "non-system workloads.",
         "TeamTNT / Kinsing crypto-jacking campaigns (2020-2022): "
         "cluster compromise reports repeatedly traced lateral movement "
         "from a single misconfigured pod to the underlying node via "

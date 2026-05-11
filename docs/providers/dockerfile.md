@@ -110,8 +110,8 @@ Multi-stage builds: only the final stage matters for runtime identity, since int
 
 **Seen in the wild**
 
-- CVE-2019-5736 (runC host breakout): a malicious container running as root could overwrite the host's runC binary and compromise every other container on the node. Non-root containers were not exploitable. https://www.cve.org/CVERecord?id=CVE-2019-5736
-- CVE-2022-0492 (cgroups v1 escape via release_agent): root inside a container with CAP_SYS_ADMIN could write to the host's release_agent file and execute arbitrary host code. Containers running as a non-root UID side-stepped the exploit class entirely. https://www.cve.org/CVERecord?id=CVE-2022-0492
+- [CVE-2019-5736](https://www.cve.org/CVERecord?id=CVE-2019-5736) (runC host breakout): a malicious container running as root could overwrite the host's runC binary and compromise every other container on the node. Non-root containers were not exploitable.
+- [CVE-2022-0492](https://www.cve.org/CVERecord?id=CVE-2022-0492) (cgroups v1 escape via release_agent): root inside a container with CAP_SYS_ADMIN could write to the host's release_agent file and execute arbitrary host code. Containers running as a non-root UID side-stepped the exploit class entirely.
 
 <div class="pg-rule__rec" markdown>
 

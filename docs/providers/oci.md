@@ -95,7 +95,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Seen in the wild**
 
-- SLSA threat-model v1.0: untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source. https://slsa.dev/spec/v1.0/threats
+- [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
 - GitHub self-hosted runner advisory (CVE-2024-32004 et al.): self-hosted runners default to non-ephemeral, persisted state; a single fork-PR run gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build. SLSA's isolation requirement (L2+) explicitly excludes this shape.
 
 <div class="pg-rule__rec" markdown>
@@ -134,8 +134,8 @@ Fires when:
 
 **Seen in the wild**
 
-- SLSA threat-model v1.0, Source-track Threat #4 ('Build uses unauthorized source'): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. https://slsa.dev/spec/v1.0/threats
-- SolarWinds Orion compromise (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape. https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a
+- [SLSA threat-model v1.0, Source-track Threat #4](https://slsa.dev/spec/v1.0/threats) ('Build uses unauthorized source'): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes.
+- [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
 
 <div class="pg-rule__rec" markdown>
 
@@ -166,7 +166,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Seen in the wild**
 
-- Log4Shell (CVE-2021-44228) downstream impact: organizations with SBOMs at the ready could ship patches in hours; those without (or with floating-version SBOMs) spent days auditing builds to discover what they actually shipped. The ``log4j-core@latest`` shape was the worst case, the SBOM said the right name but no consumer could pin which exact bytes were in production. https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a
+- [Log4Shell downstream impact](https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a) (CVE-2021-44228): organizations with SBOMs at the ready could ship patches in hours; those without (or with floating-version SBOMs) spent days auditing builds to discover what they actually shipped. The ``log4j-core@latest`` shape was the worst case — the SBOM said the right name but no consumer could pin which exact bytes were in production.
 - Common SBOM-quality findings (NTIA SBOM Minimum Elements report, 2021): version completeness consistently the lowest-scoring dimension across producers. Floating versions account for the bulk of unconsumed SBOMs in vulnerability-management pipelines.
 
 <div class="pg-rule__rec" markdown>

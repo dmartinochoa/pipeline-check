@@ -55,11 +55,11 @@ RULE = Rule(
         "incident.",
     ),
     incident_refs=(
-        "SLSA threat-model v1.0: untrusted builder is the canonical "
-        "Build-track Threat #2 ('Build the package from a modified "
-        "source'). A tampered self-hosted runner can emit a "
-        "syntactically-valid attestation for the wrong source. "
-        "https://slsa.dev/spec/v1.0/threats",
+        "[SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): "
+        "untrusted builder is the canonical Build-track Threat #2 "
+        "('Build the package from a modified source'). A tampered "
+        "self-hosted runner can emit a syntactically-valid "
+        "attestation for the wrong source.",
         "GitHub self-hosted runner advisory (CVE-2024-32004 et al.): "
         "self-hosted runners default to non-ephemeral, persisted "
         "state; a single fork-PR run gives the attacker arbitrary "
