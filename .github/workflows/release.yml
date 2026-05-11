@@ -159,10 +159,18 @@ jobs:
       actions: read       # read run metadata to embed in the predicate
       id-token: write     # OIDC token used for Sigstore signing
       contents: write     # upload the provenance file to the GH release
-    # Pin by SHA, not by tag, to match the project's SHA-pin posture.
-    # f7dd8c5 == v2.1.0 (2025-02-24); update both the SHA and the
-    # comment together when bumping the generator version.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a  # v2.1.0
+    # The SLSA generator MUST be pinned by semantic-version tag,
+    # not by commit SHA. ``slsa-verifier`` checks the trusted-
+    # builder ref embedded in the generated provenance against an
+    # allow-list of known SLSA generator tags; a SHA pin produces
+    # a ref the verifier doesn't recognize, which fails every
+    # downstream verification call (``slsa-verifier verify-artifact
+    # ... --source-uri ...``) and defeats the point of generating
+    # the attestation in the first place. CodeRabbit caught this
+    # regression on PR #93. The accompanying ``GHA-025`` finding
+    # on this file is suppressed in ``.pipelinecheckignore`` with
+    # the same rationale.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
       provenance-name: pipeline-check.intoto.jsonl

