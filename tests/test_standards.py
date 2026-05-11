@@ -373,8 +373,11 @@ class TestPerFrameworkCoverageFloor:
         # rule pack landed without nist_csf_2 mappings. Backfill is
         # queued for a follow-up; nist_csf_2 mappings cluster around
         # asset / risk-management controls that don't apply to most
-        # of the new rules.
-        "nist_csf_2":           69,
+        # of the new rules. Lowered from 69 to 68 when ATTEST-005
+        # (subject-digest unpinned) landed; the ATTEST-NNN family
+        # has no nist_csf_2 mappings today, same denominator-
+        # dilution case as the SCM pack.
+        "nist_csf_2":           68,
         "esf_supply_chain":     60,
         "openssf_scorecard":    58,
         # nist_800_53 lowered from 55 to 54 when the SCM provider

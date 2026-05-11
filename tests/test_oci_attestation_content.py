@@ -24,6 +24,9 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     attest004_missing_materials as a4,
 )
+from pipeline_check.core.checks.oci.rules import (
+    attest005_subject_unpinned as a5,
+)
 
 # ── Layout-dir fixture builder ─────────────────────────────────────
 
@@ -846,5 +849,161 @@ class TestATTEST004:
         ctx = OCIContext.from_path(index_path)
         findings = OCIManifestChecks(ctx).run()
         attest_findings = [f for f in findings if f.check_id == "ATTEST-004"]
+        assert len(attest_findings) == 1
+        assert not attest_findings[0].passed
+
+
+# ── ATTEST-005 subject-digest validation ────────────────────────────
+
+
+def _att_with_subject(
+    subject: tuple[dict[str, Any], ...],
+    pt: str = "https://slsa.dev/provenance/v0.2",
+) -> Attestation:
+    """Build an Attestation whose subject array carries *subject*.
+
+    ``_att()`` hardcodes ``subject=()``; ATTEST-005 tests need to
+    exercise specific subject shapes so they get their own helper.
+    """
+    return Attestation(
+        predicate_type=pt,
+        predicate={"builder": {"id": "https://github.com/actions/runner/Linux"}},
+        statement_type="https://in-toto.io/Statement/v0.1",
+        subject=subject,
+        manifest_path="index.json",
+        layer_digest="sha256:abc",
+    )
+
+
+# A realistic-looking sha256: 64 lowercase hex chars, not all zeros.
+_REAL_SHA256 = "4d5a6e7b8c9d0e1f2a3b4c5d6e7f80910a2b3c4d5e6f70819aabbccddeeff001"
+
+
+class TestATTEST005:
+    def test_passes_for_well_formed_subject(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": _REAL_SHA256}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_multi_subject_array(self):
+        att = _att_with_subject((
+            {"name": "image-amd64", "digest": {"sha256": _REAL_SHA256}},
+            {"name": "image-arm64", "digest": {"sha256": _REAL_SHA256[::-1]}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_empty_subject_array(self):
+        att = _att_with_subject(())
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "empty or missing" in f.description.lower()
+
+    def test_fails_for_missing_digest_map(self):
+        att = _att_with_subject((
+            {"name": "image"},  # no digest key at all
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "no digest" in f.description.lower()
+
+    def test_fails_for_empty_digest_value(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": ""}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "unpinned" in f.description.lower()
+
+    def test_fails_for_all_zero_digest(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "0" * 64}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_non_hex_digest(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "z" * 64}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_odd_length_digest(self):
+        """A valid hex byte encoding has even length; an odd-length
+        value can't be a real digest."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "abc"}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_only_one_of_two_subjects_is_pinned(self):
+        """A partial bind is still a bind to nothing for the unpinned
+        entry, attacker substitutes that one and the verifier never
+        notices."""
+        att = _att_with_subject((
+            {"name": "image-amd64", "digest": {"sha256": _REAL_SHA256}},
+            {"name": "image-arm64", "digest": {"sha256": ""}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_accepts_truncated_digest(self):
+        """Some registries store truncated 16-char digest prefixes;
+        the rule treats those as bound-enough as long as they're
+        well-formed hex."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "deadbeefcafebabe"}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_validates_sbom_attestation_subjects_too(self):
+        """The rule fires on any in-toto Statement regardless of
+        predicate type, an SBOM with unpinned subject is the same
+        substitution risk."""
+        att = _att_with_subject(
+            ({"name": "image", "digest": {"sha256": ""}},),
+            pt="https://spdx.dev/Document",
+        )
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_when_no_attestations_with_explanatory_message(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a5.check(manifest)
+        assert f.passed
+        assert "no attestation content" in f.description.lower()
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a5.check(manifest)
+        assert f.passed
+
+    def test_orchestrator_runs_attest005_end_to_end(self, tmp_path: Path):
+        """Build a layout dir whose Statement has an all-zero subject
+        digest (the fixture default), confirm ATTEST-005 fires
+        through the orchestrator."""
+        statement = _slsa_v0_2(
+            "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+        )
+        # _slsa_v0_2 emits subject digest "0" * 64 by default, which
+        # is the attestation-substitution surface this rule catches.
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        attest_findings = [f for f in findings if f.check_id == "ATTEST-005"]
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed

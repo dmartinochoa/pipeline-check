@@ -523,6 +523,7 @@ STANDARD = Standard(
         "ATTEST-002": ["CICD-SEC-3", "CICD-SEC-9"],                 # source-repo claim missing/unverifiable
         "ATTEST-003": ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # SBOM floating versions
         "ATTEST-004": ["CICD-SEC-3", "CICD-SEC-9"],                 # provenance lacks materials
+        "ATTEST-005": ["CICD-SEC-3", "CICD-SEC-9"],                 # subject digest unpinned
         # SCM posture (governance scanned via the GitHub REST API)
         "SCM-001":  ["CICD-SEC-1"],                # default branch unprotected
         "SCM-002":  ["CICD-SEC-1"],                # required reviews missing

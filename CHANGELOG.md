@@ -42,6 +42,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`ATTEST-005` in-toto Statement subject is missing or unpinned.**
+  Fifth rule in the attestation-content pack. Walks every parsed
+  in-toto Statement (SLSA provenance + SBOM) and validates the
+  ``subject`` array: a missing / empty array, a subject entry with
+  no ``digest`` map, or a digest value that's empty / all-zero /
+  non-hex / odd-length all fail. A Statement with a placeholder
+  subject is structurally unbound to artifact bytes; an attacker
+  who can move the signed envelope re-attaches it to a tampered
+  image without breaking the signature ("attestation-substitution"
+  per the SLSA Statement-Track threat model). Pairs with ATTEST-001
+  (builder), ATTEST-002 (source), ATTEST-004 (materials), ATTEST-003
+  (SBOM contents) so the full chain of custody is verifiable end to
+  end. Severity HIGH. Maps to CICD-SEC-3 + CICD-SEC-9. 14 new tests
+  covering empty / missing / placeholder / non-hex / odd-length /
+  partial-multi-subject shapes, plus the SBOM-attestation case and
+  the end-to-end orchestrator path. The catalog-locked OCI rule
+  count rises 12 -> 13; ``nist_csf_2`` floor drops one point
+  (denominator-dilution case identical to ATTEST-004's NIST 800-53 /
+  S2C2F adjustment).
+
 - **`ATTEST-004` SLSA provenance without resolved-dependencies set.**
   Fourth rule in the attestation-content pack. Reads the canonical
   materials lists on each SLSA provenance attestation (v0.2
