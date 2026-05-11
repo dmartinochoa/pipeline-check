@@ -14,6 +14,47 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Malicious-activity pack: extended obfuscation catalog.**
+  ``_malicious.py`` (the shared detector backing GHA-027 / GL-025 /
+  BB-025 / ADO-026 / CC-026 / JF-029 / CB-011) grows eleven new
+  ``obfuscated-exec`` patterns covering base64 decoders and
+  interpreter-side eval primitives the old catalog missed:
+
+  * ``base64 --decode`` (GNU long form) and ``-D`` (BSD uppercase),
+    in addition to the existing ``-d``.
+  * ``base64 -d <<< "PAYLOAD" | sh`` (Bash here-string decode, no
+    ``echo`` / ``printf`` source).
+  * ``openssl base64 -d`` and ``openssl enc -base64 -d`` as
+    alternative decoders when ``base64`` is filtered.
+  * Process substitution: ``bash <(... base64 -d)`` and
+    ``source <(curl ... | base64 -d)`` (the ``.`` POSIX alias too).
+  * Remote-fetch + decode + execute: ``curl ... | base64 -d |
+    bash`` and ``wget -qO- ... | base64 -d | sh``. Distinct from
+    GHA-016's curl-pipe hygiene rule because the encoded layer has
+    no benign explanation.
+  * Decode-then-decompress chains: ``base64 -d | gunzip | bash``
+    (also ``zcat``, ``xz -d``, ``bunzip2``).
+  * ``tr``-rot13 / character-translation decoders piped into a
+    shell.
+  * ``echo "..." | rev | bash`` reverse-string decoding.
+  * Interpreter-side eval-base64 loaders: Python
+    (``base64.b64decode`` / ``codecs.decode(..., 'base64')`` + a
+    ``exec`` / ``eval`` / ``compile`` sink, in either order),
+    Node.js (``eval(Buffer.from(..., 'base64').toString())`` /
+    ``Function(...)`` constructor), Perl
+    (``-MMIME::Base64 ... eval(decode_base64(...))``).
+  * PowerShell ``IEX ([Convert]::FromBase64String(...))`` for the
+    in-language base64 decoder path that doesn't go through
+    ``-enc`` argv.
+
+  The shell-name alternation reused across the obfuscation patterns
+  is fixed and widened: previously ``(?:ba|d|z|k|t?c)?sh`` matched
+  ``dsh`` (not a real shell) but missed ``dash`` (the system shell
+  on Debian / Ubuntu); the new ``(?:ba|da|z|k|t?c|a)?sh`` catches
+  ``dash`` and adds ``ash`` (Alpine busybox, the default shell in
+  ``alpine:*``-derived container build steps). Per-pattern positive
+  and FP cases land in ``tests/test_malicious_patterns.py``.
+
 - **GHA-04x PPE pack: GHA-044 / GHA-045 / GHA-046.** Three new
   GitHub Actions rules covering Pipeline Poisoned Execution
   variants that GHA-002 / GHA-010 / GHA-032 don't catch:
@@ -48,9 +89,56 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   All three map to OWASP CICD-SEC-4 and NIST CSF 2.0 PR.IR-01.
   Catalog: GHA 43 → 46 rules.
 
+### Fixed
+
+- **CodeRabbit review on PR #93.** Three reviewer-flagged regressions
+  addressed before cutting v1.0.0:
+
+  * ``release.yml`` SLSA generator pin moved from a commit SHA back
+    to its semantic-version tag (``@v2.1.0``). ``slsa-verifier``
+    validates the trusted-builder ref in the generated provenance
+    against an allow-list of known SLSA generator tags; a SHA pin
+    produced an unrecognized ref and broke every downstream
+    consumer verification (``slsa-verifier verify-artifact
+    --source-uri ...``). The accompanying ``GHA-025`` finding on
+    this file is suppressed in ``.pipelinecheckignore`` with the
+    same rationale, so the dogfood scan still passes. The earlier
+    "pin to match the project's SHA-pin posture" comment was wrong;
+    SLSA verification is the one place tag-pinning is the
+    deliberate choice.
+  * ``dogfood.yml`` ``security-events: write`` permission moved
+    out of the ``concurrency:`` block (where it was a no-op) into
+    ``permissions:`` so the ``github/codeql-action/upload-sarif``
+    step can actually upload findings to GitHub code scanning.
+    Without this, the SARIF upload had been silently running
+    unauthorized.
+  * ``GHA-044`` (build-tool PPE) regex widened to accept long-form
+    pip flags: ``pip install --editable .``, ``--no-deps``,
+    ``--user``, ``--prefix=/opt`` (with both space- and ``=``-
+    separated values), and any mix of short / long flags. Previous
+    pattern only accepted single-dash options, missing common
+    forms used in CI. New test cases lock the expanded surface.
+
+- **``docs/usage.md`` digest-pin wording.** Clarified that the
+  Docker ``:sha-<short>`` flavor is a mutable *tag* (still resolves
+  through the registry), not a digest pin. Added the
+  ``@sha256:<full-digest>`` form for true immutable pinning, with
+  a one-liner showing ``docker buildx imagetools inspect`` as the
+  way to obtain the digest.
+
+- **CHANGELOG ``[Unreleased]`` duplicate ``###`` subheaders.**
+  Acknowledged but deferred: the ``[Unreleased]`` section has
+  accumulated multiple ``### Added`` / ``### Changed`` / ``###
+  Fixed`` blocks across PRs, tripping markdownlint MD024.
+  Consolidating ~2.8k lines of changelog content by hand is high-
+  risk for the release cut; the duplicates render correctly and
+  the gate doesn't depend on MD024 cleanliness. Tracked for the
+  v1.0.x maintenance cycle.
+
 - **SLSA Build L3 wheel provenance.** ``release.yml`` now calls the
   ``slsa-framework/slsa-github-generator`` reusable workflow (pinned
-  to v2.1.0 by SHA) after the wheel build. The generator runs in
+  to ``@v2.1.0``, the tag form required by ``slsa-verifier``) after
+  the wheel build. The generator runs in
   GitHub's isolated SLSA builder, reads the SHA-256 hashes of the
   sdist and wheel from the build job's output, generates an in-toto
   SLSA Provenance v1.0 predicate naming the workflow run, and signs

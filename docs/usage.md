@@ -26,8 +26,12 @@ docker run --rm -v "$PWD:/scan" ghcr.io/dmartinochoa/pipeline-check
 
 Both registries publish the same digest; pick whichever your platform
 already pulls from. Tag flavors are `:<version>` (e.g. `:0.5.0`),
-`:sha-<short>` for digest-pinning to a specific build, and `:latest`
-on master. `/scan` is the image working directory, so a `-v
+`:sha-<short>` for a commit-specific *tag* (mutable: still resolves
+through Docker Hub / GHCR), and `:latest` on master. For true
+*immutable* pinning, append the manifest digest:
+`dmartinochoa/pipeline-check@sha256:<full-digest>`. `docker buildx
+imagetools inspect dmartinochoa/pipeline-check:<version>` prints the
+digest. `/scan` is the image working directory, so a `-v
 "$PWD:/scan"` bind mount makes the auto-detect walk Just Work.
 Append CLI flags after the image reference:
 

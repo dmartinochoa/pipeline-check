@@ -32,3 +32,14 @@ GHA-021:.github\workflows\localstack-test.yml
 # lockfile too. The remaining ``pip install -e .`` of this package
 # is what the suite tests against.
 GHA-021:.github\workflows\python-app.yml
+
+# ── release.yml — SLSA generator must be tag-pinned, not SHA ────────
+# The SLSA generator is consumed as a reusable workflow that produces
+# Sigstore-signed provenance. ``slsa-verifier`` validates the
+# attestation by matching the trusted-builder ref against an allow-
+# list of known SLSA generator semantic-version tags. A SHA pin
+# produces an unrecognized ref and breaks every downstream
+# verification call (the consumer-side ``slsa-verifier verify-
+# artifact --source-uri ...`` documented in the README). This is the
+# one place SHA-pinning is the wrong call.
+GHA-025:.github\workflows\release.yml

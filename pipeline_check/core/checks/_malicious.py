@@ -45,43 +45,183 @@ class MaliciousPattern:
     pattern: re.Pattern[str]
 
 
+# Shell-interpreter alternation reused across the obfuscation patterns.
+# Catches ``sh`` / ``bash`` / ``dash`` / ``zsh`` / ``ksh`` / ``csh`` /
+# ``tcsh`` / ``ash`` (Alpine busybox). The earlier inline form used
+# ``(?:ba|d|z|k|t?c)?sh`` which matched ``dsh`` (not a real shell)
+# but missed ``dash`` (the system shell on Debian / Ubuntu) entirely
+# because ``d?sh`` only consumed one letter. The widened form catches
+# both ``dash`` and ``ash`` while keeping the same FP profile.
+_SH = r"(?:ba|da|z|k|t?c|a)?sh"
+
+# Long-form base64 decode flag, accepts ``-d`` (POSIX) and
+# ``--decode`` (GNU long) and ``-D`` (BSD ``base64`` on macOS).
+_B64_DECODE = r"(?:-d|--decode|-D)"
+
+# Base64 payload of plausible attack size. 30+ chars filters out
+# tiny benign fragments while still catching minimal shellcode.
+_B64_BLOB = r"[A-Za-z0-9+/=]{30,}"
+
+
 # ── Obfuscated execution ─────────────────────────────────────────────
 _OBFUSCATED_EXEC: tuple[MaliciousPattern, ...] = (
     MaliciousPattern(
         "obfuscated-exec", "base64-decoded pipe to shell",
         re.compile(
-            r"(?:echo|printf)\s+[\"']?[A-Za-z0-9+/=]{30,}[\"']?"
-            r"\s*\|\s*base64\s+-d\s*\|\s*(?:ba|d|z|k|t?c)?sh\b",
+            rf"(?:echo|printf)\s+[\"']?{_B64_BLOB}[\"']?"
+            rf"\s*\|\s*base64\s+{_B64_DECODE}\s*\|\s*{_SH}\b",
             re.IGNORECASE,
         ),
     ),
     MaliciousPattern(
         "obfuscated-exec", "base64-decoded command substitution",
         re.compile(
-            r"\$\(\s*(?:echo|printf)\s+[\"']?[A-Za-z0-9+/=]{30,}[\"']?"
-            r"\s*\|\s*base64\s+-d\s*\)",
+            rf"\$\(\s*(?:echo|printf)\s+[\"']?{_B64_BLOB}[\"']?"
+            rf"\s*\|\s*base64\s+{_B64_DECODE}\s*\)",
             re.IGNORECASE,
         ),
     ),
+    # Here-string form: ``base64 -d <<< "PAYLOAD" | sh``. No
+    # ``echo`` / ``printf`` source, the payload is fed directly via
+    # the ``<<<`` redirector. Bash-specific (POSIX ``sh`` doesn't
+    # have here-strings) but common in modern attack scripts because
+    # it shaves a process off the pipeline.
     MaliciousPattern(
-        "obfuscated-exec", "PowerShell -enc base64 payload",
+        "obfuscated-exec", "base64 here-string decoded to shell",
         re.compile(
-            r"powershell(?:\.exe)?\s+[^;\n]*-[Ee][Nn][Cc]"
-            r"(?:odedCommand)?\s+[A-Za-z0-9+/=]{30,}",
+            rf"base64\s+{_B64_DECODE}\s*<<<\s*[\"']?{_B64_BLOB}[\"']?"
+            rf"\s*\|\s*{_SH}\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # ``openssl base64 -d`` and ``openssl enc -base64 -d`` are
+    # alternative base64 decoders attackers use when ``base64`` is
+    # filtered or absent. Both forms ship in every distro that has
+    # an ``openssl`` binary.
+    MaliciousPattern(
+        "obfuscated-exec", "openssl base64 decoder to shell",
+        re.compile(
+            rf"(?:echo|printf)\s+[\"']?{_B64_BLOB}[\"']?"
+            rf"\s*\|\s*openssl\s+(?:enc\s+)?-?(?:a|base64)\s+-d\b"
+            rf"[^|\n]*\|\s*{_SH}\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # Process substitution: ``bash <(curl ... | base64 -d)`` or
+    # ``source <(echo PAYLOAD | base64 -d)``. The decoded bytes land
+    # on a /dev/fd path that the shell sources as a file, equivalent
+    # to pipe-to-shell but harder to spot.
+    MaliciousPattern(
+        "obfuscated-exec", "process-substitution decoded exec",
+        re.compile(
+            rf"(?:source|\.|{_SH})\s+<\(\s*"
+            rf"[^)\n]*base64\s+{_B64_DECODE}[^)\n]*\)",
+            re.IGNORECASE,
+        ),
+    ),
+    # Remote-fetch + decode + execute. The simplest form is
+    # ``curl -s URL | base64 -d | bash``. GHA-016 catches plain
+    # ``curl | bash`` as a hygiene risk; this rule fires on the
+    # encoded variant which has no benign explanation, an installer
+    # script fetched over HTTPS doesn't need a base64 wrapper.
+    MaliciousPattern(
+        "obfuscated-exec", "curl-fetched encoded payload to shell",
+        re.compile(
+            rf"(?:curl|wget)\s+[^|\n]*\|\s*base64\s+{_B64_DECODE}"
+            rf"\s*\|\s*{_SH}\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # Decode-then-decompress chain: ``... | base64 -d | gunzip |
+    # bash`` (or ``zcat``). The extra gzip layer is what attackers
+    # add when the payload is large enough that a single-line base64
+    # blob would be flagged by length-based detectors.
+    MaliciousPattern(
+        "obfuscated-exec", "decode-decompress chain to shell",
+        re.compile(
+            rf"base64\s+{_B64_DECODE}\s*\|\s*"
+            rf"(?:gunzip|gzip\s+-d|zcat|xz\s+-d|unxz|bzcat|bunzip2)\b"
+            rf"[^|\n]*\|\s*{_SH}\b",
+            re.IGNORECASE,
         ),
     ),
     MaliciousPattern(
         "obfuscated-exec", "hex-decoded pipe to shell",
         re.compile(
-            r"(?:echo|printf)\s+[\"']?(?:\\x[0-9a-f]{2}){10,}[\"']?"
-            r"\s*\|\s*(?:ba|d|z|k|t?c)?sh\b",
+            rf"(?:echo|printf)\s+[\"']?(?:\\x[0-9a-f]{{2}}){{10,}}[\"']?"
+            rf"\s*\|\s*{_SH}\b",
             re.IGNORECASE,
         ),
     ),
     MaliciousPattern(
         "obfuscated-exec", "xxd-decoded pipe to shell",
         re.compile(
-            r"\b(?:xxd|od|hexdump)\s+-[rR](?:\s+-p)?\s+[^|]*\|\s*(?:ba|d)?sh\b",
+            rf"\b(?:xxd|od|hexdump)\s+-[rR](?:\s+-p)?\s+[^|]*\|\s*{_SH}\b",
+        ),
+    ),
+    # ``tr``-based decoding. Common rot-style obfuscation:
+    # ``echo "..." | tr 'A-Za-z' 'N-ZA-Mn-za-m' | bash`` (rot13).
+    # The regex narrows to pipes that flow into a shell so plain
+    # ``tr`` for text normalization doesn't fire.
+    MaliciousPattern(
+        "obfuscated-exec", "tr-decoded pipe to shell",
+        re.compile(
+            rf"\|\s*tr\s+[\"'][^\"'\n]{{2,}}[\"']\s+[\"'][^\"'\n]{{2,}}[\"']"
+            rf"\s*\|\s*{_SH}\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # ``rev`` reverses bytes. Real attack form is
+    # ``echo "REVERSED_PAYLOAD" | rev | bash``. Benign uses of
+    # ``rev`` (printing a string backward in a log) don't pipe
+    # into a shell.
+    MaliciousPattern(
+        "obfuscated-exec", "rev-decoded pipe to shell",
+        re.compile(
+            rf"(?:echo|printf)\s+[\"'][^\"'\n]{{10,}}[\"']\s*\|\s*rev"
+            rf"\s*\|\s*{_SH}\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # ``python -c 'import base64;exec(base64.b64decode("..."))'``
+    # and the shorter ``base64.decodebytes`` form. Requires both a
+    # base64 call and an ``exec``/``eval``/``compile`` sink in the
+    # same ``-c`` string so unrelated base64 use doesn't fire. Two
+    # zero-width lookaheads accept either ordering ("exec wraps
+    # base64" or "base64 then exec").
+    MaliciousPattern(
+        "obfuscated-exec", "python b64decode exec",
+        re.compile(
+            r"python[23]?\s+-c\s+[\"']"
+            r"(?=.{0,500}?(?:base64\.(?:b64decode|decodebytes"
+            r"|standard_b64decode)|codecs\.decode\s*\([^)]*"
+            r"[\"']base64[\"']))"
+            r"(?=.{0,500}?(?:exec|eval|compile)\s*\()",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
+    # ``node -e "eval(Buffer.from('...', 'base64').toString())"``
+    # is the canonical Node loader. ``Function(...)`` constructor
+    # is a common ``eval`` substitute attackers use to dodge naive
+    # string-match filters.
+    MaliciousPattern(
+        "obfuscated-exec", "node Buffer.from base64 eval",
+        re.compile(
+            r"node\s+-e\s+[\"'][^\"'\n]*"
+            r"(?:eval|Function)\s*\(\s*Buffer\.from\s*\("
+            r"[^)]*[\"']base64[\"']\s*\)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
+    # ``perl -MMIME::Base64 -e 'eval(decode_base64("..."))'``. The
+    # ``MIME::Base64`` module is the standard Perl base64; the
+    # decode-then-eval pairing is the tell.
+    MaliciousPattern(
+        "obfuscated-exec", "perl decode_base64 eval",
+        re.compile(
+            r"perl\b[^\n]*(?:-MMIME::Base64|use\s+MIME::Base64)"
+            r"[^\n]*(?:eval|exec)\s*\(?\s*decode_base64\s*\(",
+            re.IGNORECASE | re.DOTALL,
         ),
     ),
     # PowerShell remote-download-and-execute. The classic Cobalt-Strike
@@ -103,6 +243,19 @@ _OBFUSCATED_EXEC: tuple[MaliciousPattern, ...] = (
         re.compile(
             r"(?:Invoke-WebRequest|iwr|curl|wget)\s+[^|\n]*\|\s*"
             r"(?:IEX|Invoke-Expression)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # ``IEX ([Text.Encoding]::ASCII.GetString([Convert]::
+    # FromBase64String("...")))``. PowerShell's in-language base64
+    # decoder, the alternative to ``-enc`` when the attacker is
+    # already inside a PowerShell session and wants to dodge
+    # command-line argument logging.
+    MaliciousPattern(
+        "obfuscated-exec", "PowerShell FromBase64String IEX",
+        re.compile(
+            r"(?:IEX|Invoke-Expression)\b[^\n]*"
+            r"\[\s*(?:System\.)?Convert\s*\]\s*::\s*FromBase64String\s*\(",
             re.IGNORECASE,
         ),
     ),

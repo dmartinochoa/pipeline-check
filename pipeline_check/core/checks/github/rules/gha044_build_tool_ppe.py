@@ -135,13 +135,21 @@ _BUILD_TOOL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("bun install",
      re.compile(r"^\s*(?:sudo\s+)?bun\s+install(?:\s|$)")),
     ("pip install local",
-     # ``pip install .`` / ``pip install -e .`` / ``pip install ./pkg``
-     # ``pip install -e ./pkg``. Matches ``python -m pip install …``
-     # and ``pip3``. Does NOT match ``pip install -r requirements.txt``
-     # (that path doesn't auto-execute checked-out setup.py).
+     # ``pip install .`` / ``pip install -e .`` / ``pip install ./pkg``,
+     # plus long-form variants: ``pip install --editable .``,
+     # ``pip install --no-deps .``, ``pip install --user .``,
+     # ``pip install --prefix=/opt .``. Mixed short / long flags work
+     # too: ``pip install --no-deps -e .``. Matches ``python -m pip
+     # install …`` and ``pip3``. Does NOT match ``pip install -r
+     # requirements.txt`` (no setup.py auto-execution) or ``pip
+     # install requests`` (named-package install). The fused
+     # ``--editable=.`` form is out of scope (rare); use the space-
+     # separated form for the rule to fire.
      re.compile(
-         r"^\s*(?:sudo\s+)?(?:python3?\s+-m\s+)?pip3?\s+install"
-         r"(?:\s+-[^-\s]+)*\s+(?:-e\s+)?\.(?:/\S*)?(?:\s|$)"
+         r"^\s*(?:sudo\s+)?(?:python3?\s+-m\s+)?pip3?\s+install\b"
+         r"(?:\s+--?[A-Za-z][\w-]*(?:=\S+)?)*"
+         r"\s+(?:(?:-e|--editable)\s+)?"
+         r"\.(?:/\S*)?(?:\s|$)"
      )),
     ("setup.py",
      re.compile(r"^\s*(?:sudo\s+)?python3?\s+setup\.py(?:\s|$)")),

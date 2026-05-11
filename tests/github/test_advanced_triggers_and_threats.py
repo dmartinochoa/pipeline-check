@@ -449,6 +449,70 @@ class TestGHA044BuildToolPPE:
         f = run_check(wf, "GHA-044")
         assert f.passed
 
+    def test_fails_on_long_form_editable_flag(self):
+        """``pip install --editable .`` is the long-form variant of
+        ``-e .`` and runs the same setup.py code."""
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: pip install --editable .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_fails_on_no_deps_local_install(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: pip install --no-deps .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_fails_on_long_flag_with_separator_value(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: pip install --prefix=/opt/build --no-deps -e .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_passes_on_long_form_named_package(self):
+        """``pip install --upgrade requests`` installs a named
+        package, no local setup.py execution."""
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: pip install --upgrade requests
+        """
+        f = run_check(wf, "GHA-044")
+        assert f.passed
+
     def test_passes_on_npm_run_lint(self):
         """``npm run <script>`` triggers the named script only; the
         rule narrows to install / ci / i which execute lifecycle

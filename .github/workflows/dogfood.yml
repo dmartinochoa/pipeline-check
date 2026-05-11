@@ -16,11 +16,17 @@ on:
 
 permissions:
   contents: read
+  # Needed by ``github/codeql-action/upload-sarif`` in the
+  # ``Upload SARIF`` step below. Previously this lived under
+  # ``concurrency:`` where it had no effect, so the SARIF upload
+  # ran without the scope it needed and the dogfood findings
+  # never reached the GitHub code-scanning UI. CodeRabbit caught
+  # it on PR #93.
+  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-  security-events: write
 
 jobs:
   scan-self:
