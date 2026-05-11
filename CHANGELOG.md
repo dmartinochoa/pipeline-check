@@ -40,6 +40,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   finding(s) to PATH` to stderr unless `--quiet` is set. Closes
   the missing half of the v0.5.0 auto-baseline item.
 
+### Added
+
+- **`ATTEST-004` SLSA provenance without resolved-dependencies set.**
+  Fourth rule in the attestation-content pack. Reads the canonical
+  materials lists on each SLSA provenance attestation (v0.2
+  ``predicate.materials``, v1
+  ``predicate.buildDefinition.resolvedDependencies``) and fires when
+  the list is missing or empty. A trusted-builder image with no
+  declared materials gives downstream consumers no chain-of-custody
+  for build inputs (base image, source ref, transitive tool chain),
+  which defeats SLSA Build-track L2+ and breaks downstream
+  vulnerability correlation when an advisory drops. Pairs with
+  ATTEST-003 (SBOM-level inputs); both lists are needed for the SLSA
+  "isolated, reproducible" claim. Severity MEDIUM. Maps to
+  CICD-SEC-3 + CICD-SEC-9. 12 new tests covering both spec versions,
+  malformed shapes, multi-attestation cases, and the
+  end-to-end orchestrator path.
+
 ### Changed
 
 - **Rule-pack quality backfill (no behavior change).** Three

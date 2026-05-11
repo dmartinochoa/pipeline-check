@@ -386,7 +386,11 @@ class TestPerFrameworkCoverageFloor:
         # 54 to 53 when SCM-017/018/019 (CODEOWNERS / bypass /
         # push restrictions) added three more denominator entries
         # without 800-53 mappings, same denominator-dilution case.
-        "nist_800_53":          53,
+        # Lowered from 53 to 52 when ATTEST-004 (materials gap)
+        # landed; the ATTEST-NNN family has no NIST 800-53 mapping
+        # today and the denominator dilution drops the percentage
+        # one point. Backfill is queued.
+        "nist_800_53":          52,
         "nist_800_190":         45,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
@@ -395,7 +399,11 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                 41,
         "soc2":                 49,
         "cis_supply_chain":     28,
-        "s2c2f":                29,
+        # s2c2f lowered from 29 to 28 when ATTEST-004 landed: the
+        # ATTEST-NNN family has no S2C2F mapping today, so adding a
+        # rule grows the denominator without growing the numerator.
+        # Backfill is queued; the existing S2C2F coverage is intact.
+        "s2c2f":                28,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack

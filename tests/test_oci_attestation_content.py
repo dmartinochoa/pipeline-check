@@ -21,6 +21,9 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     attest003_sbom_floating_versions as a3,
 )
+from pipeline_check.core.checks.oci.rules import (
+    attest004_missing_materials as a4,
+)
 
 # ── Layout-dir fixture builder ─────────────────────────────────────
 
@@ -679,3 +682,169 @@ class TestATTEST003Rule:
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed
         assert "openssl@latest" in attest_findings[0].description
+
+
+# ── ATTEST-004 materials / resolvedDependencies ────────────────────
+
+
+class TestATTEST004:
+    def test_passes_for_v0_2_with_populated_materials(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": [
+                {
+                    "uri": "git+https://github.com/owner/repo",
+                    "digest": {"sha1": "a" * 40},
+                },
+                {
+                    "uri": "pkg:docker/ubuntu@22.04",
+                    "digest": {"sha256": "b" * 64},
+                },
+            ],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+        assert "non-empty" in f.description.lower()
+
+    def test_fails_for_v0_2_empty_materials(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": [],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "materials" in f.description.lower()
+
+    def test_fails_for_v0_2_missing_materials_key(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_v0_2_materials_wrong_type(self):
+        """A non-list materials value (string, dict, int) is malformed
+        per spec and treated as empty."""
+        att = _att({
+            "materials": "see-build-log",
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_v1_with_populated_resolved_dependencies(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+                "resolvedDependencies": [
+                    {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"gitCommit": "a" * 40},
+                    },
+                ],
+            },
+            "runDetails": {
+                "builder": {"id": "https://github.com/actions/runner/Linux"},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_v1_empty_resolved_dependencies(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+                "resolvedDependencies": [],
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "resolveddependencies" in f.description.lower()
+
+    def test_fails_for_v1_missing_resolved_dependencies_key(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_v1_resolved_dependencies_preferred_over_v0_2_materials(self):
+        """A transitional attestation carrying both keys should be read
+        through the v1 path (the canonical place) when buildDefinition
+        is present, so the rule doesn't pass on a stale v0.2 fallback
+        that happens to be populated."""
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "resolvedDependencies": [],
+            },
+            "materials": [
+                {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+            ],
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_when_no_attestations_with_explanatory_message(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a4.check(manifest)
+        assert f.passed
+        assert "no slsa provenance" in f.description.lower()
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a4.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_sbom_attestations_present(self):
+        """ATTEST-004 only reads SLSA provenance attestations. An
+        image that ships an SBOM attestation but no provenance has
+        nothing for this rule to verify; it passes with the
+        no-content message."""
+        sbom_att = _att(
+            {"packages": [{"name": "x", "versionInfo": "1.0"}]},
+            pt="https://spdx.dev/Document",
+        )
+        f = a4.check(_index_with_attestations(sbom_att))
+        assert f.passed
+
+    def test_orchestrator_runs_attest004_end_to_end(self, tmp_path: Path):
+        """Build a layout dir whose provenance has empty materials,
+        confirm ATTEST-004 fires through the orchestrator."""
+        statement = {
+            "_type": "https://in-toto.io/Statement/v0.1",
+            "subject": [{"name": "image", "digest": {"sha256": "0" * 64}}],
+            "predicateType": "https://slsa.dev/provenance/v0.2",
+            "predicate": {
+                "builder": {
+                    "id": "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+                },
+                "buildType": "https://example.com/buildtype",
+                "invocation": {
+                    "configSource": {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"sha1": "a" * 40},
+                    },
+                },
+                "materials": [],
+            },
+        }
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        attest_findings = [f for f in findings if f.check_id == "ATTEST-004"]
+        assert len(attest_findings) == 1
+        assert not attest_findings[0].passed
