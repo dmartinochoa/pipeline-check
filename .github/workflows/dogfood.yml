@@ -110,8 +110,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: pipeline-check (published v0.5.0)
-        uses: dmartinochoa/pipeline-check@d747f5dfe33f91831ee25db603aefc4327111033  # v0.5.0
+      - name: pipeline-check (published, post-1.0.1 SHA-pin fix)
+        # Pinned to ``8ba0b9e`` (the SHA-pin-composites merge commit
+        # on master) rather than the latest release tag because v1.0.1
+        # was cut before the SHA-pin policy fix landed and its
+        # composite ``action.yml`` still references ``setup-python@v5``
+        # / ``upload-sarif@v3`` by tag, which the org's "actions must
+        # be pinned to a full-length commit SHA" policy refuses to
+        # run. Bump this back to a release tag once a v1.0.2+ (or
+        # whatever cuts after) is published.
+        uses: dmartinochoa/pipeline-check@8ba0b9ec726c0971abb227185f26a0b6d2e14f88  # post-v1.0.1 SHA-pin fix
         with:
           pipeline: github
           path: .github/workflows

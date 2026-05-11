@@ -182,56 +182,20 @@ jobs:
       upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
 
   # ---------------------------------------------------------------------------
-  # Publish to Test PyPI first. Serves as a smoke test and lets us
-  # verify the sdist/wheel install cleanly before hitting the real
-  # index. Gated on a successful provenance run so a Sigstore signing
-  # failure blocks the publish (consumers downloading from PyPI still
-  # rely on the matching GitHub-release provenance file).
-  # ---------------------------------------------------------------------------
-  publish-testpypi:
-    needs: [build, provenance]
-    # Run automatically on any ``v*.*.*`` tag push. On
-    # workflow_dispatch the ``publish`` input still gates the upload
-    # so an operator running the workflow against a branch for testing
-    # can't ship to public indexes by accident.
-    if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/project/pipeline_check/
-    permissions:
-      # OIDC token for PyPI trusted publishing — no long-lived API key.
-      id-token: write
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to Test PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          # PEP 740 in-toto attestations published alongside the
-          # artifact. The PyPI ``id-token: write`` permission above
-          # supplies the OIDC token the action uses to sign.
-          attestations: true
-
-  # ---------------------------------------------------------------------------
-  # Publish to real PyPI — gated on the ``production`` GitHub
-  # environment, which can require manual approval before the step
-  # runs.
+  # Publish to PyPI. Single hop — no TestPyPI intermediate step. The
+  # earlier TestPyPI pre-flight added a separate trusted-publisher
+  # surface to maintain (different environment name, separate PyPI
+  # account configuration) without catching anything the ``build``
+  # job's ``Verify tag matches package version`` + ``pip-audit
+  # --strict`` + ``twine check`` (implicit in gh-action-pypi-publish)
+  # didn't already catch. ``production`` GitHub environment provides
+  # the human-approval checkpoint before the real-index push.
   # ---------------------------------------------------------------------------
   publish-pypi:
-    needs: publish-testpypi
-    # Same gate as publish-testpypi: auto on tag push, opt-in on
-    # workflow_dispatch. The ``production`` environment configured
-    # below is the human-approval checkpoint for the real-index push.
+    needs: [build, provenance]
+    # Auto on ``v*.*.*`` tag push. On workflow_dispatch the ``publish``
+    # input still gates the upload so an operator running this against
+    # a branch for testing can't ship to PyPI by accident.
     if: |
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
@@ -241,6 +205,7 @@ jobs:
       name: production
       url: https://pypi.org/project/pipeline_check/
     permissions:
+      # OIDC token for PyPI trusted publishing — no long-lived API key.
       id-token: write
 
     steps:
@@ -253,5 +218,7 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
-          # PEP 740 in-toto attestations — same as the TestPyPI step.
+          # PEP 740 in-toto attestations published alongside the
+          # artifact. The PyPI ``id-token: write`` permission above
+          # supplies the OIDC token the action uses to sign.
           attestations: true
