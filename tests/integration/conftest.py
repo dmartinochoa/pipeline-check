@@ -10,7 +10,7 @@ your LocalStack URL (typically ``http://localhost:4566``) to run the suite:
     AWS_DEFAULT_REGION=us-east-1 \\
     pytest tests/integration/ -v
 
-boto3 >=1.28 honours ``AWS_ENDPOINT_URL`` automatically, so no boto3 client
+boto3 >=1.28 honors ``AWS_ENDPOINT_URL`` automatically, so no boto3 client
 in the scanner or in these tests needs explicit endpoint configuration.
 """
 

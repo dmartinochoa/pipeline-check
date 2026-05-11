@@ -984,7 +984,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Description shape: ``[CONFIRMED in <callee-path>] <chain>``
   vs ``[UNCONFIRMED] <chain>``, plus a header counting
   confirmed vs unconfirmed paths. ``Finding.confidence_locked``
-  is set so the centralised confidence demoter doesn't flatten
+  is set so the centralized confidence demoter doesn't flatten
   the deliberate split.
 
   Closes the v1 limitation noted in the original TAINT-003

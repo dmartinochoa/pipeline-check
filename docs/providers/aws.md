@@ -1,7 +1,7 @@
 # AWS provider
 
 The AWS provider uses a `boto3.Session` scoped to a single region. It
-supports named AWS CLI profiles via `--profile` and honours the
+supports named AWS CLI profiles via `--profile` and honors the
 `AWS_ENDPOINT_URL` environment variable (for LocalStack).
 
 ## Services covered
@@ -690,7 +690,7 @@ accessed, downloaded, or tampered with pipeline artifacts during an
 investigation.
 
 **Recommended actions**
-- Enable S3 server access logging and direct logs to a separate, centralised logging bucket.
+- Enable S3 server access logging and direct logs to a separate, centralized logging bucket.
 - Restrict write access to the logging bucket so log entries cannot be tampered with.
 - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
 

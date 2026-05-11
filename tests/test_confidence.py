@@ -56,7 +56,7 @@ def test_finding_confidence_locked_defaults_to_false():
 
 def test_scanner_respects_confidence_locked(tmp_path, monkeypatch):
     """A finding with confidence_locked=True keeps its explicit
-    confidence even when the check_id is in the centralised demotion
+    confidence even when the check_id is in the centralized demotion
     list. This is the CB-005 scenario: the rule's blanket default is
     MEDIUM but specific findings (``two+ versions behind``) need to
     stay HIGH."""

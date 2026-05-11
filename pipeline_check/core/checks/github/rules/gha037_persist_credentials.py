@@ -39,7 +39,7 @@ RULE = Rule(
         "and the StepSecurity / harden-runner audit set tracks "
         "as ``persist-credentials``-default. Real-world exploit "
         "chains (the ``ultralytics`` 2024 RCE, multiple Mend / "
-        "Snyk advisories) leverage exactly this primitive: a "
+        "Snyk advisories) exploit exactly this primitive: a "
         "first checkout step persists the token, a later "
         "``run:`` step (often a build script the attacker can "
         "influence via PR contents) reads ``.git/config`` and "

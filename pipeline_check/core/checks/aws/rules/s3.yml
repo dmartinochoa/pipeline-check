@@ -48,7 +48,7 @@
     buckets. Without access logs it is not possible to audit who accessed,
     downloaded, or tampered with pipeline artifacts during an investigation.
   recommended_actions:
-    - Enable S3 server access logging and direct logs to a separate, centralised logging bucket.
+    - Enable S3 server access logging and direct logs to a separate, centralized logging bucket.
     - Restrict write access to the logging bucket so log entries cannot be tampered with.
     - Use Amazon Athena or CloudWatch Logs Insights to query access logs for anomalous patterns.
   owasp_cicd: "CICD-SEC-10: Insufficient Logging and Visibility"

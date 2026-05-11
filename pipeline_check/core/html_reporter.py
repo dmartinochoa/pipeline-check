@@ -448,7 +448,7 @@ _SCRIPT = r"""
   const collapseBtn = document.getElementById('f-collapse');
   function setAll(open) {
     document.querySelectorAll('tr[data-check-id] details').forEach(d => {
-      // Only toggle rows currently visible after filtering, honours the
+      // Only toggle rows currently visible after filtering, honors the
       // user's "show me what's failing" filter even when they expand all.
       if (d.closest('tr').style.display !== 'none') d.open = open;
     });

@@ -128,7 +128,7 @@ Rules
 - Unknown check IDs are silently ignored: the override simply never
   matches anything. Bad severities are dropped with a `[config]`
   warning at load time.
-- Overrides are applied **after** centralised confidence demotion, so
+- Overrides are applied **after** centralized confidence demotion, so
   the rule's confidence score is preserved even when its severity is
   changed.
 - Suppression is still done through `--ignore-file` /

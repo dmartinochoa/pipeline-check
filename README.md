@@ -363,7 +363,7 @@ See [docs/standards/](docs/standards/).
 | `--scm-repo` | | Repository to scan in `OWNER/NAME` form (required when `--pipeline scm`) |
 | `--scm-fixture-dir` | | Read SCM API responses from JSON files under DIR instead of hitting the network. Useful for offline tests / CI runs without a token. |
 | `--gh-token` | `$GITHUB_TOKEN` | Token for the GHA reusable-workflow resolver and the SCM provider's REST API calls |
-| `--resolve-remote` | | Follow remote `uses:` refs (reusable workflows + composite actions) over HTTPS. Off by default — opt in to take on the network surface. |
+| `--resolve-remote` | | Follow remote `uses:` refs (reusable workflows + composite actions) over HTTPS. Off by default; opt in to take on the network surface. |
 | `--config` | auto | Config file path (TOML or YAML) |
 | `--config-check` | | Validate config, exit non-zero on unknown keys |
 | `--man [TOPIC]` | | Extended docs (`gate`, `autofix`, `diff`, `secrets`, `standards`, `config`, `output`, `lambda`, `recipes`) |

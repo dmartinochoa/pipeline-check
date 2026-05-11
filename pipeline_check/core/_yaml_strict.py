@@ -20,9 +20,7 @@ class DupKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
         mapping: dict[Any, Any] = {}
         for key_node, value_node in node.value:
-            # ``construct_object`` is annotated as untyped in the
-            # types-PyYAML stubs, hence the per-call ignore.
-            key = self.construct_object(key_node, deep=deep)  # type: ignore[no-untyped-call]
+            key = self.construct_object(key_node, deep=deep)
             if key in mapping:
                 mark = key_node.start_mark
                 raise yaml.constructor.ConstructorError(
@@ -31,7 +29,7 @@ class DupKeyLoader(yaml.SafeLoader):
                     f"column {mark.column + 1}",
                     mark,
                 )
-            mapping[key] = self.construct_object(value_node, deep=deep)  # type: ignore[no-untyped-call]
+            mapping[key] = self.construct_object(value_node, deep=deep)
         return mapping
 
 

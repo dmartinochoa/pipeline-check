@@ -15,7 +15,7 @@ RULE = Rule(
     cwe=("CWE-778",),
     recommendation=(
         "Enable S3 server access logging for the artifact bucket and "
-        "direct logs to a separate, centralised logging bucket with "
+        "direct logs to a separate, centralized logging bucket with "
         "restricted write access."
     ),
     docs_note=(

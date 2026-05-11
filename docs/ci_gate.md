@@ -53,7 +53,7 @@ pipeline_check --pipeline github --gha-path .github/workflows \
     --fail-on-check GHA-002 --fail-on-check GHA-005
 ```
 
-### Cap total failures while the team paydown debt
+### Cap total failures while the team pays down debt
 
 ```bash
 pipeline_check --pipeline aws --max-failures 5
@@ -131,8 +131,8 @@ longer applies and the gate summary emits:
 [gate] ignore rule expired on 2026-06-30: GHA-001:.github/workflows/release.yml (no longer suppressing)
 ```
 
-Suppressions within 14 days of expiry surface a forewarning in the
-same place so the team schedules a revisit before the gate flips:
+Suppressions within 14 days of expiry surface an advance warning in
+the same place so the team schedules a revisit before the gate flips:
 
 ```
 [gate] ignore rule expires in 5 days on 2026-06-30: GHA-001:.github/workflows/release.yml (still suppressing, but plan to revisit)

@@ -6,7 +6,7 @@
 
 The OWASP CICD Top 10 mapping every rule already carries is the right vocabulary for a CI/CD audience but not the one auditors and threat modelers prefer. STRIDE has been the lingua franca of threat-modeling docs since Microsoft introduced it in 1999, and most compliance frameworks (SOC 2 CC, PCI 6.5, NIST SSDF PW.1) speak it natively.
 
-The mapping is mechanical — there's nothing the reporter knows that isn't already in the rule registry. STRIDE classification is derived per-finding at report time, so re-policing is one table swap.
+The mapping is mechanical. There's nothing the reporter knows that isn't already in the rule registry. STRIDE classification is derived per-finding at report time, so re-policing is one table swap.
 
 ## Quick start
 
@@ -130,7 +130,7 @@ CWE refinements that prepend to the head:
 | `CWE-250` | E              | execution with unnecessary privilege |
 | `CWE-778` | R              | insufficient logging                 |
 
-Findings with no OWASP and no CWE tags default to **Tampering** — the most common CI/CD failure mode.
+Findings with no OWASP and no CWE tags default to **Tampering**, the most common CI/CD failure mode.
 
 ## Use cases
 

@@ -28,7 +28,7 @@ RULE = Rule(
         "Dockerfile build time. The risk is subtler: a privileged "
         "RUN step doesn't directly elevate the resulting image, but "
         "it gives the build host's docker daemon a chance to escape, "
-        "and any tampered base image can leverage the elevated build."
+        "and any tampered base image can exploit the elevated build."
     ),
 )
 
