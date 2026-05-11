@@ -1,0 +1,135 @@
+name: Docker publish
+
+# Manual-only for now. The PyPI release flow (release.yml) handles
+# tagged source-distribution releases; this workflow lets an operator
+# publish a container image independently from any branch via the
+# Actions UI. Keeping the trigger to ``workflow_dispatch`` avoids
+# double-firing on ``v*.*.*`` tag pushes and keeps the container
+# release an explicit operator decision, matching the manual-publish
+# posture documented in release.yml.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write         # GHCR push via the default GITHUB_TOKEN
+  id-token: write         # SLSA provenance / SBOM attestation OIDC
+  security-events: write  # upload Docker Scout SARIF to the Security tab
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python
+        # Used only to read the package version out of pyproject.toml
+        # via ``tomllib``. The image itself is built inside the
+        # Dockerfile's own python:3.12-slim base.
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Read package version
+        id: ver
+        run: |
+          v=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        # Emulator binaries that let buildx cross-compile the arm64
+        # variant on the amd64 GitHub runner.
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a  # v4.0.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        # Requires two repo secrets: DOCKERHUB_USERNAME and
+        # DOCKERHUB_TOKEN. The token must be a Docker Hub access
+        # token (Account Settings -> Security), not the account
+        # password.
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute image tags + labels
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf  # v6.0.0
+        with:
+          images: |
+            ghcr.io/dmartinochoa/pipeline-check
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/pipeline-check
+          # Three tag flavors per image: the package version, a
+          # short-SHA pointer for traceability, and ``latest`` when
+          # the workflow runs against the repo's default branch
+          # (master). Non-default branches still publish the
+          # version+sha pair, so preview builds from feature
+          # branches don't pollute ``latest``.
+          tags: |
+            type=raw,value=${{ steps.ver.outputs.version }}
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=pipeline-check
+            org.opencontainers.image.description=CI/CD security posture scanner
+            org.opencontainers.image.source=https://github.com/dmartinochoa/pipeline-check
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # SLSA build provenance and an SBOM attached to the image
+          # manifest. Keeps parity with release.yml's CycloneDX SBOM
+          # for the wheel.
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan image with Docker Scout
+        # Vulnerability scan against the digest just pushed to GHCR.
+        # ``exit-code: true`` + ``only-severities: critical,high``
+        # fails the workflow on any new critical or high CVE, mirroring
+        # release.yml's ``pip-audit --strict`` posture for the wheel.
+        # SARIF output is uploaded in the next step so findings land on
+        # the repo's Security tab even when this step fails the job.
+        # Scout authenticates via the Docker Hub login already
+        # performed above; no separate secret is needed.
+        id: scout
+        uses: docker/scout-action@bacf462e8d090c09660de30a6ccc718035f961e3  # v1.20.4
+        with:
+          command: cves
+          image: ghcr.io/dmartinochoa/pipeline-check@${{ steps.build.outputs.digest }}
+          only-severities: critical,high
+          exit-code: true
+          sarif-file: scout-cves.sarif
+          summary: true
+
+      - name: Upload Scout SARIF
+        # Always upload, even if the Scout step exited non-zero, so a
+        # failed build still surfaces its findings on the Security tab
+        # rather than vanishing with the job.
+        if: always() && hashFiles('scout-cves.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+        with:
+          sarif_file: scout-cves.sarif
+          category: docker-scout
