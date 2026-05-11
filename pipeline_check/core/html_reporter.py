@@ -730,7 +730,6 @@ def _severity_summary_html(summary: dict[str, Any]) -> str:
         n = fails[sev]
         if n == 0:
             continue
-        pct = 100.0 * n / total_fails
         color = _SEVERITY_COLOR[sev]
         passes = summary.get(sev.value, {}).get("passed", 0)
         tip = f"{sev.value}: {n} failing"
