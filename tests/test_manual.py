@@ -105,3 +105,59 @@ def test_cli_man_short_circuits_path_validation(tmp_path, monkeypatch):
     assert "TOPIC: gate" in result.output
     # The "missing .gitlab-ci.yml" error must NOT have been raised.
     assert "--gitlab-path" not in result.output
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Dynamic-content drift traps
+#
+# The standards / autofix / secrets topics build their bodies from
+# the live registries. The tests below assert that every entry in
+# each registry actually appears in the rendered topic, so adding a
+# new standard / fixer / detector either auto-updates the page (via
+# the registry walk) or fails this test (when the page needs a
+# matching description entry).
+# ────────────────────────────────────────────────────────────────────────
+
+
+def test_standards_topic_lists_every_registered_standard():
+    from pipeline_check.core import standards as _standards
+
+    body = manual.render("standards")
+    for name in _standards.available():
+        assert name in body, f"standards topic missing {name!r}"
+
+
+def test_autofix_topic_lists_every_registered_fixer():
+    from pipeline_check.core.autofix import available_fixers
+
+    body = manual.render("autofix")
+    for cid in available_fixers():
+        assert cid in body, f"autofix topic missing fixer {cid!r}"
+
+
+def test_secrets_topic_lists_every_built_in_detector():
+    from pipeline_check.core.checks._patterns import _BUILTIN_PATTERNS
+
+    body = manual.render("secrets")
+    for name in _BUILTIN_PATTERNS:
+        assert name in body, f"secrets topic missing detector {name!r}"
+
+
+def test_detector_descriptions_cover_registry():
+    """Every entry in ``_BUILTIN_PATTERNS`` must have a hand-curated
+    description in the manual so the rendered catalog isn't peppered
+    with ``(see _patterns.py)`` placeholders. Adding a new detector
+    without documenting its shape fails here."""
+    from pipeline_check.core.checks._patterns import _BUILTIN_PATTERNS
+    from pipeline_check.core.manual import _DETECTOR_DESCRIPTIONS
+
+    missing = sorted(set(_BUILTIN_PATTERNS) - set(_DETECTOR_DESCRIPTIONS))
+    assert not missing, (
+        f"Add shape descriptions to manual._DETECTOR_DESCRIPTIONS "
+        f"for: {', '.join(missing)}"
+    )
+    extra = sorted(set(_DETECTOR_DESCRIPTIONS) - set(_BUILTIN_PATTERNS))
+    assert not extra, (
+        f"Stale entries in manual._DETECTOR_DESCRIPTIONS (no longer "
+        f"in _BUILTIN_PATTERNS): {', '.join(extra)}"
+    )

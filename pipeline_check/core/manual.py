@@ -8,9 +8,14 @@ markup, no ANSI colors, no required width. Pipe to ``less`` or
 
 Topic content is owned here rather than in the CLI module so it can
 be unit-tested without invoking click — and so adding a topic is a
-one-dictionary-entry change.
+one-dictionary-entry change. Drift-prone lists (registered standards,
+autofixers, credential detectors) are built at render time from their
+respective registries rather than hand-maintained, so adding a new
+standard / fixer / detector updates this manual on the next run.
 """
 from __future__ import annotations
+
+from typing import Callable, Union
 
 # Topic body strings end with a single trailing newline; the renderer
 # adds a blank line between topic header and body and between body
@@ -47,7 +52,8 @@ Available topics:
               inventory export).
   explain     ``--explain CHECK_ID`` — per-check reference: severity,
               confidence, compliance mappings, docs note, known FP
-              modes, and the recommended fix.
+              modes, related rules, attack-chain triggers, and the
+              recommended fix.
 
 Run e.g. ``pipeline_check --man gate`` for any topic above.
 """
@@ -57,7 +63,7 @@ GATE = """\
 TOPIC: gate
 
 The CI gate turns a scan result into a single pass / fail decision.
-It has FOUR fail conditions and TWO subtractive filters; any tripped
+It has SIX fail conditions and TWO subtractive filters; any tripped
 condition fails the gate (logical OR), and filters always run before
 conditions are evaluated.
 
@@ -76,6 +82,18 @@ Fail conditions
 --fail-on-check ID
     Fail when a named check is in the effective set. Repeat for many.
     Useful for "we tolerate everything except this one regression."
+
+--fail-on-chain ID
+    Fail when a named attack chain matched (e.g. ``--fail-on-chain
+    AC-001``). Repeat for many. Chain matches bypass the baseline
+    and ignore filters, since a correlated multi-step attack path is
+    intrinsically a new finding even when its constituent rules are
+    individually suppressed.
+
+--fail-on-any-chain
+    Fail when any attack chain matched. Use as a blanket "no
+    correlated attack paths in this branch" guard for high-trust
+    repositories.
 
 Default gate
 ------------
@@ -114,7 +132,8 @@ Exit codes
 0  Gate passed.
 1  Gate failed (one of the conditions above tripped).
 2  Scanner error (stack trace printed to stderr).
-3  --config-check found unknown keys.
+3  --config-check found unknown keys, or --man / --explain got an
+   unknown name.
 
 Recipes
 -------
@@ -127,11 +146,31 @@ pipeline_check --pipeline aws --min-grade B
 # Only block on NEW regressions
 pipeline_check --pipeline aws --output json > baseline.json   # once
 pipeline_check --pipeline aws --baseline baseline.json --fail-on HIGH
+
+# Block any correlated attack chain
+pipeline_check --pipeline github --fail-on-any-chain
 """
 
 
-AUTOFIX = """\
-TOPIC: autofix
+def _build_autofix() -> str:
+    """Render the autofix topic with the live fixer registry."""
+    from .autofix import available_fixers
+
+    fixers = available_fixers()
+    # Group by provider prefix so the catalog is readable. Anything
+    # without a "-" prefix lands in "other".
+    by_prefix: dict[str, list[str]] = {}
+    for cid in fixers:
+        prefix = cid.split("-", 1)[0] if "-" in cid else "other"
+        by_prefix.setdefault(prefix, []).append(cid)
+
+    catalog_lines: list[str] = []
+    for prefix in sorted(by_prefix):
+        ids = ", ".join(sorted(by_prefix[prefix]))
+        catalog_lines.append(f"  {prefix:<6}{ids}")
+    catalog = "\n".join(catalog_lines)
+
+    return f"""TOPIC: autofix
 
 For a subset of checks, pipeline_check can emit the exact source edit
 that would remediate the finding. The output is a standard unified
@@ -139,39 +178,47 @@ diff so it composes with ``git apply``.
 
 --fix
     Print one diff per failing finding that has a registered fixer.
-    Stdout by default; stderr when --output is json/sarif/html/both
-    so the machine-readable stream stays valid. File reads are
-    cached, so multiple findings against the same file don't re-read
-    it. Per-fixer exceptions log to stderr and are skipped — one
-    broken fixer never aborts the run.
+    Stdout by default; switched to stderr whenever ``--output`` is
+    anything other than ``terminal`` (json / sarif / html / junit /
+    markdown / threatmodel / both), so the machine-readable stream
+    on stdout stays valid. File reads are cached, so multiple
+    findings against the same file don't re-read it. Per-fixer
+    exceptions log to stderr and are skipped — one broken fixer
+    never aborts the run.
 
 --fix --apply
     Write the patches in place instead of printing them. Reports
     "N file(s) modified" to stderr. Opt-in (dry-run by default)
     and only valid alongside --fix.
 
-Registered fixers
+Categories of fix
 -----------------
-GHA-002  Adds ``persist-credentials: false`` under every
-         actions/checkout step. Recognises both single-line
-         (``- uses: actions/checkout@v4``) and named-step
-         (``- name: ... / uses: ...``) forms. Idempotent.
+Two shapes ship today:
 
-GHA-004  Inserts ``permissions: contents: read`` at the top of
-         the workflow. Idempotent — skips files that already
-         declare any top-level permissions block.
+  Structural rewrites
+      Modify the YAML / Dockerfile / shell line so the scanner no
+      longer flags it. Examples: GHA-002 inserts ``persist-credentials:
+      false`` under ``actions/checkout``; GHA-004 inserts
+      ``permissions: contents: read``; GHA-008 / GL-008 / BB-008 /
+      ADO-008 / CC-008 / JF-008 redact credential-shaped literals to
+      ``"<REDACTED>"`` with a rotation TODO; the docker / package /
+      curl-pipe families strip ``--privileged``, ``--no-verify``,
+      ``--trusted-host`` etc.; the K8S / HELM / DF families flip
+      ``runAsNonRoot`` / ``readOnlyRootFilesystem`` / ``allowPrivilege
+      Escalation`` and similar boolean toggles.
 
-GHA-008  Replaces credential-shaped literals with ``"<REDACTED>"``
-         and a ``# TODO(pipeline-check): rotate ...`` marker.
-         Preserves any operator comment on the line so existing
-         context (ticket numbers, blame hints) survives.
+  Comment-only TODO markers
+      Where text rewriting can't safely synthesize the structural
+      fix (e.g. resolving a tag to a commit SHA needs a network
+      call), the fixer instead drops a ``# TODO(pipeline-check):
+      ...`` marker on the line so a reviewer can see the obligation
+      in the diff. Examples: GHA-001 / GL-001 / BB-001 / ADO-001
+      add pin-to-SHA TODOs; CC-015 / GHA-019 mark token-persistence
+      lines for review.
 
-Why not more
-------------
-GHA-001 (SHA-pin actions) requires a network call to the GitHub
-API to resolve a tag to a commit SHA — out of scope for an
-offline scanner. Use Dependabot or StepSecurity's
-``pin-github-action`` for that one.
+Registered fixers ({len(fixers)} total)
+{"-" * 24}
+{catalog}
 
 Workflow examples
 -----------------
@@ -182,9 +229,17 @@ pipeline_check --pipeline github --fix | git apply
 pipeline_check --pipeline github --fix --apply
 git diff
 
-# Run without applying so a reviewer sees what the bot WOULD do
+# Run without applying so a reviewer sees what the bot WOULD do.
+# The patch goes to stderr (because --output sarif consumes stdout);
+# the SARIF report goes to r.sarif.
 pipeline_check --pipeline github --fix --output sarif --output-file r.sarif
-# (the patch goes to stderr; the SARIF report goes to r.sarif)
+
+Limits
+------
+GHA-001's structural fix (resolve a tag to a commit SHA) requires a
+network call to the GitHub API and is intentionally not built in;
+the comment-only fixer above leaves the resolution to Dependabot or
+StepSecurity's ``pin-github-action``.
 """
 
 
@@ -201,10 +256,14 @@ TOPIC: diff
 
 Per-provider semantics
 ----------------------
-github / gitlab / bitbucket / azure / jenkins
-    Loads every workflow file as before, then drops the ones not
-    touched by the diff. Common case for PR pipelines: only the
-    files the PR actually changes get scanned.
+File-based providers (any whose context exposes ``workflows`` or
+``pipelines`` lists):
+    github / gitlab / bitbucket / azure / jenkins / circleci /
+    cloudbuild / dockerfile / kubernetes / helm / buildkite /
+    tekton / argo / oci / drone / scm / cloudformation
+    Loads every workflow / template file as before, then drops the
+    ones not touched by the diff. Common case for PR pipelines:
+    only the files the PR actually changes get scanned.
 
 terraform
     Loads the plan, then drops planned resources whose module
@@ -229,10 +288,77 @@ pipeline_check --pipeline terraform --tf-plan plan.json \\
 """
 
 
-SECRETS = """\
-TOPIC: secrets
+# ── Secrets topic ────────────────────────────────────────────────────────
+#
+# Per-detector descriptions kept here rather than in _patterns.py so
+# the manual stays self-contained and the regex registry stays focused
+# on detection logic. ``test_detector_descriptions_cover_registry``
+# enforces that every key in ``_BUILTIN_PATTERNS`` has a description
+# here, so adding a detector without documenting its shape fails CI.
+_DETECTOR_DESCRIPTIONS: dict[str, str] = {
+    "aws_access_key":         "AKIA / ASIA + 16 alphanumeric",
+    "github_token":           "ghp_ / gho_ / ghu_ / ghs_ / ghr_ + 36 chars",
+    "slack_token":            "xoxa- / xoxb- / xoxp- / xoxr- / xoxs-",
+    "jwt":                    "eyJ.....eyJ......sig (header.payload.signature)",
+    "stripe_secret":          "sk_live_ / sk_test_ / rk_live_ / rk_test_",
+    "stripe_publishable":     "pk_live_ / pk_test_",
+    "google_api_key":         "AIza + 35 chars (Google Cloud / Firebase)",
+    "npm_token":              "npm_ + 36 chars",
+    "pypi_token":             "pypi-AgEIcHlwaS5vcmc... (carries an internal JWT)",
+    "docker_hub_pat":         "dckr_pat_ + 20+ chars",
+    "gitlab_pat":             "glpat- + 20 chars",
+    "gitlab_deploy_token":    "gldt- + 20+ chars",
+    "sendgrid":               "SG.<22>.<43>",
+    "anthropic_api_key":      "sk-ant-api03- + 90+ chars",
+    "digitalocean_token":     "dop_v1_ + 64 hex",
+    "hashicorp_vault":        "hvs. + 24+ chars",
+    "twilio_api_key":         "SK + 32 hex",
+    "twilio_account_sid":     "AC + 32 hex",
+    "mailchimp_api_key":      "<32 hex>-us<1-2 digits>",
+    "shopify_token":          "shpat_ / shpca_ / shppa_ / shpss_ + 32 hex",
+    "databricks_token":       "dapi + 32 hex",
+    "openai_api_key":         "sk-...T3BlbkFJ... / sk-proj- + 40+ chars",
+    "huggingface_token":      "hf_ + 34+ chars",
+    "age_secret_key":         "AGE-SECRET-KEY-1 + 58 chars",
+    "linear_api_key":         "lin_api_ + 40 chars",
+    "planetscale_token":      "pscale_tkn_ + 40+ chars",
+    "new_relic_api_key":      "NRAK- + 27 chars",
+    "grafana_api_key":        "glsa_ + 32+ chars",
+    "telegram_bot_token":     "<8-10 digits>:<35 chars>",
+    "atlassian_api_token":    "ATATT3 + 50+ chars (Forge / Connect)",
+    "gitlab_runner_token":    "glrt- + 20+ chars (runner registration)",
+    "gitlab_ci_token":        "glcbt- + 20+ chars (job token)",
+    "supabase_key":           "sbp_ + 40 hex",
+    "fly_api_token":          "fo1_ + 40+ chars (Fly.io)",
+    "pulumi_access_token":    "pul- + 40 hex",
+    "doppler_token":          "dp.{ct,sa,st,scrt,audit}. + 40+ chars",
+    "netlify_token":          "nfp_ + 40+ chars",
+    "railway_token":          "railway_ + 36+ chars",
+    "render_api_key":         "rnd_ + 32+ chars",
+    "prefect_api_key":        "pnu_ + 36+ chars",
+    "neon_api_key":           "neon_ + 36+ chars (Neon serverless Postgres)",
+    "cohere_api_key":         "co_pat_ + 40+ chars",
+    "replicate_token":        "r8_ + 40 chars",
+    "asana_pat":              "1/<account-id>:<32 hex>",
+    "square_access_token":    "sq0atp- / sq0csp- + 20+ chars",
+    "terraform_cloud_token":  "<14 chars>.atlasv1.<60+ chars>",
+}
 
-Two layers of secret detection ship by default:
+
+def _build_secrets() -> str:
+    """Render the secrets topic with the live detector registry."""
+    from .checks._patterns import _BUILTIN_PATTERNS
+
+    width = max(len(n) for n in _BUILTIN_PATTERNS) + 2
+    catalog_lines: list[str] = []
+    for name in sorted(_BUILTIN_PATTERNS):
+        desc = _DETECTOR_DESCRIPTIONS.get(name, "(see _patterns.py)")
+        catalog_lines.append(f"  {name:<{width}}{desc}")
+    catalog = "\n".join(catalog_lines)
+
+    return f"""TOPIC: secrets
+
+Two layers of secret detection ship by default.
 
 YAML-declared variable scans
 ----------------------------
@@ -242,46 +368,41 @@ for Bitbucket) and flag entries whose VARIABLE NAME matches the
 "secretish" pattern (password / token / api_key / etc.) AND whose
 value is a literal string.
 
-Whole-document credential scans (-008)
---------------------------------------
-GHA-008 / GL-008 / BB-008 / ADO-008 / JF-008 walk every string in
-the document — script bodies, env values, embedded config — and
-flag any token matching one of the built-in credential-shape
-detectors. Each hit carries its detector name so operators can
-group findings by secret type and write targeted ignore rules.
+Whole-document literal-secret scans
+-----------------------------------
+The literal-secret rule family walks every string in the document
+(script bodies, env values, embedded config) and flags any token
+matching one of the built-in credential-shape detectors. Each hit
+carries its detector name so operators can group findings by secret
+type and write targeted ignore rules. The full rule list across
+providers:
 
-Built-in detector catalog:
+  GHA-008   GitHub Actions
+  GL-008    GitLab CI/CD
+  BB-008    Bitbucket Pipelines
+  ADO-008   Azure Pipelines
+  CC-008    CircleCI
+  JF-008    Jenkins
+  GCB-012   Google Cloud Build
+  BK-002    Buildkite
+  TKN-005   Tekton
+  ARGO-006  Argo Workflows
 
-  aws_access_key        AKIA...... / ASIA......
-  github_token          ghp_ / gho_ / ghu_ / ghs_ / ghr_
-  slack_token           xoxa- / xoxb- / xoxp- / xoxr- / xoxs-
-  jwt                   eyJ.....eyJ......sig
-  stripe_secret         sk_live_ / sk_test_ / rk_live_ / rk_test_
-  stripe_publishable    pk_live_ / pk_test_
-  google_api_key        AIza<35 chars>
-  npm_token             npm_<36 chars>
-  pypi_token            pypi-AgEIcHlwaS5vcmc<...>
-  docker_hub_pat        dckr_pat_<20+ chars>
-  gitlab_pat            glpat-<20 chars>
-  gitlab_deploy_token   gldt-<20+ chars>
-  sendgrid              SG.<22>.<43>
-  anthropic_api_key     sk-ant-api03-<90+ chars>
-  digitalocean_token    dop_v1_<64 hex>
-  hashicorp_vault       hvs.<24+ chars>
-  twilio_api_key        SK<32 hex>
-  twilio_account_sid    AC<32 hex>
-  mailchimp_api_key     <32 hex>-us<1-2 digits>
-  shopify_token         shpat_ / shpca_ / shppa_ / shpss_ + <32 hex>
-  databricks_token      dapi<32 hex>
-  openai_api_key        sk-<...>T3BlbkFJ<...> / sk-proj-<40+ chars>
-  huggingface_token     hf_<34+ chars>
-  age_secret_key        AGE-SECRET-KEY-1<58 chars>
-  linear_api_key        lin_api_<40 chars>
-  planetscale_token     pscale_tkn_<40+ chars>
-  new_relic_api_key     NRAK-<27 chars>
-  grafana_api_key       glsa_<32+ chars>
-  telegram_bot_token    <8-10 digits>:<35 chars>
-  private_key           multi-line PEM BEGIN markers (RSA/EC/OPENSSH/PGP)
+Built-in detector catalog ({len(_BUILTIN_PATTERNS)} entries):
+
+{catalog}
+
+Optional: Shannon-entropy detector
+----------------------------------
+--detect-entropy
+    Off by default. When enabled, the literal-secret rules add a
+    second pass that flags high-entropy values (>= 3.5 bits/char,
+    length >= 20) appearing in YAML keys whose name suggests a
+    credential (``API_KEY``, ``apiToken``, ``password``, ...) and
+    that the prefix-shape catalog hasn't already caught. Hits are
+    labeled ``entropy:<redacted>``. Turning it on can introduce
+    new findings on previously-clean scans, suppress per-resource
+    via ``--ignore-file`` once you've validated the heuristic.
 
 Placeholder suppression
 -----------------------
@@ -298,42 +419,43 @@ Adding org-specific patterns
     Append a Python regex to the detector. Anchor with ^...$ for
     whole-token match. The token stream is split on whitespace
     and common shell separators before each pattern is tested.
+    Honored by every literal-secret rule above.
 
 Or in config (config.md):
 
     secret_patterns:
-      - '^acme_[a-f0-9]{32}$'
-      - '^xoxo-[A-Z0-9]{20,}$'
+      - '^acme_[a-f0-9]{{32}}$'
+      - '^xoxo-[A-Z0-9]{{20,}}$'
 
 Examples
 --------
 # Internal token shape: acme_<32 hex>
 pipeline_check --pipeline github \\
-    --secret-pattern '^acme_[a-f0-9]{32}$'
+    --secret-pattern '^acme_[a-f0-9]{{32}}$'
 
-# Run only the secret-scanning checks across every provider
+# Run only the secret-scanning checks across providers
 pipeline_check --pipeline github --checks '*-008'
 """
 
 
-STANDARDS = """\
-TOPIC: standards
+def _build_standards() -> str:
+    """Render the standards topic with the live registry."""
+    from .standards import resolve
+
+    standards = resolve(None)
+    width = max(len(s.name) for s in standards) + 2
+    rows = "\n".join(f"  {s.name:<{width}}{s.title}" for s in standards)
+
+    return f"""TOPIC: standards
 
 Every finding is enriched with a list of ControlRef objects —
 references to controls in registered compliance standards. One
 check can evidence controls in multiple standards at once, so a
 single scan satisfies multiple frameworks.
 
-Shipped standards
------------------
-owasp_cicd_top_10        OWASP Top 10 CI/CD Security Risks
-cis_aws_foundations      CIS AWS Foundations Benchmark (subset)
-cis_supply_chain         CIS Software Supply Chain Security Guide
-nist_ssdf                NIST SP 800-218 v1.1
-nist_800_53              NIST SP 800-53 Rev. 5 (CI/CD subset)
-slsa                     SLSA Build Track v1.0
-pci_dss_v4               PCI DSS v4.0 (CI/CD subset)
-esf_supply_chain         NSA/CISA ESF Supply Chain
+Shipped standards ({len(standards)} registered)
+{"-" * 32}
+{rows}
 
 Flags
 -----
@@ -355,7 +477,8 @@ Create one Python module under
 pipeline_check/core/standards/data/ that exports a STANDARD
 object with .controls and .mappings dicts. Register it in
 pipeline_check/core/standards/__init__.py. The CLI picks it up
-automatically — no other code change needed.
+automatically — no other code change needed, and this manual page
+re-renders from the registry on the next invocation.
 
 Examples
 --------
@@ -441,31 +564,38 @@ OUTPUT = """\
 TOPIC: output
 
 --output FORMAT (default: terminal)
-    terminal  Rich-formatted human report on stdout.
-    json      Machine-parseable on stdout. Schema includes
-              ``schema_version`` and ``tool_version`` for stable
-              downstream parsing.
-    html      Self-contained HTML on disk (--output-file required).
-              Embedded CSS + JS; client-side filter bar (severity /
-              standard / provider / status / free-text) and a
-              per-finding "copy ignore" button.
-    sarif     SARIF 2.1.0. Stdout by default; --output-file writes
-              to disk. Best-effort startLine annotations land
-              GitHub PR comments on the offending line; AWS ARN
-              and region are exposed as result properties.
-    threatmodel
-              STRIDE-mapped threat-model Markdown document on
-              stdout (or to --output-file). Auto-runs the inventory
-              pass so the Assets and trust-boundary sections are
-              populated. Failing findings group by STRIDE category
-              (Spoofing / Tampering / Repudiation / Information
-              Disclosure / DoS / Elevation of Privilege); mapping
-              is derived from each rule's OWASP CICD Top 10 + CWE
-              tags. Shaped for SOC 2 / PCI evidence packages and
-              architecture-review docs; the risk register caps at
-              the top 25 failures (the JSON output is unbounded).
-    both      Terminal report -> stderr, JSON -> stdout. Pipe
-              ``jq`` while still seeing a human report.
+    terminal     Rich-formatted human report on stdout.
+    json         Machine-parseable on stdout. Schema includes
+                 ``schema_version`` and ``tool_version`` for stable
+                 downstream parsing.
+    html         Self-contained HTML on disk (--output-file required).
+                 Embedded CSS + JS; client-side filter bar (severity /
+                 standard / provider / status / free-text) and a
+                 per-finding "copy ignore" button.
+    sarif        SARIF 2.1.0. Stdout by default; --output-file writes
+                 to disk. Best-effort startLine annotations land
+                 GitHub PR comments on the offending line; AWS ARN
+                 and region are exposed as result properties.
+    junit        JUnit XML. Stdout by default; --output-file writes
+                 to disk. One ``<testcase>`` per finding, failing
+                 findings render as ``<failure>`` so CI test-result
+                 widgets (Jenkins, CircleCI, GitLab) display them
+                 alongside unit-test results.
+    markdown     Markdown report on stdout (or to --output-file).
+                 Useful for pasting into PR comments or wiki pages
+                 without further conversion.
+    threatmodel  STRIDE-mapped threat-model Markdown document on
+                 stdout (or to --output-file). Auto-runs the inventory
+                 pass so the Assets and trust-boundary sections are
+                 populated. Failing findings group by STRIDE category
+                 (Spoofing / Tampering / Repudiation / Information
+                 Disclosure / DoS / Elevation of Privilege); mapping
+                 is derived from each rule's OWASP CICD Top 10 + CWE
+                 tags. Shaped for SOC 2 / PCI evidence packages and
+                 architecture-review docs; the risk register caps at
+                 the top 25 failures (the JSON output is unbounded).
+    both         Terminal report -> stderr, JSON -> stdout. Pipe
+                 ``jq`` while still seeing a human report.
 
 --output-file PATH
     REQUIRED for --output html. Optional for --output sarif /
@@ -486,6 +616,10 @@ pipeline_check --pipeline github --output sarif \\
     --output-file pipeline-check.sarif
 # then in a workflow step:
 #   github/codeql-action/upload-sarif with sarif_file: pipeline-check.sarif
+
+# JUnit output picked up by Jenkins / GitLab test widgets
+pipeline_check --pipeline github --output junit \\
+    --output-file pipeline-check.junit.xml
 """
 
 
@@ -520,9 +654,13 @@ Single scan (legacy):
 Fan-out (multiple regions / providers in one invocation):
     {"regions": ["us-east-1", "eu-west-1"], "providers": ["aws"]}
 
-Per-provider kwargs (tf_plan, gha_path, gitlab_path, bitbucket_path,
-azure_path, jenkinsfile_path, target, profile) are forwarded to
-Scanner alongside ``region`` / ``provider``.
+Per-provider kwargs forwarded to Scanner: ``tf_plan``, ``gha_path``,
+``gitlab_path``, ``bitbucket_path``, ``azure_path``, ``target``,
+``profile``. Other ``--pipeline`` providers (kubernetes, helm, oci,
+cloudformation, ...) work from the CLI but the Lambda entry point
+does not currently expose path overrides for them; run them from
+the CLI or extend the kwarg whitelist in
+``pipeline_check/lambda_handler.py``.
 
 Return value
 ------------
@@ -551,10 +689,12 @@ scan fails.
 
 IAM
 ---
-The bundled function needs read-only access to: codebuild,
-codepipeline, codedeploy, ecr, iam, s3 (Get* only), plus
-SNS:Publish + S3:PutObject for its own outputs. Full policy in
-the top-level README.
+The bundled function needs read-only access to the AWS services
+the inventory pass walks: codebuild, codepipeline, codedeploy,
+codeartifact, codecommit, ecr, iam, lambda, kms, ssm,
+secretsmanager, cloudtrail, cloudwatch (logs), eventbridge, and
+s3 (Get*/List*). Plus SNS:Publish + S3:PutObject for its own
+outputs. The full policy is in the top-level README.
 """
 
 
@@ -677,7 +817,7 @@ CloudFormation Every resource in the ``Resources:`` block. ``type`` is
 GitHub         One component per loaded workflow file. Metadata lists
                jobs, runners, environments, triggers, permissions.
 
-GitLab / Bitbucket / Azure / CircleCI
+GitLab / Bitbucket / Azure / CircleCI / Buildkite / Drone / CloudBuild
                One component per pipeline / config file. Metadata
                depends on provider (jobs, categories, stages,
                workflows + orbs).
@@ -685,6 +825,17 @@ GitLab / Bitbucket / Azure / CircleCI
 Jenkins        One component per parsed Jenkinsfile. Metadata lists
                stages, @Library refs, agent declaration, and whether
                the file declares a ``timeout`` or ``buildDiscarder``.
+
+Dockerfile     One component per Dockerfile / Containerfile.
+
+Kubernetes / Helm / Tekton / Argo
+               One component per manifest document (Helm renders the
+               chart with ``helm template`` first). ``type`` is the
+               manifest ``kind``.
+
+OCI            One component per parsed manifest / image-index file.
+
+SCM            One component per repository whose posture was scanned.
 
 Examples
 --------
@@ -735,6 +886,33 @@ What it shows
     heuristic shape is known to misfire on specific legitimate
     patterns. Use this to decide whether to dismiss a finding.
   * ``[How to fix]`` — the rule's recommendation string verbatim.
+  * ``[Seen in the wild]`` — links to public incidents the rule
+    would have caught, when the rule carries ``incident_refs``.
+  * ``[Proof of exploit]`` — a minimal reproduction of the threat
+    when the rule defines ``exploit_example``.
+  * ``[Triggers attack chains]`` — every ``AC-NNN`` /
+    ``XPC-NNN`` chain whose ``triggering_check_ids`` include this
+    rule, so you can see how a single finding feeds a multi-step
+    attack narrative.
+  * ``[Related rules]`` — cross-references to checks in the same
+    topic cluster (same threat / different layer, or same control
+    / different provider). Fixing only the rule you opened often
+    leaves siblings uncovered.
+  * ``[Autofixable]`` — present when a fixer is registered for
+    the rule. Run ``--fix`` to emit the patch and ``--apply`` to
+    write it in place.
+
+Sibling flag
+------------
+--ai-explain CHECK_ID
+    Augment the static reference above with an AI-generated,
+    project-specific remediation grounded in your README and
+    optionally a file you point at via ``--ai-context-file PATH``.
+    Opt-in. Bring your own key via ``ANTHROPIC_API_KEY`` /
+    ``OPENAI_API_KEY``, or run ``ollama serve`` locally and pass
+    ``--ai-model ollama``. The AI block is clearly framed as
+    ``[AI-generated, non-deterministic]`` and never affects the
+    score / gate / SARIF output.
 
 Exit codes
 ----------
@@ -746,19 +924,29 @@ Examples
     pipeline_check --explain GHA-024
     pipeline_check --explain CB-001
     pipeline_check --explain IAM-002
+    pipeline_check --ai-explain GHA-008 \\
+        --ai-context-file .github/workflows/release.yml
 
 Tab completion (if installed via --install-completion) expands every
 known check ID.
 """
 
 
-_TOPICS: dict[str, str] = {
+# ── Topic registry ──────────────────────────────────────────────────────
+#
+# Values are either a ready string or a zero-arg builder that returns
+# one. Builders run at render time, so the standards / autofix /
+# secrets pages reflect the current registries on every invocation.
+
+_TopicValue = Union[str, Callable[[], str]]
+
+_TOPICS: dict[str, _TopicValue] = {
     "index": INDEX,
     "gate": GATE,
-    "autofix": AUTOFIX,
+    "autofix": _build_autofix,
     "diff": DIFF,
-    "secrets": SECRETS,
-    "standards": STANDARDS,
+    "secrets": _build_secrets,
+    "standards": _build_standards,
     "config": CONFIG,
     "output": OUTPUT,
     "inventory": INVENTORY,
@@ -773,16 +961,20 @@ def topics() -> list[str]:
     return [t for t in _TOPICS if t != "index"]
 
 
+def _resolve(value: _TopicValue) -> str:
+    return value() if callable(value) else value
+
+
 def render(topic: str) -> str:
     """Render a topic body. Unknown names render the index plus an error
     line so the user can correct the typo without an extra invocation.
     """
     name = (topic or "index").lower()
-    body = _TOPICS.get(name)
-    if body is None:
+    value = _TOPICS.get(name)
+    if value is None:
         return (
             f"Unknown topic: {topic!r}.\n\n"
             f"Available: {', '.join(topics())}\n\n"
-            + INDEX
+            + _resolve(INDEX)
         )
-    return body
+    return _resolve(value)

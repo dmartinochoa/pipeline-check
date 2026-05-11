@@ -180,6 +180,7 @@ STANDARD = Standard(
         "GHA-044":  ["CICD-SEC-4"],   # build-tool PPE on untrusted trigger
         "GHA-045":  ["CICD-SEC-4"],   # caller-ref input drives checkout
         "GHA-046":  ["CICD-SEC-4"],   # manual PR-head fetch on untrusted trigger
+        "GHA-047":  ["CICD-SEC-3", "CICD-SEC-8"],  # fresh-ref cooldown
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

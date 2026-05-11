@@ -667,6 +667,30 @@ class TestGHA047:
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
         assert f.passed
 
+    def test_trusted_publisher_sha_pin_opts_back_in(self):
+        """A 40-char SHA pin on a trusted publisher is the documented
+        escape hatch for opting back into freshness gating. The
+        floating-tag bypass exists to absorb noise from legitimate
+        retags; a SHA pin doesn't move under retag and the caller is
+        signaling they want the cooldown check on this specific ref."""
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{sha}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            ref_committed_at={sha: _iso_days_ago(1)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert sha in f.description
+
     def test_per_ref_lookup_missing_passes_silently(self):
         """When the action metadata is present but the specific ``@ref``
         the workflow uses wasn't looked up (or came back with no date),

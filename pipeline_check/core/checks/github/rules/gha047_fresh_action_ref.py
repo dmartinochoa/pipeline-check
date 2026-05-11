@@ -109,7 +109,7 @@ RULE = Rule(
     ),
     incident_refs=(
         "Multiple action-tag compromises (ua-parser-js npm 2021, "
-        "tj-actions/changed-files 2024) followed the same shape: a "
+        "tj-actions/changed-files 2025) followed the same shape: a "
         "tag was re-pointed at a malicious commit and consumers "
         "pulling on the next CI run executed the payload. Cooldown "
         "gating turns the community-detection window into a "
@@ -179,11 +179,13 @@ def _scan_value(
     if not ref.owner or not ref.repo or not ref.ref:
         return
     owner_lc = ref.owner.lower()
-    if owner_lc in _TRUSTED_PUBLISHERS:
-        # The owner publishes legitimate retags often enough that
-        # the rule would be noise on every release of theirs. The
-        # SHA-pin escape hatch in the recommendation covers users
-        # who want freshness on a specific trusted action anyway.
+    if owner_lc in _TRUSTED_PUBLISHERS and not ref.is_pinned_to_sha:
+        # Floating-tag refs on trusted publishers re-point under every
+        # release; firing on every legitimate retag would drown the
+        # rule. A 40-char SHA pin is deterministic and signals the
+        # caller is opting back into freshness gating for this ref
+        # (matches the top-of-module docstring and the recommendation
+        # text), so don't short-circuit when the ref is a SHA.
         return
     key = (owner_lc, ref.repo.lower(), ref.ref)
     if key in seen:

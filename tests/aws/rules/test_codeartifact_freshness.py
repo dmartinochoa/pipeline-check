@@ -296,17 +296,6 @@ def test_namespace_threaded_through_when_present(make_catalog):
     """Maven / generic formats use a namespace; the primitive should
     propagate it through the list/describe calls and into the output."""
     published = datetime(2026, 5, 1, tzinfo=timezone.utc)
-    captured_kwargs: dict = {}
-
-    def list_versions_recording(**kwargs):
-        captured_kwargs.update(kwargs)
-        from unittest.mock import MagicMock
-        p = MagicMock()
-        p.paginate.return_value = iter([
-            {"versions": [{"version": "1.0.0", "status": "Published"}]},
-        ])
-        return p
-
     client = _client_with_versions(
         packages_by_repo={
             ("d", "r"): [
