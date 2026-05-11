@@ -1030,8 +1030,8 @@ def _chains_section_html(chains: list[Chain]) -> str:
             for cid in c.triggering_check_ids
         )
         mitre_html = (
-            f'<div class="chain-card__line chain-card__mitre">'
-            f"<strong>MITRE ATT&amp;CK:</strong> "
+            '<div class="chain-card__line chain-card__mitre">'
+            "<strong>MITRE ATT&amp;CK:</strong> "
             + " ".join(
                 f"<code>{_e(t)}</code>" for t in c.mitre_attack
             )
