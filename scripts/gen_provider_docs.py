@@ -623,9 +623,10 @@ the CIS Software Supply Chain Security Guide section it satisfies.
 Three platforms today: **GitHub** (full 19-rule pack), **GitLab**
 and **Bitbucket Cloud** (universal subset of seven rules:
 ``SCM-001``, ``SCM-002``, ``SCM-006``, ``SCM-007``, ``SCM-008``,
-``SCM-009``, ``SCM-017``). GitHub-only rules pass silently on the
-other platforms with a "not applicable on PLATFORM" note so the
-operator sees the deliberate skip rather than a silent absence.
+``SCM-009``, ``SCM-017``). GitHub-only rules pass on the other
+platforms with a "not applicable on PLATFORM" note in the
+description so the operator sees the deliberate skip rather than
+a silent absence.
 
 Closes the gap between this scanner and Legitify / OpenSSF
 Scorecard, neither of which scan pipeline-config files. Together

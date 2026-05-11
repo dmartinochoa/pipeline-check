@@ -13,8 +13,6 @@ can review the allowlist without re-opening the GitHub UI.
 """
 from __future__ import annotations
 
-from typing import Any
-
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import SCMRepoSnapshot, default_branch_name, repo_resource

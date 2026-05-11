@@ -258,8 +258,10 @@ class TestBitbucketHydration:
                     },
                 ],
             },
-            "repositories/acme/widget/src/main/CODEOWNERS": {
+            "repositories/acme/widget/src/main/CODEOWNERS"
+            "?format=meta": {
                 "path": "CODEOWNERS",
+                "type": "commit_file",
             },
         })
         ctx = bitbucket_context_for_repo("acme", "widget", f)
@@ -356,8 +358,9 @@ class TestBitbucketHydration:
                     },
                 ],
             },
-            "repositories/w/r/src/main/CODEOWNERS": {
+            "repositories/w/r/src/main/CODEOWNERS?format=meta": {
                 "path": "CODEOWNERS",
+                "type": "commit_file",
             },
         })
         ctx = bitbucket_context_for_repo("w", "r", f)
@@ -383,11 +386,14 @@ class TestBitbucketHydration:
                 "size": 1024,
             },
             "repositories/w/r/branch-restrictions": {"values": []},
-            "repositories/w/r/src/main/.bitbucket/CODEOWNERS": {
+            "repositories/w/r/src/main/.bitbucket/CODEOWNERS"
+            "?format=meta": {
                 "path": ".bitbucket/CODEOWNERS",
+                "type": "commit_file",
             },
-            "repositories/w/r/src/main/CODEOWNERS": {
+            "repositories/w/r/src/main/CODEOWNERS?format=meta": {
                 "path": "CODEOWNERS",
+                "type": "commit_file",
             },
         })
         ctx = bitbucket_context_for_repo("w", "r", f)
@@ -474,8 +480,9 @@ class TestBitbucketHydration:
 
 class TestSCMProviderPlatformRouting:
     def test_unknown_platform_raises_value_error(self):
-        from pipeline_check.core.providers.scm import SCMProvider
         import pytest
+
+        from pipeline_check.core.providers.scm import SCMProvider
         provider = SCMProvider()
         with pytest.raises(ValueError, match="Supported: github"):
             provider.build_context(
@@ -496,15 +503,17 @@ class TestSCMProviderPlatformRouting:
         assert ctx.repos[0].platform == "github"
 
     def test_missing_platform_raises(self):
-        from pipeline_check.core.providers.scm import SCMProvider
         import pytest
+
+        from pipeline_check.core.providers.scm import SCMProvider
         provider = SCMProvider()
         with pytest.raises(ValueError, match="--scm-platform"):
             provider.build_context(scm_repo="o/r")
 
     def test_missing_repo_raises(self):
-        from pipeline_check.core.providers.scm import SCMProvider
         import pytest
+
+        from pipeline_check.core.providers.scm import SCMProvider
         provider = SCMProvider()
         with pytest.raises(ValueError, match="--scm-repo"):
             provider.build_context(scm_platform="github")

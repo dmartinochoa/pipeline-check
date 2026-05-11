@@ -19,6 +19,15 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Environment binding gates the publish on the protection rules
+    # configured under Settings -> Environments -> ``container-
+    # registry`` (required reviewers, wait timer, branch policy). The
+    # GHCR / Docker Hub push is the workflow's blast-radius surface;
+    # the binding is what makes "manual operator decision" auditable
+    # rather than just relying on workflow_dispatch. Mirrors the
+    # control GHA-014 / GHA-030 enforce on every other deploy-shaped
+    # job in this repo.
+    environment: container-registry
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2

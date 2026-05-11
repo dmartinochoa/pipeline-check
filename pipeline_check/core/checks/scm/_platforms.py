@@ -497,16 +497,29 @@ def _bitbucket_codeowners_path(
     default_branch: str,
 ) -> str | None:
     """Probe the canonical CODEOWNERS locations on a Bitbucket repo
-    via the ``src`` endpoint."""
+    via the ``src`` endpoint.
+
+    The ``?format=meta`` query string is load-bearing: without it
+    Bitbucket Cloud returns the raw file body (which trips
+    ``isinstance(raw, dict)`` and silently fails the probe). With
+    it the endpoint returns a JSON object carrying ``path`` /
+    ``type`` so the existing dict-shape check can distinguish "file
+    exists" from "404".
+
+    Reference: https://developer.atlassian.com/cloud/bitbucket/rest/
+    api-group-source/#format-meta-parameter
+    """
     candidates = (
         ".bitbucket/CODEOWNERS",
         "CODEOWNERS",
         "docs/CODEOWNERS",
     )
+    encoded_ref = urllib.parse.quote(default_branch, safe="")
     for path in candidates:
+        encoded_path = urllib.parse.quote(path, safe="/")
         raw = fetcher.fetch(
             f"repositories/{workspace}/{repo_slug}/src/"
-            f"{default_branch}/{path}",
+            f"{encoded_ref}/{encoded_path}?format=meta",
         )
         if isinstance(raw, dict) and raw.get("path") == path:
             return path

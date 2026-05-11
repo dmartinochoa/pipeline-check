@@ -24,7 +24,19 @@ def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
 
 @pytest.fixture
 def runner():
-    return CliRunner()
+    """Click test runner pinned to an empty isolated cwd.
+
+    Without this, the CLI's auto-detect path walks the project root,
+    finds multiple providers (``.github/workflows``, ``Dockerfile``,
+    …), and routes through ``MultiScanner`` — which bypasses these
+    tests' ``patch("pipeline_check.cli.Scanner")`` mocks. The
+    isolated filesystem context ensures cwd contains no CI files,
+    so auto-detect falls back to ``aws`` and the single-Scanner
+    code path that every test in this module is exercising.
+    """
+    cli_runner = CliRunner()
+    with cli_runner.isolated_filesystem():
+        yield cli_runner
 
 
 class TestExitCodes:
@@ -176,7 +188,7 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GHA-{i:03d}" for i in range(1, 41)}
+            {f"GHA-{i:03d}" for i in range(1, 44)}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 

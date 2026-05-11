@@ -57,7 +57,7 @@ class ActionRepoMetadata:
     #: fetch failed.
     stargazers_count: int | None = None
     #: Number of contributors found on the first page of the
-    #: ``/contributors`` endpoint (capped at 5 by the fetcher; rule
+    #: ``/contributors`` endpoint (capped at 2 by the fetcher; rule
     #: only cares about == 1). ``None`` when the contributors fetch
     #: failed; ``0`` for an empty repo with no commits.
     contributor_count: int | None = None

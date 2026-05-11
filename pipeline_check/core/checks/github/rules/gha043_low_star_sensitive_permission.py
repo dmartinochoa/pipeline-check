@@ -22,7 +22,6 @@ from ...rule import Rule
 from ..base import (
     GitHubContext,
     Workflow,
-    effective_permissions,
     iter_jobs,
     iter_steps,
 )
@@ -122,31 +121,19 @@ def check(
             # fire even on a low-star action because the
             # blast-radius leg of the heuristic is absent.
             continue
+        # Job-level reusable-workflow callee. A ``jobs.<id>.uses:``
+        # spec runs the called workflow with the caller's
+        # ``permissions:`` inherited; if that callee is itself a
+        # low-star, low-review repo the supply-chain risk applies
+        # the same way it would for a step-level action.
+        _consider_ref(
+            parse_uses(job.get("uses")),
+            job_id, sensitive, ctx, seen, matches,
+        )
         for step in iter_steps(job):
-            ref = parse_uses(step.get("uses"))
-            if ref is None:
-                continue
-            if ref.kind not in {"remote-action", "remote-workflow"}:
-                continue
-            if not ref.owner or not ref.repo:
-                continue
-            key = (ref.owner.lower(), ref.repo.lower())
-            seen_key = (job_id, f"{key[0]}/{key[1]}")
-            if seen_key in seen:
-                continue
-            seen.add(seen_key)
-            meta = ctx.action_metadata.get(f"{key[0]}/{key[1]}")
-            if meta is None:
-                continue
-            if meta.stargazers_count is None:
-                continue
-            if meta.stargazers_count >= MAX_STARS:
-                continue
-            matches.append(
-                f"{ref.owner}/{ref.repo} "
-                f"({meta.stargazers_count} stars) in job "
-                f"``{job_id}`` with {'+'.join(sorted(sensitive))} "
-                f"write"
+            _consider_ref(
+                parse_uses(step.get("uses")),
+                job_id, sensitive, ctx, seen, matches,
             )
     passed = not matches
     if passed:
@@ -169,6 +156,45 @@ def check(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+    )
+
+
+def _consider_ref(
+    ref: Any,
+    job_id: str,
+    sensitive: set[str],
+    ctx: GitHubContext,
+    seen: set[tuple[str, str]],
+    matches: list[str],
+) -> None:
+    """Common low-star + sensitive-permission match logic for a
+    single parsed ``uses:`` reference. Used for both step-level
+    (``steps[].uses``) and job-level (``jobs.<id>.uses``) refs so
+    reusable-workflow callees get the same audit treatment as
+    step-level actions."""
+    if ref is None:
+        return
+    if ref.kind not in {"remote-action", "remote-workflow"}:
+        return
+    if not ref.owner or not ref.repo:
+        return
+    key = f"{ref.owner.lower()}/{ref.repo.lower()}"
+    seen_key = (job_id, key)
+    if seen_key in seen:
+        return
+    seen.add(seen_key)
+    meta = ctx.action_metadata.get(key)
+    if meta is None:
+        return
+    if meta.stargazers_count is None:
+        return
+    if meta.stargazers_count >= MAX_STARS:
+        return
+    matches.append(
+        f"{ref.owner}/{ref.repo} "
+        f"({meta.stargazers_count} stars) in job "
+        f"``{job_id}`` with {'+'.join(sorted(sensitive))} "
+        f"write"
     )
 
 
