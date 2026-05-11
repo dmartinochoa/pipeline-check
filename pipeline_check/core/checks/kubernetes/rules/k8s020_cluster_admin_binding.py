@@ -47,12 +47,14 @@ RULE = Rule(
         "credentials to deploy crypto-mining workloads with full "
         "cluster access. Least-privilege RBAC would have capped "
         "the blast radius even after dashboard exposure.",
-        "Argo CD CVE-2022-24348 / CVE-2022-24768 chain (2022): "
-        "directory traversal plus a default cluster-admin install "
-        "let any project member exfiltrate cluster-wide secrets. "
-        "Argo's recommendation post-fix was to scope the "
-        "controller's RBAC away from cluster-admin so a similar "
-        "future bug couldn't escalate the same way.",
+        "Argo CD [CVE-2022-24348](https://www.cve.org/CVERecord?id=CVE-2022-24348) "
+        "(2022): a Helm path-traversal bug let a project member read "
+        "other applications' YAML, exposing credentials. Combined "
+        "with the default cluster-admin RBAC install, the recovered "
+        "tokens were a direct cluster takeover. Argo's recommendation "
+        "post-fix was to scope the controller's RBAC away from "
+        "cluster-admin so a similar future bug couldn't escalate "
+        "the same way.",
     ),
 )
 
