@@ -10,7 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [0.5.0] - 2026-05-10
+## [1.0.1] - 2026-05-11
+
+Skipped v1.0.0 — that tag is locked against re-use by the
+GitHub immutable-release feature after a failed first attempt
+(release.yml's tag-vs-wheel-version check correctly refused to
+publish a wheel that still said ``version = "0.5.0"``). 1.0.1
+is the first published 1.x version; it carries the same content
+the v1.0.0 release commit would have, including the API-stability
+commitment for ``pipeline_check.__all__`` and the classifier
+promotion to Production/Stable.
 
 ### Added
 
@@ -925,6 +934,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   underlying detection table is shared between single- and
   multi-detect (``_PROVIDER_DETECT_FILES``) so a new provider
   hooks into both detection modes by adding one row.
+
+## [0.5.0] - 2026-05-10
+
+### Added
 
 - **MCP (Model Context Protocol) server (``--serve``).** Locally-
   running MCP server that lets AI clients (Claude Desktop,
