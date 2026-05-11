@@ -258,9 +258,27 @@ class TestRuleIdResolution:
         assert len(r.findings) == 1
         assert "AVD-AWS-0028" in r.findings[0].check_id
 
-    def test_result_with_no_rule_id_dropped(self):
+    def test_result_with_no_rule_id_but_message_kept_with_synthetic_id(self):
+        """SARIF results missing ``ruleId`` (and ``rule.id``) are
+        salvaged when a non-empty ``message.text`` survives — the
+        ingest contract is best-effort, and free-form tools that
+        skip rule metadata still produce a finding under a
+        ``message-only-<hash>`` synthetic id. Documented on
+        ``_convert_result``."""
         sarif = _trivy_sarif()
         sarif["runs"][0]["results"][0].pop("ruleId")
+        r = parse_sarif_text(json.dumps(sarif))
+        assert len(r.findings) == 1
+        cid = r.findings[0].check_id
+        # ``INGEST-<tool>-message-only-<10-char-hash>`` form.
+        assert "message-only-" in cid
+
+    def test_result_with_no_rule_id_and_no_message_dropped(self):
+        """The truly-empty case (no ruleId and no message) yields
+        nothing — there's no salvageable identifier left."""
+        sarif = _trivy_sarif()
+        sarif["runs"][0]["results"][0].pop("ruleId")
+        sarif["runs"][0]["results"][0].pop("message", None)
         r = parse_sarif_text(json.dumps(sarif))
         assert r.findings == []
 
