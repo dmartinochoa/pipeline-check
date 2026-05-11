@@ -29,8 +29,6 @@ def _client_with_versions(
     """
     client = FakeClient()
 
-    list_pkg_pages = []
-
     def list_packages_paginator(**kwargs):
         domain = kwargs["domain"]
         repo = kwargs["repository"]
@@ -354,9 +352,9 @@ def test_client_error_per_repo_is_swallowed(make_catalog):
     """A ``ClientError`` from one repo's paginator records the error
     on the catalog and continues with the other repos rather than
     aborting the primitive."""
-    from botocore.exceptions import ClientError
-
     from unittest.mock import MagicMock
+
+    from botocore.exceptions import ClientError
     raising_paginator = MagicMock()
     raising_paginator.paginate.side_effect = ClientError(
         {"Error": {"Code": "AccessDenied", "Message": "boom"}},
