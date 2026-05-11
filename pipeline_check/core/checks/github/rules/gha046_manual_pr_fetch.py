@@ -50,6 +50,19 @@ RULE = Rule(
         "workspace with the same privileged context active, so "
         "they get the same severity."
     ),
+    known_fp=(
+        "Workflows that fetch the PR head purely to *inspect "
+        "metadata* (``git fetch origin pull/N/head && git log -1 "
+        "FETCH_HEAD --format=%s``) and never run code from the "
+        "fetched tree still trigger the rule, because the fetch "
+        "primitive is the structural signal. The rule has no way "
+        "to confirm the workspace bytes are never executed. "
+        "Suppress per-workflow via ``--ignore-file`` once you've "
+        "verified no ``run:`` / ``uses: ./`` step consumes the "
+        "checked-out tree; the safer pattern is still to read PR "
+        "metadata via the GitHub API rather than materializing "
+        "the head ref.",
+    ),
     incident_refs=(
         "GitHub Security Lab: "
         "[Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) "

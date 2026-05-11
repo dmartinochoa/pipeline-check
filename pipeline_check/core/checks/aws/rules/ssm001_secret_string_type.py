@@ -26,6 +26,35 @@ RULE = Rule(
         "``PASSWORD``, ``KEY``) are almost always intended to be "
         "SecureString and rarely should not be."
     ),
+    exploit_example=(
+        "# Vulnerable: secret-named parameter stored as plain ``String``.\n"
+        "$ aws ssm put-parameter \\\n"
+        "    --name /prod/api/GITHUB_TOKEN \\\n"
+        "    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \\\n"
+        "    --type String\n"
+        "\n"
+        "# Attack: any principal with the minimal ``ssm:GetParameter``\n"
+        "# permission reads the cleartext, no KMS authorization needed:\n"
+        "#\n"
+        "#   aws ssm get-parameter --name /prod/api/GITHUB_TOKEN\n"
+        "#   # Returns the plaintext, even for principals with\n"
+        "#   # ``kms:Decrypt`` explicitly denied account-wide.\n"
+        "#\n"
+        "# CloudTrail records the GetParameter call but not the value;\n"
+        "# defenders see the access only by name + principal, not what\n"
+        "# was read.\n"
+        "\n"
+        "# Safe: SecureString forces a separate KMS authorization step.\n"
+        "$ aws ssm put-parameter \\\n"
+        "    --name /prod/api/GITHUB_TOKEN \\\n"
+        "    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \\\n"
+        "    --type SecureString \\\n"
+        "    --key-id alias/prod-secrets\n"
+        "\n"
+        "# Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``\n"
+        "# on the named CMK, and the call only returns plaintext when\n"
+        "# ``WithDecryption=true`` is set (an explicit, auditable opt-in)."
+    ),
 )
 
 

@@ -32,6 +32,18 @@ RULE = Rule(
         "injection vector. The detection fires on the unquoted "
         "interpolation form and on use inside ``eval`` / ``$(...)``."
     ),
+    known_fp=(
+        "The single-token double-quoted form "
+        "(``\"$BUILDKITE_BRANCH\"``) is already excluded; "
+        "multi-token shell snippets that *look* unquoted but are "
+        "consumed safely by the downstream tool (e.g. a "
+        "``./script.sh $BUILDKITE_BRANCH`` where the script "
+        "treats argv as data and never re-evaluates) still flag. "
+        "The rule has no AST-level understanding of the called "
+        "script, suppress per-step via ``--ignore-file`` once "
+        "you've verified the script handles untrusted argv "
+        "safely (or quote the use, which is the better fix).",
+    ),
 )
 
 # Buildkite-managed variables that are attacker-controllable through a

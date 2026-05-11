@@ -48,6 +48,42 @@ RULE = Rule(
         "rule only matches the curated runtime-macro catalog and the "
         "literal ``${{ parameters.X }}`` template-parameter shape.",
     ),
+    exploit_example=(
+        "# Vulnerable: pool name computed from caller-controlled parameter.\n"
+        "parameters:\n"
+        "  - name: targetPool\n"
+        "    type: string\n"
+        "    default: linux-pool\n"
+        "jobs:\n"
+        "  - job: build\n"
+        "    pool: { name: ${{ parameters.targetPool }} }\n"
+        "    steps:\n"
+        "      - bash: ./scripts/build.sh\n"
+        "\n"
+        "# Attack: the pipeline is queued via the REST API or a\n"
+        "# downstream caller. Whoever supplies ``targetPool`` chooses\n"
+        "# the agent fleet:\n"
+        "#\n"
+        "#   POST .../_apis/pipelines/42/runs\n"
+        "#   { \"templateParameters\": { \"targetPool\": \"signer-hsm\" } }\n"
+        "#\n"
+        "# The attacker routes the job onto ``signer-hsm``, a privileged\n"
+        "# self-hosted pool intended only for release signing. The\n"
+        "# build script now executes on a host that has the signing key\n"
+        "# mounted; ``./scripts/build.sh`` (or anything else the caller\n"
+        "# also influences) can read the key and exfil it.\n"
+        "\n"
+        "# Safe: hard-code the pool, validate parameter against an\n"
+        "# allowlist when parameterization is required.\n"
+        "parameters:\n"
+        "  - name: targetPool\n"
+        "    type: string\n"
+        "    default: linux-pool\n"
+        "    values: [linux-pool, windows-pool]   # vetted allowlist\n"
+        "jobs:\n"
+        "  - job: build\n"
+        "    pool: { name: ${{ parameters.targetPool }} }"
+    ),
 )
 
 

@@ -40,6 +40,40 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   finding(s) to PATH` to stderr unless `--quiet` is set. Closes
   the missing half of the v0.5.0 auto-baseline item.
 
+### Changed
+
+- **Rule-pack quality backfill (no behavior change).** Three
+  documentation passes driven by an audit of the 462 active rule
+  modules:
+
+  * **`known_fp` backfill on 14 raw-blob heuristics** that
+    shipped without documented FP modes despite using regex
+    against free-text. Touched ``ARGO-005``, ``ADO-004``,
+    ``ADO-014``, ``BB-002``, ``BB-019``, ``BK-002``, ``BK-003``,
+    ``GCB-003``, ``GCB-004``, ``GCB-019``, ``GCB-023``,
+    ``DF-003``, ``GHA-013``, ``GHA-032``, ``GHA-046``,
+    ``TKN-008``. ``--explain`` and the auto-generated provider
+    docs now surface FP modes for all 14.
+  * **`exploit_example` backfill on 10 highest-ROI HIGH/CRITICAL
+    rules.** Concrete vulnerable-config / attack-payload / safe-
+    rewrite snippets land in ``IAM-001``, ``IAM-004``,
+    ``CB-001``, ``SSM-001``, ``ADO-002``, ``ADO-019``,
+    ``ADO-030``, ``BB-002``, ``ARGO-005``, ``TAINT-007``.
+    Each follows the ``GHA-003`` template (vulnerable code,
+    attack walk-through, safe variant).
+  * **CICD-SEC-8 (Ungoverned Usage of 3rd-Party Services)
+    tagging.** Per the OWASP CICD Top 10 spec, action / orb /
+    pipe / task marketplaces are direct examples of 3rd-party
+    service consumption. Nine rules whose primary surface is
+    that exact pattern now carry the SEC-8 mapping alongside
+    their existing SEC-3 tag: ``GHA-001``, ``GHA-025``,
+    ``GHA-040``..``GHA-043``, ``CC-001``, ``BB-001``,
+    ``ADO-001``. SEC-8 coverage rises from 7 to 16 rules,
+    better-proportioned with neighbors (SEC-5 at 20, SEC-10 at
+    24). Both the rule files' ``owasp=`` tuples and the
+    ``standards/data/owasp_cicd_top_10.py`` mappings updated
+    in lockstep.
+
 ## [1.0.1] - 2026-05-11
 
 Skipped v1.0.0 — that tag is locked against re-use by the
