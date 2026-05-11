@@ -86,8 +86,17 @@ def _perms_issues(
             issues.append(
                 f"{job_id}: `contents: write` on a pull_request workflow"
             )
-        # id-token: write without a corresponding OIDC step
-        if perms.get("id-token") == "write" and job is not None:
+        # id-token: write without a corresponding OIDC step. Skipped
+        # for reusable-workflow callers (``jobs.<id>.uses:`` set, no
+        # ``steps:``): the grant is forwarded to the called workflow,
+        # which is the actual OIDC consumer. Inspecting the caller's
+        # empty step list would always FP on legitimate slsa-github-
+        # generator / attest-build-provenance reusable workflow calls.
+        if (
+            perms.get("id-token") == "write"
+            and job is not None
+            and not isinstance(job.get("uses"), str)
+        ):
             has_oidc = any(
                 _is_oidc_step(s) for s in iter_steps(job)
             )

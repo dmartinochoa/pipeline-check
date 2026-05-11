@@ -12,6 +12,60 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-04x PPE pack: GHA-044 / GHA-045 / GHA-046.** Three new
+  GitHub Actions rules covering Pipeline Poisoned Execution
+  variants that GHA-002 / GHA-010 / GHA-032 don't catch:
+
+  * ``GHA-044`` (build tool runs lifecycle scripts on untrusted-
+    trigger workflow) — fires when a ``pull_request_target`` /
+    ``workflow_run`` workflow invokes ``npm install`` / ``pnpm
+    install`` / ``yarn`` / ``pip install .`` / ``setup.py`` /
+    ``make`` / ``mvn`` / ``gradle`` / ``bundle install`` /
+    ``composer install`` / ``cargo build`` / ``go generate``.
+    Each of those tools auto-executes config-file code
+    (``preinstall`` / ``postinstall`` scripts, Makefile targets,
+    ``setup.py`` body, Maven plugins, ``build.gradle`` /
+    ``init.gradle``, ``build.rs``) that the PR controls, so the
+    install step IS the attack. Severity HIGH.
+  * ``GHA-045`` (caller-controlled ref input feeds actions/
+    checkout) — fires when a ``workflow_dispatch`` /
+    ``workflow_call`` workflow takes an input and passes it
+    verbatim as ``ref:`` to ``actions/checkout``. The caller
+    picks which tree runs with secrets and a write-scope
+    ``GITHUB_TOKEN``. Severity HIGH.
+  * ``GHA-046`` (manual PR-head fetch on untrusted-trigger
+    workflow) — fires when a ``pull_request_target`` /
+    ``workflow_run`` workflow materializes the PR head via shell
+    (``gh pr checkout``, ``git fetch origin pull/<N>/head``,
+    ``git checkout ${{ github.event.pull_request.head.sha }}``,
+    or ``git checkout FETCH_HEAD`` after a pull-ref fetch). This
+    is the shell-level variant of GHA-002 that bypasses the
+    ``actions/checkout`` detector while landing the same
+    attacker-controlled bytes. Severity CRITICAL.
+
+  All three map to OWASP CICD-SEC-4 and NIST CSF 2.0 PR.IR-01.
+  Catalog: GHA 43 → 46 rules.
+
+- **SLSA Build L3 wheel provenance.** ``release.yml`` now calls the
+  ``slsa-framework/slsa-github-generator`` reusable workflow (pinned
+  to v2.1.0 by SHA) after the wheel build. The generator runs in
+  GitHub's isolated SLSA builder, reads the SHA-256 hashes of the
+  sdist and wheel from the build job's output, generates an in-toto
+  SLSA Provenance v1.0 predicate naming the workflow run, and signs
+  it via Sigstore using the workflow's OIDC token. Output is a
+  ``pipeline-check.intoto.jsonl`` file uploaded as a workflow run
+  artifact and, on tag-push runs, attached to the matching GitHub
+  release alongside the wheel. PyPI's own PEP 740 attestations
+  (already produced by ``gh-action-pypi-publish`` with
+  ``attestations: true``) are unchanged, the SLSA file is the
+  stronger build-time attestation that downstream consumers verify
+  with ``slsa-verifier verify-artifact ... --source-uri
+  github.com/dmartinochoa/pipeline-check --source-tag vX.Y.Z``.
+  README gains a "Verifying a release" section documenting the
+  consumer-side flow. Closes the v0.5.0 reproducible-build roadmap
+  item; complements the container image's existing buildx
+  ``provenance: true``.
+
 - **SCM provider: GitLab + Bitbucket Cloud platform parity.** New
   ``--scm-platform gitlab`` and ``--scm-platform bitbucket`` modes
   extend the SCM provider beyond GitHub. Each platform ships its
@@ -1829,6 +1883,64 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   chars) and rewrote the malformed
   ``scripts/gen_attack_chains_doc.py:60`` ``# noqa`` directive
   ruff was logging at every run.
+- **Runtime image no longer ships base-image pip.** The
+  ``runtime`` stage of the project ``Dockerfile`` installed the
+  pre-built wheel using the ``pip`` that came with
+  ``python:3.12-slim``, which trails upstream by months and was
+  flagged by image scanners for CVE-2025-8869, CVE-2026-6357, and
+  CVE-2026-1703 (all fixed in current ``pip``). The builder stage
+  already upgrades pip; the runtime stage now does the same before
+  the wheel install so the final layer carries a current pip. No
+  behavior change for users of the CLI; the remaining
+  scanner-reported CVEs against the image are Debian system
+  packages without upstream fixes and ride the regular
+  ``python:3.12-slim`` rebuild cadence.
+
+### Changed
+
+- **PR CI is faster and cancels stale runs.** ``python-app.yml``
+  splits into three jobs (``lint`` / ``typecheck`` / ``test``)
+  instead of running ruff + mypy + pytest sequentially inside every
+  matrix leg. Ruff and mypy now run once on 3.12 in parallel with
+  the pytest matrix (Ubuntu 3.11 / 3.12 / 3.13 + Windows 3.12),
+  cutting the long-pole wait when one of them is the slow step
+  and saving three redundant mypy invocations per PR. All three
+  CI workflows (``python-app.yml``, ``codeql.yml``, ``dogfood.yml``)
+  gain a ``concurrency`` group keyed on workflow + ref that cancels
+  stale PR runs when a new commit lands on the same branch (master
+  pushes keep the standard "don't cancel" posture). All three also
+  gain a ``paths-ignore`` filter that skips PR runs touching only
+  ``docs/`` / ``bench/`` / ``*.md`` / ``mkdocs.yml`` (docs PRs are
+  already covered by ``docs.yml``, which is paths-gated to
+  ``docs/**`` and ``mkdocs.yml``). CodeQL's weekly cron still runs
+  the full scan against master regardless of which PR-paths
+  changed in between, so the paths-ignore filter is a PR-feedback
+  speedup, not a coverage reduction.
+- **README and usage docs surface the container distribution.**
+  The project ships a multi-arch (`linux/amd64` + `linux/arm64`)
+  image to Docker Hub (``dmartinochoa/pipeline-check``) and GHCR
+  (``ghcr.io/dmartinochoa/pipeline-check``) on every release, but
+  the README quick-start and ``docs/usage.md`` install section only
+  documented ``pip install``. README quick-start gains a ``docker
+  run`` example pointing at both registries; ``docs/usage.md``
+  gains a "Container image" subsection covering tag flavors,
+  digest-pinning, and the ``/scan`` bind-mount convention. README
+  badge row gains PyPI version + Docker Hub version badges so the
+  dual distribution is visible at a glance.
+- **Tag-push triggers PyPI + Docker publish automatically.**
+  ``release.yml``'s ``publish-testpypi`` and ``publish-pypi`` jobs
+  previously required an operator to run the workflow via the
+  Actions UI with ``inputs.publish: true``; pushing a ``v*.*.*``
+  tag built the artifacts but did not ship them. The publish gate
+  is now the ``production`` GitHub environment binding (configurable
+  under Settings -> Environments -> ``production`` with required
+  reviewers), which is auditable and survives operator turnover.
+  ``docker-publish.yml`` adds the matching ``push: tags: [v*.*.*]``
+  trigger and continues to gate on the ``container-registry``
+  environment. ``workflow_dispatch`` stays available on both
+  workflows for re-runs and feature-branch preview builds; the
+  ``inputs.publish`` toggle still gates dispatch-mode publishes so
+  a dispatch from ``dev`` cannot ship to public indexes.
 
 ### Added
 
@@ -2719,6 +2831,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   over a runner quirk. The pure-Python tests in the same file
   still cover the source-header parser and the K8s rule reuse,
   so the e2e test stays a "trust but verify" smoke check.
+
+### Fixed
+
+- **GHA-004 false positive on reusable-workflow callers.** A job that
+  is a reusable-workflow caller (``jobs.<id>.uses:`` set, no
+  ``steps:`` block) legitimately needs ``id-token: write`` to forward
+  the OIDC token to the called workflow, but GHA-004 was inspecting
+  the caller's empty step list and faulting it as "id-token: write
+  with no OIDC step". The rule now skips the id-token check when
+  ``job.uses`` is set. Surfaced by the new SLSA provenance job in
+  ``release.yml``; would have FP'd on every project that calls
+  ``slsa-github-generator`` or ``actions/attest-build-provenance``
+  through a reusable workflow.
+- **GHA-015 false positive on reusable-workflow callers.** GitHub
+  Actions does not accept ``timeout-minutes:`` on jobs that call a
+  reusable workflow, the called workflow's own jobs declare their
+  timeouts. The rule was faulting reusable-workflow callers for
+  missing an attribute that's structurally invalid on this job
+  shape. Now skips callers identified by ``job.uses``.
 
 ## [0.4.2] - 2026-05-08
 

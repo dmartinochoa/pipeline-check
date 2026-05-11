@@ -91,6 +91,26 @@ class TestGHA015TimeoutMinutes:
         f = run_check(wf, "GHA-015")
         assert f.passed
 
+    def test_skips_reusable_workflow_caller(self):
+        # GitHub Actions does not accept ``timeout-minutes:`` on jobs
+        # that call a reusable workflow (``jobs.<id>.uses:``). The
+        # called workflow's own jobs declare their timeouts. GHA-015
+        # must skip the caller rather than fault it for missing an
+        # attribute that's structurally invalid on this shape.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          provenance:
+            permissions:
+              id-token: write
+            uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+            with:
+              base64-subjects: deadbeef
+        """
+        f = run_check(wf, "GHA-015")
+        assert f.passed
+
 
 # ── GHA-016 curl-pipe ───────────────────────────────────────────────
 
