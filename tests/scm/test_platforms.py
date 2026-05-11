@@ -129,6 +129,89 @@ class TestGitLabHydration:
         assert any("GitLab" in w for w in ctx.warnings)
         assert ctx.repos[0].repo_meta is None
 
+    def test_universal_rules_all_fire_or_pass_correctly_on_gitlab(self):
+        """End-to-end: every universal rule (SCM-001/002/006/007/008/
+        009/017) emits the expected pass-state on a fully-protected
+        GitLab snapshot. Catches regressions where a universal rule
+        accidentally depends on a GitHub-only slot."""
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 4096},
+                "approvals_before_merge": 2,
+                "only_allow_merge_if_pipeline_succeeds": True,
+            },
+            "projects/g%2Fp/protected_branches": [
+                {"name": "main", "allow_force_push": False},
+            ],
+            "projects/g%2Fp/push_rule": {
+                "reject_unsigned_commits": True,
+            },
+            "projects/g%2Fp/repository/files/CODEOWNERS?ref=main": {
+                "file_path": "CODEOWNERS",
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        for cid in (
+            "SCM-001", "SCM-002", "SCM-006", "SCM-007",
+            "SCM-008", "SCM-009", "SCM-017",
+        ):
+            assert findings[cid].passed, (
+                f"{cid} should pass on fully-protected GitLab repo, "
+                f"got {findings[cid].description}"
+            )
+
+    def test_scm006_fires_when_push_rules_unset_on_gitlab(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "approvals_before_merge": 1,
+            },
+            "projects/g%2Fp/protected_branches": [
+                {"name": "main", "allow_force_push": False},
+            ],
+            "projects/g%2Fp/push_rule": {
+                "reject_unsigned_commits": False,
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-006"].passed
+
+    def test_scm017_fires_when_no_codeowners_on_gitlab(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [
+                {"name": "main", "allow_force_push": False},
+            ],
+            "projects/g%2Fp/push_rule": {},
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-017"].passed
+
+    def test_gitlab_codeowners_prefers_gitlab_path_over_github_path(self):
+        """When both ``.gitlab/CODEOWNERS`` and ``.github/CODEOWNERS``
+        exist, the platform-preferred path wins."""
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/repository/files/.gitlab%2FCODEOWNERS"
+            "?ref=main": {"file_path": ".gitlab/CODEOWNERS"},
+            "projects/g%2Fp/repository/files/.github%2FCODEOWNERS"
+            "?ref=main": {"file_path": ".github/CODEOWNERS"},
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        assert ctx.repos[0].codeowners_path == ".gitlab/CODEOWNERS"
+
     def test_nested_subgroup_path(self):
         """GitLab supports nested subgroups (``a/b/c/repo``). The
         rule pack treats everything before the last ``/`` as the
@@ -250,6 +333,110 @@ class TestBitbucketHydration:
         ctx = bitbucket_context_for_repo("w", "r", f)
         assert any("Bitbucket" in s for s in ctx.warnings)
         assert ctx.repos[0].repo_meta is None
+
+    def test_universal_rules_all_fire_or_pass_correctly_on_bitbucket(
+        self,
+    ):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 4096,
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main", "value": 2,
+                    },
+                    {"kind": "force", "pattern": "main"},
+                    {"kind": "delete", "pattern": "main"},
+                    {
+                        "kind": "require_passing_builds_to_merge",
+                        "pattern": "main",
+                    },
+                ],
+            },
+            "repositories/w/r/src/main/CODEOWNERS": {
+                "path": "CODEOWNERS",
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        for cid in (
+            "SCM-001", "SCM-002", "SCM-007",
+            "SCM-008", "SCM-009", "SCM-017",
+        ):
+            assert findings[cid].passed, (
+                f"{cid} should pass on fully-protected Bitbucket repo "
+                f"({findings[cid].description})"
+            )
+        # SCM-006 always fires on Bitbucket — the platform has no
+        # per-branch signed-commit enforcement. Document that.
+        assert not findings["SCM-006"].passed
+
+    def test_bitbucket_codeowners_prefers_bitbucket_path(self):
+        """``.bitbucket/CODEOWNERS`` is the platform-preferred path
+        and wins over the generic ``CODEOWNERS``."""
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+            "repositories/w/r/src/main/.bitbucket/CODEOWNERS": {
+                "path": ".bitbucket/CODEOWNERS",
+            },
+            "repositories/w/r/src/main/CODEOWNERS": {
+                "path": "CODEOWNERS",
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        assert ctx.repos[0].codeowners_path == ".bitbucket/CODEOWNERS"
+
+    def test_restrictions_on_non_default_branch_dont_apply(self):
+        """A restriction whose pattern is ``develop`` doesn't protect
+        ``main``; SCM-001 should still fire because no restriction
+        covers the default branch."""
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "develop",
+                        "value": 2,
+                    },
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-001"].passed
+
+    def test_wildcard_pattern_matches_default_branch(self):
+        """A restriction with pattern ``*`` covers every branch
+        including the default."""
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "*",
+                        "value": 1,
+                    },
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-001"].passed
 
     def test_github_only_rules_skip_with_note(self):
         f = FakeFetcher({

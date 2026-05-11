@@ -168,6 +168,58 @@ class TestGHA041:
         f = _run(ctx, "GHA-041")
         assert f.passed
 
+    def test_fires_on_reusable_workflow_callee(self):
+        """The rule walks ``jobs.<id>.uses:`` (reusable workflows)
+        as well as ``steps[].uses:`` — a single-maintainer callee
+        is just as much a supply-chain risk as a single-maintainer
+        step action."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: solo/shared/.github/workflows/release.yml@v1
+        """
+        k, m = _meta("solo", "shared", contributor_count=1)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-041")
+        assert not f.passed
+        assert "solo/shared" in f.description
+
+    def test_contributor_count_zero_treated_as_single_maintainer(self):
+        """A repo with zero (anonymous-only) contributors is at
+        least as risky as a one-contributor repo. The rule fires
+        on ``<= 1``."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: nascent/repo@v1
+        """
+        k, m = _meta("nascent", "repo", contributor_count=0)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-041")
+        assert not f.passed
+
+    def test_mixed_actions_only_single_maintainer_ones_fire(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: solo/widget@v1
+        """
+        k1, m1 = _meta("actions", "checkout", contributor_count=42)
+        k2, m2 = _meta("solo", "widget", contributor_count=1)
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-041")
+        assert not f.passed
+        assert "solo/widget" in f.description
+        assert "actions/checkout" not in f.description
+
     def test_skips_action_without_contributor_count(self):
         """``contributor_count is None`` means the contributors fetch
         failed for this specific action. The rule should not fire on
@@ -265,6 +317,28 @@ class TestGHA042:
         k, m = _meta("typo", "checkout", created_at=ts)
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-042")
         assert not f.passed
+
+    def test_boundary_threshold_exact_age_passes(self):
+        """A repo whose age in days equals ``MIN_AGE_DAYS`` passes
+        (rule uses ``< MIN_AGE_DAYS``, not ``<=``)."""
+        from pipeline_check.core.checks.github.rules import (
+            gha042_young_action_repo,
+        )
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: borderline/action@v1
+        """
+        # Plus one second to avoid a flake where the seconds-truncated
+        # timestamp drifts under the threshold mid-test.
+        ts = _iso_days_ago(gha042_young_action_repo.MIN_AGE_DAYS)
+        k, m = _meta("borderline", "action", created_at=ts)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-042")
+        assert f.passed
 
 
 # ── GHA-043: low-star + sensitive permission ───────────────────────
@@ -388,6 +462,95 @@ class TestGHA043:
         k, m = _meta("obscure", "action", stargazers_count=1)
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-043")
         assert f.passed
+
+    def test_exactly_at_star_threshold_passes(self):
+        """Boundary: a repo with exactly ``MAX_STARS`` stars passes
+        (rule uses ``< MAX_STARS``, not ``<=``)."""
+        from pipeline_check.core.checks.github.rules import (
+            gha043_low_star_sensitive_permission,
+        )
+        wf = """
+        name: ci
+        on: push
+        permissions:
+          contents: write
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: borderline/action@v1
+        """
+        k, m = _meta(
+            "borderline", "action",
+            stargazers_count=(
+                gha043_low_star_sensitive_permission.MAX_STARS
+            ),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-043")
+        assert f.passed
+
+    def test_inherited_permissions_for_reusable_callee(self):
+        """When a resolved reusable callee declares no permissions
+        of its own, the rule sees the caller's inherited block as
+        the effective permissions. Catches the case where a callee
+        appears to have ``permissions: None`` but is actually run
+        with the caller's elevated scopes."""
+        import textwrap
+        import yaml as _yaml
+        from pipeline_check.core.checks.github.base import (
+            GitHubContext, Workflow,
+        )
+        from pipeline_check.core.checks.github.workflows import (
+            WorkflowChecks,
+        )
+        callee_text = """
+        on: workflow_call
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: obscure/action@v1
+        """
+        data = _yaml.safe_load(textwrap.dedent(callee_text))
+        # Synthesize the callee as if it had been pulled by the
+        # remote-ref resolver — inherited_permissions carries the
+        # caller's scope.
+        wf = Workflow(
+            path="resolved.yml", data=data,
+            inherited_permissions={"contents": "write"},
+        )
+        ctx = GitHubContext([wf])
+        k, m = _meta("obscure", "action", stargazers_count=1)
+        ctx.action_metadata = {k: m}
+        findings = {f.check_id: f for f in WorkflowChecks(ctx).run()}
+        assert not findings["GHA-043"].passed
+
+    def test_dedup_across_jobs_with_different_permissions(self):
+        """An action referenced in two jobs (one with sensitive
+        permission, one without) fires once for the sensitive-perm
+        job, not twice."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            permissions:
+              contents: write
+            steps:
+              - uses: obscure/action@v1
+          b:
+            runs-on: ubuntu-latest
+            permissions:
+              contents: read
+            steps:
+              - uses: obscure/action@v1
+        """
+        k, m = _meta("obscure", "action", stargazers_count=2)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-043")
+        assert not f.passed
+        # Only the elevated-permission job is in the match list.
+        assert f.description.count("obscure/action") == 1
 
 
 # ── _action_reputation: collect / populate / fetcher projection ────

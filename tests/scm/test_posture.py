@@ -838,6 +838,48 @@ class TestSCM018:
         assert f.passed
         assert "See SCM-002" in f.description
 
+    def test_malformed_bypass_payload_doesnt_crash(self):
+        """``bypass_pull_request_allowances`` value is a string
+        instead of a dict (malformed API response). Rule should
+        pass silently rather than raise; this is the FP/FN guard
+        pattern shared by the rest of the SCM pack."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                    "bypass_pull_request_allowances": "malformed",
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert f.passed
+
+    def test_non_list_user_slot_treated_as_empty(self):
+        """``users`` value isn't a list (could be ``null`` or a
+        dict on malformed responses). Treat as zero, don't crash."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "bypass_pull_request_allowances": {
+                        "users": None,
+                        "teams": "not-a-list",
+                        "apps": [{"slug": "ok-bot"}],
+                    },
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-018")
+        assert not f.passed
+        assert "1 app(s)" in f.description
+        # The malformed user / teams slots don't crash and don't
+        # appear in the count.
+        assert "user(s)" not in f.description
+        assert "team(s)" not in f.description
+
 
 # ── SCM-019: push restrictions allowlist (individual users) ─────────
 
