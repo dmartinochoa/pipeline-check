@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [0.5.0] - 2026-05-10
+## [1.0.0] - 2026-05-11
 
 ### Added
 
@@ -925,6 +925,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   underlying detection table is shared between single- and
   multi-detect (``_PROVIDER_DETECT_FILES``) so a new provider
   hooks into both detection modes by adding one row.
+
+## [0.5.0] - 2026-05-10
+
+### Added
 
 - **MCP (Model Context Protocol) server (``--serve``).** Locally-
   running MCP server that lets AI clients (Claude Desktop,
