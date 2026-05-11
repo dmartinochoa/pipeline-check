@@ -25,7 +25,7 @@ Shape:
 ```json
 {
   "schema_version": "1.0",
-  "tool_version": "0.4.x",
+  "tool_version": "1.0.1",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
     {

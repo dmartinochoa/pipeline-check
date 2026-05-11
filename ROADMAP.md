@@ -19,9 +19,9 @@ What's planned, what's shipped, and what's deliberately out of scope.
   Markdown reporters, 13-standard mapping, autofix engine, HTML report
   interactivity.
 
-## v0.4.0 (in progress)
+## v0.4.0 (shipped)
 
-A "hardening" release. Closes structural gaps that the rule-count race
+A "hardening" release. Closed structural gaps that the rule-count race
 of v0.2.x to v0.3.x left behind.
 
 ### Landed on `dev`
@@ -732,7 +732,7 @@ across every provider scanned in the same run.
   HIGH. Insider-introducible Dockerfile change AND floating-tag
   base image; two unrelated trust boundaries open at once.
 
-Catalog now spans 35 chains total (27 ``AC-NNN`` + 8 ``XPC-NNN``).
+Catalog now spans 36 chains total (27 ``AC-NNN`` + 9 ``XPC-NNN``).
 Each composite carries its own severity (often higher than its
 parts because the cross-cut means there's no compensating control
 elsewhere) and its own ``--explain`` prose. Engine reuses the
