@@ -48,6 +48,15 @@ RULE = Rule(
         "shell invocations, and ``$(gcloud secrets …)`` command "
         "substitutions in step args or entrypoint."
     ),
+    known_fp=(
+        "Steps whose sole purpose is to *grant* a service account "
+        "access to a secret (``gcloud secrets add-iam-policy-"
+        "binding``) reference the resource URI without exposing "
+        "the value. The literal-URI regex doesn't distinguish "
+        "read from administrative operations. Suppress those "
+        "specific steps via ``--ignore-file`` once you've "
+        "confirmed the gcloud subcommand is administrative.",
+    ),
 )
 
 # Literal Secret Manager resource URI (also used by gcloud output).

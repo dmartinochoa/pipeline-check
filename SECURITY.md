@@ -2,9 +2,19 @@
 
 ## Supported versions
 
-Pipeline-Check is pre-1.0. Only the latest release published to
+Pipeline-Check follows semantic versioning. The public Python API
+exported via ``pipeline_check.__all__`` is stable across minor releases
+in the 1.x line; deeper imports under ``pipeline_check.core.*`` remain
+internal.
+
+Only the latest release published to
 [PyPI](https://pypi.org/project/pipeline-check/) receives security fixes.
-Older minor versions are not patched — upgrade to the current release.
+Older releases are not patched. Upgrade to the current 1.x release.
+
+| Version | Supported |
+| ------- | --------- |
+| 1.x (latest) | Yes |
+| < 1.0   | No (upgrade to 1.x) |
 
 ## Reporting a vulnerability
 

@@ -34,6 +34,18 @@ RULE = Rule(
         "the substitution carried, straight command injection through "
         "trigger configuration."
     ),
+    known_fp=(
+        "Substitutions whose values are *server-controlled* in "
+        "practice (e.g. the trigger always supplies a SHA from "
+        "``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by "
+        "the trigger config) still match the user-sub regex "
+        "because Cloud Build can't distinguish locked from "
+        "editable trigger fields. Suppress per-step via "
+        "``--ignore-file`` once you've verified your trigger "
+        "policy prevents arbitrary substitution overrides, "
+        "ideally combined with ``options.substitutionOption: "
+        "MUST_MATCH`` (GCB-022) to make the lock explicit.",
+    ),
 )
 
 _SHELL_ENTRYPOINTS = frozenset({

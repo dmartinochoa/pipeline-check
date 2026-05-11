@@ -41,12 +41,13 @@ RULE = Rule(
         "/ ``pull_request.title`` directly into shell. Any "
         "commenter or PR author could run arbitrary commands in "
         "the maintainer's CI.",
-        "Trail of Bits ``pwn-request`` research (2021): demonstrated "
-        "the same primitive against ``pull_request_target`` workflows "
-        "where the runner has secrets and a write-scope token; one "
-        "fork PR could exfiltrate every secret the workflow could "
-        "see. Mitigation is the same: never interpolate context into "
-        "shell, route through ``env:``.",
+        "[Keeping your GitHub Actions and workflows secure: "
+        "Preventing pwn requests](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) "
+        "(GitHub Security Lab, 2020): the same primitive against "
+        "``pull_request_target`` workflows where the runner has "
+        "secrets and a write-scope token; one fork PR exfiltrates "
+        "every secret the workflow can see. Mitigation: never "
+        "interpolate context into shell, route through ``env:``.",
     ),
     exploit_example=(
         "# Vulnerable: PR title interpolated straight into shell.\n"

@@ -10,6 +10,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Per-rule policy-as-code overlay (`--policy NAME` /
+  `--list-policies`).** New `pipeline_check/core/policies.py`
+  module loads named scan profiles from `./policies/<NAME>.yml` or
+  `./.pipeline-check/policies/<NAME>.yml`. Each policy bundles a
+  `checks:` whitelist, a `standards:` filter, gate thresholds
+  (`gate.fail_on` / `gate.min_grade` / `gate.max_failures` /
+  `gate.fail_on_checks`), and per-rule severity overrides
+  (`overrides:`). Policy values feed click's `default_map`, so the
+  config file, env vars, and explicit CLI flags continue to win on
+  conflicts (precedence: defaults < policy < config file < env <
+  CLI). `--list-policies` enumerates every discoverable policy
+  and exits 0; exits 3 when no policies are found. The `--policy`
+  argument is sanitized to reject path traversal (`..` and path
+  separators); pass a literal file path to bypass the lookup.
+  Per-rule `overrides` merge with the existing
+  `tool.pipeline_check.overrides` config block (config-file
+  overrides win per-key). Closes the v0.6.0 "deployable in the way
+  real teams deploy linters" item from the roadmap. 34 unit tests
+  + 9 CLI integration tests lock the contract.
+- **`--write-baseline PATH` companion to `--baseline`.** Snapshots
+  the current scan's findings to a JSON file in the same shape
+  `--output json` emits, so the next run can gate only on new
+  issues via `--baseline PATH`. Independent of `--output`: a CI
+  lane can emit SARIF for code-scanning while simultaneously
+  writing the JSON baseline. Logs `[baseline] wrote N failing
+  finding(s) to PATH` to stderr unless `--quiet` is set. Closes
+  the missing half of the v0.5.0 auto-baseline item.
+
+- **`ATTEST-005` in-toto Statement subject is missing or unpinned.**
+  Fifth rule in the attestation-content pack. Walks every parsed
+  in-toto Statement (SLSA provenance + SBOM) and validates the
+  ``subject`` array: a missing / empty array, a subject entry with
+  no ``digest`` map, or a digest value that's empty / all-zero /
+  non-hex / odd-length all fail. A Statement with a placeholder
+  subject is structurally unbound to artifact bytes; an attacker
+  who can move the signed envelope re-attaches it to a tampered
+  image without breaking the signature ("attestation-substitution"
+  per the SLSA Statement-Track threat model). Pairs with ATTEST-001
+  (builder), ATTEST-002 (source), ATTEST-004 (materials), ATTEST-003
+  (SBOM contents) so the full chain of custody is verifiable end to
+  end. Severity HIGH. Maps to CICD-SEC-3 + CICD-SEC-9. 14 new tests
+  covering empty / missing / placeholder / non-hex / odd-length /
+  partial-multi-subject shapes, plus the SBOM-attestation case and
+  the end-to-end orchestrator path. The catalog-locked OCI rule
+  count rises 12 -> 13; ``nist_csf_2`` floor drops one point
+  (denominator-dilution case identical to ATTEST-004's NIST 800-53 /
+  S2C2F adjustment).
+
+- **`ATTEST-004` SLSA provenance without resolved-dependencies set.**
+  Fourth rule in the attestation-content pack. Reads the canonical
+  materials lists on each SLSA provenance attestation (v0.2
+  ``predicate.materials``, v1
+  ``predicate.buildDefinition.resolvedDependencies``) and fires when
+  the list is missing or empty. A trusted-builder image with no
+  declared materials gives downstream consumers no chain-of-custody
+  for build inputs (base image, source ref, transitive tool chain),
+  which defeats SLSA Build-track L2+ and breaks downstream
+  vulnerability correlation when an advisory drops. Pairs with
+  ATTEST-003 (SBOM-level inputs); both lists are needed for the SLSA
+  "isolated, reproducible" claim. Severity MEDIUM. Maps to
+  CICD-SEC-3 + CICD-SEC-9. 12 new tests covering both spec versions,
+  malformed shapes, multi-attestation cases, and the
+  end-to-end orchestrator path.
+
+### Changed
+
+- **Rule-pack quality backfill (no behavior change).** Three
+  documentation passes driven by an audit of the 462 active rule
+  modules:
+
+  * **`known_fp` backfill on 14 raw-blob heuristics** that
+    shipped without documented FP modes despite using regex
+    against free-text. Touched ``ARGO-005``, ``ADO-004``,
+    ``ADO-014``, ``BB-002``, ``BB-019``, ``BK-002``, ``BK-003``,
+    ``GCB-003``, ``GCB-004``, ``GCB-019``, ``GCB-023``,
+    ``DF-003``, ``GHA-013``, ``GHA-032``, ``GHA-046``,
+    ``TKN-008``. ``--explain`` and the auto-generated provider
+    docs now surface FP modes for all 14.
+  * **`exploit_example` backfill on 10 highest-ROI HIGH/CRITICAL
+    rules.** Concrete vulnerable-config / attack-payload / safe-
+    rewrite snippets land in ``IAM-001``, ``IAM-004``,
+    ``CB-001``, ``SSM-001``, ``ADO-002``, ``ADO-019``,
+    ``ADO-030``, ``BB-002``, ``ARGO-005``, ``TAINT-007``.
+    Each follows the ``GHA-003`` template (vulnerable code,
+    attack walk-through, safe variant).
+  * **CICD-SEC-8 (Ungoverned Usage of 3rd-Party Services)
+    tagging.** Per the OWASP CICD Top 10 spec, action / orb /
+    pipe / task marketplaces are direct examples of 3rd-party
+    service consumption. Nine rules whose primary surface is
+    that exact pattern now carry the SEC-8 mapping alongside
+    their existing SEC-3 tag: ``GHA-001``, ``GHA-025``,
+    ``GHA-040``..``GHA-043``, ``CC-001``, ``BB-001``,
+    ``ADO-001``. SEC-8 coverage rises from 7 to 16 rules,
+    better-proportioned with neighbors (SEC-5 at 20, SEC-10 at
+    24). Both the rule files' ``owasp=`` tuples and the
+    ``standards/data/owasp_cicd_top_10.py`` mappings updated
+    in lockstep.
+
 ## [1.0.1] - 2026-05-11
 
 Skipped v1.0.0 — that tag is locked against re-use by the

@@ -40,6 +40,17 @@ RULE = Rule(
         "approvals, checks, or deployment history against a named "
         "resource. Every `deployment:` job should bind one."
     ),
+    known_fp=(
+        "The deploy-name regex (``deploy`` / ``release`` / "
+        "``publish`` / ``promote``) flags jobs whose names "
+        "include those tokens for non-deploy reasons (e.g. "
+        "``release-notes-build`` that only generates a "
+        "changelog). The deploy-command regex similarly fires on "
+        "test pipelines that exercise ``kubectl apply --dry-run`` "
+        "or ``helm template`` for validation. Suppress those jobs "
+        "per-resource via ``--ignore-file`` once you've verified "
+        "they don't actually mutate any environment.",
+    ),
 )
 
 

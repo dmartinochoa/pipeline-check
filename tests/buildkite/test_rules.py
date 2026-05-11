@@ -127,6 +127,110 @@ class TestBK003UntrustedInterpolation:
         f = run_check(cfg, "BK-003")
         assert not f.passed
 
+    def test_passes_for_var_prefix_match(self):
+        """``$BUILDKITE_BRANCH_FOO`` is not the same variable as
+        ``$BUILDKITE_BRANCH``; the negative lookahead on
+        ``[A-Za-z0-9_]`` after the var name must prevent the prefix
+        match from firing."""
+        cfg = """
+        steps:
+          - command: echo $BUILDKITE_BRANCH_FOO
+        """
+        f = run_check(cfg, "BK-003")
+        assert f.passed
+
+    def test_passes_for_brace_form_when_quoted(self):
+        """``"${BUILDKITE_BRANCH}"`` is a single-token quoted form,
+        which is safe."""
+        cfg = """
+        steps:
+          - command: echo "${BUILDKITE_BRANCH}"
+        """
+        f = run_check(cfg, "BK-003")
+        assert f.passed
+
+    def test_fails_for_brace_form_unquoted(self):
+        """``${BUILDKITE_BRANCH}`` without quotes is the same shell-
+        injection vector as ``$BUILDKITE_BRANCH``, just spelled
+        differently. The rule's regex covers both spellings."""
+        cfg = """
+        steps:
+          - command: echo ${BUILDKITE_BRANCH}
+        """
+        f = run_check(cfg, "BK-003")
+        assert not f.passed
+
+    def test_passes_for_escaped_dollar(self):
+        r"""``\$BUILDKITE_BRANCH`` is a literal-dollar shell escape;
+        the runtime never substitutes the variable, so no injection
+        is possible."""
+        cfg = r"""
+        steps:
+          - command: echo \$BUILDKITE_BRANCH
+        """
+        f = run_check(cfg, "BK-003")
+        assert f.passed
+
+    def test_fails_for_command_substitution(self):
+        """``$(...)`` re-evaluates the interpolated value as a
+        command; an unquoted tainted var inside the substitution is
+        a direct injection."""
+        cfg = """
+        steps:
+          - command: echo "$(handle $BUILDKITE_BRANCH)"
+        """
+        f = run_check(cfg, "BK-003")
+        assert not f.passed
+
+    def test_passes_for_single_quoted(self):
+        """Single quotes prevent any shell-level interpolation; the
+        rule treats the ``'$VAR'`` form as safe by the same
+        negative-lookbehind path it uses for double quotes."""
+        cfg = """
+        steps:
+          - command: echo '$BUILDKITE_BRANCH'
+        """
+        f = run_check(cfg, "BK-003")
+        assert f.passed
+
+    def test_fails_for_each_tainted_var(self):
+        """Every variable in ``_TAINTED_VARS`` should trigger
+        detection. Verifies the catalog hasn't drifted and locks in
+        the documented set."""
+        # BUILDKITE_BUILD_MESSAGE was previously listed but isn't a
+        # documented Buildkite env var; the rule's catalog dropped
+        # it deliberately. Update this test alongside the rule when
+        # the canonical set changes.
+        tainted = [
+            "BUILDKITE_BRANCH", "BUILDKITE_TAG", "BUILDKITE_MESSAGE",
+            "BUILDKITE_PULL_REQUEST",
+            "BUILDKITE_PULL_REQUEST_BASE_BRANCH",
+            "BUILDKITE_PULL_REQUEST_DEFAULT_BRANCH",
+            "BUILDKITE_PULL_REQUEST_REPO",
+            "BUILDKITE_BUILD_AUTHOR",
+            "BUILDKITE_BUILD_AUTHOR_EMAIL",
+            "BUILDKITE_COMMIT",
+        ]
+        for var in tainted:
+            cfg = f"""
+            steps:
+              - command: echo ${var}
+            """
+            f = run_check(cfg, "BK-003")
+            assert not f.passed, f"{var} should be tainted but rule passed"
+
+    def test_passes_for_undocumented_envvar_lookalike(self):
+        """A var that *looks* Buildkite-shaped but isn't in the
+        documented catalog (e.g. ``BUILDKITE_BUILD_MESSAGE``, which
+        was previously over-cataloged) must not trigger. Locks the
+        catalog trim from the hallucination audit."""
+        cfg = """
+        steps:
+          - command: echo $BUILDKITE_BUILD_MESSAGE
+        """
+        f = run_check(cfg, "BK-003")
+        assert f.passed
+
 
 # ── BK-004 curl-pipe ───────────────────────────────────────────────────
 

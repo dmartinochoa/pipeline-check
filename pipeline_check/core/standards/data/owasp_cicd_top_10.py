@@ -134,7 +134,7 @@ STANDARD = Standard(
         "S3-004":   ["CICD-SEC-10"],
         "S3-005":   ["CICD-SEC-9"],
         # GitHub Actions
-        "GHA-001":  ["CICD-SEC-3"],
+        "GHA-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-004":  ["CICD-SEC-5"],
@@ -158,7 +158,7 @@ STANDARD = Standard(
         "GHA-022":  ["CICD-SEC-3"],
         "GHA-023":  ["CICD-SEC-3"],
         "GHA-024":  ["CICD-SEC-9"],
-        "GHA-025":  ["CICD-SEC-3"],
+        "GHA-025":  ["CICD-SEC-3", "CICD-SEC-8"],
         "GHA-026":  ["CICD-SEC-7"],
         "GHA-027":  ["CICD-SEC-4", "CICD-SEC-7"],
         "GHA-028":  ["CICD-SEC-4"],
@@ -173,10 +173,10 @@ STANDARD = Standard(
         "GHA-037":  ["CICD-SEC-6", "CICD-SEC-4"],  # checkout persists token (Artipacked)
         "GHA-038":  ["CICD-SEC-4", "CICD-SEC-7"],  # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GHA-039":  ["CICD-SEC-6"],   # services / container creds literal
-        "GHA-040":  ["CICD-SEC-3"],   # known-compromised action ref
-        "GHA-041":  ["CICD-SEC-3"],   # single-maintainer action
-        "GHA-042":  ["CICD-SEC-3"],   # very-young action repo
-        "GHA-043":  ["CICD-SEC-3", "CICD-SEC-5"],  # low-star + sensitive perms
+        "GHA-040":  ["CICD-SEC-3", "CICD-SEC-8"],   # known-compromised action ref
+        "GHA-041":  ["CICD-SEC-3", "CICD-SEC-8"],   # single-maintainer action
+        "GHA-042":  ["CICD-SEC-3", "CICD-SEC-8"],   # very-young action repo
+        "GHA-043":  ["CICD-SEC-3", "CICD-SEC-5", "CICD-SEC-8"],  # low-star + sensitive perms
         "GHA-044":  ["CICD-SEC-4"],   # build-tool PPE on untrusted trigger
         "GHA-045":  ["CICD-SEC-4"],   # caller-ref input drives checkout
         "GHA-046":  ["CICD-SEC-4"],   # manual PR-head fetch on untrusted trigger
@@ -215,7 +215,7 @@ STANDARD = Standard(
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
         # Bitbucket Pipelines
-        "BB-001":   ["CICD-SEC-3"],
+        "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
@@ -245,7 +245,7 @@ STANDARD = Standard(
         "BB-028":   ["CICD-SEC-2"],   # OIDC without deployment-gated environment
         "BB-029":   ["CICD-SEC-3"],   # step+service image pinning
         # Azure DevOps Pipelines
-        "ADO-001":  ["CICD-SEC-3"],
+        "ADO-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "ADO-002":  ["CICD-SEC-4"],
         "ADO-003":  ["CICD-SEC-6"],
         "ADO-004":  ["CICD-SEC-1"],
@@ -309,7 +309,7 @@ STANDARD = Standard(
         "JF-031":   ["CICD-SEC-3"],
         "JF-032":   ["CICD-SEC-7"],   # agent label interpolates untrusted ref
         # CircleCI
-        "CC-001":   ["CICD-SEC-3"],
+        "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "CC-002":   ["CICD-SEC-4"],
         "CC-003":   ["CICD-SEC-3"],
         "CC-004":   ["CICD-SEC-6"],
@@ -522,6 +522,8 @@ STANDARD = Standard(
         "ATTEST-001": ["CICD-SEC-2", "CICD-SEC-3", "CICD-SEC-9"],   # untrusted SLSA builder
         "ATTEST-002": ["CICD-SEC-3", "CICD-SEC-9"],                 # source-repo claim missing/unverifiable
         "ATTEST-003": ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # SBOM floating versions
+        "ATTEST-004": ["CICD-SEC-3", "CICD-SEC-9"],                 # provenance lacks materials
+        "ATTEST-005": ["CICD-SEC-3", "CICD-SEC-9"],                 # subject digest unpinned
         # SCM posture (governance scanned via the GitHub REST API)
         "SCM-001":  ["CICD-SEC-1"],                # default branch unprotected
         "SCM-002":  ["CICD-SEC-1"],                # required reviews missing

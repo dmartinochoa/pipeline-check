@@ -30,6 +30,19 @@ RULE = Rule(
         "``COPY`` is for local files; ``RUN curl + verify`` is for "
         "remote ones."
     ),
+    known_fp=(
+        "``ADD`` of an internal URL served from an immutable, "
+        "build-time-frozen object store (a private artifact "
+        "registry under your control, GCS with object-versioning "
+        "and uniform bucket-level access) is materially less "
+        "risky than a public-internet fetch, but the rule still "
+        "fires because no on-line check can distinguish trusted "
+        "from untrusted hosts. Prefer the explicit "
+        "``--checksum=sha256:<hex>`` form (BuildKit native, "
+        "doesn't trigger) or move to a ``COPY`` from a builder "
+        "stage; suppress per-Dockerfile if the deployment target "
+        "guarantees the URL host can't be substituted.",
+    ),
 )
 
 _URL_RE = re.compile(r"\bhttps?://\S+", re.IGNORECASE)

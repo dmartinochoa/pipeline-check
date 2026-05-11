@@ -65,11 +65,12 @@ RULE = Rule(
         "is intentional.",
     ),
     incident_refs=(
-        "[SLSA threat-model v1.0, Source-track Threat #4](https://slsa.dev/spec/v1.0/threats) "
-        "('Build uses unauthorized source'): a builder pulling "
-        "code from a fork or a different ref than the operator "
-        "believes produces an attestation that signs the wrong "
-        "bytes.",
+        "[SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) "
+        "(Source-track threats): a builder pulling code from a "
+        "fork or a different ref than the operator believes "
+        "produces an attestation that signs the wrong bytes. "
+        "The source-track threats catalog those source-substitution "
+        "shapes that a pinned + verified source claim mitigates.",
         "[SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) "
         "(December 2020): the build system pulled tampered source "
         "from an unauthorized branch via SUNSPOT, producing "

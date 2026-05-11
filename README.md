@@ -54,7 +54,7 @@ docker run --rm -v "$PWD:/scan" ghcr.io/dmartinochoa/pipeline-check
 
 The image is multi-arch (`linux/amd64` + `linux/arm64`), ships with
 SLSA build provenance and an SBOM attached to the manifest, and is
-tagged per release (`:0.5.0`), per commit (`:sha-<short>`), and
+tagged per release (`:1.0.1`), per commit (`:sha-<short>`), and
 `:latest` on master. `/scan` is the image working directory, so
 mounting your repo there lets auto-detect Just Work.
 
@@ -107,8 +107,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 46 checks (`GHA-001`--`043`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 33 checks (`GL-001`--`033`, plus `TAINT-004` and `TAINT-008`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 49 checks (`GHA-001`--`046`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` form the PPE pack: build-tool lifecycle scripts on untrusted triggers, caller-ref input feeding `actions/checkout`, manual PR-head fetch via shell. |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 35 checks (`GL-001`--`033`, plus `TAINT-004` and `TAINT-008`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
@@ -121,7 +121,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
-| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 11 checks (`OCI-001`--`008` plus `ATTEST-001..003`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions |
+| **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 13 checks (`OCI-001`--`008` plus `ATTEST-001..005`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding |
 | **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 19 checks (`SCM-001`--`019`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
@@ -285,7 +285,7 @@ providers your repo ships through:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/dmartinochoa/pipeline-check
-    rev: v0.5.0   # pin to a release tag
+    rev: v1.0.1   # pin to a release tag
     hooks:
       - id: pipeline-check-github
       - id: pipeline-check-dockerfile
@@ -365,6 +365,9 @@ See [docs/standards/](docs/standards/).
 | `--fail-on-check` | | Fail if named check fails (repeat for multiple) |
 | `--baseline` | | Prior JSON report; existing findings don't gate |
 | `--baseline-from-git` | | `REF:PATH`. Resolves baseline via `git show` |
+| `--write-baseline` | | Write the current scan's failing findings to PATH as JSON. Pair with `--baseline PATH` on subsequent runs to gate only on new issues. |
+| `--policy` | | Load a named scan profile from `./policies/<NAME>.yml` (or `./.pipeline-check/policies/<NAME>.yml`). Bundles a rule filter, standards filter, gate thresholds, and per-rule severity overrides into one file. CLI flags and config keep overriding policy values. |
+| `--list-policies` | | List every discoverable policy file and exit. |
 | `--ignore-file` | `.pipelinecheckignore` | Suppressions (flat or YAML with `expires:`) |
 | `--diff-base` | | Only scan files changed vs this git ref |
 | `--fix` | | Emit unified-diff patches to stdout |
@@ -420,7 +423,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix.py             # 111 fixers (text-based, comment-preserving)
+    ├── autofix/               # 111 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -443,7 +446,7 @@ pipeline_check/
         ├── drone/rules/       # DR-001 .. DR-011
         ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
-        ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..003
+        ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..005
         ├── dockerfile/rules/  # DF-001 .. DF-020
         ├── kubernetes/rules/  # K8S-001 .. K8S-040
         ├── helm/              # Renders charts; reuses the K8s rule pack
@@ -528,7 +531,7 @@ go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@v2.7.0
 
 # 2. Download the wheel and the matching provenance file from the
 #    GitHub release for the version you want.
-TAG=v0.5.0
+TAG=v1.0.1
 gh release download "$TAG" \
   --repo dmartinochoa/pipeline-check \
   --pattern '*.whl' \
