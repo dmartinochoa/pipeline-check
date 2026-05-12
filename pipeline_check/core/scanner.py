@@ -9,7 +9,9 @@ See the relevant provider module for instructions:
 from __future__ import annotations
 
 import fnmatch
+import logging
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -29,6 +31,8 @@ from .fp_annotations import (
     load_annotations,
 )
 from .inventory import Component
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -168,10 +172,23 @@ class Scanner:
         try:
             provider.post_filter(ctx, **provider_kwargs)
         except Exception as exc:
+            # Keep ``ctx.warnings`` populated so the structured report
+            # surfaces the failure to programmatic consumers, AND log
+            # the traceback so a CI operator running with ``--verbose``
+            # can see the root cause instead of just the exception
+            # type. The previous code lost the stack and the type
+            # name when the warnings list happened to be absent.
+            logger.warning(
+                "[%s] post_filter hook raised: %s\n%s",
+                self.pipeline,
+                exc,
+                traceback.format_exc(),
+            )
             warnings_list = getattr(ctx, "warnings", None)
             if isinstance(warnings_list, list):
                 warnings_list.append(
-                    f"[{self.pipeline}] post_filter hook raised: {exc}"
+                    f"[{self.pipeline}] post_filter hook raised: "
+                    f"{type(exc).__name__}: {exc}"
                 )
         return ctx
 

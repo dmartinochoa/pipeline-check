@@ -199,9 +199,24 @@ class TestToolScan:
         with pytest.raises(ValueError, match="requires a path"):
             _tools.scan(provider="gitlab", path=None)
 
-    def test_scan_nonexistent_path_raises(self):
+    def test_scan_nonexistent_path_raises(self, tmp_path, monkeypatch):
+        # Whitelist tmp_path so the scan-root guard doesn't intercept
+        # first. The point of this test is the ``path does not exist``
+        # arm of ``_provider_kwarg``.
+        monkeypatch.setenv("PIPELINE_CHECK_MCP_SCAN_ROOTS", str(tmp_path))
+        missing = tmp_path / "missing.yml"
         with pytest.raises(ValueError, match="path does not exist"):
-            _tools.scan(provider="gitlab", path="/nope/missing.yml")
+            _tools.scan(provider="gitlab", path=str(missing))
+
+    def test_scan_path_outside_scan_root_raises(self, tmp_path, monkeypatch):
+        # An untrusted MCP client can pass any path. The server bounds
+        # paths to its configured scan root(s) (cwd by default; opt-in
+        # widening via PIPELINE_CHECK_MCP_SCAN_ROOTS) so a request
+        # for ``/etc/passwd`` or a sibling repo gets rejected.
+        monkeypatch.setenv("PIPELINE_CHECK_MCP_SCAN_ROOTS", str(tmp_path))
+        outside = tmp_path.parent / "elsewhere.yml"
+        with pytest.raises(ValueError, match="outside the MCP server"):
+            _tools.scan(provider="gitlab", path=str(outside))
 
 
 class TestToolInventory:

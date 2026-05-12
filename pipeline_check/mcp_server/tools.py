@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -38,6 +39,30 @@ from ..core.markdown_reporter import report_markdown
 from ..core.scanner import Scanner
 from ..core.scorer import score
 from ..core.threatmodel_reporter import report_threatmodel, stride_for_finding
+
+# Env var that widens the path-resolution boundary the MCP tools
+# enforce. By default tools refuse to scan paths outside the server's
+# working directory; setting this to a different root (or a
+# platform-conventional pathsep-separated list of roots) lets sites
+# that deploy the server alongside multiple repos opt in to those
+# exact roots, without losing the protection against an MCP client
+# pointing the scanner at ``/etc/passwd``.
+_SCAN_ROOTS_ENV = "PIPELINE_CHECK_MCP_SCAN_ROOTS"
+
+
+def _allowed_scan_roots() -> list[Path]:
+    """Return the resolved scan-root boundaries for MCP tool calls.
+
+    Falls back to ``[cwd]`` when the env var isn't set. Path separators
+    are platform-conventional (``:`` on POSIX, ``;`` on Windows, via
+    :data:`os.pathsep`).
+    """
+    override = os.environ.get(_SCAN_ROOTS_ENV)
+    if not override:
+        return [Path.cwd().resolve()]
+    roots = [Path(r).expanduser().resolve() for r in override.split(os.pathsep) if r]
+    return roots or [Path.cwd().resolve()]
+
 
 # ── Provider catalog ────────────────────────────────────────────────
 
@@ -92,12 +117,41 @@ def _provider_kwarg(provider: str, path: str | None) -> dict[str, Any]:
             f"provider {provider!r} requires a path argument "
             f"(maps to --{flag.replace('_', '-')})."
         )
-    resolved = Path(path).expanduser()
+    # Resolve symlinks and ``..`` segments, then bound the target to
+    # the configured scan root (cwd by default). Prevents an untrusted
+    # MCP client from pointing the scanner at ``/etc/passwd`` or a
+    # sibling repo it shouldn't read. Deployments that mount multiple
+    # repos can opt in to those exact roots via the
+    # ``PIPELINE_CHECK_MCP_SCAN_ROOTS`` env var.
+    resolved = Path(path).expanduser().resolve()
+    roots = _allowed_scan_roots()
+    if not any(_is_within(resolved, root) for root in roots):
+        raise ValueError(
+            f"path {resolved} is outside the MCP server's allowed scan "
+            f"roots ({', '.join(str(r) for r in roots)}). Either run "
+            f"the server from a parent directory that covers the path, "
+            f"or set {_SCAN_ROOTS_ENV} to a colon/semicolon-separated "
+            f"list of allowed roots."
+        )
     if not resolved.exists():
         raise ValueError(
             f"path does not exist: {resolved}"
         )
     return {flag: str(resolved)}
+
+
+def _is_within(candidate: Path, root: Path) -> bool:
+    """True iff *candidate* equals *root* or sits inside it.
+
+    ``Path.relative_to`` raises on a non-subpath, so it'd be awkward
+    in a boolean predicate; this wrapper folds that into a clean
+    ``bool``.
+    """
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return False
+    return True
 
 
 # ── Tool: list_providers ────────────────────────────────────────────

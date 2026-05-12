@@ -289,3 +289,224 @@ def test_provider_registry_count_lines_up_with_known_floor():
     providers/__init__.py, the registry shrinks. This guards against
     a silent regression by fixing a known minimum."""
     assert _count_providers() >= 13
+
+
+# ──────────────────────────────────────────────────────────────────
+# Per-provider drift guards.
+#
+# The aggregate counts above (providers, standards, autofixers, total
+# checks) catch top-level drift. The two tests below catch the harder
+# case: the contributor adds a single new rule under one provider's
+# pack, which doesn't move the aggregate enough to register, but the
+# per-provider claim ("GitHub Actions: 50 checks", "GHA-001 .. GHA-047")
+# silently goes stale.
+# ──────────────────────────────────────────────────────────────────
+
+
+def _count_rules_in(provider: str) -> int:
+    """Count rule-module files under a single provider's ``rules/`` dir."""
+    rules_dir = REPO / "pipeline_check" / "core" / "checks" / provider / "rules"
+    if not rules_dir.is_dir():
+        return 0
+    return sum(
+        1 for f in rules_dir.iterdir()
+        if f.suffix == ".py"
+        and f.name != "__init__.py"
+        and not f.name.startswith("_")
+    )
+
+
+def _existing_ids_for_prefix(provider: str, prefix: str) -> set[int]:
+    """Return numeric suffixes of every ``<prefix><N>_*.py`` rule file
+    in the provider's ``rules/`` dir. Empty set when nothing matches."""
+    rules_dir = REPO / "pipeline_check" / "core" / "checks" / provider / "rules"
+    if not rules_dir.is_dir():
+        return set()
+    pat = re.compile(rf"^{prefix.lower()}(\d+)_")
+    return {int(m.group(1)) for f in rules_dir.iterdir() if (m := pat.match(f.name))}
+
+
+# Match every <a class="pg-provider"> tile in docs/index.md.
+# href="providers/<NAME>/" identifies the provider; the count <span>
+# carries the claim text (which may be "50 checks", "~63 checks",
+# "aws-parity", or helm's two-number prose).
+_PROVIDER_TILE_RE = re.compile(
+    r'href="providers/(?P<name>[^/"]+)/"'
+    r'.*?<span class="pg-provider__count">(?P<count>[^<]+)</span>',
+    re.DOTALL,
+)
+# Plain "N checks" or "~N checks" inside a tile.
+_TILE_COUNT_RE = re.compile(r"(?P<approx>~)?(?P<n>\d+)\s+checks?")
+# Helm tile carries two numbers: "renders + 40 K8S-* rules + 10 HELM-*".
+# Returned tuples are (digits, family).
+_HELM_NUMBERS_RE = re.compile(r"(\d+)\s+(K8S|HELM)")
+
+
+def test_index_per_provider_counts_match_registry():
+    """Every <span class="pg-provider__count">N checks</span> tile in
+    docs/index.md must agree with the rule-file count for that provider.
+
+    Special cases:
+      * "aws-parity" on terraform — non-numeric, skipped.
+      * "~N checks" on cloudformation — class-based; matched against
+        ``_count_class_based_check_ids`` with a ±5 tolerance.
+      * Helm's "renders + N K8S-* rules + M HELM-*" — both numbers
+        verified against their respective rule packs.
+    """
+    text = (REPO / "docs" / "index.md").read_text(encoding="utf-8")
+    tiles = _PROVIDER_TILE_RE.findall(text)
+    assert tiles, (
+        "no provider tiles found in docs/index.md, _PROVIDER_TILE_RE "
+        "is likely out of sync with the doc structure"
+    )
+
+    drift: list[str] = []
+    for name, count_text in tiles:
+        # Helm packs two numbers into one tile.
+        if name == "helm":
+            nums = {family: int(n) for n, family in _HELM_NUMBERS_RE.findall(count_text)}
+            for family, expected_provider in (
+                ("HELM", "helm"),
+                ("K8S", "kubernetes"),
+            ):
+                claimed = nums.get(family)
+                actual = _count_rules_in(expected_provider)
+                if claimed is None:
+                    drift.append(
+                        f"docs/index.md helm tile missing the {family}-* count"
+                    )
+                elif claimed != actual:
+                    drift.append(
+                        f"docs/index.md helm tile claims {claimed} {family}-* "
+                        f"rules; registry has {actual}"
+                    )
+            continue
+
+        m = _TILE_COUNT_RE.search(count_text)
+        if not m:
+            # Non-numeric labels like "aws-parity" are intentional.
+            continue
+
+        claimed = int(m["n"])
+        approx = m["approx"] == "~"
+
+        if name in ("terraform", "cloudformation"):
+            actual = _count_class_based_check_ids(name)
+        else:
+            actual = _count_rules_in(name)
+
+        if approx:
+            if abs(claimed - actual) > 5:
+                drift.append(
+                    f"docs/index.md {name} tile claims '~{claimed} checks', "
+                    f"actual is {actual} (>5 off; tighten the claim)"
+                )
+        elif claimed != actual:
+            drift.append(
+                f"docs/index.md {name} tile claims '{claimed} checks', "
+                f"actual is {actual}"
+            )
+
+    assert not drift, "docs/index.md per-provider drift:\n  " + "\n  ".join(drift)
+
+
+# Match each ``├── <provider>/rules/  # <body>`` line in the README
+# architecture block. The body holds rule-range claims like
+# ``GHA-001 .. GHA-047 + TAINT-001..003``.
+_RANGE_LINE_RE = re.compile(
+    r"^\s*├──\s*(?P<provider>\w+)/rules/\s*#\s*(?P<body>.+)$",
+    re.MULTILINE,
+)
+# Pull every ``PREFIX-NNN`` (single) or ``PREFIX-NNN..MMM`` (range) from
+# a body. Range form supports both ``PFX-NNN .. PFX-MMM`` and the more
+# compact ``PFX-NNN..MMM``. The prefix must begin with a letter and may
+# contain digits (handles ``K8S``); the leading ``\b`` stops the engine
+# from matching ``S-001`` inside ``K8S-001`` as a separate claim.
+_RANGE_PIECE_RE = re.compile(
+    r"\b(?P<prefix>[A-Z][A-Z0-9]*)-(?P<lo>\d+)"
+    r"(?:\s*\.\.\s*(?:(?P=prefix)-)?(?P<hi>\d+))?"
+)
+# Match the AWS line specifically: ``# 71 rule-based checks (...)``.
+_AWS_COUNT_LINE_RE = re.compile(
+    r"├──\s*aws/rules/\s*#\s*(\d+)\s+rule-based\s+checks?", re.IGNORECASE
+)
+
+
+def test_readme_architecture_rule_ranges_match_registry():
+    """The architecture block in README.md lists each rule pack's ID
+    range (e.g. ``GHA-001 .. GHA-047 + TAINT-001..003``). For each
+    claimed range, the high end must match the highest-numbered rule
+    file in that provider's ``rules/`` directory; for each claimed
+    single ID (``TAINT-004 / TAINT-008``), the file must exist.
+
+    Catches: contributor adds a rule but forgets to bump the README
+    range; contributor renames a rule out of one provider into
+    another; contributor adds a TAINT/ATTEST/etc. cross-pack rule
+    that the README doesn't acknowledge.
+    """
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+
+    # Aws line uses a different shape (count, not range). Verify it
+    # explicitly so the architecture block is fully covered.
+    aws_match = _AWS_COUNT_LINE_RE.search(text)
+    assert aws_match, (
+        "README.md architecture block missing the 'aws/rules/  # N "
+        "rule-based checks' line, or the format changed"
+    )
+    claimed_aws = int(aws_match.group(1))
+    actual_aws = _count_rules_in("aws")
+    assert claimed_aws == actual_aws, (
+        f"README.md aws/rules/ line claims {claimed_aws} rule-based "
+        f"checks, registry has {actual_aws}"
+    )
+
+    matches = list(_RANGE_LINE_RE.finditer(text))
+    assert matches, (
+        "README.md architecture block has no '├── <provider>/rules/' "
+        "lines, _RANGE_LINE_RE likely out of sync with the doc"
+    )
+
+    drift: list[str] = []
+    for line_match in matches:
+        provider = line_match["provider"]
+        body = line_match["body"]
+        # Group claimed pieces by prefix so we can compare highs and
+        # validate any singles (hi is None on a single ``PFX-NNN``).
+        by_prefix: dict[str, list[tuple[int, int | None]]] = {}
+        for piece in _RANGE_PIECE_RE.finditer(body):
+            prefix = piece["prefix"]
+            lo = int(piece["lo"])
+            hi = int(piece["hi"]) if piece["hi"] else None
+            by_prefix.setdefault(prefix, []).append((lo, hi))
+
+        for prefix, claims in by_prefix.items():
+            existing = _existing_ids_for_prefix(provider, prefix)
+            if not existing:
+                drift.append(
+                    f"{provider}/rules/: README claims {prefix}-* but "
+                    f"no {prefix.lower()}*_*.py file found"
+                )
+                continue
+
+            # Highest claimed (range end or single).
+            highest_claimed = max(hi if hi is not None else lo for lo, hi in claims)
+            highest_actual = max(existing)
+            if highest_claimed != highest_actual:
+                drift.append(
+                    f"{provider}/rules/ {prefix}: README claims highest "
+                    f"is {prefix}-{highest_claimed:03d}, registry has "
+                    f"{prefix}-{highest_actual:03d}"
+                )
+
+            # Each single-ID claim (no range hi) must exist.
+            for lo, hi in claims:
+                if hi is None and lo not in existing:
+                    drift.append(
+                        f"{provider}/rules/ {prefix}: README claims "
+                        f"{prefix}-{lo:03d} but no "
+                        f"{prefix.lower()}{lo:03d}_*.py exists"
+                    )
+
+    assert not drift, (
+        "README.md architecture block drift:\n  " + "\n  ".join(drift)
+    )

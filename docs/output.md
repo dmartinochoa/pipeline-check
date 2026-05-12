@@ -9,8 +9,8 @@ format carries the same finding set, only the rendering differs.
 | `json`     | stdout                       | Machine parsing (`jq`, artifact archival)            |
 | `html`     | `--output-file` (required)   | Emailed / attached reports, screenshots              |
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
-| `markdown` | stdout                       | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
-| `junit`    | `--output-file` (required)   | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
+| `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
+| `junit`    | stdout or `--output-file`    | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
@@ -25,7 +25,7 @@ Shape:
 ```json
 {
   "schema_version": "1.0",
-  "tool_version": "1.0.1",
+  "tool_version": "1.0.4",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
     {
