@@ -235,7 +235,7 @@ def _compile_one(
         raise CustomRuleError(
             f"{where}: provider {provider!r} must be one of "
             f"{sorted(ALLOWED_PROVIDERS)}. Custom rules are not "
-            f"supported on this provider in v0.5.0."
+            f"supported on this provider in this release."
         )
 
     for_each = _expect_str(raw, "for_each", where)

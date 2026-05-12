@@ -37,9 +37,10 @@ RULE = Rule(
         "PR that lands in a ``pull_request_target`` workflow with "
         "the PR head checked out runs in the base repo's "
         "privileged context.",
-        "Trail of Bits ``Codecov-style supply chain via pwn "
-        "requests`` (2021): showed the primitive against widely-"
-        "used Actions workflows. The fix pattern (split the "
+        "[Keeping your GitHub Actions and workflows secure: "
+        "Untrusted input](https://securitylab.github.com/resources/github-actions-untrusted-input/) "
+        "(GitHub Security Lab, 2020): catalogued real-world Actions "
+        "carrying the same primitive. The fix pattern (split the "
         "workflow into a privileged labeler + an unprivileged "
         "builder) is now standard guidance.",
     ),

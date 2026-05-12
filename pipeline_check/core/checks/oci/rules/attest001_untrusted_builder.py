@@ -60,12 +60,17 @@ RULE = Rule(
         "('Build the package from a modified source'). A tampered "
         "self-hosted runner can emit a syntactically-valid "
         "attestation for the wrong source.",
-        "GitHub self-hosted runner advisory (CVE-2024-32004 et al.): "
-        "self-hosted runners default to non-ephemeral, persisted "
-        "state; a single fork-PR run gives the attacker arbitrary "
-        "code execution that produces signed artifacts on every "
-        "subsequent legitimate build. SLSA's isolation requirement "
-        "(L2+) explicitly excludes this shape.",
+        "[GitHub docs on self-hosted runner security]"
+        "(https://docs.github.com/en/actions/hosting-your-own-runners/"
+        "managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): "
+        "non-ephemeral self-hosted runners default to persisted "
+        "state between jobs; one compromised job gives the "
+        "attacker arbitrary code execution that produces signed "
+        "artifacts on every subsequent legitimate build on that "
+        "runner. SLSA's isolation requirement (L2+) explicitly "
+        "excludes this shape, which is why the rule treats "
+        "``self-hosted`` URIs as untrusted regardless of the "
+        "rest of the chain.",
     ),
 )
 

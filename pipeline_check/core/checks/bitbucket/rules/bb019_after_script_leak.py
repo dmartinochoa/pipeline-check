@@ -34,6 +34,17 @@ RULE = Rule(
         "fails unexpectedly. This check detects secret-like variable "
         "references in `after-script` blocks."
     ),
+    known_fp=(
+        "The detector matches any variable whose name contains "
+        "``TOKEN`` / ``SECRET`` / ``PASSWORD`` / ``KEY`` "
+        "(case-insensitive). Names that are descriptive rather "
+        "than secret (``CACHE_KEY``, ``SORT_KEY``, ``TOKEN_TYPE`` "
+        "used as a label, ``API_KEY_NAME`` storing the *name* of "
+        "the key rather than its value) trigger the regex even "
+        "though they aren't credentials. The rule has no way to "
+        "tell from the name alone, suppress per-step via "
+        "``--ignore-file`` when the referenced value is benign.",
+    ),
 )
 
 

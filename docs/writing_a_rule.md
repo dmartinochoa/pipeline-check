@@ -216,9 +216,10 @@ confidence to LOW unless the finding sets
 
 Most rules don't need an autofix. If the fix is a single-line patch
 (comment-out an unsafe line, drop a flag, flip a boolean), register
-a fixer in `core/autofix.py`. Look at the existing `_FIXERS`
-registry for the pattern. Comment-only TODOs are preferred for
-ambiguous cases.
+a fixer in the `core/autofix/` package (the `_FIXERS` registry is
+the entry point; implementation modules sit alongside it). Look at
+the existing fixers for the pattern. Comment-only TODOs are
+preferred for ambiguous cases.
 
 ## What NOT to do
 

@@ -373,8 +373,11 @@ class TestPerFrameworkCoverageFloor:
         # rule pack landed without nist_csf_2 mappings. Backfill is
         # queued for a follow-up; nist_csf_2 mappings cluster around
         # asset / risk-management controls that don't apply to most
-        # of the new rules.
-        "nist_csf_2":           69,
+        # of the new rules. Lowered from 69 to 68 when ATTEST-005
+        # (subject-digest unpinned) landed; the ATTEST-NNN family
+        # has no nist_csf_2 mappings today, same denominator-
+        # dilution case as the SCM pack.
+        "nist_csf_2":           68,
         "esf_supply_chain":     60,
         "openssf_scorecard":    58,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
@@ -386,11 +389,18 @@ class TestPerFrameworkCoverageFloor:
         # 54 to 53 when SCM-017/018/019 (CODEOWNERS / bypass /
         # push restrictions) added three more denominator entries
         # without 800-53 mappings, same denominator-dilution case.
-        # Lowered from 53 to 52 when GHA-047 (fresh-ref cooldown)
-        # landed without an 800-53 mapping; the SR-family backfill
-        # for the GHA-04x reputation pack is queued separately.
+        # nist_800_53 absorbs two unmapped landings on this merge:
+        # ATTEST-004 (materials gap) from master and GHA-047 (fresh-
+        # ref cooldown) from this branch. Neither family has an
+        # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
+        # queued separately. Same denominator-dilution case.
         "nist_800_53":          52,
-        "nist_800_190":         45,
+        # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
+        # The ATTEST-NNN family has no nist_800_190 mappings today
+        # (800-190 is container-isolation focused, the attestation-
+        # content rules are provenance-focused). Same denominator-
+        # dilution case as earlier ATTEST landings.
+        "nist_800_190":         44,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
@@ -398,9 +408,11 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                 41,
         "soc2":                 49,
         "cis_supply_chain":     28,
-        # s2c2f lowered from 29 to 28 when GHA-047 landed without an
-        # s2c2f mapping (none of the existing GHA-04x reputation pack
-        # has one; backfill deferred). Denominator-dilution case.
+        # s2c2f absorbs two unmapped landings on this merge: ATTEST-
+        # 004 from master and GHA-047 from this branch. Neither
+        # family has an S2C2F mapping today (GHA-04x reputation pack
+        # is uncovered; ATTEST-NNN backfill is queued). Denominator-
+        # dilution case.
         "s2c2f":                28,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,

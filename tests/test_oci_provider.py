@@ -110,7 +110,8 @@ class TestOCIManifestChecksOrchestrator:
         findings = OCIManifestChecks(ctx).run()
         ids = sorted(f.check_id for f in findings)
         assert ids == [
-            "ATTEST-001", "ATTEST-002", "ATTEST-003",
+            "ATTEST-001", "ATTEST-002", "ATTEST-003", "ATTEST-004",
+            "ATTEST-005", "ATTEST-006", "ATTEST-007",
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
             "OCI-007", "OCI-008",
@@ -181,7 +182,8 @@ class TestScannerWiring:
         findings = scanner.run()
         ids = sorted(f.check_id for f in findings)
         assert ids == [
-            "ATTEST-001", "ATTEST-002", "ATTEST-003",
+            "ATTEST-001", "ATTEST-002", "ATTEST-003", "ATTEST-004",
+            "ATTEST-005", "ATTEST-006", "ATTEST-007",
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
             "OCI-007", "OCI-008",

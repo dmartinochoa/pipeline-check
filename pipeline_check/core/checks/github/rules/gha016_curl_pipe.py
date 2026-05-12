@@ -41,11 +41,15 @@ RULE = Rule(
         "variables from CI runners (AWS keys, GitHub tokens, "
         "signing keys) at thousands of customers for over two "
         "months before discovery.",
-        "Bitwarden / npm install scripts (CVE-2018-7536-class incidents): "
-        "remote-script execution in CI is the same primitive. The "
-        "attacker controls bytes the runner executes. Pinning a digest "
-        "or hosting a vendored copy turns a perpetual ambient risk "
-        "into a one-time review.",
+        "[event-stream](https://github.com/dominictarr/event-stream/issues/116) "
+        "(November 2018) and the [ua-parser-js compromise](https://github.com/faisalman/ua-parser-js/issues/536) "
+        "(October 2021): npm-side examples of the same primitive. "
+        "When the CI runner executes bytes a third party can swap out "
+        "(via `curl | bash`, an unpinned `npm install`, or a "
+        "compromised maintainer account), the attacker controls "
+        "what runs with the runner's credentials in scope. Pinning a "
+        "digest or vendoring a frozen copy turns a perpetual ambient "
+        "risk into a one-time review.",
     ),
     exploit_example=(
         "# Vulnerable: install script piped straight to bash.\n"

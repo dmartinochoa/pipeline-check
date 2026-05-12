@@ -62,6 +62,13 @@ from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
+from .core.policies import (
+    POLICY_DIRS,
+    PolicyError,
+    discover_policies,
+    load_policy,
+    policy_to_config_map,
+)
 from .core.reporter import (
     report_chains_terminal,
     report_inventory_terminal,
@@ -141,6 +148,7 @@ class _GroupedCommand(click.Command):
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--baseline", "--baseline-from-git",
+            "--write-baseline",
             "--diff-base", "--ignore-file",
             "--fail-on-chain", "--fail-on-any-chain",
         })),
@@ -152,6 +160,7 @@ class _GroupedCommand(click.Command):
             "--list-checks", "--list-standards", "--standard-report",
             "--explain", "--man", "--config-check",
             "--install-completion", "--config", "--version",
+            "--policy", "--list-policies",
             "--help", "--verbose", "--quiet",
         })),
         ("AI augmentation (opt-in)", frozenset({
@@ -596,6 +605,58 @@ _SEVERITY_CHOICES = [
 _PIPELINE_CHOICES = ["auto", *_providers.available()]
 
 
+def _load_policy_callback(
+    ctx: click.Context, _param: click.Parameter, value: str | None,
+) -> str | None:
+    """Resolve ``--policy NAME`` and prepend its values to ``default_map``.
+
+    Policy values sit one rung below the config file in the precedence
+    stack: they fill in option defaults, but the config file, env vars,
+    and explicit CLI flags all override them. This callback is declared
+    above ``--config`` so click processes it first; the config callback
+    then merges its own values on top.
+
+    Per-rule severity overrides aren't a CLI option, so they're stashed
+    on ``ctx.meta`` instead and merged with the config-file overrides
+    inside the scan body.
+    """
+    if not value:
+        return value
+    try:
+        policy = load_policy(value)
+    except PolicyError as exc:
+        raise click.UsageError(f"--policy: {exc}") from exc
+    base = dict(ctx.default_map or {})
+    base.update(policy_to_config_map(policy))
+    ctx.default_map = base
+    # Stash the loaded policy so the scan body can: (a) merge per-rule
+    # overrides with the config-file overrides, and (b) print a
+    # ``[policy] loaded …`` line for parity with ``[config] loaded …``.
+    ctx.meta["pipeline_check.policy"] = policy
+    return value
+
+
+def _list_policies_callback(
+    ctx: click.Context, _param: click.Parameter, value: bool,
+) -> None:
+    """Print every discoverable policy and exit. Eager, no scan runs."""
+    if not value:
+        return
+    policies = discover_policies()
+    if not policies:
+        click.echo(
+            "[list-policies] no policies found. Searched: "
+            + ", ".join(POLICY_DIRS),
+            err=True,
+        )
+        ctx.exit(3)
+    name_w = max(len(p.name) for p in policies)
+    for p in policies:
+        suffix = f"  -- {p.description}" if p.description else ""
+        click.echo(f"{p.name:<{name_w}}  ({p.source}){suffix}")
+    ctx.exit(0)
+
+
 def _load_config_callback(
     ctx: click.Context, _param: click.Parameter, value: str | None,
 ) -> str | None:
@@ -606,11 +667,20 @@ def _load_config_callback(
     defaults, CLI-provided values override them, and env/file values
     already live inside ``default_map`` with env winning over file (see
     :func:`pipeline_check.core.config.load_config`).
+
+    A ``--policy NAME`` callback may have populated ``ctx.default_map``
+    already; merging here preserves those values for keys the config
+    file / env don't touch, so policies act as a baseline.
     """
     try:
-        ctx.default_map = load_config(explicit_path=value)
+        config_map = load_config(explicit_path=value)
     except FileNotFoundError as exc:
         raise click.UsageError(str(exc)) from exc
+    if ctx.default_map:
+        merged = {**ctx.default_map, **config_map}
+        ctx.default_map = merged
+    else:
+        ctx.default_map = config_map
     return value
 
 
@@ -688,6 +758,37 @@ def _install_completion_callback(
     expose_value=False,
     callback=_install_completion_callback,
     help="Install shell completion for the given shell and exit.",
+)
+@click.option(
+    "--policy",
+    "policy_name",
+    default=None,
+    metavar="NAME",
+    is_eager=True,
+    expose_value=False,
+    callback=_load_policy_callback,
+    help=(
+        "Load a named scan profile from ./policies/<NAME>.yml or "
+        "./.pipeline-check/policies/<NAME>.yml. Policies bundle a "
+        "rule filter, standards filter, gate thresholds, and "
+        "per-rule severity overrides into a single file. Values "
+        "become click defaults: explicit CLI flags, env vars, and "
+        "the config file override them. Run --list-policies to see "
+        "what's available. A NAME with a path separator is treated "
+        "as a literal path."
+    ),
+)
+@click.option(
+    "--list-policies",
+    is_flag=True,
+    default=False,
+    is_eager=True,
+    expose_value=False,
+    callback=_list_policies_callback,
+    help=(
+        "List every policy YAML file discoverable under ./policies/ "
+        "or ./.pipeline-check/policies/ and exit. No scan is performed."
+    ),
 )
 @click.option(
     "--config",
@@ -1412,6 +1513,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--write-baseline",
+    "write_baseline",
+    default=None,
+    metavar="PATH",
+    help=(
+        "After the scan completes, write the JSON-shaped findings list to "
+        "PATH. Pair with --baseline on the next run to gate only on new "
+        "issues. The output is the same shape --output json emits, so "
+        "downstream tooling that already parses pipeline-check JSON works "
+        "as-is. Does not interfere with --output (you can write a baseline "
+        "and emit a different report in the same run)."
+    ),
+)
+@click.option(
     "--ignore-file",
     default=None,
     metavar="PATH",
@@ -1612,6 +1727,7 @@ def scan(
     baseline_from_git: str | None,
     diff_base: str | None,
     baseline: str | None,
+    write_baseline: str | None,
     ignore_file: str | None,
     custom_rules: tuple[str, ...],
     verbose: bool,
@@ -2119,14 +2235,33 @@ def scan(
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
 
+    ctx = click.get_current_context()
+    active_policy = ctx.meta.get("pipeline_check.policy")
     if not quiet:
         from .core.config import last_loaded_source as _config_source
         _cfg_src = _config_source()
         if _cfg_src:
             click.echo(f"[config] loaded {_cfg_src}", err=True)
+        if active_policy is not None:
+            click.echo(
+                f"[policy] loaded {active_policy.name!r} from "
+                f"{active_policy.source}",
+                err=True,
+            )
 
     from .core.config import last_overrides as _config_overrides
     cli_overrides = _config_overrides()
+    if active_policy is not None and active_policy.overrides:
+        # Config-file overrides win over policy overrides, mirroring how
+        # the rest of the config layering treats policy values as
+        # defaults. Merge per-rule so a policy can carry a default
+        # severity while the config tightens individual entries.
+        merged_overrides: dict[str, dict[str, str]] = {
+            cid: dict(body) for cid, body in active_policy.overrides.items()
+        }
+        for cid, body in cli_overrides.items():
+            merged_overrides.setdefault(cid, {}).update(body)
+        cli_overrides = merged_overrides
 
     if pipelines_list:
         _debug(f"providers: {', '.join(pipelines_list)}")
@@ -2395,6 +2530,31 @@ def scan(
                 # documented `pipeline_check --fix | git apply` recipe uses the
                 # default terminal output where stdout is free for the patch.
                 _emit_fix_patches(findings, to_stderr=output != "terminal")
+
+    # --write-baseline snapshots the current findings to disk before
+    # gating so the next run can suppress them via --baseline PATH.
+    # Independent of --output: a CI lane can emit SARIF for code-
+    # scanning while simultaneously writing the JSON baseline that
+    # the next scheduled run gates against.
+    if write_baseline:
+        try:
+            with open(write_baseline, "w", encoding="utf-8") as fh:
+                fh.write(report_json(
+                    findings, score_result, tool_version=__version__,
+                    inventory=components,
+                    chains=chains if not no_chains else None,
+                ))
+        except OSError as exc:
+            raise click.UsageError(
+                f"--write-baseline: could not write {write_baseline}: {exc}"
+            ) from exc
+        if not quiet:
+            failing = sum(1 for f in findings if not f.passed)
+            click.echo(
+                f"[baseline] wrote {failing} failing finding(s) to "
+                f"{write_baseline}",
+                err=True,
+            )
 
     # CI gate evaluation. See pipeline_check.core.gate for the full contract.
     ignore_path = ignore_file or ".pipelinecheckignore"

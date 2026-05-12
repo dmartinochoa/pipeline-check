@@ -32,6 +32,20 @@ RULE = Rule(
         "or accesses secrets, the attacker controls timing and can "
         "inject payloads through the comment body."
     ),
+    known_fp=(
+        "Guard detection runs against the whole workflow as text "
+        "rather than against parsed ``if:`` expressions, so a "
+        "guard token appearing in an unrelated context (a "
+        "comment, a step name, a description field) reads as "
+        "satisfying the rule. Conversely, guards expressed via "
+        "alternative author-association idioms the regex doesn't "
+        "recognize (``github.event.issue.user.login``, an org-"
+        "membership API check inside a script) leave the rule "
+        "firing even though the workflow is safely gated. "
+        "Suppress per-workflow via ``--ignore-file`` once you've "
+        "verified the gate logic; tighten the guard expression "
+        "to use the recognized tokens if possible.",
+    ),
 )
 
 # Guards that restrict comment-triggered execution to trusted actors.

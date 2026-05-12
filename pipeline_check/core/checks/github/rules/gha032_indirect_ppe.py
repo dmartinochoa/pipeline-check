@@ -40,6 +40,19 @@ RULE = Rule(
         "``workflow_run`` is PR-controlled. The attacker ships an "
         "edited script and gets a default-branch-privileged shell."
     ),
+    known_fp=(
+        "Workflows that explicitly checkout a *trusted* ref "
+        "(``ref: ${{ github.event.pull_request.base.sha }}`` or "
+        "the default branch) before invoking the local script "
+        "land the trusted bytes on disk, so the script body the "
+        "PR ships is never executed. The rule has no checkout-"
+        "graph analysis, it fires on any ``run: ./script`` under "
+        "an untrusted trigger. Suppress per-workflow via "
+        "``--ignore-file`` once you've verified the checkout ref "
+        "is anchored to a base-branch SHA; the safer pattern is "
+        "still to split the workflow so secrets aren't in scope "
+        "during the build half.",
+    ),
 )
 
 # Match a ``run:`` body that invokes a local-path script as its

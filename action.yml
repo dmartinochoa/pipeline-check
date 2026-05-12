@@ -151,7 +151,7 @@ runs:
   using: 'composite'
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
       with:
         python-version: ${{ inputs.python-version }}
 
@@ -313,6 +313,6 @@ runs:
 
     - name: Upload SARIF
       if: ${{ inputs.upload-sarif == 'true' && inputs.output == 'sarif' && always() }}
-      uses: github/codeql-action/upload-sarif@v4
+      uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
       with:
         sarif_file: ${{ inputs.output-file }}

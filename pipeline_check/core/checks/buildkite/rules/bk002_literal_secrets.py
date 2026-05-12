@@ -32,6 +32,19 @@ RULE = Rule(
         "the value is a non-empty literal rather than an "
         "interpolation (``$SECRET_FROM_AGENT_HOOK``)."
     ),
+    known_fp=(
+        "Names that imply a secret but actually store a "
+        "non-sensitive identifier flag here: ``CACHE_KEY: "
+        "build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, "
+        "``SECRET_NAME: my-vault-secret``. The rule has no way to "
+        "tell from the name + literal alone whether the value is "
+        "the credential or merely a reference to one. Also: "
+        "deliberate test fixtures and documentation snippets that "
+        "embed canonical example values ("
+        "``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; "
+        "this is intentional, real-world copies of those example "
+        "literals usually mean a docs paste was never substituted.",
+    ),
 )
 
 # Strong patterns, high confidence that the literal is a credential.

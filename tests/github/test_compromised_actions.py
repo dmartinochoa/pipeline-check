@@ -17,7 +17,7 @@ from .conftest import run_check
 # A known-compromised SHA from the registry. tj-actions/changed-files
 # CVE-2025-30066. Hard-coded so a registry change that drops or
 # renames this entry trips the test deliberately.
-_TJ_BAD_SHA = "0e58ed867288cdc3d92e6e2f9bb9b1bd0c4c78d2"
+_TJ_BAD_SHA = "0e58ed8671d6b60d0890c21b07f8835ace038e67"
 
 
 # ── GHA-040 rule behavior ──────────────────────────────────────────

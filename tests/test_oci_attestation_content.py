@@ -21,6 +21,18 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     attest003_sbom_floating_versions as a3,
 )
+from pipeline_check.core.checks.oci.rules import (
+    attest004_missing_materials as a4,
+)
+from pipeline_check.core.checks.oci.rules import (
+    attest005_subject_unpinned as a5,
+)
+from pipeline_check.core.checks.oci.rules import (
+    attest006_missing_build_type as a6,
+)
+from pipeline_check.core.checks.oci.rules import (
+    attest007_sbom_missing_supplier as a7,
+)
 
 # ── Layout-dir fixture builder ─────────────────────────────────────
 
@@ -679,3 +691,776 @@ class TestATTEST003Rule:
         assert len(attest_findings) == 1
         assert not attest_findings[0].passed
         assert "openssl@latest" in attest_findings[0].description
+
+
+# ── ATTEST-004 materials / resolvedDependencies ────────────────────
+
+
+class TestATTEST004:
+    def test_passes_for_v0_2_with_populated_materials(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": [
+                {
+                    "uri": "git+https://github.com/owner/repo",
+                    "digest": {"sha1": "a" * 40},
+                },
+                {
+                    "uri": "pkg:docker/ubuntu@22.04",
+                    "digest": {"sha256": "b" * 64},
+                },
+            ],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+        assert "non-empty" in f.description.lower()
+
+    def test_fails_for_v0_2_empty_materials(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": [],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "materials" in f.description.lower()
+
+    def test_fails_for_v0_2_missing_materials_key(self):
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_v0_2_materials_wrong_type(self):
+        """A non-list materials value (string, dict, int) is malformed
+        per spec and treated as empty."""
+        att = _att({
+            "materials": "see-build-log",
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_v1_with_populated_resolved_dependencies(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+                "resolvedDependencies": [
+                    {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"gitCommit": "a" * 40},
+                    },
+                ],
+            },
+            "runDetails": {
+                "builder": {"id": "https://github.com/actions/runner/Linux"},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_v1_empty_resolved_dependencies(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+                "resolvedDependencies": [],
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "resolveddependencies" in f.description.lower()
+
+    def test_fails_for_v1_missing_resolved_dependencies_key(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "externalParameters": {},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_v1_resolved_dependencies_preferred_over_v0_2_materials(self):
+        """A transitional attestation carrying both keys should be read
+        through the v1 path (the canonical place) when buildDefinition
+        is present, so the rule doesn't pass on a stale v0.2 fallback
+        that happens to be populated."""
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://example.com/buildtype",
+                "resolvedDependencies": [],
+            },
+            "materials": [
+                {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+            ],
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_when_no_attestations_with_explanatory_message(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a4.check(manifest)
+        assert f.passed
+        assert "no slsa provenance" in f.description.lower()
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a4.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_sbom_attestations_present(self):
+        """ATTEST-004 only reads SLSA provenance attestations. An
+        image that ships an SBOM attestation but no provenance has
+        nothing for this rule to verify; it passes with the
+        no-content message."""
+        sbom_att = _att(
+            {"packages": [{"name": "x", "versionInfo": "1.0"}]},
+            pt="https://spdx.dev/Document",
+        )
+        f = a4.check(_index_with_attestations(sbom_att))
+        assert f.passed
+
+    def test_orchestrator_runs_attest004_end_to_end(self, tmp_path: Path):
+        """Build a layout dir whose provenance has empty materials,
+        confirm ATTEST-004 fires through the orchestrator."""
+        statement = {
+            "_type": "https://in-toto.io/Statement/v0.1",
+            "subject": [{"name": "image", "digest": {"sha256": "0" * 64}}],
+            "predicateType": "https://slsa.dev/provenance/v0.2",
+            "predicate": {
+                "builder": {
+                    "id": "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+                },
+                "buildType": "https://example.com/buildtype",
+                "invocation": {
+                    "configSource": {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"sha1": "a" * 40},
+                    },
+                },
+                "materials": [],
+            },
+        }
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        attest_findings = [f for f in findings if f.check_id == "ATTEST-004"]
+        assert len(attest_findings) == 1
+        assert not attest_findings[0].passed
+
+    # ── Robustness against malformed predicates ──────────────────
+
+    def test_fails_for_materials_as_dict(self):
+        """The v0.2 ``materials`` field MUST be a list. A dict
+        (sometimes emitted by hand-rolled converters) is treated
+        as missing."""
+        att = _att({
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+            "materials": {"a": "b"},  # wrong shape
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_materials_as_string(self):
+        att = _att({
+            "materials": "see-build-attachment.json",
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_v0_2_materials_with_non_dict_entries(self):
+        """Per spec, materials entries should be ``{uri, digest}``
+        dicts. The rule's contract is list-non-empty; entry-shape
+        validation is deferred to a future rule. Passing here locks
+        the current behavior so the future tightening change is a
+        deliberate test update."""
+        att = _att({
+            "materials": ["just-a-string", {"uri": "x", "digest": {"sha1": "0"}}],
+        })
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_v1_resolved_deps_wrong_type(self):
+        """``resolvedDependencies: "see attachment"`` is malformed
+        per spec; treat as empty."""
+        att = _att({
+            "buildDefinition": {
+                "resolvedDependencies": "see-attachment",
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_predicate_completely_empty(self):
+        """An empty predicate dict carries no materials at any
+        path — treat as missing/empty."""
+        att = _att({})
+        f = a4.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_v0_2_path_used_when_no_build_definition_present(self):
+        """The dispatch in _materials prefers v1 only when
+        ``buildDefinition`` is a dict. Without it, the v0.2
+        ``materials`` key is consulted even if predicate_type
+        says v1 (transitional / mistyped attestations should still
+        be classified by structure, not just type URI)."""
+        att = _att({
+            "materials": [
+                {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+            ],
+            # No buildDefinition key.
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a4.check(_index_with_attestations(att))
+        assert f.passed
+
+
+# ── ATTEST-005 subject-digest validation ────────────────────────────
+
+
+def _att_with_subject(
+    subject: tuple[dict[str, Any], ...],
+    pt: str = "https://slsa.dev/provenance/v0.2",
+) -> Attestation:
+    """Build an Attestation whose subject array carries *subject*.
+
+    ``_att()`` hardcodes ``subject=()``; ATTEST-005 tests need to
+    exercise specific subject shapes so they get their own helper.
+    """
+    return Attestation(
+        predicate_type=pt,
+        predicate={"builder": {"id": "https://github.com/actions/runner/Linux"}},
+        statement_type="https://in-toto.io/Statement/v0.1",
+        subject=subject,
+        manifest_path="index.json",
+        layer_digest="sha256:abc",
+    )
+
+
+# A realistic-looking sha256: 64 lowercase hex chars, not all zeros.
+_REAL_SHA256 = "4d5a6e7b8c9d0e1f2a3b4c5d6e7f80910a2b3c4d5e6f70819aabbccddeeff001"
+
+
+class TestATTEST005:
+    def test_passes_for_well_formed_subject(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": _REAL_SHA256}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_multi_subject_array(self):
+        att = _att_with_subject((
+            {"name": "image-amd64", "digest": {"sha256": _REAL_SHA256}},
+            {"name": "image-arm64", "digest": {"sha256": _REAL_SHA256[::-1]}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_empty_subject_array(self):
+        att = _att_with_subject(())
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "empty or missing" in f.description.lower()
+
+    def test_fails_for_missing_digest_map(self):
+        att = _att_with_subject((
+            {"name": "image"},  # no digest key at all
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "no digest" in f.description.lower()
+
+    def test_fails_for_empty_digest_value(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": ""}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "unpinned" in f.description.lower()
+
+    def test_fails_for_all_zero_digest(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "0" * 64}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_non_hex_digest(self):
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "z" * 64}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_odd_length_digest(self):
+        """A valid hex byte encoding has even length; an odd-length
+        value can't be a real digest."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "abc"}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_only_one_of_two_subjects_is_pinned(self):
+        """A partial bind is still a bind to nothing for the unpinned
+        entry, attacker substitutes that one and the verifier never
+        notices."""
+        att = _att_with_subject((
+            {"name": "image-amd64", "digest": {"sha256": _REAL_SHA256}},
+            {"name": "image-arm64", "digest": {"sha256": ""}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_accepts_truncated_digest(self):
+        """Some registries store truncated 16-char digest prefixes;
+        the rule treats those as bound-enough as long as they're
+        well-formed hex."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "deadbeefcafebabe"}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_validates_sbom_attestation_subjects_too(self):
+        """The rule fires on any in-toto Statement regardless of
+        predicate type, an SBOM with unpinned subject is the same
+        substitution risk."""
+        att = _att_with_subject(
+            ({"name": "image", "digest": {"sha256": ""}},),
+            pt="https://spdx.dev/Document",
+        )
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_when_no_attestations_with_explanatory_message(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a5.check(manifest)
+        assert f.passed
+        assert "no attestation content" in f.description.lower()
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a5.check(manifest)
+        assert f.passed
+
+    def test_orchestrator_runs_attest005_end_to_end(self, tmp_path: Path):
+        """Build a layout dir whose Statement has an all-zero subject
+        digest (the fixture default), confirm ATTEST-005 fires
+        through the orchestrator."""
+        statement = _slsa_v0_2(
+            "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+        )
+        # _slsa_v0_2 emits subject digest "0" * 64 by default, which
+        # is the attestation-substitution surface this rule catches.
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        attest_findings = [f for f in findings if f.check_id == "ATTEST-005"]
+        assert len(attest_findings) == 1
+        assert not attest_findings[0].passed
+
+    # ── Edge cases surfaced by the hallucination audit ──────────
+
+    def test_passes_for_mixed_case_hex(self):
+        """Hex validation lowercases before comparison, so
+        ``AbCdEf...`` should pass exactly like the all-lowercase
+        equivalent."""
+        mixed = ("AbCdEf" + "0123456789abcdef" * 3 + "AB").ljust(64, "0")
+        assert len(mixed) == 64
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": mixed}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_whitespace_only_digest(self):
+        """Whitespace-only digest values strip to empty and are
+        treated as unpinned, the same as a literal empty string."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": "   "}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_digest_with_embedded_space(self):
+        """Hex digest values must not contain whitespace; the rule
+        validates the character set, not just the length."""
+        # 64 chars but with a space splice that breaks the hex class.
+        broken = "ab cdef" + "1" * 57
+        assert len(broken) == 64
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": broken}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_when_any_algorithm_in_a_subject_is_unpinned(self):
+        """A subject entry may declare multiple digest algorithms
+        (sha256 + sha512 + sha1). If ANY of them is malformed, the
+        verifier downstream can pick the wrong one, fail closed."""
+        att = _att_with_subject((
+            {
+                "name": "image",
+                "digest": {
+                    "sha256": _REAL_SHA256,
+                    "sha512": "",  # this one is empty
+                },
+            },
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_multi_algorithm_all_well_formed(self):
+        att = _att_with_subject((
+            {
+                "name": "image",
+                "digest": {
+                    "sha256": _REAL_SHA256,
+                    "sha512": "abcd" * 32,  # 128 chars, even hex
+                },
+            },
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_non_string_digest_value(self):
+        """A digest value that isn't a string (number, bool, list,
+        nested dict) can't be a hex byte encoding and fails by
+        construction."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {"sha256": 12345}},  # type: ignore[dict-item]
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_subject_entry_with_no_name(self):
+        """An entry with a digest but no name still binds artifact
+        bytes; spec-permissive but the rule's failure-message path
+        synthesizes an ``<entry N>`` label when name is absent and
+        proceeds with normal validation."""
+        # Well-formed digest + missing name should still pass on the
+        # binding-validation grounds — the rule cares about the
+        # digest, not the label.
+        att = _att_with_subject((
+            {"digest": {"sha256": _REAL_SHA256}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_subject_entry_with_empty_digest_map(self):
+        """A digest map present but empty is the same shape as 'no
+        digest' — there's no algorithm to compare against."""
+        att = _att_with_subject((
+            {"name": "image", "digest": {}},
+        ))
+        f = a5.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "no digest" in f.description.lower()
+
+
+# ── ATTEST-006 buildType completeness ──────────────────────────────
+
+
+class TestATTEST006:
+    def test_passes_for_v0_2_with_concrete_build_type(self):
+        att = _att({
+            "buildType": "https://github.com/slsa-framework/slsa-github-generator/generic@v2",
+            "builder": {"id": "https://github.com/actions/runner/Linux"},
+        })
+        f = a6.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_v1_with_concrete_build_type(self):
+        att = _att({
+            "buildDefinition": {
+                "buildType": "https://slsa.dev/buildtypes/github-actions-workflow/v1",
+                "externalParameters": {},
+                "resolvedDependencies": [],
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_missing_build_type_v0_2(self):
+        att = _att({"builder": {"id": "..."}})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "missing" in f.description.lower()
+
+    def test_fails_for_missing_build_type_v1(self):
+        att = _att({
+            "buildDefinition": {
+                "externalParameters": {},
+            },
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_placeholder_example_com(self):
+        """The ``example.com`` URI is a well-known placeholder some
+        experimental generators emit. Treat as missing."""
+        att = _att({
+            "buildType": "https://example.com/buildtype/v1",
+        })
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "placeholder" in f.description.lower()
+
+    def test_fails_for_unknown_token(self):
+        att = _att({"buildType": "unknown"})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_empty_string(self):
+        att = _att({"buildType": ""})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_non_uri_value(self):
+        """A bare repo name or unfilled template token isn't a URI."""
+        att = _att({"buildType": "github-actions-workflow"})
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "not a uri" in f.description.lower()
+
+    def test_v1_path_preferred_when_both_present(self):
+        """A transitional Statement carries both v0.2 and v1
+        keys; the v1 path wins when buildDefinition is present
+        because that's the canonical location for SLSA v1."""
+        att = _att({
+            "buildDefinition": {
+                "buildType": "unknown",  # v1 path: placeholder
+            },
+            "buildType": "https://slsa.dev/buildtypes/foo/v1",  # v0.2 path: ok
+        }, pt="https://slsa.dev/provenance/v1")
+        f = a6.check(_index_with_attestations(att))
+        assert not f.passed  # v1 path wins, finds the placeholder
+
+    def test_passes_when_no_attestations(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a6.check(manifest)
+        assert f.passed
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a6.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_sbom_attestations_present(self):
+        """ATTEST-006 only reads SLSA provenance. An SBOM-only
+        image has nothing to verify; pass with the no-content
+        message."""
+        sbom_att = _att(
+            {"packages": []},
+            pt="https://spdx.dev/Document",
+        )
+        f = a6.check(_index_with_attestations(sbom_att))
+        assert f.passed
+
+
+# ── ATTEST-007 SBOM supplier completeness ──────────────────────────
+
+
+class TestATTEST007:
+    def test_passes_for_spdx_with_full_supplier_coverage(self):
+        att = _att({
+            "packages": [
+                {"name": "openssl", "supplier": "Organization: OpenSSL Foundation"},
+                {"name": "zlib", "supplier": "Person: Jean-loup Gailly"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_spdx_with_originator_fallback(self):
+        """SPDX permits either ``supplier`` OR ``originator`` as
+        attribution. The rule accepts either."""
+        att = _att({
+            "packages": [
+                {"name": "openssl",
+                 "originator": "Organization: OpenSSL Foundation"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_spdx_missing_supplier(self):
+        att = _att({
+            "packages": [
+                {"name": "openssl"},
+                {"name": "zlib", "supplier": "Organization: ZLib"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+        assert "openssl" in f.description
+
+    def test_fails_for_spdx_noassertion_supplier(self):
+        """``NOASSERTION`` is the SPDX sentinel meaning "producer
+        chose not to populate"; treat as missing for the rule's
+        purposes."""
+        att = _att({
+            "packages": [
+                {"name": "openssl", "supplier": "NOASSERTION"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_cyclonedx_with_supplier_object(self):
+        att = _att({
+            "components": [
+                {"name": "openssl", "supplier": {"name": "OpenSSL Foundation"}},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_for_cyclonedx_with_publisher_fallback(self):
+        """CycloneDX's ``publisher`` field is the fallback the rule
+        accepts when ``supplier`` is absent."""
+        att = _att({
+            "components": [
+                {"name": "openssl", "publisher": "OpenSSL Foundation"},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_fails_for_cyclonedx_missing_supplier(self):
+        att = _att({
+            "components": [
+                {"name": "openssl"},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_fails_for_cyclonedx_empty_supplier_name(self):
+        """An empty ``supplier.name`` is the same as missing; spec
+        says the name is the required-for-attribution field."""
+        att = _att({
+            "components": [
+                {"name": "openssl", "supplier": {"name": ""}},
+            ],
+        }, pt="https://cyclonedx.org/bom")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+
+    def test_passes_for_empty_sbom_packages(self):
+        """An SBOM with no enumerable packages is structurally
+        empty; ATTEST-003 covers the version-coverage angle, and
+        this rule pass-by-defaults rather than firing on the same
+        shape."""
+        att = _att({"packages": []}, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert f.passed
+
+    def test_passes_when_no_attestations(self):
+        manifest = OCIManifest(
+            path="index.json",
+            media_type="application/vnd.oci.image.index.v1+json",
+            schema_version=2,
+            attestations=(),
+        )
+        f = a7.check(manifest)
+        assert f.passed
+
+    def test_passes_for_single_image_manifest(self):
+        manifest = OCIManifest(
+            path="manifest.json",
+            media_type="application/vnd.oci.image.manifest.v1+json",
+            schema_version=2,
+        )
+        f = a7.check(manifest)
+        assert f.passed
+
+    def test_passes_when_only_provenance_attestations_present(self):
+        """ATTEST-007 only reads SBOM attestations. A provenance-only
+        image has nothing to verify; pass with the no-content message."""
+        prov_att = _att(
+            {"builder": {"id": "..."}},
+            pt="https://slsa.dev/provenance/v0.2",
+        )
+        f = a7.check(_index_with_attestations(prov_att))
+        assert f.passed
+
+    def test_mixed_attribution_in_multiple_packages(self):
+        """Some packages have suppliers, others don't. The rule
+        fires with a count summary listing the missing ones."""
+        att = _att({
+            "packages": [
+                {"name": "a", "supplier": "Organization: A"},
+                {"name": "b"},
+                {"name": "c", "supplier": "NOASSERTION"},
+                {"name": "d", "originator": "Person: D"},
+            ],
+        }, pt="https://spdx.dev/Document")
+        f = a7.check(_index_with_attestations(att))
+        assert not f.passed
+        # 2 of 4 missing (b + c); description should list both names
+        assert "b" in f.description
+        assert "c" in f.description
+
+    def test_orchestrator_runs_attest006_and_007_end_to_end(self, tmp_path: Path):
+        """Build a layout dir with an SPDX SBOM lacking suppliers
+        AND a SLSA provenance lacking buildType. Both ATTEST-006 and
+        ATTEST-007 should fire through the orchestrator."""
+        # Use a fresh statement that lacks buildType + has an
+        # incomplete SBOM. The _build_layout helper writes one
+        # statement per layout, so this exercises ATTEST-006 only.
+        statement = {
+            "_type": "https://in-toto.io/Statement/v0.1",
+            "subject": [{"name": "image", "digest": {"sha256": "0" * 64}}],
+            "predicateType": "https://slsa.dev/provenance/v0.2",
+            "predicate": {
+                "builder": {
+                    "id": "https://github.com/slsa-framework/slsa-github-generator/x@v1",
+                },
+                # no buildType key
+                "invocation": {
+                    "configSource": {
+                        "uri": "git+https://github.com/owner/repo",
+                        "digest": {"sha1": "a" * 40},
+                    },
+                },
+                "materials": [
+                    {"uri": "git+https://x/y", "digest": {"sha1": "a" * 40}},
+                ],
+            },
+        }
+        index_path = _build_layout(tmp_path, statement=statement)
+        ctx = OCIContext.from_path(index_path)
+        findings = OCIManifestChecks(ctx).run()
+        a6_findings = [f for f in findings if f.check_id == "ATTEST-006"]
+        assert len(a6_findings) == 1
+        assert not a6_findings[0].passed

@@ -58,13 +58,17 @@ authoring-time gaps that don't survive into the manifest.
 
 ## What it covers
 
-11 checks · 0 have an autofix patch (``--fix``).
+15 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [ATTEST-001](#attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ATTEST-002](#attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ATTEST-003](#attest-003) | SBOM contains floating-version dependencies | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ATTEST-004](#attest-004) | SLSA provenance ships without a resolved-dependencies set | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ATTEST-005](#attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ATTEST-006](#attest-006) | SLSA provenance lacks a meaningful buildType | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ATTEST-007](#attest-007) | SBOM packages lack supplier / originator attribution | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [OCI-001](#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [OCI-002](#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [OCI-003](#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> |  |
@@ -96,7 +100,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 **Seen in the wild**
 
 - [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
-- GitHub self-hosted runner advisory (CVE-2024-32004 et al.): self-hosted runners default to non-ephemeral, persisted state; a single fork-PR run gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build. SLSA's isolation requirement (L2+) explicitly excludes this shape.
+- [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
 
 <div class="pg-rule__rec" markdown>
 
@@ -134,7 +138,7 @@ Fires when:
 
 **Seen in the wild**
 
-- [SLSA threat-model v1.0, Source-track Threat #4](https://slsa.dev/spec/v1.0/threats) ('Build uses unauthorized source'): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes.
+- [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
 - [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
 
 <div class="pg-rule__rec" markdown>
@@ -174,6 +178,137 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 **Recommended action**
 
 Pin every dependency in the SBOM to a concrete version (a released semver, a digest, or a tag-plus-commit pair). Floating values like ``latest``, ``*``, ``master``, an empty string, or a bare major like ``v1`` defeat the SBOM's purpose: a consumer can't reproduce or vulnerability-scan what they don't have a fixed version of. SPDX 2.x carries version under ``packages[*].versionInfo``; CycloneDX uses ``components[*].version``. Both fields are optional in the spec but operationally required for any meaningful SBOM consumption.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ATTEST-004: SLSA provenance ships without a resolved-dependencies set { #attest-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Walks every SLSA provenance attestation on the image index and reads the materials list at the spec-version-appropriate path. Both v0.2 and v1 are accepted. A missing key, a non-list value, and an empty list all fail (each shape means the consumer gets no input chain-of-custody). Per-material content validation (digest map populated, URI well-formed) is deferred to a future rule, this one establishes that the list exists.
+
+Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs, ATTEST-004 verifies the build-level inputs. Both are needed for the SLSA Build-track L3 'isolated, reproducible' claim; SBOM-only coverage misses the resolved base image and the build-tool chain.
+
+**Known false-positive modes**
+
+- Trivial ``FROM scratch`` images with no build-time dependencies legitimately have an empty materials list. The rule has no way to distinguish 'trivial build' from 'instrumentation gap', the SLSA spec treats both as the same fail-closed signal. Suppress per-image via ``--ignore-file`` once you've verified the build genuinely has nothing to attest.
+- Some builders (older BuildKit, hand-rolled generators) populate ``materials`` but omit the ``digest`` map, which the SLSA spec marks recommended-not-required. This rule accepts that shape today (list non-empty = pass); a future ATTEST-NNN will tighten to require digest coverage.
+
+**Seen in the wild**
+
+- [SLSA v1 spec, Build track L3 requirements](https://slsa.dev/spec/v1.0/levels#build-l3): resolved dependencies are a Build-track requirement, not an optional courtesy. The provenance was supposed to answer 'what went into this artifact'; an empty resolvedDependencies list answers 'we declined to say', which is materially worse than 'we didn't produce an attestation' because consumers see a signed-and-stamped document and trust it.
+- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): forensic teams reconstructing the blast radius needed to know which downstream images consumed the compromised action's outputs. Builds whose provenance carried materials lists pinpointed the exposure in minutes; builds without paid for the gap in days of manual review.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Configure the builder to emit a non-empty ``materials`` (SLSA v0.2) or ``resolvedDependencies`` (SLSA v1) list with one entry per ingredient the build consumed. For BuildKit, set ``--attest=type=provenance,mode=max`` so the resolved-base-image + checked-out source land in the attestation. For slsa-github-generator the L3 presets populate this automatically; teams running a custom generator must add the inputs explicitly. An empty list is structurally indistinguishable from 'the build had no inputs' and breaks downstream vulnerability correlation.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ATTEST-005: In-toto Statement subject is missing or unpinned { #attest-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Walks every parsed in-toto Statement (SLSA provenance + SBOM both) and validates the subject array. Three failure shapes:
+  - ``subject`` is missing or an empty list, the Statement attests nothing.
+  - A subject entry has no ``digest`` map, the entry names an artifact but doesn't bind to its bytes.
+  - A digest value is empty, all-zeros, or not valid hex, the bind exists structurally but the value is a placeholder.
+
+Hex validation is conservative: the value must consist entirely of ``0-9`` and ``a-f`` (case-insensitive) and the length must be a multiple of two (a valid byte encoding). Algorithm-specific length checks (``sha256`` = 64 chars, ``sha1`` = 40) are not enforced here, some registries truncate to a 16-char prefix and the rule accepts those as long as the bytes are well-formed.
+
+**Known false-positive modes**
+
+- Some experimental attestor implementations emit Statements with placeholder subjects for in-flight verification (the bytes are still being uploaded when the attestation is signed). Suppress per-manifest via ``--ignore-file`` if the team has a documented review of the deferred-binding pattern; the default expectation for any image promoted to a production registry is a subject digest that matches the actual image bytes.
+- Multi-subject Statements (one attestation covering multiple sibling artifacts) are accepted, as long as *every* entry has a populated digest. A partially-filled subject array fires because the unbound entries are the substitution surface, the rest don't compensate.
+
+**Seen in the wild**
+
+- [in-toto Statement spec](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md): the subject digest is the cryptographic bind between a signed envelope and the artifact bytes. A placeholder value reduces the attestation to a free-floating signature attackers can re-attach.
+- [SLSA v1.0 verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts): consumers MUST compare the attestation's subject digest against the artifact they're about to use. A signed envelope whose subject is unbound to artifact bytes passes signature verification but fails this comparison step trivially — which is exactly what an attacker exploits when re-attaching a valid signature to a tampered image.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Configure the builder to emit Statements with a non-empty ``subject`` array whose entries each carry a populated ``digest`` map. The digest value must be a real hex encoding of the artifact's bytes, an empty string or all-zeros placeholder defeats verification. For BuildKit this is automatic when ``--attest=type=provenance`` is set alongside ``--push``; older Buildx versions sometimes emitted Statements with empty subjects, upgrade if you see this fire on a recent build. For slsa-github-generator and cosign-attested workflows the subject is populated by the framework, an empty subject usually means a custom attestor was wired up incorrectly.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ATTEST-006: SLSA provenance lacks a meaningful buildType { #attest-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads the ``buildType`` claim at the spec-appropriate path: v0.2 at ``predicate.buildType``, v1 at ``predicate.buildDefinition.buildType``. Fires when the claim is missing, an empty string, or a known placeholder (``example.com``, ``unknown``, ``n/a``, ``tbd``). A well-shaped buildType is a URI with a scheme and a path component; the rule does a conservative URI-shape check to catch typos like a bare repository name or an unfilled template token.
+
+Doesn't validate that the URI is reachable or that the schema it names is one a verifier knows about; that's policy-layer work (an allowlist of trusted buildType URIs is a separate consumer-side concern).
+
+**Known false-positive modes**
+
+- Some experimental generators emit a buildType under a placeholder URI during development (``https://example.com/buildtype/v1``). The rule fires on those by design; the canonical fix is to publish a real schema URI before any image ships to a registry that downstream consumers trust. Suppress per-manifest via ``--ignore-file`` only when the team has a documented review of the placeholder's intended scope.
+- BuildKit < v0.10 emitted Statements without a buildType field at all. Modern Buildx always populates it; if the rule fires on a current build, the provenance configuration is likely incomplete rather than the Buildx version being too old.
+
+**Seen in the wild**
+
+- [SLSA v1.0 provenance spec](https://slsa.dev/spec/v1.0/provenance): buildType is REQUIRED on every Statement. The spec calls out that consumers MUST refuse provenance whose buildType they don't recognize, which means an under-specified buildType reduces the attestation to advisory text the verifier can't act on.
+- [SLSA build types catalog](https://slsa.dev/buildtypes/): the publicly registered buildType URIs SLSA-aware tooling knows how to verify. Provenance that names an unregistered URI is acceptable when paired with a documented schema, but provenance with no URI at all is structurally unverifiable.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Configure the builder to emit a concrete ``buildType`` URI naming the schema the provenance follows. For slsa-github-generator that's automatic (``https://github.com/slsa-framework/slsa-github-generator/<workflow>@<ref>``). For BuildKit the canonical URI is ``https://github.com/Attestations/GitHubHostedActions@v1`` or one of the SLSA-listed build types at https://slsa.dev/buildtypes/. Custom in-house generators should publish their own buildType URI that points at a stable schema doc; the URI doesn't need to be globally registered, but it does need to be resolvable so consumers can review the schema.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## ATTEST-007: SBOM packages lack supplier / originator attribution { #attest-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Walks every SBOM attestation (SPDX + CycloneDX) and counts components / packages without supplier attribution. SPDX checks ``packages[*].supplier``; CycloneDX checks ``components[*].supplier.name`` (the spec uses an object with a ``name`` key, unlike SPDX's bare string). A package passes when the field exists, is non-empty, and isn't the ``NOASSERTION`` sentinel.
+
+Severity LOW because the failure mode is downstream correlation friction rather than direct execution risk. Pair with ATTEST-003 (version completeness) for the full SBOM-quality story; an SBOM that has versions but no suppliers, or suppliers but no versions, is only half actionable.
+
+**Known false-positive modes**
+
+- Air-gapped builds where the SBOM emitter genuinely cannot resolve a supplier (private registry without ecosystem metadata) legitimately ship ``NOASSERTION`` for affected packages. Suppress per-manifest via ``--ignore-file`` when the gap is documented; the default expectation for any image promoted to a production registry is supplier attribution on every third-party component.
+- System-injected components (``glibc`` from a distroless base image, kernel symbols) sometimes carry no supplier because the SBOM emitter didn't have distro metadata available. The rule fires by design; the canonical fix is to provide a supplier of last resort (e.g. the base image vendor) rather than to suppress.
+
+**Seen in the wild**
+
+- [NTIA SBOM Minimum Elements report](https://www.ntia.gov/files/ntia/publications/sbom_minimum_elements_report.pdf) (2021): supplier name is listed as a minimum required element. NTIA's quality assessment of real-world SBOMs consistently flagged supplier coverage as one of the lowest-scoring dimensions across producers.
+- Typosquat and mirror-replay supply-chain incidents (the broad class behind event-stream, ua-parser-js, and tj-actions): the attacker substitutes a package whose name + version match a legitimate one but whose supplier differs. SBOMs with supplier attribution let downstream consumers detect the substitution by comparing publisher identity; SBOMs without it carry no signal at all.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Configure the SBOM emitter to populate supplier and (where applicable) originator fields for every component. Syft / Trivy / cdxgen all support supplier inference from package-manager metadata; the field is most often missing because the generator was invoked without the relevant ecosystem authority configured. For hand-rolled SBOM pipelines, derive ``supplier`` from the package registry (``pkg:npm/foo`` -> ``Organization: https://npmjs.com``) or the upstream maintainer's published metadata. ``NOASSERTION`` is acceptable only when the package truly has no identifiable supplier; treating it as a routine default defeats downstream attribution.
 
 </div>
 

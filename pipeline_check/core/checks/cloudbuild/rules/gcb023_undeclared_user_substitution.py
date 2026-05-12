@@ -42,6 +42,17 @@ RULE = Rule(
         "Cloud Build server-set and don't appear in ``substitutions:``; "
         "the rule allow-lists them so they don't false-positive."
     ),
+    known_fp=(
+        "Cloud Build deployments triggered exclusively via "
+        "``gcloud builds submit --substitutions=_FOO=bar`` "
+        "(without a build trigger) may legitimately reference "
+        "``$_FOO`` without declaring it under ``substitutions:`` "
+        "because the value is always supplied from the CLI. The "
+        "scanner can't observe trigger / CLI configuration, only "
+        "the YAML. Declaring the variable with an empty-string "
+        "default is the canonical fix; ``--ignore-file`` is the "
+        "escape hatch when that's not practical.",
+    ),
 )
 
 #: Cloud Build user substitution shape: ``$_FOO`` or ``${_FOO}``.

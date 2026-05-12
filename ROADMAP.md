@@ -4,6 +4,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- v1.0.x — first production-stable release. Carries every v0.4 / v0.5
+  item below the "Landed" markers (STRIDE threat model, MCP server,
+  SCM provider, composite-action resolution, action-reputation pack,
+  multi-scanner SARIF ingest, vulnerable-by-design `bench/`, taint
+  engine spanning 8 rules across 5 providers, multi-provider scan
+  mode, attestation content checks, action-reputation pack, GHA-04x
+  PPE rules, extended obfuscated-exec catalog), plus the API-stability
+  commitment on ``pipeline_check.__all__``.
 - v0.3.x — Kubernetes provider, docs site, attack chains engine, English
   variant enforcement, doc-claim drift guards, MANIFEST sdist filter,
   GitHub Actions workflow audit.
@@ -11,9 +19,9 @@ What's planned, what's shipped, and what's deliberately out of scope.
   Markdown reporters, 13-standard mapping, autofix engine, HTML report
   interactivity.
 
-## v0.4.0 (in progress)
+## v0.4.0 (shipped)
 
-A "hardening" release. Closes structural gaps that the rule-count race
+A "hardening" release. Closed structural gaps that the rule-count race
 of v0.2.x to v0.3.x left behind.
 
 ### Landed on `dev`
@@ -724,7 +732,7 @@ across every provider scanned in the same run.
   HIGH. Insider-introducible Dockerfile change AND floating-tag
   base image; two unrelated trust boundaries open at once.
 
-Catalog now spans 35 chains total (27 ``AC-NNN`` + 8 ``XPC-NNN``).
+Catalog now spans 36 chains total (27 ``AC-NNN`` + 9 ``XPC-NNN``).
 Each composite carries its own severity (often higher than its
 parts because the cross-cut means there's no compensating control
 elsewhere) and its own ``--explain`` prose. Engine reuses the
@@ -865,19 +873,38 @@ hallucinating model can't change a HIGH into a LOW.
 
 ### Per-rule policy-as-code overlay
 
-Beyond the v0.5.0 severity / confidence overrides: a `policies/`
-directory of YAML files that compose rule subsets into named
-policies (`pci-only.yml`, `pre-merge.yml`, `release-gate.yml`)
-with their own gating thresholds and standards filters.
-`--policy pre-merge` runs that subset; `--list-policies` prints
-the catalog. Lets a single repo wire up different scan profiles
-for pre-commit (fast, HIGH-only), PR (full pack, HIGH-fail), and
-release (full pack, MEDIUM-fail with attestation rules forced
-on) without flag soup in the CI YAML.
+*Landed on dev.* `--policy NAME` loads a YAML file from
+`./policies/<NAME>.yml` (or `./.pipeline-check/policies/<NAME>.yml`)
+that bundles a `checks:` whitelist, a `standards:` filter, gate
+thresholds (`gate.fail_on` / `gate.min_grade` /
+`gate.max_failures` / `gate.fail_on_checks`), and per-rule
+severity overrides (`overrides:`). Policy values land in click's
+``default_map`` so the config file, env vars, and explicit CLI
+flags continue to win on conflicts. `--list-policies` enumerates
+every discoverable policy and exits. The `--policy` name is
+sanitized to reject path traversal; passing a literal path
+bypasses the lookup and loads the file directly. Per-rule
+`overrides` merge with the config-file `overrides` block (config
+wins where keys overlap) so the existing
+``tool.pipeline_check.overrides`` story continues to compose.
 
-Costs nothing in detection power but makes the scanner
-deployable in the way real teams deploy linters: tiered, named,
-reviewed.
+Lets a single repo wire up different scan profiles for
+pre-commit (fast, HIGH-only), PR (full pack, HIGH-fail), and
+release (full pack, MEDIUM-fail with attestation rules forced on)
+without flag soup in the CI YAML. Confidence-rung overrides and a
+`--policy-dir` override flag are deferred, schema lands first;
+refinements follow as authors hit their limits.
+
+### Auto-baseline / SARIF differential mode
+
+*Landed on dev.* `--baseline PATH` already suppressed any finding
+present in a prior `--output json` report; the missing half,
+`--write-baseline PATH`, now ships the same JSON snapshot from
+the current scan so the next run can gate only on new issues. The
+companion `--baseline-from-git REF:PATH` (already on dev) skips
+the file dance for baselines stored in git. Solves the "scanner
+adopted on a 5-year-old repo returns 800 findings" problem that
+keeps comparable tools on the shelf for legacy codebases.
 
 ## Non-goals
 

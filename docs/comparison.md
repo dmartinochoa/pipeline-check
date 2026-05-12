@@ -51,7 +51,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Dockerfile | Yes (20) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
-| OCI image manifests (provenance, SLSA) | Yes (11, incl. ATTEST-001..003 attestation content) | No | No | No | No | Partial |
+| OCI image manifests (provenance, SLSA) | Yes (13, incl. ATTEST-001..005 attestation content) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (36 chains: 27 AC + 9 XPC) | No | No | No | No | No |

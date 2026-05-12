@@ -53,6 +53,17 @@ RULE = Rule(
         "trigger event and are *not* treated as user-controlled by "
         "this rule."
     ),
+    known_fp=(
+        "Pipelines that enable ``dynamicSubstitutions`` solely to "
+        "use bash parameter expansion on *built-in* substitutions "
+        "(``${PROJECT_ID/-/_}``) still flag if any step also "
+        "references a ``$_USER_VAR``, even when the user sub "
+        "lands in a context that can't reach a shell. The rule "
+        "has no AST-level awareness of which substitution is "
+        "consumed by which shell context. Suppress per-step via "
+        "``--ignore-file`` after verifying the user sub never "
+        "feeds bash re-evaluation.",
+    ),
 )
 
 # ``$_FOO`` or ``${_FOO}``, the leading underscore distinguishes user
