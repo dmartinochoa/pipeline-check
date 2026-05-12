@@ -23,6 +23,15 @@ permissions:
   id-token: write         # SLSA provenance / SBOM attestation OIDC
   security-events: write  # upload Docker Scout SARIF to the Security tab
 
+# Serialize tag-driven image publishes so two near-simultaneous tag
+# pushes (or a workflow_dispatch racing a tag) don't both try to push
+# the same image tag. ``cancel-in-progress: false`` keeps the
+# in-flight build alive, half-pushed multi-arch manifests are worse
+# than waiting for the prior run to finish.
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -145,7 +154,7 @@ jobs:
         # failed build still surfaces its findings on the Security tab
         # rather than vanishing with the job.
         if: always() && hashFiles('scout-cves.sarif') != ''
-        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         with:
           sarif_file: scout-cves.sarif
           category: docker-scout

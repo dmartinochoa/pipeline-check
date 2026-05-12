@@ -103,7 +103,7 @@ class _LineLoader(yaml.SafeLoader):
             )
         mapping: LineDict = LineDict()
         for key_node, value_node in node.value:
-            key = self.construct_object(key_node, deep=deep)
+            key = self.construct_object(key_node, deep=deep)  # type: ignore[no-untyped-call]
             try:
                 hash(key)
             except TypeError as exc:
@@ -111,7 +111,7 @@ class _LineLoader(yaml.SafeLoader):
                     "while constructing a mapping", node.start_mark,
                     f"found unhashable key ({exc})", key_node.start_mark,
                 ) from exc
-            value = self.construct_object(value_node, deep=deep)
+            value = self.construct_object(value_node, deep=deep)  # type: ignore[no-untyped-call]
             mapping[key] = value
         mapping._line = node.start_mark.line + 1  # 1-based
         mapping._col = node.start_mark.column + 1
@@ -128,7 +128,7 @@ class _LineLoader(yaml.SafeLoader):
             )
         out: LineList = LineList()
         for child in node.value:
-            out.append(self.construct_object(child, deep=deep))
+            out.append(self.construct_object(child, deep=deep))  # type: ignore[no-untyped-call]
             out._item_lines.append(child.start_mark.line + 1)
             out._item_cols.append(child.start_mark.column + 1)
         out._line = node.start_mark.line + 1

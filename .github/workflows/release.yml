@@ -30,6 +30,16 @@ on:
 permissions:
   contents: read
 
+# Serialize tag-driven releases so two simultaneous tag pushes (or a
+# tag push that races a workflow_dispatch) can't both reach
+# ``publish-pypi`` and double-upload the same wheel. ``cancel-in-
+# progress: false`` is the right setting here, an in-flight release
+# must finish (or fail) cleanly before the next one starts; canceling
+# mid-publish risks half-uploaded artifacts or a half-tagged release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   # ---------------------------------------------------------------------------
   # Build: produce sdist + wheel and upload as a run artifact so the

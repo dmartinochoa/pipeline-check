@@ -225,6 +225,19 @@ def _make_cmp_op(name: str, cmp: Callable[[Any, Any], bool]) -> Callable[[Any, s
     return _factory
 
 
+# Limits applied to user-supplied ``regex`` / ``not_regex`` patterns
+# in custom rules. Custom rule files are sometimes fetched from a
+# shared "platform" repo, so a compromised feed could ship a
+# catastrophic-backtracking pattern that hangs the scanner.
+# Python's stdlib ``re`` has no native timeout, so we bound complexity
+# at the edges: cap the pattern source length (longer patterns are
+# almost always a smell), and cap the haystack size the pattern runs
+# against. 100KB covers realistic YAML node values; anything bigger
+# isn't getting matched literally anyway.
+_MAX_REGEX_PATTERN_LEN = 500
+_MAX_REGEX_HAYSTACK_BYTES = 100_000
+
+
 def _regex_op(arg: Any, where: str) -> Predicate:
     if not isinstance(arg, dict) or "pattern" not in arg:
         raise PredicateError(f"{where}: requires 'path' (optional) and 'pattern'")
@@ -234,6 +247,13 @@ def _regex_op(arg: Any, where: str) -> Predicate:
         raise PredicateError(
             f"{where}: 'pattern' must be a string, got "
             f"{type(pattern_src).__name__}"
+        )
+    if len(pattern_src) > _MAX_REGEX_PATTERN_LEN:
+        raise PredicateError(
+            f"{where}: pattern length {len(pattern_src)} exceeds the "
+            f"{_MAX_REGEX_PATTERN_LEN}-char cap. Patterns this long "
+            f"are typically a sign of catastrophic-backtracking shapes; "
+            f"split the rule or simplify."
         )
     try:
         pattern = re.compile(pattern_src)
@@ -246,7 +266,9 @@ def _regex_op(arg: Any, where: str) -> Predicate:
         actual, ok = _first_match(path, node)
         if not ok or not isinstance(actual, str):
             return False
-        return pattern.search(actual) is not None
+        # Bound the haystack so a quadratic-backtracking pattern can
+        # only burn time proportional to the cap, not the full doc.
+        return pattern.search(actual[:_MAX_REGEX_HAYSTACK_BYTES]) is not None
 
     return _eval
 

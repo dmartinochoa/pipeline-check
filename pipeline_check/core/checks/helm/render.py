@@ -5,6 +5,17 @@ into a multi-doc Kubernetes manifest stream. The rendered text is
 fed through ``KubernetesContext.from_yaml_stream`` so the existing
 K8s rule pack can score it without modification.
 
+User-supplied ``--helm-set KEY=VALUE`` strings are validated before
+they reach ``helm template``: the keys must match Helm's documented
+path syntax (alphanumeric, dot, bracket-index, dash, underscore) and
+the values must not contain unescaped helm ``--set`` separators
+(``,``) or shell-injection-flavored metacharacters (``$()``, backticks,
+embedded newlines). The subprocess is invoked with a list argv so
+the local shell never sees the value, but ``helm`` itself parses
+``--set`` strings with its own separator rules; rejecting metachars
+up front prevents a single override smuggling additional fields into
+the rendered manifest.
+
 Helm 2 is rejected on principle: it has been EOL since November 2020
 and its server-side ``tiller`` model isn't representative of how
 charts get rendered in modern CI pipelines.
@@ -36,6 +47,44 @@ class HelmRenderError(RuntimeError):
     def __init__(self, message: str, stderr: str = "") -> None:
         super().__init__(message)
         self.stderr = stderr
+
+
+# Helm's documented key syntax: alphanumerics, dot for object paths,
+# brackets for list indices, underscore, and dash. Anything else (a
+# bare space, a comma, a backtick, etc.) is rejected so a malicious
+# override can't smuggle a second override past helm's ``--set`` parser.
+_HELM_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\[\]\-]*$")
+# Values are looser, but a tight blocklist on the characters that
+# would either split helm's parser (``,``) or escape into shell-like
+# expansions (`` ` ``, ``$(``, ``$``, newlines, ``;``) is enough to
+# catch the smuggling shapes without breaking legitimate values like
+# image tags or numeric replicas. ``\\`` (helm's escape character)
+# is also rejected because we don't try to interpret it.
+_HELM_VALUE_BAD_RE = re.compile(r"[,`;\n\r]|\$\(|\\\\")
+
+
+def _validate_set_overrides(set_overrides: list[str] | None) -> None:
+    """Reject ``--helm-set KEY=VALUE`` entries with metacharacters
+    that would let one override smuggle others past helm's ``--set``
+    parser. Raises :class:`HelmRenderError` on the first bad entry."""
+    for kv in set_overrides or ():
+        if "=" not in kv:
+            raise HelmRenderError(
+                f"--helm-set {kv!r} is not a KEY=VALUE pair"
+            )
+        key, _, value = kv.partition("=")
+        if not _HELM_KEY_RE.match(key):
+            raise HelmRenderError(
+                f"--helm-set key {key!r} contains unsafe characters; "
+                f"allowed: letters, digits, dot, dash, underscore, "
+                f"brackets for list indices"
+            )
+        if _HELM_VALUE_BAD_RE.search(value):
+            raise HelmRenderError(
+                f"--helm-set value for {key!r} contains a metacharacter "
+                f"(``,`` / backtick / ``$(`` / ``;`` / newline / ``\\\\``) "
+                f"that would interact with helm's --set parser or a shell"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +200,11 @@ def render_chart(
             "directory (one containing Chart.yaml) or a packaged "
             "chart .tgz."
         )
+
+    # Defensive: reject ``--helm-set`` entries with metacharacters that
+    # would interact with helm's --set parser or a shell. See the
+    # module docstring for the threat shape.
+    _validate_set_overrides(set_overrides)
 
     cmd: list[str] = [
         binary, "template", release_name, str(chart),

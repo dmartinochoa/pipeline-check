@@ -207,6 +207,53 @@ class TestProviderErrors:
         with pytest.raises(ValueError, match="--helm-path"):
             provider.build_context()
 
+
+class TestHelmSetValidation:
+    """``--helm-set KEY=VALUE`` is passed to a subprocess via argv list,
+    but helm's own ``--set`` parser uses ``,`` as a separator and
+    interprets ``\\`` escapes, so a single override can smuggle others
+    into the rendered manifest. The validator rejects metacharacters
+    that enable smuggling or any shell expansion."""
+
+    def setup_method(self):
+        # ``_validate_set_overrides`` is module-private, but it's the
+        # focused unit under test. Importing here keeps the public
+        # ``render_chart`` test surface intact.
+        from pipeline_check.core.checks.helm.render import _validate_set_overrides
+        self._validate = _validate_set_overrides
+
+    def test_accepts_simple_key_value(self):
+        # Should not raise.
+        self._validate(["replicas=3", "image.tag=v1.2.3"])
+
+    def test_accepts_bracketed_list_index(self):
+        # helm path syntax for lists.
+        self._validate(["nodeSelector[0]=a"])
+
+    def test_rejects_comma_in_value(self):
+        with pytest.raises(HelmRenderError, match="metacharacter"):
+            self._validate(["image=evil,securityContext.runAsRoot=true"])
+
+    def test_rejects_command_substitution(self):
+        with pytest.raises(HelmRenderError, match="metacharacter"):
+            self._validate(["image=$(whoami)"])
+
+    def test_rejects_backtick(self):
+        with pytest.raises(HelmRenderError, match="metacharacter"):
+            self._validate(["image=`whoami`"])
+
+    def test_rejects_newline_in_value(self):
+        with pytest.raises(HelmRenderError, match="metacharacter"):
+            self._validate(["image=foo\nbar"])
+
+    def test_rejects_missing_equals(self):
+        with pytest.raises(HelmRenderError, match="KEY=VALUE"):
+            self._validate(["lonelyKey"])
+
+    def test_rejects_unsafe_key(self):
+        with pytest.raises(HelmRenderError, match="unsafe characters"):
+            self._validate(["evil key=foo"])
+
     def test_helm_path_without_chart_yaml_raises(self, tmp_path):
         with pytest.raises(ValueError, match="no Chart.yaml"):
             HelmContext.from_path(tmp_path)
