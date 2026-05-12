@@ -15,7 +15,7 @@ standard / fixer / detector updates this manual on the next run.
 """
 from __future__ import annotations
 
-from typing import Callable, Union
+from collections.abc import Callable
 
 # Topic body strings end with a single trailing newline; the renderer
 # adds a blank line between topic header and body and between body
@@ -938,7 +938,7 @@ known check ID.
 # one. Builders run at render time, so the standards / autofix /
 # secrets pages reflect the current registries on every invocation.
 
-_TopicValue = Union[str, Callable[[], str]]
+_TopicValue = str | Callable[[], str]
 
 _TOPICS: dict[str, _TopicValue] = {
     "index": INDEX,
