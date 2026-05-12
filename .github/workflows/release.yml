@@ -174,12 +174,19 @@ jobs:
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
       provenance-name: pipeline-check.intoto.jsonl
-      # Only upload the provenance to a release when the workflow
-      # was triggered by a ``v*.*.*`` tag push and a matching
-      # GitHub release exists. workflow_dispatch runs still produce
-      # the provenance file as a workflow run artifact; uploading
-      # to a release without one existing is a generator error.
-      upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
+      # ``upload-assets`` is held at ``false`` because the repo has
+      # immutable releases enabled. The SLSA generator's underlying
+      # ``softprops/action-gh-release`` step does a two-call sequence
+      # (create release, then upload asset). Once the create succeeds,
+      # immutability locks the release and the upload fails with
+      # ``Cannot upload assets to an immutable release``, which
+      # cascades into ``publish-pypi`` not running. v1.0.2 and v1.0.3
+      # were skipped on this exact failure (see CHANGELOG). The
+      # provenance file still lands as a workflow run artifact so a
+      # downstream verifier can fetch it via the run; the wheel
+      # itself carries PEP 740 attestations on PyPI via the
+      # ``attestations: true`` flag on the publish job.
+      upload-assets: false
 
   # ---------------------------------------------------------------------------
   # Publish to PyPI. Single hop — no TestPyPI intermediate step. The

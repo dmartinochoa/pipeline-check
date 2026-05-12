@@ -10,15 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [1.0.3] - 2026-05-12
+## [1.0.4] - 2026-05-12
 
-Skipped v1.0.2 — the GitHub release for that tag was auto-created
-by the SLSA generator's `softprops/action-gh-release` step, and the
-repo's immutable-releases setting then blocked the same step from
-attaching `pipeline-check.intoto.jsonl` to it ("Cannot upload assets
-to an immutable release"). Because `publish-pypi` depends on
-`provenance` succeeding, no v1.0.2 wheel reached PyPI. v1.0.3
-re-runs the same release content on a fresh tag.
+Skipped v1.0.2 and v1.0.3. Both releases failed at the same step:
+the SLSA generator's `softprops/action-gh-release` does a two-call
+sequence (create release, upload asset), and the repo's
+immutable-releases setting locks the release between those two
+calls so the upload fails with "Cannot upload assets to an immutable
+release". `publish-pypi` depends on `provenance` succeeding, so no
+v1.0.2 / v1.0.3 wheel ever reached PyPI. v1.0.4 ships the same
+release content with `release.yml` patched to set the SLSA
+generator's `upload-assets: false` — the `pipeline-check.intoto.jsonl`
+provenance file is still produced (as a workflow run artifact, so
+downstream verifiers can fetch it via the run) and PyPI continues
+to receive PEP 740 attestations in-band via the publish action's
+`attestations: true` flag.
 
 ### Added
 
