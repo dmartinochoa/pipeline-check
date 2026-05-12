@@ -136,6 +136,7 @@ Rules
   `.pipelinecheckignore`. Overrides change severity; they don't
   suppress the finding.
 
+<a id="named-scan-profiles"></a>
 ## 🗂️ Named scan profiles
 
 For teams that run the scanner in multiple lanes (pre-commit, PR
