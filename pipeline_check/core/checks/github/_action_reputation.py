@@ -2,11 +2,12 @@
 
 Foundation for the GHA-04x reputation rule pack (GHA-041 single-
 maintainer, GHA-042 very-young repo, GHA-043 low-star + sensitive
-permission). Where ``_compromised_actions.py`` is a *static* registry
-of known-bad refs, this module is a *dynamic* fetcher: each scan
-queries the GitHub REST API for the metadata of every action
-referenced by the loaded workflows and surfaces the result on the
-context for the reputation rules to consume.
+permission, GHA-047 fresh referenced tag/SHA). Where
+``_compromised_actions.py`` is a *static* registry of known-bad refs,
+this module is a *dynamic* fetcher: each scan queries the GitHub REST
+API for the metadata of every action referenced by the loaded
+workflows and surfaces the result on the context for the reputation
+rules to consume.
 
 Network access is opt-in via ``--resolve-remote``. The CLI wires the
 HTTP fetcher in there; when the flag is off, no metadata is fetched
@@ -69,6 +70,17 @@ class ActionRepoMetadata:
     #: throwaway and the GHA-041 / -042 / -043 heuristics apply with
     #: even more weight.
     fork: bool = False
+    #: Per-ref commit timestamp, keyed by the ``UsesRef.ref`` string
+    #: (a tag like ``v4`` or a 40-char commit SHA). Populated by
+    #: :meth:`ActionMetadataFetcher.fetch_ref_dates` for each ref the
+    #: workflows actually reference. ``None`` for the whole slot when
+    #: the rule should treat per-ref freshness as unknown (typical
+    #: when the opt-in flag is off or every per-ref fetch failed).
+    #: A ``None`` value for a specific key inside the dict (e.g.
+    #: ``{"v4": None}``) means the ref was looked up and the API
+    #: didn't carry a usable date; the consuming rule passes silently
+    #: on that specific ref. Consumed by GHA-047.
+    ref_committed_at: dict[str, str | None] | None = None
 
 
 class ActionMetadataFetcher:
@@ -130,6 +142,60 @@ class ActionMetadataFetcher:
             fork=fork,
         )
 
+    def fetch_ref_dates(
+        self, owner: str, repo: str, refs: set[str],
+    ) -> dict[str, str | None]:
+        """Resolve per-ref commit timestamps for *refs*.
+
+        Each entry in *refs* is the right-hand side of a ``uses:``
+        ``@<ref>`` (a tag like ``v4``, an annotated tag, or a 40-char
+        commit SHA). Branch refs are accepted too; they resolve to the
+        branch HEAD's commit date, which is the freshness signal
+        GHA-047 wants for the unpinned-ref case. The
+        ``/repos/{o}/{r}/commits/{ref}`` endpoint handles all three
+        ref shapes uniformly, so this method is one API call per
+        distinct ref rather than the
+        ``/git/refs`` → ``/git/tags`` → ``/commits`` chain a strict
+        tag-vs-SHA dispatch would require.
+
+        Returns a mapping ``{ref: iso8601 | None}``. A ``None`` value
+        means the lookup completed but the response didn't carry a
+        usable ``commit.committer.date``; GHA-047 passes silently on
+        those entries. Skipped (empty) input returns an empty dict so
+        the caller can distinguish "no refs to look up" from "lookups
+        failed."
+        """
+        out: dict[str, str | None] = {}
+        for ref in refs:
+            if not ref:
+                continue
+            payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{ref}")
+            out[ref] = _extract_committer_date(payload)
+        return out
+
+
+def _extract_committer_date(payload: Any) -> str | None:
+    """Pull ``commit.committer.date`` out of a ``/commits/{ref}`` body.
+
+    Returns ``None`` when any layer is missing or wrong-typed so the
+    caller records "lookup ran, no usable date" rather than crashing.
+    GitHub also exposes ``commit.author.date`` but the *committer*
+    date is what changes when a tag is re-pointed at a new commit —
+    that's the signal GHA-047 wants.
+    """
+    if not isinstance(payload, dict):
+        return None
+    commit = payload.get("commit")
+    if not isinstance(commit, dict):
+        return None
+    committer = commit.get("committer")
+    if not isinstance(committer, dict):
+        return None
+    date = committer.get("date")
+    if not isinstance(date, str):
+        return None
+    return date
+
 
 def collect_referenced_actions(ctx: GitHubContext) -> set[tuple[str, str]]:
     """Walk every loaded workflow, return the distinct ``(owner, repo)``
@@ -176,18 +242,76 @@ def _consume_uses(
     sink.add((ref.owner.lower(), ref.repo.lower()))
 
 
+def collect_referenced_action_refs(
+    ctx: GitHubContext,
+) -> dict[tuple[str, str], set[str]]:
+    """Like :func:`collect_referenced_actions`, but also captures the
+    set of ``@<ref>`` values referenced for each action.
+
+    Returns ``{(owner, repo): {ref, ...}}`` — same lower-cased keys as
+    :func:`collect_referenced_actions` so a caller can merge the two
+    views. An action referenced as both ``acme/foo@v1`` and
+    ``acme/foo@v2`` lands as one entry with two refs. Used by
+    :func:`populate_action_metadata` to drive the per-ref date fetch
+    in addition to the repo-metadata fetch.
+    """
+    out: dict[tuple[str, str], set[str]] = {}
+    for wf in ctx.workflows:
+        data = wf.data if isinstance(wf.data, dict) else {}
+        jobs = data.get("jobs")
+        if not isinstance(jobs, dict):
+            continue
+        for job in jobs.values():
+            if not isinstance(job, dict):
+                continue
+            _consume_uses_with_ref(job.get("uses"), out)
+            steps = job.get("steps")
+            if not isinstance(steps, list):
+                continue
+            for step in steps:
+                if not isinstance(step, dict):
+                    continue
+                _consume_uses_with_ref(step.get("uses"), out)
+    return out
+
+
+def _consume_uses_with_ref(
+    value: Any, sink: dict[tuple[str, str], set[str]],
+) -> None:
+    ref = parse_uses(value)
+    if ref is None:
+        return
+    if ref.kind not in {"remote-action", "remote-workflow"}:
+        return
+    if not ref.owner or not ref.repo:
+        return
+    if not ref.ref:
+        return
+    key = (ref.owner.lower(), ref.repo.lower())
+    sink.setdefault(key, set()).add(ref.ref)
+
+
 def populate_action_metadata(
     ctx: GitHubContext, fetcher: ActionMetadataFetcher,
 ) -> None:
     """Fetch metadata for every distinct action referenced by the
     workflows and store the result on ``ctx.action_metadata``.
 
+    Two passes per action:
+
+      1. Repo metadata (``/repos/{o}/{r}`` + contributors) for the
+         GHA-041 / GHA-042 / GHA-043 reputation rules.
+      2. Per-ref commit date (``/repos/{o}/{r}/commits/{ref}``) for
+         every distinct ``@<ref>`` the workflows use for that action.
+         Drives GHA-047's freshness check.
+
     Failures land in ``ctx.warnings`` rather than raising — a private
     fork or rate-limit response on one action shouldn't abort the
     scan. The reputation rules read ``ctx.action_metadata`` and pass
     silently on the actions whose metadata fetch failed.
     """
-    actions = sorted(collect_referenced_actions(ctx))
+    refs_by_action = collect_referenced_action_refs(ctx)
+    actions = sorted(refs_by_action.keys() | collect_referenced_actions(ctx))
     fetched: dict[str, ActionRepoMetadata] = {}
     failed: list[str] = []
     for owner, repo in actions:
@@ -195,15 +319,32 @@ def populate_action_metadata(
         if meta is None:
             failed.append(f"{owner}/{repo}")
             continue
-        fetched[f"{owner}/{repo}"] = meta
+        refs = refs_by_action.get((owner, repo), set())
+        ref_dates = fetcher.fetch_ref_dates(owner, repo, refs) if refs else {}
+        # Re-pack the metadata with the per-ref dates folded in.
+        # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
+        # when the action had no resolvable refs, so GHA-047 can tell
+        # "no data" from "looked up, came back empty."
+        meta_with_refs = ActionRepoMetadata(
+            owner=meta.owner,
+            repo=meta.repo,
+            owner_type=meta.owner_type,
+            created_at=meta.created_at,
+            stargazers_count=meta.stargazers_count,
+            contributor_count=meta.contributor_count,
+            archived=meta.archived,
+            fork=meta.fork,
+            ref_committed_at=ref_dates if ref_dates else None,
+        )
+        fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:
         ctx.warnings.append(
             f"[gha] action reputation: metadata fetch failed for "
             f"{len(failed)} action(s) "
             f"({', '.join(failed[:3])}"
             f"{', ...' if len(failed) > 3 else ''}). The reputation "
-            f"rules (GHA-041 / GHA-042 / GHA-043) pass silently on "
-            f"those actions; rerun with --gh-token to lift the "
-            f"unauthenticated rate-limit ceiling."
+            f"rules (GHA-041 / GHA-042 / GHA-043 / GHA-047) pass "
+            f"silently on those actions; rerun with --gh-token to "
+            f"lift the unauthenticated rate-limit ceiling."
         )
     ctx.action_metadata = fetched

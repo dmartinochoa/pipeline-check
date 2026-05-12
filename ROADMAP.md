@@ -19,6 +19,30 @@ What's planned, what's shipped, and what's deliberately out of scope.
   Markdown reporters, 13-standard mapping, autofix engine, HTML report
   interactivity.
 
+## Next items
+
+Small follow-ups surfaced during the 1.0.2 merge. Cheap to clear, not
+worth their own milestone.
+
+- **OCI per-provider check count drift.** `README.md` (provider
+  table) and `docs/comparison.md` (feature matrix) both still say
+  "13 checks (`OCI-001`--`008` plus `ATTEST-001..005`)" but the
+  registry now ships `ATTEST-001..007` (total 15). Not caught by
+  `tests/test_doc_claims.py` since only the aggregate counts are
+  locked there, so the drift survived two merges. Either bump the
+  literal to 15 with the new `ATTEST-006` / `ATTEST-007` short
+  descriptions, or add a per-provider claim parser to
+  `test_doc_claims.py` so future per-provider counts stay locked
+  the same way the aggregates already are. The second option costs
+  about a day and prevents the next round of this same drift.
+- **Stale-stash sweep on the working clone.** Two stashes
+  (`stash@{0}` "pre-merge wip: CHANGELOG 1.0.2 entry" and `stash@{1}`
+  "pre-merge wip: version bump to 1.0.2") were already re-applied
+  by hand during conflict resolution and can be dropped. `stash@{2}`
+  ("ROADMAP.md local edits, pre-release-checkout") predates this
+  session and is worth a manual look before dropping. Pure local
+  hygiene, no repo-state impact.
+
 ## v0.4.0 (shipped)
 
 A "hardening" release. Closed structural gaps that the rule-count race

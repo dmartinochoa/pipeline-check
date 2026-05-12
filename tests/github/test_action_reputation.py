@@ -1,7 +1,7 @@
 """Per-rule tests for the GHA-04x action-reputation pack
 (GHA-041 single-maintainer / GHA-042 very-young repo / GHA-043
-low-star + sensitive permission) and the underlying
-``_action_reputation`` fetcher.
+low-star + sensitive permission / GHA-047 fresh referenced ref) and
+the underlying ``_action_reputation`` fetcher.
 
 The reputation rules read ``ctx.action_metadata``, which is
 populated by the ``--resolve-remote`` path in production. The tests
@@ -21,6 +21,7 @@ from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.github._action_reputation import (
     ActionMetadataFetcher,
     ActionRepoMetadata,
+    collect_referenced_action_refs,
     collect_referenced_actions,
     populate_action_metadata,
 )
@@ -57,6 +58,7 @@ def _meta(
     owner_type: str | None = None,
     archived: bool = False,
     fork: bool = False,
+    ref_committed_at: dict[str, str | None] | None = None,
 ) -> tuple[str, ActionRepoMetadata]:
     return f"{owner.lower()}/{repo.lower()}", ActionRepoMetadata(
         owner=owner, repo=repo,
@@ -66,6 +68,7 @@ def _meta(
         owner_type=owner_type,
         archived=archived,
         fork=fork,
+        ref_committed_at=ref_committed_at,
     )
 
 
@@ -589,6 +592,256 @@ class TestGHA043:
         assert "obscure/shared" in f.description
 
 
+# ── GHA-047: freshly-committed referenced ref ──────────────────────
+
+
+class TestGHA047:
+    def test_fires_when_referenced_ref_is_fresh(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1.2.3
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            ref_committed_at={"v1.2.3": _iso_days_ago(2)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "vendor/widget@v1.2.3" in f.description
+
+    def test_passes_when_referenced_ref_is_older_than_threshold(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1.2.3
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            ref_committed_at={"v1.2.3": _iso_days_ago(60)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1.2.3
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-047")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_trusted_publisher_skipped_by_default(self):
+        """``actions/checkout@v4`` legitimately gets retagged on every
+        release of the upstream first-party action; firing on those
+        would drown the rule. The default trusted-publisher allowlist
+        suppresses ``actions``, ``aws-actions``, etc."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            ref_committed_at={"v4": _iso_days_ago(1)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+    def test_trusted_publisher_sha_pin_opts_back_in(self):
+        """A 40-char SHA pin on a trusted publisher is the documented
+        escape hatch for opting back into freshness gating. The
+        floating-tag bypass exists to absorb noise from legitimate
+        retags; a SHA pin doesn't move under retag and the caller is
+        signaling they want the cooldown check on this specific ref."""
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{sha}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            ref_committed_at={sha: _iso_days_ago(1)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert sha in f.description
+
+    def test_per_ref_lookup_missing_passes_silently(self):
+        """When the action metadata is present but the specific ``@ref``
+        the workflow uses wasn't looked up (or came back with no date),
+        the rule should not fire on that slot — same "unknown = pass"
+        convention as the other reputation rules."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v9.9.9
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            # Workflow asks about v9.9.9 but metadata only carries v1.0.0.
+            ref_committed_at={"v1.0.0": _iso_days_ago(2)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+    def test_per_ref_lookup_with_none_value_passes_silently(self):
+        """An entry shaped ``{"v1": None}`` means the lookup ran but the
+        API didn't carry a usable date. Treat as unknown."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1
+        """
+        k, m = _meta("vendor", "widget", ref_committed_at={"v1": None})
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+    def test_dedups_repeated_ref_across_jobs(self):
+        """An ``@ref`` referenced from multiple jobs counts once."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1.2.3
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1.2.3
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            ref_committed_at={"v1.2.3": _iso_days_ago(2)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert f.description.count("vendor/widget@v1.2.3") == 1
+
+    def test_two_refs_to_same_action_evaluated_independently(self):
+        """A workflow that pins one ref of an action to a fresh commit
+        and another to an old one fires only on the fresh ref."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1
+              - uses: vendor/widget@deadbeef
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            ref_committed_at={
+                "v1": _iso_days_ago(2),
+                "deadbeef": _iso_days_ago(400),
+            },
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert "vendor/widget@v1" in f.description
+        assert "vendor/widget@deadbeef" not in f.description
+
+    def test_fires_on_reusable_workflow_callee_ref(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: vendor/shared/.github/workflows/release.yml@v1
+        """
+        k, m = _meta(
+            "vendor", "shared",
+            ref_committed_at={"v1": _iso_days_ago(2)},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert not f.passed
+        assert "vendor/shared@v1" in f.description
+
+    def test_handles_malformed_timestamp_gracefully(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1
+        """
+        k, m = _meta(
+            "vendor", "widget",
+            ref_committed_at={"v1": "not-a-date"},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+    def test_boundary_threshold_exact_age_passes(self):
+        """A ref whose age in days equals ``MIN_REF_AGE_DAYS`` passes
+        (rule uses ``< MIN_REF_AGE_DAYS``, not ``<=``). Subtract an
+        extra second so the seconds-truncated timestamp is
+        unambiguously older than the threshold after a few ms of test
+        execution."""
+        from pipeline_check.core.checks.github.rules import (
+            gha047_fresh_action_ref,
+        )
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@v1
+        """
+        dt = datetime.now(tz=timezone.utc) - timedelta(
+            days=gha047_fresh_action_ref.MIN_REF_AGE_DAYS,
+            seconds=1,
+        )
+        ts = dt.replace(microsecond=0).isoformat().replace(
+            "+00:00", "Z",
+        )
+        k, m = _meta(
+            "vendor", "widget", ref_committed_at={"v1": ts},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-047")
+        assert f.passed
+
+
 # ── _action_reputation: collect / populate / fetcher projection ────
 
 
@@ -721,6 +974,103 @@ class TestActionMetadataFetcher:
         assert meta.contributor_count == 0
 
 
+class TestFetchRefDates:
+    def test_extracts_committer_date_from_commits_endpoint(self):
+        raw = FakeRawFetcher({
+            "repos/acme/widget/commits/v1": {
+                "sha": "deadbeef" * 5,
+                "commit": {
+                    "committer": {"date": "2026-05-01T12:00:00Z"},
+                    "author": {"date": "2024-01-01T00:00:00Z"},
+                },
+            },
+        })
+        out = ActionMetadataFetcher(raw).fetch_ref_dates(
+            "acme", "widget", {"v1"},
+        )
+        assert out == {"v1": "2026-05-01T12:00:00Z"}
+
+    def test_missing_payload_yields_none(self):
+        raw = FakeRawFetcher({})
+        out = ActionMetadataFetcher(raw).fetch_ref_dates(
+            "acme", "widget", {"v1"},
+        )
+        assert out == {"v1": None}
+
+    def test_handles_malformed_payload_without_raising(self):
+        """A non-dict response (HTML error page, garbage) lands as
+        ``None`` rather than crashing the populate pass."""
+        raw = FakeRawFetcher({
+            "repos/acme/widget/commits/v1": "not-json",
+        })
+        out = ActionMetadataFetcher(raw).fetch_ref_dates(
+            "acme", "widget", {"v1"},
+        )
+        assert out == {"v1": None}
+
+    def test_skips_empty_string_refs(self):
+        """Defensive: a refs set containing the empty string (impossible
+        through the normal collector but cheap to guard) should not
+        produce a request."""
+        raw = FakeRawFetcher({})
+        out = ActionMetadataFetcher(raw).fetch_ref_dates(
+            "acme", "widget", {""},
+        )
+        assert out == {}
+        assert raw.calls == []
+
+
+class TestCollectReferencedActionRefs:
+    def test_groups_refs_per_action(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v3
+              - uses: actions/checkout@v4
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/widget@deadbeef
+        """
+        ctx = _ctx_with_metadata(wf)
+        out = collect_referenced_action_refs(ctx)
+        assert out == {
+            ("actions", "checkout"): {"v3", "v4"},
+            ("vendor", "widget"): {"deadbeef"},
+        }
+
+    def test_ignores_local_and_docker_refs(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: ./.github/actions/build
+              - uses: docker://ghcr.io/foo/bar:1.2.3
+        """
+        ctx = _ctx_with_metadata(wf)
+        assert collect_referenced_action_refs(ctx) == {}
+
+    def test_collects_reusable_workflow_callee_ref(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: org/repo/.github/workflows/release.yml@v1
+        """
+        ctx = _ctx_with_metadata(wf)
+        assert collect_referenced_action_refs(ctx) == {
+            ("org", "repo"): {"v1"},
+        }
+
+
 class TestPopulateActionMetadata:
     def test_populates_metadata_on_ctx_for_each_referenced_action(self):
         wf = """
@@ -762,3 +1112,64 @@ class TestPopulateActionMetadata:
         populate_action_metadata(ctx, ActionMetadataFetcher(raw))
         assert ctx.action_metadata == {}
         assert any("action reputation" in w for w in ctx.warnings)
+
+    def test_populates_ref_committed_at_for_referenced_refs(self):
+        """The per-ref date fetch should fold its results into the
+        assembled :class:`ActionRepoMetadata`. Two distinct refs to the
+        same action produce two entries in ``ref_committed_at``."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/widget@v1
+              - uses: acme/widget@deadbeef
+        """
+        ctx = _ctx_with_metadata(wf)
+        raw = FakeRawFetcher({
+            "repos/acme/widget": {
+                "owner": {"type": "Organization"},
+                "stargazers_count": 7,
+                "created_at": "2024-06-01T00:00:00Z",
+            },
+            "repos/acme/widget/contributors?per_page=2&anon=false": [
+                {"login": "alice"},
+            ],
+            "repos/acme/widget/commits/v1": {
+                "commit": {"committer": {"date": "2026-05-01T12:00:00Z"}},
+            },
+            "repos/acme/widget/commits/deadbeef": {
+                "commit": {"committer": {"date": "2024-01-15T00:00:00Z"}},
+            },
+        })
+        populate_action_metadata(ctx, ActionMetadataFetcher(raw))
+        meta = ctx.action_metadata["acme/widget"]
+        assert meta.ref_committed_at == {
+            "v1": "2026-05-01T12:00:00Z",
+            "deadbeef": "2024-01-15T00:00:00Z",
+        }
+
+    def test_ref_committed_at_is_dict_with_none_when_lookup_empty(self):
+        """An action referenced with an ``@ref`` whose commits endpoint
+        returns nothing should leave the slot as ``{"v1": None}`` —
+        distinct from the whole-slot ``None`` (meaning "no refs to
+        look up")."""
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/widget@v1
+        """
+        ctx = _ctx_with_metadata(wf)
+        raw = FakeRawFetcher({
+            "repos/acme/widget": {"stargazers_count": 1},
+            # No commits/v1 entry — the per-ref date comes back None.
+        })
+        populate_action_metadata(ctx, ActionMetadataFetcher(raw))
+        meta = ctx.action_metadata["acme/widget"]
+        assert meta.ref_committed_at == {"v1": None}

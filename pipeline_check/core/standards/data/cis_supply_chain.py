@@ -98,6 +98,7 @@ STANDARD = Standard(
         "GHA-041":  ["3.1.3"],                           # single-maintainer action
         "GHA-042":  ["3.1.3"],                           # very-young action repo
         "GHA-043":  ["3.1.3"],                           # low-star + sensitive perms
+        "GHA-047":  ["3.1.3"],                           # fresh-ref cooldown
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

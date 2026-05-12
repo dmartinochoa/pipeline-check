@@ -389,10 +389,11 @@ class TestPerFrameworkCoverageFloor:
         # 54 to 53 when SCM-017/018/019 (CODEOWNERS / bypass /
         # push restrictions) added three more denominator entries
         # without 800-53 mappings, same denominator-dilution case.
-        # Lowered from 53 to 52 when ATTEST-004 (materials gap)
-        # landed; the ATTEST-NNN family has no NIST 800-53 mapping
-        # today and the denominator dilution drops the percentage
-        # one point. Backfill is queued.
+        # nist_800_53 absorbs two unmapped landings on this merge:
+        # ATTEST-004 (materials gap) from master and GHA-047 (fresh-
+        # ref cooldown) from this branch. Neither family has an
+        # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
+        # queued separately. Same denominator-dilution case.
         "nist_800_53":          52,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
@@ -407,10 +408,11 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                 41,
         "soc2":                 49,
         "cis_supply_chain":     28,
-        # s2c2f lowered from 29 to 28 when ATTEST-004 landed: the
-        # ATTEST-NNN family has no S2C2F mapping today, so adding a
-        # rule grows the denominator without growing the numerator.
-        # Backfill is queued; the existing S2C2F coverage is intact.
+        # s2c2f absorbs two unmapped landings on this merge: ATTEST-
+        # 004 from master and GHA-047 from this branch. Neither
+        # family has an S2C2F mapping today (GHA-04x reputation pack
+        # is uncovered; ATTEST-NNN backfill is queued). Denominator-
+        # dilution case.
         "s2c2f":                28,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,

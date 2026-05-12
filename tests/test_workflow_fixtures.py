@@ -53,7 +53,7 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 47)}
+        {f"GHA-{i:03d}" for i in range(1, 48)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
@@ -62,6 +62,7 @@ class TestGitHubFixtures:
 
         from pipeline_check.core.checks.github._action_reputation import (
             ActionRepoMetadata,
+            collect_referenced_action_refs,
             collect_referenced_actions,
         )
 
@@ -74,37 +75,50 @@ class TestGitHubFixtures:
         # mark every action as single-maintainer / very-young / low-
         # star so all three rules fire; "secure" fixtures mark every
         # action as well-maintained / aged / popular so all three pass.
+        # GHA-047 additionally reads per-ref commit dates from
+        # ``ref_committed_at``; insecure refs land a recent (fresh)
+        # date so the cooldown rule fires, secure refs land an old
+        # date so it passes.
         is_secure = filename.startswith("secure")
         if is_secure:
-            now = datetime.now(tz=timezone.utc) - timedelta(days=1000)
+            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=1000)
+            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=180)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=42,
-                created_at=now.replace(microsecond=0).isoformat().replace(
+                created_at=repo_now.replace(microsecond=0).isoformat().replace(
                     "+00:00", "Z",
                 ),
                 stargazers_count=5000,
                 owner_type="Organization",
             )
         else:
-            now = datetime.now(tz=timezone.utc) - timedelta(days=10)
+            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=10)
+            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=1)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=1,
-                created_at=now.replace(microsecond=0).isoformat().replace(
+                created_at=repo_now.replace(microsecond=0).isoformat().replace(
                     "+00:00", "Z",
                 ),
                 stargazers_count=2,
                 owner_type="User",
             )
+        ref_iso = ref_now.replace(microsecond=0).isoformat().replace(
+            "+00:00", "Z",
+        )
+        refs_by_action = collect_referenced_action_refs(ctx)
         meta: dict[str, ActionRepoMetadata] = {}
         for owner, repo in collect_referenced_actions(ctx):
+            refs = refs_by_action.get((owner, repo), set())
+            ref_dates = {r: ref_iso for r in refs} if refs else None
             meta[f"{owner}/{repo}"] = ActionRepoMetadata(
                 owner=owner, repo=repo,
                 contributor_count=template.contributor_count,
                 created_at=template.created_at,
                 stargazers_count=template.stargazers_count,
                 owner_type=template.owner_type,
+                ref_committed_at=ref_dates,
             )
         ctx.action_metadata = meta
         return _finding_map(WorkflowChecks(ctx).run())
@@ -491,7 +505,7 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 47)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 48)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",

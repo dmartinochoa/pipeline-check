@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.0.4] - 2026-05-12
+
+Skipped v1.0.2 and v1.0.3. Both releases failed at the same step:
+the SLSA generator's `softprops/action-gh-release` does a two-call
+sequence (create release, upload asset), and the repo's
+immutable-releases setting locks the release between those two
+calls so the upload fails with "Cannot upload assets to an immutable
+release". `publish-pypi` depends on `provenance` succeeding, so no
+v1.0.2 / v1.0.3 wheel ever reached PyPI. v1.0.4 ships the same
+release content with `release.yml` patched to set the SLSA
+generator's `upload-assets: false` — the `pipeline-check.intoto.jsonl`
+provenance file is still produced (as a workflow run artifact, so
+downstream verifiers can fetch it via the run) and PyPI continues
+to receive PEP 740 attestations in-band via the publish action's
+`attestations: true` flag.
+
 ### Added
 
 - **Per-rule policy-as-code overlay (`--policy NAME` /
@@ -76,6 +92,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   malformed shapes, multi-attestation cases, and the
   end-to-end orchestrator path.
 
+- **GHA-047 fresh-ref cooldown + CodeArtifact freshness primitive.**
+  New GitHub Actions rule flags `actions/*` references pinned to a
+  ref published within the cooldown window (default 7 days) so a
+  freshly-pushed malicious tag doesn't reach prod the day it lands.
+  Backed by a shared CodeArtifact freshness primitive that the AWS
+  rule pack reuses for package-version recency checks.
+
+- **Standards-doc generator (`scripts/gen_standards_docs.py`).**
+  Renders `docs/standards/<name>.md` from the standards registry
+  + rule registry, mirroring the provider-doc generator. Every
+  shipped standard now has a regenerated page with per-control
+  detail, the checks that evidence it, and a severity legend.
+  Hand edits get overwritten on the next regeneration; see the
+  CLAUDE.md "Standards-doc generation" section.
+
 ### Changed
 
 - **Rule-pack quality backfill (no behavior change).** Three
@@ -109,6 +140,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     24). Both the rule files' ``owasp=`` tuples and the
     ``standards/data/owasp_cicd_top_10.py`` mappings updated
     in lockstep.
+
+- **`--man` topics rebuilt from the live registries.** The
+  `standards`, `autofix`, and `secrets` pages are now generated at
+  render time from `standards.available()`,
+  `autofix.available_fixers()`, and `_BUILTIN_PATTERNS` respectively,
+  so adding a new standard / fixer / detector auto-updates the
+  manual. Drift traps in `tests/test_manual.py` enforce coverage.
+  Static topics (`gate`, `output`, `lambda`, `explain`, `diff`,
+  `inventory`) updated for the six fail conditions, the
+  junit/markdown output formats, the current Lambda kwarg
+  whitelist, and the explain renderer's full section list.
+
+### Fixed
+
+- Ruff F841 / I001 violations in `tests/test_codeartifact_freshness`.
 
 ## [1.0.1] - 2026-05-11
 
