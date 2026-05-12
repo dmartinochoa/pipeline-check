@@ -78,17 +78,19 @@ codebase has 200+ examples to crib from.
 
 ### `Rule` fields
 
-| Field            | Required | Notes                                                 |
-|------------------|----------|-------------------------------------------------------|
-| `id`             | yes      | `<PROVIDER>-<NNN>`. Globally unique.                  |
-| `title`          | yes      | One short sentence; appears in tables and reports.    |
-| `severity`       | yes      | `Severity.{CRITICAL,HIGH,MEDIUM,LOW}`.                |
-| `owasp`          | no       | OWASP CICD-SEC controls evidenced. Doc-only.          |
-| `esf`            | no       | NSA ESF controls. Doc-only.                           |
-| `cwe`            | no       | CWE IDs. Surfaces in SARIF.                           |
-| `recommendation` | yes      | One paragraph. Shown in every finding + the doc.      |
-| `docs_note`      | yes      | Longer prose for the provider doc page.               |
-| `known_fp`       | no       | Tuple of false-positive modes shown by `--explain`.   |
+| Field             | Required | Notes                                                 |
+|-------------------|----------|-------------------------------------------------------|
+| `id`              | yes      | `<PROVIDER>-<NNN>`. Globally unique.                  |
+| `title`           | yes      | One short sentence; appears in tables and reports.    |
+| `severity`        | yes      | `Severity.{CRITICAL,HIGH,MEDIUM,LOW}`.                |
+| `owasp`           | no       | OWASP CICD-SEC controls evidenced. Doc-only.          |
+| `esf`             | no       | NSA ESF controls. Doc-only.                           |
+| `cwe`             | no       | CWE IDs. Surfaces in SARIF.                           |
+| `recommendation`  | yes      | One paragraph. Shown in every finding + the doc.      |
+| `docs_note`       | yes      | Longer prose for the provider doc page.               |
+| `known_fp`        | no       | Tuple of false-positive modes shown by `--explain`.   |
+| `incident_refs`   | no       | Tuple of real-world incident references (CVE / GHSA / breach postmortems). Surfaces in `--explain` and HTML/SARIF reports. |
+| `exploit_example` | no       | Optional proof-of-exploit snippet for HIGH / CRITICAL rules. Convention: vulnerable code, attack payload, safe rewrite. Shown by `--explain` and the HTML report. |
 
 `owasp` / `esf` on `Rule` are doc-generation hints. The
 *authoritative* mapping for compliance evidence lives in

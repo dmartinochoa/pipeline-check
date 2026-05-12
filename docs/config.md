@@ -11,7 +11,8 @@ Highest wins, matches every standard tool (ruff, mypy, pytest):
 1. **CLI flags**: `--pipeline aws --fail-on HIGH`
 2. **Environment variables**: `PIPELINE_CHECK_PIPELINE=aws`, `PIPELINE_CHECK_GATE_FAIL_ON=HIGH`
 3. **Config file**: `.pipeline-check.yml` or `[tool.pipeline_check]` in `pyproject.toml`
-4. **Built-in defaults**
+4. **Policy** (`--policy NAME`): see [Named scan profiles](#named-scan-profiles) below
+5. **Built-in defaults**
 
 ## 🔍 File discovery
 

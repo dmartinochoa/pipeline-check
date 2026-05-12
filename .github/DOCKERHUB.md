@@ -45,7 +45,7 @@ docker run --rm \
 | Tag | Points to |
 |-----|-----------|
 | `latest` | most recent release on `master` |
-| `<version>` (e.g. `1.0.2`) | a specific release |
+| `<version>` (e.g. `1.0.4`) | a specific release |
 | `sha-<short>` | a specific commit build, for digest-style pinning |
 
 The same digest is published to GHCR at
