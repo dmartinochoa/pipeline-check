@@ -1921,6 +1921,192 @@ class TestSCM025:
         assert "safe-clone" not in f.description
 
 
+# ── SCM-026: webhook ships events insecurely ───────────────────────
+
+
+class TestSCM026:
+    def test_http_url_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "name": "web", "active": True,
+                    "events": ["push"],
+                    "config": {
+                        "url": "http://hooks.example.com/in",
+                        "secret": "********",
+                        "insecure_ssl": "0",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert not f.passed
+        assert "plain-HTTP" in f.description
+
+    def test_insecure_ssl_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {
+                        "url": "https://hooks.example.com/in",
+                        "secret": "********",
+                        "insecure_ssl": "1",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert not f.passed
+        assert "insecure_ssl" in f.description
+
+    def test_missing_secret_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {
+                        "url": "https://hooks.example.com/in",
+                        "secret": None,
+                        "insecure_ssl": "0",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert not f.passed
+        assert "no shared secret" in f.description
+
+    def test_secure_webhook_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {
+                        "url": "https://hooks.example.com/in",
+                        "secret": "********",
+                        "insecure_ssl": "0",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert f.passed
+        assert "1 webhook(s) ship events securely" in f.description
+
+    def test_inactive_webhook_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "active": False,
+                    "config": {
+                        "url": "http://hooks.example.com/in",
+                        "secret": None,
+                        "insecure_ssl": "1",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        # Disabled webhook doesn't fire — not the rule's surface.
+        assert f.passed
+
+    def test_no_webhooks_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert f.passed
+        assert "No webhooks" in f.description
+
+    def test_endpoint_unavailable_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=None,
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {"url": "http://x", "secret": None,
+                               "insecure_ssl": "1"},
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {"url": "http://x", "secret": None,
+                               "insecure_ssl": "1"},
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert f.passed
+        assert "archived" in f.description
+
+    def test_summary_lists_all_failure_modes_per_hook(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[
+                {
+                    "id": 1, "active": True,
+                    "config": {
+                        "url": "http://hooks.example.com/in",
+                        "secret": None,
+                        "insecure_ssl": "1",
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert not f.passed
+        # All three issues should be listed for the single hook.
+        assert "plain-HTTP" in f.description
+        assert "insecure_ssl" in f.description
+        assert "no shared secret" in f.description
+
+    def test_malformed_config_block_flagged(self):
+        # If the API somehow returned a missing / non-dict config we
+        # still want the rule to fail loudly rather than silently pass.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            webhooks=[{"id": 1, "active": True}],
+        )
+        f = _by_id(_findings(snap), "SCM-026")
+        assert not f.passed
+        assert "malformed config" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
@@ -1946,6 +2132,16 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/keys": [
                 {"id": 1, "title": "ci", "read_only": True},
             ],
+            "repos/o/r/hooks": [
+                {
+                    "id": 1, "name": "web", "active": True,
+                    "config": {
+                        "url": "https://hooks.example.com/in",
+                        "secret": "********",
+                        "insecure_ssl": "0",
+                    },
+                },
+            ],
         })
         ctx = SCMContext.for_repo("o", "r", fetcher)
         snap = ctx.repos[0]
@@ -1961,12 +2157,15 @@ class TestSnapshotActionsEndpoints:
         assert snap.deploy_keys == [
             {"id": 1, "title": "ci", "read_only": True},
         ]
+        assert isinstance(snap.webhooks, list)
+        assert len(snap.webhooks) == 1
         # Each new endpoint was hit exactly once.
         for path in (
             "repos/o/r/actions/permissions",
             "repos/o/r/actions/permissions/workflow",
             "repos/o/r/environments",
             "repos/o/r/keys",
+            "repos/o/r/hooks",
         ):
             assert path in fetcher.calls
 
@@ -1983,3 +2182,4 @@ class TestSnapshotActionsEndpoints:
         assert snap.actions_workflow_permissions is None
         assert snap.environments is None
         assert snap.deploy_keys is None
+        assert snap.webhooks is None

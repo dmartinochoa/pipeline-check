@@ -206,6 +206,13 @@ class SCMRepoSnapshot:
     #: ``None`` when the endpoint failed or the token lacks admin
     #: scope; empty list ``[]`` when no deploy keys are configured.
     deploy_keys: list[dict[str, Any]] | None = None
+    #: ``GET /repos/{owner}/{repo}/hooks``. List of webhooks, each
+    #: ``{"id", "name", "active", "events", "config": {"url",
+    #: "content_type", "secret", "insecure_ssl"}, ...}``. ``SCM-026``
+    #: reads this slot to flag plain-HTTP URLs, ``insecure_ssl: "1"``,
+    #: and missing webhook secrets. ``None`` when the endpoint failed
+    #: or the token lacks admin scope.
+    webhooks: list[dict[str, Any]] | None = None
 
 
 @dataclass(slots=True)
@@ -292,6 +299,7 @@ class SCMContext:
         actions_workflow_permissions: dict[str, Any] | None = None
         environments: dict[str, Any] | None = None
         deploy_keys: list[dict[str, Any]] | None = None
+        webhooks: list[dict[str, Any]] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -307,6 +315,9 @@ class SCMContext:
             raw_keys = fetcher.fetch(f"repos/{owner}/{name}/keys")
             if isinstance(raw_keys, list):
                 deploy_keys = [k for k in raw_keys if isinstance(k, dict)]
+            raw_hooks = fetcher.fetch(f"repos/{owner}/{name}/hooks")
+            if isinstance(raw_hooks, list):
+                webhooks = [h for h in raw_hooks if isinstance(h, dict)]
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -318,6 +329,7 @@ class SCMContext:
             actions_workflow_permissions=actions_workflow_permissions,
             environments=environments,
             deploy_keys=deploy_keys,
+            webhooks=webhooks,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

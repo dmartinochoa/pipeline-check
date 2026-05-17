@@ -72,6 +72,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-026 — webhook ships events insecurely (HTTP / no-TLS /
+  no-secret).** HIGH. Walks ``GET /repos/{owner}/{repo}/hooks``
+  and flags any active webhook hitting one or more failure modes:
+  ``config.url`` is plain ``http://`` (push payloads incl. diffs
+  go over the wire unencrypted); ``config.insecure_ssl == "1"``
+  (TLS verification disabled); ``config.secret`` is null /
+  missing (no HMAC signature — anyone who learns the URL can
+  forge events into the receiver). Each finding lists every
+  failure mode hit per webhook so the operator sees the full
+  fix scope. Inactive webhooks are skipped (they don't fire).
+  Requires admin scope; silent-pass with unavailability note
+  otherwise. GitHub masks the actual secret value as
+  ``"********"`` in API responses so the rule never handles a
+  credential directly — it detects absence, not contents.
+
 - **SCM-025 — repo has write-enabled deploy keys (push backdoor).**
   HIGH. Walks ``GET /repos/{owner}/{repo}/keys`` and flags every
   deploy key whose ``read_only`` is false. Deploy keys are repo-
