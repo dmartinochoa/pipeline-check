@@ -263,5 +263,6 @@ STANDARD = Standard(
         "SCM-039":  ["6.3.1", "6.4.3"],                  # ruleset lacks required_workflows
         "SCM-040":  ["6.3.1"],                           # ruleset lacks code_scanning gate
         "SCM-041":  ["6.4.3", "6.5.1"],                  # ruleset lacks deployment-env gate
+        "SCM-042":  ["6.4.3", "6.5.1"],                  # ruleset lacks merge queue
     },
 )

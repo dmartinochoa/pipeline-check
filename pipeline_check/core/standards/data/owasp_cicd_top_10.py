@@ -609,5 +609,6 @@ STANDARD = Standard(
         "SCM-039":  ["CICD-SEC-1", "CICD-SEC-3"],  # active ruleset doesn't pin a required workflow
         "SCM-040":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't gate on code scanning
         "SCM-041":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't gate on a deployment env
+        "SCM-042":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't require merge queue
     },
 )

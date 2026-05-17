@@ -385,5 +385,6 @@ STANDARD = Standard(
         "SCM-039": ["CC8.1", "CC7.1"],      # ruleset lacks required_workflows
         "SCM-040": ["CC8.1", "CC7.1"],      # ruleset lacks code_scanning gate
         "SCM-041": ["CC8.1"],               # ruleset lacks deployment-env gate
+        "SCM-042": ["CC8.1", "CC7.1"],      # ruleset lacks merge queue
     },
 )

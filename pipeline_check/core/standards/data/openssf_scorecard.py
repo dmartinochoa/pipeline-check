@@ -400,5 +400,6 @@ STANDARD = Standard(
         "SCM-039": ["Branch-Protection"],          # ruleset lacks required_workflows
         "SCM-040": ["Branch-Protection", "SAST"],  # ruleset lacks code_scanning gate
         "SCM-041": ["Branch-Protection"],          # ruleset lacks deployment-env gate
+        "SCM-042": ["Branch-Protection"],          # ruleset lacks merge queue
     },
 )

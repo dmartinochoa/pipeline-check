@@ -413,6 +413,7 @@ STANDARD = Standard(
         "SCM-038":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks linear_history
         "SCM-039":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks required_workflows
         "SCM-041":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # ruleset lacks deployment-env gate
+        "SCM-042":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks merge queue
         # SCM-003 (SAST), SCM-006/036 (signed commits), SCM-016
         # (private vuln reporting), SCM-026 (webhook), SCM-028
         # (private repo forking), SCM-040 (code_scanning gate) have
