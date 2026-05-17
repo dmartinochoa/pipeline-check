@@ -1,0 +1,6 @@
+child-pipeline:
+  stage: build
+  trigger:
+    include:
+      - project: my-group/templates
+        file: /.gitlab-ci.yml

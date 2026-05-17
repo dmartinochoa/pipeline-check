@@ -1,0 +1,12 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+          sh "curl -H 'Authorization: Bearer ${TOKEN}' https://api.example.com/deploy"
+        }
+      }
+    }
+  }
+}

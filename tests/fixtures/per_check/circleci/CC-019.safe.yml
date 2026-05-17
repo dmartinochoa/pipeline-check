@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  deploy:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "ab:cd:ef:01:23:45:67:89:ab:cd:ef:01:23:45:67:89"
+      - run: git push origin main
+workflows:
+  main:
+    jobs: [deploy]

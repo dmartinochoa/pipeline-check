@@ -289,5 +289,25 @@ STANDARD = Standard(
                        "Build.L3.NonFalsifiable"],                 # subject digest unpinned
         "ATTEST-006": ["Build.L1.Provenance"],                     # buildType missing
         "ATTEST-007": ["Build.L1.Provenance"],                     # SBOM supplier missing
+        # ── SCM posture (source-side trust assumptions) ─────────────
+        # SLSA's Build track presumes a stable, attested source. SCM
+        # rules that undermine that presumption — history rewrite,
+        # bypassed governance, untrusted action allowlists — map to
+        # Build.L3.NonFalsifiable and Build.L2.Signed. Most SCM rules
+        # cover review-control governance that's outside SLSA's
+        # scope (SLSA cares about the build, not the source-side
+        # review trail) and are intentionally left unmapped.
+        "SCM-006":  ["Build.L2.Signed"],            # signed commits (source-side provenance root)
+        "SCM-007":  ["Build.L3.NonFalsifiable"],    # force-push allowed (history rewrite breaks provenance)
+        "SCM-009":  ["Build.L3.NonFalsifiable"],    # branch deletions allowed (provenance lineage erased)
+        "SCM-022":  ["Build.L3.Isolated",
+                     "Build.L3.NonFalsifiable"],    # allowed_actions unrestricted (untrusted 3rd-party in build)
+        "SCM-029":  ["Build.L3.NonFalsifiable"],    # ruleset not enforced (governance silently disabled)
+        "SCM-030":  ["Build.L3.NonFalsifiable"],    # ruleset always-bypass (governance bypassed silently)
+        "SCM-034":  ["Build.L3.NonFalsifiable"],    # ruleset allows force_push
+        "SCM-035":  ["Build.L3.NonFalsifiable"],    # ruleset allows deletion
+        "SCM-036":  ["Build.L2.Signed"],            # ruleset lacks signed_commits
+        "SCM-038":  ["Build.L3.NonFalsifiable"],    # ruleset lacks linear_history (lineage muddied)
+        "SCM-039":  ["Build.L3.NonFalsifiable"],    # ruleset lacks required_workflows (scan removable in-PR)
     },
 )

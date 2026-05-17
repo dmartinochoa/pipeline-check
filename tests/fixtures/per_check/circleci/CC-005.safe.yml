@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    environment:
+      AWS_REGION: us-east-1
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build:
+          context: aws-oidc

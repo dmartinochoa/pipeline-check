@@ -1,0 +1,10 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Install') {
+      steps {
+        sh 'pip install --require-hashes -r requirements.txt'
+      }
+    }
+  }
+}

@@ -212,5 +212,57 @@ STANDARD = Standard(
         "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
         "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
         "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
+        # ── SCM posture (governance via the platform REST API) ──────
+        # Branch protection / review controls map to 6.4.3 (change
+        # control) and 6.5.1 (secure development procedures) — the
+        # two PCI requirements that demand authorized review before
+        # code changes land. Access surfaces map to the 7.2.x family
+        # (least privilege). Credential surfaces map to 8.2.1 (unique
+        # identifiers) and 8.2.2 (group/shared accounts). History
+        # protection maps to 10.3.2 (audit log integrity).
+        "SCM-001":  ["6.4.3", "6.5.1"],                  # default branch unprotected
+        "SCM-002":  ["6.4.3", "6.5.1"],                  # required reviews missing
+        "SCM-003":  ["6.3.1", "6.5.1"],                  # default code scanning disabled
+        "SCM-004":  ["6.5.1", "8.2.1"],                  # secret scanning disabled
+        "SCM-005":  ["6.3.1", "6.3.3"],                  # Dependabot security updates off
+        "SCM-006":  ["8.2.1", "6.5.1"],                  # signed commits not required
+        "SCM-007":  ["6.4.3", "10.3.2"],                 # force-push allowed
+        "SCM-008":  ["6.4.3", "6.5.1"],                  # required status checks missing
+        "SCM-009":  ["6.4.3", "10.3.2"],                 # branch deletions allowed
+        "SCM-010":  ["7.2.1", "6.4.3"],                  # admin bypass allowed
+        "SCM-011":  ["6.4.3"],                           # CODEOWNERS reviews not required
+        "SCM-012":  ["6.4.3"],                           # stale reviews not dismissed
+        "SCM-013":  ["6.4.3"],                           # conversation resolution not required
+        "SCM-014":  ["6.4.3"],                           # last-push approval not required
+        "SCM-015":  ["6.5.1"],                           # secret scanning push protection off
+        "SCM-016":  ["6.3.1"],                           # private vulnerability reporting off
+        "SCM-017":  ["6.4.3"],                           # CODEOWNERS file missing
+        "SCM-018":  ["6.4.3", "7.2.1"],                  # PR review bypass allowed
+        "SCM-019":  ["7.2.1"],                           # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020":  ["7.2.5", "8.2.1"],                  # workflow_token default write
+        "SCM-021":  ["6.4.3"],                           # Actions can approve PRs
+        "SCM-022":  ["6.4.1", "6.3.3"],                  # allowed_actions unrestricted
+        "SCM-023":  ["6.4.3"],                           # env missing reviewers
+        "SCM-024":  ["6.4.3"],                           # env branch policy missing
+        "SCM-025":  ["8.2.1", "7.2.5"],                  # deploy keys write-enabled
+        "SCM-026":  ["6.4.1", "10.3.2"],                 # webhook insecure / no HMAC
+        "SCM-027":  ["7.2.1", "7.2.5"],                  # outside collaborator elevated
+        "SCM-028":  ["7.2.5"],                           # private repo allows forking
+        # Ruleset enforcement
+        "SCM-029":  ["6.4.3"],                           # ruleset not enforced
+        "SCM-030":  ["6.4.3", "7.2.1"],                  # ruleset always-bypass
+        "SCM-031":  ["6.4.3"],                           # auto-merge enabled
+        "SCM-032":  ["6.4.3"],                           # ruleset lacks PR review
+        "SCM-033":  ["6.4.3", "6.5.1"],                  # ruleset lacks status_checks
+        "SCM-034":  ["6.4.3", "10.3.2"],                 # ruleset allows force_push
+        "SCM-035":  ["6.4.3", "10.3.2"],                 # ruleset allows deletion
+        "SCM-036":  ["8.2.1", "6.5.1"],                  # ruleset lacks signed_commits
+        "SCM-037":  ["6.4.3"],                           # ruleset stale-review dismissal
+        "SCM-038":  ["6.4.3", "10.3.2"],                 # ruleset lacks linear_history
+        "SCM-039":  ["6.3.1", "6.4.3"],                  # ruleset lacks required_workflows
+        "SCM-040":  ["6.3.1"],                           # ruleset lacks code_scanning gate
+        "SCM-041":  ["6.4.3", "6.5.1"],                  # ruleset lacks deployment-env gate
+        "SCM-042":  ["6.4.3", "6.5.1"],                  # ruleset lacks merge queue
     },
 )

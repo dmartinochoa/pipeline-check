@@ -1,0 +1,16 @@
+name: reusable-build
+on:
+  workflow_call:
+    outputs:
+      artifact_name:
+        description: Name of the produced artifact
+        value: ${{ jobs.build.outputs.name }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.pkg.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: pkg
+        run: echo "name=app-$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"

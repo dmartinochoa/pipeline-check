@@ -1,0 +1,11 @@
+version: 2.1
+jobs:
+  deploy:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - add_ssh_keys
+      - run: git push origin main
+workflows:
+  main:
+    jobs: [deploy]

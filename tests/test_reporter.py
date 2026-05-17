@@ -226,6 +226,15 @@ class TestGroupSimilar:
         out = self._render(self._dupes(3), group_similar=False)
         assert "more on lines" not in out
 
+    def test_follower_lines_cap_after_threshold(self):
+        # 13 grouped findings (1 representative + 12 followers); the
+        # inline line list caps at 10 numbers + "(and N more)" so the
+        # title column stays one line on rules that fire many times
+        # on one resource.
+        out = self._render(self._dupes(13), group_similar=True)
+        # Lines start at 10, so followers carry 11..22.
+        assert "+ 12 more on lines 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 (and 2 more)" in out
+
     def test_grouping_skipped_for_different_resources(self):
         from pipeline_check.core.checks.base import Location
         findings = [

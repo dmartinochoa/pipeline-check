@@ -1,0 +1,15 @@
+trigger: [main]
+jobs:
+  - deployment: Deploy
+    environment: production
+    pool: { vmImage: 'ubuntu-latest' }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureCLI@2
+              inputs:
+                azureSubscription: prod-sc
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: az webapp list

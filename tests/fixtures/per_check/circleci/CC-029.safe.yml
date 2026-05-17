@@ -1,0 +1,11 @@
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: ubuntu-2204:2024.05.1
+    steps:
+      - checkout
+      - run: ./scripts/integration.sh
+workflows:
+  main:
+    jobs: [integration]

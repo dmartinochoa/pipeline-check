@@ -1,0 +1,7 @@
+child-pipeline:
+  stage: build
+  trigger:
+    include:
+      - project: my-group/templates
+        file: /.gitlab-ci.yml
+        ref: v1.2.3

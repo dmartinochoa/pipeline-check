@@ -620,7 +620,7 @@ live at the repo / org settings layer rather than in workflow YAML.
 Maps each rule to the OpenSSF Scorecard check it evidences and to
 the CIS Software Supply Chain Security Guide section it satisfies.
 
-Three platforms today: **GitHub** (full 40-rule pack), **GitLab**
+Three platforms today: **GitHub** (full 42-rule pack), **GitLab**
 and **Bitbucket Cloud** (universal subset of seven rules:
 ``SCM-001``, ``SCM-002``, ``SCM-006``, ``SCM-007``, ``SCM-008``,
 ``SCM-009``, ``SCM-017``). GitHub-only rules pass on the other

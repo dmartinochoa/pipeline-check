@@ -301,6 +301,90 @@ CASES: list[CheckCase] = [
     CheckCase("CC-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
     # Category 2 — build cache poisoning
     CheckCase("CC-025", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    # ── CircleCI core backfill (CC-001..023, CC-027..031) ────────────
+    CheckCase("CC-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-003", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-004", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-005", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("CC-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("CC-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("CC-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-009", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("CC-010", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("CC-011", "CICD-SEC-10", ("ESF-C-AUDIT",)),
+    CheckCase("CC-012", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-013", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("CC-014", "CICD-SEC-5", ("ESF-D-BUILD-ENV",)),
+    CheckCase("CC-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("CC-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("CC-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("CC-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("CC-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("CC-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-029", "CICD-SEC-3"),
+    CheckCase("CC-030", "CICD-SEC-6"),
+    CheckCase("CC-031", "CICD-SEC-2"),
+    # ── GitHub Actions backfill (GHA-028..055) ───────────────────────
+    # GHA-041 / 042 / 043 / 047 are network-dependent (need
+    # ``--resolve-remote`` to populate ``ctx.action_metadata``); the
+    # per-check harness can't seed that synthetically, so they stay
+    # in KNOWN_UNCOVERED with a note.
+    CheckCase("GHA-028", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-029", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GHA-030", "CICD-SEC-2"),
+    CheckCase("GHA-031", "CICD-SEC-4"),
+    CheckCase("GHA-032", "CICD-SEC-4"),
+    CheckCase("GHA-033", "CICD-SEC-6"),
+    CheckCase("GHA-034", "CICD-SEC-2"),
+    CheckCase("GHA-035", "CICD-SEC-4"),
+    CheckCase("GHA-036", "CICD-SEC-7"),
+    CheckCase("GHA-037", "CICD-SEC-6"),
+    CheckCase("GHA-038", "CICD-SEC-4"),
+    CheckCase("GHA-039", "CICD-SEC-6"),
+    CheckCase("GHA-040", "CICD-SEC-3"),
+    CheckCase("GHA-044", "CICD-SEC-4"),
+    CheckCase("GHA-045", "CICD-SEC-4"),
+    CheckCase("GHA-046", "CICD-SEC-4"),
+    CheckCase("GHA-048", "CICD-SEC-1"),
+    CheckCase("GHA-049", "CICD-SEC-1"),
+    CheckCase("GHA-050", "CICD-SEC-2"),
+    CheckCase("GHA-051", "CICD-SEC-3"),
+    CheckCase("GHA-052", "CICD-SEC-3"),
+    CheckCase("GHA-053", "CICD-SEC-4"),
+    CheckCase("GHA-054", "CICD-SEC-6"),
+    CheckCase("GHA-055", "CICD-SEC-6"),
+    # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
+    CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-028", "CICD-SEC-3"),
+    CheckCase("GL-029", "CICD-SEC-1"),
+    CheckCase("GL-030", "CICD-SEC-3"),
+    CheckCase("GL-031", "CICD-SEC-2"),
+    CheckCase("GL-032", "CICD-SEC-7"),
+    CheckCase("GL-033", "CICD-SEC-4"),
+    # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
+    CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-028", "CICD-SEC-2"),
+    CheckCase("BB-029", "CICD-SEC-3"),
+    # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
+    CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-029", "CICD-SEC-2"),
+    CheckCase("ADO-030", "CICD-SEC-7"),
+    # ── Jenkins backfill (JF-030..035) ───────────────────────────────
+    CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-032", "CICD-SEC-7"),
+    CheckCase("JF-033", "CICD-SEC-6"),
+    CheckCase("JF-034", "CICD-SEC-6"),
+    CheckCase("JF-035", "CICD-SEC-3"),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -358,23 +442,12 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 # ``CheckCase`` or a ``KNOWN_UNCOVERED`` entry trips
 # ``test_every_workflow_check_has_a_case``, which is the point.
 KNOWN_UNCOVERED: frozenset[str] = frozenset({
-    # GitHub Actions — GHA-028..055 (per-rule tests under
-    # ``tests/github/test_gha048_to_050.py`` and
-    # ``tests/github/test_gha051_to_055.py`` cover the new worm-
-    # mitigation + advanced PPE packs; richer real-example
-    # snippets are queued for a follow-up backfill).
-    *(f"GHA-{i:03d}" for i in range(28, 56)),
-    # GitLab CI — GL-026..033
-    *(f"GL-{i:03d}" for i in range(26, 34)),
-    # Bitbucket — BB-026..029
-    *(f"BB-{i:03d}" for i in range(26, 30)),
-    # Azure DevOps — ADO-027..030
-    *(f"ADO-{i:03d}" for i in range(27, 31)),
-    # Jenkins — JF-030..035
-    *(f"JF-{i:03d}" for i in range(30, 36)),
-    # CircleCI — only CC-024..026 currently have CASES.
-    *(f"CC-{i:03d}" for i in range(1, 24)),
-    *(f"CC-{i:03d}" for i in range(27, 32)),
+    # GHA-041 / 042 / 043 / 047 are the network-dependent action-
+    # reputation rules: they pass silently in the per-check harness
+    # because ``ctx.action_metadata`` is empty (only populated by
+    # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
+    # which seeds the metadata synthetically.
+    "GHA-041", "GHA-042", "GHA-043", "GHA-047",
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step

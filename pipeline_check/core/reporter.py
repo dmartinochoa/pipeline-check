@@ -46,6 +46,12 @@ _GRADE_COLOR: dict[str, str] = {
     "D": "red",
 }
 
+#: Hard cap on how many follower line numbers render inline in the
+#: grouped-output title cell before the renderer collapses the rest
+#: into "(and N more)". Larger lists balloon the row into a
+#: multi-line wall on rules that fire many times on one resource.
+_FOLLOWER_LINES_CAP = 10
+
 
 def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
     """Return findings at or above *threshold* severity, failures first."""
@@ -257,9 +263,17 @@ def report_terminal(
             if f.locations and f.locations[0].start_line is not None
         ]
         if lines:
+            # Cap the inline list so a rule that fires 60+ times on
+            # one resource (k8s manifest sets) doesn't balloon the
+            # Title column into a multi-line wall.
+            shown = lines[:_FOLLOWER_LINES_CAP]
+            extra = len(lines) - len(shown)
+            lines_phrase = ", ".join(shown)
+            if extra:
+                lines_phrase += f" (and {extra} more)"
             follower_cell = (
                 f"[dim]      + {len(followers)} more on lines "
-                f"{', '.join(lines)} (rerun with --no-group to expand)[/dim]"
+                f"{lines_phrase} (rerun with --no-group to expand)[/dim]"
             )
         else:
             follower_cell = (
@@ -303,7 +317,11 @@ def report_terminal(
             if follower.locations and follower.locations[0].start_line is not None:
                 all_lines.append(follower.locations[0].start_line)
         if len(all_lines) > 1:
-            lines_csv = ", ".join(str(n) for n in all_lines)
+            shown_lines = all_lines[:_FOLLOWER_LINES_CAP]
+            extra = len(all_lines) - len(shown_lines)
+            lines_csv = ", ".join(str(n) for n in shown_lines)
+            if extra:
+                lines_csv += f" (and {extra} more)"
             path = f.locations[0].path if f.locations else f.resource
             locations_text = f"\n[bold]Locations:[/bold] {path}:{lines_csv}"
         elif followers:

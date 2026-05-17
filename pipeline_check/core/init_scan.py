@@ -12,7 +12,6 @@ legacy finding is baselined and only new regressions block merges.
 """
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -76,34 +75,37 @@ def _pick_top(findings: list[Finding], fixers: set[str]) -> list[TopFinding]:
 
     Sort key: severity desc, then "has autofixer" desc (give the user a
     quick win), then check_id asc for determinism. Deduped on
-    ``(check_id, resource)`` so the same finding repeated across N
-    workflows doesn't crowd out other rules from the list.
+    ``check_id`` alone, so the same rule firing across N workflows
+    contributes one row and doesn't crowd out other rules from the
+    list. The first-seen instance keeps its resource for the row
+    label.
     """
     failing = [f for f in findings if not f.passed]
-    seen: set[tuple[str, str]] = set()
-    deduped: list[Finding] = []
+    seen: set[str] = set()
+    deduped: list[tuple[Finding, bool]] = []
     for f in failing:
-        key = (f.check_id.upper(), f.resource)
+        key = f.check_id.upper()
         if key in seen:
             continue
         seen.add(key)
-        deduped.append(f)
+        deduped.append((f, key in fixers))
 
-    def sort_key(f: Finding) -> tuple[int, int, str]:
-        # Higher severity first, then "has fixer" first, then alpha.
-        has_fix = f.check_id.upper() in fixers
-        return (-severity_rank(f.severity), 0 if has_fix else 1, f.check_id)
-
-    deduped.sort(key=sort_key)
+    deduped.sort(
+        key=lambda pair: (
+            -severity_rank(pair[0].severity),
+            0 if pair[1] else 1,
+            pair[0].check_id,
+        ),
+    )
     return [
         TopFinding(
             check_id=f.check_id,
             severity=f.severity,
             title=f.title,
             resource=f.resource,
-            fixable=f.check_id.upper() in fixers,
+            fixable=has_fix,
         )
-        for f in deduped[:TOP_FIX_COUNT]
+        for f, has_fix in deduped[:TOP_FIX_COUNT]
     ]
 
 
@@ -150,27 +152,3 @@ def build_init_scan_result(
         baseline_json=baseline_json,
         top=_pick_top(findings, fixers),
     )
-
-
-def parse_baseline_summary(path: str) -> tuple[int, str] | None:
-    """Return ``(failing_count, grade)`` from a baseline JSON file.
-
-    Used by the gate-failure trailer to tell the user "X new findings
-    since baseline". Returns ``None`` when the file is missing or
-    malformed; callers fall back to a less-specific hint.
-    """
-    try:
-        with open(path, encoding="utf-8") as fh:
-            doc = json.load(fh)
-    except (OSError, json.JSONDecodeError):
-        return None
-    findings = doc.get("findings")
-    if not isinstance(findings, list):
-        return None
-    failing = sum(
-        1 for f in findings
-        if isinstance(f, dict) and not f.get("passed", True)
-    )
-    score = doc.get("score") or {}
-    grade = score.get("grade") if isinstance(score, dict) else None
-    return failing, grade if isinstance(grade, str) else ""

@@ -1,0 +1,15 @@
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+jobs:
+  deploy:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - aws-cli/setup
+      - run: aws s3 sync ./dist s3://my-bucket/
+workflows:
+  main:
+    jobs:
+      - deploy:
+          role_arn: arn:aws:iam::123456789012:role/ci-deploy

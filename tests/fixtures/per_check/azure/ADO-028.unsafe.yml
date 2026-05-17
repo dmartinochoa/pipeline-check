@@ -1,0 +1,6 @@
+trigger: [main]
+jobs:
+  - job: Build
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - bash: pip install git+https://github.com/example/lib.git

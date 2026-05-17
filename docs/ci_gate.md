@@ -228,7 +228,7 @@ prints a short summary to **stderr**:
 [gate] FAIL
         - 3 finding(s) at or above HIGH (CRITICAL, HIGH): --fail-on HIGH
         - 7 failing findings exceed --max-failures 5
-[gate] next: 2 of 3 failing finding(s) have autofixers; run `pipeline_check --fix --apply` to apply them
+[gate] next: 2 of 3 failing findings are autofixable; run `pipeline_check --fix --apply` to apply them
 [gate] 12 finding(s) suppressed by baseline
 [gate] 2 finding(s) suppressed by ignore file
 ```

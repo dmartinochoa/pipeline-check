@@ -1,0 +1,6 @@
+build:
+  stage: build
+  tags:
+    - "$CI_COMMIT_REF_NAME"
+  script:
+    - make build

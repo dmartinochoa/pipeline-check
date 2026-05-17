@@ -1,0 +1,12 @@
+parameters:
+  - name: targetPool
+    type: string
+    default: linux-pool
+
+trigger: [main]
+jobs:
+  - job: Build
+    pool:
+      name: ${{ parameters.targetPool }}
+    steps:
+      - bash: make build

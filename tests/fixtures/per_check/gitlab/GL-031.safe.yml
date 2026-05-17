@@ -1,0 +1,8 @@
+deploy:
+  stage: deploy
+  environment: production
+  id_tokens:
+    AWS_TOKEN:
+      aud: https://gitlab.example.com
+  script:
+    - aws s3 sync ./dist s3://my-bucket/

@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: ./scripts/notify.sh "Building $CIRCLE_BRANCH"
+workflows:
+  main:
+    jobs: [build]

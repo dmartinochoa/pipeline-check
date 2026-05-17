@@ -1,0 +1,11 @@
+version: 2.1
+setup: true
+jobs:
+  generate:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: ./scripts/generate-config.sh
+workflows:
+  setup:
+    jobs: [generate]

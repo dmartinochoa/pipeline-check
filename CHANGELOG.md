@@ -52,6 +52,41 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   SARIF / JUnit outputs always carry every finding regardless of
   this flag.
 
+- **SCM-042 — active ruleset doesn't require merge queue.**
+  LOW. Walks active rulesets targeting the default branch
+  looking for an entry with ``type: "merge_queue"``. Pairs
+  with SCM-033 (required status checks) as the concurrency-
+  hardening complement: SCM-033 ensures CI passes BEFORE
+  merge; SCM-042's merge queue ensures CI passes AFTER merge
+  in queue order, against the queue's post-merge candidate
+  commit. Without it, two PRs that individually pass CI can
+  both merge into the same trunk and produce a state where
+  the combined diff wasn't validated. No legacy branch-
+  protection analog. Mapped across the 9 frameworks that
+  already evidence SCM (OWASP, CIS, Scorecard, ESF, NIST
+  800-53, SOC 2, NIST CSF 2.0, NIST SSDF, PCI DSS); SLSA's
+  build-track scope doesn't extend to merge ordering so left
+  off.
+
+- **SCM-041 — active ruleset doesn't gate on a deployment
+  environment.** LOW. Walks active rulesets targeting the
+  default branch looking for a ``required_deployments`` entry
+  whose ``parameters.required_deployment_environments`` is a
+  non-empty list. Fires when none is found, when the list is
+  empty, or when params are absent. Complements SCM-023
+  (environment missing reviewers) and SCM-024 (environment
+  branch policy missing): SCM-023/024 ensure the environment
+  itself is gated; SCM-041 makes a successful deployment to
+  that environment a merge prerequisite. Without it, a PR can
+  merge without a smoke-test deployment having run, even when
+  the environment is rigorously configured. No legacy branch-
+  protection analog; passes silently with absence-not-coverage
+  language when no rulesets / no targeting rulesets are
+  configured. Mapped across all 9 frameworks that already
+  evidence SCM (OWASP, CIS, Scorecard, ESF, NIST 800-53, SOC 2,
+  NIST CSF 2.0, NIST SSDF, PCI DSS); SLSA's build-track scope
+  doesn't extend to post-build deployment gating so left off.
+
 - **SCM-040 — active ruleset doesn't gate on code scanning
   results.** LOW. Walks the merged ``rules`` array on every
   active ruleset looking for a ``code_scanning`` entry whose
@@ -89,6 +124,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   legacy branch-protection analog — with description language
   that says the gate doesn't exist rather than implying it's
   enforced elsewhere.
+
+- **SCM-038 — active ruleset doesn't require linear history.** LOW.
+  Walks the merged ``rules`` array on every active ruleset looking
+  for an entry with ``type: "required_linear_history"``. Fires when
+  none is found. Merge commits aren't a direct attacker primitive
+  (force-push, SCM-034, is the history-rewrite surface), but they
+  muddy ``git log --first-parent`` triage and git-bisect during
+  incident response and hide which specific commits landed when a
+  long-lived feature branch is merged. Pairs with SCM-036 (signed
+  commits) for tamper-evident linear history. Unlike SCM-033..037
+  the rule has no legacy branch-protection analog — the
+  ``required_linear_history`` rule_type is ruleset-only — so the
+  rule passes silently when no rulesets are configured with a
+  description that names the absence-not-coverage state explicitly.
 
 - **Two new dependency-supply-chain providers: `npm` and `pypi`.**
   Lockfile / manifest static analysis, no `npm install`, no `pip
@@ -203,20 +252,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     every Node startup, the Node equivalent of ``LD_PRELOAD``)
     or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
     debugger control to anyone who can reach the port).
-
-- **SCM-038 — active ruleset doesn't require linear history.** LOW.
-  Walks the merged ``rules`` array on every active ruleset looking
-  for an entry with ``type: "required_linear_history"``. Fires when
-  none is found. Merge commits aren't a direct attacker primitive
-  (force-push, SCM-034, is the history-rewrite surface), but they
-  muddy ``git log --first-parent`` triage and git-bisect during
-  incident response and hide which specific commits landed when a
-  long-lived feature branch is merged. Pairs with SCM-036 (signed
-  commits) for tamper-evident linear history. Unlike SCM-033..037
-  the rule has no legacy branch-protection analog — the
-  ``required_linear_history`` rule_type is ruleset-only — so the
-  rule passes silently when no rulesets are configured with a
-  description that names the absence-not-coverage state explicitly.
 
 - **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
   Completes the ruleset analog of legacy branch protection. Each
@@ -520,6 +555,124 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     are the standard loader-hijack escalation primitive.
 
 ### Changed
+
+- **Added SCM coverage to PCI DSS v4 and SLSA.** PCI DSS gets
+  the full SCM range (40 rules); SLSA gets a narrow selection
+  (11 rules) since most SCM rules cover review-control
+  governance outside SLSA's build-track scope.
+  - **PCI DSS v4**: 154/526 → 194/526 (+40 rules, full SCM
+    range). 6.4.3 (Change control) and 6.5.1 (Secure
+    development procedures) carry the branch-protection /
+    review-control / ruleset rule-type bulk; 6.3.1 / 6.3.3
+    carry scanning/patching surfaces; 6.4.1 carries
+    allowed-actions and webhook hygiene; 7.2.x carries
+    least-privilege; 8.2.1 carries unique-identifier surfaces
+    (signed commits, workflow tokens, deploy keys); 10.3.2
+    carries history-protection (force-push, deletion,
+    linear-history).
+  - **SLSA**: 200/526 → 211/526 (+11 rules, selective).
+    Build.L2.Signed carries signed commits (SCM-006/SCM-036)
+    as the source-side root of provenance attestation;
+    Build.L3.NonFalsifiable carries the history-rewrite /
+    governance-bypass surfaces that undermine provenance
+    integrity (SCM-007/009 force-push/deletion;
+    SCM-029/030 ruleset enforcement; SCM-034/035 ruleset
+    force-push/deletion; SCM-038 linear history; SCM-039
+    required workflows); Build.L3.Isolated carries SCM-022
+    (allowed-actions unrestricted = untrusted 3rd-party in
+    build env).
+
+  Together with the prior CIS / Scorecard / ESF / NIST 800-53
+  / SOC 2 / NIST CSF 2.0 / NIST SSDF backfills, SCM rules now
+  have coverage on 9 of the 12 framework standards. Remaining
+  gaps: NIST 800-190 (container-focused), S2C2F (OSS-deps
+  focused), ``cis_aws_foundations`` and ``cis_kubernetes``
+  (intentionally narrow per their floor comments).
+
+- **Added SCM coverage to NIST CSF 2.0 and NIST SSDF.** Two
+  more frameworks commonly used for CI/CD compliance gating
+  get SCM mappings:
+  - **NIST CSF 2.0**: 326/526 → 369/526 (+43 rules, full SCM
+    range). PR.PS-06 (Secure software development practices)
+    carries branch-protection / review-control / ruleset
+    rule-type surfaces; PR.AA-05 / PR.AA-01 / PR.AA-03 carry
+    access and identity surfaces; PR.DS-01 / PR.DS-02 carry
+    secret-scanning + webhook transport; DE.CM-09 carries
+    detection surfaces; GV.SC-05 + PR.PS-05 carry the
+    allowed-actions / supply-chain governance surface;
+    PR.PS-01 carries configuration-management; RS.MA-01
+    carries the private vulnerability reporting channel.
+  - **NIST SSDF**: 144/526 → 184/526 (+40 rules, full SCM
+    range). The PS.1 family ("Protect all forms of code from
+    unauthorized access and tampering") is the workhorse for
+    branch-protection / ruleset rule-type surfaces; PS.2.1
+    carries signed commits; PW.4.1 / PW.4.4 carry allowed-
+    actions governance; PO.5.1 carries environment separation;
+    PO.3.2 carries webhook channel security; PW.6.1 carries
+    required-workflows; RV.1.1 carries scan and vuln-reporting
+    surfaces.
+
+  Together with the prior CIS / Scorecard / ESF / NIST 800-53
+  / SOC 2 backfills, SCM rules now have coverage on 7 of the
+  12 framework standards. Remaining gaps: NIST 800-190
+  (container-focused), PCI DSS v4 (less natural fit), S2C2F
+  (OSS-deps focused), SLSA (provenance focused), and
+  ``cis_aws_foundations`` / ``cis_kubernetes`` (intentionally
+  narrow per their floor comments).
+
+- **Added SCM coverage to NIST 800-53 and SOC 2.** Two
+  compliance frameworks commonly used as CI/CD gates had zero
+  SCM coverage. SCM-001..040 now map:
+  - **NIST 800-53**: 233/526 → 293/526 (+39 rules). SA-15
+    (Development Process, Standards, and Tools) carries
+    branch-protection / review-control / ruleset rule-type
+    concerns; AC-3 / AC-6 carry access enforcement; SI-7 / AU-9
+    carry history-integrity surfaces; IA-5 carries credential-
+    shaped surfaces (workflow tokens, deploy keys, webhook
+    HMAC); SR-3 / SR-4 / SR-11 carry signed-commit and
+    allowed-actions surfaces; SA-11 carries SAST gates. SCM-016
+    (private vuln reporting) is an incident-response surface
+    that 800-53's IR family handles, which isn't currently in
+    this standard's control catalog; left unmapped with a
+    comment.
+  - **SOC 2**: 250/526 → 280/526 (+40 rules, full SCM range).
+    CC8.1 (Change Management) carries the branch-protection /
+    review-control / ruleset rule-type surface, since SOC 2
+    frames source review as authorized-change-before-
+    deployment. CC6.1 / CC6.2 / CC6.3 carry logical-access
+    surfaces; CC6.7 carries webhook transport; CC6.8 carries
+    allowed-actions; CC7.1 / CC7.3 / CC7.4 carry the
+    vulnerability and incident surfaces.
+
+- **Backfilled SCM coverage on CIS SSCS, OpenSSF Scorecard, and
+  ESF supply chain.** SCM-020..040 (Actions governance,
+  environment protection, deploy-keys, webhooks, outside-
+  collaborator audit, fork-policy, ruleset enforcement /
+  always-bypass / per-rule-type coverage / auto-merge) landed
+  OWASP-only across this branch. This commit backfills the
+  framework mappings the floor comments in
+  ``tests/test_standards.py`` had queued:
+  - **CIS SSCS**: 197/526 → 217/526 (+20 rules). SCM-020..040
+    map to CIS controls in the 1.x source-code and 5.x
+    deployment sections; SCM-026 (webhook channel) has no clean
+    CIS fit and is left unmapped with a comment.
+  - **OpenSSF Scorecard**: 280/526 → 301/526 (+21 rules).
+    SCM-020..040 fold into the Branch-Protection / Code-Review
+    / Token-Permissions / Pinned-Dependencies / SAST checks
+    Scorecard already evidences via SCM-001..017.
+  - **NSA/CISA ESF supply chain**: 293/526 → 326/526 (+33
+    rules). First SCM coverage on this framework — the rules
+    declared ``esf=`` tags in their definitions all along, but
+    the standard's data file had zero SCM mappings. SCM-001..040
+    map to ESF-D-CODE-REVIEW for branch-protection / review-
+    control concerns, ESF-D-SECRETS for scanning, ESF-D-TOKEN-
+    HYGIENE for long-lived credentials, ESF-C-LEAST-PRIV for
+    governance scope, and ESF-C-APPROVAL / ESF-C-ENV-SEP for
+    environment protection. Six SCM rules (SCM-003 SAST,
+    SCM-006/036 signed commits, SCM-016 private vuln reporting,
+    SCM-026 webhook, SCM-028 fork policy, SCM-040 code-scanning
+    gate) have no clean ESF control fit and are left unmapped
+    with a comment explaining why.
 
 - **SCM-032..040 now check that rulesets actually target the
   default branch.** All nine ruleset rule-type checks used to

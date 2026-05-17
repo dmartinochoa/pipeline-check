@@ -1,0 +1,19 @@
+name: ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cat > .github/workflows/lint.yml <<'EOF'
+          name: lint
+          on: push
+          jobs:
+            lint:
+              runs-on: ubuntu-latest
+              steps:
+                - run: echo "lint"
+          EOF

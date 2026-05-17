@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  test:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: npm test
+workflows:
+  main:
+    jobs: [test]

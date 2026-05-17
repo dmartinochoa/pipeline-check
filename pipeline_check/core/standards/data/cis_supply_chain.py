@@ -274,5 +274,32 @@ STANDARD = Standard(
         "SCM-017":  ["1.1.5"],                      # CODEOWNERS file missing
         "SCM-018":  ["1.1.5"],                      # PR review bypass allowed
         "SCM-019":  ["1.1.17"],                     # push-restriction allowlist names users
+        # ── Actions governance + environment protection ─────────────
+        "SCM-020":  ["2.4.3"],                      # workflow_token default write (pipeline exec access)
+        "SCM-021":  ["1.1.5"],                      # Actions can approve PRs (PR review trust)
+        "SCM-022":  ["1.4.1", "3.1.5"],             # allowed_actions unrestricted (3rd-party verify, trusted pkg mgrs)
+        "SCM-023":  ["5.1.4", "1.1.5"],             # env missing reviewers (deployment config review)
+        "SCM-024":  ["5.2.1"],                      # env branch policy missing (deployment env separation)
+        "SCM-025":  ["2.4.3", "1.3.4"],             # deploy keys write-enabled (long-lived push credential)
+        # SCM-026 (webhook insecure transport / no HMAC): CIS SSCS
+        # has no control covering the webhook-as-event-channel
+        # surface; left unmapped.
+        "SCM-027":  ["1.1.5"],                      # outside collaborator elevated (review trust boundary)
+        "SCM-028":  ["4.2.1"],                      # private repo allows forking (source-leak surface)
+        # ── Ruleset enforcement (modern variant of branch protection) ──
+        "SCM-029":  ["1.1.17"],                     # ruleset not enforced
+        "SCM-030":  ["1.1.17", "1.1.5"],            # ruleset always-bypass
+        "SCM-031":  ["1.1.5"],                      # auto-merge enabled
+        "SCM-032":  ["1.1.5"],                      # ruleset lacks PR review
+        "SCM-033":  ["1.1.5", "1.1.7"],             # ruleset lacks status_checks (CI gate)
+        "SCM-034":  ["1.1.17"],                     # ruleset allows force_push
+        "SCM-035":  ["1.1.17"],                     # ruleset allows deletion
+        "SCM-036":  ["1.1.6"],                      # ruleset lacks signed_commits
+        "SCM-037":  ["1.1.5"],                      # ruleset stale-review dismissal
+        "SCM-038":  ["1.1.17"],                     # ruleset lacks linear_history (history protection)
+        "SCM-039":  ["1.1.7", "1.1.8"],             # ruleset lacks required_workflows (SAST/SCA gate)
+        "SCM-040":  ["1.1.7"],                      # ruleset lacks code_scanning gate (SAST gate)
+        "SCM-041":  ["5.1.4", "5.2.1"],             # ruleset lacks deployment-env gate
+        "SCM-042":  ["1.1.5"],                      # ruleset lacks merge queue (review-control)
     },
 )

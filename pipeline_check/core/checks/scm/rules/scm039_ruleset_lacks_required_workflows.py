@@ -54,7 +54,7 @@ RULE = Rule(
         "when no rulesets are configured — required workflows "
         "have no legacy branch-protection analog, so absence of "
         "rulesets means the gate simply doesn't exist (not that "
-        "it's carried elsewhere)."
+        "it's enforced elsewhere)."
     ),
     known_fp=(
         "Repos that don't run any workflow-based gating at all "
@@ -129,22 +129,29 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
     targeting, unavailable_rs, scoped_away = (
         active_rulesets_targeting_default(snapshot)
     )
-    if not targeting and not unavailable_rs and scoped_away:
+    if not targeting and scoped_away:
         labels = [ruleset_label(rs) for rs in scoped_away]
         default = default_branch_name(snapshot)
+        desc = (
+            f"{len(scoped_away)} active ruleset(s) configured "
+            f"but none target the default branch "
+            f"(refs/heads/{default}): "
+            f"{', '.join(labels[:3])}"
+            f"{'…' if len(labels) > 3 else ''}. Required-"
+            f"workflows enforcement has no legacy branch-"
+            f"protection analog, so the default branch has "
+            f"no scan-removal-resistant CI gate."
+        )
+        if unavailable_rs:
+            desc += (
+                f" Additionally, {len(unavailable_rs)} active "
+                "ruleset(s) had detail-endpoint errors and were "
+                "not evaluated."
+            )
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description=(
-                f"{len(scoped_away)} active ruleset(s) configured "
-                f"but none target the default branch "
-                f"(refs/heads/{default}): "
-                f"{', '.join(labels[:3])}"
-                f"{'…' if len(labels) > 3 else ''}. Required-"
-                f"workflows enforcement has no legacy branch-"
-                f"protection analog, so the default branch has "
-                f"no scan-removal-resistant CI gate."
-            ),
+            description=desc,
             recommendation=RULE.recommendation, passed=False,
         )
     if not targeting and not unavailable_rs:

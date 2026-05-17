@@ -1,0 +1,4 @@
+build:
+  stage: build
+  script:
+    - pip install --require-hashes -r requirements.txt

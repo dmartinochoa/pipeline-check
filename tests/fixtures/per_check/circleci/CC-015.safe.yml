@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run:
+          name: Build
+          no_output_timeout: 15m
+          command: make build
+workflows:
+  main:
+    jobs: [build]

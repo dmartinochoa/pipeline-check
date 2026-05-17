@@ -1,0 +1,10 @@
+name: pr-lint
+on: pull_request_target
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: bash scripts/lint.sh

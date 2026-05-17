@@ -435,5 +435,56 @@ STANDARD = Standard(
         "BK-011": ["GV.SC-05"],                 # no SLSA provenance
         "BK-012": ["PR.PS-02", "DE.CM-09"],     # no vuln scan
         "BK-013": ["PR.AA-05"],                 # no branches filter
+        # ── SCM posture (governance via the platform REST API) ──────
+        # Branch protection / review controls map primarily to
+        # PR.PS-06 (secure software development practices). Access-
+        # control surfaces map to PR.AA-05 (access permissions) and
+        # PR.AA-01 (identities and credentials). Scanning / detection
+        # surfaces map to DE.CM-09. Supply-chain surfaces (allowed
+        # actions, Dependabot) map to GV.SC-05.
+        "SCM-001":  ["PR.PS-06", "PR.AA-05"],   # default branch unprotected
+        "SCM-002":  ["PR.PS-06"],               # required reviews missing
+        "SCM-003":  ["PR.PS-06", "DE.CM-09"],   # default code scanning disabled
+        "SCM-004":  ["PR.DS-01", "DE.CM-09"],   # secret scanning disabled
+        "SCM-005":  ["PR.PS-02", "GV.SC-05"],   # Dependabot security updates off
+        "SCM-006":  ["PR.PS-06", "PR.AA-03"],   # signed commits not required
+        "SCM-007":  ["PR.PS-06"],               # force-push allowed
+        "SCM-008":  ["PR.PS-06"],               # required status checks missing
+        "SCM-009":  ["PR.PS-06"],               # branch deletions allowed
+        "SCM-010":  ["PR.AA-05", "PR.PS-06"],   # admin bypass allowed
+        "SCM-011":  ["PR.PS-06"],               # CODEOWNERS reviews not required
+        "SCM-012":  ["PR.PS-06"],               # stale reviews not dismissed
+        "SCM-013":  ["PR.PS-06"],               # conversation resolution not required
+        "SCM-014":  ["PR.PS-06"],               # last-push approval not required
+        "SCM-015":  ["PR.DS-01", "DE.CM-09"],   # secret scanning push protection off
+        "SCM-016":  ["RS.MA-01"],               # private vulnerability reporting off
+        "SCM-017":  ["PR.PS-06"],               # CODEOWNERS file missing
+        "SCM-018":  ["PR.PS-06", "PR.AA-05"],   # PR review bypass allowed
+        "SCM-019":  ["PR.AA-05"],               # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020":  ["PR.AA-01", "PR.AA-05"],   # workflow_token default write
+        "SCM-021":  ["PR.PS-06"],               # Actions can approve PRs
+        "SCM-022":  ["GV.SC-05", "PR.PS-05"],   # allowed_actions unrestricted
+        "SCM-023":  ["PR.PS-06"],               # env missing reviewers
+        "SCM-024":  ["PR.PS-01"],               # env branch policy missing
+        "SCM-025":  ["PR.AA-01"],               # deploy keys write-enabled
+        "SCM-026":  ["PR.DS-02", "PR.AA-01"],   # webhook insecure / no HMAC
+        "SCM-027":  ["PR.AA-05"],               # outside collaborator elevated
+        "SCM-028":  ["PR.AA-05"],               # private repo allows forking
+        # Ruleset enforcement
+        "SCM-029":  ["PR.PS-06", "PR.PS-01"],   # ruleset not enforced
+        "SCM-030":  ["PR.AA-05", "PR.PS-06"],   # ruleset always-bypass
+        "SCM-031":  ["PR.PS-06"],               # auto-merge enabled
+        "SCM-032":  ["PR.PS-06"],               # ruleset lacks PR review
+        "SCM-033":  ["PR.PS-06"],               # ruleset lacks status_checks
+        "SCM-034":  ["PR.PS-06"],               # ruleset allows force_push
+        "SCM-035":  ["PR.PS-06"],               # ruleset allows deletion
+        "SCM-036":  ["PR.PS-06", "PR.AA-03"],   # ruleset lacks signed_commits
+        "SCM-037":  ["PR.PS-06"],               # ruleset stale-review dismissal
+        "SCM-038":  ["PR.PS-06"],               # ruleset lacks linear_history
+        "SCM-039":  ["PR.PS-06", "PR.PS-05"],   # ruleset lacks required_workflows
+        "SCM-040":  ["DE.CM-09", "PR.PS-06"],   # ruleset lacks code_scanning gate
+        "SCM-041":  ["PR.PS-06", "PR.PS-01"],   # ruleset lacks deployment-env gate
+        "SCM-042":  ["PR.PS-06"],               # ruleset lacks merge queue
     },
 )
