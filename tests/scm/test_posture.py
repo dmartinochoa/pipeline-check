@@ -3210,6 +3210,70 @@ class TestSCM038LinearHistory:
         assert "no legacy branch-protection" in f.description.lower()
 
 
+class TestSCM039RequiredWorkflows:
+    def test_no_workflows_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_workflows_rule_with_entries_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "workflows",
+                 "parameters": {"workflows": [
+                     {"repository_id": 1,
+                      "path": ".github/workflows/scan.yml",
+                      "ref": "refs/heads/main"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert f.passed
+
+    def test_workflows_rule_empty_list_fails(self):
+        # An empty ``workflows`` list documents the gate without
+        # filling it — treated the same as no rule.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "workflows",
+                 "parameters": {"workflows": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_workflows_rule_no_params_fails(self):
+        # Bare ``workflows`` with no params is malformed; treat as
+        # not-satisfied (don't crash, don't pass).
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "workflows"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        # Required workflows has no legacy branch-protection
+        # analog; absence-not-coverage language must be present.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 

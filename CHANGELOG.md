@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM-039 — active ruleset doesn't pin a required workflow.**
+  LOW. Walks the merged ``rules`` array on every active ruleset
+  looking for a ``workflows`` entry whose
+  ``parameters.workflows`` is a non-empty list. Fires when none
+  is found, when the list is empty, or when params are
+  missing entirely. Closes a gap that SCM-033 (status checks)
+  doesn't cover: ``required_status_checks`` gates on a context
+  *name* the workflow chooses to report — a PR that edits the
+  workflow YAML in its own branch to remove or rename that
+  context bypasses the gate. The ``workflows`` rule pins the
+  workflow file at a vetted ref (``main`` or a specific SHA) so
+  GitHub forces that workflow to run against the PR's code
+  regardless of what the PR did to the workflow YAML. The
+  scan-removal-resistant variant. Passes silently when no
+  rulesets are configured — the rule_type is ruleset-only, no
+  legacy branch-protection analog — with description language
+  that says the gate doesn't exist rather than implying it's
+  enforced elsewhere.
+
 - **Two new dependency-supply-chain providers: `npm` and `pypi`.**
   Lockfile / manifest static analysis, no `npm install`, no `pip
   install`, no registry pull. The first cut of the "dependency
