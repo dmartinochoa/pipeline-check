@@ -55,7 +55,7 @@ _PIP_INSTALL_RE = re.compile(
 )
 _TRUSTED_HOST_RE = re.compile(r"--trusted-host\b", re.IGNORECASE)
 _HTTP_INDEX_RE = re.compile(
-    r"(?:-i|--index-url|--extra-index-url)\s+http://",
+    r"(?:-i|--index-url|--extra-index-url)(?:\s+|=)http://",
     re.IGNORECASE,
 )
 

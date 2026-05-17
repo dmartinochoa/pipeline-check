@@ -150,7 +150,7 @@ def report_terminal(
             console.print(
                 f"[green]No failures at or above {severity_threshold.value}.[/green] "
                 f"[dim]Use --severity-threshold INFO to widen, "
-                f"or --show-passed to list every check.[/dim]"
+                f"or pair it with --show-passed to list every check.[/dim]"
             )
         else:
             console.print(
