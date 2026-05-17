@@ -2,9 +2,8 @@
 recommends a gate, writes a baseline, and prints a top-N summary.
 
 The unit tests below pin the pure-function pieces (recommend_fail_on,
-build_init_scan_result, parse_baseline_summary, _pick_top). The CLI
-end-to-end behavior lives in tests/test_cli_ease_of_use.py and
-tests/test_cli_smart_init.py.
+build_init_scan_result, _pick_top). The CLI end-to-end behavior lives
+in tests/test_cli_ease_of_use.py and tests/test_cli_smart_init.py.
 """
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ from pipeline_check.core.init_scan import (
     InitScanResult,
     _pick_top,
     build_init_scan_result,
-    parse_baseline_summary,
 )
 
 
@@ -88,6 +86,20 @@ class TestPickTop:
         # the rest of the top list off the screen.
         findings = [
             _f("GHA-001", Severity.HIGH, resource="wf.yml") for _ in range(20)
+        ] + [
+            _f("GHA-002", Severity.MEDIUM, resource="wf.yml"),
+        ]
+        top = _pick_top(findings, fixers=set())
+        assert [t.check_id for t in top] == ["GHA-001", "GHA-002"]
+
+    def test_dedupes_same_check_across_resources(self):
+        # The same rule firing across many files (e.g. GHA-001 on every
+        # workflow YAML) contributes one row, so unique rule types fill
+        # the top-N instead of one offending rule crowding the others
+        # out.
+        findings = [
+            _f("GHA-001", Severity.HIGH, resource=f"wf{i}.yml")
+            for i in range(20)
         ] + [
             _f("GHA-002", Severity.MEDIUM, resource="wf.yml"),
         ]
@@ -169,26 +181,3 @@ class TestBuildInitScanResult:
         )
         assert [t.check_id for t in result.top] == ["GHA-001", "GHA-002"]
         assert result.top[0].fixable is True
-
-
-class TestParseBaselineSummary:
-    def test_missing_file_returns_none(self, tmp_path):
-        assert parse_baseline_summary(str(tmp_path / "nope.json")) is None
-
-    def test_malformed_returns_none(self, tmp_path):
-        p = tmp_path / "b.json"
-        p.write_text("not json")
-        assert parse_baseline_summary(str(p)) is None
-
-    def test_counts_only_failing_findings(self, tmp_path):
-        p = tmp_path / "b.json"
-        p.write_text(json.dumps({
-            "findings": [
-                {"check_id": "X", "passed": True},
-                {"check_id": "Y", "passed": False},
-                {"check_id": "Z", "passed": False},
-            ],
-            "score": {"grade": "C"},
-        }))
-        out = parse_baseline_summary(str(p))
-        assert out == (2, "C")

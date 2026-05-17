@@ -3384,6 +3384,38 @@ class TestSCM041RequiredDeployments:
         assert "no legacy branch-protection" in f.description.lower()
 
 
+class TestSCM042MergeQueue:
+    def test_no_merge_queue_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-042")
+        assert not f.passed
+
+    def test_merge_queue_rule_present_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "merge_queue"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-042")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-042")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
 # ── Default-branch scoping: rulesets exist but scope away from main ──
 #
 # Every per-rule-type rule in SCM-032..040 used to iterate "active"
@@ -3544,6 +3576,17 @@ class TestRulesetScopedAwayFromDefault:
             ])],
         )
         f = _by_id(_findings(snap), "SCM-041")
+        assert not f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+    def test_scm042_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "merge_queue"},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-042")
         assert not f.passed
         assert "no legacy branch-protection" in f.description.lower()
 

@@ -141,7 +141,7 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
     targeting, unavailable, scoped_away = (
         active_rulesets_targeting_default(snapshot)
     )
-    if not targeting and not unavailable and scoped_away:
+    if not targeting and scoped_away:
         # Active rulesets exist but none target the default branch.
         # The PR-review gate (where this rule looks for it) isn't
         # applied to refs/heads/<default>. Legacy SCM-002 still
@@ -150,19 +150,26 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         # uncovered at the ruleset layer.
         labels = [ruleset_label(rs) for rs in scoped_away]
         default = default_branch_name(snapshot)
+        desc = (
+            f"{len(scoped_away)} active ruleset(s) configured "
+            f"but none target the default branch "
+            f"(refs/heads/{default}): "
+            f"{', '.join(labels[:3])}"
+            f"{'…' if len(labels) > 3 else ''}. The PR-review "
+            f"gate isn't applied to the default branch at the "
+            f"ruleset layer; SCM-002 covers the legacy "
+            f"branch-protection carry."
+        )
+        if unavailable:
+            desc += (
+                f" Additionally, {len(unavailable)} active "
+                "ruleset(s) had detail-endpoint errors and were "
+                "not evaluated."
+            )
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description=(
-                f"{len(scoped_away)} active ruleset(s) configured "
-                f"but none target the default branch "
-                f"(refs/heads/{default}): "
-                f"{', '.join(labels[:3])}"
-                f"{'…' if len(labels) > 3 else ''}. The PR-review "
-                f"gate isn't applied to the default branch at the "
-                f"ruleset layer; SCM-002 covers the legacy "
-                f"branch-protection carry."
-            ),
+            description=desc,
             recommendation=RULE.recommendation, passed=False,
         )
     if not targeting and not unavailable:

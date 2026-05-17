@@ -673,17 +673,24 @@ def active_rulesets_targeting_default(
                             failed (``_detail_unavailable: True``);
                             target can't be determined. Surface as
                             "not fully evaluated".
-      3. ``scoped_away``  — active + detail available but the
-                            ``conditions.ref_name`` filter doesn't
-                            include the default branch (tag-only,
-                            feature-branch-only, exclude list shadows
-                            the default). These are the false-pass
-                            shape: a ruleset that exists but doesn't
-                            protect ``main``.
+      3. ``scoped_away``  — active + detail available + branch-
+                            targeted but the ``conditions.ref_name``
+                            filter doesn't include the default
+                            branch (tag-only, feature-branch-only,
+                            exclude list shadows the default). These
+                            are the false-pass shape: a ruleset that
+                            exists but doesn't protect ``main``.
 
     Non-active rulesets (``evaluate`` / ``disabled``) are filtered
-    out entirely — they're SCM-029's surface, not the per-rule-type
-    rules' concern. Returns three empty lists when
+    out — they're SCM-029's surface. Push-targeted rulesets are also
+    filtered out: they fire on every push but use a different rule
+    shape (file size / path / extension filters) that can't carry
+    the SCM-032..040 rule types, so classifying them as scoped-away
+    would emit a confusing "doesn't target the default branch"
+    failure for a ruleset that does. Tag-targeted rulesets stay in
+    scope of the branch-rule checks only when their ref_name filter
+    matches the default branch, which it generally won't; they
+    surface as scoped_away. Returns three empty lists when
     ``snapshot.rulesets`` is ``None``.
     """
     if snapshot.rulesets is None:
@@ -697,6 +704,8 @@ def active_rulesets_targeting_default(
             continue
         if rs.get("_detail_unavailable") is True:
             unavailable.append(rs)
+            continue
+        if rs.get("target") == "push":
             continue
         if ruleset_targets_default_branch(rs, default):
             targeting.append(rs)

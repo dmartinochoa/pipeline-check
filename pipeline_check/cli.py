@@ -3050,31 +3050,28 @@ def _build_gate_trailer(
     fixers = set(available_fixers())
     fixable = [f for f in effective if f.check_id.upper() in fixers]
     n_total = len(effective)
-    parts: list[str] = []
     if fixable:
-        parts.append(
-            f"{len(fixable)} of {n_total} failing finding(s) have "
-            f"autofixers; run `pipeline_check --fix --apply` to apply them"
+        message = (
+            f"{len(fixable)} of {n_total} failing findings "
+            f"are autofixable; run `pipeline_check --fix --apply` to apply them"
         )
     elif not baseline_path and not baseline_from_git:
-        parts.append(
+        message = (
             "no baseline configured; run `pipeline_check "
             "--write-baseline baseline.json` then pair with "
             "`--baseline baseline.json` to gate only on new findings"
         )
     else:
-        # Both autofix and baseline aren't useful: name the top check
-        # and point at explain so the operator has a starting move.
         from .core.checks.base import severity_rank
         top = sorted(
             effective,
             key=lambda f: (-severity_rank(f.severity), f.check_id),
         )[0]
-        parts.append(
+        message = (
             f"start with the highest-severity rule: "
             f"`pipeline_check explain {top.check_id}`"
         )
-    return f"[gate] next: {parts[0]}"
+    return f"[gate] next: {message}"
 
 
 def _emit_gate_summary(
@@ -3151,11 +3148,9 @@ def _emit_gate_summary(
 #: ``init`` constructs a Scanner with no flags. Keys must match the
 #: names returned by :func:`_detect_pipeline_from_cwd`. Each value is a
 #: tuple of ``(scanner_kwarg, candidate_paths)``; init picks the first
-#: candidate that exists. Providers that don't appear here (AWS,
-#: cloudformation, oci, scm) are skipped by smart-init because they
-#: need either credentials or a flag the scaffold can't guess; init
-#: falls back to ``--no-scan`` in that case so the user can still
-#: write a config file.
+#: candidate that exists. Providers that need credentials or a remote
+#: target the scaffold can't guess (AWS, oci, scm) are listed in
+#: :data:`_INIT_SKIP_PROVIDERS` instead and bypass the scan entirely.
 _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     "github": ("gha_path", (".github/workflows",)),
     "gitlab": ("gitlab_path", (".gitlab-ci.yml",)),
@@ -3174,17 +3169,29 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     "helm": ("helm_path", (".",)),
     "npm": ("npm_path", (".",)),
     "pypi": ("pypi_path", (".",)),
+    "cloudformation": (
+        "cfn_template",
+        (
+            "template.yml", "template.yaml", "template.json",
+            "cloudformation.yml", "cloudformation.yaml",
+            "cfn.yml", "cfn.yaml",
+        ),
+    ),
 }
+
+#: Providers that smart-init can detect but not scan unattended (live
+#: cloud credentials, registry pulls, GitHub admin tokens). For these,
+#: the CLI writes a static scaffold and skips the scan instead of
+#: surfacing a confusing "scan failed" exception in stderr.
+_INIT_SKIP_PROVIDERS: frozenset[str] = frozenset({"aws", "oci", "scm"})
 
 
 def _init_scanner_kwargs_for(detected: str) -> dict[str, Any]:
     """Return Scanner constructor kwargs for the smart-init flow.
 
-    Returns ``{}`` when the provider doesn't need a path (AWS) or
-    isn't supported by init (cloudformation, oci, scm — they need
-    flags or credentials the scaffold can't guess). Callers should
-    still try to construct the Scanner; if it fails, the caller falls
-    back to writing a static scaffold.
+    Returns ``{}`` when the provider doesn't need a path. Callers
+    should still try to construct the Scanner; if it fails, the caller
+    falls back to writing a static scaffold.
 
     Return type is ``dict[str, Any]`` because the Scanner constructor
     type-checks each kwarg against its named parameter (a path string
@@ -3270,10 +3277,12 @@ def init_cmd(
 
     detected = _detect_pipeline_from_cwd()
 
-    if no_scan or detected is None:
-        # Either the user opted out, or there's nothing to scan. Fall
-        # back to the static scaffold so ``init`` still does something
-        # useful on a bare repo.
+    if no_scan or detected is None or detected in _INIT_SKIP_PROVIDERS:
+        # Either the user opted out, there's nothing to scan, or the
+        # detected provider needs credentials / a remote target that
+        # smart-init can't guess (AWS account, OCI registry, SCM
+        # token). Fall back to the static scaffold so ``init`` still
+        # does something useful.
         try:
             with open(target_path, "w", encoding="utf-8") as fh:
                 fh.write(_render_template(detected))
@@ -3287,6 +3296,13 @@ def init_cmd(
                 if detected
                 else " (no CI files detected, edit the 'pipeline:' line "
                 "before use)"
+            )
+        elif detected in _INIT_SKIP_PROVIDERS:
+            suffix = (
+                f" (pipeline: {detected}; this provider needs "
+                f"credentials, smart-init skipped the scan. Run "
+                f"`pipeline_check --pipeline {detected}` to scan once "
+                f"those are set.)"
             )
         else:
             suffix = (
