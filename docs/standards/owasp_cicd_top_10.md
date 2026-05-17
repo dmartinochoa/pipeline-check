@@ -19,20 +19,10 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 509
+- **Distinct checks evidencing this standard:** 510
 - **Of those, autofixable with `--fix`:** 111
 
-## How to read severity
-
-Every check below ships at a fixed severity level. The scale is the same across providers and standards so a CRITICAL finding in one place means the same thing as a CRITICAL finding anywhere else.
-
-| Level | What it means | Examples |
-|-------|---------------|----------|
-| <span class="pg-sev pg-sev--critical">CRITICAL</span> | Active exploit primitive in the workflow as written. Treat as P0: a default scan path lands an attacker on a secret, an RCE, or production write access without further effort. | Hardcoded credential literal, branch ref pointing at a known-compromised action, signed-into-an-unverified registry. |
-| <span class="pg-sev pg-sev--high">HIGH</span> | Production-impact gap that requires modest attacker effort or a second condition to weaponize. Remediate this sprint; the secondary condition is usually already present in real pipelines. | Action pinned to a floating tag, sensitive permissions on a low-popularity action, mutable container tag in prod. |
-| <span class="pg-sev pg-sev--medium">MEDIUM</span> | Significant defense-in-depth gap. Not directly exploitable on its own but disables a control whose absence widens the blast radius of a separate compromise. Backlog with a deadline. | Missing branch protection, container without resource limits, freshly-published dependency consumed before the cooldown window. |
-| <span class="pg-sev pg-sev--low">LOW</span> | Hygiene / hardening issue. Not a vulnerability on its own but raises baseline posture and reduces audit friction. | Missing CI logging retention, SBOM without supplier attribution, ECR repo without scan-on-push. |
-| <span class="pg-sev pg-sev--info">INFO</span> | Degraded-mode signal. The scanner couldn't reach an API or parse a config and surfaces the gap so the operator knows coverage was incomplete. No finding against the workload itself. | ``CB-000`` CodeBuild API access failed, ``IAM-000`` IAM enumeration failed. |
+_Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
 ## Coverage by control
 
@@ -45,11 +35,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 135 | 2C · 68H · 50M · 15L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 76 | 21C · 42H · 11M · 2L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 24 | 4C · 15H · 5M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 62 | 26C · 22H · 14M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 63 | 26C · 23H · 14M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 91 | 22C · 30H · 32M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 18 | 5C · 8H · 5M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 66 | 1C · 13H · 45M · 7L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 43 | 3H · 12M · 12L · 16I |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 44 | 4H · 12M · 12L · 16I |
 
 ## Filter at runtime
 
@@ -438,7 +428,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 62 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
+**Evidenced by 63 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -499,6 +489,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
@@ -711,7 +702,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 43 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
+**Evidenced by 44 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -756,6 +747,7 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-008`](#detail-scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SM-000`](#detail-sm-000) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](#detail-ssm-000) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 
@@ -7720,6 +7712,35 @@ GET /repos/acme/payments-api/keys
 # entry per push.
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
+
+**Evidences:** [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene, [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Reads ``GET /repos/{owner}/{repo}/hooks`` and flags any active webhook with one or more failure modes:
+
+* ``config.url`` starts with ``http://`` — push payloads   including code diffs leak over plain HTTP
+* ``config.insecure_ssl == "1"`` — TLS certificate   verification disabled, MITM possible on the HTTPS   endpoint
+* ``config.secret`` is null / missing — no HMAC   signature, so anyone who learns the URL can forge   events into the receiver
+
+Inactive webhooks (``active: false``) are skipped — they don't fire. Each finding's description lists every failure mode hit so the operator sees the full fix scope per webhook. Requires admin scope; without it the endpoint returns 403 / 404 and the rule passes silently. GitHub never returns the actual secret value via the API; the slot reports either ``"********"`` (configured) or ``null`` (missing), so this rule detects the absence without ever handling the credential itself.
+
+**Recommendation.** For each flagged webhook, fix all three knobs at once (Settings → Webhooks → <hook> → Edit):
+
+* Switch the Payload URL to ``https://`` and enable ``Verify SSL`` (the field is labeled ``SSL verification`` on the form; setting it to ``Enable SSL verification`` is the safe value).
+* Set the ``Secret`` field to a long random value and validate the incoming ``X-Hub-Signature-256`` header on the receiving end. Without the secret + verification, an attacker who learns the URL (URLs are not secrets; they appear in receiving-system logs, in CI screenshots, in support tickets) can forge events.
+
+If the receiving service genuinely cannot handle HTTPS or shared secrets, terminate TLS at a reverse proxy in front of the receiver and keep the public-facing URL ``https://`` with a real cert. The webhook content carries the full event payload — pull requests with diff content, push events with the commits, secret scanning alerts — which is exactly what an unauthenticated MITM is looking for.
+
+**Known false positives.**
+
+- Long-running internal-only webhooks pointing at a hostname only resolvable inside a private network (``http://internal.svc/hook``) often skip TLS by convention. The right fix is still to terminate TLS at an ingress and use a non-empty secret; the rule does not have visibility into network topology and cannot distinguish 'public HTTP' from 'private-network HTTP', so it errs toward flagging. Suppress per webhook id with a rationale that names the receiving service.
+
+**Seen in the wild.**
+
+- Long-running pattern of webhook payloads leaking via plain-HTTP receivers (Zapier, IFTTT, custom legacy endpoints) — the GitHub repo's commit-diff content, pull-request body, and secret-scanning alert payloads all land on the wire unencrypted. Public catalogs of compromised internal webhooks document the receiver-side breach where the URL alone was enough to inject forged events when no shared secret was configured.
+
+**Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
 
 #### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 

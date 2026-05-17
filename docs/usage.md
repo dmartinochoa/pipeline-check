@@ -45,6 +45,24 @@ digest (`@sha256:…`) rather than tag. The digest for each release is
 visible on the [Docker Hub tags page](https://hub.docker.com/r/dmartinochoa/pipeline-check/tags)
 and on the [GHCR package page](https://github.com/dmartinochoa/pipeline-check/pkgs/container/pipeline-check).
 
+## 📖 In-terminal help
+
+`--help` covers every flag. For deeper topic walk-throughs without
+leaving the terminal, `--man <topic>` ships expanded prose on the
+sub-systems people most often need to look up:
+
+```bash
+pipeline_check --man              # list topics
+pipeline_check --man gate         # CI gate flags, baselines, ignore files
+pipeline_check --man autofix      # which rules have --fix, what they emit
+pipeline_check --man secrets      # entropy + custom-pattern secret detection
+pipeline_check --man standards    # compliance mappings, --standard filtering
+```
+
+The same prose is mirrored on this site, e.g.
+[ci_gate.md](ci_gate.md), but `--man` is the offline / no-browser
+copy.
+
 ## 🚀 First scan (auto-detect)
 
 Run with no flags in any supported repo, the working directory is
@@ -478,18 +496,6 @@ default but distinct semantically from `1`.
 ```bash
 pipeline_check -v       # debug logs to stderr (per-check timing, API calls)
 pipeline_check -q       # suppress all output, rely on the exit code
-```
-
-## Extended manual pages
-
-Topic-specific help without leaving the terminal:
-
-```bash
-pipeline_check --man              # list topics
-pipeline_check --man gate
-pipeline_check --man autofix
-pipeline_check --man secrets
-pipeline_check --man standards
 ```
 
 ## See also

@@ -642,21 +642,39 @@ _SEVERITY_GUIDE: tuple[tuple[str, str, str], ...] = (
 
 
 def _render_severity_guide() -> str:
-    """Markdown for the top-of-page severity legend. Same on every page."""
-    out = ["## How to read severity\n\n"]
-    out.append(
-        "Every check below ships at a fixed severity level. The scale "
-        "is the same across providers and standards so a CRITICAL "
-        "finding in one place means the same thing as a CRITICAL "
-        "finding anywhere else.\n\n"
+    """One-line pointer to the canonical severity legend.
+
+    The full ``CRITICAL/HIGH/MEDIUM/LOW/INFO`` table lives once in
+    ``docs/standards/README.md`` so a reader clicking between
+    standards pages doesn't see the same 60-line legend on every
+    page. Generated pages emit only this pointer; the legend itself
+    is hand-maintained in the README and ``test_severity_legend_in_sync``
+    locks it against the ``_SEVERITY_GUIDE`` constants.
+    """
+    return (
+        "_Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / "
+        "`INFO`) follow the same scale across every provider and "
+        "standard. See [How to read severity](README.md#how-to-read-severity) "
+        "on the standards overview for the definitions._\n\n"
     )
-    out.append("| Level | What it means | Examples |\n")
+
+
+def _render_severity_guide_full() -> str:
+    """Full markdown for the severity legend.
+
+    Currently consumed only by the standards-overview generation, but
+    the helper is kept here (next to ``_SEVERITY_GUIDE``) so the
+    table's wording stays in lockstep with the constants. Add
+    ``--write-overview-legend`` to write
+    ``docs/standards/_severity_legend.md`` if a future generator wants
+    a snippet to ``--8<--`` include.
+    """
+    out = ["| Level | What it means | Examples |\n"]
     out.append("|-------|---------------|----------|\n")
     for level, meaning, examples in _SEVERITY_GUIDE:
         out.append(
             f"| {_severity_chip(level)} | {meaning} | {examples} |\n"
         )
-    out.append("\n")
     return "".join(out)
 
 

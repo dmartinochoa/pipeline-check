@@ -9,6 +9,34 @@ bump and gets a deprecation period of at least one minor release
 beforehand. Anything described as **unstable** can change on any
 release; do not depend on it.
 
+## TL;DR for CI integrations
+
+If you only have a minute, this is what's safe to build on and what
+isn't. The rest of the page is the long version.
+
+**Safe to depend on:**
+
+1. `--output json --output-file <path>` writes a parseable JSON file
+   whose `schema_version` you can branch on.
+2. `--output sarif` writes a SARIF 2.1.0 file uploadable to GitHub
+   Code Scanning.
+3. Exit codes `0` / `1` / `2` / `3` / `4` keep their meanings (see
+   the canonical table in [`usage.md`](usage.md#exit-codes)).
+4. `check_id` values (`GHA-001`, `JF-033`, `AC-001`, `XPC-008`, …)
+   are stable identifiers across releases.
+
+**Don't depend on:**
+
+1. The terminal report for failure counts or scores — it's rendered
+   for humans. Use JSON.
+2. Specific `[scan]` / `[warn]` / `[gate]` stderr lines for
+   programmatic decisions. Use JSON + exit codes.
+3. The exact wording of `description` or `recommendation` strings.
+   Refined every release.
+4. Severity downgrades / upgrades within the rule's logical scope.
+   Wire the gate to `--fail-on` or `--fail-on-check`, not to a hard
+   severity expectation per rule.
+
 ## CLI flags and subcommands — stable
 
 Every flag listed by `pipeline_check --help` is stable. That includes:
@@ -202,20 +230,8 @@ are stable. Unknown keys log a warning but don't fail the load, so
 adding new options in newer pipeline-check releases doesn't break
 older configs.
 
-## What you can rely on for CI integrations
+## See also
 
-1. `--output json --output-file <path>` writes a parseable JSON file
-   whose `schema_version` you can branch on. Stable.
-2. `--output sarif` writes a SARIF 2.1.0 file uploadable to GitHub
-   Code Scanning. Stable.
-3. Exit codes 0/1/2/3 keep their meanings. Stable.
-4. `check_id` values are stable identifiers across releases. Stable.
-
-What you should **not** rely on:
-
-1. Parsing the terminal report for the failure count or score —
-   it's rendered for humans. Use JSON.
-2. Pattern-matching specific stderr `[scan]` / `[warn]` lines for
-   programmatic decisions. Use JSON + exit codes.
-3. The exact wording of any `description` or `recommendation`
-   string. They're refined every release.
+The short list at the top of this page ("TL;DR for CI integrations")
+restates the safe-to-depend-on contract for readers who just need
+the punch list.
