@@ -89,6 +89,8 @@ STANDARD = Standard(
         "JF-004":   ["CC6.2", "CC6.3"],
         "JF-008":   ["CC6.2"],
         "JF-010":   ["CC6.2"],
+        "JF-033":   ["CC6.1", "CC6.2"],   # withCredentials leaked via Groovy ${}
+        "JF-034":   ["CC6.1"],             # password() build parameter
         "CC-005":   ["CC6.2", "CC6.3"],
         "CC-008":   ["CC6.2"],
         "CC-019":   ["CC6.3"],
@@ -132,6 +134,7 @@ STANDARD = Standard(
         "BB-023":   ["CC6.7"],
         "ADO-023":  ["CC6.7"],
         "JF-023":   ["CC6.7"],
+        "JF-035":   ["CC6.7"],             # httpRequest ignoreSslErrors
         "CC-023":   ["CC6.7"],
 
         # ── CC6.8. Malicious software prevention / detection ───────
@@ -276,6 +279,9 @@ STANDARD = Standard(
         "K8S-038":  ["CC6.6"],            # NetworkPolicy allow-all
         "K8S-039":  ["CC6.8"],            # shareProcessNamespace
         "K8S-040":  ["CC6.8"],            # procMount: Unmasked
+        "K8S-041":  ["CC6.6"],            # Service externalIPs (CVE-2020-8554)
+        "K8S-042":  ["CC6.1", "CC6.3"],   # anonymous RoleBinding
+        "K8S-043":  ["CC6.6"],            # Ingress wildcard host
 
         # ── Helm, chart-supply-chain hygiene maps to CC8.1 ─────────
         # (changes flow through chart upgrades) plus CC6.7 for non-
@@ -309,6 +315,9 @@ STANDARD = Standard(
         "DF-018": ["CC6.8"],                # chown system path
         "DF-019": ["CC6.1"],                # COPY credential file
         "DF-020": ["CC6.1"],                # credential ARG
+        "DF-021": ["CC6.7"],                # pip install TLS bypass
+        "DF-022": ["CC8.1"],                # npm install vs npm ci
+        "DF-023": ["CC6.8"],                # ENV loader-hijack var
         # ── Buildkite (CI provider) ───────────────────────────────
         # Mirrors GHA / GitLab pack mappings: CC6.1 (logical access /
         # secrets), CC8.1 (change management), CC6.6 (network

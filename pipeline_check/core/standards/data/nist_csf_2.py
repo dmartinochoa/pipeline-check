@@ -261,6 +261,9 @@ STANDARD = Standard(
         "JF-019":   ["PR.PS-05"],
         "JF-029":   ["PR.PS-05"],
         "JF-030":   ["PR.PS-05"],
+        "JF-033":   ["PR.AA-01", "PR.DS-01"],   # withCredentials leaked via ${} interpolation
+        "JF-034":   ["PR.AA-01"],               # password() build parameter
+        "JF-035":   ["GV.SC-05", "PR.DS-02"],   # httpRequest ignoreSslErrors
         "CC-002":   ["PR.PS-05"],
         "CC-016":   ["PR.PS-05"],
         "CC-026":   ["PR.PS-05"],
@@ -371,6 +374,9 @@ STANDARD = Standard(
         "K8S-038":  ["PR.IR-01"],               # NetworkPolicy allow-all
         "K8S-039":  ["PR.PS-01"],               # shareProcessNamespace
         "K8S-040":  ["PR.PS-01"],               # procMount: Unmasked
+        "K8S-041":  ["PR.IR-01"],               # Service externalIPs (MITM)
+        "K8S-042":  ["PR.AA-05"],               # anonymous RoleBinding
+        "K8S-043":  ["PR.IR-01"],               # Ingress wildcard host
 
         # ── Helm, chart-supply-chain hygiene maps to GV.SC. ────────
         "HELM-001": ["GV.SC-05"],   # legacy v1 schema
@@ -408,6 +414,9 @@ STANDARD = Standard(
         "DF-018": ["PR.PS-01"],                 # chown system path
         "DF-019": ["PR.AA-01"],                 # COPY credential file
         "DF-020": ["PR.AA-01"],                 # credential ARG
+        "DF-021": ["GV.SC-05", "PR.DS-02"],     # pip TLS bypass / http index
+        "DF-022": ["GV.SC-05"],                 # npm install vs npm ci
+        "DF-023": ["PR.PS-01"],                 # ENV loader-hijack var
         # ── Buildkite. CI provider mappings mirror what the GHA /
         # GitLab packs already use: PR.PS-01 (config management),
         # GV.SC-05 (third-party verification), PR.AA-01 (credential

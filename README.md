@@ -16,7 +16,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**590+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**610+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -111,16 +111,16 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 35 checks (`GL-001`--`033`, plus `TAINT-004` and `TAINT-008`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
-| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 32 checks (`JF-001`--`032`) |
+| **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 35 checks (`JF-001`--`035`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks (`BK-001`--`015`, plus `TAINT-005`) |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks (`TKN-001`--`015`, plus `TAINT-006`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 16 checks (`ARGO-001`--`015`, plus `TAINT-007`) |
-| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 20 checks (`DF-001`--`020`) |
-| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 40 checks (`K8S-001`--`040`) |
-| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 40 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
+| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 23 checks (`DF-001`--`023`) |
+| **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 43 checks (`K8S-001`--`043`) |
+| **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 43 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 15 checks (`OCI-001`--`008` plus `ATTEST-001..007`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding, meaningful SLSA `buildType`, SBOM package supplier / originator attribution |
 | **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 19 checks (`SCM-001`--`019`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
 
@@ -144,7 +144,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   590+ checks across 19 providers
+  Config files   |  Scanner  |   610+ checks across 19 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -435,11 +435,11 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-047 + TAINT-001..003
+        ├── github/rules/      # GHA-001 .. GHA-050 + TAINT-001..003
         ├── gitlab/rules/      # GL-001 .. GL-033 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-029
         ├── azure/rules/       # ADO-001 .. ADO-030
-        ├── jenkins/rules/     # JF-001 .. JF-032
+        ├── jenkins/rules/     # JF-001 .. JF-035
         ├── circleci/rules/    # CC-001 .. CC-031
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
@@ -447,8 +447,8 @@ pipeline_check/
         ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
         ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..007
-        ├── dockerfile/rules/  # DF-001 .. DF-020
-        ├── kubernetes/rules/  # K8S-001 .. K8S-040
+        ├── dockerfile/rules/  # DF-001 .. DF-025
+        ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-019 — repo governance via the platform REST API (GitHub full pack; GitLab + Bitbucket universal subset)
         └── custom/            # YAML rule loader + predicate engine

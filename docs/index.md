@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 19 providers, graded against 14 compliance frameworks. 
-111 of the 590+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+111 of the 610+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,7 +55,7 @@ A read-only scanner for 19 providers, graded against 14 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">590+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">610+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">19</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
@@ -160,20 +160,20 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">71 checks</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">aws-parity</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">~63 checks</span></a>
-  <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">50 checks</span></a>
+  <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">53 checks</span></a>
   <a class="pg-provider" href="providers/gitlab/"><span class="pg-provider__name">GitLab CI</span><span class="pg-provider__count">35 checks</span></a>
   <a class="pg-provider" href="providers/bitbucket/"><span class="pg-provider__name">Bitbucket</span><span class="pg-provider__count">29 checks</span></a>
   <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">30 checks</span></a>
-  <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">32 checks</span></a>
+  <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">35 checks</span></a>
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">31 checks</span></a>
   <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">26 checks</span></a>
   <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">16 checks</span></a>
   <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">11 checks</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">16 checks</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">16 checks</span></a>
-  <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">20 checks</span></a>
-  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">40 checks</span></a>
-  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 40 K8S-* rules + 10 HELM-*</span></a>
+  <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">25 checks</span></a>
+  <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">43 checks</span></a>
+  <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 43 K8S-* rules + 10 HELM-*</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">15 checks</span></a>
   <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub)</span><span class="pg-provider__count">19 checks</span></a>
 </div>
@@ -227,7 +227,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "19 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "590+ checks emit findings with severity, location, fix"
+    click C "attack_chains/" "610+ checks emit findings with severity, location, fix"
     click D "standards/" "14 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

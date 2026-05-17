@@ -8,6 +8,12 @@ pipeline {
         docker { image 'maven:latest' }
     }
 
+    // JF-034 — password() build parameter stores the value in
+    // build.xml and surfaces it on the parameters page.
+    parameters {
+        password(name: 'DEPLOY_TOKEN', defaultValue: '', description: 'prod token')
+    }
+
     environment {
         DEBUG_AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
         // JF-010 — long-lived AWS keys exposed via env block.
@@ -71,10 +77,17 @@ spec:
             // pusher picks which build pool the deploy lands on.
             agent { label "build-pool-${env.BRANCH_NAME}" }
             steps {
+                // JF-004 — binds long-lived AWS keys, not an IAM role.
+                // JF-033 — Groovy ${AWS_ACCESS_KEY_ID} interpolation
+                // bakes the literal value into the shell command before
+                // the Jenkins masker sees it, leaking the secret to set -x.
                 withCredentials([string(credentialsId: 'aws-prod-key',
                                         variable: 'AWS_ACCESS_KEY_ID')]) {
-                    sh "make deploy"
+                    sh "aws s3 cp dist/ s3://prod-bucket/ --key ${AWS_ACCESS_KEY_ID}"
                 }
+                // JF-035 — httpRequest disables SSL verification.
+                httpRequest url: 'https://internal.example.com/notify',
+                            ignoreSslErrors: true
             }
         }
 

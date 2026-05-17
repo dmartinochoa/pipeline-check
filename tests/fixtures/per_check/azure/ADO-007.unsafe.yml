@@ -1,4 +1,5 @@
 jobs:
-  - job: Release
+  - job: BuildAndPublish
     steps:
-      - script: cosign sign --yes example/app:$(Build.BuildId)
+      - script: docker push example.azurecr.io/app:$(Build.BuildId)
+      - script: cosign sign --yes example.azurecr.io/app:$(Build.BuildId)

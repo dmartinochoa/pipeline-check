@@ -34,6 +34,7 @@ in Cloud Build, so every parsable document is in scope.
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -160,6 +161,77 @@ def step_location(path: str, step: dict[str, Any]) -> Location:
     """
     line = _line_of(step)
     return Location(path=path, start_line=line, end_line=line)
+
+
+def pipeline_publishes(doc: dict[str, Any]) -> bool:
+    """True when *doc* publishes an image / artifact externally.
+
+    Cloud Build YAML doesn't use ``docker push`` as a contiguous
+    substring (the verb lives in ``args:`` while the builder name
+    sits on ``name:``), so the cross-provider ``produces_artifacts``
+    heuristic misses these pipelines. This helper recognizes three
+    publish shapes Cloud Build users actually ship:
+
+      * top-level ``images:`` array — Cloud Build's built-in push hook
+      * a step whose ``name:`` is ``gcr.io/cloud-builders/docker`` and
+        whose ``args`` start with ``push`` / ``buildx`` (the latter
+        with ``--push`` or ``imagetools push``)
+      * a shell-builder step (``ubuntu``, ``alpine``, ``gcloud``) whose
+        joined ``args`` blob matches a docker-push command
+
+    Keeping the structural recognizer here means GCB-009 / GCB-015 /
+    GCB-017 (and any future "applies only to publishing pipelines"
+    rule) get the same publish-detection contract without each rule
+    reimplementing it.
+    """
+    images = doc.get("images")
+    if isinstance(images, list) and any(
+        isinstance(x, str) and x.strip() for x in images
+    ):
+        return True
+    for _idx, step in iter_steps(doc):
+        if _step_pushes_image(step):
+            return True
+    return False
+
+
+_DOCKER_BUILDER_PREFIX = "gcr.io/cloud-builders/docker"
+_DOCKER_PUSH_BLOB_RE = re.compile(
+    r"\bdocker(?:\s+buildx(?:\s+imagetools)?)?\s+push\b"
+    r"|\bdocker\s+buildx\s+build\b[^|]*--push\b",
+)
+
+
+def _step_pushes_image(step: dict[str, Any]) -> bool:
+    """Structural recognizer for Cloud Build push steps.
+
+    Duplicates the helper inside ``gcb024_images_missing`` so that
+    rule's import graph doesn't reach out of its own module. The two
+    copies share a comment marker so a future refactor can collapse
+    them.
+    """
+    name = step.get("name")
+    args = step.get("args")
+    if (
+        isinstance(name, str)
+        and name.startswith(_DOCKER_BUILDER_PREFIX)
+        and isinstance(args, list)
+        and len(args) >= 1
+    ):
+        first = args[0] if isinstance(args[0], str) else ""
+        if first == "push":
+            return True
+        if first == "buildx":
+            tail = [a for a in args[1:] if isinstance(a, str)]
+            if "--push" in tail:
+                return True
+            if tail and tail[0] == "imagetools" and "push" in tail:
+                return True
+    if isinstance(args, list):
+        joined = " ".join(a for a in args if isinstance(a, str))
+        if _DOCKER_PUSH_BLOB_RE.search(joined):
+            return True
+    return False
 
 
 def step_strings(step: dict[str, Any]) -> list[str]:

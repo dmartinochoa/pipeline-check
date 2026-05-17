@@ -47,13 +47,18 @@ def _mock_scanner_with_metadata(findings, meta=None):
 
 
 @pytest.fixture
-def runner():
-    """Click test runner pinned to an isolated empty cwd so the CLI's
-    auto-detect path falls back to the AWS single-Scanner branch
-    (see :mod:`tests.test_cli` for the full rationale)."""
-    cli_runner = CliRunner()
-    with cli_runner.isolated_filesystem():
-        yield cli_runner
+def runner(tmp_path, monkeypatch):
+    """Click test runner pinned to an isolated cwd with a minimal CI file.
+
+    Since UX-3, empty cwd raises ``UsageError("no CI/CD config files
+    detected")`` before the Scanner mock fires. Drop a trivial
+    ``.gitlab-ci.yml`` so auto-detect resolves; the mocked Scanner
+    intercepts the actual scan and these tests assert UX output
+    regardless of the picked provider.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".gitlab-ci.yml").write_text("stages: []\n")
+    return CliRunner()
 
 
 # ────────────────────────────────────────────────────────────────────────────

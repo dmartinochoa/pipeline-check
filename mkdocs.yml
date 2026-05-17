@@ -173,6 +173,7 @@ nav:
       - S2C2F: standards/s2c2f.md
       - SOC 2: standards/soc2.md
   - Configuration: config.md
+  - Stability: stability.md
   - Scoring & gate:
       - Scoring model: scoring_model.md
       - CI gate: ci_gate.md

@@ -1,7 +1,11 @@
-name: release
+name: build-and-publish
 on: push
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: example/app:latest
       - run: cosign sign --yes example/app:$GITHUB_SHA

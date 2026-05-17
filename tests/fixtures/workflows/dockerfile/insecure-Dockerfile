@@ -29,6 +29,10 @@ WORKDIR /etc/app-config
 # user write access to a system directory.
 ENV PATH=/tmp/bin:$PATH
 
+# DF-023: ENV sets a dynamic-loader hijack variable (applies to every
+# binary the image runs).
+ENV LD_PRELOAD=/opt/hook/libhook.so
+
 # DF-003: ADD pulls a remote URL without --checksum= integrity flag.
 ADD https://example.com/internal/helper.tar.gz /opt/
 
@@ -55,6 +59,21 @@ RUN apt-get update && apt-get dist-upgrade -y && \
     curl -fsSL https://example.com/install.sh | bash && \
     eval "$BUILD_CMD" && \
     docker run --privileged builder-image make all
+
+# DF-021: pip install bypasses TLS via --trusted-host + http:// index.
+RUN pip install --trusted-host pypi.example.com \
+    -i http://pypi.example.com/simple/ requests
+
+# DF-022: npm install (not npm ci) re-resolves the lockfile at build time.
+# DF-024: same line runs lifecycle scripts (no ``--ignore-scripts``), so a
+# compromised transitive dep runs postinstall with the builder's env.
+RUN npm install
+
+# DF-025: writes a registry auth token into the layer. The token is
+# recoverable from the image with ``docker save`` + ``tar``.
+ARG NPM_REGISTRY_TOKEN
+RUN echo "//registry.npmjs.org/:_authToken=${NPM_REGISTRY_TOKEN}" \
+    > /root/.npmrc
 
 COPY . .
 

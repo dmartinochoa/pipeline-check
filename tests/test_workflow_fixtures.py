@@ -53,7 +53,7 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 48)}
+        {f"GHA-{i:03d}" for i in range(1, 51)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
@@ -241,7 +241,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 33)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 36)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
@@ -376,7 +376,7 @@ class TestBuildkiteFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 21)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 26)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)
@@ -408,7 +408,7 @@ class TestDockerfileFixtures:
 
 
 class TestKubernetesFixtures:
-    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 41)}
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 44)}
 
     def _scan(self, filename: str):
         ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
@@ -505,7 +505,7 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 48)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 51)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
@@ -515,7 +515,7 @@ class TestArgoFixtures:
      AzureContext, AzurePipelineChecks,
      {f"ADO-{i:03d}" for i in range(1, 31)}),
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
-     {f"JF-{i:03d}" for i in range(1, 33)}),
+     {f"JF-{i:03d}" for i in range(1, 36)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
      {f"CC-{i:03d}" for i in range(1, 32)}),
     ("buildkite", "buildkite/insecure-pipeline.yml",
@@ -532,10 +532,10 @@ class TestArgoFixtures:
      {f"GCB-{i:03d}" for i in range(1, 27)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
-     {f"DF-{i:03d}" for i in range(1, 21)}),
+     {f"DF-{i:03d}" for i in range(1, 26)}),
     ("kubernetes", "k8s/insecure.yaml",
      KubernetesContext, KubernetesManifestChecks,
-     {f"K8S-{i:03d}" for i in range(1, 41)}),
+     {f"K8S-{i:03d}" for i in range(1, 44)}),
 ])
 def test_every_insecure_fixture_emits_expected_check_ids(
     provider, fixture, loader, checker, expected

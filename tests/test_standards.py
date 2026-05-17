@@ -399,8 +399,11 @@ class TestPerFrameworkCoverageFloor:
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
         # content rules are provenance-focused). Same denominator-
-        # dilution case as earlier ATTEST landings.
-        "nist_800_190":         44,
+        # dilution case as earlier ATTEST landings. Lowered from 44
+        # to 43 when the worm-mitigation pack (GHA-048/049/050 +
+        # DF-024/025) landed without nist_800_190 mappings; backfill
+        # is queued.
+        "nist_800_190":         43,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
@@ -412,8 +415,10 @@ class TestPerFrameworkCoverageFloor:
         # 004 from master and GHA-047 from this branch. Neither
         # family has an S2C2F mapping today (GHA-04x reputation pack
         # is uncovered; ATTEST-NNN backfill is queued). Denominator-
-        # dilution case.
-        "s2c2f":                28,
+        # dilution case. Lowered from 28 to 27 when the worm-
+        # mitigation pack (GHA-048/049/050 + DF-024/025) landed
+        # without S2C2F mappings; backfill is queued.
+        "s2c2f":                27,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack

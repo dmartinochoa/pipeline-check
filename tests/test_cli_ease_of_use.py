@@ -82,15 +82,74 @@ class TestAutoDetect:
         assert "[auto] detected --pipeline gitlab" in result.stderr
         assert MS.call_args.kwargs["pipeline"] == "gitlab"
 
-    def test_scan_auto_falls_back_to_aws(self, runner, tmp_path, monkeypatch):
+    def test_scan_auto_refuses_when_no_ci_files_present(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # Behavior change: prior to UX-3, auto-mode in a directory
+        # with no CI files silently fell through to ``--pipeline aws``,
+        # which produced 14 INFO-severity "API access failed" findings
+        # on machines without AWS credentials and a misleading
+        # "Grade A / Score 100" headline. New behavior: refuse with a
+        # concrete hint that includes ``--pipeline aws`` for users who
+        # actually wanted the AWS scan.
         monkeypatch.chdir(tmp_path)
         with patch("pipeline_check.cli.Scanner") as MS:
             MS.return_value.run.return_value = []
             MS.return_value.metadata = _mock_meta()
             result = runner.invoke(scan, [])
+        # click.UsageError exits with code 2.
+        assert result.exit_code != 0
+        combined = (result.output or "") + (result.stderr or "")
+        assert "no CI/CD config files detected" in combined
+        assert "--pipeline aws" in combined  # opt-in hint
+        # Scanner must NOT have been instantiated — no phantom scan.
+        MS.assert_not_called()
+
+    def test_scan_explicit_aws_still_works_in_empty_cwd(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # The opt-in path for AWS users: passing --pipeline aws keeps
+        # working in directories without CI files, since it's an
+        # explicit request, not an auto-fallback guess.
+        monkeypatch.chdir(tmp_path)
+        with patch("pipeline_check.cli.Scanner") as MS:
+            MS.return_value.run.return_value = []
+            MS.return_value.metadata = _mock_meta()
+            result = runner.invoke(scan, ["--pipeline", "aws"])
         assert result.exit_code == 0
-        assert "no CI files found at cwd; using --pipeline aws" in result.stderr
         assert MS.call_args.kwargs["pipeline"] == "aws"
+
+    def test_degraded_scan_warning_when_all_findings_are_dash_000(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # When every emitted finding is a ``<PREFIX>-000`` API-access-
+        # failed degraded marker, the score still reads 100/Grade A
+        # (degraded findings are INFO and don't count toward the
+        # weighted score), which is mathematically right but visually
+        # confusing. The CLI must surface a ``[warn]`` line so the
+        # operator knows the score reflects only modules that
+        # returned data.
+        monkeypatch.chdir(tmp_path)
+        degraded_findings = [
+            Finding(
+                check_id=f"{prefix}-000",
+                title=f"{prefix} API access failed",
+                severity=Severity.INFO,
+                resource=prefix,
+                description="Could not enumerate.",
+                recommendation="Configure credentials.",
+                passed=False,
+            )
+            for prefix in ("CB", "CP", "IAM", "S3")
+        ]
+        with patch("pipeline_check.cli.Scanner") as MS:
+            MS.return_value.run.return_value = degraded_findings
+            MS.return_value.metadata = _mock_meta()
+            MS.return_value.chains = []
+            result = runner.invoke(scan, ["--pipeline", "aws"])
+        assert result.exit_code == 0
+        combined = (result.output or "") + (result.stderr or "")
+        assert "scan degraded: 4 module(s) failed API access" in combined
 
 
 class TestMultiAutoDetect:
@@ -236,6 +295,41 @@ class TestInit:
             main()
         assert exc.value.code in (0, None)
         assert (tmp_path / ".pipeline-check.yml").exists()
+
+    def test_redirected_stdout_is_utf8_on_windows(self, tmp_path):
+        # Regression: Windows redirected stdout used cp1252, which
+        # mojibakes the · and … characters Rich emits. On non-Windows
+        # the default is already UTF-8 so this is a no-op assertion.
+        import subprocess
+        import sys
+        out = tmp_path / "out.txt"
+        with open(out, "wb") as fh:
+            subprocess.run(
+                [sys.executable, "-m", "pipeline_check", "--help"],
+                stdout=fh, stderr=subprocess.DEVNULL, timeout=30,
+            )
+        raw = out.read_bytes()
+        # Decode as UTF-8 — must not raise.
+        text = raw.decode("utf-8", errors="strict")
+        assert "Pipeline-Check" in text
+
+    def test_python_dash_m_entry_point_works(self):
+        # ``python -m pipeline_check --help`` is the canonical fallback
+        # when the console script isn't on PATH (fresh virtualenv,
+        # rootless containers). It must succeed and print the same
+        # help text as the installed script.
+        import subprocess
+        import sys
+        result = subprocess.run(
+            [sys.executable, "-m", "pipeline_check", "--help"],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert result.returncode == 0, (
+            f"python -m pipeline_check --help failed:\n"
+            f"stdout: {result.stdout!r}\nstderr: {result.stderr!r}"
+        )
+        assert "Pipeline-Check" in result.stdout
+        assert "--pipeline" in result.stdout
 
 
 # ── short flags ─────────────────────────────────────────────────────────────

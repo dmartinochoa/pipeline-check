@@ -13,6 +13,7 @@ from typing import Any
 
 from ...base import Finding, Severity, has_sbom, produces_artifacts
 from ...rule import Rule
+from ..base import pipeline_publishes
 
 RULE = Rule(
     id="GCB-015",
@@ -39,7 +40,7 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    produces = produces_artifacts(doc) or bool(doc.get("images"))
+    produces = produces_artifacts(doc) or pipeline_publishes(doc)
     passed = has_sbom(doc)
     if not passed and not produces:
         return Finding(

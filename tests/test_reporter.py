@@ -106,3 +106,74 @@ class TestReportTerminal:
         report_terminal(findings, result, severity_threshold=Severity.HIGH, console=console)
         output = buf.getvalue()
         assert "CB-001" in output
+
+    def test_passed_findings_hidden_by_default(self):
+        # Default UX: the table shows only failures. Passed checks
+        # would drown a 50-rule scan on a 10-workflow repo in green
+        # rows. The headline still reports the pass count.
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        findings = [
+            _f("CB-001", Severity.CRITICAL, False),
+            _f("CB-002", Severity.HIGH, True),   # passed
+            _f("CB-003", Severity.HIGH, True),   # passed
+        ]
+        report_terminal(findings, score(findings), console=console)
+        output = buf.getvalue()
+        assert "CB-001" in output
+        # CB-002 / CB-003 passed — must not appear as table rows.
+        assert "CB-002" not in output
+        assert "CB-003" not in output
+
+    def test_show_passed_brings_back_passes(self):
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        findings = [
+            _f("CB-001", Severity.CRITICAL, False),
+            _f("CB-002", Severity.HIGH, True),
+        ]
+        report_terminal(
+            findings, score(findings), console=console, show_passed=True,
+        )
+        output = buf.getvalue()
+        assert "CB-001" in output
+        assert "CB-002" in output
+
+    def test_controls_hidden_by_default(self):
+        # Compliance metadata always lands in JSON/SARIF; the terminal
+        # default drops it to keep the per-finding panel scannable.
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        findings = [_f("CB-001", Severity.CRITICAL, False)]
+        report_terminal(findings, score(findings), console=console)
+        output = buf.getvalue()
+        # The OWASP control we attached must not surface in the panel.
+        assert "Insufficient Flow Control" not in output
+
+    def test_show_controls_renders_controls(self):
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        findings = [_f("CB-001", Severity.CRITICAL, False)]
+        report_terminal(
+            findings, score(findings), console=console, show_controls=True,
+        )
+        output = buf.getvalue()
+        assert "Insufficient Flow Control" in output
+
+    def test_no_failures_hint_message(self):
+        # When the threshold filters out every failure, surface a clear
+        # hint instead of an empty table.
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        findings = [_f("CB-001", Severity.LOW, False)]
+        report_terminal(
+            findings, score(findings),
+            severity_threshold=Severity.HIGH, console=console,
+        )
+        output = buf.getvalue()
+        assert "No failures at or above" in output

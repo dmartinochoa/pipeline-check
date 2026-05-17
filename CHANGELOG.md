@@ -10,6 +10,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **5 new rules covering the Shai-Hulud / TanStack / axios npm worm
+  pattern.** Each one closes a specific leg of the postinstall-driven
+  supply-chain compromise loop that the existing lockfile-pinning /
+  SHA-pinning rules were blind to (a pinned lockfile is no defense
+  when the pinned version itself is poisoned).
+  - **DF-024** — `RUN npm install` / `npm ci` / `yarn install` /
+    `pnpm install` without `--ignore-scripts` runs lifecycle hooks
+    (`preinstall`, `install`, `postinstall`, `prepare`) with the
+    builder's environment. A single compromised dependency anywhere
+    in the transitive tree gets to read `NPM_TOKEN`, `GH_TOKEN`,
+    `AWS_*`, and `~/.npmrc`. Detection short-circuits when the image
+    sets `ENV NPM_CONFIG_IGNORE_SCRIPTS=true` or
+    `ENV YARN_ENABLE_SCRIPTS=false` as a kill-switch.
+  - **DF-025** — `RUN` body writes a registry auth line into a
+    Docker layer (`//registry.npmjs.org/:_authToken=...`, npm
+    `_password` / `_auth`, or pip credentials embedded in
+    `index-url`). The token is recoverable from the image with
+    `docker save` even if a later step deletes the file. BuildKit
+    secret mounts (`--mount=type=secret`) are the documented fix.
+  - **GHA-048** — workflow step writes a file under
+    `.github/workflows/` via redirect, `tee`, `cp`, `mv`, heredoc,
+    or templating tool. There is no legitimate non-automation reason
+    for an in-CI step to author a sibling workflow; the Shai-Hulud
+    worm used exactly this primitive to push
+    `shai-hulud-workflow.yml` into every repo the stolen
+    `GITHUB_TOKEN` could reach.
+  - **GHA-049** — workflow step pushes to a parameterized
+    cross-repo destination: `git push` to a URL interpolated from
+    `${{ ... }}` / `$VAR`, `gh repo create` / `gh repo edit` /
+    `gh api -X POST /repos/...` / `gh release` against a non-literal
+    target. Benign `git push origin` / `upstream` forms are
+    exempted. The second leg of the worm-propagation loop.
+  - **GHA-050** — package publish step (`npm publish`,
+    `twine upload`, `poetry publish`, `cargo publish`,
+    `pypa/gh-action-pypi-publish` with a `password` input, ...)
+    runs from a job that has no protected `environment:` and pulls
+    a long-lived registry token (`NPM_TOKEN`, `NODE_AUTH_TOKEN`,
+    `PYPI_TOKEN`, `TWINE_PASSWORD`, ...). The OIDC trusted-publisher
+    path (PyPI PEP 740, npm provenance) plus `environment:` gating
+    is the documented fix. A long-lived `NPM_TOKEN` on a runner is
+    the fuel that lets a single compromised dep republish more
+    poisoned packages on the org's behalf.
+
+- **9 new rules across Jenkins, Kubernetes, and Dockerfile packs.**
+  - **JF-033** — `withCredentials` binding referenced through Groovy
+    `${VAR}` inside a double-quoted `sh` body bakes the literal
+    secret into the shell command before Jenkins' masker sees it, so
+    `set -x` prints the credential. The safe pattern is a
+    single-quoted Groovy string so the shell, not Groovy, resolves
+    the variable.
+  - **JF-034** — `parameters { password(name: 'X') }` declares a
+    password-typed build parameter. The value lands in
+    `builds/<n>/build.xml` on the controller's filesystem and is
+    surfaced on the build's parameters page; use the Credentials
+    Provider + `withCredentials` instead.
+  - **JF-035** — `httpRequest` step with `ignoreSslErrors: true`
+    bypasses TLS verification for the HTTP Request plugin call.
+  - **K8S-041** — `Service.externalIPs` non-empty (CVE-2020-8554
+    surface). Any namespace user with `services/create` can claim
+    arbitrary IPs and kube-proxy installs DNAT rules that MITM
+    matching traffic.
+  - **K8S-042** — RoleBinding / ClusterRoleBinding subject is
+    `system:anonymous` or `system:unauthenticated`. Anything bound to
+    either resolves for requests with no authentication.
+  - **K8S-043** — Ingress rule with wildcard host (`'*'`, `'*.x'`)
+    or missing `host:` accepts every Host header the controller
+    sees, collapsing hostname-based routing.
+  - **DF-021** — `RUN pip install --trusted-host` / `-i http://...`
+    fetches Python dependencies without TLS verification, opening a
+    build-time MITM supply-chain surface.
+  - **DF-022** — `RUN npm install` (or `npm i`) instead of `npm ci`
+    re-resolves and mutates the lockfile at build time; the image
+    can carry packages the committed lockfile never recorded.
+  - **DF-023** — `ENV LD_PRELOAD` / `LD_LIBRARY_PATH` / `LD_AUDIT`
+    set in the image apply to every binary the container runs and
+    are the standard loader-hijack escalation primitive.
+
 ## [1.0.4] - 2026-05-12
 
 Skipped v1.0.2 and v1.0.3. Both releases failed at the same step:

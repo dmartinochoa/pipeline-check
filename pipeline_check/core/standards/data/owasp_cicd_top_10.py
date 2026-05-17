@@ -181,6 +181,9 @@ STANDARD = Standard(
         "GHA-045":  ["CICD-SEC-4"],   # caller-ref input drives checkout
         "GHA-046":  ["CICD-SEC-4"],   # manual PR-head fetch on untrusted trigger
         "GHA-047":  ["CICD-SEC-3", "CICD-SEC-8"],  # fresh-ref cooldown
+        "GHA-048":  ["CICD-SEC-1", "CICD-SEC-4"],  # workflow self-mutation
+        "GHA-049":  ["CICD-SEC-1", "CICD-SEC-4"],  # cross-repo push from CI
+        "GHA-050":  ["CICD-SEC-2", "CICD-SEC-6"],  # publish without OIDC
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -309,6 +312,9 @@ STANDARD = Standard(
         "JF-030":   ["CICD-SEC-4"],
         "JF-031":   ["CICD-SEC-3"],
         "JF-032":   ["CICD-SEC-7"],   # agent label interpolates untrusted ref
+        "JF-033":   ["CICD-SEC-6"],   # withCredentials leaked via Groovy ${} in sh
+        "JF-034":   ["CICD-SEC-6"],   # password() build parameter declared
+        "JF-035":   ["CICD-SEC-3"],   # httpRequest ignoreSslErrors: true
         # CircleCI
         "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "CC-002":   ["CICD-SEC-4"],
@@ -409,6 +415,9 @@ STANDARD = Standard(
         "K8S-038":  ["CICD-SEC-7"],   # NetworkPolicy allow-all
         "K8S-039":  ["CICD-SEC-7"],   # shareProcessNamespace: true
         "K8S-040":  ["CICD-SEC-7"],   # procMount: Unmasked
+        "K8S-041":  ["CICD-SEC-7"],   # Service externalIPs (CVE-2020-8554)
+        "K8S-042":  ["CICD-SEC-2", "CICD-SEC-5"],  # anonymous RoleBinding
+        "K8S-043":  ["CICD-SEC-7"],   # Ingress wildcard / missing host
         # Helm chart-supply-chain
         "HELM-001": ["CICD-SEC-3"],   # legacy apiVersion: v1
         "HELM-002": ["CICD-SEC-3"],   # Chart.lock missing digests
@@ -441,6 +450,11 @@ STANDARD = Standard(
         "DF-018":   ["CICD-SEC-7"],   # RUN chown rewrites a system path
         "DF-019":   ["CICD-SEC-6"],   # COPY/ADD credential-shaped file
         "DF-020":   ["CICD-SEC-6"],   # ARG credential-shaped name
+        "DF-021":   ["CICD-SEC-3"],   # pip install TLS bypass / http index
+        "DF-022":   ["CICD-SEC-3"],   # npm install (not npm ci)
+        "DF-023":   ["CICD-SEC-7"],   # ENV LD_PRELOAD / LD_LIBRARY_PATH
+        "DF-024":   ["CICD-SEC-3", "CICD-SEC-7"],  # npm install runs lifecycle scripts
+        "DF-025":   ["CICD-SEC-6", "CICD-SEC-3"],  # registry token in image layer
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

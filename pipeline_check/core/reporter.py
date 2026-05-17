@@ -63,8 +63,25 @@ def report_terminal(
     score_result: ScoreResult,
     severity_threshold: Severity = Severity.INFO,
     console: Console | None = None,
+    show_controls: bool = False,
+    show_passed: bool = False,
 ) -> None:
-    """Print a rich-formatted report to the terminal."""
+    """Print a rich-formatted report to the terminal.
+
+    By default the table renders only failures: passed findings sit
+    behind ``show_passed`` because on a real repo with 50 GHA checks
+    against 10 workflow files, listing every PASS row produces
+    hundreds of lines of green that bury the failures the user
+    actually opened the report for. The headline summary still
+    reports the failed-vs-passed counts.
+
+    The per-finding panel shows the description, the recommendation,
+    the CWE tags, and any multi-location list. The standards-mapping
+    block (which can span 5+ frameworks and pad each panel out by
+    ~30 lines) is suppressed unless ``show_controls`` is set.
+    Compliance auditors who need either signal should use the JSON
+    / SARIF outputs, which always carry the full ControlRef list.
+    """
     if console is None:
         console = Console()
 
@@ -120,11 +137,26 @@ def report_terminal(
     )
     console.print()
 
-    # Findings table
+    # Findings table. Passing findings render only when explicitly
+    # requested — they're noise in the everyday "what's broken?"
+    # workflow, and the headline already shows the pass count.
     visible = _visible(findings, severity_threshold)
+    if not show_passed:
+        visible = [f for f in visible if not f.passed]
 
     if not visible:
-        console.print("[green]No findings at or above the severity threshold.[/green]")
+        if any(not f.passed for f in findings):
+            # Failures exist but were filtered out by severity threshold.
+            console.print(
+                f"[green]No failures at or above {severity_threshold.value}.[/green] "
+                f"[dim]Use --severity-threshold INFO to widen, "
+                f"or --show-passed to list every check.[/dim]"
+            )
+        else:
+            console.print(
+                "[green]No findings.[/green] "
+                "[dim]Use --show-passed to list every check that ran.[/dim]"
+            )
         return
 
     table = Table(box=box.SIMPLE_HEAVY, expand=True, pad_edge=False)
@@ -178,7 +210,7 @@ def report_terminal(
         if f.cwe:
             cwe_line = f"\n[dim]CWE: {', '.join(f.cwe)}[/dim]"
         controls_text = ""
-        if f.controls:
+        if f.controls and show_controls:
             controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
                 f"  [{c.standard_title}] {c.label()}" for c in f.controls
             )
