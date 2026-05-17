@@ -72,6 +72,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-030 — repository ruleset has bypass actor with
+  ``bypass_mode: always``.** HIGH. For every ``active`` ruleset
+  the snapshot hydrator now fetches per-ruleset details
+  (``bypass_actors`` + ``rules`` live behind a per-id GET; the
+  list endpoint only returns ``enforcement``). The rule walks
+  ``bypass_actors`` and flags every entry whose
+  ``bypass_mode`` is ``always`` and whose ``actor_type`` is not
+  ``Integration`` (GitHub App bypasses are auditable via the
+  App's invocation channel and so are a documented escape
+  hatch). ``pull_request`` mode is the safe shape: the bypass
+  flows through a PR review thread that leaves an audit trail.
+  Non-active rulesets are SCM-029's surface and skipped here.
+
+- **SCM-029 — repository ruleset is in evaluate / disabled mode.**
+  MEDIUM. Walks ``GET /repos/{owner}/{repo}/rulesets`` and flags
+  every entry whose ``enforcement`` is anything other than
+  ``"active"`` (i.e., ``"evaluate"`` preview-mode or
+  ``"disabled"`` explicit-off). The legacy-branch-protection
+  rules in this pack (SCM-001..010) do NOT see rulesets, so an
+  org that has migrated to rulesets can pass the entire legacy
+  pack while every actual governance signal sits in evaluate
+  mode (rules run, surface what *would* have been blocked, but
+  never actually block). Passes silently when no rulesets are
+  configured (legacy branch protection carries the load). The
+  hydrator adds a new ``rulesets`` snapshot slot fed by the
+  rulesets endpoint.
+
 - **SCM-028 — private repo allows forking.** MEDIUM. Reads
   ``private`` and ``allow_forking`` from the repo metadata and
   fires when both are true. Forks inherit the code into the

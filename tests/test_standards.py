@@ -384,7 +384,9 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 66 to 65 when SCM-020..025 (Actions governance
         # + environments + deploy-keys) landed OWASP-only.
         "nist_csf_2":           65,
-        "esf_supply_chain":     58,
+        # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
+        # landed OWASP-only; ESF backfill queued.
+        "esf_supply_chain":     57,
         # openssf_scorecard lowered from 57 to 56 when NPM-011
         # (secrets-in-files-field) landed OWASP-only; Scorecard
         # backfill queued. (SCM-020..025 are already a no-op here.)
