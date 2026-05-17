@@ -47,7 +47,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
 | Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
 | Helm charts (rendered + supply-chain) | Yes (43 + 10) | Partial | No | No | No | Partial |
-| Dockerfile | Yes (25) | Yes | Yes | No | No | Yes |
+| Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (15, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |

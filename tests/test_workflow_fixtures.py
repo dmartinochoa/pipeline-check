@@ -376,7 +376,7 @@ class TestBuildkiteFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 26)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 31)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)
@@ -532,7 +532,7 @@ class TestArgoFixtures:
      {f"GCB-{i:03d}" for i in range(1, 27)}),
     ("dockerfile", "dockerfile/insecure-Dockerfile",
      DockerfileContext, DockerfileChecks,
-     {f"DF-{i:03d}" for i in range(1, 26)}),
+     {f"DF-{i:03d}" for i in range(1, 31)}),
     ("kubernetes", "k8s/insecure.yaml",
      KubernetesContext, KubernetesManifestChecks,
      {f"K8S-{i:03d}" for i in range(1, 44)}),

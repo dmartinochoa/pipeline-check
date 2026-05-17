@@ -97,6 +97,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     *without* GitHub's secret-masking following — third secret-
     leak sink the existing log-surface rules don't cover.
 
+- **DF-026..030 — Dockerfile ENV-based runtime-bypass detection (5
+  new rules).** Extends DF-023 (loader hijack via ``LD_PRELOAD`` /
+  ``LD_LIBRARY_PATH`` / ``LD_AUDIT``) to the language-runtime and
+  toolchain TLS-bypass / preload surfaces that bake into the image:
+  - **DF-026** (HIGH) — ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+    disables Node.js TLS verification. Every Node process the
+    image launches (incl. ``npm install`` / ``npm publish`` /
+    runtime ``fetch`` / postinstall scripts) accepts any
+    certificate the upstream presents.
+  - **DF-027** (HIGH) — ``ENV PYTHONHTTPSVERIFY=0`` disables
+    Python stdlib TLS verification. The env-var counterpart to
+    the pip-flag bypass DF-021 already catches; affects every
+    ``urllib``-using library.
+  - **DF-028** (HIGH) — ``ENV GIT_SSL_NO_VERIFY=1`` (or any
+    truthy form, ``true`` / ``yes`` / ``on``) disables Git TLS
+    verification. Every ``git clone`` / ``git fetch`` /
+    ``git+https://`` dep install in or downstream of the image
+    accepts any certificate.
+  - **DF-029** (HIGH) — ``ENV REQUESTS_CA_BUNDLE`` points at
+    ``/dev/null`` or an empty string. ``requests`` treats the
+    empty bundle as "verify against nothing"; covers pip, AWS
+    CLI, Django, every Python network client that flows through
+    ``requests``.
+  - **DF-030** (MEDIUM) — ``ENV NODE_OPTIONS`` carries
+    ``--require=`` / ``--import=`` (preload arbitrary module on
+    every Node startup, the Node equivalent of ``LD_PRELOAD``)
+    or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
+    debugger control to anyone who can reach the port).
+
 - **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
   Completes the ruleset analog of legacy branch protection. Each
   rule fires when an active ruleset is missing the specific

@@ -460,6 +460,11 @@ STANDARD = Standard(
         "DF-023":   ["CICD-SEC-7"],   # ENV LD_PRELOAD / LD_LIBRARY_PATH
         "DF-024":   ["CICD-SEC-3", "CICD-SEC-7"],  # npm install runs lifecycle scripts
         "DF-025":   ["CICD-SEC-6", "CICD-SEC-3"],  # registry token in image layer
+        "DF-026":   ["CICD-SEC-3", "CICD-SEC-7"],  # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["CICD-SEC-3", "CICD-SEC-7"],  # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["CICD-SEC-3", "CICD-SEC-7"],  # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["CICD-SEC-3", "CICD-SEC-7"],  # REQUESTS_CA_BUNDLE neutered
+        "DF-030":   ["CICD-SEC-3", "CICD-SEC-7"],  # NODE_OPTIONS --require / --inspect
         # npm (lockfile + manifest static analysis)
         "NPM-001":  ["CICD-SEC-3"],   # floating range in package.json
         "NPM-002":  ["CICD-SEC-3", "CICD-SEC-9"],  # lock entry missing integrity

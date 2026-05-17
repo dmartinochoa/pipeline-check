@@ -33,6 +33,21 @@ ENV PATH=/tmp/bin:$PATH
 # binary the image runs).
 ENV LD_PRELOAD=/opt/hook/libhook.so
 
+# DF-026: ENV disables Node.js TLS verification image-wide.
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# DF-027: ENV disables Python stdlib TLS verification image-wide.
+ENV PYTHONHTTPSVERIFY=0
+
+# DF-028: ENV disables Git TLS verification image-wide.
+ENV GIT_SSL_NO_VERIFY=1
+
+# DF-029: ENV neuters the Python requests CA bundle.
+ENV REQUESTS_CA_BUNDLE=/dev/null
+
+# DF-030: ENV NODE_OPTIONS preloads a module on every Node startup.
+ENV NODE_OPTIONS=--require=/opt/preload.js
+
 # DF-003: ADD pulls a remote URL without --checksum= integrity flag.
 ADD https://example.com/internal/helper.tar.gz /opt/
 

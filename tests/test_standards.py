@@ -388,7 +388,9 @@ class TestPerFrameworkCoverageFloor:
         # surface area today.
         # Lowered 64→63 when SCM-033..037 (ruleset rule-type
         # coverage pack) landed OWASP-only.
-        "nist_csf_2":           63,
+        # Lowered 63→62 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "nist_csf_2":           62,
         # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
         # landed OWASP-only; ESF backfill queued. Lowered 57→56
         # when SCM-033..037 landed OWASP-only.
@@ -399,8 +401,9 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 56 to 55 when SCM-026/027/028 landed
         # OWASP-only (Scorecard backfill queued). Lowered 55→54
         # when SCM-032 (ruleset PR-review presence) landed
-        # OWASP-only.
-        "openssf_scorecard":    54,
+        # OWASP-only. Lowered 54→53 when DF-026..030 (ENV-based
+        # runtime-bypass pack) landed OWASP-only.
+        "openssf_scorecard":    53,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
         # added 10 rules (none NIST 800-53 mapped today; SCM is
         # already in OWASP, CIS SSCS, and Scorecard, and 800-53
@@ -418,7 +421,9 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 51 to 50 when the SCM-020..025 pack landed
         # OWASP-only; backfill queued. Lowered from 50 to 49 when
         # the GHA-051..055 advanced-PPE pack landed OWASP-only.
-        "nist_800_53":          49,
+        # Lowered 49→48 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "nist_800_53":          48,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
@@ -443,7 +448,9 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                 38,
         # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
         # Lowered from 47 to 46 when GHA-051..055 landed OWASP-only.
-        "soc2":                 46,
+        # Lowered 46→45 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "soc2":                 45,
         "cis_supply_chain":     28,
         # s2c2f absorbs two unmapped landings on this merge: ATTEST-
         # 004 from master and GHA-047 from this branch. Neither

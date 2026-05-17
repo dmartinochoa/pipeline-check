@@ -119,7 +119,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks (`TKN-001`--`015`, plus `TAINT-006`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 16 checks (`ARGO-001`--`015`, plus `TAINT-007`) |
-| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 25 checks (`DF-001`--`025`) |
+| **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 30 checks (`DF-001`--`030`). `DF-021`/`DF-024`/`DF-025` cover the lifecycle-scripts / npmrc-token / pip-TLS-bypass primitives the npm-worm pack relies on. `DF-026`..`030` extend DF-023's loader-hijack detection to the language-runtime TLS bypass surface (Node `NODE_TLS_REJECT_UNAUTHORIZED`, Python `PYTHONHTTPSVERIFY` / `REQUESTS_CA_BUNDLE`, Git `GIT_SSL_NO_VERIFY`) plus `NODE_OPTIONS` preload / debugger flags. |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 43 checks (`K8S-001`--`043`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 43 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 15 checks (`OCI-001`--`008` plus `ATTEST-001..007`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding, meaningful SLSA `buildType`, SBOM package supplier / originator attribution |
@@ -450,7 +450,7 @@ pipeline_check/
         ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
         ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..007
-        ├── dockerfile/rules/  # DF-001 .. DF-025
+        ├── dockerfile/rules/  # DF-001 .. DF-030
         ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-037 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal + auto-merge audit; GitLab + Bitbucket universal subset)
