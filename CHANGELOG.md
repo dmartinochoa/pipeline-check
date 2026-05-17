@@ -52,6 +52,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   SARIF / JUnit outputs always carry every finding regardless of
   this flag.
 
+- **SCM-041 — active ruleset doesn't gate on a deployment
+  environment.** LOW. Walks active rulesets targeting the
+  default branch looking for a ``required_deployments`` entry
+  whose ``parameters.required_deployment_environments`` is a
+  non-empty list. Fires when none is found, when the list is
+  empty, or when params are absent. Complements SCM-023
+  (environment missing reviewers) and SCM-024 (environment
+  branch policy missing): SCM-023/024 ensure the environment
+  itself is gated; SCM-041 makes a successful deployment to
+  that environment a merge prerequisite. Without it, a PR can
+  merge without a smoke-test deployment having run, even when
+  the environment is rigorously configured. No legacy branch-
+  protection analog; passes silently with absence-not-coverage
+  language when no rulesets / no targeting rulesets are
+  configured. Mapped across all 9 frameworks that already
+  evidence SCM (OWASP, CIS, Scorecard, ESF, NIST 800-53, SOC 2,
+  NIST CSF 2.0, NIST SSDF, PCI DSS); SLSA's build-track scope
+  doesn't extend to post-build deployment gating so left off.
+
 - **SCM-040 — active ruleset doesn't gate on code scanning
   results.** LOW. Walks the merged ``rules`` array on every
   active ruleset looking for a ``code_scanning`` entry whose
@@ -89,6 +108,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   legacy branch-protection analog — with description language
   that says the gate doesn't exist rather than implying it's
   enforced elsewhere.
+
+- **SCM-038 — active ruleset doesn't require linear history.** LOW.
+  Walks the merged ``rules`` array on every active ruleset looking
+  for an entry with ``type: "required_linear_history"``. Fires when
+  none is found. Merge commits aren't a direct attacker primitive
+  (force-push, SCM-034, is the history-rewrite surface), but they
+  muddy ``git log --first-parent`` triage and git-bisect during
+  incident response and hide which specific commits landed when a
+  long-lived feature branch is merged. Pairs with SCM-036 (signed
+  commits) for tamper-evident linear history. Unlike SCM-033..037
+  the rule has no legacy branch-protection analog — the
+  ``required_linear_history`` rule_type is ruleset-only — so the
+  rule passes silently when no rulesets are configured with a
+  description that names the absence-not-coverage state explicitly.
 
 - **Two new dependency-supply-chain providers: `npm` and `pypi`.**
   Lockfile / manifest static analysis, no `npm install`, no `pip
@@ -203,20 +236,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     every Node startup, the Node equivalent of ``LD_PRELOAD``)
     or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
     debugger control to anyone who can reach the port).
-
-- **SCM-038 — active ruleset doesn't require linear history.** LOW.
-  Walks the merged ``rules`` array on every active ruleset looking
-  for an entry with ``type: "required_linear_history"``. Fires when
-  none is found. Merge commits aren't a direct attacker primitive
-  (force-push, SCM-034, is the history-rewrite surface), but they
-  muddy ``git log --first-parent`` triage and git-bisect during
-  incident response and hide which specific commits landed when a
-  long-lived feature branch is merged. Pairs with SCM-036 (signed
-  commits) for tamper-evident linear history. Unlike SCM-033..037
-  the rule has no legacy branch-protection analog — the
-  ``required_linear_history`` rule_type is ruleset-only — so the
-  rule passes silently when no rulesets are configured with a
-  description that names the absence-not-coverage state explicitly.
 
 - **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
   Completes the ruleset analog of legacy branch protection. Each
