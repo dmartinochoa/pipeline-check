@@ -97,8 +97,8 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <span class="pg-doc-card__meta">{{ providers.oci.checks }}</span>
   </a>
   <a class="pg-doc-card" href="scm/">
-    <h3>SCM (GitHub) posture</h3>
-    <p>Hits the GitHub REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits. Closes the gap with Legitify and OpenSSF Scorecard.</p>
+    <h3>SCM (GitHub / GitLab / Bitbucket) posture</h3>
+    <p>Hits the GitHub, GitLab, or Bitbucket REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits, deploy keys, webhook security, ruleset enforcement. Full pack on GitHub, 7-rule universal subset on GitLab and Bitbucket. Closes the gap with Legitify and OpenSSF Scorecard.</p>
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
   </a>
   <a class="pg-doc-card" href="npm/">
