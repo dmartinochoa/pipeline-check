@@ -16,22 +16,22 @@
 # SLSA-attest checks treat any upload-artifact use as a software
 # release; there's no further structural signal to distinguish "test
 # report" uploads from real builds, so we suppress per-resource here.
-GHA-006:.github\workflows\localstack-test.yml
-GHA-007:.github\workflows\localstack-test.yml
-GHA-020:.github\workflows\localstack-test.yml
-GHA-024:.github\workflows\localstack-test.yml
+GHA-006:.github/workflows/localstack-test.yml
+GHA-007:.github/workflows/localstack-test.yml
+GHA-020:.github/workflows/localstack-test.yml
+GHA-024:.github/workflows/localstack-test.yml
 # Inline ``pip install pyyaml`` and ``pip install -e .`` in the test
 # setup install the package being tested. The hash-locked install
 # (``pip install --require-hashes -r requirements-dev.txt``) runs
 # immediately before, covering the actual dependency surface.
-GHA-021:.github\workflows\localstack-test.yml
+GHA-021:.github/workflows/localstack-test.yml
 
 # ── python-app.yml — lint / type-check / test runner ────────────────
 # The hash-locked ``--require-hashes -r requirements-dev.txt`` install
 # covers the actual dependency surface; ruff / mypy ride that
 # lockfile too. The remaining ``pip install -e .`` of this package
 # is what the suite tests against.
-GHA-021:.github\workflows\python-app.yml
+GHA-021:.github/workflows/python-app.yml
 
 # ── release.yml — SLSA generator must be tag-pinned, not SHA ────────
 # The SLSA generator is consumed as a reusable workflow that produces
@@ -42,4 +42,4 @@ GHA-021:.github\workflows\python-app.yml
 # verification call (the consumer-side ``slsa-verifier verify-
 # artifact --source-uri ...`` documented in the README). This is the
 # one place SHA-pinning is the wrong call.
-GHA-025:.github\workflows\release.yml
+GHA-025:.github/workflows/release.yml
