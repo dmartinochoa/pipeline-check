@@ -212,5 +212,57 @@ STANDARD = Standard(
         "GCB-024": ["PS.3.2"],                         # missing provenance labels
         "GCB-025": ["PW.4.1"],                         # outdated runner image
         "GCB-026": ["PS.1.1"],                         # public storage bucket
+        # ── SCM posture (governance via the platform REST API) ──────
+        # The PS.1 family ("Protect all forms of code from
+        # unauthorized access and tampering") is purpose-built for
+        # SCM governance: branch protection, review gates, and
+        # ruleset enforcement all evidence "store all forms of code
+        # based on least-privilege and tamper-resistance". PS.2.1
+        # carries integrity-verification surfaces (signed commits).
+        # PW.4.x carries third-party action governance. PO.5.1
+        # carries environment separation. RV.1.1 carries
+        # vulnerability gathering.
+        "SCM-001":  ["PS.1.1"],                        # default branch unprotected
+        "SCM-002":  ["PS.1.1"],                        # required reviews missing
+        "SCM-003":  ["RV.1.1"],                        # default code scanning disabled
+        "SCM-004":  ["PS.1.1"],                        # secret scanning disabled
+        "SCM-005":  ["PW.4.4", "RV.1.1"],              # Dependabot security updates off
+        "SCM-006":  ["PS.2.1"],                        # signed commits not required
+        "SCM-007":  ["PS.1.1"],                        # force-push allowed
+        "SCM-008":  ["PS.1.1"],                        # required status checks missing
+        "SCM-009":  ["PS.1.1"],                        # branch deletions allowed
+        "SCM-010":  ["PS.1.1"],                        # admin bypass allowed
+        "SCM-011":  ["PS.1.1"],                        # CODEOWNERS reviews not required
+        "SCM-012":  ["PS.1.1"],                        # stale reviews not dismissed
+        "SCM-013":  ["PS.1.1"],                        # conversation resolution not required
+        "SCM-014":  ["PS.1.1"],                        # last-push approval not required
+        "SCM-015":  ["PS.1.1"],                        # secret scanning push protection off
+        "SCM-016":  ["RV.1.1"],                        # private vulnerability reporting off
+        "SCM-017":  ["PS.1.1"],                        # CODEOWNERS file missing
+        "SCM-018":  ["PS.1.1"],                        # PR review bypass allowed
+        "SCM-019":  ["PS.1.1"],                        # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020":  ["PO.5.1", "PS.1.1"],              # workflow_token default write
+        "SCM-021":  ["PS.1.1"],                        # Actions can approve PRs
+        "SCM-022":  ["PW.4.1", "PW.4.4"],              # allowed_actions unrestricted
+        "SCM-023":  ["PO.5.1"],                        # env missing reviewers
+        "SCM-024":  ["PO.5.1"],                        # env branch policy missing
+        "SCM-025":  ["PS.1.1"],                        # deploy keys write-enabled
+        "SCM-026":  ["PO.3.2"],                        # webhook insecure / no HMAC
+        "SCM-027":  ["PS.1.1"],                        # outside collaborator elevated
+        "SCM-028":  ["PS.1.1"],                        # private repo allows forking
+        # Ruleset enforcement
+        "SCM-029":  ["PS.1.1"],                        # ruleset not enforced
+        "SCM-030":  ["PS.1.1"],                        # ruleset always-bypass
+        "SCM-031":  ["PS.1.1"],                        # auto-merge enabled
+        "SCM-032":  ["PS.1.1"],                        # ruleset lacks PR review
+        "SCM-033":  ["PS.1.1"],                        # ruleset lacks status_checks
+        "SCM-034":  ["PS.1.1"],                        # ruleset allows force_push
+        "SCM-035":  ["PS.1.1"],                        # ruleset allows deletion
+        "SCM-036":  ["PS.2.1"],                        # ruleset lacks signed_commits
+        "SCM-037":  ["PS.1.1"],                        # ruleset stale-review dismissal
+        "SCM-038":  ["PS.1.1"],                        # ruleset lacks linear_history
+        "SCM-039":  ["PS.1.1", "PW.6.1"],              # ruleset lacks required_workflows
+        "SCM-040":  ["RV.1.1", "PS.1.1"],              # ruleset lacks code_scanning gate
     },
 )
