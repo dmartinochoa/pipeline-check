@@ -2687,6 +2687,59 @@ class TestSCM030:
         assert f.passed
         assert "archived" in f.description
 
+    def test_detail_unavailable_does_not_silently_pass(self):
+        # The per-ruleset detail fetch failed (403 / 404 / timeout)
+        # for an active ruleset, so ``bypass_actors`` was never
+        # populated. The rule must NOT treat that as a clean
+        # bypass list — it should surface the gap so the operator
+        # knows posture wasn't fully evaluated.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "_detail_unavailable": True,
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        # Passes (we can't prove a fail), but the description
+        # names the unavailability so the operator can fix it.
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+        assert "default" in f.description
+
+    def test_detail_unavailable_combines_with_real_offender(self):
+        # One active ruleset has detail unavailable; a second
+        # active ruleset has a real always-bypass. The rule must
+        # fail on the offender AND note the gap.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "with-bad-bypass",
+                    "enforcement": "active",
+                    "bypass_actors": [
+                        {"actor_type": "Team", "actor_id": 42,
+                         "bypass_mode": "always"},
+                    ],
+                },
+                {
+                    "id": 2, "name": "unmeasurable",
+                    "enforcement": "active",
+                    "_detail_unavailable": True,
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert not f.passed
+        assert "with-bad-bypass" in f.description
+        assert "unmeasurable" in f.description.lower() or \
+               "1 ruleset(s) had their detail endpoint" in f.description
+
 
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
@@ -2726,7 +2779,7 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/collaborators?affiliation=outside&per_page=100": [
                 {"login": "outside-dev", "permissions": {"pull": True}},
             ],
-            "repos/o/r/rulesets": [
+            "repos/o/r/rulesets?per_page=100": [
                 {"id": 1, "name": "default-branch-protection",
                  "target": "branch", "enforcement": "active"},
             ],
@@ -2768,10 +2821,46 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/keys",
             "repos/o/r/hooks",
             "repos/o/r/collaborators?affiliation=outside&per_page=100",
-            "repos/o/r/rulesets",
+            "repos/o/r/rulesets?per_page=100",
             "repos/o/r/rulesets/1",
         ):
             assert path in fetcher.calls
+
+    def test_for_repo_marks_active_ruleset_when_detail_fetch_fails(self):
+        # The list endpoint returns an active ruleset, but the
+        # per-id detail endpoint is missing from the fixture (→
+        # the FakeSCMFetcher returns None → represents a 403/404
+        # / timeout from GitHub). The loader must mark the
+        # ruleset entry with ``_detail_unavailable: True`` so
+        # SCM-030 can distinguish "couldn't measure" from "clean".
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/rulesets?per_page=100": [
+                {"id": 7, "name": "active-but-403-on-detail",
+                 "enforcement": "active"},
+            ],
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        snap = ctx.repos[0]
+        assert isinstance(snap.rulesets, list)
+        assert snap.rulesets[0]["_detail_unavailable"] is True
+
+    def test_for_repo_warns_when_rulesets_at_page_cap(self):
+        # Exactly 100 rulesets came back → potential pagination
+        # boundary; the context warnings list must mention it so
+        # the operator audits manually.
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+            "repos/o/r/rulesets?per_page=100": [
+                {"id": i, "name": f"rs{i}", "enforcement": "disabled"}
+                for i in range(100)
+            ],
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        assert any(
+            "rulesets returned" in w and "100" in w
+            for w in ctx.warnings
+        )
 
     def test_for_repo_silent_when_actions_endpoints_404(self):
         # Endpoints unavailable (typical for tokens without admin

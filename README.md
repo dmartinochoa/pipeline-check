@@ -385,7 +385,7 @@ See [docs/standards/](docs/standards/).
 | `--inventory-type` | | Glob pattern to scope inventory by type (repeatable, implies `--inventory`) |
 | `--inventory-only` | | Skip checks; emit inventory only (implies `--inventory`) |
 | `--ingest` | | SARIF 2.1.0 file from another scanner (Trivy, Checkov, Snyk, KICS, CodeQL, …). External rules become `INGEST-<tool>-<rule-id>` findings; chain engine re-evaluates over the union. Repeatable. |
-| `--scm-platform` | | SCM platform for `--pipeline scm`: `github` (full 28-rule pack), `gitlab`, or `bitbucket` (each gets a 7-rule universal subset) |
+| `--scm-platform` | | SCM platform for `--pipeline scm`: `github` (full 30-rule pack), `gitlab`, or `bitbucket` (each gets a 7-rule universal subset) |
 | `--scm-repo` | | Repository to scan: `owner/name` (GitHub), `group/subgroup/project` (GitLab — nested subgroups OK), or `workspace/repo_slug` (Bitbucket Cloud) |
 | `--scm-fixture-dir` | | Read SCM API responses from JSON files under DIR instead of hitting the network. Useful for offline tests / CI runs without a token. |
 | `--gh-token` | `$GITHUB_TOKEN` | Token for the GHA reusable-workflow resolver and the SCM provider's REST API calls |
