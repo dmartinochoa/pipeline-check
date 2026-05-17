@@ -759,7 +759,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 Fires when ``ENV NODE_OPTIONS`` contains any of:
 
-* ``--require=<path>`` or ``--import=<path>``   (preload a module on every Node startup)
+* ``--require=<path>`` / ``--require <path>`` /   ``-r <path>`` (the short alias Node accepts inside   ``NODE_OPTIONS``), or ``--import=<path>``   (preload a module on every Node startup)
 * ``--inspect`` / ``--inspect=...`` /   ``--inspect-brk`` (open V8 inspector port)
 
 Safe flags (``--max-old-space-size=``, ``--enable-source-maps``, ``--unhandled-rejections=throw``, etc.) pass. The rule flags the *primitive*, not the value — even an innocent-looking ``--require=./preload.js`` is the same shape as the malicious one, and the security decision is at the build-policy layer.

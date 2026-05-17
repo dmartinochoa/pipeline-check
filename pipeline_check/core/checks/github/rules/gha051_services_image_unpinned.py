@@ -73,7 +73,13 @@ def _is_pinned(image: Any) -> bool:
 
 def _scan_image(node: Any, breadcrumb: str) -> str | None:
     """Return a breadcrumb label when *node* declares an unpinned
-    image, or ``None``."""
+    image, or ``None``. Accepts either the string shorthand
+    (``container: node:20``) or the object shape
+    (``container: { image: node:20, ... }``)."""
+    if isinstance(node, str):
+        if _is_pinned(node):
+            return None
+        return f"{breadcrumb} ({node})"
     if not isinstance(node, dict):
         return None
     image = node.get("image")
@@ -89,6 +95,8 @@ def _scan_image(node: Any, breadcrumb: str) -> str | None:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for job_id, job in iter_jobs(doc):
+        # ``jobs.<id>.container`` accepts both ``image:`` (object form)
+        # and a bare string shorthand per the GitHub Actions schema.
         c = _scan_image(
             job.get("container"),
             breadcrumb=f"jobs.{job_id}.container",
@@ -98,6 +106,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         services = job.get("services")
         if isinstance(services, dict):
             for svc_name, svc in services.items():
+                # ``services.<name>`` always carries the object shape
+                # (it needs ``image`` plus optional ``ports`` / ``env``
+                # / ``options``); the string shorthand is container-only.
                 hit = _scan_image(
                     svc, breadcrumb=f"jobs.{job_id}.services.{svc_name}",
                 )

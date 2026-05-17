@@ -1007,7 +1007,7 @@ Pairs with SCM-002 (legacy branch-protection required reviews) and SCM-029 (rule
 
 Add a ``pull_request`` rule to every active ruleset and set ``parameters.required_approving_review_count`` to at least 1 (Settings → Rules → <ruleset> → Add rule → Require a pull request before merging → Required approvals). An active ruleset without a PR-review gate is the same shape as legacy branch protection without required reviews (SCM-002): the ruleset is enforced — force-push denial, signed commits, status checks may all fire — but pushes / merges still go through without human review. Operators commonly create rulesets for specific governance signals (e.g., commit-message patterns for compliance) and forget that the PR-review gate is a separate rule type that has to be added explicitly.
 
-If you have BOTH legacy branch protection and rulesets configured (the migration is in progress), the legacy branch protection's required-reviews still applies — SCM-002 is the rule that catches that case. SCM-032 fires only when the ruleset is the sole governance channel and is missing the PR-review rule.
+SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-protection state, so it fires on any active ruleset that lacks a PR-review rule, even when legacy branch protection on the same ref provides the required-review gate. SCM-002 covers the legacy branch-protection side; the two rules together describe the full review-control surface.
 
 </div>
 

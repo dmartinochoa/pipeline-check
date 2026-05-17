@@ -42,7 +42,9 @@ RULE = Rule(
         "references to attacker-controllable expression "
         "contexts: ``github.event.head_commit.message``, "
         "``github.event.pull_request.title``, ``...body``, "
-        "``...head.ref``, ``github.event.issue.title`` / "
+        "``...head.ref``, ``github.head_ref`` (the top-level "
+        "shorthand for the same PR source-branch name), "
+        "``github.event.issue.title`` / "
         "``...body``, ``github.event.comment.body``, "
         "``github.event.review_comment.body``, "
         "``github.event.review.body``.\n\n"
@@ -82,6 +84,12 @@ _UNTRUSTED_CONTEXTS: tuple[str, ...] = (
     "github.event.comment.body",
     "github.event.review.body",
     "github.event.review_comment.body",
+    # ``github.head_ref`` is the top-level shorthand for the PR's
+    # source-branch name on ``pull_request`` events. The branch name
+    # is fully attacker-controlled (a fork can name its branch
+    # anything, including ``${{ secrets.X }}``); same risk shape as
+    # ``github.event.pull_request.head.ref``, more common in the wild.
+    "github.head_ref",
 )
 
 

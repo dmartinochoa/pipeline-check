@@ -8,7 +8,7 @@ from ...rule import Rule
 
 RULE = Rule(
     id="GHA-055",
-    title="Reusable workflow outputs derive a secret value",
+    title="Reusable workflow outputs derive a secret or caller-input value",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-6",),
     esf=("ESF-D-SECRETS",),
@@ -62,31 +62,48 @@ RULE = Rule(
 )
 
 
+def _extract_refs(value: str, prefix: str) -> list[str]:
+    """Pull ``<prefix><name>`` tokens (e.g. ``secrets.X``,
+    ``inputs.Y``) out of an expression string. Returns each unique
+    reference in source order."""
+    out: list[str] = []
+    idx = 0
+    while idx < len(value):
+        mark = value.find(prefix, idx)
+        if mark < 0:
+            break
+        end = mark + len(prefix)
+        while end < len(value) and (
+            value[end].isalnum() or value[end] in "_-"
+        ):
+            end += 1
+        ref = value[mark:end]
+        if ref not in out and end > mark + len(prefix):
+            out.append(ref)
+        idx = end
+    return out
+
+
 def _scan_output_value(value: Any) -> list[str]:
-    """Return the list of ``secrets.*`` tokens in *value*."""
+    """Return the list of attacker-controllable / secret-carrying
+    expression tokens in *value*. Covers two leak shapes:
+
+    * ``${{ secrets.<name> }}`` — direct secret reference.
+    * ``${{ inputs.<name> }}`` — caller-supplied input. GitHub's
+      reusable-workflow docs explicitly warn against passing secret
+      values through ``with:``, but the API permits it, and a
+      caller that does so will see the value re-emitted via
+      ``outputs.<name>.value`` without secret masking applied.
+    """
     if not isinstance(value, str):
         return []
+    if "${{" not in value:
+        return []
     hits: list[str] = []
-    # Walk the string, looking for ``secrets.<name>`` references
-    # inside ``${{ ... }}`` interpolations. The substring check
-    # is broad on purpose: any nested expression that references
-    # the secrets context returns the secret bytes.
-    if "${{" in value and "secrets." in value:
-        # Pull the first ~5 secret names mentioned (de-dup).
-        idx = 0
-        while idx < len(value):
-            mark = value.find("secrets.", idx)
-            if mark < 0:
-                break
-            end = mark + len("secrets.")
-            while end < len(value) and (
-                value[end].isalnum() or value[end] in "_-"
-            ):
-                end += 1
-            ref = value[mark:end]
-            if ref not in hits:
-                hits.append(ref)
-            idx = end
+    if "secrets." in value:
+        hits.extend(_extract_refs(value, "secrets."))
+    if "inputs." in value:
+        hits.extend(_extract_refs(value, "inputs."))
     return hits
 
 
@@ -151,14 +168,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         offenders.append(f"outputs.{out_name}: {', '.join(hits[:3])}")
     passed = not offenders
     desc = (
-        "No reusable-workflow output references a secret."
+        "No reusable-workflow output references a secret or "
+        "caller-supplied input."
         if passed else
-        f"{len(offenders)} reusable-workflow output(s) leak a "
-        f"secret to the caller: {', '.join(offenders[:3])}"
+        f"{len(offenders)} reusable-workflow output(s) re-emit "
+        f"a secret / input across the workflow boundary: "
+        f"{', '.join(offenders[:3])}"
         f"{'…' if len(offenders) > 3 else ''}. The caller sees "
-        f"the secret as an ordinary ``needs.<job>.outputs.*`` "
-        f"value, which appears in the caller's build log when "
-        f"referenced."
+        f"the value as an ordinary ``needs.<job>.outputs.*`` "
+        f"entry which appears in the caller's build log when "
+        f"referenced. ``secrets.*`` references are direct leaks; "
+        f"``inputs.*`` references leak whatever the caller passes "
+        f"through ``with:`` (including secrets the caller wired "
+        f"in against GitHub's guidance)."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
