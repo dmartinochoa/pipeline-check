@@ -3179,6 +3179,37 @@ class TestSCM037StaleReviewDismissal:
         assert "SCM-012" in f.description
 
 
+class TestSCM038LinearHistory:
+    def test_no_linear_history_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "non_fast_forward"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert not f.passed
+
+    def test_required_linear_history_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_linear_history"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        # Linear history has no legacy branch-protection analog, so
+        # the rule is silent (passing) when no rulesets exist —
+        # absence here means "gate doesn't exist", not "gate carried
+        # elsewhere". The description must say so.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 

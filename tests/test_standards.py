@@ -393,8 +393,9 @@ class TestPerFrameworkCoverageFloor:
         "nist_csf_2":           62,
         # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
         # landed OWASP-only; ESF backfill queued. Lowered 57→56
-        # when SCM-033..037 landed OWASP-only.
-        "esf_supply_chain":     56,
+        # when SCM-033..037 landed OWASP-only. Lowered 56→55 when
+        # SCM-038 (ruleset linear-history) landed OWASP-only.
+        "esf_supply_chain":     55,
         # openssf_scorecard lowered from 57 to 56 when NPM-011
         # (secrets-in-files-field) landed OWASP-only; Scorecard
         # backfill queued. (SCM-020..025 are already a no-op here.)

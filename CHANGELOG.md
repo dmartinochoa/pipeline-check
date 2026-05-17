@@ -126,6 +126,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
     debugger control to anyone who can reach the port).
 
+- **SCM-038 — active ruleset doesn't require linear history.** LOW.
+  Walks the merged ``rules`` array on every active ruleset looking
+  for an entry with ``type: "required_linear_history"``. Fires when
+  none is found. Merge commits aren't a direct attacker primitive
+  (force-push, SCM-034, is the history-rewrite surface), but they
+  muddy ``git log --first-parent`` triage and git-bisect during
+  incident response and hide which specific commits landed when a
+  long-lived feature branch is merged. Pairs with SCM-036 (signed
+  commits) for tamper-evident linear history. Unlike SCM-033..037
+  the rule has no legacy branch-protection analog — the
+  ``required_linear_history`` rule_type is ruleset-only — so the
+  rule passes silently when no rulesets are configured with a
+  description that names the absence-not-coverage state explicitly.
+
 - **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
   Completes the ruleset analog of legacy branch protection. Each
   rule fires when an active ruleset is missing the specific
