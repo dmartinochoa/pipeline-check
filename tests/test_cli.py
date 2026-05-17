@@ -23,20 +23,23 @@ def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
 
 
 @pytest.fixture
-def runner():
-    """Click test runner pinned to an empty isolated cwd.
+def runner(tmp_path, monkeypatch):
+    """Click test runner pinned to an isolated cwd with a minimal CI file.
 
-    Without this, the CLI's auto-detect path walks the project root,
-    finds multiple providers (``.github/workflows``, ``Dockerfile``,
-    …), and routes through ``MultiScanner`` — which bypasses these
-    tests' ``patch("pipeline_check.cli.Scanner")`` mocks. The
-    isolated filesystem context ensures cwd contains no CI files,
-    so auto-detect falls back to ``aws`` and the single-Scanner
-    code path that every test in this module is exercising.
+    Without an isolated cwd, the CLI's auto-detect walks the project
+    root, finds multiple providers, and routes through ``MultiScanner``
+    — which bypasses these tests' ``patch("pipeline_check.cli.Scanner")``
+    mocks. We additionally drop a trivial ``.gitlab-ci.yml`` so
+    auto-detect resolves to a single provider; without it, UX-3 raises
+    a ``UsageError`` for "no CI files found" before the Scanner mock
+    is ever called. The exact provider doesn't matter for these tests
+    — they assert exit codes, output shape, and flag wiring with the
+    Scanner mocked out — but the file's presence is now required to
+    reach the Scanner-construction path.
     """
-    cli_runner = CliRunner()
-    with cli_runner.isolated_filesystem():
-        yield cli_runner
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".gitlab-ci.yml").write_text("stages: []\n")
+    return CliRunner()
 
 
 class TestExitCodes:
@@ -144,6 +147,34 @@ class TestFlagWiring:
         assert result.exit_code != 0
         assert "--output-file" in result.output or "--output-file" in (result.stderr or "")
 
+    def test_json_output_honors_output_file(self, runner, tmp_path):
+        # Regression: --output json silently ignored --output-file and
+        # dumped JSON to stdout, which breaks every CI integration that
+        # routes JSON to a path.
+        out = tmp_path / "report.json"
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = [_finding()]
+            result = runner.invoke(
+                scan, ["--output", "json", "--output-file", str(out)],
+            )
+        assert result.exit_code in (0, 1), result.output
+        assert out.exists(), "JSON file was not written"
+        # File holds a parseable JSON payload.
+        import json as _json
+        _json.loads(out.read_text(encoding="utf-8"))
+        # stdout should NOT also carry the JSON.
+        assert result.stdout.strip() == ""
+
+    def test_json_output_without_file_still_writes_stdout(self, runner):
+        # The bare --output json case (no --output-file) must keep its
+        # legacy stdout behavior so existing scripts piping the output
+        # don't break.
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = [_finding()]
+            result = runner.invoke(scan, ["--output", "json"])
+        assert result.exit_code in (0, 1)
+        assert result.stdout.strip().startswith("{")
+
 
 class TestAutoDetect:
     def test_gitlab_path_autodetected(self, runner, tmp_path, monkeypatch):
@@ -188,12 +219,16 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GHA-{i:03d}" for i in range(1, 48)}
+            {f"GHA-{i:03d}" for i in range(1, 51)}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 
-    def test_gitlab_missing_file_raises_usage_error(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)  # no .gitlab-ci.yml present
-        result = runner.invoke(scan, ["--pipeline", "gitlab", "--output", "json"])
+    def test_gitlab_missing_file_raises_usage_error(self, tmp_path_factory, monkeypatch):
+        # Uses a fresh tmp dir (not the ``runner`` fixture's, which
+        # drops a ``.gitlab-ci.yml`` to satisfy auto-detect) so the
+        # explicit ``--pipeline gitlab`` has nothing to resolve.
+        empty = tmp_path_factory.mktemp("no-gitlab")
+        monkeypatch.chdir(empty)
+        result = CliRunner().invoke(scan, ["--pipeline", "gitlab", "--output", "json"])
         assert result.exit_code != 0
         assert "gitlab-path" in result.output.lower()

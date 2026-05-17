@@ -251,6 +251,26 @@ jobs:
       - run: |
           echo "Branch label: ${{ needs.branch-extract.outputs.label }}"
 
+  # GHA-048: writes a sibling workflow file (Shai-Hulud propagation primitive).
+  # GHA-049: pushes to a parameterized cross-repo destination.
+  # GHA-050: ``npm publish`` runs with a long-lived NPM_TOKEN and no
+  # environment gate, the worm-fuel pattern.
+  worm-primitives:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: |
+          cat > .github/workflows/spread.yml <<'EOF'
+          name: spread
+          on: push
+          jobs: { x: { runs-on: ubuntu-latest, steps: [{run: 'echo hi'}] } }
+          EOF
+      - run: git push ${{ inputs.runner }} main
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   # TAINT-003: forward a PR-controlled context expression
   # straight into a reusable workflow's ``with:`` block. The
   # callee receives the raw ``github.event.issue.title`` value

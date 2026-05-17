@@ -47,22 +47,50 @@ PROVENANCE_TOKENS = (
 # Tokens that indicate a workflow produces deployable artifacts.
 # Used by the signing/SBOM/vuln-scan checks to suppress false positives
 # on lint/test-only workflows that don't produce anything to sign or scan.
+#
+# Bare-word tokens like ``publish`` / ``deploy`` / ``release`` were removed
+# because they false-positived on workflows whose only mention of those
+# verbs came from branch names ("release-please"), PR titles ("Cherry-
+# pick from release"), or step names ("Deploy preview"). Each entry below
+# is either an executable command shape (``gh release create``) or a
+# concrete reusable-action ``uses:`` ref (``softprops/action-gh-release``)
+# so that mere prose mention of "release" or "deploy" no longer trips the
+# downstream signing / SBOM / SLSA rules.
 _ARTIFACT_TOKENS = (
+    # Container builds + pushes
     "docker push", "docker build",
-    # Anchored with ``@`` so ``actions/upload-pages-artifact@<ref>``
-    # (a docs/Pages site, not a software artifact) doesn't match.
-    "actions/upload-artifact@",
-    "archiveartifacts",                         # Jenkins
-    "store_artifacts", "persist_to_workspace",  # CircleCI
-    "publish", "deploy", "release",
     "docker/build-push-action",
     "docker/metadata-action",
+    "buildah push", "podman push",
+    # GitHub Actions artifact + release flows. ``upload-artifact@`` is
+    # anchored with ``@`` so ``actions/upload-pages-artifact@<ref>`` (a
+    # docs/Pages site, not a software artifact) doesn't match.
+    "actions/upload-artifact@",
+    "softprops/action-gh-release",
+    "actions/create-release",
+    "actions/upload-release-asset",
+    "gh release create", "gh release upload",
+    # Jenkins
+    "archiveartifacts",
+    # CircleCI
+    "store_artifacts", "persist_to_workspace",
+    # Cloud deploys
     "aws s3 cp", "aws s3 sync",
+    "aws cloudformation deploy",
+    "aws ecs update-service",
+    "aws deploy create-deployment",
+    "atlassian/aws-s3-deploy",      # Bitbucket Pipelines pipe
+    "atlassian/aws-ecs-deploy",     # Bitbucket Pipelines pipe
+    "aws-cli/setup-and-deploy",     # CircleCI orb command
     "kubectl apply", "helm upgrade", "helm install",
     "terraform apply",
-    "gcloud app deploy", "gcloud run deploy",
+    "gcloud app deploy", "gcloud run deploy", "gcloud functions deploy",
+    "az webapp deploy", "az functionapp deployment",
+    # Language package registries
     "twine upload", "cargo publish", "gem push",
-    "npm publish", "yarn publish",
+    "npm publish", "yarn publish", "pnpm publish",
+    "pypa/gh-action-pypi-publish",
+    "mvn deploy", "gradle publish",
 )
 
 

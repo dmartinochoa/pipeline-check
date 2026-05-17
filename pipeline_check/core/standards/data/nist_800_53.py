@@ -156,6 +156,9 @@ STANDARD = Standard(
         "JF-010":   ["IA-5"],                            # long-lived AWS keys
         "JF-011":   ["AU-2", "AU-12"],                   # build log retention
         "JF-015":   ["CM-6"],                            # no timeout
+        "JF-033":   ["IA-5", "AU-9"],                    # withCredentials leaked via Groovy ${}
+        "JF-034":   ["IA-5", "SC-28"],                   # password() build parameter
+        "JF-035":   ["SC-8", "SC-13"],                   # httpRequest ignoreSslErrors
         # Cloud Build
         "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
         "GCB-002":  ["AC-3", "AC-6"],                    # default service account
@@ -225,6 +228,9 @@ STANDARD = Standard(
         "K8S-038":  ["SC-7", "AC-3"],                    # NetworkPolicy allow-all
         "K8S-039":  ["AC-6", "CM-6"],                    # shareProcessNamespace
         "K8S-040":  ["AC-6", "CM-6"],                    # procMount: Unmasked
+        "K8S-041":  ["SC-7", "AC-3"],                    # Service externalIPs (CVE-2020-8554)
+        "K8S-042":  ["AC-2", "AC-3", "AC-6"],            # anonymous RoleBinding
+        "K8S-043":  ["SC-7", "CM-6"],                    # Ingress wildcard host
         # Helm chart-supply-chain. The same SR family that covers
         # image pinning (K8S-001 / DF-001) covers chart pinning;
         # SC-8 (transmission integrity) covers HELM-003's plaintext
@@ -306,6 +312,9 @@ STANDARD = Standard(
         "DF-018":   ["AC-6", "CM-6"],                    # RUN chown system path
         "DF-019":   ["IA-5", "SC-28"],                   # COPY/ADD credential-shaped file
         "DF-020":   ["IA-5", "AU-2"],                    # ARG credential-shaped name
+        "DF-021":   ["SC-8", "SC-13", "SR-3"],           # pip install TLS bypass / http index
+        "DF-022":   ["SR-3", "SR-11", "CM-2"],           # npm install (no lockfile enforcement)
+        "DF-023":   ["CM-6", "AC-6"],                    # ENV LD_PRELOAD / LD_LIBRARY_PATH
         # Additional AWS services not previously mapped.
         "KMS-001":  ["SC-12", "SC-13"],                  # CMK rotation disabled
         "KMS-002":  ["AC-3", "AC-6"],                    # CMK policy wildcard

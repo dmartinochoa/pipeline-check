@@ -323,3 +323,61 @@ spec:
       image: nginx@sha256:0000000000000000000000000000000000000000000000000000000000000007
       securityContext:
         procMount: Unmasked
+---
+# Service with externalIPs set — exercises K8S-041 (CVE-2020-8554).
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-externalips
+  namespace: insecure-apps
+spec:
+  type: ClusterIP
+  selector:
+    app: insecure-app
+  ports:
+    - port: 80
+      targetPort: 8080
+  externalIPs:
+    - 198.51.100.10
+---
+# ClusterRoleBinding granting access to system:anonymous —
+# exercises K8S-042.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insecure-anon-binding
+subjects:
+  - kind: User
+    name: system:anonymous
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:unauthenticated
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: viewer
+  apiGroup: rbac.authorization.k8s.io
+---
+# Ingress with a wildcard host — exercises K8S-043. The TLS block
+# is intentionally populated so this resource does not also re-fire
+# K8S-027 on the same Ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: insecure-wildcard-host
+  namespace: insecure-apps
+spec:
+  tls:
+    - hosts: ["*.example.com"]
+      secretName: wildcard-tls
+  rules:
+    - host: "*.example.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: insecure-public-lb
+                port:
+                  number: 80

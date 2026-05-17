@@ -15,6 +15,7 @@ from typing import Any
 
 from ...base import Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
+from ..base import pipeline_publishes
 
 RULE = Rule(
     id="GCB-009",
@@ -45,7 +46,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # ``images:`` triggers a push even without an explicit step). Treat
     # a non-empty ``images:`` list as artifact-producing so the check
     # applies even to minimal configs that rely on the built-in push.
-    produces = produces_artifacts(doc) or bool(doc.get("images"))
+    produces = produces_artifacts(doc) or pipeline_publishes(doc)
     passed = has_signing(doc)
     if not passed and not produces:
         return Finding(

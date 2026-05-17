@@ -84,14 +84,26 @@ from .core.threatmodel_reporter import report_threatmodel
 def _tolerate_unencodable_stdio() -> None:
     """Make stdout/stderr tolerate non-ASCII characters on legacy consoles.
 
-    Windows' default ``cmd.exe`` uses cp1252 for stdout. When click or
-    our own code emits help text containing characters cp1252 can't
-    encode (box-drawing, arrow, >=), Python raises
-    ``UnicodeEncodeError`` and the program dies before printing
-    anything useful. Reconfiguring the streams with
-    ``errors='replace'`` degrades un-encodable characters to ``?``
-    instead of crashing. We leave the *encoding* alone so output still
-    matches the terminal's expectations - only the error handler changes.
+    Two related Windows problems this fixes:
+
+    1. ``UnicodeEncodeError`` on help text. Windows' default ``cmd.exe``
+       uses cp1252 for stdout. When click or our own code emits help
+       text containing characters cp1252 can't encode (box-drawing,
+       arrow, ``>=``), Python raises ``UnicodeEncodeError`` and the
+       program dies before printing anything useful. Reconfiguring
+       with ``errors='replace'`` degrades un-encodable characters to
+       ``?`` instead of crashing.
+
+    2. cp1252 bytes when stdout is redirected. On Windows, when stdout
+       is redirected to a file or pipe (CI logs, ``> report.json``,
+       piping into a UTF-8 consumer), Python opens it with the system
+       locale encoding (cp1252) rather than the terminal's. Rich's
+       rendering of ``·`` (U+00B7) and ``…`` (U+2026) lands as raw cp1252
+       bytes, which mojibake every UTF-8 consumer downstream. When we
+       detect a redirected (non-TTY) stream we force the encoding to
+       UTF-8 so the bytes downstream tools see match the bytes a Linux
+       runner would produce. TTY streams keep the system encoding so
+       the interactive console renders correctly.
 
     Runs at import time so it takes effect before click's argument-
     parsing emits help text on --help.
@@ -105,8 +117,16 @@ def _tolerate_unencodable_stdio() -> None:
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:
             continue
+        # Force UTF-8 on Windows when the stream isn't a TTY (i.e. it's
+        # been redirected). Leaving the system locale would write cp1252
+        # bytes that downstream UTF-8 consumers reject. On non-Windows
+        # the default is already UTF-8, so we skip the override there.
+        is_tty = getattr(stream, "isatty", lambda: False)()
         try:
-            reconfigure(errors="replace")
+            if sys.platform == "win32" and not is_tty:
+                reconfigure(encoding="utf-8", errors="replace")
+            else:
+                reconfigure(errors="replace")
         except OSError:
             # Stream rejects the reconfigure (e.g. detached). Non-fatal:
             # the worst case is the original crash on cp1252, which only
@@ -1251,8 +1271,9 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Write the report to this file. Required for --output html. "
-        "Optional for --output sarif/junit/markdown/threatmodel "
-        "(stdout is used if unset)."
+        "Optional for --output json/sarif/junit/markdown/threatmodel "
+        "(stdout is used if unset). Ignored for --output terminal "
+        "and --output both (the latter always writes JSON to stdout)."
     ),
 )
 @click.option(
@@ -1571,6 +1592,29 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--show-controls",
+    is_flag=True,
+    default=False,
+    help=(
+        "Include the full compliance-control mapping (OWASP, ESF, "
+        "SLSA, SOC 2, NIST CSF, OpenSSF Scorecard, S2C2F, ...) in "
+        "each finding's terminal panel. Off by default to keep the "
+        "human-readable report scannable; controls are always present "
+        "in JSON / SARIF outputs regardless of this flag."
+    ),
+)
+@click.option(
+    "--show-passed",
+    is_flag=True,
+    default=False,
+    help=(
+        "Include passed checks in the terminal table. Off by default "
+        "so the table focuses on failures; the headline still shows "
+        "the failed-vs-passed counts. Passed findings always appear "
+        "in JSON / SARIF / JUnit outputs regardless of this flag."
+    ),
+)
+@click.option(
     "--no-chains",
     is_flag=True,
     default=False,
@@ -1732,6 +1776,8 @@ def scan(
     custom_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
+    show_controls: bool,
+    show_passed: bool,
     no_chains: bool,
     list_chains: bool,
     annotate_fp: tuple[str, str] | None,
@@ -2040,11 +2086,27 @@ def scan(
             pipeline_lc = detected_all[0]
             click.echo(f"[auto] detected --pipeline {pipeline_lc}", err=True)
         else:
-            click.echo(
-                "[auto] no CI files found at cwd; using --pipeline aws",
-                err=True,
+            # No CI files at cwd. Previously this silently fell through
+            # to ``--pipeline aws``, which then degraded to "API access
+            # failed" findings on machines without AWS credentials and
+            # produced a misleading "Grade A / Score 100" headline (the
+            # API-failure findings are INFO-severity so they don't
+            # count toward the score). Refuse to scan instead, with a
+            # concrete hint pointing at the explicit-AWS form for
+            # users who actually wanted that path.
+            raise click.UsageError(
+                "no CI/CD config files detected at cwd. Pipeline-check "
+                "looks for: .github/workflows/, .gitlab-ci.yml, "
+                "Jenkinsfile, bitbucket-pipelines.yml, azure-pipelines.yml, "
+                ".circleci/config.yml, cloudbuild.yaml, "
+                ".buildkite/pipeline.yml, .drone.yml, tekton/, argo "
+                "manifests, Dockerfile / Containerfile, Kubernetes "
+                "manifests under k8s/ or kubernetes/, a Helm Chart.yaml, "
+                "or an OCI image manifest. Pass --pipeline <name> to "
+                "scan a specific provider, --<provider>-path to point "
+                "at a non-standard location, or --pipeline aws (with "
+                "AWS credentials configured) to scan a live AWS account."
             )
-            pipeline_lc = "aws"
 
     # Per-provider path resolution. In single-pipeline mode the
     # if/elif chain below runs once for ``pipeline_lc``; in
@@ -2412,6 +2474,7 @@ def scan(
     if not quiet:
         _emit_scan_summary(scanner.metadata)
         _maybe_emit_wrong_provider_hint(pipeline_lc, findings)
+        _maybe_emit_degraded_scan_warning(findings)
 
     # Confidence filter applies BEFORE scoring + gate so scores reflect
     # the trusted finding set. ``--min-confidence LOW`` (the default)
@@ -2454,18 +2517,35 @@ def scan(
             # stderr so the JSON on stdout remains clean and machine-parseable.
             from rich.console import Console as _Console  # local import, only needed here
             console = _Console(stderr=(output == "both"))
-            report_terminal(findings, score_result, severity_threshold=threshold, console=console)
+            report_terminal(
+                findings, score_result,
+                severity_threshold=threshold, console=console,
+                show_controls=show_controls,
+                show_passed=show_passed,
+            )
             if chains:
                 report_chains_terminal(chains, console=console)
             if components is not None:
                 report_inventory_terminal(components, console=console)
 
         if output in ("json", "both"):
-            click.echo(report_json(
+            json_text = report_json(
                 findings, score_result, tool_version=__version__,
                 inventory=components,
                 chains=chains if not no_chains else None,
-            ))
+            )
+            # ``--output-file`` is honored for every other format and
+            # the help text doesn't carve json out; respect it here too
+            # so CI integrations that redirect to a path actually
+            # produce a file instead of silently dumping to stdout.
+            # ``--output both`` still goes to stdout, since the point
+            # of ``both`` is the side-by-side terminal+JSON stream.
+            if output == "json" and output_file:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(json_text)
+                click.echo(f"JSON report written to {output_file}", err=True)
+            else:
+                click.echo(json_text)
 
         if output == "html":
             report_html(
@@ -2837,6 +2917,38 @@ def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> No
     click.echo(
         f"[hint] no real AWS results. This looks like a '{detected}' "
         f"repo; try: pipeline_check --pipeline {detected}",
+        err=True,
+    )
+
+
+def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
+    """Surface a ``[warn]`` line when degraded-mode findings dominate.
+
+    Every AWS module emits a single ``<PREFIX>-000`` INFO-severity
+    finding when its boto3 enumeration fails (missing credentials,
+    AccessDenied, throttling). Those findings are NOT security gaps —
+    they're tool-status — but they still render as "FAIL" rows in the
+    table, and they don't count toward the score (INFO is ignored by
+    the weighted formula), so a fully-degraded scan can confusingly
+    display "Score 100 / Grade A" right next to fourteen FAIL rows.
+
+    This helper bridges that gap: when ``>0`` degraded-mode findings
+    exist, emit a stderr ``[warn]`` line listing how many modules
+    failed API access so the operator knows the score reflects only
+    the modules that actually returned data.
+    """
+    degraded = [
+        f for f in findings
+        if getattr(f, "check_id", "").endswith("-000")
+        and not getattr(f, "passed", True)
+    ]
+    if not degraded:
+        return
+    n = len(degraded)
+    click.echo(
+        f"[warn] scan degraded: {n} module(s) failed API access. The "
+        f"score reflects only the modules that returned data; run "
+        f"with --verbose to see which modules were skipped.",
         err=True,
     )
 
