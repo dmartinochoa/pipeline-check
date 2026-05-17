@@ -72,6 +72,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-020..024 — Actions governance + deployment-environment
+  protection.** Five new SCM-pack rules backed by three new GitHub
+  REST endpoints (``actions/permissions``,
+  ``actions/permissions/workflow``, ``environments``).
+  - **SCM-020** — Default workflow GITHUB_TOKEN scope is ``write``.
+    HIGH. Workflows that don't declare their own ``permissions:``
+    block get repo-wide write by default — the GHA-048 / GHA-049
+    worm-propagation primitive at the org / repo level. The
+    ``read`` default is what blocks Shai-Hulud-style transitive-
+    dependency compromises from immediately reaching write APIs.
+  - **SCM-021** — Actions can submit PR reviews
+    (``can_approve_pull_request_reviews: true``). HIGH. With it
+    on, any workflow with ``pull-requests: write`` can satisfy
+    SCM-002 / SCM-011 / SCM-014's required-review gate by
+    approving its own PR — required-review controls become
+    advisory.
+  - **SCM-022** — ``allowed_actions: all``. MEDIUM. No allow-list
+    on action sources; any workflow can ``uses: random/unknown@v1``
+    and CI executes it without further policy review. The org-
+    level complement to GHA-040..047's workflow-time signal pack.
+  - **SCM-023** — Deployment environment lacks a required-
+    reviewer rule. HIGH. Any workflow targeting the environment
+    deploys without a human gate — the deploy-side equivalent of
+    the GHA-050 publish-without-OIDC failure.
+  - **SCM-024** — Deployment environment can deploy from any
+    branch (no ``deployment_branch_policy``). MEDIUM. A feature-
+    branch workflow can target production directly; reviewers
+    approve a stale or wrong-branch deployment without realizing.
+  All five require ``admin`` scope on the repo; without it the
+  underlying endpoints return 403 and each rule passes silently
+  with an "endpoint unavailable" note (same pattern the
+  existing ``security_and_analysis``-driven rules use). The SCM
+  snapshot dataclass gained three new slots
+  (``actions_permissions``, ``actions_workflow_permissions``,
+  ``environments``) and ``SCMContext.for_repo`` hydrates them
+  alongside the existing branch-protection + CODEOWNERS calls.
+
 - **NPM-011 — `package.json` `files` field leaks secret-shaped paths.**
   Static positive-list audit on the manifest's ``files`` entries.
   Flags any path matching ``.env`` / ``.env.<suffix>``, ``.npmrc``

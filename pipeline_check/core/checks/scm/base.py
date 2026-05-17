@@ -180,6 +180,26 @@ class SCMRepoSnapshot:
     #: Populated via ``GET /repos/{owner}/{repo}/contents/<path>`` —
     #: the first 200 response wins.
     codeowners_path: str | None = None
+    #: ``GET /repos/{owner}/{repo}/actions/permissions``. Carries the
+    #: ``enabled`` master switch and ``allowed_actions`` allowlist
+    #: mode (``all`` / ``local_only`` / ``selected``). ``SCM-022``
+    #: reads this slot. ``None`` when the token lacks admin scope or
+    #: actions are disabled on the plan.
+    actions_permissions: dict[str, Any] | None = None
+    #: ``GET /repos/{owner}/{repo}/actions/permissions/workflow``.
+    #: Carries ``default_workflow_permissions`` (``read`` /
+    #: ``write``) — the default GITHUB_TOKEN scope new workflows
+    #: get — and ``can_approve_pull_request_reviews`` (whether
+    #: GitHub Actions can submit PR reviews). ``SCM-020`` / ``SCM-
+    #: 021`` read this slot.
+    actions_workflow_permissions: dict[str, Any] | None = None
+    #: ``GET /repos/{owner}/{repo}/environments``. List of deploy
+    #: environments with their ``protection_rules`` (required
+    #: reviewers, wait timers) and ``deployment_branch_policy``
+    #: (branch / tag allowlist). ``SCM-023`` / ``SCM-024`` walk this
+    #: slot. ``None`` when the endpoint failed; empty ``environments``
+    #: list (``{"total_count": 0}``) when no environments configured.
+    environments: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -257,6 +277,26 @@ class SCMContext:
                 if isinstance(raw_co, dict) and raw_co.get("type") == "file":
                     codeowners_path = candidate
                     break
+        # Actions governance: two endpoints carry the Actions-side
+        # supply-chain knobs (token scope, self-approval, allow-list).
+        # Both require ``admin`` scope on the repo; without it GitHub
+        # returns 403 / 404 and the rule pack passes silently with a
+        # "scope unavailable" note.
+        actions_permissions: dict[str, Any] | None = None
+        actions_workflow_permissions: dict[str, Any] | None = None
+        environments: dict[str, Any] | None = None
+        if isinstance(repo_meta, dict):
+            raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
+            if isinstance(raw_ap, dict):
+                actions_permissions = raw_ap
+            raw_awp = fetcher.fetch(
+                f"repos/{owner}/{name}/actions/permissions/workflow"
+            )
+            if isinstance(raw_awp, dict):
+                actions_workflow_permissions = raw_awp
+            raw_envs = fetcher.fetch(f"repos/{owner}/{name}/environments")
+            if isinstance(raw_envs, dict):
+                environments = raw_envs
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -264,6 +304,9 @@ class SCMContext:
             default_branch_protection=protection,
             code_scanning_default_setup=code_scanning,
             codeowners_path=codeowners_path,
+            actions_permissions=actions_permissions,
+            actions_workflow_permissions=actions_workflow_permissions,
+            environments=environments,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

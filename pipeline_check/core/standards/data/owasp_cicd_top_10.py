@@ -577,5 +577,10 @@ STANDARD = Standard(
         "SCM-017":  ["CICD-SEC-1"],                # CODEOWNERS file missing
         "SCM-018":  ["CICD-SEC-1"],                # PR review bypass allowed
         "SCM-019":  ["CICD-SEC-1"],                # push-restriction allowlist names users
+        "SCM-020":  ["CICD-SEC-2", "CICD-SEC-5"],  # default workflow token write
+        "SCM-021":  ["CICD-SEC-1", "CICD-SEC-4"],  # actions can self-approve PRs
+        "SCM-022":  ["CICD-SEC-3", "CICD-SEC-8"],  # allowed_actions = all
+        "SCM-023":  ["CICD-SEC-1", "CICD-SEC-5"],  # environment without required reviewers
+        "SCM-024":  ["CICD-SEC-1", "CICD-SEC-4"],  # environment deploys from any branch
     },
 )

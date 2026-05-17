@@ -1510,3 +1510,368 @@ class TestSCMProvider:
         assert items[0].identifier == "octocat/hello-world"
         assert items[0].metadata["branch_protection_enabled"] is True
         assert items[0].metadata["code_scanning_default_enabled"] is True
+
+
+# ── SCM-020: default workflow token has write ──────────────────────
+
+
+class TestSCM020:
+    def test_write_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "write",
+                "can_approve_pull_request_reviews": False,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-020")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_read_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "read",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-020")
+        assert f.passed
+
+    def test_missing_endpoint_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions=None,
+        )
+        f = _by_id(_findings(snap), "SCM-020")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            actions_workflow_permissions=None,
+        )
+        f = _by_id(_findings(snap), "SCM-020")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_repo_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "write",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-020")
+        assert f.passed
+        assert "archived" in f.description
+
+
+# ── SCM-021: actions can self-approve PRs ──────────────────────────
+
+
+class TestSCM021:
+    def test_self_approval_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "read",
+                "can_approve_pull_request_reviews": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-021")
+        assert not f.passed
+
+    def test_no_self_approval_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "read",
+                "can_approve_pull_request_reviews": False,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-021")
+        assert f.passed
+
+    def test_missing_field_passes(self):
+        # ``can_approve_pull_request_reviews`` absent is treated as
+        # not-enabled (GitHub's default).
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_workflow_permissions={
+                "default_workflow_permissions": "read",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-021")
+        assert f.passed
+
+
+# ── SCM-022: allowed_actions = all ─────────────────────────────────
+
+
+class TestSCM022:
+    def test_all_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_permissions={
+                "enabled": True,
+                "allowed_actions": "all",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-022")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+
+    def test_selected_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_permissions={
+                "enabled": True,
+                "allowed_actions": "selected",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-022")
+        assert f.passed
+
+    def test_local_only_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_permissions={
+                "enabled": True,
+                "allowed_actions": "local_only",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-022")
+        assert f.passed
+
+    def test_disabled_actions_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            actions_permissions={"enabled": False},
+        )
+        f = _by_id(_findings(snap), "SCM-022")
+        assert f.passed
+        assert "disabled" in f.description.lower()
+
+
+# ── SCM-023: environment required reviewers ────────────────────────
+
+
+class TestSCM023:
+    def test_environment_without_reviewers_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 1,
+                "environments": [
+                    {
+                        "name": "production",
+                        "protection_rules": [
+                            {"type": "wait_timer", "wait_timer": 0},
+                        ],
+                        "deployment_branch_policy": None,
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-023")
+        assert not f.passed
+        assert "production" in f.description
+
+    def test_environment_with_reviewers_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 1,
+                "environments": [
+                    {
+                        "name": "production",
+                        "protection_rules": [
+                            {
+                                "type": "required_reviewers",
+                                "reviewers": [
+                                    {"type": "Team", "reviewer": {"name": "sec"}},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-023")
+        assert f.passed
+
+    def test_no_environments_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={"total_count": 0, "environments": []},
+        )
+        f = _by_id(_findings(snap), "SCM-023")
+        assert f.passed
+        assert "No deployment environments" in f.description
+
+    def test_summary_lists_failing_environments(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 2,
+                "environments": [
+                    {"name": "production", "protection_rules": []},
+                    {
+                        "name": "staging",
+                        "protection_rules": [
+                            {"type": "required_reviewers", "reviewers": []},
+                        ],
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-023")
+        assert not f.passed
+        assert "production" in f.description
+        assert "staging" not in f.description
+
+
+# ── SCM-024: environment deployment-branch policy ──────────────────
+
+
+class TestSCM024:
+    def test_null_branch_policy_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 1,
+                "environments": [
+                    {
+                        "name": "production",
+                        "protection_rules": [],
+                        "deployment_branch_policy": None,
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-024")
+        assert not f.passed
+        assert "production" in f.description
+
+    def test_protected_branches_policy_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 1,
+                "environments": [
+                    {
+                        "name": "production",
+                        "deployment_branch_policy": {
+                            "protected_branches": True,
+                            "custom_branch_policies": False,
+                        },
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-024")
+        assert f.passed
+
+    def test_custom_policies_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={
+                "total_count": 1,
+                "environments": [
+                    {
+                        "name": "production",
+                        "deployment_branch_policy": {
+                            "protected_branches": False,
+                            "custom_branch_policies": True,
+                        },
+                    },
+                ],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-024")
+        assert f.passed
+
+    def test_no_environments_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            environments={"total_count": 0, "environments": []},
+        )
+        f = _by_id(_findings(snap), "SCM-024")
+        assert f.passed
+
+
+# ── Snapshot hydration: from_repo wires the new endpoints ──────────
+
+
+class TestSnapshotActionsEndpoints:
+    def test_for_repo_calls_new_endpoints(self):
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main", "private": True},
+            "repos/o/r/branches/main/protection": {},
+            "repos/o/r/code-scanning/default-setup": {"state": "configured"},
+            "repos/o/r/actions/permissions": {
+                "enabled": True, "allowed_actions": "selected",
+            },
+            "repos/o/r/actions/permissions/workflow": {
+                "default_workflow_permissions": "read",
+                "can_approve_pull_request_reviews": False,
+            },
+            "repos/o/r/environments": {
+                "total_count": 1,
+                "environments": [
+                    {"name": "production", "protection_rules": []},
+                ],
+            },
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        snap = ctx.repos[0]
+        assert snap.actions_permissions == {
+            "enabled": True, "allowed_actions": "selected",
+        }
+        assert snap.actions_workflow_permissions == {
+            "default_workflow_permissions": "read",
+            "can_approve_pull_request_reviews": False,
+        }
+        assert isinstance(snap.environments, dict)
+        assert snap.environments["total_count"] == 1
+        # Each new endpoint was hit exactly once.
+        for path in (
+            "repos/o/r/actions/permissions",
+            "repos/o/r/actions/permissions/workflow",
+            "repos/o/r/environments",
+        ):
+            assert path in fetcher.calls
+
+    def test_for_repo_silent_when_actions_endpoints_404(self):
+        # Endpoints unavailable (typical for tokens without admin
+        # scope): the corresponding snapshot slots stay None and the
+        # context still hydrates.
+        fetcher = FakeSCMFetcher({
+            "repos/o/r": {"default_branch": "main"},
+        })
+        ctx = SCMContext.for_repo("o", "r", fetcher)
+        snap = ctx.repos[0]
+        assert snap.actions_permissions is None
+        assert snap.actions_workflow_permissions is None
+        assert snap.environments is None
