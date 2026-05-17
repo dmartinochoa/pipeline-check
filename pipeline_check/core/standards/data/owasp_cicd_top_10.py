@@ -461,12 +461,14 @@ STANDARD = Standard(
         "NPM-003":  ["CICD-SEC-3", "CICD-SEC-8"],  # non-registry source
         "NPM-004":  ["CICD-SEC-3", "CICD-SEC-7"],  # install-time lifecycle script
         "NPM-005":  ["CICD-SEC-3", "CICD-SEC-9"],  # git dep with mutable ref
+        "NPM-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
         "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
         "PYPI-003": ["CICD-SEC-3", "CICD-SEC-7"],  # http index / --trusted-host
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
+        "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

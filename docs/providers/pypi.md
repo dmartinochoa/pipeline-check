@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -56,6 +56,7 @@ covered.
 | [PYPI-003](#pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-004](#pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-005](#pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-006](#pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -190,6 +191,35 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 **Recommended action**
 
 Replace ``--extra-index-url`` with a single ``--index-url`` pointing at the index you actually want (an internal proxy or a curated private index), and configure that index to transparently mirror PyPI for any package not published internally. With ``--extra-index-url``, pip queries *both* indexes for every name and picks the highest version — so a public PyPI publisher who registers your internal package name (``acme-internal``) with a higher version wins the resolution. The single-index pattern eliminates the dependency-confusion vector entirely.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## PYPI-006: requirements.txt pins a known-compromised PyPI package version { #pypi-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-506</span>
+</div>
+
+Walks every ``name==version`` line in the requirements file against the curated compromised-package registry in ``pipeline_check.core.checks.pypi._compromised_packages``. Name matching follows PEP 503 normalization (lowercase, underscore/dot folded to hyphen) so ``Pillow``, ``pillow``, and ``Pil_Low`` resolve to the same registry entry. Lines without an exact ``==`` pin can't be evaluated by this rule (the version literal isn't decidable from the file alone); those are PYPI-001's surface. VCS URLs and local / editable installs are skipped — they don't carry a registry-resolvable version. Registry is hand-curated and append-only; refresh by PR with the citing advisory.
+
+**Known false-positive modes**
+
+- The registry covers only public, advisory-confirmed compromises. Pre-disclosure compromises and yet-unpublished maintainer-account takeovers do not land until the citing advisory exists. For broader coverage, run ``pip-audit`` or ``osv-scanner`` alongside pipeline-check; PYPI-006 is the curated supply-chain anchor, not a vulnerability database.
+
+**Seen in the wild**
+
+- ctx package compromise (May 2022): the abandoned ``ctx`` package was claimed by an attacker and republished with an env-var exfiltration payload targeting AWS keys / GitHub tokens. https://isc.sans.edu/diary/28772
+- requests-darwin-lite 2.27.1 ([GHSA-7gjg-3qcj-9jvg](https://github.com/advisories/GHSA-7gjg-3qcj-9jvg), May 2024): typosquat-flavored package whose wheel embedded the Geneva malware framework.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Rotate every secret reachable to any process that ran ``pip install`` against this requirements file during the window the compromised version was installed (AWS keys, GH tokens, SSH keys — most published PyPI compromises have been credential stealers). Bump the affected requirement to a post-incident clean version published after the maintainer / PyPI took down the malicious release, and audit CI logs for the exfiltration shape the advisory documents. Pair with PYPI-002 (``--require-hashes``) so a future swap of the same version literal fails verification.
 
 </div>
 

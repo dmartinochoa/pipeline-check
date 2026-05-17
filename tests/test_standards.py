@@ -379,7 +379,9 @@ class TestPerFrameworkCoverageFloor:
         # dilution case as the SCM pack. Lowered from 68 to 67 when
         # the npm + pypi dependency-supply-chain packs (NPM-001..005
         # / PYPI-001..005) landed OWASP-only; backfill is queued.
-        "nist_csf_2":           67,
+        # Lowered from 67 to 66 when NPM-006 / PYPI-006 (curated
+        # compromised-package registries) landed OWASP-only.
+        "nist_csf_2":           66,
         "esf_supply_chain":     59,
         "openssf_scorecard":    57,
         # nist_800_53 lowered from 55 to 54 when the SCM provider

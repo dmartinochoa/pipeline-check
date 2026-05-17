@@ -5,6 +5,10 @@ NPM-002 (lockfile entry missing integrity hash),
 NPM-003 (lockfile entry from non-registry source),
 NPM-004 (install-time lifecycle script in package.json),
 NPM-005 (git dependency uses a mutable ref).
+
+NPM-006 (compromised-package registry lookup) lives in
+``test_npm006.py`` so the curated-list assertions stay
+grouped with the registry data.
 """
 from __future__ import annotations
 

@@ -72,6 +72,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **NPM-006 / PYPI-006 — curated compromised-package registries.**
+  Hand-curated, append-only lookup tables of `(name, version,
+  advisory)` triples sourced from public CVEs / GHSAs / vendor
+  postmortems. Same shape as the existing GHA-040
+  `_compromised_actions.py` registry: no network, no telemetry,
+  refresh by PR with the citing advisory in the commit message.
+  - **NPM-006** seeded with event-stream 3.3.6 (Nov 2018 Copay
+    backdoor), ua-parser-js 0.7.29 / 0.8.0 / 1.0.0
+    (CVE-2021-43547, Oct 2021 maintainer takeover + miner /
+    stealer), coa 2.0.3+ and rc 1.2.9+ (GHSA-73qr-pfmq-6rp8 /
+    GHSA-g2q5-5433-rhrf, Nov 2021 coordinated campaign), and
+    node-ipc 10.1.1-10.1.3 (CVE-2022-23812, Mar 2022 protestware).
+    Walks both `lockfileVersion: 1` (npm 6) and `lockfileVersion:
+    2`/`3` (npm 7+) schemas; catches transitive matches the
+    `package.json` declaration never mentioned.
+  - **PYPI-006** seeded with ctx 0.2.2-0.2.8 (May 2022 hijacked-
+    package env-var exfil) and requests-darwin-lite 2.27.1
+    (GHSA-7gjg-3qcj-9jvg, May 2024 Geneva-framework typosquat).
+    PEP 503 name normalization on lookup so `requests_darwin_lite`,
+    `requests-darwin-lite`, and `Requests.Darwin.Lite` all resolve
+    to the same registry entry.
+
 - **5 new rules covering the Shai-Hulud / TanStack / axios npm worm
   pattern.** Each one closes a specific leg of the postinstall-driven
   supply-chain compromise loop that the existing lockfile-pinning /
