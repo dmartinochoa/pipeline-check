@@ -1,0 +1,13 @@
+name: reusable-build
+on:
+  workflow_call:
+    outputs:
+      api_token:
+        description: API token used during build
+        value: ${{ secrets.API_TOKEN }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make build

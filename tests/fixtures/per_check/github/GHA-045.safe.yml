@@ -1,0 +1,15 @@
+name: build-release
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Release identifier
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: make release

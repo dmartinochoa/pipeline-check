@@ -1,0 +1,11 @@
+name: ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dynamic build
+        run: eval "$BUILD_CMD"
+        env:
+          BUILD_CMD: make build

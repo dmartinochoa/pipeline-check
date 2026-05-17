@@ -330,6 +330,35 @@ CASES: list[CheckCase] = [
     CheckCase("CC-029", "CICD-SEC-3"),
     CheckCase("CC-030", "CICD-SEC-6"),
     CheckCase("CC-031", "CICD-SEC-2"),
+    # ── GitHub Actions backfill (GHA-028..055) ───────────────────────
+    # GHA-041 / 042 / 043 / 047 are network-dependent (need
+    # ``--resolve-remote`` to populate ``ctx.action_metadata``); the
+    # per-check harness can't seed that synthetically, so they stay
+    # in KNOWN_UNCOVERED with a note.
+    CheckCase("GHA-028", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-029", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GHA-030", "CICD-SEC-2"),
+    CheckCase("GHA-031", "CICD-SEC-4"),
+    CheckCase("GHA-032", "CICD-SEC-4"),
+    CheckCase("GHA-033", "CICD-SEC-6"),
+    CheckCase("GHA-034", "CICD-SEC-2"),
+    CheckCase("GHA-035", "CICD-SEC-4"),
+    CheckCase("GHA-036", "CICD-SEC-7"),
+    CheckCase("GHA-037", "CICD-SEC-6"),
+    CheckCase("GHA-038", "CICD-SEC-4"),
+    CheckCase("GHA-039", "CICD-SEC-6"),
+    CheckCase("GHA-040", "CICD-SEC-3"),
+    CheckCase("GHA-044", "CICD-SEC-4"),
+    CheckCase("GHA-045", "CICD-SEC-4"),
+    CheckCase("GHA-046", "CICD-SEC-4"),
+    CheckCase("GHA-048", "CICD-SEC-1"),
+    CheckCase("GHA-049", "CICD-SEC-1"),
+    CheckCase("GHA-050", "CICD-SEC-2"),
+    CheckCase("GHA-051", "CICD-SEC-3"),
+    CheckCase("GHA-052", "CICD-SEC-3"),
+    CheckCase("GHA-053", "CICD-SEC-4"),
+    CheckCase("GHA-054", "CICD-SEC-6"),
+    CheckCase("GHA-055", "CICD-SEC-6"),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -387,12 +416,12 @@ def test_safe_snippet_does_not_trigger_check(case, tmp_path):
 # ``CheckCase`` or a ``KNOWN_UNCOVERED`` entry trips
 # ``test_every_workflow_check_has_a_case``, which is the point.
 KNOWN_UNCOVERED: frozenset[str] = frozenset({
-    # GitHub Actions — GHA-028..055 (per-rule tests under
-    # ``tests/github/test_gha048_to_050.py`` and
-    # ``tests/github/test_gha051_to_055.py`` cover the new worm-
-    # mitigation + advanced PPE packs; richer real-example
-    # snippets are queued for a follow-up backfill).
-    *(f"GHA-{i:03d}" for i in range(28, 56)),
+    # GHA-041 / 042 / 043 / 047 are the network-dependent action-
+    # reputation rules: they pass silently in the per-check harness
+    # because ``ctx.action_metadata`` is empty (only populated by
+    # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
+    # which seeds the metadata synthetically.
+    "GHA-041", "GHA-042", "GHA-043", "GHA-047",
     # GitLab CI — GL-026..033
     *(f"GL-{i:03d}" for i in range(26, 34)),
     # Bitbucket — BB-026..029

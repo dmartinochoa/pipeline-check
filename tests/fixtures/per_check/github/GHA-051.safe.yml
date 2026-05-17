@@ -1,0 +1,12 @@
+name: integration
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+        ports: ['5432:5432']
+    steps:
+      - uses: actions/checkout@v4
+      - run: make integration
