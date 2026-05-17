@@ -37,7 +37,8 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 pip install pipeline-check          # Python >= 3.10
 
 pipeline_check                      # auto-detects every provider in cwd
-pipeline_check init                 # scaffold .pipeline-check.yml
+pipeline_check init                 # scan + baseline + tuned config (smart init)
+pipeline_check explain GHA-001      # full per-check reference (severity, fix, controls)
 pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
@@ -123,7 +124,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 43 checks (`K8S-001`--`043`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 43 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 15 checks (`OCI-001`--`008` plus `ATTEST-001..007`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding, meaningful SLSA `buildType`, SBOM package supplier / originator attribution |
-| **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 37 checks (`SCM-001`--`037`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing; Actions governance (default workflow token scope, self-approval, allowed-actions allowlist); deployment-environment protection (required reviewers, branch policy); write-enabled deploy keys; webhook security (HTTP transport, TLS verification, HMAC secret); outside-collaborator elevated-permissions audit; private-repo fork-policy; ruleset enforcement / always-bypass / PR-review-presence / status-checks / force-push denial / deletion / signed-commits / stale-review dismissal (full ruleset analog of legacy branch protection); auto-merge enabled. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
+| **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 40 checks (`SCM-001`--`040`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing; Actions governance (default workflow token scope, self-approval, allowed-actions allowlist); deployment-environment protection (required reviewers, branch policy); write-enabled deploy keys; webhook security (HTTP transport, TLS verification, HMAC secret); outside-collaborator elevated-permissions audit; private-repo fork-policy; ruleset enforcement / always-bypass / PR-review-presence / status-checks / force-push denial / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate (full ruleset analog of legacy branch protection plus history-shape hygiene, scan-removal-resistant CI gating, and code-scanning-results merge gating); auto-merge enabled. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
 | **npm** | `package.json` / `package-lock.json` / `npm-shrinkwrap.json` / `.npmrc` | `--npm-path` | 8 checks (`NPM-001`--`007` plus `NPM-011`): floating version ranges, lockfile entries missing `integrity`, non-registry sources (git+ssh, http://, git+https without 40-char SHA pin), install-time lifecycle scripts (`preinstall` / `install` / `postinstall` / `prepare`), git deps using mutable refs, known-compromised package versions (curated `_compromised_packages.py` registry seeded with event-stream / ua-parser-js / coa / rc / node-ipc), `.npmrc` missing or disabling `ignore-scripts=true` (the file-side complement to DF-024), and `package.json` `files` field listing secret-shaped paths (`.env`, `.npmrc`, `*.pem`, SSH keys, AWS credentials). Skips `node_modules/`. NPM-008..010 are reserved for the deferred registry-fetch rules (cooldown, transitive-diff, audit-signatures) per ROADMAP. |
 | **pypi** | `requirements*.txt` / `*.in` | `--pypi-path` | 6 checks (`PYPI-001`--`006`): requirements lines missing `==` pin, files missing `--require-hashes` / per-line `--hash=`, HTTP indexes (`-i http://`, `--trusted-host`), VCS deps without 40-char commit SHA, `--extra-index-url` (dependency-confusion vector), and known-compromised package versions (curated registry seeded with ctx 0.2.2-0.2.8 / requests-darwin-lite 2.27.1). `*.in` (pip-tools input) exempt from PYPI-001/002 since hashing lives in the compiled output. |
 
@@ -397,6 +398,7 @@ See [docs/standards/](docs/standards/).
 | `--profile` | | AWS CLI named profile |
 | `--verbose` / `-v` | | Debug output to stderr |
 | `--quiet` / `-q` | | Suppress all output; exit code only |
+| `--no-group` | | Render every finding on its own row. By default the terminal table collapses repeated `(check_id, resource)` failures into one row plus a `+N similar` summary line. JSON / SARIF / JUnit outputs always carry every finding regardless. |
 | `--version` | | Print version |
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
@@ -409,10 +411,22 @@ forwarded to `helm template`. The SCM provider is API-only and takes
 `--scm-platform github --scm-repo owner/name` (plus `--gh-token` or
 `$GITHUB_TOKEN`); no on-disk path flag.
 
-Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
-to the current directory, pre-filling the `pipeline:` key based on what it
-finds in cwd. Pass `--path PATH` to redirect the output, or `--force` to
-overwrite an existing file.
+Subcommands:
+
+- **`pipeline_check init`** runs one scan against the auto-detected
+  pipeline, writes `.pipeline-check-baseline.json` capturing current
+  failing findings, and emits `.pipeline-check.yml` with a recommended
+  `gate.fail_on` and a baseline pointer so future CI runs only block on
+  *new* regressions. Prints a "top 5 to fix" summary to stderr. Pass
+  `--no-scan` for the legacy commented-out scaffold, `--path PATH` to
+  redirect the output, or `--force` to overwrite an existing file.
+- **`pipeline_check explain CHECK_ID`** prints the full per-check
+  reference (severity, recommendation, controls, autofix availability,
+  related rules, attack chains). Equivalent to
+  `pipeline_check --explain CHECK_ID`; the subcommand form is more
+  discoverable and is what the smart-init top-5 summary and the
+  gate-failure trailer point users at. Exit code `0` on a known ID,
+  `3` on an unknown ID with a "did you mean" list.
 
 ---
 
@@ -453,7 +467,7 @@ pipeline_check/
         ├── dockerfile/rules/  # DF-001 .. DF-030
         ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
-        ├── scm/rules/         # SCM-001 .. SCM-037 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal + auto-merge audit; GitLab + Bitbucket universal subset)
+        ├── scm/rules/         # SCM-001 .. SCM-040 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate + auto-merge audit; GitLab + Bitbucket universal subset)
         ├── npm/rules/         # NPM-001 .. NPM-007 + NPM-011 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector
         ├── pypi/rules/        # PYPI-001 .. PYPI-006 — requirements.txt supply-chain hygiene + curated compromised-package registry
         └── custom/            # YAML rule loader + predicate engine

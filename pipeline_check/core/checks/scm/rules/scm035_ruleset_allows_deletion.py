@@ -7,9 +7,12 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     SCMRepoSnapshot,
+    active_rulesets_targeting_default,
     archived_state_label,
+    default_branch_name,
     github_only_skip,
     repo_resource,
+    ruleset_label,
 )
 
 RULE = Rule(
@@ -92,22 +95,44 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    unavailable: list[str] = []
-    for rs in rulesets:
-        if rs.get("enforcement") != "active":
-            continue
-        name = rs.get("name")
-        rs_id = rs.get("id")
-        rs_label = name if isinstance(name, str) and name else (
-            f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
+    targeting, unavailable_rs, scoped_away = (
+        active_rulesets_targeting_default(snapshot)
+    )
+    if not targeting and not unavailable_rs and scoped_away:
+        labels = [ruleset_label(rs) for rs in scoped_away]
+        default = default_branch_name(snapshot)
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"{len(scoped_away)} active ruleset(s) configured "
+                f"but none target the default branch "
+                f"(refs/heads/{default}): "
+                f"{', '.join(labels[:3])}"
+                f"{'…' if len(labels) > 3 else ''}. The deletion "
+                f"block isn't applied to the default branch at "
+                f"the ruleset layer; SCM-009 covers the legacy "
+                f"branch-protection carry."
+            ),
+            recommendation=RULE.recommendation, passed=False,
         )
-        if rs.get("_detail_unavailable") is True:
-            unavailable.append(rs_label)
-            continue
+    if not targeting and not unavailable_rs:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "No active rulesets target the default branch; "
+                "legacy branch-protection (SCM-009) carries the "
+                "deletion block."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    offenders: list[str] = []
+    for rs in targeting:
         if _blocks_deletion(rs.get("rules")):
             continue
-        offenders.append(rs_label)
+        offenders.append(ruleset_label(rs))
+    unavailable = [ruleset_label(rs) for rs in unavailable_rs]
     passed = not offenders
     if passed and unavailable:
         desc = (
@@ -117,11 +142,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             "posture not fully evaluated."
         )
     elif passed:
-        desc = "Every active ruleset blocks branch deletion."
+        desc = (
+            "Every active ruleset targeting the default branch "
+            "blocks branch deletion."
+        )
     else:
         desc = (
-            f"{len(offenders)} active ruleset(s) don't block "
-            f"deletion: {', '.join(offenders[:3])}"
+            f"{len(offenders)} active ruleset(s) targeting the "
+            f"default branch don't block deletion: "
+            f"{', '.join(offenders[:3])}"
             f"{'…' if len(offenders) > 3 else ''}. Targeted refs "
             "can be deleted by anyone with push access."
         )

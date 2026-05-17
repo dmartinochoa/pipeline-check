@@ -1,4 +1,4 @@
-"""SCM-033. Active ruleset doesn't require status checks."""
+"""SCM-040. Active ruleset doesn't gate on code scanning results."""
 from __future__ import annotations
 
 from typing import Any
@@ -16,67 +16,71 @@ from ..base import (
 )
 
 RULE = Rule(
-    id="SCM-033",
-    title="Active ruleset doesn't require status checks",
-    severity=Severity.MEDIUM,
+    id="SCM-040",
+    title="Active ruleset doesn't gate on code scanning results",
+    severity=Severity.LOW,
     owasp=("CICD-SEC-1", "CICD-SEC-4"),
     esf=("ESF-S-CHANGE-CONTROL", "ESF-D-CI-COVERAGE"),
     cwe=("CWE-693",),
     recommendation=(
-        "Add a ``required_status_checks`` rule to every active "
-        "ruleset and populate ``parameters.required_status_"
-        "checks`` with the names of the contexts that must pass "
-        "(Settings → Rules → <ruleset> → Add rule → Require "
-        "status checks to pass before merging → pick the "
-        "specific check runs). Without it, the ruleset is "
-        "enforced but pushes / merges land without any of your "
-        "tests, lint, security scans, or build verification "
-        "actually being green — the ruleset documents that "
-        "checks *exist* without requiring them to *pass*. The "
-        "ruleset analog of SCM-008 (legacy branch-protection "
-        "required checks).\n\n"
-        "An empty contexts list (``required_status_checks: []``) "
-        "is the same as no rule — it documents the gate without "
-        "filling it. Pick at least one canonical job name (the "
-        "primary build) and add the rest of your CI matrix over "
-        "time."
+        "Add a ``code_scanning`` rule to the ruleset (Settings → "
+        "Rules → <ruleset> → Add rule → Require code scanning "
+        "results) and pin at least one tool (CodeQL, the most "
+        "common choice) with a non-empty alerts threshold. The "
+        "rule turns a passive code-scanning configuration "
+        "(SCM-003 — default setup is on) into an active merge "
+        "gate: the PR can't merge until the scan completes for "
+        "the head SHA *and* the configured threshold isn't "
+        "crossed (e.g. ``security_alerts_threshold: "
+        "\"high_or_higher\"`` rejects merges that introduce "
+        "high-severity findings). Closes the asymmetry between "
+        "code scanning being enabled and the org actually "
+        "blocking on its results.\n\n"
+        "If your org doesn't license GHAS (the underlying "
+        "feature), this rule type isn't available. Suppress with "
+        "a rationale that names the licensing constraint and "
+        "carry the gate via ``required_status_checks`` (SCM-033) "
+        "pointed at the named context the scan tool reports."
     ),
     docs_note=(
         "For every active ruleset, walks the merged ``rules`` "
         "array looking for an entry with ``type: "
-        "\"required_status_checks\"`` whose "
-        "``parameters.required_status_checks`` lists at least "
-        "one context. Empty lists are treated as no rule. "
-        "Non-active rulesets are SCM-029's surface; rulesets "
-        "with unavailable detail are surfaced explicitly. Passes "
-        "silently when no rulesets are configured (legacy "
-        "branch-protection SCM-008 covers the gap)."
+        "\"code_scanning\"`` whose "
+        "``parameters.code_scanning_tools`` lists at least one "
+        "tool. An empty tools list documents the gate without "
+        "filling it and is treated as no rule. Passes silently "
+        "when no rulesets are configured — the rule_type is "
+        "ruleset-only and has no legacy branch-protection "
+        "analog, so absence of rulesets means the gate simply "
+        "doesn't exist (not that it's enforced elsewhere)."
     ),
     known_fp=(
-        "Some rulesets are deliberately scoped to non-CI "
-        "concerns (commit-message format, tag-name pattern); "
-        "those should be paired with a separate ruleset that "
-        "enforces status checks on the same refs. Suppress with "
-        "a rationale that names the parallel ruleset.",
+        "GHAS-licensing constraint: the ``code_scanning`` "
+        "ruleset rule type requires GitHub Advanced Security on "
+        "the repo. Repos on free / team tier can't configure "
+        "this rule even when they run code scanning via "
+        "third-party tools. Suppress with the licensing "
+        "rationale and ensure SCM-033 carries the merge gate "
+        "via the scan tool's reported status-check context.",
     ),
 )
 
 
-def _has_status_checks_rule(rules: Any) -> bool:
+def _has_code_scanning_rule(rules: Any) -> bool:
     if not isinstance(rules, list):
         return False
     for entry in rules:
         if not isinstance(entry, dict):
             continue
-        if entry.get("type") != "required_status_checks":
+        if entry.get("type") != "code_scanning":
             continue
         params = entry.get("parameters")
         if not isinstance(params, dict):
-            # Bare ``required_status_checks`` with no params is
-            # malformed; treat as not-satisfied.
+            # Bare ``code_scanning`` with no params is malformed;
+            # treat as not-satisfied.
             continue
-        contexts = params.get("required_status_checks")
-        if isinstance(contexts, list) and contexts:
+        tools = params.get("code_scanning_tools")
+        if isinstance(tools, list) and tools:
             return True
     return False
 
@@ -94,7 +98,7 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description=f"Repo is {label}; ruleset status-checks check skipped.",
+            description=f"Repo is {label}; ruleset code-scanning check skipped.",
             recommendation=RULE.recommendation, passed=True,
         )
     rulesets = snapshot.rulesets
@@ -113,8 +117,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
             description=(
-                "No repository rulesets configured; legacy "
-                "branch-protection (SCM-008) carries the gate."
+                "No repository rulesets configured; code-"
+                "scanning gating has no legacy branch-"
+                "protection analog and is not separately "
+                "evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
@@ -132,10 +138,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
                 f"but none target the default branch "
                 f"(refs/heads/{default}): "
                 f"{', '.join(labels[:3])}"
-                f"{'…' if len(labels) > 3 else ''}. The status-"
-                f"checks gate isn't applied to the default branch "
-                f"at the ruleset layer; SCM-008 covers the "
-                f"legacy branch-protection carry."
+                f"{'…' if len(labels) > 3 else ''}. Code-"
+                f"scanning gating has no legacy branch-"
+                f"protection analog, so the default branch has "
+                f"no merge-gate on scan results."
             ),
             recommendation=RULE.recommendation, passed=False,
         )
@@ -145,14 +151,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             resource=repo_resource(snapshot),
             description=(
                 "No active rulesets target the default branch; "
-                "legacy branch-protection (SCM-008) carries the "
-                "status-checks gate."
+                "code-scanning gating has no legacy branch-"
+                "protection analog and is not separately "
+                "evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
     offenders: list[str] = []
     for rs in targeting:
-        if _has_status_checks_rule(rs.get("rules")):
+        if _has_code_scanning_rule(rs.get("rules")):
             continue
         offenders.append(ruleset_label(rs))
     unavailable = [ruleset_label(rs) for rs in unavailable_rs]
@@ -161,21 +168,22 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         desc = (
             f"Ruleset detail unavailable for {len(unavailable)} "
             f"active ruleset(s): {', '.join(unavailable[:3])}"
-            f"{'…' if len(unavailable) > 3 else ''}. Status-checks "
-            "posture not fully evaluated."
+            f"{'…' if len(unavailable) > 3 else ''}. Code-"
+            "scanning gating posture not fully evaluated."
         )
     elif passed:
         desc = (
             "Every active ruleset targeting the default branch "
-            "requires at least one status check to pass."
+            "gates on code scanning results."
         )
     else:
         desc = (
             f"{len(offenders)} active ruleset(s) targeting the "
-            f"default branch don't require status checks: "
-            f"{', '.join(offenders[:3])}"
-            f"{'…' if len(offenders) > 3 else ''}. Merges land "
-            "without any CI gate."
+            f"default branch don't gate on code scanning "
+            f"results: {', '.join(offenders[:3])}"
+            f"{'…' if len(offenders) > 3 else ''}. Scans may be "
+            "configured (SCM-003) but their results aren't "
+            "blocking merges."
         )
         if unavailable:
             desc += (

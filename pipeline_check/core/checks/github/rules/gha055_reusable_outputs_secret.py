@@ -14,7 +14,8 @@ RULE = Rule(
     esf=("ESF-D-SECRETS",),
     cwe=("CWE-200", "CWE-532"),
     recommendation=(
-        "Remove every ``${{ secrets.* }}`` reference from the "
+        "Remove every ``${{ secrets.* }}`` and "
+        "``${{ inputs.* }}`` reference from the "
         "``on.workflow_call.outputs.<name>.value:`` field. A "
         "reusable workflow's outputs are visible to the caller "
         "as ordinary job outputs (``needs.<job>.outputs.*``), "
@@ -26,7 +27,12 @@ RULE = Rule(
         "masking layer only redacts the value in the "
         "*defining* workflow's logs; once the value crosses "
         "the workflow boundary via ``outputs:``, the masking "
-        "doesn't follow.\n\n"
+        "doesn't follow. The ``inputs.*`` route is the "
+        "indirect form: a caller wires ``with: x: "
+        "${{ secrets.X }}`` into one of the reusable "
+        "workflow's inputs, and re-emitting that input as an "
+        "output crosses the same boundary with the same "
+        "loss-of-masking outcome.\n\n"
         "If the caller genuinely needs information derived "
         "from a secret (e.g., a build artifact name "
         "incorporating a tenant id), derive the non-secret "
@@ -34,7 +40,7 @@ RULE = Rule(
         "(echo \\$SECRET | sha256sum | cut -d' ' -f1)\" >> "
         "$GITHUB_OUTPUT``) and emit only the transformed value. "
         "The reusable workflow's outputs should never contain "
-        "raw secret bytes."
+        "raw secret bytes or caller-controlled input bytes."
     ),
     docs_note=(
         "Scans ``on.workflow_call.outputs.<name>.value:`` for "
@@ -55,9 +61,9 @@ RULE = Rule(
         "(``sha256(secret)``) as an output is not the same "
         "risk shape — the original secret is not recoverable. "
         "The rule errs on the side of flagging any direct "
-        "``${{ secrets.* }}`` substring in the output value; "
-        "suppress when the value is provably a one-way "
-        "transform.",
+        "``${{ secrets.* }}`` / ``${{ inputs.* }}`` substring "
+        "in the output value; suppress when the value is "
+        "provably a one-way transform.",
     ),
 )
 

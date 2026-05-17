@@ -12,6 +12,84 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Smart `pipeline_check init`.** ``init`` now runs one scan against
+  whatever pipeline it auto-detects, writes
+  ``.pipeline-check-baseline.json`` capturing the current failing
+  findings, and emits ``.pipeline-check.yml`` with a recommended
+  ``gate.fail_on`` plus a baseline pointer so the first CI run after
+  ``init`` returns exit 0 and only new regressions block merges.
+  Prints a "top 5 to fix first" summary to stderr (sorted by severity,
+  with autofix availability tagged) so the operator has a starting
+  point. Pass ``--no-scan`` for the legacy commented-out scaffold,
+  ``--baseline-path PATH`` to redirect the baseline file. The
+  recommendation logic: any CRITICAL failure → ``fail_on: HIGH``;
+  grade A or B → ``MEDIUM``; otherwise ``HIGH``.
+
+- **`pipeline_check explain CHECK_ID` subcommand.** A top-level verb
+  wrapping the existing ``--explain`` flag so the per-check reference
+  (severity, recommendation, controls, autofix availability, related
+  rules, attack chains) is discoverable as a subcommand rather than a
+  hidden option. Same exit-code contract as ``--explain``: 0 on a known
+  ID, 3 on unknown with a "did you mean" list. The smart-init top-5
+  summary and the gate-failure trailer point users at this form.
+
+- **Gate-failure trailer.** When the gate fails, ``pipeline_check``
+  now emits a single ``[gate] next:`` line after the failure reasons
+  with the most actionable next move based on the failing set: an
+  autofix command when fixers cover at least one failure, a
+  ``--write-baseline`` suggestion when no baseline is configured, or
+  ``pipeline_check explain <ID>`` for the highest-severity failure
+  otherwise. Silent when the gate trips only on attack-chain state
+  (nothing actionable in the effective set).
+
+- **`--no-group` flag and grouped terminal output.** The terminal
+  reporter now collapses repeated ``(check_id, resource)`` failures
+  into one visible row plus a ``+N more on lines X, Y, Z`` follower
+  line, so a rule firing across many files no longer drowns the
+  report. The detail panel still renders for the representative and
+  carries every offending line number. Pass ``--no-group`` to revert
+  to the pre-1.x behavior (every finding on its own row). JSON /
+  SARIF / JUnit outputs always carry every finding regardless of
+  this flag.
+
+- **SCM-040 — active ruleset doesn't gate on code scanning
+  results.** LOW. Walks the merged ``rules`` array on every
+  active ruleset looking for a ``code_scanning`` entry whose
+  ``parameters.code_scanning_tools`` is a non-empty list.
+  Fires when none is found, when the tools list is empty, or
+  when params are missing entirely. Turns a passive code-
+  scanning configuration (SCM-003 — default setup is on)
+  into an active merge gate: the PR can't merge until the
+  scan completes for the head SHA *and* the configured
+  alerts threshold isn't crossed. Closes the asymmetry
+  between code scanning being enabled and the org actually
+  blocking on its results. The rule_type is GHAS-licensed
+  so repos on free / team tier can't configure it; the
+  ``known_fp`` note carries the suppression rationale and
+  points operators at SCM-033 (status checks) as the
+  no-GHAS fallback. Passes silently when no rulesets are
+  configured with absence-not-coverage language (no legacy
+  branch-protection analog for code-scanning gating).
+
+- **SCM-039 — active ruleset doesn't pin a required workflow.**
+  LOW. Walks the merged ``rules`` array on every active ruleset
+  looking for a ``workflows`` entry whose
+  ``parameters.workflows`` is a non-empty list. Fires when none
+  is found, when the list is empty, or when params are
+  missing entirely. Closes a gap that SCM-033 (status checks)
+  doesn't cover: ``required_status_checks`` gates on a context
+  *name* the workflow chooses to report — a PR that edits the
+  workflow YAML in its own branch to remove or rename that
+  context bypasses the gate. The ``workflows`` rule pins the
+  workflow file at a vetted ref (``main`` or a specific SHA) so
+  GitHub forces that workflow to run against the PR's code
+  regardless of what the PR did to the workflow YAML. The
+  scan-removal-resistant variant. Passes silently when no
+  rulesets are configured — the rule_type is ruleset-only, no
+  legacy branch-protection analog — with description language
+  that says the gate doesn't exist rather than implying it's
+  enforced elsewhere.
+
 - **Two new dependency-supply-chain providers: `npm` and `pypi`.**
   Lockfile / manifest static analysis, no `npm install`, no `pip
   install`, no registry pull. The first cut of the "dependency
@@ -125,6 +203,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     every Node startup, the Node equivalent of ``LD_PRELOAD``)
     or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
     debugger control to anyone who can reach the port).
+
+- **SCM-038 — active ruleset doesn't require linear history.** LOW.
+  Walks the merged ``rules`` array on every active ruleset looking
+  for an entry with ``type: "required_linear_history"``. Fires when
+  none is found. Merge commits aren't a direct attacker primitive
+  (force-push, SCM-034, is the history-rewrite surface), but they
+  muddy ``git log --first-parent`` triage and git-bisect during
+  incident response and hide which specific commits landed when a
+  long-lived feature branch is merged. Pairs with SCM-036 (signed
+  commits) for tamper-evident linear history. Unlike SCM-033..037
+  the rule has no legacy branch-protection analog — the
+  ``required_linear_history`` rule_type is ruleset-only — so the
+  rule passes silently when no rulesets are configured with a
+  description that names the absence-not-coverage state explicitly.
 
 - **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
   Completes the ruleset analog of legacy branch protection. Each
@@ -426,6 +518,42 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   - **DF-023** — `ENV LD_PRELOAD` / `LD_LIBRARY_PATH` / `LD_AUDIT`
     set in the image apply to every binary the container runs and
     are the standard loader-hijack escalation primitive.
+
+### Changed
+
+- **SCM-032..040 now check that rulesets actually target the
+  default branch.** All nine ruleset rule-type checks used to
+  iterate active rulesets without consulting
+  ``conditions.ref_name`` — a ruleset scoped to ``refs/tags/*``
+  or ``refs/heads/release/**`` with the right rule type silently
+  passed the check while the default branch had no ruleset-level
+  coverage at all (false-pass shape). The new
+  ``active_rulesets_targeting_default(snapshot)`` helper in
+  ``checks/scm/base.py`` partitions active rulesets into
+  ``targeting`` (default-branch-applicable), ``unavailable``
+  (detail fetch failed), and ``scoped_away`` (active but not
+  applicable to the default branch). Each per-rule-type check
+  now iterates only the ``targeting`` bucket and surfaces a new
+  failure shape when active rulesets exist but none target the
+  default branch:
+  - For SCM-032..037 (legacy-BP analogs), the failure message
+    names the gap and points to the corresponding legacy
+    ``SCM-002 / 006 / 007 / 008 / 009 / 012`` as the
+    default-branch carrier.
+  - For SCM-038..040 (no legacy analog), the failure message
+    names the absent default-branch coverage directly.
+  The ``~ALL`` and ``~DEFAULT_BRANCH`` include tokens, exact
+  ``refs/heads/<default>`` includes, and fnmatch globs are all
+  recognized; an ``exclude`` entry that matches the default
+  branch also flips the ruleset into ``scoped_away`` even when
+  the include list is broad. ``target == "tag"`` rulesets are
+  filtered out (they never apply to branches).
+
+  Behavior change: existing scans against a repo with
+  feature-branch- or tag-only rulesets that previously passed
+  SCM-032..040 may now fail in this branch. The new finding is
+  load-bearing — the previous pass was wrong about the default
+  branch's coverage.
 
 ## [1.0.4] - 2026-05-12
 

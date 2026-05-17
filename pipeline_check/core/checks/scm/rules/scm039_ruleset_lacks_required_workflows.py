@@ -1,4 +1,4 @@
-"""SCM-033. Active ruleset doesn't require status checks."""
+"""SCM-039. Active ruleset doesn't pin a required workflow."""
 from __future__ import annotations
 
 from typing import Any
@@ -16,67 +16,73 @@ from ..base import (
 )
 
 RULE = Rule(
-    id="SCM-033",
-    title="Active ruleset doesn't require status checks",
-    severity=Severity.MEDIUM,
-    owasp=("CICD-SEC-1", "CICD-SEC-4"),
+    id="SCM-039",
+    title="Active ruleset doesn't pin a required workflow",
+    severity=Severity.LOW,
+    owasp=("CICD-SEC-1", "CICD-SEC-3"),
     esf=("ESF-S-CHANGE-CONTROL", "ESF-D-CI-COVERAGE"),
     cwe=("CWE-693",),
     recommendation=(
-        "Add a ``required_status_checks`` rule to every active "
-        "ruleset and populate ``parameters.required_status_"
-        "checks`` with the names of the contexts that must pass "
-        "(Settings → Rules → <ruleset> → Add rule → Require "
-        "status checks to pass before merging → pick the "
-        "specific check runs). Without it, the ruleset is "
-        "enforced but pushes / merges land without any of your "
-        "tests, lint, security scans, or build verification "
-        "actually being green — the ruleset documents that "
-        "checks *exist* without requiring them to *pass*. The "
-        "ruleset analog of SCM-008 (legacy branch-protection "
-        "required checks).\n\n"
-        "An empty contexts list (``required_status_checks: []``) "
-        "is the same as no rule — it documents the gate without "
-        "filling it. Pick at least one canonical job name (the "
-        "primary build) and add the rest of your CI matrix over "
-        "time."
+        "Add a ``workflows`` rule to the ruleset (Settings → "
+        "Rules → <ruleset> → Add rule → Require workflows to "
+        "pass before merging) and pin at least one workflow by "
+        "repository + path + ref. The ``workflows`` ruleset rule "
+        "differs from ``required_status_checks`` (SCM-033) in a "
+        "load-bearing way: status checks gate on a context "
+        "*name* that the workflow chooses to report — if the PR "
+        "edits the workflow YAML to remove or rename that "
+        "context, the check vanishes and the gate documents "
+        "intent rather than reality. The ``workflows`` rule "
+        "pins the workflow file at a vetted ref (``main`` or a "
+        "specific SHA) and forces *that* workflow to run "
+        "against the PR's code regardless of what the PR did to "
+        "the workflow YAML in its own branch. Closes the "
+        "scan-removal supply-chain shape (attacker opens a PR "
+        "that deletes ``.github/workflows/security-scan.yml`` "
+        "and submits malicious code in the same PR).\n\n"
+        "Pin the workflow ref to either a long-lived branch the "
+        "ruleset bypass actors don't have write access to or a "
+        "specific SHA. A ref pinned to a branch the PR author "
+        "controls undoes the protection."
     ),
     docs_note=(
         "For every active ruleset, walks the merged ``rules`` "
-        "array looking for an entry with ``type: "
-        "\"required_status_checks\"`` whose "
-        "``parameters.required_status_checks`` lists at least "
-        "one context. Empty lists are treated as no rule. "
-        "Non-active rulesets are SCM-029's surface; rulesets "
-        "with unavailable detail are surfaced explicitly. Passes "
-        "silently when no rulesets are configured (legacy "
-        "branch-protection SCM-008 covers the gap)."
+        "array looking for an entry with ``type: \"workflows\"`` "
+        "whose ``parameters.workflows`` is a non-empty list. An "
+        "empty workflows list is treated as no rule (it "
+        "documents the gate without filling it). Passes silently "
+        "when no rulesets are configured — required workflows "
+        "have no legacy branch-protection analog, so absence of "
+        "rulesets means the gate simply doesn't exist (not that "
+        "it's carried elsewhere)."
     ),
     known_fp=(
-        "Some rulesets are deliberately scoped to non-CI "
-        "concerns (commit-message format, tag-name pattern); "
-        "those should be paired with a separate ruleset that "
-        "enforces status checks on the same refs. Suppress with "
-        "a rationale that names the parallel ruleset.",
+        "Repos that don't run any workflow-based gating at all "
+        "(pure code-review + signed-commits posture) legitimately "
+        "ship without this rule. Suppress with a rationale that "
+        "names the compensating controls. The rule fires LOW "
+        "because most teams' security posture comes from "
+        "status-checks (SCM-033); the workflows rule is the "
+        "stricter scan-removal-resistant variant.",
     ),
 )
 
 
-def _has_status_checks_rule(rules: Any) -> bool:
+def _has_workflows_rule(rules: Any) -> bool:
     if not isinstance(rules, list):
         return False
     for entry in rules:
         if not isinstance(entry, dict):
             continue
-        if entry.get("type") != "required_status_checks":
+        if entry.get("type") != "workflows":
             continue
         params = entry.get("parameters")
         if not isinstance(params, dict):
-            # Bare ``required_status_checks`` with no params is
-            # malformed; treat as not-satisfied.
+            # Bare ``workflows`` with no params is malformed; treat
+            # as not-satisfied.
             continue
-        contexts = params.get("required_status_checks")
-        if isinstance(contexts, list) and contexts:
+        workflows = params.get("workflows")
+        if isinstance(workflows, list) and workflows:
             return True
     return False
 
@@ -94,7 +100,7 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description=f"Repo is {label}; ruleset status-checks check skipped.",
+            description=f"Repo is {label}; ruleset required-workflows check skipped.",
             recommendation=RULE.recommendation, passed=True,
         )
     rulesets = snapshot.rulesets
@@ -113,8 +119,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
             description=(
-                "No repository rulesets configured; legacy "
-                "branch-protection (SCM-008) carries the gate."
+                "No repository rulesets configured; required-"
+                "workflows enforcement has no legacy branch-"
+                "protection analog and is not separately "
+                "evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
@@ -132,10 +140,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
                 f"but none target the default branch "
                 f"(refs/heads/{default}): "
                 f"{', '.join(labels[:3])}"
-                f"{'…' if len(labels) > 3 else ''}. The status-"
-                f"checks gate isn't applied to the default branch "
-                f"at the ruleset layer; SCM-008 covers the "
-                f"legacy branch-protection carry."
+                f"{'…' if len(labels) > 3 else ''}. Required-"
+                f"workflows enforcement has no legacy branch-"
+                f"protection analog, so the default branch has "
+                f"no scan-removal-resistant CI gate."
             ),
             recommendation=RULE.recommendation, passed=False,
         )
@@ -145,14 +153,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             resource=repo_resource(snapshot),
             description=(
                 "No active rulesets target the default branch; "
-                "legacy branch-protection (SCM-008) carries the "
-                "status-checks gate."
+                "required-workflows enforcement has no legacy "
+                "branch-protection analog and is not separately "
+                "evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
     offenders: list[str] = []
     for rs in targeting:
-        if _has_status_checks_rule(rs.get("rules")):
+        if _has_workflows_rule(rs.get("rules")):
             continue
         offenders.append(ruleset_label(rs))
     unavailable = [ruleset_label(rs) for rs in unavailable_rs]
@@ -161,21 +170,24 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         desc = (
             f"Ruleset detail unavailable for {len(unavailable)} "
             f"active ruleset(s): {', '.join(unavailable[:3])}"
-            f"{'…' if len(unavailable) > 3 else ''}. Status-checks "
-            "posture not fully evaluated."
+            f"{'…' if len(unavailable) > 3 else ''}. Required-"
+            "workflows posture not fully evaluated."
         )
     elif passed:
         desc = (
             "Every active ruleset targeting the default branch "
-            "requires at least one status check to pass."
+            "pins at least one required workflow."
         )
     else:
         desc = (
             f"{len(offenders)} active ruleset(s) targeting the "
-            f"default branch don't require status checks: "
+            f"default branch don't pin a required workflow: "
             f"{', '.join(offenders[:3])}"
-            f"{'…' if len(offenders) > 3 else ''}. Merges land "
-            "without any CI gate."
+            f"{'…' if len(offenders) > 3 else ''}. A PR that "
+            "removes or renames a security-scan workflow in its "
+            "own branch can land without that scan running, "
+            "even when ``required_status_checks`` (SCM-033) is "
+            "set on the context name."
         )
         if unavailable:
             desc += (

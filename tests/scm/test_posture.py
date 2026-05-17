@@ -2811,18 +2811,39 @@ class TestSCM031:
 # ── SCM-032: active ruleset doesn't require PR review ───────────────
 
 
+def _active_ruleset(
+    rules: list,
+    *,
+    name: str = "rs",
+    rs_id: int = 1,
+    ref_includes: tuple[str, ...] = ("~DEFAULT_BRANCH",),
+    ref_excludes: tuple[str, ...] = (),
+) -> dict:
+    """Helper: active branch-target ruleset with the given rules
+    block. Defaults to a ``conditions.ref_name.include`` of
+    ``~DEFAULT_BRANCH`` so per-rule-type checks see the ruleset as
+    protecting the default branch. Pass ``ref_includes`` /
+    ``ref_excludes`` to build a scoped-away ruleset for the
+    "rulesets exist but don't target default" test cases."""
+    return {
+        "id": rs_id, "name": name, "enforcement": "active",
+        "target": "branch",
+        "conditions": {"ref_name": {
+            "include": list(ref_includes),
+            "exclude": list(ref_excludes),
+        }},
+        "rules": rules,
+    }
+
+
 class TestSCM032:
     def test_active_ruleset_without_pr_rule_fails(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r",
             repo_meta={"default_branch": "main"},
-            rulesets=[
-                {
-                    "id": 1, "name": "signing-only",
-                    "enforcement": "active",
-                    "rules": [{"type": "required_signatures"}],
-                },
-            ],
+            rulesets=[_active_ruleset(
+                [{"type": "required_signatures"}], name="signing-only",
+            )],
         )
         f = _by_id(_findings(snap), "SCM-032")
         assert not f.passed
@@ -2833,20 +2854,11 @@ class TestSCM032:
         snap = SCMRepoSnapshot(
             owner="o", name="r",
             repo_meta={"default_branch": "main"},
-            rulesets=[
-                {
-                    "id": 1, "name": "default",
-                    "enforcement": "active",
-                    "rules": [
-                        {
-                            "type": "pull_request",
-                            "parameters": {
-                                "required_approving_review_count": 1,
-                            },
-                        },
-                    ],
-                },
-            ],
+            rulesets=[_active_ruleset(
+                [{"type": "pull_request",
+                  "parameters": {"required_approving_review_count": 1}}],
+                name="default",
+            )],
         )
         f = _by_id(_findings(snap), "SCM-032")
         assert f.passed
@@ -2855,20 +2867,11 @@ class TestSCM032:
         snap = SCMRepoSnapshot(
             owner="o", name="r",
             repo_meta={"default_branch": "main"},
-            rulesets=[
-                {
-                    "id": 1, "name": "weak",
-                    "enforcement": "active",
-                    "rules": [
-                        {
-                            "type": "pull_request",
-                            "parameters": {
-                                "required_approving_review_count": 0,
-                            },
-                        },
-                    ],
-                },
-            ],
+            rulesets=[_active_ruleset(
+                [{"type": "pull_request",
+                  "parameters": {"required_approving_review_count": 0}}],
+                name="weak",
+            )],
         )
         f = _by_id(_findings(snap), "SCM-032")
         assert not f.passed
@@ -2877,13 +2880,9 @@ class TestSCM032:
         snap = SCMRepoSnapshot(
             owner="o", name="r",
             repo_meta={"default_branch": "main"},
-            rulesets=[
-                {
-                    "id": 1, "name": "legacy",
-                    "enforcement": "active",
-                    "rules": [{"type": "pull_request"}],
-                },
-            ],
+            rulesets=[_active_ruleset(
+                [{"type": "pull_request"}], name="legacy",
+            )],
         )
         f = _by_id(_findings(snap), "SCM-032")
         assert f.passed
@@ -2970,15 +2969,7 @@ class TestSCM032:
         assert "archived" in f.description
 
 
-# ── SCM-033..037: ruleset rule-type coverage ────────────────────────
-
-
-def _active_ruleset(rules: list) -> dict:
-    """Helper: minimal active ruleset shape with the given rules
-    block. Saves repetition across the SCM-033..037 tests."""
-    return {
-        "id": 1, "name": "rs", "enforcement": "active", "rules": rules,
-    }
+# ── SCM-033..040: ruleset rule-type coverage ────────────────────────
 
 
 class TestSCM033StatusChecks:
@@ -3177,6 +3168,373 @@ class TestSCM037StaleReviewDismissal:
         f = _by_id(_findings(snap), "SCM-037")
         assert f.passed
         assert "SCM-012" in f.description
+
+
+class TestSCM038LinearHistory:
+    def test_no_linear_history_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "non_fast_forward"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert not f.passed
+
+    def test_required_linear_history_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_linear_history"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        # Linear history has no legacy branch-protection analog, so
+        # the rule is silent (passing) when no rulesets exist —
+        # absence here means "gate doesn't exist", not "gate carried
+        # elsewhere". The description must say so.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
+class TestSCM039RequiredWorkflows:
+    def test_no_workflows_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_workflows_rule_with_entries_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "workflows",
+                 "parameters": {"workflows": [
+                     {"repository_id": 1,
+                      "path": ".github/workflows/scan.yml",
+                      "ref": "refs/heads/main"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert f.passed
+
+    def test_workflows_rule_empty_list_fails(self):
+        # An empty ``workflows`` list documents the gate without
+        # filling it — treated the same as no rule.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "workflows",
+                 "parameters": {"workflows": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_workflows_rule_no_params_fails(self):
+        # Bare ``workflows`` with no params is malformed; treat as
+        # not-satisfied (don't crash, don't pass).
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "workflows"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        # Required workflows has no legacy branch-protection
+        # analog; absence-not-coverage language must be present.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
+class TestSCM040CodeScanning:
+    def test_no_code_scanning_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_code_scanning_rule_with_tools_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "code_scanning",
+                 "parameters": {"code_scanning_tools": [
+                     {"tool": "CodeQL",
+                      "security_alerts_threshold": "high_or_higher",
+                      "alerts_threshold": "errors"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert f.passed
+
+    def test_code_scanning_rule_empty_list_fails(self):
+        # Empty ``code_scanning_tools`` documents the gate without
+        # filling it — same as no rule.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "code_scanning",
+                 "parameters": {"code_scanning_tools": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_code_scanning_rule_no_params_fails(self):
+        # Bare ``code_scanning`` with no params is malformed.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "code_scanning"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        # Code-scanning gating has no legacy BP analog;
+        # absence-not-coverage language is required.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
+# ── Default-branch scoping: rulesets exist but scope away from main ──
+#
+# Every per-rule-type rule in SCM-032..040 used to iterate "active"
+# rulesets without checking whether ``conditions.ref_name`` actually
+# targets the default branch. A ruleset scoped to ``refs/tags/*`` or
+# ``refs/heads/release/**`` with the right rule type silently passed
+# the per-rule-type check while the default branch had no
+# ruleset-level coverage at all. The refactor narrows iteration to
+# ``active_rulesets_targeting_default(snapshot)`` and surfaces the
+# new "scoped away from default" shape as an explicit failure.
+#
+# Each rule's scoped-away message names the gap and (for SCM-032..037)
+# points to the legacy SCM-NNN that still carries the default-branch
+# gate; SCM-038..040 have no legacy analog so the description names
+# the absent default-branch coverage directly.
+
+
+class TestRulesetScopedAwayFromDefault:
+    @staticmethod
+    def _scoped_away_ruleset(rules: list) -> dict:
+        """Active ruleset that targets release/** instead of main."""
+        return _active_ruleset(
+            rules,
+            name="release-only",
+            ref_includes=("refs/heads/release/**",),
+        )
+
+    def test_scm032_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "pull_request",
+                 "parameters": {"required_approving_review_count": 2}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-032")
+        assert not f.passed
+        assert "release-only" in f.description
+        assert "refs/heads/main" in f.description
+        assert "SCM-002" in f.description
+
+    def test_scm033_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert not f.passed
+        assert "SCM-008" in f.description
+
+    def test_scm034_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "non_fast_forward"},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-034")
+        assert not f.passed
+        assert "SCM-007" in f.description
+
+    def test_scm035_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "deletion"},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-035")
+        assert not f.passed
+        assert "SCM-009" in f.description
+
+    def test_scm036_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "required_signatures"},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert not f.passed
+        assert "SCM-006" in f.description
+
+    def test_scm037_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "pull_request",
+                 "parameters": {
+                     "required_approving_review_count": 1,
+                     "dismiss_stale_reviews_on_push": True,
+                 }},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert not f.passed
+        assert "SCM-012" in f.description
+
+    def test_scm038_scoped_away_fails(self):
+        # SCM-038..040 have no legacy BP analog — the failure
+        # description names absent default-branch coverage rather
+        # than a legacy carrier.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "required_linear_history"},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-038")
+        assert not f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+    def test_scm039_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "workflows",
+                 "parameters": {"workflows": [
+                     {"repository_id": 1,
+                      "path": ".github/workflows/scan.yml",
+                      "ref": "refs/heads/main"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-039")
+        assert not f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+    def test_scm040_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "code_scanning",
+                 "parameters": {"code_scanning_tools": [
+                     {"tool": "CodeQL",
+                      "security_alerts_threshold": "high_or_higher",
+                      "alerts_threshold": "errors"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+    def test_excluded_default_branch_is_scoped_away(self):
+        # ~ALL include but default branch in exclude list — same
+        # outcome as a scope-elsewhere include: default branch isn't
+        # covered.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset(
+                [{"type": "required_signatures"}],
+                name="all-except-main",
+                ref_includes=("~ALL",),
+                ref_excludes=("refs/heads/main",),
+            )],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert not f.passed
+        assert "all-except-main" in f.description
+
+    def test_tag_target_ruleset_is_scoped_away(self):
+        # target == "tag" means the ruleset never applies to
+        # branches; same effect as scope-elsewhere include.
+        rs = _active_ruleset(
+            [{"type": "required_signatures"}], name="tags-only",
+        )
+        rs["target"] = "tag"
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[rs],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert not f.passed
+        assert "tags-only" in f.description
+
+    def test_glob_matching_default_branch_passes(self):
+        # ``refs/heads/**`` matches the default branch; the rule
+        # should treat this ruleset as targeting default.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset(
+                [{"type": "required_signatures"}],
+                name="all-branches",
+                ref_includes=("refs/heads/**",),
+            )],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert f.passed
+
+    def test_exact_default_branch_ref_passes(self):
+        # An explicit ``refs/heads/<default>`` include also matches.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "trunk"},
+            rulesets=[_active_ruleset(
+                [{"type": "required_signatures"}],
+                name="trunk-only",
+                ref_includes=("refs/heads/trunk",),
+            )],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert f.passed
 
 
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────

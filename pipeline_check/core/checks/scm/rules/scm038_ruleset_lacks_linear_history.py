@@ -1,4 +1,4 @@
-"""SCM-033. Active ruleset doesn't require status checks."""
+"""SCM-038. Active ruleset doesn't require linear history."""
 from __future__ import annotations
 
 from typing import Any
@@ -16,69 +16,62 @@ from ..base import (
 )
 
 RULE = Rule(
-    id="SCM-033",
-    title="Active ruleset doesn't require status checks",
-    severity=Severity.MEDIUM,
-    owasp=("CICD-SEC-1", "CICD-SEC-4"),
-    esf=("ESF-S-CHANGE-CONTROL", "ESF-D-CI-COVERAGE"),
+    id="SCM-038",
+    title="Active ruleset doesn't require linear history",
+    severity=Severity.LOW,
+    owasp=("CICD-SEC-1",),
+    esf=("ESF-S-CHANGE-CONTROL",),
     cwe=("CWE-693",),
     recommendation=(
-        "Add a ``required_status_checks`` rule to every active "
-        "ruleset and populate ``parameters.required_status_"
-        "checks`` with the names of the contexts that must pass "
-        "(Settings → Rules → <ruleset> → Add rule → Require "
-        "status checks to pass before merging → pick the "
-        "specific check runs). Without it, the ruleset is "
-        "enforced but pushes / merges land without any of your "
-        "tests, lint, security scans, or build verification "
-        "actually being green — the ruleset documents that "
-        "checks *exist* without requiring them to *pass*. The "
-        "ruleset analog of SCM-008 (legacy branch-protection "
-        "required checks).\n\n"
-        "An empty contexts list (``required_status_checks: []``) "
-        "is the same as no rule — it documents the gate without "
-        "filling it. Pick at least one canonical job name (the "
-        "primary build) and add the rest of your CI matrix over "
-        "time."
+        "Add a ``required_linear_history`` rule to every active "
+        "ruleset (Settings → Rules → <ruleset> → Add rule → "
+        "Require linear history). Without it, merges into the "
+        "targeted refs can introduce merge commits, which "
+        "produce a branching history where two ancestors share "
+        "authorship of the merge result. Linear history forces "
+        "rebase- or squash-style integration so every commit on "
+        "the trunk has a single parent and a single attributable "
+        "author. This pairs with SCM-036 (signed commits) to give "
+        "post-incident forensics a clean answer to *who wrote this "
+        "code and when*: each commit on main has one signature, "
+        "one author, one parent, one timestamp.\n\n"
+        "Merge commits aren't a direct attacker primitive — "
+        "force-push (SCM-034) is the history-rewrite surface — "
+        "but they obscure git-bisect and complicate "
+        "``git log --first-parent`` triage during an incident, "
+        "and they hide which specific commits landed when a "
+        "long-lived feature branch is merged."
     ),
     docs_note=(
-        "For every active ruleset, walks the merged ``rules`` "
-        "array looking for an entry with ``type: "
-        "\"required_status_checks\"`` whose "
-        "``parameters.required_status_checks`` lists at least "
-        "one context. Empty lists are treated as no rule. "
-        "Non-active rulesets are SCM-029's surface; rulesets "
-        "with unavailable detail are surfaced explicitly. Passes "
-        "silently when no rulesets are configured (legacy "
-        "branch-protection SCM-008 covers the gap)."
+        "For every active ruleset, looks for an entry in the "
+        "merged ``rules`` array with ``type: \"required_linear_history\"``. "
+        "Presence means merge commits to the targeted refs are "
+        "rejected (only fast-forward / rebase / squash integration "
+        "is allowed). Passes silently when no rulesets are "
+        "configured — linear history has no legacy "
+        "branch-protection analog, so absence of rulesets means "
+        "the gate simply doesn't exist (not that it's enforced "
+        "elsewhere)."
     ),
     known_fp=(
-        "Some rulesets are deliberately scoped to non-CI "
-        "concerns (commit-message format, tag-name pattern); "
-        "those should be paired with a separate ruleset that "
-        "enforces status checks on the same refs. Suppress with "
-        "a rationale that names the parallel ruleset.",
+        "Teams that prefer merge commits as a deliberate policy "
+        "(e.g. to preserve the shape of long-lived feature "
+        "branches in the history) legitimately ship without this "
+        "rule. Suppress with a rationale that names the "
+        "merge-strategy policy. The rule is a hygiene / "
+        "auditability control, not a hard security gate.",
     ),
 )
 
 
-def _has_status_checks_rule(rules: Any) -> bool:
+def _requires_linear_history(rules: Any) -> bool:
     if not isinstance(rules, list):
         return False
-    for entry in rules:
-        if not isinstance(entry, dict):
-            continue
-        if entry.get("type") != "required_status_checks":
-            continue
-        params = entry.get("parameters")
-        if not isinstance(params, dict):
-            # Bare ``required_status_checks`` with no params is
-            # malformed; treat as not-satisfied.
-            continue
-        contexts = params.get("required_status_checks")
-        if isinstance(contexts, list) and contexts:
-            return True
-    return False
+    return any(
+        isinstance(entry, dict)
+        and entry.get("type") == "required_linear_history"
+        for entry in rules
+    )
 
 
 def check(snapshot: SCMRepoSnapshot) -> Finding:
@@ -94,7 +87,7 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description=f"Repo is {label}; ruleset status-checks check skipped.",
+            description=f"Repo is {label}; ruleset linear-history check skipped.",
             recommendation=RULE.recommendation, passed=True,
         )
     rulesets = snapshot.rulesets
@@ -113,8 +106,9 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
             description=(
-                "No repository rulesets configured; legacy "
-                "branch-protection (SCM-008) carries the gate."
+                "No repository rulesets configured; linear-history "
+                "enforcement has no legacy branch-protection "
+                "analog and is not separately evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
@@ -132,10 +126,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
                 f"but none target the default branch "
                 f"(refs/heads/{default}): "
                 f"{', '.join(labels[:3])}"
-                f"{'…' if len(labels) > 3 else ''}. The status-"
-                f"checks gate isn't applied to the default branch "
-                f"at the ruleset layer; SCM-008 covers the "
-                f"legacy branch-protection carry."
+                f"{'…' if len(labels) > 3 else ''}. Linear-history "
+                f"enforcement has no legacy branch-protection "
+                f"analog, so the default branch has no coverage "
+                f"for this gate."
             ),
             recommendation=RULE.recommendation, passed=False,
         )
@@ -145,14 +139,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             resource=repo_resource(snapshot),
             description=(
                 "No active rulesets target the default branch; "
-                "legacy branch-protection (SCM-008) carries the "
-                "status-checks gate."
+                "linear-history enforcement has no legacy "
+                "branch-protection analog and is not separately "
+                "evaluated."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
     offenders: list[str] = []
     for rs in targeting:
-        if _has_status_checks_rule(rs.get("rules")):
+        if _requires_linear_history(rs.get("rules")):
             continue
         offenders.append(ruleset_label(rs))
     unavailable = [ruleset_label(rs) for rs in unavailable_rs]
@@ -161,21 +156,22 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         desc = (
             f"Ruleset detail unavailable for {len(unavailable)} "
             f"active ruleset(s): {', '.join(unavailable[:3])}"
-            f"{'…' if len(unavailable) > 3 else ''}. Status-checks "
+            f"{'…' if len(unavailable) > 3 else ''}. Linear-history "
             "posture not fully evaluated."
         )
     elif passed:
         desc = (
             "Every active ruleset targeting the default branch "
-            "requires at least one status check to pass."
+            "requires linear history."
         )
     else:
         desc = (
             f"{len(offenders)} active ruleset(s) targeting the "
-            f"default branch don't require status checks: "
+            f"default branch don't require linear history: "
             f"{', '.join(offenders[:3])}"
-            f"{'…' if len(offenders) > 3 else ''}. Merges land "
-            "without any CI gate."
+            f"{'…' if len(offenders) > 3 else ''}. Merge commits "
+            "are permitted on the default branch, muddying "
+            "``git log --first-parent`` triage and git-bisect."
         )
         if unavailable:
             desc += (

@@ -1638,6 +1638,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--no-group",
+    "no_group",
+    is_flag=True,
+    default=False,
+    help=(
+        "Render every finding on its own row. By default the terminal "
+        "table collapses repeated ``(check_id, resource)`` failures "
+        "into one visible row plus a single ``+N similar finding(s)`` "
+        "summary line so a rule that fires across many files doesn't "
+        "drown the report. Grouping never affects JSON / SARIF / "
+        "JUnit outputs, which always carry every finding."
+    ),
+)
+@click.option(
     "--no-chains",
     is_flag=True,
     default=False,
@@ -1803,6 +1817,7 @@ def scan(
     quiet: bool,
     show_controls: bool,
     show_passed: bool,
+    no_group: bool,
     no_chains: bool,
     list_chains: bool,
     annotate_fp: tuple[str, str] | None,
@@ -2561,6 +2576,7 @@ def scan(
                 severity_threshold=threshold, console=console,
                 show_controls=show_controls,
                 show_passed=show_passed,
+                group_similar=not no_group,
             )
             if chains:
                 report_chains_terminal(chains, console=console)
@@ -2728,7 +2744,11 @@ def scan(
     gate = evaluate_gate(findings, score_result, gate_config, chains=chains)
 
     if not quiet and output != "json":
-        _emit_gate_summary(gate)
+        _emit_gate_summary(
+            gate,
+            baseline_path=baseline,
+            baseline_from_git=baseline_from_git,
+        )
 
     if not gate.passed:
         sys.exit(1)
@@ -3010,8 +3030,67 @@ def _emit_scan_summary(meta: Any) -> None:
     )
 
 
-def _emit_gate_summary(gate: Any) -> None:
-    """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean."""
+def _build_gate_trailer(
+    gate: Any,
+    *,
+    baseline_path: str | None,
+    baseline_from_git: str | None,
+) -> str | None:
+    """Construct the one-line "what next" hint for a failing gate.
+
+    Picks the most actionable suggestion based on the failing set:
+    autofix when at least one finding has a registered fixer,
+    otherwise a baseline-write when none was provided, otherwise
+    point the user at ``explain`` for the highest-severity failure.
+    """
+    effective = list(gate.effective)
+    if not effective:
+        return None
+    from .core.autofix import available_fixers
+    fixers = set(available_fixers())
+    fixable = [f for f in effective if f.check_id.upper() in fixers]
+    n_total = len(effective)
+    parts: list[str] = []
+    if fixable:
+        parts.append(
+            f"{len(fixable)} of {n_total} failing finding(s) have "
+            f"autofixers; run `pipeline_check --fix --apply` to apply them"
+        )
+    elif not baseline_path and not baseline_from_git:
+        parts.append(
+            "no baseline configured; run `pipeline_check "
+            "--write-baseline baseline.json` then pair with "
+            "`--baseline baseline.json` to gate only on new findings"
+        )
+    else:
+        # Both autofix and baseline aren't useful: name the top check
+        # and point at explain so the operator has a starting move.
+        from .core.checks.base import severity_rank
+        top = sorted(
+            effective,
+            key=lambda f: (-severity_rank(f.severity), f.check_id),
+        )[0]
+        parts.append(
+            f"start with the highest-severity rule: "
+            f"`pipeline_check explain {top.check_id}`"
+        )
+    return f"[gate] next: {parts[0]}"
+
+
+def _emit_gate_summary(
+    gate: Any,
+    *,
+    baseline_path: str | None = None,
+    baseline_from_git: str | None = None,
+) -> None:
+    """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean.
+
+    When the gate fails, also emit a single-line "what next" trailer:
+    how many of the failing findings have autofixers, and the
+    one-command path to close the loop (fix-and-apply, baseline-write,
+    or explain-the-rule). The trailer is intentionally short so a CI
+    log scan picks it up without scrolling.
+    """
     n_effective = len(gate.effective)
     n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
     if gate.passed:
@@ -3022,6 +3101,13 @@ def _emit_gate_summary(gate: Any) -> None:
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:
             msg_lines.append(f"        - {reason}")
+        trailer = _build_gate_trailer(
+            gate,
+            baseline_path=baseline_path,
+            baseline_from_git=baseline_from_git,
+        )
+        if trailer:
+            msg_lines.append(trailer)
     if n_chains_tripped:
         ids = ", ".join(sorted({c.chain_id for c in gate.tripped_chains}))
         msg_lines.append(f"[gate] {n_chains_tripped} attack chain(s) tripped: {ids}")
@@ -3061,6 +3147,61 @@ def _emit_gate_summary(gate: Any) -> None:
 # ────────────────────────────────────────────────────────────────────────────
 
 
+#: Cwd-relative paths each provider needs to find its target files when
+#: ``init`` constructs a Scanner with no flags. Keys must match the
+#: names returned by :func:`_detect_pipeline_from_cwd`. Each value is a
+#: tuple of ``(scanner_kwarg, candidate_paths)``; init picks the first
+#: candidate that exists. Providers that don't appear here (AWS,
+#: cloudformation, oci, scm) are skipped by smart-init because they
+#: need either credentials or a flag the scaffold can't guess; init
+#: falls back to ``--no-scan`` in that case so the user can still
+#: write a config file.
+_INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "github": ("gha_path", (".github/workflows",)),
+    "gitlab": ("gitlab_path", (".gitlab-ci.yml",)),
+    "bitbucket": ("bitbucket_path", ("bitbucket-pipelines.yml",)),
+    "azure": ("azure_path", ("azure-pipelines.yml",)),
+    "jenkins": ("jenkinsfile_path", ("Jenkinsfile",)),
+    "circleci": ("circleci_path", (".circleci/config.yml",)),
+    "cloudbuild": ("cloudbuild_path", ("cloudbuild.yaml", "cloudbuild.yml")),
+    "buildkite": (
+        "buildkite_path",
+        (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+    ),
+    "drone": ("drone_path", (".drone.yml", ".drone.yaml")),
+    "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
+    "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),
+    "helm": ("helm_path", (".",)),
+    "npm": ("npm_path", (".",)),
+    "pypi": ("pypi_path", (".",)),
+}
+
+
+def _init_scanner_kwargs_for(detected: str) -> dict[str, Any]:
+    """Return Scanner constructor kwargs for the smart-init flow.
+
+    Returns ``{}`` when the provider doesn't need a path (AWS) or
+    isn't supported by init (cloudformation, oci, scm — they need
+    flags or credentials the scaffold can't guess). Callers should
+    still try to construct the Scanner; if it fails, the caller falls
+    back to writing a static scaffold.
+
+    Return type is ``dict[str, Any]`` because the Scanner constructor
+    type-checks each kwarg against its named parameter (a path string
+    is fine for ``gha_path``, but mypy reads ``dict[str, str]`` as
+    "every kwarg is ``str``" and trips on the unrelated keyword
+    parameters that share its dict signature).
+    """
+    entry = _INIT_SCANNER_KWARGS.get(detected)
+    if entry is None:
+        return {}
+    kwarg, candidates = entry
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return {kwarg: candidate}
+    return {}
+
+
 @click.command(name="init")
 @click.option(
     "--path",
@@ -3076,29 +3217,204 @@ def _emit_gate_summary(gate: Any) -> None:
     default=False,
     help="Overwrite the target file if it already exists.",
 )
-def init_cmd(target_path: str, force: bool) -> None:
-    """Write a starter .pipeline-check.yml in the current directory.
+@click.option(
+    "--no-scan",
+    "no_scan",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip the one-shot scan and write a static scaffold instead. Use "
+        "when you want the bare template with no recommended gate / "
+        "baseline."
+    ),
+)
+@click.option(
+    "--baseline-path",
+    "baseline_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Where to write the baseline JSON. Defaults to "
+        "``.pipeline-check-baseline.json``. Ignored with --no-scan."
+    ),
+)
+def init_cmd(
+    target_path: str,
+    force: bool,
+    no_scan: bool,
+    baseline_path: str | None,
+) -> None:
+    """Initialize pipeline_check in this repo: scan, baseline, scaffold.
 
-    Pre-fills the ``pipeline:`` key when a supported CI file is
-    detected in cwd. Refuses to overwrite unless ``--force`` is set.
+    By default ``init`` runs one scan against whatever pipeline files
+    it auto-detects, writes a baseline JSON capturing the current
+    failing findings, and emits ``.pipeline-check.yml`` with a
+    recommended ``gate.fail_on`` plus a baseline pointer so future CI
+    runs only block on *new* regressions. Prints a "top 5 to fix"
+    summary to stderr so the operator has a starting point.
+
+    With ``--no-scan`` it falls back to the legacy behavior: write a
+    commented-out scaffold only. ``--force`` overwrites an existing
+    config file; existing baselines are always overwritten.
     """
+    from .core.init_scan import (
+        DEFAULT_BASELINE_PATH,
+        build_init_scan_result,
+    )
     from .core.init_template import render as _render_template
+
     if os.path.exists(target_path) and not force:
         raise click.UsageError(
             f"{target_path} already exists. Re-run with --force to overwrite."
         )
+
     detected = _detect_pipeline_from_cwd()
+
+    if no_scan or detected is None:
+        # Either the user opted out, or there's nothing to scan. Fall
+        # back to the static scaffold so ``init`` still does something
+        # useful on a bare repo.
+        try:
+            with open(target_path, "w", encoding="utf-8") as fh:
+                fh.write(_render_template(detected))
+        except OSError as exc:
+            raise click.UsageError(
+                f"could not write {target_path}: {exc}"
+            ) from exc
+        if no_scan:
+            suffix = (
+                f" (pipeline: {detected})"
+                if detected
+                else " (no CI files detected, edit the 'pipeline:' line "
+                "before use)"
+            )
+        else:
+            suffix = (
+                " (no CI files detected; edit 'pipeline:' or rerun "
+                "after adding one)"
+            )
+        click.echo(f"[init] wrote {target_path}{suffix}")
+        return
+
+    # Smart path: run a scan, write baseline + tuned config. Re-use
+    # the module-level Scanner import so tests can patch
+    # ``pipeline_check.cli.Scanner`` and have init see the mock.
+    from .core.autofix import available_fixers
+
+    bpath = baseline_path or DEFAULT_BASELINE_PATH
+
+    click.echo(f"[init] scanning {detected!r} to tune the gate...", err=True)
+    scanner_kwargs = _init_scanner_kwargs_for(detected)
+    try:
+        scanner = Scanner(pipeline=detected, **scanner_kwargs)
+        findings = scanner.run()
+    except Exception as exc:  # noqa: BLE001
+        click.echo(
+            f"[init] scan failed ({exc}); writing a static scaffold instead. "
+            f"Rerun with --no-scan to skip the scan permanently.",
+            err=True,
+        )
+        try:
+            with open(target_path, "w", encoding="utf-8") as fh:
+                fh.write(_render_template(detected))
+        except OSError as inner:
+            raise click.UsageError(
+                f"could not write {target_path}: {inner}"
+            ) from inner
+        click.echo(f"[init] wrote {target_path} (pipeline: {detected})")
+        return
+
+    result = build_init_scan_result(
+        findings,
+        detected_pipeline=detected,
+        tool_version=__version__,
+        fixers=set(available_fixers()),
+        baseline_path=bpath,
+    )
+
     try:
         with open(target_path, "w", encoding="utf-8") as fh:
-            fh.write(_render_template(detected))
+            fh.write(result.config_yaml)
     except OSError as exc:
-        raise click.UsageError(f"could not write {target_path}: {exc}") from exc
-    suffix = (
-        f" (pipeline: {detected})"
-        if detected
-        else " (no CI files detected, edit the 'pipeline:' line before use)"
+        raise click.UsageError(
+            f"could not write {target_path}: {exc}"
+        ) from exc
+
+    if result.has_failures:
+        try:
+            with open(bpath, "w", encoding="utf-8") as fh:
+                fh.write(result.baseline_json)
+        except OSError as exc:
+            click.echo(
+                f"[init] could not write baseline {bpath}: {exc}. Config "
+                f"file is still written; remove the 'baseline:' line or "
+                f"fix the path before running CI.",
+                err=True,
+            )
+
+    _print_init_summary(result, target_path)
+
+
+def _print_init_summary(result: Any, config_path: str) -> None:
+    """Render the post-scan summary the smart-init flow prints to stderr."""
+    click.echo(f"[init] wrote {config_path} (pipeline: {result.detected_pipeline})", err=True)
+    if result.has_failures:
+        click.echo(
+            f"[init] wrote {result.baseline_path} "
+            f"({result.failing_findings} failing finding(s) baselined)",
+            err=True,
+        )
+    else:
+        click.echo(
+            "[init] no failing findings to baseline; gate runs against "
+            "every future finding from a clean slate.",
+            err=True,
+        )
+    click.echo(
+        f"[init] score {result.score}/100, grade {result.grade}; "
+        f"recommended gate: fail_on={result.recommended_fail_on.value}",
+        err=True,
     )
-    click.echo(f"[init] wrote {target_path}{suffix}")
+    if result.top:
+        click.echo("[init] top to fix first:", err=True)
+        width = max(len(t.check_id) for t in result.top)
+        for t in result.top:
+            tag = " [autofix available]" if t.fixable else ""
+            click.echo(
+                f"        {t.check_id:<{width}}  {t.severity.value:<8}  "
+                f"{t.title}  ({t.resource}){tag}",
+                err=True,
+            )
+        click.echo(
+            "[init] run `pipeline_check explain <ID>` for any of the above, "
+            "or `pipeline_check --fix --apply` to apply autofixes.",
+            err=True,
+        )
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# `explain` subcommand, render a per-check reference. Mirrors the
+# behavior of ``pipeline_check --explain CHECK-ID`` but is a top-level
+# verb, which is what new users reach for first ("explain X") and what
+# the smart-init / gate-failure trailer point them at.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="explain")
+@click.argument("check_id", required=False, metavar="CHECK_ID")
+def explain_cmd(check_id: str | None) -> None:
+    """Print the full reference for one check (severity, fix, controls).
+
+    Equivalent to ``pipeline_check --explain CHECK_ID`` but more
+    discoverable. Same exit-code contract: 0 when the ID is known, 3
+    when it's not (with a "did you mean" list).
+    """
+    if not check_id:
+        raise click.UsageError(
+            "missing CHECK_ID. Example: pipeline_check explain GHA-001"
+        )
+    from .core.explain import print_explain
+    sys.exit(print_explain(check_id))
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -3161,6 +3477,10 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "init":
         sys.argv.pop(1)
         init_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "explain":
+        sys.argv.pop(1)
+        explain_cmd()
         return
     if len(sys.argv) >= 2 and sys.argv[1] == "fp-stats":
         sys.argv.pop(1)

@@ -605,5 +605,8 @@ STANDARD = Standard(
         "SCM-035":  ["CICD-SEC-1"],                # active ruleset doesn't block deletion
         "SCM-036":  ["CICD-SEC-1", "CICD-SEC-9"],  # active ruleset lacks signed commits
         "SCM-037":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset PR rule lacks stale-review dismissal
+        "SCM-038":  ["CICD-SEC-1"],                # active ruleset doesn't require linear history
+        "SCM-039":  ["CICD-SEC-1", "CICD-SEC-3"],  # active ruleset doesn't pin a required workflow
+        "SCM-040":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't gate on code scanning
     },
 )

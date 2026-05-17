@@ -166,18 +166,46 @@ pipeline_check --pipelines dockerfile,kubernetes \
 
 `--pipelines` is mutually exclusive with the single-valued `--pipeline`.
 
-## 🛠️ Scaffold a config file
+## 🛠️ Set up the repo: `init`
 
 ```bash
-pipeline_check init                 # writes .pipeline-check.yml in cwd
+pipeline_check init                 # smart init: scan + baseline + tuned gate
+pipeline_check init --no-scan       # static scaffold only (legacy behavior)
 pipeline_check init --path infra/   # redirect output
 pipeline_check init --force         # overwrite existing
 ```
 
-The `init` subcommand pre-fills the `pipeline:` key based on what it
-finds in the working directory.
+By default `init` runs one scan against whatever pipeline files it
+auto-detects, writes `.pipeline-check-baseline.json` capturing the
+current failing findings, and emits `.pipeline-check.yml` with a
+recommended `gate.fail_on` plus a baseline pointer so future CI runs
+only block on *new* regressions. A "top 5 to fix" summary lands on
+stderr so the operator has a starting point.
+
+The recommendation logic is intentionally conservative:
+
+- Any CRITICAL failure → `fail_on: HIGH` (criticals are baselined; new
+  highs still block).
+- Grade A or B → `fail_on: MEDIUM` (you already have the bar — hold it).
+- Otherwise → `fail_on: HIGH` (most common first-scan case on a legacy
+  repo).
+
+Pass `--no-scan` to skip the scan and write the bare commented-out
+scaffold (the pre-1.x behavior). `--baseline-path PATH` redirects the
+baseline file.
 
 Config file reference: [config.md](config.md).
+
+## 📖 Explain a single check: `explain`
+
+```bash
+pipeline_check explain GHA-001      # severity, recommendation, controls, fixers
+pipeline_check explain ZZZ-9999     # unknown → exit 3 + "did you mean" list
+```
+
+Equivalent to `pipeline_check --explain CHECK_ID` (which still works);
+the subcommand form is more discoverable and is what the smart-init
+top-5 summary and the gate-failure trailer point users at.
 
 ## 🚦 Gate a CI build on results
 
