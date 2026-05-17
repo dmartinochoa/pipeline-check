@@ -521,6 +521,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Added SCM coverage to NIST 800-53 and SOC 2.** Two
+  compliance frameworks commonly used as CI/CD gates had zero
+  SCM coverage. SCM-001..040 now map:
+  - **NIST 800-53**: 233/526 → 293/526 (+39 rules). SA-15
+    (Development Process, Standards, and Tools) carries
+    branch-protection / review-control / ruleset rule-type
+    concerns; AC-3 / AC-6 carry access enforcement; SI-7 / AU-9
+    carry history-integrity surfaces; IA-5 carries credential-
+    shaped surfaces (workflow tokens, deploy keys, webhook
+    HMAC); SR-3 / SR-4 / SR-11 carry signed-commit and
+    allowed-actions surfaces; SA-11 carries SAST gates. SCM-016
+    (private vuln reporting) is an incident-response surface
+    that 800-53's IR family handles, which isn't currently in
+    this standard's control catalog; left unmapped with a
+    comment.
+  - **SOC 2**: 250/526 → 280/526 (+40 rules, full SCM range).
+    CC8.1 (Change Management) carries the branch-protection /
+    review-control / ruleset rule-type surface, since SOC 2
+    frames source review as authorized-change-before-
+    deployment. CC6.1 / CC6.2 / CC6.3 carry logical-access
+    surfaces; CC6.7 carries webhook transport; CC6.8 carries
+    allowed-actions; CC7.1 / CC7.3 / CC7.4 carry the
+    vulnerability and incident surfaces.
+
 - **Backfilled SCM coverage on CIS SSCS, OpenSSF Scorecard, and
   ESF supply chain.** SCM-020..040 (Actions governance,
   environment protection, deploy-keys, webhooks, outside-
