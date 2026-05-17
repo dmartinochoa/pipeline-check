@@ -17,7 +17,7 @@ pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 pipeline_check --pipeline jenkins --jenkinsfile-path ci/
 ```
 
-The loader recognises files named `Jenkinsfile` exactly, plus anything
+The loader recognizes files named `Jenkinsfile` exactly, plus anything
 ending in `.jenkinsfile` or `.groovy`. It treats every file as text,
 no Groovy parsing, and applies the same regex-driven heuristics the
 other workflow providers use for `run:` blocks. False positives are
@@ -281,7 +281,7 @@ Replace the literal with a credentials-store reference: `AWS_ACCESS_KEY_ID = cre
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-LOGS</span> <span class="pg-tag pg-tag--esf">ESF-C-AUDIT</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
 </div>
 
-Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognises declarative `options { buildDiscarder(...) }`, scripted `properties([buildDiscarder(...)])`, and bare `logRotator(...)`.
+Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognizes declarative `options { buildDiscarder(...) }`, scripted `properties([buildDiscarder(...)])`, and bare `logRotator(...)`.
 
 <div class="pg-rule__rec" markdown>
 
@@ -321,7 +321,7 @@ Move shared Groovy into a Jenkins shared library (`@Library('name@<sha>')`). Tho
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
-Recognises both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
+Recognizes both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
 
 <div class="pg-rule__rec" markdown>
 
@@ -469,7 +469,7 @@ Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avo
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
 </div>
 
-Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
+Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
 
 <div class="pg-rule__rec" markdown>
 

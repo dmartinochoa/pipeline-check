@@ -4,10 +4,9 @@ Pipeline-Check overlaps with several well-known scanners. This page is
 the short version of "is this the right tool for me?" so you don't
 have to grep through five readmes.
 
-The matrix below reflects feature coverage as we understand it at the
-time of writing (May 2026). Treat it as a starting point. Tools move
-fast, your mileage will vary, and we'd rather you correct a row than
-trust it blindly. PRs welcome.
+The matrix below reflects feature coverage as we understand it. Treat
+it as a starting point. Tools move fast, your mileage will vary, and
+we'd rather you correct a row than trust it blindly. PRs welcome.
 
 ## At a glance
 
@@ -17,7 +16,7 @@ trust it blindly. PRs welcome.
 | **Checkov** | Terraform / CloudFormation / Kubernetes / Helm IaC misconfig | IaC providers |
 | **KICS** | IaC + a growing CI/CD query pack | IaC + GHA / GitLab |
 | **Semgrep** | Source-code SAST with custom rule writing | rule-DSL, taint (different scope) |
-| **tfsec** | Terraform-only, fast pre-commit | Terraform |
+| **tfsec** | Terraform-only, fast pre-commit (now merged into Trivy; still maintained as a standalone binary) | Terraform |
 | **Trivy** | Container images, SBOM, vulnerabilities | OCI / Dockerfile / Kubernetes |
 | **gitleaks** | Secret scanning across git history | Inline credential scanning only |
 | **Snyk IaC** | Hosted IaC scanning with policy management | IaC providers (commercial) |
@@ -30,9 +29,9 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (50 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (53 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (35) | No | Partial | No | No | No |
-| Jenkins (Declarative + Scripted) | Yes (32) | No | No | Partial | No | No |
+| Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (31) | No | Partial | No | No | No |
 | Azure DevOps | Yes (30) | No | Partial | No | No | No |
 | Bitbucket Pipelines | Yes (29) | No | No | No | No | No |
@@ -42,23 +41,23 @@ missing major surfaces or requires extra config. No = not in scope.
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
 | **SCM posture (governance)** | | | | | | |
-| GitHub repo branch protection / secret scanning / Dependabot | Yes (19, `SCM-001..019`) | No | No | No | No | No |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (25, `SCM-001..025`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
-| Kubernetes manifests | Yes (40) | Yes | Yes | No | No | Yes |
-| Helm charts (rendered + supply-chain) | Yes (40 + 10) | Partial | No | No | No | Partial |
-| Dockerfile | Yes (20) | Yes | Yes | No | No | Yes |
+| Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
+| Helm charts (rendered + supply-chain) | Yes (43 + 10) | Partial | No | No | No | Partial |
+| Dockerfile | Yes (25) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
-| OCI image manifests (provenance, SLSA) | Yes (13, incl. ATTEST-001..005 attestation content) | No | No | No | No | Partial |
+| OCI image manifests (provenance, SLSA) | Yes (15, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (36 chains: 27 AC + 9 XPC) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
-| Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, 100% recall, CI-gated) | No | No | No | No | No |
+| Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
-| Compliance frameworks (per-finding controls) | 14 (OWASP, SLSA, NIST SSDF, NIST 800-53/190, NIST CSF, CIS, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F) | Partial | Partial | Partial | No | Partial |
+| Compliance frameworks (per-finding controls) | 14 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
 | Baseline / new-findings-only | Yes | Partial | No | Yes | No | No |
 | Diff-mode (only changed files) | Yes | Partial | No | Partial | No | Partial |

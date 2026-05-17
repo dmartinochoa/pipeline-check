@@ -1,8 +1,8 @@
 # Compliance standards
 
-Every finding produced by the scanner carries a list of `ControlRef` objects. References to controls in registered compliance standards. The same check
-
-can evidence controls in multiple standards at once.
+Every finding produced by the scanner carries a list of `ControlRef`
+objects: references to controls in registered compliance standards. The
+same check can evidence controls in multiple standards at once.
 
 <div class="pg-doc-cards">
   <a class="pg-doc-card pg-doc-card--featured" href="owasp_cicd_top_10/">

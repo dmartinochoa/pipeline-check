@@ -119,11 +119,11 @@ severity = "low"
 severity = "critical"
 ```
 
-Rules
------
+### Rules
 
-- The check ID is matched case-insensitively (`gha-016` and `GHA-016`
-  both work).
+- The check ID is matched case-insensitively, so `gha-016` and
+  `GHA-016` both work. This avoids the common typo class where a
+  contributor copies an ID from a lowercase log line.
 - `severity` is the only sub-key today; values are `critical`, `high`,
   `medium`, `low`, or `info`.
 - Unknown check IDs are silently ignored: the override simply never

@@ -510,3 +510,164 @@ def test_readme_architecture_rule_ranges_match_registry():
     assert not drift, (
         "README.md architecture block drift:\n  " + "\n  ".join(drift)
     )
+
+
+# ──────────────────────────────────────────────────────────────────
+# Comparison-page per-row drift guard.
+#
+# ``docs/comparison.md`` has a feature matrix whose Pipeline-Check
+# column carries cell counts like ``Yes (53 rules)`` or
+# ``Yes (43 + 10)``. Those numbers are not auto-derived; before this
+# test, every per-cell count quietly went stale as new rules landed.
+# ──────────────────────────────────────────────────────────────────
+
+# Row name → provider slug. The row name is the first non-empty cell
+# of the table row (the capability label); the slug is the provider
+# whose rule-file count the cell's first integer must match.
+_COMPARISON_ROWS: dict[str, str] = {
+    "GitHub Actions": "github",
+    "GitLab CI": "gitlab",
+    "Jenkins (Declarative + Scripted)": "jenkins",
+    "CircleCI": "circleci",
+    "Azure DevOps": "azure",
+    "Bitbucket Pipelines": "bitbucket",
+    "Google Cloud Build": "cloudbuild",
+    "Buildkite": "buildkite",
+    "Drone CI": "drone",
+    "Tekton": "tekton",
+    "Argo Workflows": "argo",
+    "Kubernetes manifests": "kubernetes",
+    "Dockerfile": "dockerfile",
+    "Live AWS account scan": "aws",
+}
+
+
+def test_comparison_per_row_rule_counts_match_registry():
+    """The per-row Pipeline-Check cell in ``docs/comparison.md``
+    declares a rule count like ``Yes (53 rules)``. Each declared count
+    must match the rule-file count in the corresponding provider's
+    ``rules/`` directory.
+
+    Catches drift the moment a new rule lands and the matrix isn't
+    bumped.
+    """
+    text = (REPO / "docs" / "comparison.md").read_text(encoding="utf-8")
+    drift: list[str] = []
+
+    for row_name, slug in _COMPARISON_ROWS.items():
+        # Match the row's Pipeline-Check cell: the first ``Yes (...)``
+        # after the row label. The label can contain regex metachars
+        # (parens in "Jenkins (Declarative + Scripted)") so escape it.
+        pat = re.compile(
+            rf"\|\s*{re.escape(row_name)}\s*\|\s*Yes\s*\(([^)]+)\)",
+        )
+        m = pat.search(text)
+        if not m:
+            drift.append(
+                f"comparison.md: row '{row_name}' missing or its "
+                f"Pipeline-Check cell isn't 'Yes (...)'"
+            )
+            continue
+        cell = m.group(1)
+        # First integer in the cell is the rule count.
+        num_match = re.search(r"\b(\d+)\b", cell)
+        if not num_match:
+            drift.append(
+                f"comparison.md: row '{row_name}' cell '{cell}' has "
+                f"no integer rule count"
+            )
+            continue
+        claimed = int(num_match.group(1))
+        actual = _count_rules_in(slug)
+        if claimed != actual:
+            drift.append(
+                f"comparison.md: row '{row_name}' claims {claimed} "
+                f"rules, registry has {actual}"
+            )
+
+    # Helm row carries two numbers: ``Yes (43 + 10)`` — first is the
+    # K8s pack reused via render, second is the chart-supply-chain
+    # HELM-* pack. Verify both.
+    helm_pat = re.compile(
+        r"\|\s*Helm charts \(rendered \+ supply-chain\)\s*\|\s*Yes\s*\((\d+)\s*\+\s*(\d+)\)"
+    )
+    helm_m = helm_pat.search(text)
+    if not helm_m:
+        drift.append(
+            "comparison.md: Helm row missing or doesn't carry "
+            "'Yes (N + M)' shape"
+        )
+    else:
+        k8s_claimed = int(helm_m.group(1))
+        helm_claimed = int(helm_m.group(2))
+        k8s_actual = _count_rules_in("kubernetes")
+        helm_actual = _count_rules_in("helm")
+        if k8s_claimed != k8s_actual:
+            drift.append(
+                f"comparison.md: Helm row claims {k8s_claimed} K8S-* "
+                f"rules, registry has {k8s_actual}"
+            )
+        if helm_claimed != helm_actual:
+            drift.append(
+                f"comparison.md: Helm row claims {helm_claimed} HELM-* "
+                f"rules, registry has {helm_actual}"
+            )
+
+    # SCM row carries an explicit highest-ID claim: ``SCM-001..NNN``.
+    scm_pat = re.compile(
+        r"GitHub repo branch protection[^|]+\|\s*Yes\s*\((\d+),\s*`SCM-001\.\.0?(\d+)`\)"
+    )
+    scm_m = scm_pat.search(text)
+    if not scm_m:
+        drift.append(
+            "comparison.md: SCM row missing or its 'Yes (N, `SCM-001..NNN`)' "
+            "shape changed"
+        )
+    else:
+        scm_count_claimed = int(scm_m.group(1))
+        scm_high_claimed = int(scm_m.group(2))
+        scm_count_actual = _count_rules_in("scm")
+        scm_high_actual = max(_existing_ids_for_prefix("scm", "SCM"), default=0)
+        if scm_count_claimed != scm_count_actual:
+            drift.append(
+                f"comparison.md: SCM row claims {scm_count_claimed} "
+                f"rules, registry has {scm_count_actual}"
+            )
+        if scm_high_claimed != scm_high_actual:
+            drift.append(
+                f"comparison.md: SCM row claims SCM-001..{scm_high_claimed:03d}, "
+                f"registry's highest is SCM-{scm_high_actual:03d}"
+            )
+
+    # OCI row carries 'Yes (N, incl. ATTEST-001..NNN ...)'. The N
+    # is the combined OCI-* + ATTEST-* total; the ATTEST high
+    # must match the highest ATTEST file.
+    oci_pat = re.compile(
+        r"OCI image manifests[^|]+\|\s*Yes\s*\((\d+),\s*incl\.\s*ATTEST-001\.\.0?(\d+)"
+    )
+    oci_m = oci_pat.search(text)
+    if not oci_m:
+        drift.append(
+            "comparison.md: OCI row missing or its 'Yes (N, incl. "
+            "ATTEST-001..NNN ...)' shape changed"
+        )
+    else:
+        oci_total_claimed = int(oci_m.group(1))
+        attest_high_claimed = int(oci_m.group(2))
+        oci_total_actual = _count_rules_in("oci")
+        attest_high_actual = max(
+            _existing_ids_for_prefix("oci", "ATTEST"), default=0
+        )
+        if oci_total_claimed != oci_total_actual:
+            drift.append(
+                f"comparison.md: OCI row claims {oci_total_claimed} "
+                f"rules, registry has {oci_total_actual}"
+            )
+        if attest_high_claimed != attest_high_actual:
+            drift.append(
+                f"comparison.md: OCI row claims ATTEST-001.."
+                f"{attest_high_claimed:03d}, registry's highest is "
+                f"ATTEST-{attest_high_actual:03d}"
+            )
+
+    assert not drift, "comparison.md drift:\n  " + "\n  ".join(drift)

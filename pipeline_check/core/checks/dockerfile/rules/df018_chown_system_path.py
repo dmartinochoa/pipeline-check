@@ -25,7 +25,7 @@ RULE = Rule(
         "exploit later steps to stage a binary the system trusts."
     ),
     docs_note=(
-        "Recognises ``chown`` and ``chgrp`` invocations whose first "
+        "Recognizes ``chown`` and ``chgrp`` invocations whose first "
         "non-flag path argument resolves under a system directory. "
         "The non-recursive case is also flagged because a single "
         "``chown user /etc`` is just as harmful, the recursive "

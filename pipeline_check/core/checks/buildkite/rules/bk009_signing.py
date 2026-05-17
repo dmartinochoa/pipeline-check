@@ -24,7 +24,7 @@ RULE = Rule(
     docs_note=(
         "Unsigned artifacts can't be verified downstream, a tampered "
         "build is indistinguishable from a legitimate one. The check "
-        "recognises cosign, sigstore, slsa-github-generator, slsa-"
+        "recognizes cosign, sigstore, slsa-github-generator, slsa-"
         "framework, and notation-sign as signing tools, matching the "
         "shared signing-token catalog used by the other CI packs."
     ),

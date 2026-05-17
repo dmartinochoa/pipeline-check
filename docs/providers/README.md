@@ -2,7 +2,7 @@
 
 A **provider** binds a CI/CD platform to the scanner: it builds the API
 context (credentials, clients) and declares which check modules run against
-it. The scanner's core is provider-agnostic, adding a new platform never
+it. The scanner's core is provider-agnostic. Adding a new platform never
 requires editing `Scanner`, `Reporter`, or the CLI.
 
 <div class="pg-doc-cards">
@@ -72,7 +72,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
   </a>
   <a class="pg-doc-card" href="helm/">
     <h3>Helm</h3>
-    <p>Renders charts via <code>helm template</code> and runs the K8S-* rule pack on the result. Catches the bulk of real workloads, which ship as charts.</p>
+    <p>Renders charts via <code>helm template</code> and runs the full K8S-* rule pack on the result, plus a chart-supply-chain pack (<code>HELM-001..010</code>: legacy schema, unlocked dependencies, plaintext repos) that reads <code>Chart.yaml</code> straight off disk.</p>
   </a>
   <a class="pg-doc-card" href="oci/">
     <h3>OCI image manifest</h3>

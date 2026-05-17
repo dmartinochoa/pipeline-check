@@ -30,7 +30,10 @@ Two subtractive filters narrow what "effective" means:
 | Baseline     | `--baseline PATH` | Drops every current finding that was already failing in a prior JSON report. |
 | Ignore file  | `--ignore-file PATH` | Drops hand-curated suppressions. Defaults to `.pipelinecheckignore`. |
 
-Exit codes are unchanged: `0` pass, `1` gate fail, `2` scanner error.
+Exit codes follow the canonical contract in
+[`usage.md`](usage.md#exit-codes): `0` pass, `1` gate fail, `2` bad
+invocation or scan exception, `3` operational failure on a non-scan
+action, `4` `--ai-explain` failure.
 
 ## 📖 Recipes
 

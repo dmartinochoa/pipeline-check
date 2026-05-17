@@ -37,17 +37,12 @@ If every finding is INFO (or there are none), the score is 100.
 
 ## Exit codes
 
-| Code | Meaning                       |
-|------|-------------------------------|
-| `0`  | Gate passed                   |
-| `1`  | Gate failed                   |
-| `2`  | Scanner error                 |
-| `3`  | Usage / config / unknown ID   |
-
-The default gate is `--fail-on CRITICAL`, one CRITICAL finding in the
-effective set (after baseline + ignore filtering) fails CI. The grade
-is *not* the default gate criterion; use `--min-grade` to gate on it
-explicitly. See [ci_gate.md](ci_gate.md) for the full gate contract.
+The full exit-code table is documented in
+[`usage.md`](usage.md#exit-codes). The default gate is
+`--fail-on CRITICAL`: one CRITICAL finding in the effective set (after
+baseline + ignore filtering) fails CI. The grade is *not* the default
+gate criterion; use `--min-grade` to gate on it explicitly. See
+[ci_gate.md](ci_gate.md) for the full gate contract.
 
 The implementation lives in
 [`pipeline_check/core/scorer.py`](https://github.com/dmartinochoa/pipeline-check/blob/master/pipeline_check/core/scorer.py) and

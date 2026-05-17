@@ -61,10 +61,11 @@ Auto-detect looks for: `.github/workflows/`, `.gitlab-ci.yml`,
 `.drone.yml` / `.drone.yaml`, `Dockerfile`/`Containerfile`,
 CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
 a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
-Helm `Chart.yaml`, and falls back to `aws` (live account scan) when
-nothing matches. OCI manifests (`index.json`) are not auto-detected
-because the filename is too generic; pass `--pipeline oci` or
-`--pipelines github,oci` explicitly.
+and Helm `Chart.yaml`. When nothing matches, the CLI exits with a
+usage error rather than scanning silently; pass `--pipeline aws`
+explicitly to scan a live AWS account. OCI manifests (`index.json`)
+are also not auto-detected because the filename is too generic; pass
+`--pipeline oci` or `--pipelines github,oci` explicitly.
 
 A single match runs through `Scanner` unchanged. Two or more matches
 automatically switch to `MultiScanner` (the same engine
@@ -348,10 +349,12 @@ operators can write targeted ignore rules per-class.
 
 ## 🤖 AI-augmented `--explain`
 
-`--ai-explain CHECK_ID` prints the deterministic `--explain` body and
-appends a clearly-banner-framed AI-generated remediation paragraph
-grounded in the project's README and an optional context file. Three
-providers supported, all opt-in:
+`--ai-explain CHECK_ID` prints the deterministic `--explain` body,
+then a banner-prefixed AI section that grounds an LLM remediation
+paragraph in the project's README and an optional context file. The
+banner makes the generated text visually distinct from the
+deterministic body so readers can tell at a glance which lines came
+from a model. Three providers supported, all opt-in:
 
 ```bash
 pip install pipeline-check[ai-anthropic]   # or [ai-openai]
@@ -382,8 +385,8 @@ pipeline_check --inventory-type 'AWS::IAM::*'     # glob filter (repeatable)
 SARIF 2.1.0-conformant scanner (Trivy, Checkov, Snyk, KICS,
 CodeQL, …) into the same scan output as pipeline-check's native
 findings. External rules become `INGEST-<tool>-<rule-id>`
-`Finding` rows; the chain engine RE-EVALUATES over the union, so
-cross-tool chains (e.g. `XPC-009` — ingested CVE finding +
+`Finding` rows; the chain engine then re-evaluates over the union,
+so cross-tool chains (e.g. `XPC-009`, an ingested CVE finding plus
 `DF-001` mutable runtime image) fire on compositions no
 individual scanner would surface alone.
 
@@ -455,13 +458,20 @@ Precedence: CLI > env > config file > defaults.
 
 ## 🚪 Exit codes
 
+This is the canonical table. Other pages link here rather than
+restating it.
+
 | Code | Meaning |
 |------|---------|
-| 0    | Gate passed |
-| 1    | Gate failed |
-| 2    | Scanner error (e.g. AWS API failure, malformed config file) |
-| 3    | Usage / config error (unknown flag, missing required path, bad YAML) |
-| 4    | `--ai-explain` request failure (missing SDK, missing key, unknown provider, request error) |
+| `0` | Scan completed; gate passed. |
+| `1` | Scan completed; gate failed (any of `--fail-on`, `--min-grade`, `--max-failures`, `--fail-on-check`, `--fail-on-chain`, `--fail-on-any-chain` tripped). |
+| `2` | Bad invocation or unexpected scan exception. Click `UsageError` (invalid flag, missing required path, mutually-exclusive flags) and uncaught scanner exceptions both surface here. The error and any traceback are on stderr. |
+| `3` | Operational failure on a non-scan action: `--list-checks` / `--explain` for an unknown ID, `--apply` without `--fix`, MCP support not installed, malformed `--ignore-file` or `--baseline`. |
+| `4` | `--ai-explain` request failure (missing SDK, missing API key, unknown provider, request error). |
+
+Code `1` is what CI runs gate on. Codes `2`, `3`, `4` mean the scan
+didn't complete usefully; treating them as failures in CI is the safe
+default but distinct semantically from `1`.
 
 ## Verbose and quiet modes
 

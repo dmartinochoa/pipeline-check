@@ -56,8 +56,8 @@ attack paths. Fix any one leg and the chain breaks.
 The `XPC-NNN` family is **cross-provider**. It only fires when the chain
 engine sees findings from multiple providers in the same scan, which
 happens when you pass `--pipelines github,oci` (plural, comma-separated)
-instead of single-valued `--pipeline`. Single-provider runs never see
-both check IDs and these chains stay quiet.
+instead of single-valued `--pipeline`. A single-provider run never sees
+both legs of an `XPC` chain, so those rules stay quiet there.
 
 Run `pipeline_check --list-chains` to see the current set at any time.
 Run `pipeline_check --explain-chain AC-001` for the full reference

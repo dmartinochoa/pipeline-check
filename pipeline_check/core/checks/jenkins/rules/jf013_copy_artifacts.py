@@ -21,7 +21,7 @@ RULE = Rule(
         "branch protection if verification isn't feasible."
     ),
     docs_note=(
-        "Recognises both `copyArtifacts(projectName: ...)` and the "
+        "Recognizes both `copyArtifacts(projectName: ...)` and the "
         "older `step([$class: 'CopyArtifact', ...])` form. If the "
         "upstream job accepts multibranch or PR builds, the "
         "artifact may have been produced by attacker-controlled code."

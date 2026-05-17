@@ -77,7 +77,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             desc = (
                 "The repository policy contains statements that allow unauthenticated "
                 "or public access (Principal: '*'). This could expose proprietary "
-                "images or allow unauthorised parties to push images."
+                "images or allow unauthorized parties to push images."
             )
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

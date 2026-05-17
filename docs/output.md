@@ -24,7 +24,7 @@ Shape:
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "tool_version": "1.0.4",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
@@ -64,9 +64,10 @@ Shape:
 }
 ```
 
-The `chains` array is omitted (not empty) when the run was invoked with
-`--no-chains`, so consumers can distinguish "nothing matched" from "not
-asked for". See [attack_chains.md](attack_chains.md) for the full
+Present as an empty list (`"chains": []`) when chain detection ran
+and matched nothing; absent entirely when `--no-chains` was passed.
+That lets consumers distinguish "nothing matched" from "not asked
+for". See [attack_chains.md](attack_chains.md) for the full
 chain-output contract.
 
 - **`schema_version`** is bumped on breaking format changes. Adding a
@@ -246,14 +247,7 @@ pure-function swap, no rule registry changes.
 
 ## Exit codes are independent of format
 
-Regardless of output format, the process exits with:
-
-| Code | Meaning              |
-|------|----------------------|
-| `0`  | Gate passed          |
-| `1`  | Gate failed          |
-| `2`  | Scanner error        |
-| `3`  | Usage / config error |
-
-Gating is governed by the CI gate, not by the output format, see
-[ci_gate.md](ci_gate.md).
+The output format never affects the exit code. Gating is governed by
+the CI gate, not by the output format; see [ci_gate.md](ci_gate.md).
+The full exit-code contract is documented once in
+[`usage.md`](usage.md#exit-codes).
