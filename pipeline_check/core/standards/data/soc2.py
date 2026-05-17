@@ -336,5 +336,53 @@ STANDARD = Standard(
         "BK-011": ["CC8.1"],                # no SLSA provenance
         "BK-012": ["CC7.1"],                # no vuln scan
         "BK-013": ["CC8.1"],                # no branches filter
+        # ── SCM posture (governance via the platform REST API) ──────
+        # Branch protection / review controls map to CC8.1 (Change
+        # Management) since the SOC 2 framing of source-code review
+        # is essentially "changes are authorized before deployment".
+        # Logical-access surfaces (workflow tokens, deploy keys,
+        # outside collaborators) map to CC6.1 / CC6.2 / CC6.3.
+        "SCM-001": ["CC8.1"],               # default branch unprotected
+        "SCM-002": ["CC8.1"],               # required reviews missing
+        "SCM-003": ["CC8.1", "CC7.1"],      # default code scanning disabled
+        "SCM-004": ["CC6.1"],               # secret scanning disabled
+        "SCM-005": ["CC7.1"],               # Dependabot security updates off
+        "SCM-006": ["CC6.1", "CC8.1"],      # signed commits not required
+        "SCM-007": ["CC8.1"],               # force-push allowed
+        "SCM-008": ["CC8.1"],               # required status checks missing
+        "SCM-009": ["CC8.1"],               # branch deletions allowed
+        "SCM-010": ["CC8.1"],               # admin bypass allowed
+        "SCM-011": ["CC8.1"],               # CODEOWNERS reviews not required
+        "SCM-012": ["CC8.1"],               # stale reviews not dismissed
+        "SCM-013": ["CC8.1"],               # conversation resolution not required
+        "SCM-014": ["CC8.1"],               # last-push approval not required
+        "SCM-015": ["CC6.1"],               # secret scanning push protection off
+        "SCM-016": ["CC7.3", "CC7.4"],      # private vulnerability reporting off
+        "SCM-017": ["CC8.1"],               # CODEOWNERS file missing
+        "SCM-018": ["CC8.1"],               # PR review bypass allowed
+        "SCM-019": ["CC6.1"],               # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020": ["CC6.1"],               # workflow_token default write
+        "SCM-021": ["CC8.1"],               # Actions can approve PRs
+        "SCM-022": ["CC6.8"],               # allowed_actions unrestricted
+        "SCM-023": ["CC8.1"],               # env missing reviewers
+        "SCM-024": ["CC8.1"],               # env branch policy missing
+        "SCM-025": ["CC6.1", "CC6.3"],      # deploy keys write-enabled
+        "SCM-026": ["CC6.7", "CC6.1"],      # webhook insecure transport / no HMAC
+        "SCM-027": ["CC6.1", "CC6.2"],      # outside collaborator elevated
+        "SCM-028": ["CC6.1"],               # private repo allows forking
+        # Ruleset enforcement
+        "SCM-029": ["CC8.1"],               # ruleset not enforced
+        "SCM-030": ["CC8.1"],               # ruleset always-bypass
+        "SCM-031": ["CC8.1"],               # auto-merge enabled
+        "SCM-032": ["CC8.1"],               # ruleset lacks PR review
+        "SCM-033": ["CC8.1"],               # ruleset lacks status_checks
+        "SCM-034": ["CC8.1"],               # ruleset allows force_push
+        "SCM-035": ["CC8.1"],               # ruleset allows deletion
+        "SCM-036": ["CC6.1", "CC8.1"],      # ruleset lacks signed_commits
+        "SCM-037": ["CC8.1"],               # ruleset stale-review dismissal
+        "SCM-038": ["CC8.1"],               # ruleset lacks linear_history
+        "SCM-039": ["CC8.1", "CC7.1"],      # ruleset lacks required_workflows
+        "SCM-040": ["CC8.1", "CC7.1"],      # ruleset lacks code_scanning gate
     },
 )

@@ -343,5 +343,56 @@ STANDARD = Standard(
         "CA-002":   ["SR-3", "SR-11"],                   # public upstream repo
         "CA-003":   ["AC-3", "SC-7"],                    # domain policy public
         "CA-004":   ["AC-6"],                            # repo wildcard actions
+        # ── SCM posture (governance via the platform REST API) ──────
+        # Branch protection / review controls map primarily to SA-15
+        # (Development Process, Standards, and Tools) — the developer-
+        # side governance regime — supplemented by AC-3 / AC-6 for
+        # access enforcement, SI-7 / AU-9 for history-integrity
+        # surfaces, and IA-5 for credential-shaped surfaces (workflow
+        # tokens, deploy keys).
+        "SCM-001":  ["SA-15", "AC-3"],                  # default branch unprotected
+        "SCM-002":  ["SA-15"],                          # required reviews missing
+        "SCM-003":  ["SA-11"],                          # default code scanning disabled (SAST)
+        "SCM-004":  ["SI-7", "IA-5"],                   # secret scanning disabled
+        "SCM-005":  ["RA-5", "SI-2"],                   # Dependabot security updates off
+        "SCM-006":  ["SI-7", "SR-4"],                   # signed commits not required (provenance)
+        "SCM-007":  ["SI-7", "AU-9"],                   # force-push allowed (history rewrite)
+        "SCM-008":  ["SA-15", "SA-11"],                 # required status checks missing
+        "SCM-009":  ["SI-7", "AU-9"],                   # branch deletions allowed
+        "SCM-010":  ["AC-6", "SA-15"],                  # admin bypass allowed
+        "SCM-011":  ["SA-15", "AC-3"],                  # CODEOWNERS reviews not required
+        "SCM-012":  ["SA-15"],                          # stale reviews not dismissed
+        "SCM-013":  ["SA-15"],                          # conversation resolution not required
+        "SCM-014":  ["SA-15"],                          # last-push approval not required
+        "SCM-015":  ["SI-7", "IA-5"],                   # secret scanning push protection off
+        # SCM-016 (private vulnerability reporting) is an incident-
+        # response surface; 800-53's IR family isn't currently in
+        # this standard's catalog. Left unmapped.
+        "SCM-017":  ["SA-15"],                          # CODEOWNERS file missing
+        "SCM-018":  ["SA-15", "AC-6"],                  # PR review bypass allowed
+        "SCM-019":  ["AC-3", "AC-6"],                   # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020":  ["AC-6", "IA-5"],                   # workflow_token default write
+        "SCM-021":  ["AC-3", "SA-15"],                  # Actions can approve PRs (self-approval)
+        "SCM-022":  ["SR-3", "SR-11", "CM-7"],          # allowed_actions unrestricted
+        "SCM-023":  ["SA-10", "AC-3"],                  # env missing reviewers
+        "SCM-024":  ["CM-6", "SA-10"],                  # env branch policy missing
+        "SCM-025":  ["IA-5", "AC-6"],                   # deploy keys write-enabled
+        "SCM-026":  ["SC-8", "IA-5"],                   # webhook insecure transport / no HMAC
+        "SCM-027":  ["AC-2", "AC-6"],                   # outside collaborator elevated
+        "SCM-028":  ["AC-3"],                           # private repo allows forking
+        # Ruleset enforcement (modern variant of branch protection)
+        "SCM-029":  ["SA-15", "CM-6"],                  # ruleset not enforced
+        "SCM-030":  ["AC-6", "SA-15"],                  # ruleset always-bypass
+        "SCM-031":  ["SA-15"],                          # auto-merge enabled
+        "SCM-032":  ["SA-15"],                          # ruleset lacks PR review
+        "SCM-033":  ["SA-11", "SA-15"],                 # ruleset lacks status_checks
+        "SCM-034":  ["SI-7", "AU-9"],                   # ruleset allows force_push
+        "SCM-035":  ["SI-7", "AU-9"],                   # ruleset allows deletion
+        "SCM-036":  ["SI-7", "SR-4"],                   # ruleset lacks signed_commits
+        "SCM-037":  ["SA-15"],                          # ruleset stale-review dismissal
+        "SCM-038":  ["SI-7", "AU-9"],                   # ruleset lacks linear_history
+        "SCM-039":  ["SA-11", "SA-15"],                 # ruleset lacks required_workflows
+        "SCM-040":  ["SA-11", "RA-5"],                  # ruleset lacks code_scanning gate
     },
 )
