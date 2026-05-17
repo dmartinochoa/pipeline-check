@@ -228,11 +228,26 @@ prints a short summary to **stderr**:
 [gate] FAIL
         - 3 finding(s) at or above HIGH (CRITICAL, HIGH): --fail-on HIGH
         - 7 failing findings exceed --max-failures 5
+[gate] next: 2 of 3 failing finding(s) have autofixers; run `pipeline_check --fix --apply` to apply them
 [gate] 12 finding(s) suppressed by baseline
 [gate] 2 finding(s) suppressed by ignore file
 ```
 
 This makes failure diagnosis immediate without parsing the full JSON.
+
+The `[gate] next:` trailer picks the most actionable next move based on
+the failing set:
+
+- When at least one finding has a registered autofixer, it suggests
+  `--fix --apply`.
+- When no autofixers apply and no baseline is configured, it suggests
+  `--write-baseline` so the team can start gating only on new findings.
+- Otherwise it points at `pipeline_check explain <ID>` for the
+  highest-severity failure, so the operator has a starting move.
+
+The trailer is silent when a gate condition tripped on attack-chain
+state alone (the effective set is empty); there's nothing actionable to
+suggest in that case.
 
 ## 🎛️ How the default interacts with filters
 

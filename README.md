@@ -37,7 +37,8 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 pip install pipeline-check          # Python >= 3.10
 
 pipeline_check                      # auto-detects every provider in cwd
-pipeline_check init                 # scaffold .pipeline-check.yml
+pipeline_check init                 # scan + baseline + tuned config (smart init)
+pipeline_check explain GHA-001      # full per-check reference (severity, fix, controls)
 pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
@@ -397,6 +398,7 @@ See [docs/standards/](docs/standards/).
 | `--profile` | | AWS CLI named profile |
 | `--verbose` / `-v` | | Debug output to stderr |
 | `--quiet` / `-q` | | Suppress all output; exit code only |
+| `--no-group` | | Render every finding on its own row. By default the terminal table collapses repeated `(check_id, resource)` failures into one row plus a `+N similar` summary line. JSON / SARIF / JUnit outputs always carry every finding regardless. |
 | `--version` | | Print version |
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
@@ -409,10 +411,22 @@ forwarded to `helm template`. The SCM provider is API-only and takes
 `--scm-platform github --scm-repo owner/name` (plus `--gh-token` or
 `$GITHUB_TOKEN`); no on-disk path flag.
 
-Subcommand: **`pipeline_check init`** writes a starter `.pipeline-check.yml`
-to the current directory, pre-filling the `pipeline:` key based on what it
-finds in cwd. Pass `--path PATH` to redirect the output, or `--force` to
-overwrite an existing file.
+Subcommands:
+
+- **`pipeline_check init`** runs one scan against the auto-detected
+  pipeline, writes `.pipeline-check-baseline.json` capturing current
+  failing findings, and emits `.pipeline-check.yml` with a recommended
+  `gate.fail_on` and a baseline pointer so future CI runs only block on
+  *new* regressions. Prints a "top 5 to fix" summary to stderr. Pass
+  `--no-scan` for the legacy commented-out scaffold, `--path PATH` to
+  redirect the output, or `--force` to overwrite an existing file.
+- **`pipeline_check explain CHECK_ID`** prints the full per-check
+  reference (severity, recommendation, controls, autofix availability,
+  related rules, attack chains). Equivalent to
+  `pipeline_check --explain CHECK_ID`; the subcommand form is more
+  discoverable and is what the smart-init top-5 summary and the
+  gate-failure trailer point users at. Exit code `0` on a known ID,
+  `3` on an unknown ID with a "did you mean" list.
 
 ---
 

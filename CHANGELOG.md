@@ -12,6 +12,46 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Smart `pipeline_check init`.** ``init`` now runs one scan against
+  whatever pipeline it auto-detects, writes
+  ``.pipeline-check-baseline.json`` capturing the current failing
+  findings, and emits ``.pipeline-check.yml`` with a recommended
+  ``gate.fail_on`` plus a baseline pointer so the first CI run after
+  ``init`` returns exit 0 and only new regressions block merges.
+  Prints a "top 5 to fix first" summary to stderr (sorted by severity,
+  with autofix availability tagged) so the operator has a starting
+  point. Pass ``--no-scan`` for the legacy commented-out scaffold,
+  ``--baseline-path PATH`` to redirect the baseline file. The
+  recommendation logic: any CRITICAL failure → ``fail_on: HIGH``;
+  grade A or B → ``MEDIUM``; otherwise ``HIGH``.
+
+- **`pipeline_check explain CHECK_ID` subcommand.** A top-level verb
+  wrapping the existing ``--explain`` flag so the per-check reference
+  (severity, recommendation, controls, autofix availability, related
+  rules, attack chains) is discoverable as a subcommand rather than a
+  hidden option. Same exit-code contract as ``--explain``: 0 on a known
+  ID, 3 on unknown with a "did you mean" list. The smart-init top-5
+  summary and the gate-failure trailer point users at this form.
+
+- **Gate-failure trailer.** When the gate fails, ``pipeline_check``
+  now emits a single ``[gate] next:`` line after the failure reasons
+  with the most actionable next move based on the failing set: an
+  autofix command when fixers cover at least one failure, a
+  ``--write-baseline`` suggestion when no baseline is configured, or
+  ``pipeline_check explain <ID>`` for the highest-severity failure
+  otherwise. Silent when the gate trips only on attack-chain state
+  (nothing actionable in the effective set).
+
+- **`--no-group` flag and grouped terminal output.** The terminal
+  reporter now collapses repeated ``(check_id, resource)`` failures
+  into one visible row plus a ``+N more on lines X, Y, Z`` follower
+  line, so a rule firing across many files no longer drowns the
+  report. The detail panel still renders for the representative and
+  carries every offending line number. Pass ``--no-group`` to revert
+  to the pre-1.x behavior (every finding on its own row). JSON /
+  SARIF / JUnit outputs always carry every finding regardless of
+  this flag.
+
 - **SCM-040 — active ruleset doesn't gate on code scanning
   results.** LOW. Walks the merged ``rules`` array on every
   active ruleset looking for a ``code_scanning`` entry whose

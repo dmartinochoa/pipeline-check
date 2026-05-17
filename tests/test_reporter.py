@@ -177,3 +177,73 @@ class TestReportTerminal:
         )
         output = buf.getvalue()
         assert "No failures at or above" in output
+
+
+class TestGroupSimilar:
+    """Findings sharing ``(check_id, resource)`` collapse to one row
+    plus a single follower-summary line, unless ``group_similar=False``."""
+
+    def _dupes(self, n: int) -> list[Finding]:
+        from pipeline_check.core.checks.base import Location
+        return [
+            Finding(
+                check_id="GHA-001",
+                title="Unpinned action",
+                severity=Severity.HIGH,
+                resource=".github/workflows/ci.yml",
+                description="d",
+                recommendation="rec",
+                passed=False,
+                locations=[Location(path=".github/workflows/ci.yml",
+                                    start_line=10 + i)],
+            )
+            for i in range(n)
+        ]
+
+    def _render(self, findings, *, group_similar: bool) -> str:
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=240)
+        report_terminal(
+            findings, score(findings), console=console,
+            group_similar=group_similar,
+        )
+        return buf.getvalue()
+
+    def test_groups_collapse_repeated_rows(self):
+        out = self._render(self._dupes(3), group_similar=True)
+        # The follower-summary cell mentions the extra line numbers.
+        assert "+ 2 more on lines 11, 12" in out
+        # Only one occurrence of GHA-001 as a visible table row's check
+        # column: the representative. The follower row leaves the
+        # Check column blank.
+        # Robustly: the panel still names the rule, so we can't just
+        # count "GHA-001". Instead assert the "+N more" hint is present
+        # exactly once.
+        assert out.count("+ 2 more on lines") == 1
+
+    def test_no_group_renders_every_row(self):
+        out = self._render(self._dupes(3), group_similar=False)
+        assert "more on lines" not in out
+
+    def test_grouping_skipped_for_different_resources(self):
+        from pipeline_check.core.checks.base import Location
+        findings = [
+            Finding(
+                check_id="GHA-001",
+                title="Unpinned action",
+                severity=Severity.HIGH,
+                resource=path,
+                description="d",
+                recommendation="rec",
+                passed=False,
+                locations=[Location(path=path, start_line=10)],
+            )
+            for path in (
+                ".github/workflows/a.yml",
+                ".github/workflows/b.yml",
+            )
+        ]
+        out = self._render(findings, group_similar=True)
+        # Two distinct resources → two separate rows, no follower line.
+        assert "more on lines" not in out

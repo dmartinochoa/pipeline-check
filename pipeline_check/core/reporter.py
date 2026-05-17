@@ -58,6 +58,41 @@ def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
     return filtered
 
 
+def _group_findings(
+    failures: list[Finding],
+) -> list[tuple[Finding, list[Finding]]]:
+    """Collapse failures that share ``(check_id, resource-file)``.
+
+    On a large repo the same rule fires across dozens of workflow
+    files or container layers; the table fills with rows that read
+    the same except for the line number. Grouping picks one
+    representative per ``(check_id, file)`` and pushes the rest into
+    a follower list rendered as a single dim "+N similar" row, with
+    each follower's line number listed.
+
+    ``file`` is the resource path without any line suffix when a
+    ``Location`` is present, so two findings on different lines of
+    the same workflow group together; two findings on the same line
+    of different workflows do not.
+    """
+    groups: dict[tuple[str, str], list[Finding]] = {}
+    order: list[tuple[str, str]] = []
+    for f in failures:
+        # ``f.resource`` is the structured key; the Location (if any)
+        # carries the line number separately. Group purely on the
+        # resource so callers don't need to know about Locations.
+        key = (f.check_id.upper(), f.resource)
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(f)
+    result: list[tuple[Finding, list[Finding]]] = []
+    for key in order:
+        members = groups[key]
+        result.append((members[0], members[1:]))
+    return result
+
+
 def report_terminal(
     findings: list[Finding],
     score_result: ScoreResult,
@@ -65,6 +100,7 @@ def report_terminal(
     console: Console | None = None,
     show_controls: bool = False,
     show_passed: bool = False,
+    group_similar: bool = True,
 ) -> None:
     """Print a rich-formatted report to the terminal.
 
@@ -81,6 +117,14 @@ def report_terminal(
     ~30 lines) is suppressed unless ``show_controls`` is set.
     Compliance auditors who need either signal should use the JSON
     / SARIF outputs, which always carry the full ControlRef list.
+
+    When ``group_similar`` is True (the default), repeated failures
+    that share the same ``(check_id, resource)`` collapse to one
+    visible row plus a "+N similar" follower row that lists the
+    extra line numbers. Detail panels still render for the
+    representative; the followers' line numbers are folded into its
+    panel. Pass ``group_similar=False`` to render every row
+    individually (matches the pre-1.x behavior).
     """
     if console is None:
         console = Console()
@@ -159,6 +203,17 @@ def report_terminal(
             )
         return
 
+    # Split passes and failures up-front so the grouping logic below
+    # only collapses failures (we don't want a passed-row group merging
+    # with a failed-row group that happens to share a resource).
+    visible_passes = [f for f in visible if f.passed]
+    visible_failures = [f for f in visible if not f.passed]
+
+    if group_similar:
+        groups = _group_findings(visible_failures)
+    else:
+        groups = [(f, []) for f in visible_failures]
+
     table = Table(box=box.SIMPLE_HEAVY, expand=True, pad_edge=False)
     table.add_column("", no_wrap=True, width=4)
     table.add_column("Check", style="bold", no_wrap=True, width=8)
@@ -167,21 +222,15 @@ def report_terminal(
     table.add_column("Resource", overflow="fold", max_width=28)
     table.add_column("Title", ratio=1)
 
-    for f in visible:
+    def _render_row(f: Finding) -> None:
         sev_style = _SEVERITY_STYLE.get(f.severity, "white")
         conf_style = _CONFIDENCE_STYLE.get(f.confidence, "")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
-        # Abbreviate confidence to fit column width. LOW confidence is
-        # visually de-emphasized so HIGH failures stand out when
-        # scanning a long table.
         conf_label = f.confidence.value[:3]
         conf_cell = (
-            f"[{conf_style}]{conf_label}[/{conf_style}]" if conf_style else conf_label
+            f"[{conf_style}]{conf_label}[/{conf_style}]"
+            if conf_style else conf_label
         )
-        # Surface the first precise location after the resource label
-        # so terminal users see ``path:line`` whenever the rule emits
-        # a structured Location. Multi-location findings list the
-        # primary line; remaining lines appear in the detail panel.
         resource_cell = f.resource
         if f.locations:
             primary = f.locations[0]
@@ -196,15 +245,43 @@ def report_terminal(
             f.title,
         )
 
+    # Failures first, in group order.
+    for representative, followers in groups:
+        _render_row(representative)
+        if not followers:
+            continue
+        # Collect line numbers from the followers that have a Location.
+        lines = [
+            str(f.locations[0].start_line)
+            for f in followers
+            if f.locations and f.locations[0].start_line is not None
+        ]
+        if lines:
+            follower_cell = (
+                f"[dim]      + {len(followers)} more on lines "
+                f"{', '.join(lines)} (rerun with --no-group to expand)[/dim]"
+            )
+        else:
+            follower_cell = (
+                f"[dim]      + {len(followers)} similar finding(s) "
+                f"(rerun with --no-group to expand)[/dim]"
+            )
+        # Render the follower-summary in the Title column so the row
+        # height stays one line and the eye scans down the Check column.
+        table.add_row("", "", "", "", "", follower_cell)
+
+    # Passes (only present when show_passed is set).
+    for f in visible_passes:
+        _render_row(f)
+
     console.print(table)
 
-    # Detail panels for failures
-    failures = [f for f in visible if not f.passed]
-    if not failures:
+    if not visible_failures:
         return
 
     console.print()
-    for f in failures:
+    for representative, followers in groups:
+        f = representative
         style = _SEVERITY_STYLE.get(f.severity, "white")
         cwe_line = ""
         if f.cwe:
@@ -214,19 +291,26 @@ def report_terminal(
             controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
                 f"  [{c.standard_title}] {c.label()}" for c in f.controls
             )
-        # When the rule emitted >1 location, list each one in the
-        # panel so users see every offending line at a glance.
+        # When the rule emitted >1 location OR there are grouped
+        # followers with locations, list every offending line in the
+        # panel so users see every hit at a glance.
         locations_text = ""
-        if len(f.locations) > 1:
-            lines_csv = ", ".join(
-                str(loc.start_line) for loc in f.locations
-                if loc.start_line is not None
+        all_lines: list[int] = [
+            loc.start_line for loc in f.locations
+            if loc.start_line is not None
+        ]
+        for follower in followers:
+            if follower.locations and follower.locations[0].start_line is not None:
+                all_lines.append(follower.locations[0].start_line)
+        if len(all_lines) > 1:
+            lines_csv = ", ".join(str(n) for n in all_lines)
+            path = f.locations[0].path if f.locations else f.resource
+            locations_text = f"\n[bold]Locations:[/bold] {path}:{lines_csv}"
+        elif followers:
+            locations_text = (
+                f"\n[dim]Grouped with {len(followers)} similar finding(s) "
+                f"on the same resource.[/dim]"
             )
-            if lines_csv:
-                locations_text = (
-                    f"\n[bold]Locations:[/bold] {f.locations[0].path}:"
-                    f"{lines_csv}"
-                )
         console.print(
             Panel(
                 f"{f.description}\n\n"
