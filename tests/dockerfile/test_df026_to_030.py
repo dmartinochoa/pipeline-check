@@ -259,6 +259,31 @@ HEALTHCHECK CMD true
         assert not f.passed
         assert "-r" in f.description
 
+    def test_fails_on_require_whitespace_form(self):
+        # Node accepts ``--require <path>`` (space-separated) as
+        # an equivalent of ``--require=<path>`` inside NODE_OPTIONS.
+        text = f"""\
+FROM node:20{_DIGEST}
+USER 1001
+ENV NODE_OPTIONS="--require /opt/preload.js"
+HEALTHCHECK CMD true
+"""
+        f = run_check(text, "DF-030")
+        assert not f.passed
+        assert "--require" in f.description
+
+    def test_fails_on_import_whitespace_form(self):
+        # Same whitespace shape, but for the ESM ``--import`` flag.
+        text = f"""\
+FROM node:20{_DIGEST}
+USER 1001
+ENV NODE_OPTIONS="--import /opt/preload.mjs"
+HEALTHCHECK CMD true
+"""
+        f = run_check(text, "DF-030")
+        assert not f.passed
+        assert "--import" in f.description
+
     def test_passes_on_substring_lookalike(self):
         # Innocent flags that happen to contain ``-r`` as a substring
         # (``--enable-source-maps``) must not trigger the short alias
