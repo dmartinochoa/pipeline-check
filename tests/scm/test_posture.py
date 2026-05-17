@@ -2497,6 +2497,197 @@ class TestSCM029:
         assert "archived" in f.description
 
 
+# ── SCM-030: ruleset bypass actor with bypass_mode "always" ────────
+
+
+class TestSCM030:
+    def test_always_bypass_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "bypass_actors": [
+                        {
+                            "actor_id": 5,
+                            "actor_type": "RepositoryRole",
+                            "bypass_mode": "always",
+                        },
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert not f.passed
+        assert "RepositoryRole:5" in f.description
+        assert f.severity == Severity.HIGH
+
+    def test_pull_request_bypass_passes(self):
+        # ``pull_request`` mode requires a PR thread; the audit
+        # trail makes this a non-issue.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "bypass_actors": [
+                        {
+                            "actor_id": 5,
+                            "actor_type": "RepositoryRole",
+                            "bypass_mode": "pull_request",
+                        },
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+
+    def test_integration_always_bypass_passes(self):
+        # GitHub App ``always`` bypass is auditable via the App's
+        # invocation channel; the rule's documented escape hatch.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "bypass_actors": [
+                        {
+                            "actor_id": 12345,
+                            "actor_type": "Integration",
+                            "bypass_mode": "always",
+                        },
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+
+    def test_no_bypass_actors_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "bypass_actors": [],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+        assert "No active ruleset configures" in f.description
+
+    def test_non_active_ruleset_skipped(self):
+        # SCM-029 owns the not-enforced case; SCM-030 ignores
+        # non-active rulesets since their bypass list doesn't
+        # affect runtime behavior.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "evaluating",
+                    "enforcement": "evaluate",
+                    "bypass_actors": [
+                        {
+                            "actor_id": 5,
+                            "actor_type": "RepositoryRole",
+                            "bypass_mode": "always",
+                        },
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+
+    def test_team_always_bypass_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default",
+                    "enforcement": "active",
+                    "bypass_actors": [
+                        {
+                            "actor_id": 42,
+                            "actor_type": "Team",
+                            "bypass_mode": "always",
+                        },
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert not f.passed
+        assert "Team:42" in f.description
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+        assert "No repository rulesets" in f.description
+
+    def test_endpoint_unavailable_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=None,
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            rulesets=[
+                {
+                    "id": 1, "name": "x", "enforcement": "active",
+                    "bypass_actors": [
+                        {"actor_type": "Team", "actor_id": 1,
+                         "bypass_mode": "always"},
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            rulesets=[
+                {
+                    "id": 1, "name": "x", "enforcement": "active",
+                    "bypass_actors": [
+                        {"actor_type": "Team", "actor_id": 1,
+                         "bypass_mode": "always"},
+                    ],
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-030")
+        assert f.passed
+        assert "archived" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
@@ -2539,6 +2730,12 @@ class TestSnapshotActionsEndpoints:
                 {"id": 1, "name": "default-branch-protection",
                  "target": "branch", "enforcement": "active"},
             ],
+            "repos/o/r/rulesets/1": {
+                "id": 1, "name": "default-branch-protection",
+                "target": "branch", "enforcement": "active",
+                "bypass_actors": [],
+                "rules": [],
+            },
         })
         ctx = SCMContext.for_repo("o", "r", fetcher)
         snap = ctx.repos[0]
@@ -2561,6 +2758,8 @@ class TestSnapshotActionsEndpoints:
         ]
         assert isinstance(snap.rulesets, list)
         assert len(snap.rulesets) == 1
+        # Active ruleset's detail body got merged in.
+        assert snap.rulesets[0]["bypass_actors"] == []
         # Each new endpoint was hit exactly once.
         for path in (
             "repos/o/r/actions/permissions",
@@ -2570,6 +2769,7 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/hooks",
             "repos/o/r/collaborators?affiliation=outside&per_page=100",
             "repos/o/r/rulesets",
+            "repos/o/r/rulesets/1",
         ):
             assert path in fetcher.calls
 

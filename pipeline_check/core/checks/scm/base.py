@@ -351,6 +351,31 @@ class SCMContext:
             raw_rulesets = fetcher.fetch(f"repos/{owner}/{name}/rulesets")
             if isinstance(raw_rulesets, list):
                 rulesets = [r for r in raw_rulesets if isinstance(r, dict)]
+                # Hydrate per-ruleset details for any active entry.
+                # The list endpoint returns only ``id`` / ``name`` /
+                # ``target`` / ``enforcement``; ``bypass_actors`` and
+                # the per-rule body live behind a per-id GET. We only
+                # follow up on ``active`` rulesets — non-active ones
+                # are already SCM-029's surface and their internals
+                # don't affect runtime behavior anyway. Bounded
+                # ``ruleset_id`` extraction keeps the fetch list to
+                # the small handful of active rulesets a repo
+                # typically has.
+                for rs in rulesets:
+                    if rs.get("enforcement") != "active":
+                        continue
+                    rs_id = rs.get("id")
+                    if not isinstance(rs_id, int):
+                        continue
+                    raw_detail = fetcher.fetch(
+                        f"repos/{owner}/{name}/rulesets/{rs_id}"
+                    )
+                    if isinstance(raw_detail, dict):
+                        # Merge in place; the list entry's basic
+                        # fields (id, name, enforcement) round-trip
+                        # safely since the detail endpoint returns
+                        # the same values.
+                        rs.update(raw_detail)
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,

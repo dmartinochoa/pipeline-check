@@ -72,6 +72,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-030 — repository ruleset has bypass actor with
+  ``bypass_mode: always``.** HIGH. For every ``active`` ruleset
+  the snapshot hydrator now fetches per-ruleset details
+  (``bypass_actors`` + ``rules`` live behind a per-id GET; the
+  list endpoint only returns ``enforcement``). The rule walks
+  ``bypass_actors`` and flags every entry whose
+  ``bypass_mode`` is ``always`` and whose ``actor_type`` is not
+  ``Integration`` (GitHub App bypasses are auditable via the
+  App's invocation channel and so are a documented escape
+  hatch). ``pull_request`` mode is the safe shape: the bypass
+  flows through a PR review thread that leaves an audit trail.
+  Non-active rulesets are SCM-029's surface and skipped here.
+
 - **SCM-029 — repository ruleset is in evaluate / disabled mode.**
   MEDIUM. Walks ``GET /repos/{owner}/{repo}/rulesets`` and flags
   every entry whose ``enforcement`` is anything other than

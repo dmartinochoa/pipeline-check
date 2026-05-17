@@ -587,5 +587,6 @@ STANDARD = Standard(
         "SCM-027":  ["CICD-SEC-2", "CICD-SEC-5"],  # outside collaborator with elevated perms
         "SCM-028":  ["CICD-SEC-3", "CICD-SEC-5"],  # private repo allows forking
         "SCM-029":  ["CICD-SEC-1", "CICD-SEC-5"],  # ruleset in evaluate / disabled mode
+        "SCM-030":  ["CICD-SEC-1", "CICD-SEC-2", "CICD-SEC-5"],  # ruleset always-bypass
     },
 )
