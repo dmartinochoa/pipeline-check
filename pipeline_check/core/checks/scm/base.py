@@ -200,6 +200,12 @@ class SCMRepoSnapshot:
     #: slot. ``None`` when the endpoint failed; empty ``environments``
     #: list (``{"total_count": 0}``) when no environments configured.
     environments: dict[str, Any] | None = None
+    #: ``GET /repos/{owner}/{repo}/keys``. List of deploy keys, each
+    #: ``{"id", "title", "key", "read_only", ...}``. ``SCM-025`` reads
+    #: this slot to flag write-enabled keys (``read_only: false``).
+    #: ``None`` when the endpoint failed or the token lacks admin
+    #: scope; empty list ``[]`` when no deploy keys are configured.
+    deploy_keys: list[dict[str, Any]] | None = None
 
 
 @dataclass(slots=True)
@@ -285,6 +291,7 @@ class SCMContext:
         actions_permissions: dict[str, Any] | None = None
         actions_workflow_permissions: dict[str, Any] | None = None
         environments: dict[str, Any] | None = None
+        deploy_keys: list[dict[str, Any]] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -297,6 +304,9 @@ class SCMContext:
             raw_envs = fetcher.fetch(f"repos/{owner}/{name}/environments")
             if isinstance(raw_envs, dict):
                 environments = raw_envs
+            raw_keys = fetcher.fetch(f"repos/{owner}/{name}/keys")
+            if isinstance(raw_keys, list):
+                deploy_keys = [k for k in raw_keys if isinstance(k, dict)]
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -307,6 +317,7 @@ class SCMContext:
             actions_permissions=actions_permissions,
             actions_workflow_permissions=actions_workflow_permissions,
             environments=environments,
+            deploy_keys=deploy_keys,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

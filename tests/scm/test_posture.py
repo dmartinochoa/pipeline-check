@@ -1821,6 +1821,106 @@ class TestSCM024:
         assert f.passed
 
 
+# ── SCM-025: deploy keys with write access ─────────────────────────
+
+
+class TestSCM025:
+    def test_write_key_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=[
+                {
+                    "id": 42, "title": "ci-runner-prod",
+                    "key": "ssh-ed25519 AAAA...",
+                    "read_only": False,
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert not f.passed
+        assert "ci-runner-prod" in f.description
+        assert f.severity == Severity.HIGH
+
+    def test_read_only_keys_pass(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=[
+                {"id": 1, "title": "docs-clone", "read_only": True},
+                {"id": 2, "title": "monitoring-clone", "read_only": True},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert f.passed
+        assert "2 deploy key(s) are read-only" in f.description
+
+    def test_no_keys_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=[],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert f.passed
+        assert "No deploy keys" in f.description
+
+    def test_endpoint_unavailable_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=None,
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            deploy_keys=[{"id": 1, "title": "x", "read_only": False}],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            deploy_keys=[{"id": 1, "title": "x", "read_only": False}],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert f.passed
+        assert "archived" in f.description
+
+    def test_unnamed_key_in_summary(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=[
+                {"id": 7, "read_only": False},  # no title
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert not f.passed
+        assert "key:7" in f.description
+
+    def test_mixed_keys_summary_lists_only_writable(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            deploy_keys=[
+                {"id": 1, "title": "safe-clone", "read_only": True},
+                {"id": 2, "title": "release-bot", "read_only": False},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-025")
+        assert not f.passed
+        assert "release-bot" in f.description
+        assert "safe-clone" not in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
@@ -1843,6 +1943,9 @@ class TestSnapshotActionsEndpoints:
                     {"name": "production", "protection_rules": []},
                 ],
             },
+            "repos/o/r/keys": [
+                {"id": 1, "title": "ci", "read_only": True},
+            ],
         })
         ctx = SCMContext.for_repo("o", "r", fetcher)
         snap = ctx.repos[0]
@@ -1855,11 +1958,15 @@ class TestSnapshotActionsEndpoints:
         }
         assert isinstance(snap.environments, dict)
         assert snap.environments["total_count"] == 1
+        assert snap.deploy_keys == [
+            {"id": 1, "title": "ci", "read_only": True},
+        ]
         # Each new endpoint was hit exactly once.
         for path in (
             "repos/o/r/actions/permissions",
             "repos/o/r/actions/permissions/workflow",
             "repos/o/r/environments",
+            "repos/o/r/keys",
         ):
             assert path in fetcher.calls
 
@@ -1875,3 +1982,4 @@ class TestSnapshotActionsEndpoints:
         assert snap.actions_permissions is None
         assert snap.actions_workflow_permissions is None
         assert snap.environments is None
+        assert snap.deploy_keys is None

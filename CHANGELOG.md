@@ -72,6 +72,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-025 — repo has write-enabled deploy keys (push backdoor).**
+  HIGH. Walks ``GET /repos/{owner}/{repo}/keys`` and flags every
+  deploy key whose ``read_only`` is false. Deploy keys are repo-
+  scoped SSH credentials that bypass GitHub's RBAC — anyone with
+  the private half can push directly, side-stepping branch
+  protection (SCM-001), required reviews (SCM-002), CODEOWNERS
+  (SCM-011), and the user-account audit trail. Requires admin
+  scope on the repo (silently passes with an unavailability note
+  otherwise; same pattern the rest of the SCM-NNN pack uses).
+  Closes the perimeter-security gap that branch-protection rules
+  alone can't see: SSH-key-based push bypass.
+
 - **SCM-020..024 — Actions governance + deployment-environment
   protection.** Five new SCM-pack rules backed by three new GitHub
   REST endpoints (``actions/permissions``,
@@ -2294,7 +2306,7 @@ promotion to Production/Stable.
   shape as for other input-validation failures. Eight new
   parameterized tests in ``tests/test_diff_mode.py`` lock the
   rejection path and the argv-shape invariant.
-- **``produces_artifacts`` heuristic recognises GitHub Pages
+- **``produces_artifacts`` heuristic recognizes GitHub Pages
   workflows.** A workflow using ``actions/deploy-pages`` can only
   ship a static documentation site, never a software artifact —
   but the heuristic's bare ``deploy`` / ``publish`` substring
