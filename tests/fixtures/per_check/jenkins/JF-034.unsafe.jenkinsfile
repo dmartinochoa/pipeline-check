@@ -1,0 +1,13 @@
+pipeline {
+  agent { label 'build' }
+  parameters {
+    password(name: 'API_TOKEN', description: 'API token')
+  }
+  stages {
+    stage('Deploy') {
+      steps {
+        sh 'deploy --token "${params.API_TOKEN}"'
+      }
+    }
+  }
+}

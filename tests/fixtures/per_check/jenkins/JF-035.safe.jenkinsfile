@@ -1,0 +1,10 @@
+pipeline {
+  agent { label 'build' }
+  stages {
+    stage('Notify') {
+      steps {
+        httpRequest url: 'https://internal-api.local/notify'
+      }
+    }
+  }
+}

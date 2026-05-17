@@ -1,0 +1,7 @@
+trigger: [main]
+jobs:
+  - job: Build
+    pool:
+      name: linux-pool
+    steps:
+      - bash: make build

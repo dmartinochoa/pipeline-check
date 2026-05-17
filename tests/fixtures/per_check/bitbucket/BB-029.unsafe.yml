@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        image: atlassian/default-image:3
+        script:
+          - make build

@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        image: atlassian/default-image:3@sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+        script:
+          - make build

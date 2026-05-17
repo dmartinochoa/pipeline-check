@@ -368,6 +368,23 @@ CASES: list[CheckCase] = [
     CheckCase("GL-031", "CICD-SEC-2"),
     CheckCase("GL-032", "CICD-SEC-7"),
     CheckCase("GL-033", "CICD-SEC-4"),
+    # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
+    CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-028", "CICD-SEC-2"),
+    CheckCase("BB-029", "CICD-SEC-3"),
+    # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
+    CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-029", "CICD-SEC-2"),
+    CheckCase("ADO-030", "CICD-SEC-7"),
+    # ── Jenkins backfill (JF-030..035) ───────────────────────────────
+    CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("JF-032", "CICD-SEC-7"),
+    CheckCase("JF-033", "CICD-SEC-6"),
+    CheckCase("JF-034", "CICD-SEC-6"),
+    CheckCase("JF-035", "CICD-SEC-3"),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -431,12 +448,6 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
     # which seeds the metadata synthetically.
     "GHA-041", "GHA-042", "GHA-043", "GHA-047",
-    # Bitbucket — BB-026..029
-    *(f"BB-{i:03d}" for i in range(26, 30)),
-    # Azure DevOps — ADO-027..030
-    *(f"ADO-{i:03d}" for i in range(27, 31)),
-    # Jenkins — JF-030..035
-    *(f"JF-{i:03d}" for i in range(30, 36)),
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step
