@@ -72,6 +72,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **NPM-007 — `.npmrc` ignore-scripts enforcement.** File-side
+  complement to DF-024: scans every ``.npmrc`` in the npm scan path
+  (excluding ``node_modules``) and flags any that don't declare
+  ``ignore-scripts=true``. Three failure shapes: explicit re-enable
+  (``ignore-scripts=false``), unrecognized value, and the default
+  case where the key isn't set (npm's built-in is to run scripts).
+  Where DF-024 protects the image build, NPM-007 protects developer
+  laptops and unattended CI ``npm install`` steps that run outside
+  a Docker layer. The npm loader gained an ``NpmRc`` file kind and
+  an INI-style parser tolerant of comments (``#``/``;``), quoted
+  values, and trailing whitespace; the orchestrator routes
+  ``NpmRc``-annotated rules through the same dispatch the manifest /
+  lock rules use.
+
 - **NPM-006 / PYPI-006 — curated compromised-package registries.**
   Hand-curated, append-only lookup tables of `(name, version,
   advisory)` triples sourced from public CVEs / GHSAs / vendor

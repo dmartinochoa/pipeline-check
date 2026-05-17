@@ -23,17 +23,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   analysis: ``--pipeline npm`` parses ``package.json`` +
   ``package-lock.json`` / ``npm-shrinkwrap.json`` (both schemas);
   ``--pipeline pypi`` parses ``requirements*.txt`` / ``*.in``.
-  Twelve rules total (NPM-001..006, PYPI-001..006) covering
+  Thirteen rules total (NPM-001..007, PYPI-001..006) covering
   floating version ranges, missing integrity hashes, non-registry
   sources, install-time lifecycle scripts in your own
   ``package.json``, mutable VCS refs, known-compromised package
   versions (curated registry seeded with event-stream / ua-parser-
   js / coa / rc / node-ipc on the npm side, ctx / requests-darwin-
-  lite on the pypi side), missing version / hash pins, HTTP
-  indexes / ``--trusted-host``, and ``--extra-index-url``
-  dependency confusion. No network, no install, skips
-  ``node_modules/``. Closes the gap between the existing CI-pattern
-  rules (DF-024, GHA-044) and the dependency files themselves.
+  lite on the pypi side), ``.npmrc`` ``ignore-scripts`` enforcement,
+  missing version / hash pins, HTTP indexes / ``--trusted-host``,
+  and ``--extra-index-url`` dependency confusion. No network, no
+  install, skips ``node_modules/``. Closes the gap between the
+  existing CI-pattern rules (DF-024, GHA-044) and the dependency
+  files themselves.
 - **SCM GitLab + Bitbucket platform parity** — ``--scm-platform
   gitlab`` and ``--scm-platform bitbucket`` ship a 7-rule
   universal subset against the GitLab and Bitbucket APIs.
@@ -57,19 +58,13 @@ release; landing order is open.
 
 ### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2)
 
-*Shipped so far: NPM-001..006, PYPI-001..006 — initial static
-pack plus the curated compromised-package registries (no
-network, refresh by PR with citing advisory).* The follow-up
-rules below require either a registry fetch behind
+*Shipped so far: NPM-001..007, PYPI-001..006 — static manifest /
+lockfile / .npmrc analysis plus the curated compromised-package
+registries (no network, refresh by PR with citing advisory).*
+The follow-up rules below require either a registry fetch behind
 ``--resolve-remote`` or new infrastructure (lockfile diff against
 a base ref) and so are deferred:
 
-- **NPM-007** — ``.npmrc`` ``ignore-scripts=true`` enforcement (the
-  repo-file analog of ``DF-024``'s build-time check). The
-  image-build pass catches the image; this catches the developer
-  laptop and the unattended CI ``npm install`` outside a Docker
-  build. Needs the npm loader extended to pick up ``.npmrc`` as a
-  third file kind.
 - **NPM-008** — package-cooldown gate (analog of ``GHA-047`` for
   npm). Fail when any direct dependency in ``package.json`` was
   published within N days (default 7); same takedown-window
