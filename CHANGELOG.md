@@ -52,6 +52,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   SARIF / JUnit outputs always carry every finding regardless of
   this flag.
 
+- **SCM-042 — active ruleset doesn't require merge queue.**
+  LOW. Walks active rulesets targeting the default branch
+  looking for an entry with ``type: "merge_queue"``. Pairs
+  with SCM-033 (required status checks) as the concurrency-
+  hardening complement: SCM-033 ensures CI passes BEFORE
+  merge; SCM-042's merge queue ensures CI passes AFTER merge
+  in queue order, against the queue's post-merge candidate
+  commit. Without it, two PRs that individually pass CI can
+  both merge into the same trunk and produce a state where
+  the combined diff wasn't validated. No legacy branch-
+  protection analog. Mapped across the 9 frameworks that
+  already evidence SCM (OWASP, CIS, Scorecard, ESF, NIST
+  800-53, SOC 2, NIST CSF 2.0, NIST SSDF, PCI DSS); SLSA's
+  build-track scope doesn't extend to merge ordering so left
+  off.
+
 - **SCM-041 — active ruleset doesn't gate on a deployment
   environment.** LOW. Walks active rulesets targeting the
   default branch looking for a ``required_deployments`` entry
