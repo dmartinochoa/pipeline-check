@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── GHA-048 workflow self-mutation ───────────────────────────────────
 
 

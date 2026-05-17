@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── DF-024 npm install --ignore-scripts ──────────────────────────────
 
 

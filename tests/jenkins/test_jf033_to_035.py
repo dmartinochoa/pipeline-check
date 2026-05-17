@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── JF-033 withCredentials Groovy-interpolation leak ─────────────────
 
 

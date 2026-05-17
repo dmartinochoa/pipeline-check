@@ -15,7 +15,6 @@ to pause and look at the public surface deliberately.
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -237,8 +236,9 @@ class TestScoringFormulaContract:
         # If the source no longer literally embeds the contracted
         # boundaries, this test fails so the doc and the constants
         # stay in sync.
-        from pipeline_check.core import scorer as _scorer
         import inspect
+
+        from pipeline_check.core import scorer as _scorer
         body = inspect.getsource(_scorer.score)
         assert ">= 90" in body, (
             "score()'s A-grade threshold drifted from >= 90. Update "
