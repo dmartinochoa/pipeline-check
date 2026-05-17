@@ -2369,6 +2369,134 @@ class TestSCM028:
         assert "archived" in f.description
 
 
+# ── SCM-029: ruleset in evaluate / disabled mode ────────────────────
+
+
+class TestSCM029:
+    def test_evaluate_mode_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default-branch-protection",
+                    "target": "branch", "enforcement": "evaluate",
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert not f.passed
+        assert "default-branch-protection" in f.description
+        assert "evaluate" in f.description
+
+    def test_disabled_mode_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 2, "name": "signed-commits",
+                    "target": "branch", "enforcement": "disabled",
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert not f.passed
+        assert "disabled" in f.description
+
+    def test_active_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "default-branch-protection",
+                    "target": "branch", "enforcement": "active",
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert f.passed
+        assert "1 ruleset(s) are actively enforced" in f.description
+
+    def test_mixed_only_flags_non_active(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {
+                    "id": 1, "name": "good-ruleset",
+                    "enforcement": "active",
+                },
+                {
+                    "id": 2, "name": "stuck-in-eval",
+                    "enforcement": "evaluate",
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert not f.passed
+        assert "stuck-in-eval" in f.description
+        assert "good-ruleset" not in f.description
+
+    def test_no_rulesets_passes(self):
+        # Empty list — legacy branch protection (SCM-001..010)
+        # carries the governance load.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert f.passed
+        assert "No repository rulesets" in f.description
+
+    def test_endpoint_unavailable_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=None,
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_unnamed_ruleset_shows_id(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {"id": 42, "enforcement": "evaluate"},  # no name
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert not f.passed
+        assert "ruleset:42" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            rulesets=[
+                {"id": 1, "name": "x", "enforcement": "evaluate"},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            rulesets=[
+                {"id": 1, "name": "x", "enforcement": "evaluate"},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-029")
+        assert f.passed
+        assert "archived" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
@@ -2407,6 +2535,10 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/collaborators?affiliation=outside&per_page=100": [
                 {"login": "outside-dev", "permissions": {"pull": True}},
             ],
+            "repos/o/r/rulesets": [
+                {"id": 1, "name": "default-branch-protection",
+                 "target": "branch", "enforcement": "active"},
+            ],
         })
         ctx = SCMContext.for_repo("o", "r", fetcher)
         snap = ctx.repos[0]
@@ -2427,6 +2559,8 @@ class TestSnapshotActionsEndpoints:
         assert snap.outside_collaborators == [
             {"login": "outside-dev", "permissions": {"pull": True}},
         ]
+        assert isinstance(snap.rulesets, list)
+        assert len(snap.rulesets) == 1
         # Each new endpoint was hit exactly once.
         for path in (
             "repos/o/r/actions/permissions",
@@ -2435,6 +2569,7 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/keys",
             "repos/o/r/hooks",
             "repos/o/r/collaborators?affiliation=outside&per_page=100",
+            "repos/o/r/rulesets",
         ):
             assert path in fetcher.calls
 
@@ -2453,3 +2588,4 @@ class TestSnapshotActionsEndpoints:
         assert snap.deploy_keys is None
         assert snap.webhooks is None
         assert snap.outside_collaborators is None
+        assert snap.rulesets is None

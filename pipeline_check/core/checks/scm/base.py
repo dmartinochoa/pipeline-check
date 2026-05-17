@@ -224,6 +224,15 @@ class SCMRepoSnapshot:
     #: scan cost bounded; rules note the truncation when a list of
     #: exactly 100 entries comes back.
     outside_collaborators: list[dict[str, Any]] | None = None
+    #: ``GET /repos/{owner}/{repo}/rulesets``. List of repository
+    #: rulesets (the newer alternative / supplement to legacy branch
+    #: protection), each ``{"id", "name", "target", "source_type",
+    #: "enforcement", ...}``. ``SCM-029`` reads this slot to flag
+    #: rulesets in non-enforcing modes (``evaluate`` / ``disabled``).
+    #: ``None`` when the endpoint failed; empty list ``[]`` when no
+    #: rulesets are configured (in which case the SCM-001..010
+    #: legacy branch-protection rules carry the governance load).
+    rulesets: list[dict[str, Any]] | None = None
 
 
 @dataclass(slots=True)
@@ -312,6 +321,7 @@ class SCMContext:
         deploy_keys: list[dict[str, Any]] | None = None
         webhooks: list[dict[str, Any]] | None = None
         outside_collaborators: list[dict[str, Any]] | None = None
+        rulesets: list[dict[str, Any]] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -338,6 +348,9 @@ class SCMContext:
                 outside_collaborators = [
                     u for u in raw_outside if isinstance(u, dict)
                 ]
+            raw_rulesets = fetcher.fetch(f"repos/{owner}/{name}/rulesets")
+            if isinstance(raw_rulesets, list):
+                rulesets = [r for r in raw_rulesets if isinstance(r, dict)]
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -351,6 +364,7 @@ class SCMContext:
             deploy_keys=deploy_keys,
             webhooks=webhooks,
             outside_collaborators=outside_collaborators,
+            rulesets=rulesets,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1
