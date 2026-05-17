@@ -1,0 +1,7 @@
+before_script:
+  - env | grep -c '^CI_' || true
+
+build:
+  stage: build
+  script:
+    - make build

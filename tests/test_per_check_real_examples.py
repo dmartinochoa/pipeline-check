@@ -359,6 +359,15 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-053", "CICD-SEC-4"),
     CheckCase("GHA-054", "CICD-SEC-6"),
     CheckCase("GHA-055", "CICD-SEC-6"),
+    # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
+    CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("GL-028", "CICD-SEC-3"),
+    CheckCase("GL-029", "CICD-SEC-1"),
+    CheckCase("GL-030", "CICD-SEC-3"),
+    CheckCase("GL-031", "CICD-SEC-2"),
+    CheckCase("GL-032", "CICD-SEC-7"),
+    CheckCase("GL-033", "CICD-SEC-4"),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -422,8 +431,6 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
     # which seeds the metadata synthetically.
     "GHA-041", "GHA-042", "GHA-043", "GHA-047",
-    # GitLab CI — GL-026..033
-    *(f"GL-{i:03d}" for i in range(26, 34)),
     # Bitbucket — BB-026..029
     *(f"BB-{i:03d}" for i in range(26, 30)),
     # Azure DevOps — ADO-027..030

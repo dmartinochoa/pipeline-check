@@ -1,0 +1,6 @@
+deploy-prod:
+  stage: deploy
+  script:
+    - kubectl apply -f manifests/
+  when: manual
+  allow_failure: false

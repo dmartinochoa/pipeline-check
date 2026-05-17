@@ -1,0 +1,7 @@
+before_script:
+  - echo "Building $CI_COMMIT_TITLE"
+
+build:
+  stage: build
+  script:
+    - make build

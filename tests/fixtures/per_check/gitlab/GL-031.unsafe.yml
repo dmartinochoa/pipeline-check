@@ -1,0 +1,7 @@
+deploy:
+  stage: deploy
+  id_tokens:
+    AWS_TOKEN:
+      aud: "*"
+  script:
+    - aws s3 sync ./dist s3://my-bucket/
