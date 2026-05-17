@@ -93,6 +93,40 @@ class TestGHA051:
         f = run_check(wf, "GHA-051")
         assert f.passed
 
+    def test_fails_on_string_shorthand_container(self):
+        # ``jobs.<id>.container`` accepts either the object shape or
+        # a bare string shorthand per the GHA schema; both routes the
+        # runner pulls a third-party image and both should fail.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            container: node:20
+            steps:
+              - run: node --version
+        """
+        f = run_check(wf, "GHA-051")
+        assert not f.passed
+        assert "container" in f.description
+        assert "node:20" in f.description
+
+    def test_passes_on_string_shorthand_pinned(self):
+        sha = "0" * 64
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            container: node:20@sha256:{sha}
+            steps:
+              - run: node --version
+        """
+        f = run_check(wf, "GHA-051")
+        assert f.passed
+
 
 # ── GHA-052: actions/cache key untrusted ────────────────────────────
 
@@ -241,6 +275,25 @@ class TestGHA053:
         """
         f = run_check(wf, "GHA-053")
         assert f.passed
+
+    def test_fails_on_github_head_ref_shorthand(self):
+        # ``github.head_ref`` is the top-level alias for the PR's
+        # source-branch name; same user-controlled value as
+        # ``github.event.pull_request.head.ref``, more common in
+        # the wild.
+        wf = """
+        name: ci
+        on: pull_request
+        jobs:
+          gate:
+            runs-on: ubuntu-latest
+            if: startsWith(github.head_ref, 'release/')
+            steps:
+              - run: echo release branch
+        """
+        f = run_check(wf, "GHA-053")
+        assert not f.passed
+        assert "github.head_ref" in f.description
 
     def test_passes_when_no_if(self):
         wf = """
@@ -430,3 +483,28 @@ class TestGHA055:
         """
         f = run_check(wf, "GHA-055")
         assert f.passed
+
+    def test_fails_on_inputs_in_output(self):
+        # A caller can wire ``with: x: ${{ secrets.X }}`` into a
+        # reusable workflow's input; if the input is re-emitted via
+        # ``outputs.<name>.value`` the value crosses the workflow
+        # boundary without secret-masking. Flag the input shape.
+        wf = """
+        name: reusable
+        on:
+          workflow_call:
+            inputs:
+              api_token:
+                type: string
+            outputs:
+              echoed_token:
+                value: ${{ inputs.api_token }}
+        jobs:
+          dummy:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo hi
+        """
+        f = run_check(wf, "GHA-055")
+        assert not f.passed
+        assert "inputs.api_token" in f.description

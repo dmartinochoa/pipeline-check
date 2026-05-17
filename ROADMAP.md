@@ -60,9 +60,11 @@ release; landing order is open.
 
 ### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2)
 
-*Shipped so far: NPM-001..007, PYPI-001..006 — static manifest /
-lockfile / .npmrc analysis plus the curated compromised-package
-registries (no network, refresh by PR with citing advisory).*
+*Shipped so far: NPM-001..007, NPM-011, PYPI-001..006 — static
+manifest / lockfile / .npmrc analysis plus the curated
+compromised-package registries and the ``files``-field
+secret-leak detector (no network, refresh by PR with citing
+advisory).*
 The follow-up rules below require either a registry fetch behind
 ``--resolve-remote`` or new infrastructure (lockfile diff against
 a base ref) and so are deferred:

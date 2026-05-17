@@ -42,7 +42,9 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires when ``ENV NODE_OPTIONS`` contains any of:\n\n"
-        "* ``--require=<path>`` or ``--import=<path>`` "
+        "* ``--require=<path>`` / ``--require <path>`` / "
+        "  ``-r <path>`` (the short alias Node accepts inside "
+        "  ``NODE_OPTIONS``), or ``--import=<path>`` "
         "  (preload a module on every Node startup)\n"
         "* ``--inspect`` / ``--inspect=...`` / "
         "  ``--inspect-brk`` (open V8 inspector port)\n\n"
@@ -65,11 +67,16 @@ RULE = Rule(
 )
 
 
-# ``--require=<path>``, ``--require <path>``, and the newer ES-module
-# variant ``--import=<path>``. Inspector flags accept an optional
-# ``=host:port`` or ``=<port>``; the bare flag also fires.
+# ``--require=<path>``, ``--require <path>``, the short alias
+# ``-r <path>`` (Node accepts ``-r`` inside ``NODE_OPTIONS``), and
+# the newer ES-module variant ``--import=<path>``. Inspector flags
+# accept an optional ``=host:port`` or ``=<port>``; the bare flag
+# also fires. The ``(?<![\w-])`` guard on ``-r`` keeps the rule
+# from misfiring on longer flags that happen to contain ``-r`` as
+# a substring (e.g., ``--enable-source-maps``).
 _UNSAFE_FLAG_RE = re.compile(
     r"--(?:require|import)(?:=|\s+)\S+"
+    r"|(?<![\w-])-r(?:=|\s+)\S+"
     r"|--inspect(?:-brk)?(?:=\S+)?\b",
     re.IGNORECASE,
 )

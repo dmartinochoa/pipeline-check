@@ -245,3 +245,29 @@ HEALTHCHECK CMD true
 """
         f = run_check(text, "DF-030")
         assert not f.passed
+
+    def test_fails_on_short_require_alias(self):
+        # Node accepts ``-r <path>`` as the short form of
+        # ``--require=<path>`` and honors it inside NODE_OPTIONS.
+        text = f"""\
+FROM node:20{_DIGEST}
+USER 1001
+ENV NODE_OPTIONS="-r /opt/preload.js"
+HEALTHCHECK CMD true
+"""
+        f = run_check(text, "DF-030")
+        assert not f.passed
+        assert "-r" in f.description
+
+    def test_passes_on_substring_lookalike(self):
+        # Innocent flags that happen to contain ``-r`` as a substring
+        # (``--enable-source-maps``) must not trigger the short alias
+        # match.
+        text = f"""\
+FROM node:20{_DIGEST}
+USER 1001
+ENV NODE_OPTIONS="--enable-source-maps --unhandled-rejections=throw"
+HEALTHCHECK CMD true
+"""
+        f = run_check(text, "DF-030")
+        assert f.passed
