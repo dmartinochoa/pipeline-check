@@ -3274,6 +3274,69 @@ class TestSCM039RequiredWorkflows:
         assert "no legacy branch-protection" in f.description.lower()
 
 
+class TestSCM040CodeScanning:
+    def test_no_code_scanning_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_code_scanning_rule_with_tools_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "code_scanning",
+                 "parameters": {"code_scanning_tools": [
+                     {"tool": "CodeQL",
+                      "security_alerts_threshold": "high_or_higher",
+                      "alerts_threshold": "errors"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert f.passed
+
+    def test_code_scanning_rule_empty_list_fails(self):
+        # Empty ``code_scanning_tools`` documents the gate without
+        # filling it — same as no rule.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "code_scanning",
+                 "parameters": {"code_scanning_tools": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_code_scanning_rule_no_params_fails(self):
+        # Bare ``code_scanning`` with no params is malformed.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "code_scanning"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        # Code-scanning gating has no legacy BP analog;
+        # absence-not-coverage language is required.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-040")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 

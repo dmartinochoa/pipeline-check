@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM-040 — active ruleset doesn't gate on code scanning
+  results.** LOW. Walks the merged ``rules`` array on every
+  active ruleset looking for a ``code_scanning`` entry whose
+  ``parameters.code_scanning_tools`` is a non-empty list.
+  Fires when none is found, when the tools list is empty, or
+  when params are missing entirely. Turns a passive code-
+  scanning configuration (SCM-003 — default setup is on)
+  into an active merge gate: the PR can't merge until the
+  scan completes for the head SHA *and* the configured
+  alerts threshold isn't crossed. Closes the asymmetry
+  between code scanning being enabled and the org actually
+  blocking on its results. The rule_type is GHAS-licensed
+  so repos on free / team tier can't configure it; the
+  ``known_fp`` note carries the suppression rationale and
+  points operators at SCM-033 (status checks) as the
+  no-GHAS fallback. Passes silently when no rulesets are
+  configured with absence-not-coverage language (no legacy
+  branch-protection analog for code-scanning gating).
+
 - **SCM-039 — active ruleset doesn't pin a required workflow.**
   LOW. Walks the merged ``rules`` array on every active ruleset
   looking for a ``workflows`` entry whose
