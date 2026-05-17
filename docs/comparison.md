@@ -41,7 +41,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
 | **SCM posture (governance)** | | | | | | |
-| GitHub repo branch protection / secret scanning / Dependabot | Yes (31, `SCM-001..031`) | No | No | No | No | No |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (32, `SCM-001..032`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |

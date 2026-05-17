@@ -21,7 +21,7 @@ missing payload sees ``None`` and reports accordingly).
 
 Per-platform rule coverage:
 
-  * **GitHub**: full 31-rule pack.
+  * **GitHub**: full 32-rule pack.
   * **GitLab** / **Bitbucket**: 7-rule universal subset (SCM-001
     branch protection presence, SCM-002 required reviews, SCM-006
     signed commits, SCM-007 force push, SCM-008 required status

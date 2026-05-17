@@ -453,7 +453,7 @@ pipeline_check/
         ├── dockerfile/rules/  # DF-001 .. DF-025
         ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
-        ├── scm/rules/         # SCM-001 .. SCM-031 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement + always-bypass auditing + auto-merge audit; GitLab + Bitbucket universal subset)
+        ├── scm/rules/         # SCM-001 .. SCM-032 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review-presence + auto-merge audit; GitLab + Bitbucket universal subset)
         ├── npm/rules/         # NPM-001 .. NPM-007 + NPM-011 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector
         ├── pypi/rules/        # PYPI-001 .. PYPI-006 — requirements.txt supply-chain hygiene + curated compromised-package registry
         └── custom/            # YAML rule loader + predicate engine

@@ -97,6 +97,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     *without* GitHub's secret-masking following — third secret-
     leak sink the existing log-surface rules don't cover.
 
+- **SCM-032 — active ruleset doesn't require a PR review.** HIGH.
+  Walks the merged ``rules`` array on every active ruleset
+  looking for a ``pull_request`` entry with
+  ``parameters.required_approving_review_count >= 1``. Fires
+  when none is found. The ruleset analog of SCM-002 (legacy
+  branch protection requires PR reviews) — operators often
+  create rulesets for specific governance signals (commit-
+  message patterns, tag patterns) and forget that the PR-review
+  gate is a separate rule type that has to be added explicitly.
+  Passes silently when no rulesets are configured (legacy
+  branch protection's SCM-002 covers the gap).
+
 - **SCM-031 — repo allows auto-merge.** MEDIUM. Reads
   ``allow_auto_merge`` from the already-fetched repo metadata
   (no new endpoint) and fires when ``true``. Auto-merge runs

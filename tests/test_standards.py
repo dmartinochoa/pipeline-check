@@ -394,8 +394,10 @@ class TestPerFrameworkCoverageFloor:
         # (secrets-in-files-field) landed OWASP-only; Scorecard
         # backfill queued. (SCM-020..025 are already a no-op here.)
         # Lowered from 56 to 55 when SCM-026/027/028 landed
-        # OWASP-only (Scorecard backfill queued).
-        "openssf_scorecard":    55,
+        # OWASP-only (Scorecard backfill queued). Lowered 55→54
+        # when SCM-032 (ruleset PR-review presence) landed
+        # OWASP-only.
+        "openssf_scorecard":    54,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
         # added 10 rules (none NIST 800-53 mapped today; SCM is
         # already in OWASP, CIS SSCS, and Scorecard, and 800-53
@@ -424,7 +426,8 @@ class TestPerFrameworkCoverageFloor:
         # is queued. Lowered from 43 to 42 when the npm + pypi
         # dependency-supply-chain packs landed OWASP-only.
         # Lowered from 42 to 41 when SCM-020..025 landed OWASP-only.
-        "nist_800_190":         41,
+        # Lowered 41→40 when SCM-032 landed OWASP-only.
+        "nist_800_190":         40,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
@@ -433,7 +436,8 @@ class TestPerFrameworkCoverageFloor:
         # landed OWASP-only; SLSA backfill is queued for the
         # dependency-supply-chain pack.
         # Lowered from 40 to 39 when SCM-020..025 landed OWASP-only.
-        "slsa":                 39,
+        # Lowered 39→38 when SCM-032 landed OWASP-only.
+        "slsa":                 38,
         # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
         # Lowered from 47 to 46 when GHA-051..055 landed OWASP-only.
         "soc2":                 46,
