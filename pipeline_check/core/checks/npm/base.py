@@ -37,6 +37,11 @@ MANIFEST_NAMES: frozenset[str] = frozenset({"package.json"})
 LOCKFILE_NAMES: frozenset[str] = frozenset({
     "package-lock.json", "npm-shrinkwrap.json",
 })
+#: ``.npmrc`` is npm's INI-style config file. Per-project ``.npmrc``
+#: lives alongside ``package.json``; we scan any ``.npmrc`` in the
+#: tree (excluding ``node_modules``) so monorepos with per-package
+#: configs are covered.
+NPMRC_NAMES: frozenset[str] = frozenset({".npmrc"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,17 +66,40 @@ class NpmLock:
     lockfile_version: int = 1
 
 
+@dataclass(frozen=True, slots=True)
+class NpmRc:
+    """A parsed ``.npmrc`` config file.
+
+    ``.npmrc`` uses an INI-style flat key/value format (no sections in
+    the common case; ``@scope:registry`` keys are flat scoped names).
+    The parser is intentionally tolerant: comments (``#`` or ``;``),
+    blank lines, and quoted values are handled; lines that don't fit
+    ``key=value`` are dropped silently.
+    """
+
+    path: str
+    text: str
+    #: Parsed ``key -> value`` map. Keys are lower-cased; values keep
+    #: their original case (URLs, auth tokens) and have surrounding
+    #: quotes stripped.
+    settings: dict[str, str] = field(default_factory=dict)
+
+
 class NpmContext:
-    """Loaded set of npm manifest + lockfile documents."""
+    """Loaded set of npm manifest, lockfile, and config documents."""
 
     def __init__(
         self,
         manifests: list[NpmManifest],
         locks: list[NpmLock],
+        rcs: list[NpmRc] | None = None,
     ) -> None:
         self.manifests = manifests
         self.locks = locks
-        self.files_scanned: int = len(manifests) + len(locks)
+        self.rcs: list[NpmRc] = rcs or []
+        self.files_scanned: int = (
+            len(manifests) + len(locks) + len(self.rcs)
+        )
         self.files_skipped: int = 0
         self.warnings: list[str] = []
 
@@ -84,19 +112,21 @@ class NpmContext:
                 "package.json / package-lock.json file or a directory "
                 "containing one."
             )
+        all_names = MANIFEST_NAMES | LOCKFILE_NAMES | NPMRC_NAMES
         if root.is_file():
             files = [root]
         else:
             files = sorted(
                 p for p in root.rglob("*")
                 if p.is_file()
-                and p.name in (MANIFEST_NAMES | LOCKFILE_NAMES)
+                and p.name in all_names
                 # Skip vendored copies under node_modules to avoid
                 # flagging every transitive dependency's own manifest.
                 and "node_modules" not in p.parts
             )
         manifests: list[NpmManifest] = []
         locks: list[NpmLock] = []
+        rcs: list[NpmRc] = []
         warnings: list[str] = []
         skipped = 0
         for f in files:
@@ -105,6 +135,11 @@ class NpmContext:
             except (OSError, UnicodeDecodeError) as exc:
                 warnings.append(f"{f}: read error: {exc}")
                 skipped += 1
+                continue
+            if f.name in NPMRC_NAMES:
+                # ``.npmrc`` is INI-style, not JSON. Parse separately.
+                settings = parse_npmrc(text)
+                rcs.append(NpmRc(path=str(f), text=text, settings=settings))
                 continue
             try:
                 data = json.loads(text)
@@ -125,7 +160,7 @@ class NpmContext:
                     path=str(f), text=text, data=data,
                     lockfile_version=lockfile_version,
                 ))
-        ctx = cls(manifests, locks)
+        ctx = cls(manifests, locks, rcs)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
@@ -209,6 +244,47 @@ def iter_lock_packages(lock: NpmLock) -> list[tuple[str, dict[str, Any]]]:
     return out
 
 
+def parse_npmrc(text: str) -> dict[str, str]:
+    """Parse the INI-style body of an ``.npmrc`` config file.
+
+    Returns ``{key_lowercase: value}``. Keys are lower-cased so
+    ``IGNORE-SCRIPTS=true`` and ``ignore-scripts=true`` collide;
+    values keep their original case (URLs, tokens, scope names).
+
+    Tolerated forms:
+
+    * ``key=value`` and ``key = value`` (spaces around ``=``)
+    * ``"quoted value"`` / ``'quoted value'`` — surrounding quotes
+      stripped
+    * Comments starting with ``#`` or ``;`` (whole line or trailing)
+    * Blank lines
+
+    Dropped silently: ``[section]`` headers (npm doesn't use them in
+    the common case; advanced ``@scope:registry`` keys are flat),
+    lines without ``=``.
+    """
+    out: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith(("#", ";", "[")):
+            continue
+        # Strip trailing comment after a whitespace-prefixed ``#``.
+        for marker in ("#", ";"):
+            idx = line.find(marker)
+            if idx > 0 and line[idx - 1].isspace():
+                line = line[:idx].rstrip()
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip().lower()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        if key:
+            out[key] = value
+    return out
+
+
 def _line_of(text: str, needle: str) -> int:
     """Return the 1-based line number of *needle* in *text*, or 1.
 
@@ -224,7 +300,7 @@ def _line_of(text: str, needle: str) -> int:
 
 
 __all__ = [
-    "LOCKFILE_NAMES", "MANIFEST_NAMES", "NpmBaseCheck", "NpmContext",
-    "NpmLock", "NpmManifest", "iter_lock_packages",
-    "iter_manifest_dependencies",
+    "LOCKFILE_NAMES", "MANIFEST_NAMES", "NPMRC_NAMES", "NpmBaseCheck",
+    "NpmContext", "NpmLock", "NpmManifest", "NpmRc",
+    "iter_lock_packages", "iter_manifest_dependencies", "parse_npmrc",
 ]

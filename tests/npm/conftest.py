@@ -13,6 +13,8 @@ from pipeline_check.core.checks.npm.base import (
     NpmContext,
     NpmLock,
     NpmManifest,
+    NpmRc,
+    parse_npmrc,
 )
 from pipeline_check.core.checks.npm.pipelines import NpmChecks
 
@@ -58,4 +60,22 @@ def run_check_lock(data: dict[str, Any], check_id: str) -> Any:
             return f
     raise AssertionError(
         f"check_id {check_id!r} not produced for lockfile input"
+    )
+
+
+def rc_ctx(text: str, path: str = ".npmrc") -> NpmContext:
+    """Build an NpmContext from a single .npmrc body."""
+    return NpmContext(
+        manifests=[], locks=[],
+        rcs=[NpmRc(path=path, text=text, settings=parse_npmrc(text))],
+    )
+
+
+def run_check_rc(text: str, check_id: str) -> Any:
+    """Run every npm check on a single .npmrc; return the named finding."""
+    for f in NpmChecks(rc_ctx(text)).run():
+        if f.check_id == check_id:
+            return f
+    raise AssertionError(
+        f"check_id {check_id!r} not produced for .npmrc input"
     )

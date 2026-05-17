@@ -14,7 +14,7 @@ from typing import Any
 
 from ..base import Finding
 from ..rule import Rule, discover_rules
-from .base import NpmBaseCheck, NpmContext, NpmLock, NpmManifest
+from .base import NpmBaseCheck, NpmContext, NpmLock, NpmManifest, NpmRc
 
 
 class NpmChecks(NpmBaseCheck):
@@ -35,6 +35,8 @@ class NpmChecks(NpmBaseCheck):
                 targets: list[Any] = list(self.ctx.manifests)
             elif kind == "lock":
                 targets = list(self.ctx.locks)
+            elif kind == "rc":
+                targets = list(self.ctx.rcs)
             else:
                 # ``ctx`` form: rule wants the whole context (rare).
                 targets = [self.ctx]
@@ -69,6 +71,8 @@ def _input_kind(check_fn: Callable[..., Finding]) -> str:
         return "manifest"
     if name == "NpmLock" or annotation is NpmLock:
         return "lock"
+    if name == "NpmRc" or annotation is NpmRc:
+        return "rc"
     return "ctx"
 
 

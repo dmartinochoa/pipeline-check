@@ -18,6 +18,30 @@ What's planned, what's shipped, and what's deliberately out of scope.
   publish without OIDC) closing the legs of the Shai-Hulud /
   TanStack / axios npm-worm pattern that pure lockfile / SHA
   pinning is blind to.
+- **npm + pypi dependency-supply-chain providers (post-1.0.4)** —
+  Two new hermetic providers for static manifest / lockfile
+  analysis: ``--pipeline npm`` parses ``package.json`` +
+  ``package-lock.json`` / ``npm-shrinkwrap.json`` (both schemas);
+  ``--pipeline pypi`` parses ``requirements*.txt`` / ``*.in``.
+  Thirteen rules total (NPM-001..007, PYPI-001..006) covering
+  floating version ranges, missing integrity hashes, non-registry
+  sources, install-time lifecycle scripts in your own
+  ``package.json``, mutable VCS refs, known-compromised package
+  versions (curated registry seeded with event-stream / ua-parser-
+  js / coa / rc / node-ipc on the npm side, ctx / requests-darwin-
+  lite on the pypi side), ``.npmrc`` ``ignore-scripts`` enforcement,
+  missing version / hash pins, HTTP indexes / ``--trusted-host``,
+  and ``--extra-index-url`` dependency confusion. No network, no
+  install, skips ``node_modules/``. Closes the gap between the
+  existing CI-pattern rules (DF-024, GHA-044) and the dependency
+  files themselves.
+- **SCM GitLab + Bitbucket platform parity** — ``--scm-platform
+  gitlab`` and ``--scm-platform bitbucket`` ship a 7-rule
+  universal subset against the GitLab and Bitbucket APIs.
+  CODEOWNERS-file presence cross-check (SCM-017), PR-review
+  bypass-allowance audit (SCM-018), and push-restriction
+  allowlist audit (SCM-019) closed the remaining GitHub-side
+  feature gaps in the same cycle.
 - v0.4.x / v0.5.x / v0.6.x — pre-1.0 milestone work folded into
   v1.0.x. See `CHANGELOG.md` for the per-version trail.
 - v0.3.x — Kubernetes provider, docs site, attack chains engine,
@@ -32,59 +56,52 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items proposed after v1.0.4. Not yet scoped to a specific
 release; landing order is open.
 
-### Node package ecosystem provider (`--pipeline npm`)
+### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2)
 
-*Scoped, not started.* New provider that parses ``package.json`` /
-``package-lock.json`` / ``pnpm-lock.yaml`` / ``yarn.lock`` /
-``.npmrc`` directly, rather than reading installs through the CI
-shell as the Dockerfile + GHA rules do today. Rule pack closes the
-gaps the Shai-Hulud / TanStack / axios incidents exposed, where a
-poisoned tag matches the pinned lockfile entry exactly and SHA /
-lockfile pinning provides no defense:
+*Shipped so far: NPM-001..007, PYPI-001..006 — static manifest /
+lockfile / .npmrc analysis plus the curated compromised-package
+registries (no network, refresh by PR with citing advisory).*
+The follow-up rules below require either a registry fetch behind
+``--resolve-remote`` or new infrastructure (lockfile diff against
+a base ref) and so are deferred:
 
-- ``NPM-001`` — package-cooldown gate (analog of ``GHA-047`` for
+- **NPM-008** — package-cooldown gate (analog of ``GHA-047`` for
   npm). Fail when any direct dependency in ``package.json`` was
   published within N days (default 7); same takedown-window
   rationale as the action cooldown rule. Needs a registry-metadata
   fetch behind ``--resolve-remote``, passes silently when the flag
   is off.
-- ``NPM-002`` — compromised-package registry lookup. Pure-data
-  lookup against a curated ``_compromised_packages.py`` registry
-  seeded with axios + plain-crypto-js (March 2026), the TanStack
-  42-package list (May 2026), and the Shai-Hulud propagation set.
-  Append-only, refresh by PR with the citing advisory; mirrors the
-  ``GHA-040`` model.
-- ``NPM-003`` — transitive-dependency diff gate. When a CI run
+- **NPM-009** — transitive-dependency diff gate. When a CI run
   mutates the lockfile, fail if a new transitive dep appears that
   didn't exist in the base ref. The axios -> plain-crypto-js
   backdoor would have been caught here at PR review time. Pairs
-  with ``NPM-001`` (cooldown) and ``NPM-002`` (known-bad registry).
-- ``NPM-004`` — ``.npmrc`` ``ignore-scripts=true`` enforcement (the
-  repo-file analog of ``DF-024``'s build-time check). The
-  image-build pass catches the image; this catches the developer
-  laptop and the unattended CI ``npm install`` outside a Docker
-  build.
-- ``NPM-005`` — ``npm audit signatures`` step missing from CI.
+  with NPM-008 (cooldown) and the shipped NPM-006 (known-bad
+  registry). Needs base-ref lockfile-diff infra.
+- **NPM-010** — ``npm audit signatures`` step missing from CI.
   Lockfile rules guarantee package contents match the recorded
   hash; ``npm audit signatures`` is what verifies those hashes are
   the ones the maintainer actually signed via the registry's
   trusted-publisher records. Lockfile pinning without signature
-  verification is integrity theater.
+  verification is integrity theater. Belongs in the CI providers
+  (GHA / GitLab / Bitbucket) rather than the npm provider.
+- **yarn.lock + pnpm-lock.yaml parsers.** Coverage parity for the
+  two non-npm lockfile formats; both ship distinct schemas that
+  warrant separate parsers, deferred from the initial pack.
+- **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry),
+  ``Pipfile.lock``, and ``poetry.lock`` parsers. PYPI-007
+  publish-time hash verification step missing from CI. PYPI-008
+  cooldown gate (PyPI ``release_date`` from the JSON API behind
+  ``--resolve-remote``).
 
-Architecture: new ``pipeline_check/core/checks/npm/`` package with
-its own ``NpmContext`` reading the five manifest / lockfile shapes
-from disk. ``--resolve-remote`` reuses the existing
+Architecture: extends the existing ``pipeline_check/core/checks/
+npm/`` and ``pypi/`` packages; ``--resolve-remote`` reuses the
 ``ActionRepoMetadata`` fetcher pattern but targets the npm registry
-(``https://registry.npmjs.org/<pkg>``); offline / fixture mode reads
-JSON from disk for CI. Standards mappings land primarily in OWASP
-CICD-SEC-3 (Dependency Chain Abuse), with CICD-SEC-6 for the
-``.npmrc`` rule and CICD-SEC-8 for the compromised-package
-registry. ``MultiScanner`` adds ``npm`` to the auto-detect table
-(presence of ``package.json``); the XPC-NNN chain engine gains a
-chain pairing ``NPM-001`` cooldown-miss with ``DF-024`` lifecycle-
-scripts-enabled so the composite escalates severity when both
-gates fail in the same scan. Closes the largest gap the
-post-1.0.4 worm-incident reviews identified.
+(``https://registry.npmjs.org/<pkg>``) and PyPI JSON API
+(``https://pypi.org/pypi/<pkg>/json``); offline / fixture mode
+reads JSON from disk for hermetic CI. The XPC-NNN chain engine
+gains chains pairing NPM-006 cooldown-miss with DF-024 lifecycle-
+scripts-enabled so the composite escalates when both gates fail
+in the same scan.
 
 ### Self-hosted findings-history dashboard
 
@@ -142,16 +159,6 @@ Probably warrants extraction to a separate ``pipeline-check-bench``
 repo at that point; the in-repo phase 1 keeps the case fixtures
 co-located with the rules they exercise so case + rule changes land
 in the same PR.
-
-### SCM provider: GitLab + Bitbucket platform parity
-
-The GitHub side of the SCM posture provider shipped in v1.0.x (19
-rules under ``SCM-NNN``). Subsequent work extends platform parity:
-``--scm-platform gitlab`` and ``--scm-platform bitbucket`` against
-the GitLab and Bitbucket APIs; provider name stays ``scm``.
-CODEOWNERS-file presence cross-check and
-``bypass_pull_request_allowances`` / ``restrictions`` allowlist
-auditing are the two remaining feature gaps on the GitHub side.
 
 ### Cross-document taint resolver: GitLab `include:` chains
 
@@ -228,30 +235,6 @@ discrete milestone, just a posture.
   positioning. Revisit if a clear paid-tier story emerges; until
   then, the self-hosted dashboard above covers the same operator
   pain at a fraction of the surface.
-
-## Next items
-
-Small follow-ups surfaced during the 1.0.2 merge. Cheap to clear, not
-worth their own milestone.
-
-- **OCI per-provider check count drift.** `README.md` (provider
-  table) and `docs/comparison.md` (feature matrix) both still say
-  "13 checks (`OCI-001`--`008` plus `ATTEST-001..005`)" but the
-  registry now ships `ATTEST-001..007` (total 15). Not caught by
-  `tests/test_doc_claims.py` since only the aggregate counts are
-  locked there, so the drift survived two merges. Either bump the
-  literal to 15 with the new `ATTEST-006` / `ATTEST-007` short
-  descriptions, or add a per-provider claim parser to
-  `test_doc_claims.py` so future per-provider counts stay locked
-  the same way the aggregates already are. The second option costs
-  about a day and prevents the next round of this same drift.
-- **Stale-stash sweep on the working clone.** Two stashes
-  (`stash@{0}` "pre-merge wip: CHANGELOG 1.0.2 entry" and `stash@{1}`
-  "pre-merge wip: version bump to 1.0.2") were already re-applied
-  by hand during conflict resolution and can be dropped. `stash@{2}`
-  ("ROADMAP.md local edits, pre-release-checkout") predates this
-  session and is worth a manual look before dropping. Pure local
-  hygiene, no repo-state impact.
 
 ## Non-goals
 
