@@ -1,0 +1,12 @@
+version: 2.1
+jobs:
+  release:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: docker build -t app:$CIRCLE_SHA1 .
+      - run: docker push app:$CIRCLE_SHA1
+      - run: syft . -o cyclonedx-json > sbom.json
+workflows:
+  main:
+    jobs: [release]

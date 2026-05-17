@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock myorg/builder
+workflows:
+  main:
+    jobs: [build]

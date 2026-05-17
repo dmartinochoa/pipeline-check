@@ -301,6 +301,35 @@ CASES: list[CheckCase] = [
     CheckCase("CC-024", "CICD-SEC-9", ("ESF-D-SBOM",)),
     # Category 2 — build cache poisoning
     CheckCase("CC-025", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    # ── CircleCI core backfill (CC-001..023, CC-027..031) ────────────
+    CheckCase("CC-001", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-002", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-003", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-004", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-005", "CICD-SEC-6", ("ESF-D-TOKEN-HYGIENE",)),
+    CheckCase("CC-006", "CICD-SEC-9", ("ESF-D-SIGN-ARTIFACTS",)),
+    CheckCase("CC-007", "CICD-SEC-9", ("ESF-D-SBOM",)),
+    CheckCase("CC-008", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-009", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
+    CheckCase("CC-010", "CICD-SEC-7", ("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD")),
+    CheckCase("CC-011", "CICD-SEC-10", ("ESF-C-AUDIT",)),
+    CheckCase("CC-012", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-013", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("CC-014", "CICD-SEC-5", ("ESF-D-BUILD-ENV",)),
+    CheckCase("CC-015", "CICD-SEC-7", ("ESF-D-BUILD-TIMEOUT",)),
+    CheckCase("CC-016", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-017", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("CC-018", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-019", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-020", "CICD-SEC-3", ("ESF-S-VULN-MGMT",)),
+    CheckCase("CC-021", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("CC-022", "CICD-SEC-3", ("ESF-S-PIN-DEPS",)),
+    CheckCase("CC-023", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("CC-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("CC-029", "CICD-SEC-3"),
+    CheckCase("CC-030", "CICD-SEC-6"),
+    CheckCase("CC-031", "CICD-SEC-2"),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -372,9 +401,6 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     *(f"ADO-{i:03d}" for i in range(27, 31)),
     # Jenkins — JF-030..035
     *(f"JF-{i:03d}" for i in range(30, 36)),
-    # CircleCI — only CC-024..026 currently have CASES.
-    *(f"CC-{i:03d}" for i in range(1, 24)),
-    *(f"CC-{i:03d}" for i in range(27, 32)),
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step

@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: pip install --index-url http://internal-mirror.local/simple/ requests
+workflows:
+  main:
+    jobs: [build]

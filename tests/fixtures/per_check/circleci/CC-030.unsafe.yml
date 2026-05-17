@@ -1,0 +1,12 @@
+version: 2.1
+jobs:
+  publish-package:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: npm publish
+workflows:
+  main:
+    jobs:
+      - publish-package:
+          context: npm-publish

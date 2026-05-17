@@ -1,0 +1,11 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    environment:
+      DB_PASSWORD: placeholder
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs: [build]

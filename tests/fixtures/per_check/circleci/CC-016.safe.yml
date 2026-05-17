@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: |
+          curl -fsSL -o install.sh https://random-mirror.example.net/install.sh
+          sha256sum -c install.sh.sha256
+          bash install.sh
+workflows:
+  main:
+    jobs: [build]

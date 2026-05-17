@@ -1,0 +1,12 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    environment:
+      AWS_ACCESS_KEY_ID: redacted
+      AWS_SECRET_ACCESS_KEY: redacted
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs: [build]

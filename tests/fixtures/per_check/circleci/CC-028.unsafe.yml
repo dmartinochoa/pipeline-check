@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: pip install git+https://github.com/example/lib.git
+workflows:
+  main:
+    jobs: [build]

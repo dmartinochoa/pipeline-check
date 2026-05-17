@@ -1,0 +1,9 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    resource_class: myorg/self-hosted-ephemeral
+    steps: [checkout]
+workflows:
+  main:
+    jobs: [build]

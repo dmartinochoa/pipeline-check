@@ -1,0 +1,10 @@
+version: 2.1
+jobs:
+  build:
+    docker: [{ image: cimg/base:stable }]
+    steps:
+      - checkout
+      - run: docker run --rm -v $(pwd):/work myorg/builder
+workflows:
+  main:
+    jobs: [build]
