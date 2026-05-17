@@ -521,6 +521,39 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Added SCM coverage to PCI DSS v4 and SLSA.** PCI DSS gets
+  the full SCM range (40 rules); SLSA gets a narrow selection
+  (11 rules) since most SCM rules cover review-control
+  governance outside SLSA's build-track scope.
+  - **PCI DSS v4**: 154/526 → 194/526 (+40 rules, full SCM
+    range). 6.4.3 (Change control) and 6.5.1 (Secure
+    development procedures) carry the branch-protection /
+    review-control / ruleset rule-type bulk; 6.3.1 / 6.3.3
+    carry scanning/patching surfaces; 6.4.1 carries
+    allowed-actions and webhook hygiene; 7.2.x carries
+    least-privilege; 8.2.1 carries unique-identifier surfaces
+    (signed commits, workflow tokens, deploy keys); 10.3.2
+    carries history-protection (force-push, deletion,
+    linear-history).
+  - **SLSA**: 200/526 → 211/526 (+11 rules, selective).
+    Build.L2.Signed carries signed commits (SCM-006/SCM-036)
+    as the source-side root of provenance attestation;
+    Build.L3.NonFalsifiable carries the history-rewrite /
+    governance-bypass surfaces that undermine provenance
+    integrity (SCM-007/009 force-push/deletion;
+    SCM-029/030 ruleset enforcement; SCM-034/035 ruleset
+    force-push/deletion; SCM-038 linear history; SCM-039
+    required workflows); Build.L3.Isolated carries SCM-022
+    (allowed-actions unrestricted = untrusted 3rd-party in
+    build env).
+
+  Together with the prior CIS / Scorecard / ESF / NIST 800-53
+  / SOC 2 / NIST CSF 2.0 / NIST SSDF backfills, SCM rules now
+  have coverage on 9 of the 12 framework standards. Remaining
+  gaps: NIST 800-190 (container-focused), S2C2F (OSS-deps
+  focused), ``cis_aws_foundations`` and ``cis_kubernetes``
+  (intentionally narrow per their floor comments).
+
 - **Added SCM coverage to NIST CSF 2.0 and NIST SSDF.** Two
   more frameworks commonly used for CI/CD compliance gating
   get SCM mappings:
