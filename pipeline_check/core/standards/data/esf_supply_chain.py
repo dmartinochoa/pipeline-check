@@ -370,5 +370,55 @@ STANDARD = Standard(
         "GCB-024": ["ESF-D-SBOM"],
         "GCB-025": ["ESF-S-PIN-DEPS"],
         "GCB-026": ["ESF-C-ARTIFACT-AUTHZ"],
+        # ── SCM posture (governance via the platform REST API) ──────
+        # The SCM provider evidences the platform-side controls that
+        # gate code into the build pipeline. Map to the Developer
+        # guide's "peer review of source and pipeline configuration"
+        # (ESF-D-CODE-REVIEW) for branch-protection / review-control
+        # rules, the Supplier guide for actions-as-dependencies, and
+        # the Customer guide for environment / deployment governance.
+        "SCM-001":  ["ESF-D-CODE-REVIEW"],          # default branch unprotected
+        "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
+        "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
+        "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off
+        "SCM-007":  ["ESF-D-CODE-REVIEW"],          # force-push allowed (history bypass)
+        "SCM-008":  ["ESF-D-CODE-REVIEW"],          # required status checks missing
+        "SCM-009":  ["ESF-D-CODE-REVIEW"],          # branch deletions allowed
+        "SCM-010":  ["ESF-D-CODE-REVIEW"],          # admin bypass allowed
+        "SCM-011":  ["ESF-D-CODE-REVIEW"],          # CODEOWNERS reviews not required
+        "SCM-012":  ["ESF-D-CODE-REVIEW"],          # stale reviews not dismissed
+        "SCM-013":  ["ESF-D-CODE-REVIEW"],          # conversation resolution not required
+        "SCM-014":  ["ESF-D-CODE-REVIEW"],          # last-push approval not required
+        "SCM-015":  ["ESF-D-SECRETS"],              # secret scanning push protection off
+        "SCM-017":  ["ESF-D-CODE-REVIEW"],          # CODEOWNERS file missing
+        "SCM-018":  ["ESF-D-CODE-REVIEW"],          # PR review bypass allowed
+        "SCM-019":  ["ESF-D-CODE-REVIEW"],          # push-restriction allowlist names users
+        # Actions governance + environments + deploy keys
+        "SCM-020":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],   # workflow_token default write
+        "SCM-021":  ["ESF-D-CODE-REVIEW"],          # Actions can approve PRs (self-approval)
+        "SCM-022":  ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # allowed_actions unrestricted
+        "SCM-023":  ["ESF-C-APPROVAL"],             # env missing reviewers
+        "SCM-024":  ["ESF-C-ENV-SEP"],              # env branch policy missing
+        "SCM-025":  ["ESF-D-TOKEN-HYGIENE"],        # deploy keys write-enabled
+        "SCM-027":  ["ESF-C-LEAST-PRIV"],           # outside collaborator elevated
+        # Ruleset enforcement (modern variant of branch protection)
+        "SCM-029":  ["ESF-D-CODE-REVIEW"],          # ruleset not enforced
+        "SCM-030":  ["ESF-D-CODE-REVIEW"],          # ruleset always-bypass
+        "SCM-031":  ["ESF-D-CODE-REVIEW"],          # auto-merge enabled
+        "SCM-032":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks PR review
+        "SCM-033":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks status_checks
+        "SCM-034":  ["ESF-D-CODE-REVIEW"],          # ruleset allows force_push
+        "SCM-035":  ["ESF-D-CODE-REVIEW"],          # ruleset allows deletion
+        "SCM-037":  ["ESF-D-CODE-REVIEW"],          # ruleset stale-review dismissal
+        "SCM-038":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks linear_history
+        "SCM-039":  ["ESF-D-CODE-REVIEW"],          # ruleset lacks required_workflows
+        # SCM-003 (SAST), SCM-006/036 (signed commits), SCM-016
+        # (private vuln reporting), SCM-026 (webhook), SCM-028
+        # (private repo forking), SCM-040 (code_scanning gate) have
+        # no clean ESF control fit: ESF's vuln/secrets controls are
+        # framed around inbound supply chain (deps, third-party),
+        # not source-side review surfaces; commit signing has no ESF
+        # primitive; and webhook / fork-policy concerns live below
+        # ESF's level of abstraction.
     },
 )

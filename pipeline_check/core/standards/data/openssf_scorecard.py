@@ -375,5 +375,29 @@ STANDARD = Standard(
         # than the binary "protection present" Scorecard model; left
         # off the explicit mapping to keep the Scorecard surface
         # interpretable.
+        # ── Actions governance + environment protection ─────────────
+        "SCM-020": ["Token-Permissions"],          # workflow_token default write
+        "SCM-021": ["Code-Review"],                # Actions can approve PRs
+        "SCM-022": ["Pinned-Dependencies"],        # allowed_actions unrestricted
+        "SCM-023": ["Code-Review"],                # env missing reviewers (review on deploys)
+        "SCM-024": ["Branch-Protection"],          # env branch policy missing
+        "SCM-025": ["Token-Permissions"],          # deploy keys write-enabled (long-lived push credential)
+        # SCM-026 (webhook insecure) and SCM-028 (private repo
+        # forking) cover surfaces Scorecard doesn't model; left
+        # off the explicit mapping.
+        "SCM-027": ["Code-Review"],                # outside collaborator elevated (review trust boundary)
+        # ── Ruleset enforcement (modern variant of branch protection) ──
+        "SCM-029": ["Branch-Protection"],          # ruleset not enforced
+        "SCM-030": ["Branch-Protection"],          # ruleset always-bypass
+        "SCM-031": ["Code-Review"],                # auto-merge enabled
+        "SCM-032": ["Branch-Protection", "Code-Review"],  # ruleset lacks PR review
+        "SCM-033": ["Branch-Protection"],          # ruleset lacks status_checks
+        "SCM-034": ["Branch-Protection"],          # ruleset allows force_push
+        "SCM-035": ["Branch-Protection"],          # ruleset allows deletion
+        "SCM-036": ["Branch-Protection"],          # ruleset lacks signed_commits
+        "SCM-037": ["Code-Review"],                # ruleset stale-review dismissal
+        "SCM-038": ["Branch-Protection"],          # ruleset lacks linear_history
+        "SCM-039": ["Branch-Protection"],          # ruleset lacks required_workflows
+        "SCM-040": ["Branch-Protection", "SAST"],  # ruleset lacks code_scanning gate
     },
 )
