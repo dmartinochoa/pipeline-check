@@ -1,6 +1,7 @@
 """NPM-011, ``package.json`` ``files`` field would publish secret paths."""
 from __future__ import annotations
 
+import json
 import re
 
 from ...base import Finding, Location, Severity
@@ -115,7 +116,9 @@ _SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # TLS / signing key extensions.
     (re.compile(r"\.(?:pem|key|crt|p12|pfx)$", re.IGNORECASE), "TLS / signing key file"),
     # SSH private keys (canonical id_* filenames).
-    (re.compile(r"(?:^|/)id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?$", re.IGNORECASE), "SSH private key"),
+    # Anchored to exact filename (no ``.pub`` suffix) so public keys
+    # are not flagged as secret material.
+    (re.compile(r"(?:^|/)id_(?:rsa|dsa|ecdsa|ed25519)$", re.IGNORECASE), "SSH private key"),
     # ``.ssh/`` directory tree.
     (re.compile(r"(?:^|/)\.ssh(?:/|$)", re.IGNORECASE), ".ssh/ directory"),
     # ``.gnupg/`` directory tree.
@@ -167,7 +170,9 @@ def check(manifest: NpmManifest) -> Finding:
             continue
         offenders.append(f"{entry!r}: {label}")
         # Best-effort: locate the entry literal in the source text.
-        idx = manifest.text.find(f'"{entry}"')
+        # ``json.dumps`` re-escapes backslashes / quotes so the
+        # search string matches the JSON-encoded representation.
+        idx = manifest.text.find(json.dumps(entry))
         line_no = manifest.text[:idx].count("\n") + 1 if idx >= 0 else 1
         locations.append(Location(
             path=manifest.path, start_line=line_no, end_line=line_no,

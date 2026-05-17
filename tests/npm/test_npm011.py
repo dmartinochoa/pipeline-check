@@ -48,6 +48,16 @@ class TestNPM011:
         assert not f.passed
         assert "SSH" in f.description
 
+    def test_passes_on_ssh_public_key(self):
+        # ``id_rsa.pub`` is a public key, safe to share. The rule
+        # must not flag it as secret material.
+        data = {
+            "name": "x", "version": "1.0.0",
+            "files": ["secrets/id_rsa.pub", "secrets/id_ed25519.pub"],
+        }
+        f = run_check_manifest(data, "NPM-011")
+        assert f.passed
+
     def test_fails_on_ssh_dir(self):
         data = {
             "name": "x", "version": "1.0.0",
