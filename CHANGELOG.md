@@ -97,6 +97,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     *without* GitHub's secret-masking following — third secret-
     leak sink the existing log-surface rules don't cover.
 
+- **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
+  Completes the ruleset analog of legacy branch protection. Each
+  rule fires when an active ruleset is missing the specific
+  rule type that mirrors a legacy-BP control:
+  - **SCM-033** (MEDIUM) — no ``required_status_checks`` rule (or
+    empty contexts list) — ruleset analog of SCM-008.
+  - **SCM-034** (MEDIUM) — no ``non_fast_forward`` rule —
+    ruleset analog of SCM-007 (force-push denial). Without it,
+    targeted refs can be force-pushed and history rewritten.
+  - **SCM-035** (LOW) — no ``deletion`` rule — ruleset analog
+    of SCM-009. Targeted refs can be deleted by anyone with push
+    access.
+  - **SCM-036** (MEDIUM) — no ``required_signatures`` rule —
+    ruleset analog of SCM-006. Without it, commits with arbitrary
+    author metadata land without a verifiable tie to a
+    contributor key.
+  - **SCM-037** (MEDIUM) — ``pull_request`` rule has
+    ``dismiss_stale_reviews_on_push: false`` — ruleset analog of
+    SCM-012. Without dismissal, an approving review on an early
+    benign version of a PR continues to count after the head
+    changes; the required-review gate documents intent rather
+    than reality.
+  All five reuse the existing rulesets snapshot slot and the
+  ``_detail_unavailable`` sentinel; each passes silently when
+  no rulesets are configured because legacy branch protection's
+  SCM-006..012 carry the corresponding gates.
+
 - **SCM-032 — active ruleset doesn't require a PR review.** HIGH.
   Walks the merged ``rules`` array on every active ruleset
   looking for a ``pull_request`` entry with

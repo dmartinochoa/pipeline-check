@@ -595,5 +595,10 @@ STANDARD = Standard(
         "SCM-030":  ["CICD-SEC-1", "CICD-SEC-2", "CICD-SEC-5"],  # ruleset always-bypass
         "SCM-031":  ["CICD-SEC-1", "CICD-SEC-4"],  # auto-merge enabled
         "SCM-032":  ["CICD-SEC-1", "CICD-SEC-5"],  # active ruleset lacks PR review
+        "SCM-033":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset lacks status checks
+        "SCM-034":  ["CICD-SEC-1"],                # active ruleset doesn't block force-push
+        "SCM-035":  ["CICD-SEC-1"],                # active ruleset doesn't block deletion
+        "SCM-036":  ["CICD-SEC-1", "CICD-SEC-9"],  # active ruleset lacks signed commits
+        "SCM-037":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset PR rule lacks stale-review dismissal
     },
 )

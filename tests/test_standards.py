@@ -386,10 +386,13 @@ class TestPerFrameworkCoverageFloor:
         # from 65 to 64 when SCM-031 (auto-merge) landed OWASP-only;
         # NIST CSF 2.0 doesn't have a direct mapping for merge-policy
         # surface area today.
-        "nist_csf_2":           64,
+        # Lowered 64→63 when SCM-033..037 (ruleset rule-type
+        # coverage pack) landed OWASP-only.
+        "nist_csf_2":           63,
         # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
-        # landed OWASP-only; ESF backfill queued.
-        "esf_supply_chain":     57,
+        # landed OWASP-only; ESF backfill queued. Lowered 57→56
+        # when SCM-033..037 landed OWASP-only.
+        "esf_supply_chain":     56,
         # openssf_scorecard lowered from 57 to 56 when NPM-011
         # (secrets-in-files-field) landed OWASP-only; Scorecard
         # backfill queued. (SCM-020..025 are already a no-op here.)
@@ -450,7 +453,8 @@ class TestPerFrameworkCoverageFloor:
         # mitigation pack (GHA-048/049/050 + DF-024/025) landed
         # without S2C2F mappings; backfill is queued.
         # Lowered from 27 to 26 when SCM-020..025 landed OWASP-only.
-        "s2c2f":                26,
+        # Lowered 26→25 when SCM-033..037 landed OWASP-only.
+        "s2c2f":                25,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack
@@ -470,7 +474,9 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 7 to 6 when the SCM provider added 8 rules
         # (none K8s-relevant) and rounded the percentage below the
         # original threshold without any K8s-coverage regression.
-        "cis_kubernetes":        6,
+        # Lowered 6→5 when SCM-033..037 landed; K8s pack share
+        # of the catalog dropped under the threshold by rounding.
+        "cis_kubernetes":        5,
     }
 
     def test_floors_hold(self):

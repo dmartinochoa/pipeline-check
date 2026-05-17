@@ -2970,6 +2970,215 @@ class TestSCM032:
         assert "archived" in f.description
 
 
+# ── SCM-033..037: ruleset rule-type coverage ────────────────────────
+
+
+def _active_ruleset(rules: list) -> dict:
+    """Helper: minimal active ruleset shape with the given rules
+    block. Saves repetition across the SCM-033..037 tests."""
+    return {
+        "id": 1, "name": "rs", "enforcement": "active", "rules": rules,
+    }
+
+
+class TestSCM033StatusChecks:
+    def test_no_status_checks_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "pull_request",
+                 "parameters": {"required_approving_review_count": 1}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+
+    def test_status_checks_with_contexts_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "ci/build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert f.passed
+
+    def test_status_checks_empty_contexts_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert f.passed
+        assert "SCM-008" in f.description
+
+    def test_non_active_ruleset_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[{"id": 1, "name": "rs", "enforcement": "evaluate",
+                       "rules": []}],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert f.passed
+
+
+class TestSCM034ForcePush:
+    def test_no_non_fast_forward_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "pull_request"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-034")
+        assert not f.passed
+
+    def test_non_fast_forward_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "non_fast_forward"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-034")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-034")
+        assert f.passed
+        assert "SCM-007" in f.description
+
+
+class TestSCM035Deletion:
+    def test_no_deletion_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "non_fast_forward"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-035")
+        assert not f.passed
+        assert f.severity == Severity.LOW
+
+    def test_deletion_rule_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "deletion"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-035")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-035")
+        assert f.passed
+        assert "SCM-009" in f.description
+
+
+class TestSCM036SignedCommits:
+    def test_no_signatures_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "non_fast_forward"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert not f.passed
+
+    def test_required_signatures_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_signatures"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert f.passed
+        assert "SCM-006" in f.description
+
+
+class TestSCM037StaleReviewDismissal:
+    def test_pr_rule_without_dismissal_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "pull_request",
+                 "parameters": {
+                     "required_approving_review_count": 1,
+                     "dismiss_stale_reviews_on_push": False,
+                 }},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert not f.passed
+
+    def test_pr_rule_with_dismissal_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "pull_request",
+                 "parameters": {
+                     "required_approving_review_count": 1,
+                     "dismiss_stale_reviews_on_push": True,
+                 }},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert f.passed
+
+    def test_no_pr_rule_skipped(self):
+        # If there's no ``pull_request`` rule at all, SCM-032
+        # owns the failure surface; SCM-037 should not double-
+        # report.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_signatures"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert f.passed
+
+    def test_pr_rule_no_params_block_fails(self):
+        # GitHub's default for dismiss_stale_reviews_on_push is
+        # false; a bare ``pull_request`` rule should still fail.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "pull_request"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert f.passed
+        assert "SCM-012" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
