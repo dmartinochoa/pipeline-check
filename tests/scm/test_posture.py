@@ -2741,6 +2741,73 @@ class TestSCM030:
                "1 ruleset(s) had their detail endpoint" in f.description
 
 
+# ── SCM-031: auto-merge enabled ─────────────────────────────────────
+
+
+class TestSCM031:
+    def test_auto_merge_enabled_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "allow_auto_merge": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-031")
+        assert not f.passed
+        assert "Auto-merge is enabled" in f.description
+        assert f.severity == Severity.MEDIUM
+
+    def test_auto_merge_disabled_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "allow_auto_merge": False,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-031")
+        assert f.passed
+        assert "disabled" in f.description
+
+    def test_missing_field_treated_as_disabled(self):
+        # GitHub's default for ``allow_auto_merge`` is false; an
+        # absent field should pass.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+        )
+        f = _by_id(_findings(snap), "SCM-031")
+        assert f.passed
+
+    def test_missing_repo_meta_passes_with_note(self):
+        snap = SCMRepoSnapshot(owner="o", name="r", repo_meta=None)
+        f = _by_id(_findings(snap), "SCM-031")
+        assert f.passed
+        assert "unavailable" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"allow_auto_merge": True},
+        )
+        f = _by_id(_findings(snap), "SCM-031")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "archived": True,
+                "allow_auto_merge": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-031")
+        assert f.passed
+        assert "archived" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 

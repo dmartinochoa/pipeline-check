@@ -72,6 +72,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-031 — repo allows auto-merge.** MEDIUM. Reads
+  ``allow_auto_merge`` from the already-fetched repo metadata
+  (no new endpoint) and fires when ``true``. Auto-merge runs
+  the merge the moment required status checks pass — including
+  any already-approved reviews on the PR — with no further
+  human gate on *when* the merge happens. The compositional
+  risk: combined with SCM-018 (PR-review bypass) or SCM-021
+  (Actions can self-approve PRs), a workflow that opens its own
+  PR can satisfy its own gate and land code into main with no
+  human at the merge moment. Orgs pairing auto-merge with
+  strong required-reviews + CODEOWNERS + last-push approval +
+  no-Actions-self-approval suppress with a rationale that names
+  the compensating controls.
+
 - **SCM-030 — repository ruleset has bypass actor with
   ``bypass_mode: always``.** HIGH. For every ``active`` ruleset
   the snapshot hydrator now fetches per-ruleset details

@@ -382,8 +382,11 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 67 to 66 when NPM-006 / PYPI-006 (curated
         # compromised-package registries) landed OWASP-only.
         # Lowered from 66 to 65 when SCM-020..025 (Actions governance
-        # + environments + deploy-keys) landed OWASP-only.
-        "nist_csf_2":           65,
+        # + environments + deploy-keys) landed OWASP-only. Lowered
+        # from 65 to 64 when SCM-031 (auto-merge) landed OWASP-only;
+        # NIST CSF 2.0 doesn't have a direct mapping for merge-policy
+        # surface area today.
+        "nist_csf_2":           64,
         # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
         # landed OWASP-only; ESF backfill queued.
         "esf_supply_chain":     57,
