@@ -112,19 +112,23 @@ _GIT_PUSH_RE = re.compile(
 # fires; this re-checks the captured token.
 _BENIGN_REMOTE_RE = re.compile(r"^(origin|upstream|fork|mirror)$", re.IGNORECASE)
 
-# ``gh repo`` write verbs against a parameterized target. Reads pass.
+# ``gh repo`` write verbs against a parameterized target. Reads pass,
+# and literal pinned ``owner/repo`` strings pass too — those are the
+# allow-list case the rule docstring carves out.
 _GH_REPO_WRITE_RE = re.compile(
     r"\bgh\s+repo\s+(?:create|edit|transfer|archive|delete|rename)\s+"
     r"(?:[-\w]+\s+)*"
-    r"(?:\$\{\{[^}]+\}\}|\$\{?\w+\}?|[\w\-]+/[\w\-]+)",
+    r"(?:\$\{\{[^}]+\}\}|\$\{?\w+\}?)",
     re.IGNORECASE,
 )
 
 # ``gh api -X POST /repos/<owner>/<repo>`` family. ``GET`` calls are
-# reads; ``POST`` / ``PUT`` / ``PATCH`` / ``DELETE`` are writes.
+# reads; ``POST`` / ``PUT`` / ``PATCH`` / ``DELETE`` are writes. Only
+# parameterized targets fire; literal ``/repos/<owner>/<repo>`` paths
+# are treated as allow-listed.
 _GH_API_WRITE_RE = re.compile(
     r"\bgh\s+api\s+(?:-X\s+|--method\s+)?(POST|PUT|PATCH|DELETE)\s+"
-    r"[\"']?/repos/(?:\$\{\{[^}]+\}\}|\$\{?\w+\}?|[\w\-]+/[\w\-]+)",
+    r"[\"']?/repos/(?:\$\{\{[^}]+\}\}|\$\{?\w+\}?)",
     re.IGNORECASE,
 )
 

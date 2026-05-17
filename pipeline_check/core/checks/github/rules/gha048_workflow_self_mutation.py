@@ -142,15 +142,47 @@ def _step_writes_workflow(body: str) -> bool:
     return False
 
 
+# Third-party actions whose documented behavior is to commit files
+# under a configurable path. When paired with a ``.github/workflows/``
+# target in ``with:``, they're the action-flavored counterpart to the
+# shell ``cat > .github/workflows/...`` propagation primitive.
+_WORKFLOW_AUTHORING_ACTIONS = (
+    "stefanzweifel/git-auto-commit-action",
+    "ad-m/github-push-action",
+    "actions-js/push",
+    "endbug/add-and-commit",
+)
+
+
+def _uses_writes_workflow(step: dict[str, Any]) -> bool:
+    """True when a ``uses:`` step is one of the workflow-authoring
+    actions and its ``with:`` arguments reference ``.github/workflows/``.
+    """
+    uses = step.get("uses")
+    if not isinstance(uses, str):
+        return False
+    action = uses.split("@", 1)[0].strip().lower()
+    if not any(action == a or action.startswith(a + "/") for a in _WORKFLOW_AUTHORING_ACTIONS):
+        return False
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        return False
+    for v in with_block.values():
+        if isinstance(v, str) and ".github/workflows/" in v:
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations = []
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
-            if not isinstance(run, str):
-                continue
-            if not _step_writes_workflow(run):
+            hit = isinstance(run, str) and _step_writes_workflow(run)
+            if not hit:
+                hit = _uses_writes_workflow(step)
+            if not hit:
                 continue
             name = step.get("name") or step.get("id") or f"steps[{idx}]"
             offenders.append(f"{job_id}.{name}")

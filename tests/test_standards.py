@@ -376,10 +376,12 @@ class TestPerFrameworkCoverageFloor:
         # of the new rules. Lowered from 69 to 68 when ATTEST-005
         # (subject-digest unpinned) landed; the ATTEST-NNN family
         # has no nist_csf_2 mappings today, same denominator-
-        # dilution case as the SCM pack.
-        "nist_csf_2":           68,
-        "esf_supply_chain":     60,
-        "openssf_scorecard":    58,
+        # dilution case as the SCM pack. Lowered from 68 to 67 when
+        # the npm + pypi dependency-supply-chain packs (NPM-001..005
+        # / PYPI-001..005) landed OWASP-only; backfill is queued.
+        "nist_csf_2":           67,
+        "esf_supply_chain":     59,
+        "openssf_scorecard":    57,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
         # added 10 rules (none NIST 800-53 mapped today; SCM is
         # already in OWASP, CIS SSCS, and Scorecard, and 800-53
@@ -394,7 +396,7 @@ class TestPerFrameworkCoverageFloor:
         # ref cooldown) from this branch. Neither family has an
         # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
         # queued separately. Same denominator-dilution case.
-        "nist_800_53":          52,
+        "nist_800_53":          51,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
@@ -402,14 +404,18 @@ class TestPerFrameworkCoverageFloor:
         # dilution case as earlier ATTEST landings. Lowered from 44
         # to 43 when the worm-mitigation pack (GHA-048/049/050 +
         # DF-024/025) landed without nist_800_190 mappings; backfill
-        # is queued.
-        "nist_800_190":         43,
+        # is queued. Lowered from 43 to 42 when the npm + pypi
+        # dependency-supply-chain packs landed OWASP-only.
+        "nist_800_190":         42,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
         # provenance. No regression on the existing SLSA mappings.
-        "slsa":                 41,
-        "soc2":                 49,
+        # Lowered from 41 to 40 when NPM-001..005 / PYPI-001..005
+        # landed OWASP-only; SLSA backfill is queued for the
+        # dependency-supply-chain pack.
+        "slsa":                 40,
+        "soc2":                 48,
         "cis_supply_chain":     28,
         # s2c2f absorbs two unmapped landings on this merge: ATTEST-
         # 004 from master and GHA-047 from this branch. Neither

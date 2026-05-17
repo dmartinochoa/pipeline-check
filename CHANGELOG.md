@@ -12,6 +12,66 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Two new dependency-supply-chain providers: `npm` and `pypi`.**
+  Lockfile / manifest static analysis, no `npm install`, no `pip
+  install`, no registry pull. The first cut of the "dependency
+  security" coverage gap pipeline-check carried until now: the
+  existing packs flag *CI patterns* that mishandle dependencies
+  (Dockerfile `RUN npm install` without `--ignore-scripts`, GHA
+  build-tool PPE), but couldn't see the dependency files themselves.
+  - **`--pipeline npm` / `--npm-path`** scans `package.json` and
+    `package-lock.json` / `npm-shrinkwrap.json` (both npm 6 v1 and
+    npm 7+ v2/v3 lockfile schemas). Auto-detected when `package.json`
+    is present at cwd. Skips `node_modules/` so vendored manifests
+    don't dilute the signal.
+    - **NPM-001** — `package.json` dependency uses a floating range
+      (`^`, `~`, `*`, `latest`, `>=`) instead of an exact pin. A
+      poisoned patch release reaches the build on the next install
+      without any code change (TanStack / axios pattern). Skips
+      `workspace:*`, `file:`, `link:`, and git URLs (NPM-005's
+      surface).
+    - **NPM-002** — `package-lock.json` entry has a `resolved` URL
+      but no `integrity` SHA. A registry that swaps the tarball
+      mid-flight (cache poisoning, MITM, malicious mirror) ships
+      arbitrary code with nothing to compare against.
+    - **NPM-003** — lockfile entry resolves from a non-registry
+      source: `git+ssh://`, `http://`, `git+https://` without a
+      40-char commit SHA pin, or `file:` pointing outside the
+      project tree. Opaque to verification on the next install.
+    - **NPM-004** — `package.json` declares `preinstall` / `install`
+      / `postinstall` / `prepare`. Install-time scripts run on
+      every consumer's machine with their `NPM_TOKEN` / `GH_TOKEN`
+      / AWS env, the Shai-Hulud worm's propagation primitive on the
+      *publisher* side.
+    - **NPM-005** — git dependency uses a mutable ref (`#main`,
+      `#v1.2.3`, or no `#` at all → default-branch HEAD) rather
+      than a 40-char commit SHA. Anyone with push access to the
+      upstream repo can swap the contents without changing the
+      dependency string.
+  - **`--pipeline pypi` / `--pypi-path`** scans `requirements.txt`,
+    `requirements*.txt`, `requirements/*.txt`, and `*.in` (pip-tools
+    inputs). Auto-detected when `requirements.txt` is present at cwd.
+    - **PYPI-001** — requirement line lacks an exact `==` pin.
+      `*.in` files are exempt (declarative inputs; pinning belongs
+      in the compiled `*.txt`).
+    - **PYPI-002** — file lacks `--require-hashes` at the top, or
+      at least one line is missing `--hash=sha256:...`. A registry
+      that swaps the artifact bytes ships unverified code; hash
+      pinning is the lockfile layer pip understands. `*.in` exempt.
+    - **PYPI-003** — `--index-url http://...`, `--extra-index-url
+      http://...`, or `--trusted-host` (the latter also silently
+      disables hash checking for the named host even when
+      `--require-hashes` is set). Complements DF-021's `RUN pip
+      install` shell-flag detection.
+    - **PYPI-004** — VCS requirement (`git+https://...@<ref>`,
+      `-e git+...@<ref>#egg=foo`) uses a non-SHA ref or no ref at
+      all. Same mutable-upstream risk as NPM-005.
+    - **PYPI-005** — file declares `--extra-index-url`. pip queries
+      every declared index for every package name and picks the
+      highest version, the dependency-confusion vector
+      (Birsan 2021, `torchtriton` 2022). Single-index installs with
+      a transparently-mirrored proxy eliminate the surface.
+
 - **5 new rules covering the Shai-Hulud / TanStack / axios npm worm
   pattern.** Each one closes a specific leg of the postinstall-driven
   supply-chain compromise loop that the existing lockfile-pinning /

@@ -56,8 +56,13 @@ RULE = Rule(
 
 
 _PARAMETERS_HEAD_RE = re.compile(r"\bparameters\s*\{")
-_PASSWORD_PARAM_RE = re.compile(
-    r"\bpassword\s*\(\s*name\s*:\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]"
+# Two-pass: find the ``password(...)`` call, then search the argument
+# list for the ``name:`` field. Splitting the head and the name match
+# means we catch declarations whose ``name:`` is not the first named
+# argument (e.g. ``password(defaultValue: '', name: 'API_TOKEN')``).
+_PASSWORD_CALL_RE = re.compile(r"\bpassword\s*\(([^)]*)\)", re.DOTALL)
+_PASSWORD_NAME_RE = re.compile(
+    r"\bname\s*:\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]"
 )
 
 
@@ -89,9 +94,12 @@ def check(jf: Jenkinsfile) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for start, body in _parameters_blocks(text):
-        for m in _PASSWORD_PARAM_RE.finditer(body):
-            name = m.group(1)
-            abs_line = text[: start + m.start()].count("\n") + 1
+        for call in _PASSWORD_CALL_RE.finditer(body):
+            name_m = _PASSWORD_NAME_RE.search(call.group(1))
+            if name_m is None:
+                continue
+            name = name_m.group(1)
+            abs_line = text[: start + call.start()].count("\n") + 1
             offenders.append(f"L{abs_line}: password({name})")
             locations.append(Location(
                 path=jf.path, start_line=abs_line, end_line=abs_line,

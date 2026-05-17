@@ -28,7 +28,9 @@ from .gitlab import GitLabProvider
 from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
+from .npm import NpmProvider
 from .oci import OCIProvider
+from .pypi import PypiProvider
 from .scm import SCMProvider
 from .tekton import TektonProvider
 from .terraform import TerraformProvider
@@ -73,3 +75,5 @@ register(HelmProvider())
 register(OCIProvider())
 register(DroneProvider())
 register(SCMProvider())
+register(NpmProvider())
+register(PypiProvider())

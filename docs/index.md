@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 19 providers, graded against 14 compliance frameworks. 
-111 of the 610+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 21 providers, graded against 14 compliance frameworks. 
+111 of the 620+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,8 +55,8 @@ A read-only scanner for 19 providers, graded against 14 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">610+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">19</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">620+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">21</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -176,6 +176,8 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 43 K8S-* rules + 10 HELM-*</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">15 checks</span></a>
   <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub)</span><span class="pg-provider__count">19 checks</span></a>
+  <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">npm</span><span class="pg-provider__count">5 checks</span></a>
+  <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">pypi</span><span class="pg-provider__count">5 checks</span></a>
 </div>
 </section>
 
@@ -226,8 +228,8 @@ flowchart LR
     G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
-    click B "providers/" "19 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "610+ checks emit findings with severity, location, fix"
+    click B "providers/" "21 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "620+ checks emit findings with severity, location, fix"
     click D "standards/" "14 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

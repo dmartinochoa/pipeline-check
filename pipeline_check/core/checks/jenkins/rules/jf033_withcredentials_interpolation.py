@@ -55,7 +55,11 @@ _VARIABLE_FIELD_RE = re.compile(r"\bvariable\s*:\s*['\"]([A-Za-z_][A-Za-z0-9_]*)
 _PASSWORD_VAR_RE = re.compile(
     r"\b(?:passwordVariable|usernameVariable)\s*:\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]"
 )
-_SH_HEAD_RE = re.compile(r"\b(?:sh|bat|powershell|pwsh)\s*\(?\s*(?P<quote>\"\"\"|\"|''')")
+_SH_HEAD_RE = re.compile(
+    r"\b(?:sh|bat|powershell|pwsh)\s*\(?\s*"
+    r"(?:script\s*:\s*)?"
+    r"(?P<quote>\"\"\"|\"|''')"
+)
 
 
 def _withcreds_blocks(text: str) -> list[tuple[int, str]]:

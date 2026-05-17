@@ -785,6 +785,106 @@ compose SCM findings with workflow / Dockerfile findings:
   control to break the chain at.
 """,
     ),
+    "npm": (
+        "npm",
+        "pipeline_check.core.checks.npm.rules",
+        _REPO_ROOT / "docs" / "providers" / "npm.md",
+        """\
+# npm provider
+
+Parses ``package.json`` / ``package-lock.json`` /
+``npm-shrinkwrap.json`` documents on disk for supply-chain hygiene.
+Text-only static analysis, no ``npm install``, no registry pull, no
+daemon access. Rule modules see either an ``NpmManifest`` (the
+parsed ``package.json``) or an ``NpmLock`` (the parsed lockfile) and
+flag the patterns that turned the Shai-Hulud / TanStack / PyTorch-
+``torchtriton`` class of incidents into mass-propagation events.
+
+## Producer workflow
+
+```bash
+# --npm-path is auto-detected when package.json / package-lock.json
+# exist at cwd; the CLI announces the pick on stderr.
+pipeline_check --pipeline npm
+
+# …or pass it explicitly.
+pipeline_check --pipeline npm --npm-path path/to/package.json
+
+# Recursively scan a monorepo: every package.json / package-lock.json
+# outside node_modules/ is picked up.
+pipeline_check --pipeline npm --npm-path packages/
+```
+
+The loader skips anything under ``node_modules/`` so transitive
+manifests don't dilute the signal; only the manifests + lockfiles you
+authored are evaluated.
+
+## Scope
+
+* ``package.json`` (root manifest, ``dependencies`` /
+  ``devDependencies`` / ``optionalDependencies`` /
+  ``peerDependencies`` / ``scripts``)
+* ``package-lock.json`` / ``npm-shrinkwrap.json`` (npm 6 v1 and npm
+  7+ v2 / v3 schemas)
+
+``yarn.lock`` and ``pnpm-lock.yaml`` are out of scope for the
+initial pack; both formats are distinct enough to warrant their own
+parsers and are queued for a follow-up.
+""",
+    ),
+    "pypi": (
+        "pypi",
+        "pipeline_check.core.checks.pypi.rules",
+        _REPO_ROOT / "docs" / "providers" / "pypi.md",
+        """\
+# pypi provider
+
+Parses pip ``requirements*.txt`` / ``*.in`` files on disk for
+supply-chain hygiene. Text-only static analysis, no ``pip install``,
+no PyPI API access, no resolver run. Rule modules see a
+``RequirementsFile`` (parsed lines + top-level options) and flag the
+patterns that produced the dependency-confusion (Birsan 2021),
+typosquat (PyTorch ``torchtriton`` 2022), and TLS-bypass
+historical incidents.
+
+## Producer workflow
+
+```bash
+# --pypi-path is auto-detected when requirements.txt exists at cwd.
+pipeline_check --pipeline pypi
+
+# …or pass it explicitly.
+pipeline_check --pipeline pypi --pypi-path requirements.txt
+
+# Recursively scan a project tree: every requirements*.txt and *.in
+# under the path is picked up.
+pipeline_check --pipeline pypi --pypi-path .
+```
+
+## Scope
+
+* ``requirements.txt`` (and any ``requirements*.txt`` variant)
+* ``requirements/*.txt`` (split-by-environment layout)
+* ``*.in`` (pip-tools input files)
+
+``pyproject.toml`` (PEP 621 / Poetry), ``Pipfile.lock``, and
+``poetry.lock`` are out of scope for the initial pack and queued for
+a follow-up. Most of the strongest supply-chain signals — pinning,
+hashing, ``--extra-index-url`` confusion, ``--trusted-host`` —
+live in the requirements file the build actually feeds to pip, which
+this provider covers.
+
+## ``*.in`` exemptions
+
+``*.in`` files are pip-tools *inputs*: declarative ranges that get
+compiled (via ``pip-compile``) into resolved, hash-bearing
+``requirements.txt`` outputs. PYPI-001 (pin) and PYPI-002 (hash) are
+intentionally skipped on ``.in`` files — pinning at the input layer
+is the wrong layer. The rules still fire on the compiled
+``requirements.txt`` so the artifact pip actually installs is
+covered.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -892,6 +992,16 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
     },
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
+    "npm": {
+        "prefix": "NPM", "prefix_lc": "npm", "pkg": "npm",
+        "signature": "check(manifest: NpmManifest) -> Finding",
+        "arg_kind": "``NpmManifest`` or ``NpmLock`` (chosen by annotation)",
+    },
+    "pypi": {
+        "prefix": "PYPI", "prefix_lc": "pypi", "pkg": "pypi",
+        "signature": "check(rf: RequirementsFile) -> Finding",
+        "arg_kind": "``RequirementsFile``",
+    },
     "oci": {
         "prefix": "OCI", "prefix_lc": "oci", "pkg": "oci",
         "signature": "check(manifest: OCIManifest) -> Finding",
