@@ -299,5 +299,6 @@ STANDARD = Standard(
         "SCM-038":  ["1.1.17"],                     # ruleset lacks linear_history (history protection)
         "SCM-039":  ["1.1.7", "1.1.8"],             # ruleset lacks required_workflows (SAST/SCA gate)
         "SCM-040":  ["1.1.7"],                      # ruleset lacks code_scanning gate (SAST gate)
+        "SCM-041":  ["5.1.4", "5.2.1"],             # ruleset lacks deployment-env gate
     },
 )

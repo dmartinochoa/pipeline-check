@@ -264,5 +264,6 @@ STANDARD = Standard(
         "SCM-038":  ["PS.1.1"],                        # ruleset lacks linear_history
         "SCM-039":  ["PS.1.1", "PW.6.1"],              # ruleset lacks required_workflows
         "SCM-040":  ["RV.1.1", "PS.1.1"],              # ruleset lacks code_scanning gate
+        "SCM-041":  ["PO.5.1"],                        # ruleset lacks deployment-env gate
     },
 )

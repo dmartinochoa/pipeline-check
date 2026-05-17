@@ -394,5 +394,6 @@ STANDARD = Standard(
         "SCM-038":  ["SI-7", "AU-9"],                   # ruleset lacks linear_history
         "SCM-039":  ["SA-11", "SA-15"],                 # ruleset lacks required_workflows
         "SCM-040":  ["SA-11", "RA-5"],                  # ruleset lacks code_scanning gate
+        "SCM-041":  ["SA-10", "SA-15"],                 # ruleset lacks deployment-env gate
     },
 )

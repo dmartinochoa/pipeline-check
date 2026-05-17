@@ -3328,6 +3328,62 @@ class TestSCM040CodeScanning:
         assert "no legacy branch-protection" in f.description.lower()
 
 
+class TestSCM041RequiredDeployments:
+    def test_no_deployments_rule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_status_checks",
+                 "parameters": {"required_status_checks": [
+                     {"context": "build"},
+                 ]}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert not f.passed
+
+    def test_required_deployments_rule_with_envs_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_deployments",
+                 "parameters": {
+                     "required_deployment_environments": ["staging"],
+                 }},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert f.passed
+
+    def test_required_deployments_empty_list_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([
+                {"type": "required_deployments",
+                 "parameters": {"required_deployment_environments": []}},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert not f.passed
+
+    def test_required_deployments_no_params_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_deployments"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert not f.passed
+
+    def test_no_rulesets_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
+
 # ── Default-branch scoping: rulesets exist but scope away from main ──
 #
 # Every per-rule-type rule in SCM-032..040 used to iterate "active"
@@ -3477,6 +3533,20 @@ class TestRulesetScopedAwayFromDefault:
         assert not f.passed
         assert "no legacy branch-protection" in f.description.lower()
 
+    def test_scm041_scoped_away_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[self._scoped_away_ruleset([
+                {"type": "required_deployments",
+                 "parameters": {
+                     "required_deployment_environments": ["staging"],
+                 }},
+            ])],
+        )
+        f = _by_id(_findings(snap), "SCM-041")
+        assert not f.passed
+        assert "no legacy branch-protection" in f.description.lower()
+
     def test_excluded_default_branch_is_scoped_away(self):
         # ~ALL include but default branch in exclude list — same
         # outcome as a scope-elsewhere include: default branch isn't
@@ -3535,6 +3605,30 @@ class TestRulesetScopedAwayFromDefault:
         )
         f = _by_id(_findings(snap), "SCM-036")
         assert f.passed
+
+    def test_scoped_away_with_unavailable_still_fails(self):
+        # Combined case: one scoped-away ruleset AND one with the
+        # detail endpoint unavailable. The scoped-away ruleset must
+        # still surface as a failure; the unavailable one rides as
+        # an "Additionally..." mention rather than being silently
+        # dropped.
+        unavail = {
+            "id": 99, "name": "needs-admin", "enforcement": "active",
+            "target": "branch", "_detail_unavailable": True,
+        }
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                self._scoped_away_ruleset([{"type": "required_signatures"}]),
+                unavail,
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-036")
+        assert not f.passed
+        assert "release-only" in f.description
+        assert "needs-admin" not in f.description  # labels not enumerated for unavail
+        assert "Additionally" in f.description
+        assert "detail-endpoint errors" in f.description
 
 
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
@@ -3674,3 +3768,178 @@ class TestSnapshotActionsEndpoints:
         assert snap.webhooks is None
         assert snap.outside_collaborators is None
         assert snap.rulesets is None
+
+
+# ── Direct tests for the ruleset partition helpers ─────────────────
+#
+# Every per-rule-type rule in SCM-032..040 funnels through
+# ``active_rulesets_targeting_default`` and ``ruleset_targets_default_branch``.
+# These tests pin the helper contract directly so a regression in the
+# partition shape surfaces without having to chase it through one of
+# the rule-specific tests.
+
+
+class TestMatchesDefaultBranchRef:
+    def test_all_wildcard_matches(self):
+        from pipeline_check.core.checks.scm.base import (
+            _matches_default_branch_ref,
+        )
+        assert _matches_default_branch_ref("~ALL", "main") is True
+
+    def test_default_branch_token_matches(self):
+        from pipeline_check.core.checks.scm.base import (
+            _matches_default_branch_ref,
+        )
+        assert _matches_default_branch_ref("~DEFAULT_BRANCH", "trunk") is True
+
+    def test_exact_ref_matches(self):
+        from pipeline_check.core.checks.scm.base import (
+            _matches_default_branch_ref,
+        )
+        assert _matches_default_branch_ref("refs/heads/main", "main") is True
+        assert _matches_default_branch_ref("refs/heads/develop", "main") is False
+
+    def test_fnmatch_glob_matches(self):
+        from pipeline_check.core.checks.scm.base import (
+            _matches_default_branch_ref,
+        )
+        assert _matches_default_branch_ref("refs/heads/**", "main") is True
+        assert _matches_default_branch_ref("refs/heads/m*", "main") is True
+        assert _matches_default_branch_ref("refs/heads/release/**", "main") is False
+
+
+class TestRulesetTargetsDefaultBranch:
+    def test_unset_target_treated_as_branch(self):
+        from pipeline_check.core.checks.scm.base import (
+            ruleset_targets_default_branch,
+        )
+        rs = {
+            "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+        }
+        assert ruleset_targets_default_branch(rs, "main") is True
+
+    def test_tag_target_returns_false(self):
+        from pipeline_check.core.checks.scm.base import (
+            ruleset_targets_default_branch,
+        )
+        rs = {
+            "target": "tag",
+            "conditions": {"ref_name": {"include": ["~ALL"], "exclude": []}},
+        }
+        assert ruleset_targets_default_branch(rs, "main") is False
+
+    def test_push_target_returns_false(self):
+        from pipeline_check.core.checks.scm.base import (
+            ruleset_targets_default_branch,
+        )
+        rs = {
+            "target": "push",
+            "conditions": {"ref_name": {"include": ["~ALL"], "exclude": []}},
+        }
+        assert ruleset_targets_default_branch(rs, "main") is False
+
+    def test_exclude_shadows_default(self):
+        from pipeline_check.core.checks.scm.base import (
+            ruleset_targets_default_branch,
+        )
+        rs = {
+            "target": "branch",
+            "conditions": {"ref_name": {
+                "include": ["~ALL"],
+                "exclude": ["refs/heads/main"],
+            }},
+        }
+        assert ruleset_targets_default_branch(rs, "main") is False
+
+    def test_missing_conditions_returns_false(self):
+        from pipeline_check.core.checks.scm.base import (
+            ruleset_targets_default_branch,
+        )
+        # Without a populated ref_name include the partition can't
+        # prove default-branch coverage; treat as scoped-away rather
+        # than silent-pass.
+        assert ruleset_targets_default_branch({"target": "branch"}, "main") is False
+        assert ruleset_targets_default_branch(
+            {"target": "branch", "conditions": {"ref_name": {"include": []}}},
+            "main",
+        ) is False
+
+
+class TestActiveRulesetsTargetingDefault:
+    def test_partitions_into_three_buckets(self):
+        from pipeline_check.core.checks.scm.base import (
+            active_rulesets_targeting_default,
+        )
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset([], name="targets-main"),
+                _active_ruleset([], name="release-only",
+                                ref_includes=("refs/heads/release/**",)),
+                {"id": 99, "name": "unavail", "enforcement": "active",
+                 "target": "branch", "_detail_unavailable": True},
+            ],
+        )
+        targeting, unavailable, scoped_away = (
+            active_rulesets_targeting_default(snap)
+        )
+        assert [rs["name"] for rs in targeting] == ["targets-main"]
+        assert [rs["name"] for rs in unavailable] == ["unavail"]
+        assert [rs["name"] for rs in scoped_away] == ["release-only"]
+
+    def test_filters_non_active_rulesets(self):
+        from pipeline_check.core.checks.scm.base import (
+            active_rulesets_targeting_default,
+        )
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {"id": 1, "name": "evaluating", "enforcement": "evaluate",
+                 "target": "branch",
+                 "conditions": {"ref_name": {"include": ["~ALL"]}}},
+                {"id": 2, "name": "disabled", "enforcement": "disabled",
+                 "target": "branch",
+                 "conditions": {"ref_name": {"include": ["~ALL"]}}},
+            ],
+        )
+        targeting, unavailable, scoped_away = (
+            active_rulesets_targeting_default(snap)
+        )
+        assert targeting == [] and unavailable == [] and scoped_away == []
+
+    def test_push_target_dropped_entirely(self):
+        # Push rulesets fire on every push but use a different rule
+        # shape (file-size / path / extension filters) that can't
+        # carry SCM-032..040 rule types. They must not surface as
+        # scoped-away or the per-rule-type failure message would
+        # claim "doesn't target the default branch" for a ruleset
+        # that does.
+        from pipeline_check.core.checks.scm.base import (
+            active_rulesets_targeting_default,
+        )
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=[
+                {"id": 1, "name": "push-only", "enforcement": "active",
+                 "target": "push",
+                 "conditions": {"ref_name": {"include": ["~ALL"]}}},
+            ],
+        )
+        targeting, unavailable, scoped_away = (
+            active_rulesets_targeting_default(snap)
+        )
+        assert targeting == [] and unavailable == [] and scoped_away == []
+
+    def test_returns_empty_when_rulesets_is_none(self):
+        from pipeline_check.core.checks.scm.base import (
+            active_rulesets_targeting_default,
+        )
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            rulesets=None,
+        )
+        assert active_rulesets_targeting_default(snap) == ([], [], [])
