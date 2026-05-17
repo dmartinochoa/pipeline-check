@@ -584,5 +584,7 @@ STANDARD = Standard(
         "SCM-024":  ["CICD-SEC-1", "CICD-SEC-4"],  # environment deploys from any branch
         "SCM-025":  ["CICD-SEC-2", "CICD-SEC-6"],  # write-enabled deploy keys (push backdoor)
         "SCM-026":  ["CICD-SEC-6", "CICD-SEC-10"], # webhook insecure (HTTP / no-TLS / no-secret)
+        "SCM-027":  ["CICD-SEC-2", "CICD-SEC-5"],  # outside collaborator with elevated perms
+        "SCM-028":  ["CICD-SEC-3", "CICD-SEC-5"],  # private repo allows forking
     },
 )
