@@ -348,9 +348,23 @@ class SCMContext:
                 outside_collaborators = [
                     u for u in raw_outside if isinstance(u, dict)
                 ]
-            raw_rulesets = fetcher.fetch(f"repos/{owner}/{name}/rulesets")
+            # The rulesets list endpoint defaults to ``per_page=30``
+            # and paginates; bump to the maximum so a repo with a
+            # mid-sized ruleset count fits in a single page. A list
+            # at exactly the page cap is potentially truncated; warn
+            # so the operator audits manually (mirrors the
+            # collaborators pattern above).
+            raw_rulesets = fetcher.fetch(
+                f"repos/{owner}/{name}/rulesets?per_page=100"
+            )
             if isinstance(raw_rulesets, list):
                 rulesets = [r for r in raw_rulesets if isinstance(r, dict)]
+                if len(rulesets) == 100:
+                    warnings.append(
+                        f"[scm] repos/{owner}/{name}/rulesets returned "
+                        "100 entries; additional pages may exist and "
+                        "are not audited by this scan."
+                    )
                 # Hydrate per-ruleset details for any active entry.
                 # The list endpoint returns only ``id`` / ``name`` /
                 # ``target`` / ``enforcement``; ``bypass_actors`` and
@@ -376,6 +390,13 @@ class SCMContext:
                         # safely since the detail endpoint returns
                         # the same values.
                         rs.update(raw_detail)
+                    else:
+                        # Detail fetch failed (403 / 404 / timeout).
+                        # Mark the ruleset so SCM-030 can distinguish
+                        # "clean bypass list" (no offenders) from
+                        # "couldn't fetch the bypass list" (data
+                        # unavailable) — the silent-pass mistake.
+                        rs["_detail_unavailable"] = True
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,

@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 21 providers, graded against 14 compliance frameworks. 
-111 of the 620+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+111 of the 640+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,7 +55,7 @@ A read-only scanner for 21 providers, graded against 14 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">620+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">640+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">21</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
@@ -175,7 +175,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">{{ providers.oci.checks }}</span></a>
-  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
   <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">npm</span><span class="pg-provider__count">{{ providers.npm.checks }}</span></a>
   <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">pypi</span><span class="pg-provider__count">{{ providers.pypi.checks }}</span></a>
 </div>
@@ -229,7 +229,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "21 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "620+ checks emit findings with severity, location, fix"
+    click C "attack_chains/" "640+ checks emit findings with severity, location, fix"
     click D "standards/" "14 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

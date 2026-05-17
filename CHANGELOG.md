@@ -72,6 +72,113 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **GHA-051..055 — advanced PPE / credential-leak surface (5 new
+  GitHub Actions rules).** Each closes a real attack surface the
+  existing GHA pack didn't see.
+  - **GHA-051** — ``services.<name>.image`` / ``container.image``
+    not pinned by ``@sha256:`` digest. MEDIUM.
+  - **GHA-052** — ``actions/cache@*`` key includes attacker-
+    controllable PR input (``github.head_ref`` /
+    ``pull_request.title`` / ``...body`` etc.). HIGH. Cache-
+    poisoning detection on the workflow-author side.
+  - **GHA-053** — ``if:`` predicate evaluates attacker-
+    controllable expression context. HIGH. A crafted payload
+    inside ``head_commit.message`` / ``pull_request.title`` is
+    parsed by the expression evaluator (and thus by an attacker)
+    rather than compared as a literal.
+  - **GHA-054** — ``actions/checkout`` with ``ssh-key`` AND
+    default ``persist-credentials: true``. HIGH. SSH deploy key
+    persists in ``.git/config`` after checkout; subsequent
+    untrusted code in the same job inherits it (the SSH-key
+    analog of GHA-037 ArtiPacked).
+  - **GHA-055** — reusable workflow ``outputs:`` value
+    references ``${{ secrets.* }}``. HIGH. Outputs cross the
+    workflow boundary into the caller's ``needs.<job>.outputs.*``
+    *without* GitHub's secret-masking following — third secret-
+    leak sink the existing log-surface rules don't cover.
+
+- **DF-026..030 — Dockerfile ENV-based runtime-bypass detection (5
+  new rules).** Extends DF-023 (loader hijack via ``LD_PRELOAD`` /
+  ``LD_LIBRARY_PATH`` / ``LD_AUDIT``) to the language-runtime and
+  toolchain TLS-bypass / preload surfaces that bake into the image:
+  - **DF-026** (HIGH) — ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+    disables Node.js TLS verification. Every Node process the
+    image launches (incl. ``npm install`` / ``npm publish`` /
+    runtime ``fetch`` / postinstall scripts) accepts any
+    certificate the upstream presents.
+  - **DF-027** (HIGH) — ``ENV PYTHONHTTPSVERIFY=0`` disables
+    Python stdlib TLS verification. The env-var counterpart to
+    the pip-flag bypass DF-021 already catches; affects every
+    ``urllib``-using library.
+  - **DF-028** (HIGH) — ``ENV GIT_SSL_NO_VERIFY=1`` (or any
+    truthy form, ``true`` / ``yes`` / ``on``) disables Git TLS
+    verification. Every ``git clone`` / ``git fetch`` /
+    ``git+https://`` dep install in or downstream of the image
+    accepts any certificate.
+  - **DF-029** (HIGH) — ``ENV REQUESTS_CA_BUNDLE`` points at
+    ``/dev/null`` or an empty string. ``requests`` treats the
+    empty bundle as "verify against nothing"; covers pip, AWS
+    CLI, Django, every Python network client that flows through
+    ``requests``.
+  - **DF-030** (MEDIUM) — ``ENV NODE_OPTIONS`` carries
+    ``--require=`` / ``--import=`` (preload arbitrary module on
+    every Node startup, the Node equivalent of ``LD_PRELOAD``)
+    or ``--inspect`` / ``--inspect-brk`` (V8 inspector port, full
+    debugger control to anyone who can reach the port).
+
+- **SCM-033..037 — ruleset rule-type coverage (5 new SCM rules).**
+  Completes the ruleset analog of legacy branch protection. Each
+  rule fires when an active ruleset is missing the specific
+  rule type that mirrors a legacy-BP control:
+  - **SCM-033** (MEDIUM) — no ``required_status_checks`` rule (or
+    empty contexts list) — ruleset analog of SCM-008.
+  - **SCM-034** (MEDIUM) — no ``non_fast_forward`` rule —
+    ruleset analog of SCM-007 (force-push denial). Without it,
+    targeted refs can be force-pushed and history rewritten.
+  - **SCM-035** (LOW) — no ``deletion`` rule — ruleset analog
+    of SCM-009. Targeted refs can be deleted by anyone with push
+    access.
+  - **SCM-036** (MEDIUM) — no ``required_signatures`` rule —
+    ruleset analog of SCM-006. Without it, commits with arbitrary
+    author metadata land without a verifiable tie to a
+    contributor key.
+  - **SCM-037** (MEDIUM) — ``pull_request`` rule has
+    ``dismiss_stale_reviews_on_push: false`` — ruleset analog of
+    SCM-012. Without dismissal, an approving review on an early
+    benign version of a PR continues to count after the head
+    changes; the required-review gate documents intent rather
+    than reality.
+  All five reuse the existing rulesets snapshot slot and the
+  ``_detail_unavailable`` sentinel; each passes silently when
+  no rulesets are configured because legacy branch protection's
+  SCM-006..012 carry the corresponding gates.
+
+- **SCM-032 — active ruleset doesn't require a PR review.** HIGH.
+  Walks the merged ``rules`` array on every active ruleset
+  looking for a ``pull_request`` entry with
+  ``parameters.required_approving_review_count >= 1``. Fires
+  when none is found. The ruleset analog of SCM-002 (legacy
+  branch protection requires PR reviews) — operators often
+  create rulesets for specific governance signals (commit-
+  message patterns, tag patterns) and forget that the PR-review
+  gate is a separate rule type that has to be added explicitly.
+  Passes silently when no rulesets are configured (legacy
+  branch protection's SCM-002 covers the gap).
+
+- **SCM-031 — repo allows auto-merge.** MEDIUM. Reads
+  ``allow_auto_merge`` from the already-fetched repo metadata
+  (no new endpoint) and fires when ``true``. Auto-merge runs
+  the merge the moment required status checks pass — including
+  any already-approved reviews on the PR — with no further
+  human gate on *when* the merge happens. The compositional
+  risk: combined with SCM-018 (PR-review bypass) or SCM-021
+  (Actions can self-approve PRs), a workflow that opens its own
+  PR can satisfy its own gate and land code into main with no
+  human at the merge moment. Orgs pairing auto-merge with
+  strong required-reviews + CODEOWNERS + last-push approval +
+  no-Actions-self-approval suppress with a rationale that names
+  the compensating controls.
+
 - **SCM-030 — repository ruleset has bypass actor with
   ``bypass_mode: always``.** HIGH. For every ``active`` ruleset
   the snapshot hydrator now fetches per-ruleset details

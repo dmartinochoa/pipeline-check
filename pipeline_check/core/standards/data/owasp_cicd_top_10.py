@@ -184,6 +184,11 @@ STANDARD = Standard(
         "GHA-048":  ["CICD-SEC-1", "CICD-SEC-4"],  # workflow self-mutation
         "GHA-049":  ["CICD-SEC-1", "CICD-SEC-4"],  # cross-repo push from CI
         "GHA-050":  ["CICD-SEC-2", "CICD-SEC-6"],  # publish without OIDC
+        "GHA-051":  ["CICD-SEC-3", "CICD-SEC-8"],  # services/container image unpinned
+        "GHA-052":  ["CICD-SEC-3", "CICD-SEC-4"],  # cache key untrusted-input poisoning
+        "GHA-053":  ["CICD-SEC-4"],                # if: predicate untrusted-context
+        "GHA-054":  ["CICD-SEC-6"],                # checkout ssh-key persists
+        "GHA-055":  ["CICD-SEC-6"],                # reusable outputs leak secret
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -455,6 +460,11 @@ STANDARD = Standard(
         "DF-023":   ["CICD-SEC-7"],   # ENV LD_PRELOAD / LD_LIBRARY_PATH
         "DF-024":   ["CICD-SEC-3", "CICD-SEC-7"],  # npm install runs lifecycle scripts
         "DF-025":   ["CICD-SEC-6", "CICD-SEC-3"],  # registry token in image layer
+        "DF-026":   ["CICD-SEC-3", "CICD-SEC-7"],  # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["CICD-SEC-3", "CICD-SEC-7"],  # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["CICD-SEC-3", "CICD-SEC-7"],  # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["CICD-SEC-3", "CICD-SEC-7"],  # REQUESTS_CA_BUNDLE neutered
+        "DF-030":   ["CICD-SEC-3", "CICD-SEC-7"],  # NODE_OPTIONS --require / --inspect
         # npm (lockfile + manifest static analysis)
         "NPM-001":  ["CICD-SEC-3"],   # floating range in package.json
         "NPM-002":  ["CICD-SEC-3", "CICD-SEC-9"],  # lock entry missing integrity
@@ -588,5 +598,12 @@ STANDARD = Standard(
         "SCM-028":  ["CICD-SEC-3", "CICD-SEC-5"],  # private repo allows forking
         "SCM-029":  ["CICD-SEC-1", "CICD-SEC-5"],  # ruleset in evaluate / disabled mode
         "SCM-030":  ["CICD-SEC-1", "CICD-SEC-2", "CICD-SEC-5"],  # ruleset always-bypass
+        "SCM-031":  ["CICD-SEC-1", "CICD-SEC-4"],  # auto-merge enabled
+        "SCM-032":  ["CICD-SEC-1", "CICD-SEC-5"],  # active ruleset lacks PR review
+        "SCM-033":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset lacks status checks
+        "SCM-034":  ["CICD-SEC-1"],                # active ruleset doesn't block force-push
+        "SCM-035":  ["CICD-SEC-1"],                # active ruleset doesn't block deletion
+        "SCM-036":  ["CICD-SEC-1", "CICD-SEC-9"],  # active ruleset lacks signed commits
+        "SCM-037":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset PR rule lacks stale-review dismissal
     },
 )

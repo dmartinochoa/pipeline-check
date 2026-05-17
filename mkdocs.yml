@@ -1,5 +1,5 @@
 site_name: Pipeline-Check
-site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Dockerfile, Kubernetes manifests, and Helm charts against the OWASP Top 10 CI/CD Risks plus 12 other compliance frameworks.
+site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture, npm and pypi dependency files against the OWASP Top 10 CI/CD Risks plus 13 other compliance frameworks.
 site_url: https://dmartinochoa.github.io/pipeline-check/
 repo_url: https://github.com/dmartinochoa/pipeline-check
 repo_name: dmartinochoa/pipeline-check
@@ -160,7 +160,7 @@ nav:
       - Kubernetes: providers/kubernetes.md
       - Helm: providers/helm.md
       - OCI image manifest: providers/oci.md
-      - SCM (GitHub) posture: providers/scm.md
+      - SCM (GitHub / GitLab / Bitbucket) posture: providers/scm.md
       - npm: providers/npm.md
       - pypi: providers/pypi.md
   - Standards:

@@ -131,31 +131,61 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             recommendation=RULE.recommendation, passed=True,
         )
     offenders: list[str] = []
+    unavailable_details: list[str] = []
     for rs in rulesets:
         # Non-active rulesets are SCM-029's surface; their bypass
         # configuration doesn't change runtime behavior.
         if rs.get("enforcement") != "active":
-            continue
-        labels = _iter_bypass_offenders(rs)
-        if not labels:
             continue
         name = rs.get("name")
         rs_id = rs.get("id")
         rs_label = name if isinstance(name, str) and name else (
             f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
         )
+        # The per-ruleset detail fetch can fail independently
+        # (403 / 404 / timeout). Without ``bypass_actors`` the rule
+        # can't evaluate this ruleset; treat that as an explicit
+        # unavailability signal instead of silently passing.
+        if rs.get("_detail_unavailable") is True:
+            unavailable_details.append(rs_label)
+            continue
+        labels = _iter_bypass_offenders(rs)
+        if not labels:
+            continue
         offenders.append(f"{rs_label} ({', '.join(labels)})")
     passed = not offenders
-    desc = (
-        "No active ruleset configures ``always``-bypass for a "
-        "non-Integration actor."
-        if passed else
-        f"{len(offenders)} active ruleset(s) grant unaudited "
-        f"bypass: {', '.join(offenders[:3])}"
-        f"{'…' if len(offenders) > 3 else ''}. The listed actors "
-        f"push / merge as if the ruleset weren't there, with no "
-        f"PR-review audit trail."
-    )
+    if passed and unavailable_details:
+        # Nothing to flag, but the bypass posture of at least one
+        # active ruleset couldn't be evaluated. Surface as a
+        # passing finding with the gap noted rather than failing.
+        desc = (
+            "Ruleset detail endpoint unavailable for "
+            f"{len(unavailable_details)} active ruleset(s): "
+            f"{', '.join(unavailable_details[:3])}"
+            f"{'…' if len(unavailable_details) > 3 else ''}. "
+            "Bypass-actor posture was not fully evaluated; ensure "
+            "the token has admin scope on the repo to enable "
+            "complete coverage."
+        )
+    elif passed:
+        desc = (
+            "No active ruleset configures ``always``-bypass for a "
+            "non-Integration actor."
+        )
+    else:
+        desc = (
+            f"{len(offenders)} active ruleset(s) grant unaudited "
+            f"bypass: {', '.join(offenders[:3])}"
+            f"{'…' if len(offenders) > 3 else ''}. The listed actors "
+            f"push / merge as if the ruleset weren't there, with no "
+            f"PR-review audit trail."
+        )
+        if unavailable_details:
+            desc += (
+                f" Additionally, {len(unavailable_details)} "
+                "ruleset(s) had their detail endpoint return an "
+                "error and were not evaluated."
+            )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=repo_resource(snapshot), description=desc,

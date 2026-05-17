@@ -23,15 +23,17 @@ What's planned, what's shipped, and what's deliberately out of scope.
   analysis: ``--pipeline npm`` parses ``package.json`` +
   ``package-lock.json`` / ``npm-shrinkwrap.json`` (both schemas);
   ``--pipeline pypi`` parses ``requirements*.txt`` / ``*.in``.
-  Thirteen rules total (NPM-001..007, PYPI-001..006) covering
-  floating version ranges, missing integrity hashes, non-registry
-  sources, install-time lifecycle scripts in your own
-  ``package.json``, mutable VCS refs, known-compromised package
-  versions (curated registry seeded with event-stream / ua-parser-
-  js / coa / rc / node-ipc on the npm side, ctx / requests-darwin-
-  lite on the pypi side), ``.npmrc`` ``ignore-scripts`` enforcement,
-  missing version / hash pins, HTTP indexes / ``--trusted-host``,
-  and ``--extra-index-url`` dependency confusion. No network, no
+  Fourteen rules total (NPM-001..007 + NPM-011, PYPI-001..006)
+  covering floating version ranges, missing integrity hashes,
+  non-registry sources, install-time lifecycle scripts in your
+  own ``package.json``, mutable VCS refs, known-compromised
+  package versions (curated registry seeded with event-stream /
+  ua-parser-js / coa / rc / node-ipc on the npm side, ctx /
+  requests-darwin-lite on the pypi side), ``.npmrc``
+  ``ignore-scripts`` enforcement, ``package.json`` ``files``
+  field listing secret-shaped paths, missing version / hash
+  pins, HTTP indexes / ``--trusted-host``, and
+  ``--extra-index-url`` dependency confusion. No network, no
   install, skips ``node_modules/``. Closes the gap between the
   existing CI-pattern rules (DF-024, GHA-044) and the dependency
   files themselves.

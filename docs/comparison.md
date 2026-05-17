@@ -29,7 +29,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (53 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (58 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (35) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (31) | No | Partial | No | No | No |
@@ -41,13 +41,13 @@ missing major surfaces or requires extra config. No = not in scope.
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
 | **SCM posture (governance)** | | | | | | |
-| GitHub repo branch protection / secret scanning / Dependabot | Yes (30, `SCM-001..030`) | No | No | No | No | No |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (37, `SCM-001..037`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
 | Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
 | Helm charts (rendered + supply-chain) | Yes (43 + 10) | Partial | No | No | No | Partial |
-| Dockerfile | Yes (25) | Yes | Yes | No | No | Yes |
+| Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (15, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |

@@ -382,17 +382,28 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 67 to 66 when NPM-006 / PYPI-006 (curated
         # compromised-package registries) landed OWASP-only.
         # Lowered from 66 to 65 when SCM-020..025 (Actions governance
-        # + environments + deploy-keys) landed OWASP-only.
-        "nist_csf_2":           65,
+        # + environments + deploy-keys) landed OWASP-only. Lowered
+        # from 65 to 64 when SCM-031 (auto-merge) landed OWASP-only;
+        # NIST CSF 2.0 doesn't have a direct mapping for merge-policy
+        # surface area today.
+        # Lowered 64→63 when SCM-033..037 (ruleset rule-type
+        # coverage pack) landed OWASP-only.
+        # Lowered 63→62 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "nist_csf_2":           62,
         # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
-        # landed OWASP-only; ESF backfill queued.
-        "esf_supply_chain":     57,
+        # landed OWASP-only; ESF backfill queued. Lowered 57→56
+        # when SCM-033..037 landed OWASP-only.
+        "esf_supply_chain":     56,
         # openssf_scorecard lowered from 57 to 56 when NPM-011
         # (secrets-in-files-field) landed OWASP-only; Scorecard
         # backfill queued. (SCM-020..025 are already a no-op here.)
         # Lowered from 56 to 55 when SCM-026/027/028 landed
-        # OWASP-only (Scorecard backfill queued).
-        "openssf_scorecard":    55,
+        # OWASP-only (Scorecard backfill queued). Lowered 55→54
+        # when SCM-032 (ruleset PR-review presence) landed
+        # OWASP-only. Lowered 54→53 when DF-026..030 (ENV-based
+        # runtime-bypass pack) landed OWASP-only.
+        "openssf_scorecard":    53,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
         # added 10 rules (none NIST 800-53 mapped today; SCM is
         # already in OWASP, CIS SSCS, and Scorecard, and 800-53
@@ -408,8 +419,11 @@ class TestPerFrameworkCoverageFloor:
         # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
         # queued separately. Same denominator-dilution case.
         # Lowered from 51 to 50 when the SCM-020..025 pack landed
-        # OWASP-only; backfill queued.
-        "nist_800_53":          50,
+        # OWASP-only; backfill queued. Lowered from 50 to 49 when
+        # the GHA-051..055 advanced-PPE pack landed OWASP-only.
+        # Lowered 49→48 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "nist_800_53":          48,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
@@ -420,7 +434,8 @@ class TestPerFrameworkCoverageFloor:
         # is queued. Lowered from 43 to 42 when the npm + pypi
         # dependency-supply-chain packs landed OWASP-only.
         # Lowered from 42 to 41 when SCM-020..025 landed OWASP-only.
-        "nist_800_190":         41,
+        # Lowered 41→40 when SCM-032 landed OWASP-only.
+        "nist_800_190":         40,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
@@ -429,9 +444,13 @@ class TestPerFrameworkCoverageFloor:
         # landed OWASP-only; SLSA backfill is queued for the
         # dependency-supply-chain pack.
         # Lowered from 40 to 39 when SCM-020..025 landed OWASP-only.
-        "slsa":                 39,
+        # Lowered 39→38 when SCM-032 landed OWASP-only.
+        "slsa":                 38,
         # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
-        "soc2":                 47,
+        # Lowered from 47 to 46 when GHA-051..055 landed OWASP-only.
+        # Lowered 46→45 when DF-026..030 (ENV-based runtime-bypass
+        # pack) landed OWASP-only.
+        "soc2":                 45,
         "cis_supply_chain":     28,
         # s2c2f absorbs two unmapped landings on this merge: ATTEST-
         # 004 from master and GHA-047 from this branch. Neither
@@ -441,7 +460,8 @@ class TestPerFrameworkCoverageFloor:
         # mitigation pack (GHA-048/049/050 + DF-024/025) landed
         # without S2C2F mappings; backfill is queued.
         # Lowered from 27 to 26 when SCM-020..025 landed OWASP-only.
-        "s2c2f":                26,
+        # Lowered 26→25 when SCM-033..037 landed OWASP-only.
+        "s2c2f":                25,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack
@@ -461,7 +481,9 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 7 to 6 when the SCM provider added 8 rules
         # (none K8s-relevant) and rounded the percentage below the
         # original threshold without any K8s-coverage regression.
-        "cis_kubernetes":        6,
+        # Lowered 6→5 when SCM-033..037 landed; K8s pack share
+        # of the catalog dropped under the threshold by rounding.
+        "cis_kubernetes":        5,
     }
 
     def test_floors_hold(self):

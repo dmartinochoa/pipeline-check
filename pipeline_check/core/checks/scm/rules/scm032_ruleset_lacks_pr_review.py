@@ -1,0 +1,187 @@
+"""SCM-032. Active ruleset doesn't require a PR review."""
+from __future__ import annotations
+
+from typing import Any
+
+from ...base import Finding, Severity
+from ...rule import Rule
+from ..base import (
+    SCMRepoSnapshot,
+    archived_state_label,
+    github_only_skip,
+    repo_resource,
+)
+
+RULE = Rule(
+    id="SCM-032",
+    title="Active ruleset doesn't require a PR review (governance theater)",
+    severity=Severity.HIGH,
+    owasp=("CICD-SEC-1", "CICD-SEC-5"),
+    esf=("ESF-S-CHANGE-CONTROL",),
+    cwe=("CWE-269", "CWE-862"),
+    recommendation=(
+        "Add a ``pull_request`` rule to every active ruleset and "
+        "set ``parameters.required_approving_review_count`` to at "
+        "least 1 (Settings → Rules → <ruleset> → Add rule → "
+        "Require a pull request before merging → Required "
+        "approvals). An active ruleset without a PR-review gate is "
+        "the same shape as legacy branch protection without "
+        "required reviews (SCM-002): the ruleset is enforced — "
+        "force-push denial, signed commits, status checks may all "
+        "fire — but pushes / merges still go through without "
+        "human review. Operators commonly create rulesets for "
+        "specific governance signals (e.g., commit-message "
+        "patterns for compliance) and forget that the PR-review "
+        "gate is a separate rule type that has to be added "
+        "explicitly.\n\n"
+        "If you have BOTH legacy branch protection and rulesets "
+        "configured (the migration is in progress), the legacy "
+        "branch protection's required-reviews still applies — "
+        "SCM-002 is the rule that catches that case. SCM-032 "
+        "fires only when the ruleset is the sole governance "
+        "channel and is missing the PR-review rule."
+    ),
+    docs_note=(
+        "For every active ruleset (``enforcement: \"active\"``) with "
+        "an evaluable detail body, walks the ``rules`` array "
+        "looking for an entry with ``type: \"pull_request\"`` whose "
+        "``parameters.required_approving_review_count`` is at "
+        "least 1. Fires when none is found. Non-active rulesets "
+        "are SCM-029's surface; rulesets with unavailable detail "
+        "are surfaced with an evaluation-gap note (the same "
+        "pattern SCM-030 uses).\n\n"
+        "Pairs with SCM-002 (legacy branch-protection required "
+        "reviews) and SCM-029 (ruleset not enforced). The three "
+        "rules together cover the required-review surface: "
+        "SCM-002 for legacy BP, SCM-029 for the existence of an "
+        "active ruleset, SCM-032 for whether that ruleset "
+        "actually requires a PR."
+    ),
+    known_fp=(
+        "Some rulesets are deliberately scoped to enforce only "
+        "non-PR-review controls (e.g., a ``commit_message_"
+        "pattern`` ruleset for changelog compliance, or a "
+        "``tag_name_pattern`` ruleset for release tagging). The "
+        "right pattern is to ALSO have a separate ruleset that "
+        "enforces PR reviews on the same refs; SCM-032 fires "
+        "when the *combination* leaves a gap. Suppress on the "
+        "specific ruleset id with a rationale that names the "
+        "PR-review channel (separate ruleset or legacy branch "
+        "protection).",
+    ),
+)
+
+
+def _has_pr_review_rule(rules: Any) -> bool:
+    """True when *rules* (the ``rules`` array on a ruleset detail
+    body) contains a ``pull_request`` entry with at least one
+    required approving review."""
+    if not isinstance(rules, list):
+        return False
+    for entry in rules:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("type") != "pull_request":
+            continue
+        params = entry.get("parameters")
+        if not isinstance(params, dict):
+            # ``pull_request`` rule with no parameters block is a
+            # GitHub API quirk on older rulesets; default review
+            # count is 1 in that case. Treat as satisfied.
+            return True
+        count = params.get("required_approving_review_count")
+        if isinstance(count, int) and count >= 1:
+            return True
+    return False
+
+
+def check(snapshot: SCMRepoSnapshot) -> Finding:
+    skip = github_only_skip(snapshot)
+    if skip is not None:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=skip,
+            recommendation=RULE.recommendation, passed=True,
+        )
+    if label := archived_state_label(snapshot):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"Repo is {label}; ruleset PR-review check skipped."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    rulesets = snapshot.rulesets
+    if rulesets is None:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "repos/rulesets endpoint unavailable (token "
+                "likely lacks ``admin`` scope on the repo)."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    if not rulesets:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "No repository rulesets configured; legacy branch-"
+                "protection (SCM-002) carries the PR-review gate."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    offenders: list[str] = []
+    unavailable_details: list[str] = []
+    for rs in rulesets:
+        if rs.get("enforcement") != "active":
+            # Non-active rulesets are SCM-029's surface.
+            continue
+        name = rs.get("name")
+        rs_id = rs.get("id")
+        rs_label = name if isinstance(name, str) and name else (
+            f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
+        )
+        if rs.get("_detail_unavailable") is True:
+            unavailable_details.append(rs_label)
+            continue
+        if _has_pr_review_rule(rs.get("rules")):
+            continue
+        offenders.append(rs_label)
+    passed = not offenders
+    if passed and unavailable_details:
+        desc = (
+            "Ruleset detail endpoint unavailable for "
+            f"{len(unavailable_details)} active ruleset(s): "
+            f"{', '.join(unavailable_details[:3])}"
+            f"{'…' if len(unavailable_details) > 3 else ''}. "
+            "PR-review posture was not fully evaluated; ensure "
+            "the token has admin scope on the repo."
+        )
+    elif passed:
+        desc = (
+            "Every active ruleset includes a ``pull_request`` "
+            "rule with at least 1 required review."
+        )
+    else:
+        desc = (
+            f"{len(offenders)} active ruleset(s) don't require a "
+            f"PR review: {', '.join(offenders[:3])}"
+            f"{'…' if len(offenders) > 3 else ''}. The ruleset "
+            f"is enforced but pushes / merges land without human "
+            f"review — governance documented, not gated."
+        )
+        if unavailable_details:
+            desc += (
+                f" Additionally, {len(unavailable_details)} "
+                "ruleset(s) had detail-endpoint errors and were "
+                "not evaluated."
+            )
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=repo_resource(snapshot), description=desc,
+        recommendation=RULE.recommendation, passed=passed,
+    )
