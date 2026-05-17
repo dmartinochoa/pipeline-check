@@ -226,7 +226,7 @@ pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile
 pipeline_check --pipeline jenkins --jenkinsfile-path ci/
 ```
 
-The loader recognises files named `Jenkinsfile` exactly, plus anything
+The loader recognizes files named `Jenkinsfile` exactly, plus anything
 ending in `.jenkinsfile` or `.groovy`. It treats every file as text,
 no Groovy parsing, and applies the same regex-driven heuristics the
 other workflow providers use for `run:` blocks. False positives are
@@ -347,7 +347,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Workload coverage
 
-The walker recognises every kind that carries a pod spec:
+The walker recognizes every kind that carries a pod spec:
 
 - `Pod`, pod spec at `spec`
 - `Deployment` / `StatefulSet` / `DaemonSet` / `ReplicaSet` / `Job`

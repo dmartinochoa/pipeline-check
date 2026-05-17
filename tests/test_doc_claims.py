@@ -328,31 +328,47 @@ def _existing_ids_for_prefix(provider: str, prefix: str) -> set[int]:
 
 # Match every <a class="pg-provider"> tile in docs/index.md.
 # href="providers/<NAME>/" identifies the provider; the count <span>
-# carries the claim text (which may be "50 checks", "~63 checks",
-# "aws-parity", or helm's two-number prose).
+# now carries a Jinja token like ``{{ providers.aws.checks }}`` that
+# the ``hooks/mkdocs_provider_stats.py`` build-time hook resolves
+# against the live rule registry. The test below checks that the
+# token wiring is intact and that the hook has a label for every
+# slug referenced on the home page.
 _PROVIDER_TILE_RE = re.compile(
     r'href="providers/(?P<name>[^/"]+)/"'
     r'.*?<span class="pg-provider__count">(?P<count>[^<]+)</span>',
     re.DOTALL,
 )
-# Plain "N checks" or "~N checks" inside a tile.
-_TILE_COUNT_RE = re.compile(r"(?P<approx>~)?(?P<n>\d+)\s+checks?")
-# Helm tile carries two numbers: "renders + 40 K8S-* rules + 10 HELM-*".
-# Returned tuples are (digits, family).
-_HELM_NUMBERS_RE = re.compile(r"(\d+)\s+(K8S|HELM)")
+_PROVIDER_TOKEN_RE = re.compile(
+    r"\{\{\s*providers\.(?P<slug>[a-z0-9_]+)\.checks\s*\}\}"
+)
 
 
-def test_index_per_provider_counts_match_registry():
-    """Every <span class="pg-provider__count">N checks</span> tile in
-    docs/index.md must agree with the rule-file count for that provider.
+def test_index_per_provider_tiles_use_hook_tokens():
+    """Every <span class="pg-provider__count"> tile on the home page
+    must carry a ``{{ providers.<slug>.checks }}`` token and the hook
+    must have a non-empty label for that slug.
 
-    Special cases:
-      * "aws-parity" on terraform — non-numeric, skipped.
-      * "~N checks" on cloudformation — class-based; matched against
-        ``_count_class_based_check_ids`` with a ±5 tolerance.
-      * Helm's "renders + N K8S-* rules + M HELM-*" — both numbers
-        verified against their respective rule packs.
+    Before this test existed, the tile counts were hand-edited literals
+    (``50 checks``, ``aws-parity``, ``renders + 40 K8S-* rules + 10
+    HELM-*`` — four different formats!) and drifted whenever a rule
+    landed. The hook-token contract removes the drift class entirely:
+    counts come from
+    ``pipeline_check/core/checks/<provider>/rules/`` at build time.
+
+    This test guards the wiring: that every tile uses a token, that
+    the tile's ``href="providers/<slug>"`` matches the token's slug,
+    and that the hook resolves the slug to a non-empty label.
     """
+    # Import the hook from the absolute hooks/ path. The directory
+    # isn't on sys.path by default; resolve it relative to REPO so
+    # this works in CI / tox / IDE runners alike.
+    import sys
+    sys.path.insert(0, str(REPO / "hooks"))
+    try:
+        from mkdocs_provider_stats import _INDEX as _PROVIDER_INDEX
+    finally:
+        sys.path.pop(0)
+
     text = (REPO / "docs" / "index.md").read_text(encoding="utf-8")
     tiles = _PROVIDER_TILE_RE.findall(text)
     assert tiles, (
@@ -361,53 +377,33 @@ def test_index_per_provider_counts_match_registry():
     )
 
     drift: list[str] = []
-    for name, count_text in tiles:
-        # Helm packs two numbers into one tile.
-        if name == "helm":
-            nums = {family: int(n) for n, family in _HELM_NUMBERS_RE.findall(count_text)}
-            for family, expected_provider in (
-                ("HELM", "helm"),
-                ("K8S", "kubernetes"),
-            ):
-                claimed = nums.get(family)
-                actual = _count_rules_in(expected_provider)
-                if claimed is None:
-                    drift.append(
-                        f"docs/index.md helm tile missing the {family}-* count"
-                    )
-                elif claimed != actual:
-                    drift.append(
-                        f"docs/index.md helm tile claims {claimed} {family}-* "
-                        f"rules; registry has {actual}"
-                    )
-            continue
-
-        m = _TILE_COUNT_RE.search(count_text)
+    for href_name, count_text in tiles:
+        m = _PROVIDER_TOKEN_RE.search(count_text)
         if not m:
-            # Non-numeric labels like "aws-parity" are intentional.
-            continue
-
-        claimed = int(m["n"])
-        approx = m["approx"] == "~"
-
-        if name in ("terraform", "cloudformation"):
-            actual = _count_class_based_check_ids(name)
-        else:
-            actual = _count_rules_in(name)
-
-        if approx:
-            if abs(claimed - actual) > 5:
-                drift.append(
-                    f"docs/index.md {name} tile claims '~{claimed} checks', "
-                    f"actual is {actual} (>5 off; tighten the claim)"
-                )
-        elif claimed != actual:
             drift.append(
-                f"docs/index.md {name} tile claims '{claimed} checks', "
-                f"actual is {actual}"
+                f"docs/index.md tile for providers/{href_name}/ has "
+                f"no ``{{{{ providers.<slug>.checks }}}}`` token; "
+                f"hand-edited literals defeat the drift guard"
+            )
+            continue
+        token_slug = m.group("slug")
+        if token_slug != href_name:
+            drift.append(
+                f"docs/index.md tile href=providers/{href_name}/ uses "
+                f"a mismatched token providers.{token_slug}.checks"
+            )
+            continue
+        label = _PROVIDER_INDEX.get(token_slug, {}).get("checks", "")
+        if not label:
+            drift.append(
+                f"hooks/mkdocs_provider_stats.py has no checks-label "
+                f"for slug '{token_slug}' referenced by "
+                f"docs/index.md; either the provider doesn't exist or "
+                f"the hook's _CLASS_BASED_LABELS / _build_index needs "
+                f"a new entry"
             )
 
-    assert not drift, "docs/index.md per-provider drift:\n  " + "\n  ".join(drift)
+    assert not drift, "docs/index.md tile drift:\n  " + "\n  ".join(drift)
 
 
 # Match each ``├── <provider>/rules/  # <body>`` line in the README
@@ -510,3 +506,221 @@ def test_readme_architecture_rule_ranges_match_registry():
     assert not drift, (
         "README.md architecture block drift:\n  " + "\n  ".join(drift)
     )
+
+
+# ──────────────────────────────────────────────────────────────────
+# Comparison-page per-row drift guard.
+#
+# ``docs/comparison.md`` has a feature matrix whose Pipeline-Check
+# column carries cell counts like ``Yes (53 rules)`` or
+# ``Yes (43 + 10)``. Those numbers are not auto-derived; before this
+# test, every per-cell count quietly went stale as new rules landed.
+# ──────────────────────────────────────────────────────────────────
+
+# Row name → provider slug. The row name is the first non-empty cell
+# of the table row (the capability label); the slug is the provider
+# whose rule-file count the cell's first integer must match.
+_COMPARISON_ROWS: dict[str, str] = {
+    "GitHub Actions": "github",
+    "GitLab CI": "gitlab",
+    "Jenkins (Declarative + Scripted)": "jenkins",
+    "CircleCI": "circleci",
+    "Azure DevOps": "azure",
+    "Bitbucket Pipelines": "bitbucket",
+    "Google Cloud Build": "cloudbuild",
+    "Buildkite": "buildkite",
+    "Drone CI": "drone",
+    "Tekton": "tekton",
+    "Argo Workflows": "argo",
+    "Kubernetes manifests": "kubernetes",
+    "Dockerfile": "dockerfile",
+    "Live AWS account scan": "aws",
+}
+
+
+def test_comparison_per_row_rule_counts_match_registry():
+    """The per-row Pipeline-Check cell in ``docs/comparison.md``
+    declares a rule count like ``Yes (53 rules)``. Each declared count
+    must match the rule-file count in the corresponding provider's
+    ``rules/`` directory.
+
+    Catches drift the moment a new rule lands and the matrix isn't
+    bumped.
+    """
+    text = (REPO / "docs" / "comparison.md").read_text(encoding="utf-8")
+    drift: list[str] = []
+
+    for row_name, slug in _COMPARISON_ROWS.items():
+        # Match the row's Pipeline-Check cell: the first ``Yes (...)``
+        # after the row label. The label can contain regex metachars
+        # (parens in "Jenkins (Declarative + Scripted)") so escape it.
+        pat = re.compile(
+            rf"\|\s*{re.escape(row_name)}\s*\|\s*Yes\s*\(([^)]+)\)",
+        )
+        m = pat.search(text)
+        if not m:
+            drift.append(
+                f"comparison.md: row '{row_name}' missing or its "
+                f"Pipeline-Check cell isn't 'Yes (...)'"
+            )
+            continue
+        cell = m.group(1)
+        # First integer in the cell is the rule count.
+        num_match = re.search(r"\b(\d+)\b", cell)
+        if not num_match:
+            drift.append(
+                f"comparison.md: row '{row_name}' cell '{cell}' has "
+                f"no integer rule count"
+            )
+            continue
+        claimed = int(num_match.group(1))
+        actual = _count_rules_in(slug)
+        if claimed != actual:
+            drift.append(
+                f"comparison.md: row '{row_name}' claims {claimed} "
+                f"rules, registry has {actual}"
+            )
+
+    # Helm row carries two numbers: ``Yes (43 + 10)`` — first is the
+    # K8s pack reused via render, second is the chart-supply-chain
+    # HELM-* pack. Verify both.
+    helm_pat = re.compile(
+        r"\|\s*Helm charts \(rendered \+ supply-chain\)\s*\|\s*Yes\s*\((\d+)\s*\+\s*(\d+)\)"
+    )
+    helm_m = helm_pat.search(text)
+    if not helm_m:
+        drift.append(
+            "comparison.md: Helm row missing or doesn't carry "
+            "'Yes (N + M)' shape"
+        )
+    else:
+        k8s_claimed = int(helm_m.group(1))
+        helm_claimed = int(helm_m.group(2))
+        k8s_actual = _count_rules_in("kubernetes")
+        helm_actual = _count_rules_in("helm")
+        if k8s_claimed != k8s_actual:
+            drift.append(
+                f"comparison.md: Helm row claims {k8s_claimed} K8S-* "
+                f"rules, registry has {k8s_actual}"
+            )
+        if helm_claimed != helm_actual:
+            drift.append(
+                f"comparison.md: Helm row claims {helm_claimed} HELM-* "
+                f"rules, registry has {helm_actual}"
+            )
+
+    # SCM row carries an explicit highest-ID claim: ``SCM-001..NNN``.
+    scm_pat = re.compile(
+        r"GitHub repo branch protection[^|]+\|\s*Yes\s*\((\d+),\s*`SCM-001\.\.0?(\d+)`\)"
+    )
+    scm_m = scm_pat.search(text)
+    if not scm_m:
+        drift.append(
+            "comparison.md: SCM row missing or its 'Yes (N, `SCM-001..NNN`)' "
+            "shape changed"
+        )
+    else:
+        scm_count_claimed = int(scm_m.group(1))
+        scm_high_claimed = int(scm_m.group(2))
+        scm_count_actual = _count_rules_in("scm")
+        scm_high_actual = max(_existing_ids_for_prefix("scm", "SCM"), default=0)
+        if scm_count_claimed != scm_count_actual:
+            drift.append(
+                f"comparison.md: SCM row claims {scm_count_claimed} "
+                f"rules, registry has {scm_count_actual}"
+            )
+        if scm_high_claimed != scm_high_actual:
+            drift.append(
+                f"comparison.md: SCM row claims SCM-001..{scm_high_claimed:03d}, "
+                f"registry's highest is SCM-{scm_high_actual:03d}"
+            )
+
+    # OCI row carries 'Yes (N, incl. ATTEST-001..NNN ...)'. The N
+    # is the combined OCI-* + ATTEST-* total; the ATTEST high
+    # must match the highest ATTEST file.
+    oci_pat = re.compile(
+        r"OCI image manifests[^|]+\|\s*Yes\s*\((\d+),\s*incl\.\s*ATTEST-001\.\.0?(\d+)"
+    )
+    oci_m = oci_pat.search(text)
+    if not oci_m:
+        drift.append(
+            "comparison.md: OCI row missing or its 'Yes (N, incl. "
+            "ATTEST-001..NNN ...)' shape changed"
+        )
+    else:
+        oci_total_claimed = int(oci_m.group(1))
+        attest_high_claimed = int(oci_m.group(2))
+        oci_total_actual = _count_rules_in("oci")
+        attest_high_actual = max(
+            _existing_ids_for_prefix("oci", "ATTEST"), default=0
+        )
+        if oci_total_claimed != oci_total_actual:
+            drift.append(
+                f"comparison.md: OCI row claims {oci_total_claimed} "
+                f"rules, registry has {oci_total_actual}"
+            )
+        if attest_high_claimed != attest_high_actual:
+            drift.append(
+                f"comparison.md: OCI row claims ATTEST-001.."
+                f"{attest_high_claimed:03d}, registry's highest is "
+                f"ATTEST-{attest_high_actual:03d}"
+            )
+
+    assert not drift, "comparison.md drift:\n  " + "\n  ".join(drift)
+
+
+# ──────────────────────────────────────────────────────────────────
+# Severity-legend drift guard.
+#
+# The canonical CRITICAL / HIGH / MEDIUM / LOW / INFO definitions
+# live in ``scripts/gen_standards_docs.py::_SEVERITY_GUIDE``. The full
+# legend table was previously duplicated on every generated standards
+# page (60+ lines × 14 pages). Now generated pages emit a one-line
+# pointer to ``docs/standards/README.md#how-to-read-severity`` and the
+# full table lives once in that README. This test catches the case
+# where the constants change but the README is forgotten (or vice
+# versa).
+# ──────────────────────────────────────────────────────────────────
+
+
+def test_severity_legend_in_readme_matches_constants():
+    """The hand-maintained severity legend in
+    ``docs/standards/README.md`` must contain the same definition rows
+    as ``scripts/gen_standards_docs.py::_SEVERITY_GUIDE``.
+
+    Compares each level's "meaning" and "examples" text (verbatim
+    substring match), not the surrounding markdown chrome. If a level
+    is renamed or its prose is rewritten in the generator script, the
+    README must be updated to match, and vice versa.
+    """
+    import sys
+    sys.path.insert(0, str(REPO / "scripts"))
+    try:
+        from gen_standards_docs import _SEVERITY_GUIDE  # type: ignore
+    finally:
+        sys.path.pop(0)
+
+    readme = (REPO / "docs" / "standards" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    drift: list[str] = []
+    for level, meaning, examples in _SEVERITY_GUIDE:
+        # ``meaning`` and ``examples`` strings can contain backticks,
+        # double quotes, commas, etc. Substring match is the cheapest
+        # way to assert "this prose appears in the README" without
+        # forcing line-by-line markdown equality (which would be
+        # fragile against trailing whitespace and the like).
+        if meaning not in readme:
+            drift.append(
+                f"docs/standards/README.md severity legend missing "
+                f"the '{level}' meaning prose. Update the README to "
+                f"match ``_SEVERITY_GUIDE`` in "
+                f"scripts/gen_standards_docs.py."
+            )
+        if examples not in readme:
+            drift.append(
+                f"docs/standards/README.md severity legend missing "
+                f"the '{level}' examples prose."
+            )
+
+    assert not drift, "severity-legend drift:\n  " + "\n  ".join(drift)

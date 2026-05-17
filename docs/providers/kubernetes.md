@@ -30,7 +30,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ### Workload coverage
 
-The walker recognises every kind that carries a pod spec:
+The walker recognizes every kind that carries a pod spec:
 
 - `Pod`, pod spec at `spec`
 - `Deployment` / `StatefulSet` / `DaemonSet` / `ReplicaSet` / `Job`

@@ -298,6 +298,42 @@ class TestIgnoreFile:
         assert len(r.effective) == 1
         assert r.effective[0].resource == "proj-b"
 
+    def test_resource_match_is_path_separator_agnostic(self):
+        # The ignore file is often authored on Windows (backslash
+        # separators) but evaluated on Linux CI (forward slashes).
+        # Literal equality silently dropped suppressions; the matcher
+        # must compare in POSIX form on both sides. Each direction
+        # of the mismatch is exercised.
+        cfg_backslash_rule = GateConfig(
+            fail_on=Severity.HIGH,
+            ignore_rules=[IgnoreRule(
+                check_id="CB-001",
+                resource=".github\\workflows\\release.yml",
+            )],
+        )
+        r = evaluate_gate(
+            [_f(resource=".github/workflows/release.yml")],
+            _score("B"),
+            cfg_backslash_rule,
+        )
+        assert r.passed
+        assert len(r.suppressed) == 1
+
+        cfg_forwardslash_rule = GateConfig(
+            fail_on=Severity.HIGH,
+            ignore_rules=[IgnoreRule(
+                check_id="CB-001",
+                resource=".github/workflows/release.yml",
+            )],
+        )
+        r = evaluate_gate(
+            [_f(resource=".github\\workflows\\release.yml")],
+            _score("B"),
+            cfg_forwardslash_rule,
+        )
+        assert r.passed
+        assert len(r.suppressed) == 1
+
     def test_load_ignore_file_parses_lines(self, tmp_path):
         p = tmp_path / ".pipelinecheckignore"
         p.write_text(

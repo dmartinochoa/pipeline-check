@@ -14,6 +14,24 @@ attack paths. Fix any one leg and the chain breaks.
 
 ## Registered chains
 
+Two families:
+
+- **`AC-NNN`** chains are single-provider correlations. They fire on
+  a normal `--pipeline <name>` scan.
+- **`XPC-NNN`** chains are cross-provider correlations. They fire
+  only when the chain engine sees findings from multiple providers
+  in the same scan, which happens when you pass
+  `--pipelines github,oci` (plural, comma-separated) instead of
+  single-valued `--pipeline`. A single-provider run never sees both
+  legs, so the `XPC-*` rules stay quiet there.
+
+Run `pipeline_check --list-chains` to see the current set at any
+time. Run `pipeline_check --explain-chain AC-001` for the full
+reference (summary, narrative, MITRE techniques, kill-chain phase,
+references, recommendation).
+
+### Single-provider chains (`AC-NNN`)
+
 | ID | Title | Severity | Providers | Triggering checks |
 |----|-------|----------|-----------|-------------------|
 | [`AC-001`](#ac-001) | Fork-PR Credential Theft (`pull_request_target`) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-002`](providers/github.md#gha-002) + [`GHA-005`](providers/github.md#gha-005) |
@@ -43,6 +61,15 @@ attack paths. Fix any one leg and the chain breaks.
 | [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
 | [`AC-026`](#ac-026) | Buildkite injection lands on auto-deploy step with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | buildkite | [`BK-003`](providers/buildkite.md#bk-003) + [`BK-007`](providers/buildkite.md#bk-007) |
 | [`AC-027`](#ac-027) | Image bakes a credential file AND exposes a remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | dockerfile | [`DF-013`](providers/dockerfile.md#df-013) + [`DF-019`](providers/dockerfile.md#df-019) |
+
+### Cross-provider chains (`XPC-NNN`)
+
+These need `--pipelines <a>,<b>,…` (or auto-detect of two or more
+providers at cwd) so the chain engine has findings from both legs in
+one scan.
+
+| ID | Title | Severity | Providers | Triggering checks |
+|----|-------|----------|-----------|-------------------|
 | [`XPC-001`](#xpc-001) | Deploy without verifiable provenance (workflow + image) | <span class="pg-sev pg-sev--high">HIGH</span> | github / oci | [`GHA-006`](providers/github.md#gha-006) + [`OCI-002`](providers/oci.md#oci-002) |
 | [`XPC-002`](#xpc-002) | Tag mutability across pipeline + runtime (Dockerfile + K8s) | <span class="pg-sev pg-sev--high">HIGH</span> | dockerfile / kubernetes | [`DF-001`](providers/dockerfile.md#df-001) + [`K8S-001`](providers/kubernetes.md#k8s-001) |
 | [`XPC-003`](#xpc-003) | Unverified Helm release flow (chart + image) | <span class="pg-sev pg-sev--high">HIGH</span> | helm / oci | [`HELM-002`](providers/helm.md#helm-002) + [`OCI-002`](providers/oci.md#oci-002) |
@@ -52,17 +79,6 @@ attack paths. Fix any one leg and the chain breaks.
 | [`XPC-007`](#xpc-007) | Unpinned actions with no automated remediation | <span class="pg-sev pg-sev--high">HIGH</span> | scm / github | [`SCM-005`](providers/scm.md#scm-005) + [`GHA-001`](providers/github.md#gha-001) |
 | [`XPC-008`](#xpc-008) | Unreviewed source ships a mutable runtime image | <span class="pg-sev pg-sev--high">HIGH</span> | scm / dockerfile | (`SCM-001` &or; `SCM-007`) + [`DF-001`](providers/dockerfile.md#df-001) |
 | [`XPC-009`](#xpc-009) | Ingested CVE finding plus mutable runtime image reference | <span class="pg-sev pg-sev--high">HIGH</span> | ingest / dockerfile | `INGEST-trivy-*` / `INGEST-grype-*` / `INGEST-snyk-*` + [`DF-001`](providers/dockerfile.md#df-001) |
-
-The `XPC-NNN` family is **cross-provider**. It only fires when the chain
-engine sees findings from multiple providers in the same scan, which
-happens when you pass `--pipelines github,oci` (plural, comma-separated)
-instead of single-valued `--pipeline`. Single-provider runs never see
-both check IDs and these chains stay quiet.
-
-Run `pipeline_check --list-chains` to see the current set at any time.
-Run `pipeline_check --explain-chain AC-001` for the full reference
-(summary, narrative, MITRE techniques, kill-chain phase, references,
-recommendation).
 
 ## How chains surface in output
 

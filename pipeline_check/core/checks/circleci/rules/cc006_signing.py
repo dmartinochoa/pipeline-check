@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Unsigned artifacts cannot be verified downstream, so a "
         "tampered build is indistinguishable from a legitimate one. "
-        "The check recognises cosign, sigstore, slsa-framework, and "
+        "The check recognizes cosign, sigstore, slsa-framework, and "
         "notation-sign as signing tools."
     ),
 )

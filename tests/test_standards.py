@@ -381,11 +381,13 @@ class TestPerFrameworkCoverageFloor:
         # / PYPI-001..005) landed OWASP-only; backfill is queued.
         # Lowered from 67 to 66 when NPM-006 / PYPI-006 (curated
         # compromised-package registries) landed OWASP-only.
-        "nist_csf_2":           66,
-        "esf_supply_chain":     59,
+        # Lowered from 66 to 65 when SCM-020..025 (Actions governance
+        # + environments + deploy-keys) landed OWASP-only.
+        "nist_csf_2":           65,
+        "esf_supply_chain":     58,
         # openssf_scorecard lowered from 57 to 56 when NPM-011
         # (secrets-in-files-field) landed OWASP-only; Scorecard
-        # backfill queued.
+        # backfill queued. (SCM-020..025 are already a no-op here.)
         "openssf_scorecard":    56,
         # nist_800_53 lowered from 55 to 54 when the SCM provider
         # added 10 rules (none NIST 800-53 mapped today; SCM is
@@ -401,7 +403,9 @@ class TestPerFrameworkCoverageFloor:
         # ref cooldown) from this branch. Neither family has an
         # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
         # queued separately. Same denominator-dilution case.
-        "nist_800_53":          51,
+        # Lowered from 51 to 50 when the SCM-020..025 pack landed
+        # OWASP-only; backfill queued.
+        "nist_800_53":          50,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
@@ -411,7 +415,8 @@ class TestPerFrameworkCoverageFloor:
         # DF-024/025) landed without nist_800_190 mappings; backfill
         # is queued. Lowered from 43 to 42 when the npm + pypi
         # dependency-supply-chain packs landed OWASP-only.
-        "nist_800_190":         42,
+        # Lowered from 42 to 41 when SCM-020..025 landed OWASP-only.
+        "nist_800_190":         41,
         # slsa lowered from 42 to 41 for the same SCM-017/018/019
         # denominator-dilution case: SLSA is provenance-focused and
         # the three new SCM rules cover review-control surface, not
@@ -419,8 +424,10 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 41 to 40 when NPM-001..005 / PYPI-001..005
         # landed OWASP-only; SLSA backfill is queued for the
         # dependency-supply-chain pack.
-        "slsa":                 40,
-        "soc2":                 48,
+        # Lowered from 40 to 39 when SCM-020..025 landed OWASP-only.
+        "slsa":                 39,
+        # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
+        "soc2":                 47,
         "cis_supply_chain":     28,
         # s2c2f absorbs two unmapped landings on this merge: ATTEST-
         # 004 from master and GHA-047 from this branch. Neither
@@ -429,7 +436,8 @@ class TestPerFrameworkCoverageFloor:
         # dilution case. Lowered from 28 to 27 when the worm-
         # mitigation pack (GHA-048/049/050 + DF-024/025) landed
         # without S2C2F mappings; backfill is queued.
-        "s2c2f":                27,
+        # Lowered from 27 to 26 when SCM-020..025 landed OWASP-only.
+        "s2c2f":                26,
         "nist_ssdf":            18,
         "pci_dss_v4":           27,
         # cis_aws_foundations is intentionally narrow: only AWS-pack
@@ -438,8 +446,10 @@ class TestPerFrameworkCoverageFloor:
         # at the AWS-pack share, not the full 363 rules.
         # Lowered from 9 to 8 when the SCM provider added 10 rules
         # (none AWS-relevant); same denominator-dilution case as
-        # cis_kubernetes below.
-        "cis_aws_foundations":   8,
+        # cis_kubernetes below. Lowered from 8 to 7 when SCM-020..
+        # 025 (Actions / environments / deploy-keys) landed, same
+        # case — none AWS-relevant.
+        "cis_aws_foundations":   7,
         # cis_kubernetes is also intentionally narrow: only the K8s
         # pack (and a few Helm-rendered K8s rules) map to it. The
         # floor caps coverage at the K8s-pack share — most of the

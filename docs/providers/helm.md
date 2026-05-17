@@ -1,7 +1,7 @@
 # Helm chart provider
 
 Renders Helm charts via `helm template` and runs the [Kubernetes
-provider's](kubernetes.md) 40-rule pack against the resulting
+provider's](kubernetes.md) full K8S-* rule pack against the resulting
 manifests, plus a chart-supply-chain rule pack
 (`HELM-001`--`010`) that reads `Chart.yaml` and `Chart.lock`
 straight off disk. The K8s pass scores rendered workloads
@@ -65,18 +65,18 @@ and `--set` overrides files. The chart's own `values.yaml` is
 applied automatically by Helm; you don't need to pass it.
 
 Scanning a chart with the **production** values is usually what you
-want, a chart that only exposes a `privileged: true` workload when
+want. A chart that only exposes a `privileged: true` workload when
 `debug: true` is set should not fail the gate during routine
 scanning.
 
 ## What it covers
 
-### Rendered-manifest rules (30)
+### Rendered-manifest rules
 
-The same 35 K8S-* rules listed on the [Kubernetes provider
-page](kubernetes.md). Every one of them, `securityContext`,
+The full K8S-* rule pack listed on the [Kubernetes provider
+page](kubernetes.md). Every one of them (`securityContext`,
 `hostPath`, RBAC blast radius, Secret hygiene, control-plane
-scheduling, applies to rendered chart output identically. The
+scheduling) applies to rendered chart output identically. The
 rules see the manifest output of `helm template`, so values-driven
 toggles and conditional templates are scored as they would actually
 deploy.
@@ -156,7 +156,7 @@ off `Chart.yaml` / `Chart.lock` rather than the rendered output:
 These rules ride on the same `Chart` records the provider parses
 once at scan start, so they don't pay the helm-render cost a second
 time. They run regardless of whether the rendered manifests scored
-clean, a chart can have a perfect `securityContext` posture and
+clean. A chart can have a perfect `securityContext` posture and
 still ship a v1 schema, an unlocked dependency, or no maintainers.
 
 ## What it can't see

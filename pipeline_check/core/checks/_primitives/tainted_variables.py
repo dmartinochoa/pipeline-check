@@ -78,7 +78,7 @@ def has_unsafe_reference(
 
     *ref_pattern* receives a tainted variable name and returns a regex
     string matching every reference syntax the provider's shell layer
-    recognises. The primitive owns the safety filter:
+    recognizes. The primitive owns the safety filter:
 
     1. Skip lines that match :func:`is_quoted_assignment` outright,
        a ``VAR="...$X..."`` capture is a safe idiom (the inner ``$X``

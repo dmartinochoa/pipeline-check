@@ -46,7 +46,7 @@ from .._yaml_lines import line_of as _line_of
 from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck, Location
 
-# Top-level keys Cloud Build recognises. Everything else is either a
+# Top-level keys Cloud Build recognizes. Everything else is either a
 # user substitution override (via ``substitutions:``) or out-of-spec.
 _TOPLEVEL_KEYWORDS: set[str] = {
     "steps", "images", "artifacts", "timeout", "options",

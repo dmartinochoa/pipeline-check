@@ -23,7 +23,7 @@ RULE = Rule(
         "Without an SBOM, downstream consumers cannot audit the exact "
         "set of dependencies shipped in the artifact, delaying "
         "vulnerability response when a transitive dep is disclosed. "
-        "The check recognises CycloneDX, syft, Anchore SBOM action, "
+        "The check recognizes CycloneDX, syft, Anchore SBOM action, "
         "spdx-sbom-generator, Microsoft sbom-tool, and Trivy in SBOM "
         "mode."
     ),

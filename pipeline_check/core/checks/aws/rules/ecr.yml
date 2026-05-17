@@ -32,7 +32,7 @@
   description: >
     Checks whether the repository resource-based policy contains any Allow statement
     with a wildcard principal (Principal: '*'). Such statements expose the repository
-    to unauthenticated or cross-account access, potentially allowing unauthorised
+    to unauthenticated or cross-account access, potentially allowing unauthorized
     image pulls or pushes.
   recommended_actions:
     - Remove wildcard principals from the repository policy.

@@ -361,13 +361,22 @@ def _baseline_from_doc(doc: object) -> set[tuple[str, str]]:
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _norm_resource(s: str) -> str:
+    # Compare ignore-file resource paths in POSIX form. The ignore
+    # file is often authored on Windows (``.github\workflows\foo.yml``)
+    # but the runner emits forward slashes; literal string equality
+    # silently fails to apply the suppression. Normalize both sides.
+    return s.replace("\\", "/")
+
+
 def _is_ignored(f: Finding, rules: Iterable[IgnoreRule], today: _dt.date) -> bool:
+    norm_resource = _norm_resource(f.resource)
     for r in rules:
         if r.is_expired(today):
             continue
         if r.check_id != f.check_id.upper():
             continue
-        if r.resource is None or r.resource == f.resource:
+        if r.resource is None or _norm_resource(r.resource) == norm_resource:
             return True
     return False
 

@@ -22,7 +22,7 @@ RULE = Rule(
     docs_note=(
         "Without a retention policy, build logs accumulate "
         "indefinitely; a secret that once leaked into a log stays "
-        "visible to anyone who can read jobs. Recognises declarative "
+        "visible to anyone who can read jobs. Recognizes declarative "
         "`options { buildDiscarder(...) }`, scripted "
         "`properties([buildDiscarder(...)])`, and bare `logRotator(...)`."
     ),

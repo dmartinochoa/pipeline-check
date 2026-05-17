@@ -29,7 +29,7 @@ RULE = Rule(
         "mode, the runner exits after one job and re-registers "
         "fresh. The check looks for an `ephemeral` label on the "
         "`runs-on` value; without one, the runner is presumed "
-        "reusable. Recognises all three `runs-on` shapes: string, "
+        "reusable. Recognizes all three `runs-on` shapes: string, "
         "list, and `{ group, labels }` dict form."
     ),
     known_fp=(

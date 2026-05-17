@@ -1,8 +1,8 @@
 # Compliance standards
 
-Every finding produced by the scanner carries a list of `ControlRef` objects. References to controls in registered compliance standards. The same check
-
-can evidence controls in multiple standards at once.
+Every finding produced by the scanner carries a list of `ControlRef`
+objects: references to controls in registered compliance standards. The
+same check can evidence controls in multiple standards at once.
 
 <div class="pg-doc-cards">
   <a class="pg-doc-card pg-doc-card--featured" href="owasp_cicd_top_10/">
@@ -77,6 +77,21 @@ can evidence controls in multiple standards at once.
     <span class="pg-doc-card__meta">{{ standards.soc2.controls }} controls · {{ standards.soc2.checks }} checks evidenced</span>
   </a>
 </div>
+
+## How to read severity
+
+Every check ships at a fixed severity level. The scale is the same
+across providers and standards, so a CRITICAL finding in one place
+means the same thing as a CRITICAL finding anywhere else. Each
+standards page links back here rather than restating the table.
+
+| Level | What it means | Examples |
+|-------|---------------|----------|
+| <span class="pg-sev pg-sev--critical">CRITICAL</span> | Active exploit primitive in the workflow as written. Treat as P0: a default scan path lands an attacker on a secret, an RCE, or production write access without further effort. | Hardcoded credential literal, branch ref pointing at a known-compromised action, signed-into-an-unverified registry. |
+| <span class="pg-sev pg-sev--high">HIGH</span> | Production-impact gap that requires modest attacker effort or a second condition to weaponize. Remediate this sprint; the secondary condition is usually already present in real pipelines. | Action pinned to a floating tag, sensitive permissions on a low-popularity action, mutable container tag in prod. |
+| <span class="pg-sev pg-sev--medium">MEDIUM</span> | Significant defense-in-depth gap. Not directly exploitable on its own but disables a control whose absence widens the blast radius of a separate compromise. Backlog with a deadline. | Missing branch protection, container without resource limits, freshly-published dependency consumed before the cooldown window. |
+| <span class="pg-sev pg-sev--low">LOW</span> | Hygiene / hardening issue. Not a vulnerability on its own but raises baseline posture and reduces audit friction. | Missing CI logging retention, SBOM without supplier attribution, ECR repo without scan-on-push. |
+| <span class="pg-sev pg-sev--info">INFO</span> | Degraded-mode signal. The scanner couldn't reach an API or parse a config and surfaces the gap so the operator knows coverage was incomplete. No finding against the workload itself. | ``CB-000`` CodeBuild API access failed, ``IAM-000`` IAM enumeration failed. |
 
 ## Using standards at runtime
 

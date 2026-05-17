@@ -483,7 +483,7 @@ verifying a digest.
 Checks whether the repository resource-based policy contains any Allow
 statement with a wildcard principal (`Principal: '*'`). Such statements
 expose the repository to unauthenticated or cross-account access,
-potentially allowing unauthorised image pulls or pushes.
+potentially allowing unauthorized image pulls or pushes.
 
 **Recommended actions**
 - Remove wildcard principals from the repository policy.
