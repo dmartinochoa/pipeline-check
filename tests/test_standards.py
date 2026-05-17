@@ -411,8 +411,9 @@ class TestPerFrameworkCoverageFloor:
         # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
         # queued separately. Same denominator-dilution case.
         # Lowered from 51 to 50 when the SCM-020..025 pack landed
-        # OWASP-only; backfill queued.
-        "nist_800_53":          50,
+        # OWASP-only; backfill queued. Lowered from 50 to 49 when
+        # the GHA-051..055 advanced-PPE pack landed OWASP-only.
+        "nist_800_53":          49,
         # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
         # The ATTEST-NNN family has no nist_800_190 mappings today
         # (800-190 is container-isolation focused, the attestation-
@@ -434,7 +435,8 @@ class TestPerFrameworkCoverageFloor:
         # Lowered from 40 to 39 when SCM-020..025 landed OWASP-only.
         "slsa":                 39,
         # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
-        "soc2":                 47,
+        # Lowered from 47 to 46 when GHA-051..055 landed OWASP-only.
+        "soc2":                 46,
         "cis_supply_chain":     28,
         # s2c2f absorbs two unmapped landings on this merge: ATTEST-
         # 004 from master and GHA-047 from this branch. Neither

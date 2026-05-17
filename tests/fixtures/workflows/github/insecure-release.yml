@@ -27,6 +27,15 @@ on:
       ref:
         type: string
         required: true
+  # GHA-055: reusable-workflow shape with an ``outputs:`` value
+  # that references a secret. Cross-workflow-boundary secret leak;
+  # the secret-masking layer only redacts in the *defining*
+  # workflow's logs, so callers see the value in their build log.
+  workflow_call:
+    outputs:
+      api_token:
+        description: leaks a long-lived publisher token to the caller
+        value: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   build:
@@ -110,13 +119,22 @@ jobs:
   # lands on.
   # GHA-045: caller-controlled ``inputs.ref`` lands as the checkout
   # ref, so the dispatcher picks which tree runs with secrets.
+  # GHA-053: job-level ``if:`` evaluates ``head_commit.message`` —
+  # a crafted payload (nested ``${{ secrets.X }}``) is parsed by
+  # the expression evaluator rather than compared as a literal.
+  # GHA-054: ``actions/checkout`` with ``ssh-key`` AND default
+  # ``persist-credentials: true`` writes the SSH key into
+  # ``.git/config`` of the working tree; subsequent untrusted code
+  # in this job inherits the credential.
   deploy:
     runs-on: ${{ inputs.runner }}
     needs: build
+    if: contains(github.event.head_commit.message, '[release]')
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           ref: ${{ inputs.ref }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
       - run: echo "deploying to prod"
 
   # GHA-025: reusable-workflow ``uses:`` pinned to a floating tag.

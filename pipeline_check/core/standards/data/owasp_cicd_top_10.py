@@ -184,6 +184,11 @@ STANDARD = Standard(
         "GHA-048":  ["CICD-SEC-1", "CICD-SEC-4"],  # workflow self-mutation
         "GHA-049":  ["CICD-SEC-1", "CICD-SEC-4"],  # cross-repo push from CI
         "GHA-050":  ["CICD-SEC-2", "CICD-SEC-6"],  # publish without OIDC
+        "GHA-051":  ["CICD-SEC-3", "CICD-SEC-8"],  # services/container image unpinned
+        "GHA-052":  ["CICD-SEC-3", "CICD-SEC-4"],  # cache key untrusted-input poisoning
+        "GHA-053":  ["CICD-SEC-4"],                # if: predicate untrusted-context
+        "GHA-054":  ["CICD-SEC-6"],                # checkout ssh-key persists
+        "GHA-055":  ["CICD-SEC-6"],                # reusable outputs leak secret
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

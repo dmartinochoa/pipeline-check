@@ -72,6 +72,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **GHA-051..055 — advanced PPE / credential-leak surface (5 new
+  GitHub Actions rules).** Each closes a real attack surface the
+  existing GHA pack didn't see.
+  - **GHA-051** — ``services.<name>.image`` / ``container.image``
+    not pinned by ``@sha256:`` digest. MEDIUM.
+  - **GHA-052** — ``actions/cache@*`` key includes attacker-
+    controllable PR input (``github.head_ref`` /
+    ``pull_request.title`` / ``...body`` etc.). HIGH. Cache-
+    poisoning detection on the workflow-author side.
+  - **GHA-053** — ``if:`` predicate evaluates attacker-
+    controllable expression context. HIGH. A crafted payload
+    inside ``head_commit.message`` / ``pull_request.title`` is
+    parsed by the expression evaluator (and thus by an attacker)
+    rather than compared as a literal.
+  - **GHA-054** — ``actions/checkout`` with ``ssh-key`` AND
+    default ``persist-credentials: true``. HIGH. SSH deploy key
+    persists in ``.git/config`` after checkout; subsequent
+    untrusted code in the same job inherits it (the SSH-key
+    analog of GHA-037 ArtiPacked).
+  - **GHA-055** — reusable workflow ``outputs:`` value
+    references ``${{ secrets.* }}``. HIGH. Outputs cross the
+    workflow boundary into the caller's ``needs.<job>.outputs.*``
+    *without* GitHub's secret-masking following — third secret-
+    leak sink the existing log-surface rules don't cover.
+
 - **SCM-031 — repo allows auto-merge.** MEDIUM. Reads
   ``allow_auto_merge`` from the already-fetched repo metadata
   (no new endpoint) and fires when ``true``. Auto-merge runs
