@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, Severity, severity_rank
 from ...rule import Rule
 from .._compromised_packages import lookup
 from ..base import RequirementsFile, iter_specs
@@ -108,6 +108,7 @@ def check(rf: RequirementsFile) -> Finding:
     matches: list[str] = []
     locations: list[Location] = []
     advisories: set[str] = set()
+    matched_severities: set[Severity] = set()
     for line in iter_specs(rf):
         parsed = _parse_name_version(line.body)
         if parsed is None:
@@ -118,6 +119,7 @@ def check(rf: RequirementsFile) -> Finding:
             continue
         matches.append(f"{name}=={version}")
         advisories.add(hit.advisory)
+        matched_severities.add(hit.severity)
         locations.append(Location(
             path=rf.path, start_line=line.line_no, end_line=line.line_no,
         ))
@@ -127,6 +129,7 @@ def check(rf: RequirementsFile) -> Finding:
             "No requirement matches a known-compromised PyPI package "
             "version in the curated registry."
         )
+        severity = RULE.severity
     else:
         unique = sorted(set(matches))
         ref_summary = ", ".join(unique[:3])
@@ -140,8 +143,12 @@ def check(rf: RequirementsFile) -> Finding:
             f"requirements file, then update to a post-incident clean "
             f"version. Advisory: {adv_summary}"
         )
+        # Per-entry severity wins, mirroring NPM-006. Today every PyPI
+        # registry entry is CRITICAL, but the next protestware-style
+        # HIGH entry would otherwise misreport.
+        severity = max(matched_severities, key=severity_rank)
     return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        check_id=RULE.id, title=RULE.title, severity=severity,
         resource=rf.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,

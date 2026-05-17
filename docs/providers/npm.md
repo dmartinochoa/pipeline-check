@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-7 checks · 0 have an autofix patch (``--fix``).
+8 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -52,6 +52,7 @@ parsers and are queued for a follow-up.
 | [NPM-005](#npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-006](#npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NPM-007](#npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -255,6 +256,43 @@ Complements NPM-004 (``package.json`` declares its own install-time hook on the 
 **Recommended action**
 
 Add ``ignore-scripts=true`` to the repo's ``.npmrc``. The setting tells npm / pnpm / Yarn 1 to skip every ``preinstall`` / ``install`` / ``postinstall`` / ``prepare`` hook on every transitive dependency, including the ones added in a future ``npm install``. This is the file-side complement to DF-024 (which catches the same primitive at ``docker build`` time) — DF-024 protects the image, NPM-007 protects the developer laptop and any unattended CI step running ``npm install`` outside a container. If a specific package legitimately needs its build script (a native module like ``better-sqlite3``), allow-list it after the install: ``npm rebuild better-sqlite3``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-011: package.json files field includes secret-shaped paths { #npm-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-538</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Fires when ``package.json`` declares a ``files`` field (positive-list of paths npm includes in the published tarball) and at least one entry matches a secret-shaped pattern:
+
+* ``.env`` / ``.env.*`` (env files, AWS keys / DB   passwords)
+* ``.npmrc`` (npm auth tokens — `_authToken` lines)
+* ``*.pem`` / ``*.key`` / ``*.crt`` / ``*.p12`` /   ``*.pfx`` (TLS / signing keys)
+* ``id_rsa`` / ``id_dsa`` / ``id_ecdsa`` / ``id_ed25519``   (SSH private keys)
+* ``credentials`` / ``credentials.json`` /   ``.aws/credentials`` (AWS-style credential blobs)
+* ``.ssh/`` / ``.gnupg/`` (entire credential directories)
+
+Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — they're too common to triage at this layer, and the right defense is ``npm pack --dry-run`` review. NPM-011 is the file-name detector; the broad-include surface is a separate rule. The ``.env.example`` template form is a documented known FP — name it ``env.example`` (no leading dot, no ``.env`` prefix) to dodge the heuristic.
+
+**Known false-positive modes**
+
+- Packages that intentionally ship template / example secret files (``dotenv-cli``, security-tooling packages) may legitimately include a ``.env.example``. Rename to ``env.example`` to dodge the regex, or suppress on this specific rule + module name with a one-line rationale.
+
+**Seen in the wild**
+
+- Long-running pattern of npm publishes leaking secrets via the ``files`` field: published packages containing ``.npmrc`` with auth tokens, AWS credentials in ``.env``, SSH private keys in dotfiles. Socket.dev and ReversingLabs research catalogs document hundreds of such incidents across the npm registry.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the secret-shaped entry from ``package.json`` ``files``. If the entry is intentional (e.g., a ``.env.example`` template that ships intentionally),  rename it to a clearly-not-a-secret form (``env.example``) before shipping. Then run ``npm pack --dry-run`` and inspect the printed contents before the next ``npm publish``; the dry-run output is the ground truth for what the registry will receive. Any tarball that includes ``.env``, ``.npmrc`` with an ``_authToken`` line, an SSH private key, or an AWS credentials file effectively publishes those credentials to every consumer of the package.
 
 </div>
 

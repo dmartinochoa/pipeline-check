@@ -99,7 +99,7 @@ npm/`` and ``pypi/`` packages; ``--resolve-remote`` reuses the
 (``https://registry.npmjs.org/<pkg>``) and PyPI JSON API
 (``https://pypi.org/pypi/<pkg>/json``); offline / fixture mode
 reads JSON from disk for hermetic CI. The XPC-NNN chain engine
-gains chains pairing NPM-006 cooldown-miss with DF-024 lifecycle-
+gains chains pairing NPM-008 cooldown-miss with DF-024 lifecycle-
 scripts-enabled so the composite escalates when both gates fail
 in the same scan.
 

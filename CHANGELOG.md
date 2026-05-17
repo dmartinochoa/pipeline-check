@@ -72,6 +72,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **NPM-011 — `package.json` `files` field leaks secret-shaped paths.**
+  Static positive-list audit on the manifest's ``files`` entries.
+  Flags any path matching ``.env`` / ``.env.<suffix>``, ``.npmrc``
+  (which would publish an ``_authToken`` line), TLS / signing key
+  extensions (``.pem`` / ``.key`` / ``.crt`` / ``.p12`` / ``.pfx``),
+  SSH private-key filenames (``id_rsa`` / ``id_dsa`` /
+  ``id_ecdsa`` / ``id_ed25519``), AWS-style credential blobs
+  (``credentials`` / ``credentials.json`` / ``.aws/``), and
+  credential-directory trees (``.ssh/`` / ``.gnupg/``). HIGH
+  severity. Real-world surface — published npm packages have
+  leaked AWS keys via ``.env``, npm auth tokens via ``.npmrc``,
+  and SSH private keys via committed dotfiles. Reserves NPM-008..
+  010 for the deferred registry-fetch rules (cooldown, transitive-
+  diff, audit-signatures) per ROADMAP. Per-entry severity
+  escalation added to NPM-006 / PYPI-006 alongside this rule — a
+  HIGH-only registry match (protestware like node-ipc) now
+  reports HIGH instead of being upgraded to the rule-level
+  CRITICAL default.
+
 - **NPM-007 — `.npmrc` ignore-scripts enforcement.** File-side
   complement to DF-024: scans every ``.npmrc`` in the npm scan path
   (excluding ``node_modules``) and flags any that don't declare

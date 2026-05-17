@@ -176,7 +176,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">renders + 43 K8S-* rules + 10 HELM-*</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">15 checks</span></a>
   <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub)</span><span class="pg-provider__count">19 checks</span></a>
-  <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">npm</span><span class="pg-provider__count">7 checks</span></a>
+  <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">npm</span><span class="pg-provider__count">8 checks</span></a>
   <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">pypi</span><span class="pg-provider__count">6 checks</span></a>
 </div>
 </section>

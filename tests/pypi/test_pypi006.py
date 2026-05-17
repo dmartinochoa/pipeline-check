@@ -52,9 +52,8 @@ class TestPYPI006:
         assert "ctx==0.2.2" in f.description
 
     def test_fails_with_pep503_variant_in_file(self):
-        # The file writes ``CTX_PKG`` (silly but valid) — wait, no:
-        # ctx is a literal name. The PEP 503 normalization is for the
-        # lookup side. Let's exercise it with an underscore.
+        # Exercise PEP 503 normalization on the file side: the
+        # underscore variant resolves to requests-darwin-lite.
         text = "requests_darwin_lite==2.27.1\n"
         f = run_check(text, "PYPI-006")
         assert not f.passed
