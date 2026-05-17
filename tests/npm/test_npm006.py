@@ -5,6 +5,7 @@ exercise both the lookup helper (so a registry-data regression
 trips the suite) and the rule against synthetic lockfiles.
 """
 
+from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.npm._compromised_packages import (
     known_names,
     lookup,
@@ -143,3 +144,45 @@ class TestNPM006:
         # description so the operator has a follow-up link.
         assert "event-stream" in f.description
         assert "Advisory:" in f.description
+
+    def test_finding_severity_tracks_registry_entry_high(self):
+        # node-ipc is registered as HIGH (protestware, scoped
+        # destructive payload). A finding emitted solely for that
+        # entry must report HIGH, not the rule-level CRITICAL.
+        data = {
+            "lockfileVersion": 3,
+            "packages": {
+                "": {"name": "root", "version": "1.0.0"},
+                "node_modules/node-ipc": {
+                    "version": "10.1.1",
+                    "resolved": "https://registry.npmjs.org/node-ipc/-/node-ipc-10.1.1.tgz",
+                    "integrity": "sha512-FAKE",
+                },
+            },
+        }
+        f = run_check_lock(data, "NPM-006")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_finding_severity_escalates_to_critical_when_mixed(self):
+        # node-ipc (HIGH) + ua-parser-js (CRITICAL) in the same lock:
+        # the most severe entry wins so operators see CRITICAL.
+        data = {
+            "lockfileVersion": 3,
+            "packages": {
+                "": {"name": "root", "version": "1.0.0"},
+                "node_modules/node-ipc": {
+                    "version": "10.1.1",
+                    "resolved": "https://registry.npmjs.org/node-ipc/-/node-ipc-10.1.1.tgz",
+                    "integrity": "sha512-FAKE",
+                },
+                "node_modules/ua-parser-js": {
+                    "version": "0.7.29",
+                    "resolved": "https://registry.npmjs.org/ua-parser-js/-/ua-parser-js-0.7.29.tgz",
+                    "integrity": "sha512-FAKE",
+                },
+            },
+        }
+        f = run_check_lock(data, "NPM-006")
+        assert not f.passed
+        assert f.severity == Severity.CRITICAL

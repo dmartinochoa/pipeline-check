@@ -1,7 +1,7 @@
 """NPM-006, lockfile pins a known-compromised npm package version."""
 from __future__ import annotations
 
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, Severity, severity_rank
 from ...rule import Rule
 from .._compromised_packages import lookup
 from ..base import NpmLock, iter_lock_packages
@@ -120,6 +120,7 @@ def check(lock: NpmLock) -> Finding:
     matches: list[str] = []
     locations: list[Location] = []
     advisories: set[str] = set()
+    matched_severities: set[Severity] = set()
     for install_path, record in iter_lock_packages(lock):
         version = record.get("version")
         if not isinstance(version, str):
@@ -132,6 +133,7 @@ def check(lock: NpmLock) -> Finding:
             continue
         matches.append(f"{name}@{version}")
         advisories.add(hit.advisory)
+        matched_severities.add(hit.severity)
         idx = lock.text.find(f'"{install_path}"')
         line_no = lock.text[:idx].count("\n") + 1 if idx >= 0 else 1
         locations.append(Location(
@@ -143,6 +145,7 @@ def check(lock: NpmLock) -> Finding:
             "No lockfile entry matches a known-compromised package "
             "version in the curated registry."
         )
+        severity = RULE.severity
     else:
         unique = sorted(set(matches))
         ref_summary = ", ".join(unique[:3])
@@ -156,8 +159,12 @@ def check(lock: NpmLock) -> Finding:
             f"lockfile, then update to a post-incident clean version. "
             f"Advisory: {adv_summary}"
         )
+        # Per-entry severity wins: a HIGH-only match (protestware like
+        # node-ipc) should report HIGH, not the rule-level CRITICAL
+        # default. Multiple matches escalate to the most severe.
+        severity = max(matched_severities, key=severity_rank)
     return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        check_id=RULE.id, title=RULE.title, severity=severity,
         resource=lock.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
