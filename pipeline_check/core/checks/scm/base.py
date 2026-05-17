@@ -213,6 +213,17 @@ class SCMRepoSnapshot:
     #: and missing webhook secrets. ``None`` when the endpoint failed
     #: or the token lacks admin scope.
     webhooks: list[dict[str, Any]] | None = None
+    #: ``GET /repos/{owner}/{repo}/collaborators?affiliation=outside&
+    #: per_page=100``. List of outside collaborators, each
+    #: ``{"login", "permissions": {"admin", "maintain", "push",
+    #: "triage", "pull"}, ...}``. ``SCM-027`` reads this slot to
+    #: flag elevated-permission outside collaborators. ``None``
+    #: when the endpoint failed or the token lacks admin scope;
+    #: empty list when no outside collaborators are configured. The
+    #: hydrator fetches only the first page (per_page=100) to keep
+    #: scan cost bounded; rules note the truncation when a list of
+    #: exactly 100 entries comes back.
+    outside_collaborators: list[dict[str, Any]] | None = None
 
 
 @dataclass(slots=True)
@@ -300,6 +311,7 @@ class SCMContext:
         environments: dict[str, Any] | None = None
         deploy_keys: list[dict[str, Any]] | None = None
         webhooks: list[dict[str, Any]] | None = None
+        outside_collaborators: list[dict[str, Any]] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -318,6 +330,14 @@ class SCMContext:
             raw_hooks = fetcher.fetch(f"repos/{owner}/{name}/hooks")
             if isinstance(raw_hooks, list):
                 webhooks = [h for h in raw_hooks if isinstance(h, dict)]
+            raw_outside = fetcher.fetch(
+                f"repos/{owner}/{name}/collaborators"
+                "?affiliation=outside&per_page=100"
+            )
+            if isinstance(raw_outside, list):
+                outside_collaborators = [
+                    u for u in raw_outside if isinstance(u, dict)
+                ]
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -330,6 +350,7 @@ class SCMContext:
             environments=environments,
             deploy_keys=deploy_keys,
             webhooks=webhooks,
+            outside_collaborators=outside_collaborators,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

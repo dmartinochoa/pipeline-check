@@ -2107,6 +2107,268 @@ class TestSCM026:
         assert "malformed config" in f.description
 
 
+# ── SCM-027: outside collaborator with elevated permissions ────────
+
+
+class TestSCM027:
+    def test_write_outside_collab_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "ex-contractor",
+                    "permissions": {
+                        "admin": False, "maintain": False,
+                        "push": True, "triage": True, "pull": True,
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert not f.passed
+        assert "ex-contractor:push" in f.description
+        assert f.severity == Severity.HIGH
+
+    def test_admin_outside_collab_fails_with_admin_label(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "audit-firm",
+                    "permissions": {
+                        "admin": True, "maintain": True, "push": True,
+                        "triage": True, "pull": True,
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert not f.passed
+        # ``admin`` is the most-elevated tier; report it, not push.
+        assert "audit-firm:admin" in f.description
+
+    def test_maintain_outside_collab_fails_with_maintain_label(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "consultant",
+                    "permissions": {
+                        "admin": False, "maintain": True, "push": True,
+                        "triage": True, "pull": True,
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert not f.passed
+        assert "consultant:maintain" in f.description
+
+    def test_read_only_outside_collab_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "doc-reviewer",
+                    "permissions": {
+                        "admin": False, "maintain": False,
+                        "push": False, "triage": False, "pull": True,
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "1 outside collaborator(s) are read-only" in f.description
+
+    def test_triage_only_passes(self):
+        # Triage is a read-tier (label / close issues; no push). Pass.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "triager",
+                    "permissions": {
+                        "admin": False, "maintain": False,
+                        "push": False, "triage": True, "pull": True,
+                    },
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+
+    def test_no_outside_collabs_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "No outside collaborators" in f.description
+
+    def test_endpoint_unavailable_passes_with_note(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=None,
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "admin" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            outside_collaborators=[
+                {"login": "x", "permissions": {"admin": True}},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"archived": True},
+            outside_collaborators=[
+                {"login": "x", "permissions": {"admin": True}},
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "archived" in f.description
+
+    def test_truncation_note_when_full_page(self):
+        # Exactly 100 entries → potential pagination boundary;
+        # the rule appends an audit-prompt note.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": f"user{i}",
+                    "permissions": {"pull": True},
+                }
+                for i in range(100)
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert f.passed
+        assert "100 entries" in f.description
+
+    def test_summary_lists_only_elevated(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {
+                    "login": "reader",
+                    "permissions": {"pull": True},
+                },
+                {
+                    "login": "pusher",
+                    "permissions": {"push": True, "pull": True},
+                },
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-027")
+        assert not f.passed
+        assert "pusher:push" in f.description
+        assert "reader" not in f.description
+
+
+# ── SCM-028: private repo allows forking ───────────────────────────
+
+
+class TestSCM028:
+    def test_private_with_forking_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "private": True,
+                "allow_forking": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert not f.passed
+        assert "pull_request_target" in f.description
+        assert f.severity == Severity.MEDIUM
+
+    def test_private_no_forking_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "private": True,
+                "allow_forking": False,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+        assert "disables forking" in f.description
+
+    def test_public_repo_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "private": False,
+                "allow_forking": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+        assert "public" in f.description
+
+    def test_missing_private_field_treated_as_public(self):
+        # GitHub omits ``private`` from public-repo responses
+        # under some token scopes; the rule's safe default is to
+        # treat the absence as 'not provably private' → pass.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "allow_forking": True},
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+
+    def test_missing_repo_meta_passes_with_note(self):
+        snap = SCMRepoSnapshot(owner="o", name="r", repo_meta=None)
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+        assert "unavailable" in f.description
+
+    def test_non_github_platform_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"private": True, "allow_forking": True},
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
+
+    def test_archived_skipped(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "archived": True,
+                "private": True,
+                "allow_forking": True,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-028")
+        assert f.passed
+        assert "archived" in f.description
+
+
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
 
 
@@ -2142,6 +2404,9 @@ class TestSnapshotActionsEndpoints:
                     },
                 },
             ],
+            "repos/o/r/collaborators?affiliation=outside&per_page=100": [
+                {"login": "outside-dev", "permissions": {"pull": True}},
+            ],
         })
         ctx = SCMContext.for_repo("o", "r", fetcher)
         snap = ctx.repos[0]
@@ -2159,6 +2424,9 @@ class TestSnapshotActionsEndpoints:
         ]
         assert isinstance(snap.webhooks, list)
         assert len(snap.webhooks) == 1
+        assert snap.outside_collaborators == [
+            {"login": "outside-dev", "permissions": {"pull": True}},
+        ]
         # Each new endpoint was hit exactly once.
         for path in (
             "repos/o/r/actions/permissions",
@@ -2166,6 +2434,7 @@ class TestSnapshotActionsEndpoints:
             "repos/o/r/environments",
             "repos/o/r/keys",
             "repos/o/r/hooks",
+            "repos/o/r/collaborators?affiliation=outside&per_page=100",
         ):
             assert path in fetcher.calls
 
@@ -2183,3 +2452,4 @@ class TestSnapshotActionsEndpoints:
         assert snap.environments is None
         assert snap.deploy_keys is None
         assert snap.webhooks is None
+        assert snap.outside_collaborators is None

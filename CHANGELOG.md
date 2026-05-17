@@ -72,6 +72,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
       (Birsan 2021, `torchtriton` 2022). Single-index installs with
       a transparently-mirrored proxy eliminate the surface.
 
+- **SCM-028 — private repo allows forking.** MEDIUM. Reads
+  ``private`` and ``allow_forking`` from the repo metadata and
+  fires when both are true. Forks inherit the code into the
+  forker's personal namespace (a separate visibility / 2FA / PAT
+  surface); if any workflow uses ``pull_request_target``
+  (GHA-027) or runs on fork PRs (GHA-046), Actions secrets reach
+  the fork execution context. Public repos pass (forking is
+  expected); private repos that explicitly disable forking pass.
+  The org-policy gate complementing the workflow-layer fork-PR
+  rules.
+
+- **SCM-027 — outside collaborator holds write / maintain / admin
+  access.** HIGH. Walks ``GET /repos/{owner}/{repo}/collaborators
+  ?affiliation=outside`` and flags every entry whose
+  ``permissions`` block has any of ``admin: true``, ``maintain:
+  true``, or ``push: true``. Outside collaborators bypass the
+  org's user-lifecycle controls — when the contractor's term
+  ends, the entry stays until somebody manually removes it. The
+  rule reports the *most-elevated* tier per collaborator
+  (admin > maintain > push) so the operator can prioritize, and
+  appends a truncation note when GitHub returns exactly 100
+  entries (the per-page cap; pagination is bounded to one page
+  to keep scan cost predictable). Requires admin scope; silent-
+  pass with an unavailability note otherwise.
+
 - **SCM-026 — webhook ships events insecurely (HTTP / no-TLS /
   no-secret).** HIGH. Walks ``GET /repos/{owner}/{repo}/hooks``
   and flags any active webhook hitting one or more failure modes:
