@@ -13,6 +13,7 @@ is a posture-reporter, not a remediation tool).
 """
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import urllib.error
@@ -579,3 +580,138 @@ def security_feature_state(
     if isinstance(status, str):
         return status
     return None
+
+
+# ── Ruleset scoping helpers ───────────────────────────────────────
+
+
+def _matches_default_branch_ref(pattern: str, default_branch: str) -> bool:
+    """True if a GitHub Rulesets ref-name pattern matches the repo's
+    default branch.
+
+    Recognized forms:
+      * ``"~ALL"``             — wildcard, matches every ref.
+      * ``"~DEFAULT_BRANCH"``  — the literal default-branch token.
+      * ``"refs/heads/<X>"``   — exact match when ``X == default_branch``.
+      * fnmatch globs          — e.g. ``"refs/heads/**"``,
+        ``"refs/heads/release/**"`` matched against
+        ``"refs/heads/<default_branch>"`` with ``fnmatchcase``.
+
+    Globs are matched literally (no Bash-style brace expansion); the
+    rulesets API only emits fnmatch shapes today.
+    """
+    if pattern == "~ALL" or pattern == "~DEFAULT_BRANCH":
+        return True
+    ref = f"refs/heads/{default_branch}"
+    if pattern == ref:
+        return True
+    return fnmatch.fnmatchcase(ref, pattern)
+
+
+def ruleset_targets_default_branch(
+    ruleset: dict[str, Any], default_branch: str,
+) -> bool:
+    """True if a ruleset's branch-target conditions include the
+    default branch and don't exclude it.
+
+    Tag-only rulesets (``target: "tag"``), push-only rulesets, and
+    rulesets whose ``conditions.ref_name.include`` never matches the
+    default branch return ``False``. A missing ``target`` field is
+    treated as ``"branch"`` — GitHub's UI defaults the field and
+    some legacy / minimal fixtures omit it.
+
+    Rulesets without a populated ``conditions.ref_name.include``
+    can't be evaluated; this returns ``False`` so the caller's
+    "scoped away from default" branch fires rather than a silent
+    pass.
+    """
+    target = ruleset.get("target")
+    if target not in (None, "branch"):
+        return False
+    conditions = ruleset.get("conditions")
+    if not isinstance(conditions, dict):
+        return False
+    ref_name = conditions.get("ref_name")
+    if not isinstance(ref_name, dict):
+        return False
+    include = ref_name.get("include")
+    if not isinstance(include, list) or not include:
+        return False
+    exclude = ref_name.get("exclude")
+    if not isinstance(exclude, list):
+        exclude = []
+    if any(
+        isinstance(p, str)
+        and _matches_default_branch_ref(p, default_branch)
+        for p in exclude
+    ):
+        return False
+    return any(
+        isinstance(p, str)
+        and _matches_default_branch_ref(p, default_branch)
+        for p in include
+    )
+
+
+def active_rulesets_targeting_default(
+    snapshot: SCMRepoSnapshot,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    """Partition active rulesets into three buckets:
+
+      1. ``targeting``    — active + detail available + the
+                            ``conditions.ref_name`` filter includes
+                            (and doesn't exclude) the default
+                            branch. These are the rulesets that
+                            actually enforce on the default branch
+                            and are what per-rule-type checks
+                            (SCM-032..040) should iterate.
+      2. ``unavailable``  — active but the per-ruleset detail fetch
+                            failed (``_detail_unavailable: True``);
+                            target can't be determined. Surface as
+                            "not fully evaluated".
+      3. ``scoped_away``  — active + detail available but the
+                            ``conditions.ref_name`` filter doesn't
+                            include the default branch (tag-only,
+                            feature-branch-only, exclude list shadows
+                            the default). These are the false-pass
+                            shape: a ruleset that exists but doesn't
+                            protect ``main``.
+
+    Non-active rulesets (``evaluate`` / ``disabled``) are filtered
+    out entirely — they're SCM-029's surface, not the per-rule-type
+    rules' concern. Returns three empty lists when
+    ``snapshot.rulesets`` is ``None``.
+    """
+    if snapshot.rulesets is None:
+        return [], [], []
+    default = default_branch_name(snapshot)
+    targeting: list[dict[str, Any]] = []
+    unavailable: list[dict[str, Any]] = []
+    scoped_away: list[dict[str, Any]] = []
+    for rs in snapshot.rulesets:
+        if rs.get("enforcement") != "active":
+            continue
+        if rs.get("_detail_unavailable") is True:
+            unavailable.append(rs)
+            continue
+        if ruleset_targets_default_branch(rs, default):
+            targeting.append(rs)
+        else:
+            scoped_away.append(rs)
+    return targeting, unavailable, scoped_away
+
+
+def ruleset_label(ruleset: dict[str, Any]) -> str:
+    """Human-readable label for a ruleset finding. Prefers ``name``,
+    falls back to ``ruleset:<id>``, finally ``(unnamed)``."""
+    name = ruleset.get("name")
+    rs_id = ruleset.get("id")
+    if isinstance(name, str) and name:
+        return name
+    if isinstance(rs_id, int):
+        return f"ruleset:{rs_id}"
+    return "(unnamed)"

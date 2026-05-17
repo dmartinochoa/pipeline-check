@@ -479,6 +479,42 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     set in the image apply to every binary the container runs and
     are the standard loader-hijack escalation primitive.
 
+### Changed
+
+- **SCM-032..040 now check that rulesets actually target the
+  default branch.** All nine ruleset rule-type checks used to
+  iterate active rulesets without consulting
+  ``conditions.ref_name`` — a ruleset scoped to ``refs/tags/*``
+  or ``refs/heads/release/**`` with the right rule type silently
+  passed the check while the default branch had no ruleset-level
+  coverage at all (false-pass shape). The new
+  ``active_rulesets_targeting_default(snapshot)`` helper in
+  ``checks/scm/base.py`` partitions active rulesets into
+  ``targeting`` (default-branch-applicable), ``unavailable``
+  (detail fetch failed), and ``scoped_away`` (active but not
+  applicable to the default branch). Each per-rule-type check
+  now iterates only the ``targeting`` bucket and surfaces a new
+  failure shape when active rulesets exist but none target the
+  default branch:
+  - For SCM-032..037 (legacy-BP analogs), the failure message
+    names the gap and points to the corresponding legacy
+    ``SCM-002 / 006 / 007 / 008 / 009 / 012`` as the
+    default-branch carrier.
+  - For SCM-038..040 (no legacy analog), the failure message
+    names the absent default-branch coverage directly.
+  The ``~ALL`` and ``~DEFAULT_BRANCH`` include tokens, exact
+  ``refs/heads/<default>`` includes, and fnmatch globs are all
+  recognized; an ``exclude`` entry that matches the default
+  branch also flips the ruleset into ``scoped_away`` even when
+  the include list is broad. ``target == "tag"`` rulesets are
+  filtered out (they never apply to branches).
+
+  Behavior change: existing scans against a repo with
+  feature-branch- or tag-only rulesets that previously passed
+  SCM-032..040 may now fail in this branch. The new finding is
+  load-bearing — the previous pass was wrong about the default
+  branch's coverage.
+
 ## [1.0.4] - 2026-05-12
 
 Skipped v1.0.2 and v1.0.3. Both releases failed at the same step:

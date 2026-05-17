@@ -7,9 +7,12 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     SCMRepoSnapshot,
+    active_rulesets_targeting_default,
     archived_state_label,
+    default_branch_name,
     github_only_skip,
     repo_resource,
+    ruleset_label,
 )
 
 RULE = Rule(
@@ -115,22 +118,44 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    unavailable: list[str] = []
-    for rs in rulesets:
-        if rs.get("enforcement") != "active":
-            continue
-        name = rs.get("name")
-        rs_id = rs.get("id")
-        rs_label = name if isinstance(name, str) and name else (
-            f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
+    targeting, unavailable_rs, scoped_away = (
+        active_rulesets_targeting_default(snapshot)
+    )
+    if not targeting and not unavailable_rs and scoped_away:
+        labels = [ruleset_label(rs) for rs in scoped_away]
+        default = default_branch_name(snapshot)
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"{len(scoped_away)} active ruleset(s) configured "
+                f"but none target the default branch "
+                f"(refs/heads/{default}): "
+                f"{', '.join(labels[:3])}"
+                f"{'…' if len(labels) > 3 else ''}. The status-"
+                f"checks gate isn't applied to the default branch "
+                f"at the ruleset layer; SCM-008 covers the "
+                f"legacy branch-protection carry."
+            ),
+            recommendation=RULE.recommendation, passed=False,
         )
-        if rs.get("_detail_unavailable") is True:
-            unavailable.append(rs_label)
-            continue
+    if not targeting and not unavailable_rs:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "No active rulesets target the default branch; "
+                "legacy branch-protection (SCM-008) carries the "
+                "status-checks gate."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    offenders: list[str] = []
+    for rs in targeting:
         if _has_status_checks_rule(rs.get("rules")):
             continue
-        offenders.append(rs_label)
+        offenders.append(ruleset_label(rs))
+    unavailable = [ruleset_label(rs) for rs in unavailable_rs]
     passed = not offenders
     if passed and unavailable:
         desc = (
@@ -141,13 +166,14 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         )
     elif passed:
         desc = (
-            "Every active ruleset requires at least one status "
-            "check to pass."
+            "Every active ruleset targeting the default branch "
+            "requires at least one status check to pass."
         )
     else:
         desc = (
-            f"{len(offenders)} active ruleset(s) don't require "
-            f"status checks: {', '.join(offenders[:3])}"
+            f"{len(offenders)} active ruleset(s) targeting the "
+            f"default branch don't require status checks: "
+            f"{', '.join(offenders[:3])}"
             f"{'…' if len(offenders) > 3 else ''}. Merges land "
             "without any CI gate."
         )

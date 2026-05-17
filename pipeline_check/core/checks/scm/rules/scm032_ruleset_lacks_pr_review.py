@@ -7,9 +7,12 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     SCMRepoSnapshot,
+    active_rulesets_targeting_default,
     archived_state_label,
+    default_branch_name,
     github_only_skip,
     repo_resource,
+    ruleset_label,
 )
 
 RULE = Rule(
@@ -135,23 +138,52 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    unavailable_details: list[str] = []
-    for rs in rulesets:
-        if rs.get("enforcement") != "active":
-            # Non-active rulesets are SCM-029's surface.
-            continue
-        name = rs.get("name")
-        rs_id = rs.get("id")
-        rs_label = name if isinstance(name, str) and name else (
-            f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
+    targeting, unavailable, scoped_away = (
+        active_rulesets_targeting_default(snapshot)
+    )
+    if not targeting and not unavailable and scoped_away:
+        # Active rulesets exist but none target the default branch.
+        # The PR-review gate (where this rule looks for it) isn't
+        # applied to refs/heads/<default>. Legacy SCM-002 still
+        # carries the gate on the default branch, but the operator's
+        # explicit ruleset configuration leaves the default branch
+        # uncovered at the ruleset layer.
+        labels = [ruleset_label(rs) for rs in scoped_away]
+        default = default_branch_name(snapshot)
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"{len(scoped_away)} active ruleset(s) configured "
+                f"but none target the default branch "
+                f"(refs/heads/{default}): "
+                f"{', '.join(labels[:3])}"
+                f"{'…' if len(labels) > 3 else ''}. The PR-review "
+                f"gate isn't applied to the default branch at the "
+                f"ruleset layer; SCM-002 covers the legacy "
+                f"branch-protection carry."
+            ),
+            recommendation=RULE.recommendation, passed=False,
         )
-        if rs.get("_detail_unavailable") is True:
-            unavailable_details.append(rs_label)
-            continue
+    if not targeting and not unavailable:
+        # All rulesets are non-active. SCM-029 covers; the per-rule
+        # check is silent on the default branch.
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "No active rulesets target the default branch; "
+                "legacy branch-protection (SCM-002) carries the "
+                "PR-review gate."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    offenders: list[str] = []
+    for rs in targeting:
         if _has_pr_review_rule(rs.get("rules")):
             continue
-        offenders.append(rs_label)
+        offenders.append(ruleset_label(rs))
+    unavailable_details = [ruleset_label(rs) for rs in unavailable]
     passed = not offenders
     if passed and unavailable_details:
         desc = (
@@ -164,13 +196,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         )
     elif passed:
         desc = (
-            "Every active ruleset includes a ``pull_request`` "
-            "rule with at least 1 required review."
+            "Every active ruleset targeting the default branch "
+            "includes a ``pull_request`` rule with at least 1 "
+            "required review."
         )
     else:
         desc = (
-            f"{len(offenders)} active ruleset(s) don't require a "
-            f"PR review: {', '.join(offenders[:3])}"
+            f"{len(offenders)} active ruleset(s) targeting the "
+            f"default branch don't require a PR review: "
+            f"{', '.join(offenders[:3])}"
             f"{'…' if len(offenders) > 3 else ''}. The ruleset "
             f"is enforced but pushes / merges land without human "
             f"review — governance documented, not gated."

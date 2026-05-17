@@ -7,9 +7,12 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     SCMRepoSnapshot,
+    active_rulesets_targeting_default,
     archived_state_label,
+    default_branch_name,
     github_only_skip,
     repo_resource,
+    ruleset_label,
 )
 
 RULE = Rule(
@@ -109,22 +112,45 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    unavailable: list[str] = []
-    for rs in rulesets:
-        if rs.get("enforcement") != "active":
-            continue
-        name = rs.get("name")
-        rs_id = rs.get("id")
-        rs_label = name if isinstance(name, str) and name else (
-            f"ruleset:{rs_id}" if isinstance(rs_id, int) else "(unnamed)"
+    targeting, unavailable_rs, scoped_away = (
+        active_rulesets_targeting_default(snapshot)
+    )
+    if not targeting and not unavailable_rs and scoped_away:
+        labels = [ruleset_label(rs) for rs in scoped_away]
+        default = default_branch_name(snapshot)
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"{len(scoped_away)} active ruleset(s) configured "
+                f"but none target the default branch "
+                f"(refs/heads/{default}): "
+                f"{', '.join(labels[:3])}"
+                f"{'…' if len(labels) > 3 else ''}. Linear-history "
+                f"enforcement has no legacy branch-protection "
+                f"analog, so the default branch has no coverage "
+                f"for this gate."
+            ),
+            recommendation=RULE.recommendation, passed=False,
         )
-        if rs.get("_detail_unavailable") is True:
-            unavailable.append(rs_label)
-            continue
+    if not targeting and not unavailable_rs:
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "No active rulesets target the default branch; "
+                "linear-history enforcement has no legacy "
+                "branch-protection analog and is not separately "
+                "evaluated."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    offenders: list[str] = []
+    for rs in targeting:
         if _requires_linear_history(rs.get("rules")):
             continue
-        offenders.append(rs_label)
+        offenders.append(ruleset_label(rs))
+    unavailable = [ruleset_label(rs) for rs in unavailable_rs]
     passed = not offenders
     if passed and unavailable:
         desc = (
@@ -134,13 +160,17 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             "posture not fully evaluated."
         )
     elif passed:
-        desc = "Every active ruleset requires linear history."
+        desc = (
+            "Every active ruleset targeting the default branch "
+            "requires linear history."
+        )
     else:
         desc = (
-            f"{len(offenders)} active ruleset(s) don't require "
-            f"linear history: {', '.join(offenders[:3])}"
+            f"{len(offenders)} active ruleset(s) targeting the "
+            f"default branch don't require linear history: "
+            f"{', '.join(offenders[:3])}"
             f"{'…' if len(offenders) > 3 else ''}. Merge commits "
-            "are permitted on the targeted refs, muddying "
+            "are permitted on the default branch, muddying "
             "``git log --first-parent`` triage and git-bisect."
         )
         if unavailable:
