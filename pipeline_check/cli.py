@@ -3058,9 +3058,9 @@ def _build_gate_trailer(
         )
     elif not baseline_path and not baseline_from_git:
         parts.append(
-            f"no baseline configured; run `pipeline_check "
-            f"--write-baseline baseline.json` then pair with "
-            f"`--baseline baseline.json` to gate only on new findings"
+            "no baseline configured; run `pipeline_check "
+            "--write-baseline baseline.json` then pair with "
+            "`--baseline baseline.json` to gate only on new findings"
         )
     else:
         # Both autofix and baseline aren't useful: name the top check
