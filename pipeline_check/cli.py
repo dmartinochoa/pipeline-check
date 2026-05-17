@@ -155,7 +155,7 @@ class _GroupedCommand(click.Command):
             "--dockerfile-path", "--k8s-path", "--helm-path",
             "--buildkite-path", "--tekton-path", "--argo-path",
             "--helm-values", "--helm-set", "--oci-manifest",
-            "--drone-path",
+            "--drone-path", "--npm-path", "--pypi-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -494,6 +494,8 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("buildkite", (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"), ()),
     ("drone", (".drone.yml", ".drone.yaml"), ()),
     ("dockerfile", ("Dockerfile", "Containerfile"), ()),
+    ("npm", ("package.json", "package-lock.json"), ()),
+    ("pypi", ("requirements.txt",), ()),
     (
         "cloudformation",
         (
@@ -846,7 +848,8 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path, --oci-manifest, --drone-path); "
+        "--argo-path, --oci-manifest, --drone-path, --npm-path, "
+        "--pypi-path); "
         "AWS scans the live account via boto3. For multi-provider "
         "scans (so cross-provider attack chains like XPC-001 fire) "
         "use ``--pipelines github,oci`` instead."
@@ -1055,6 +1058,26 @@ def _install_completion_callback(
         "Path to a Dockerfile / Containerfile or a directory containing "
         "one (required when --pipeline dockerfile). Auto-detects "
         "./Dockerfile and ./Containerfile."
+    ),
+)
+@click.option(
+    "--npm-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a package.json / package-lock.json or a directory "
+        "containing one (required when --pipeline npm). Auto-detects "
+        "./package.json and ./package-lock.json."
+    ),
+)
+@click.option(
+    "--pypi-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a requirements.txt or a directory containing one "
+        "(required when --pipeline pypi). Auto-detects "
+        "./requirements.txt and ./requirements/*.txt."
     ),
 )
 @click.option(
@@ -1735,6 +1758,8 @@ def scan(
     dockerfile_path: str | None,
     k8s_path: str | None,
     helm_path: str | None,
+    npm_path: str | None,
+    pypi_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2264,6 +2289,18 @@ def scan(
                 candidates=(".drone.yml", ".drone.yaml"),
                 detect_label=".drone.yml/.drone.yaml",
             )
+        elif pipeline_lc == "npm":
+            npm_path = _resolve_provider_path(
+                "npm", flag="npm-path", value=npm_path,
+                candidates=("package.json", "package-lock.json"),
+                detect_label="package.json/package-lock.json",
+            )
+        elif pipeline_lc == "pypi":
+            pypi_path = _resolve_provider_path(
+                "pypi", flag="pypi-path", value=pypi_path,
+                candidates=("requirements.txt",),
+                detect_label="requirements.txt",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -2367,6 +2404,8 @@ def scan(
         helm_set=list(helm_set) or None,
         oci_manifest=oci_manifest,
         drone_path=drone_path,
+        npm_path=npm_path,
+        pypi_path=pypi_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,

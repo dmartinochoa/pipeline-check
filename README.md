@@ -16,7 +16,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**610+ checks** across **19 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**620+ checks** across **21 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -123,6 +123,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 43 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 15 checks (`OCI-001`--`008` plus `ATTEST-001..007`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding, meaningful SLSA `buildType`, SBOM package supplier / originator attribution |
 | **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 19 checks (`SCM-001`--`019`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
+| **npm** | `package.json` / `package-lock.json` / `npm-shrinkwrap.json` | `--npm-path` | 5 checks (`NPM-001`--`005`): floating version ranges, lockfile entries missing `integrity`, non-registry sources (git+ssh, http://, git+https without 40-char SHA pin), install-time lifecycle scripts (`preinstall` / `install` / `postinstall` / `prepare`), git deps using mutable refs. Skips `node_modules/`. |
+| **pypi** | `requirements*.txt` / `*.in` | `--pypi-path` | 5 checks (`PYPI-001`--`005`): requirements lines missing `==` pin, files missing `--require-hashes` / per-line `--hash=`, HTTP indexes (`-i http://`, `--trusted-host`), VCS deps without 40-char commit SHA, `--extra-index-url` (dependency-confusion vector). `*.in` (pip-tools input) exempt from PYPI-001/002 since hashing lives in the compiled output. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -144,7 +146,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   610+ checks across 19 providers
+  Config files   |  Scanner  |   620+ checks across 21 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -451,6 +453,8 @@ pipeline_check/
         ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-019 — repo governance via the platform REST API (GitHub full pack; GitLab + Bitbucket universal subset)
+        ├── npm/rules/         # NPM-001 .. NPM-005 — package.json + package-lock.json supply-chain hygiene
+        ├── pypi/rules/        # PYPI-001 .. PYPI-005 — requirements.txt supply-chain hygiene
         └── custom/            # YAML rule loader + predicate engine
 ```
 

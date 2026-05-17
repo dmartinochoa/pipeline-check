@@ -455,6 +455,18 @@ STANDARD = Standard(
         "DF-023":   ["CICD-SEC-7"],   # ENV LD_PRELOAD / LD_LIBRARY_PATH
         "DF-024":   ["CICD-SEC-3", "CICD-SEC-7"],  # npm install runs lifecycle scripts
         "DF-025":   ["CICD-SEC-6", "CICD-SEC-3"],  # registry token in image layer
+        # npm (lockfile + manifest static analysis)
+        "NPM-001":  ["CICD-SEC-3"],   # floating range in package.json
+        "NPM-002":  ["CICD-SEC-3", "CICD-SEC-9"],  # lock entry missing integrity
+        "NPM-003":  ["CICD-SEC-3", "CICD-SEC-8"],  # non-registry source
+        "NPM-004":  ["CICD-SEC-3", "CICD-SEC-7"],  # install-time lifecycle script
+        "NPM-005":  ["CICD-SEC-3", "CICD-SEC-9"],  # git dep with mutable ref
+        # pypi (requirements file static analysis)
+        "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
+        "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
+        "PYPI-003": ["CICD-SEC-3", "CICD-SEC-7"],  # http index / --trusted-host
+        "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
+        "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env
