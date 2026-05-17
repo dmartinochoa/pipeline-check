@@ -521,6 +521,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Added SCM coverage to NIST CSF 2.0 and NIST SSDF.** Two
+  more frameworks commonly used for CI/CD compliance gating
+  get SCM mappings:
+  - **NIST CSF 2.0**: 326/526 → 369/526 (+43 rules, full SCM
+    range). PR.PS-06 (Secure software development practices)
+    carries branch-protection / review-control / ruleset
+    rule-type surfaces; PR.AA-05 / PR.AA-01 / PR.AA-03 carry
+    access and identity surfaces; PR.DS-01 / PR.DS-02 carry
+    secret-scanning + webhook transport; DE.CM-09 carries
+    detection surfaces; GV.SC-05 + PR.PS-05 carry the
+    allowed-actions / supply-chain governance surface;
+    PR.PS-01 carries configuration-management; RS.MA-01
+    carries the private vulnerability reporting channel.
+  - **NIST SSDF**: 144/526 → 184/526 (+40 rules, full SCM
+    range). The PS.1 family ("Protect all forms of code from
+    unauthorized access and tampering") is the workhorse for
+    branch-protection / ruleset rule-type surfaces; PS.2.1
+    carries signed commits; PW.4.1 / PW.4.4 carry allowed-
+    actions governance; PO.5.1 carries environment separation;
+    PO.3.2 carries webhook channel security; PW.6.1 carries
+    required-workflows; RV.1.1 carries scan and vuln-reporting
+    surfaces.
+
+  Together with the prior CIS / Scorecard / ESF / NIST 800-53
+  / SOC 2 backfills, SCM rules now have coverage on 7 of the
+  12 framework standards. Remaining gaps: NIST 800-190
+  (container-focused), PCI DSS v4 (less natural fit), S2C2F
+  (OSS-deps focused), SLSA (provenance focused), and
+  ``cis_aws_foundations`` / ``cis_kubernetes`` (intentionally
+  narrow per their floor comments).
+
 - **Added SCM coverage to NIST 800-53 and SOC 2.** Two
   compliance frameworks commonly used as CI/CD gates had zero
   SCM coverage. SCM-001..040 now map:
