@@ -521,6 +521,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Backfilled SCM coverage on CIS SSCS, OpenSSF Scorecard, and
+  ESF supply chain.** SCM-020..040 (Actions governance,
+  environment protection, deploy-keys, webhooks, outside-
+  collaborator audit, fork-policy, ruleset enforcement /
+  always-bypass / per-rule-type coverage / auto-merge) landed
+  OWASP-only across this branch. This commit backfills the
+  framework mappings the floor comments in
+  ``tests/test_standards.py`` had queued:
+  - **CIS SSCS**: 197/526 → 217/526 (+20 rules). SCM-020..040
+    map to CIS controls in the 1.x source-code and 5.x
+    deployment sections; SCM-026 (webhook channel) has no clean
+    CIS fit and is left unmapped with a comment.
+  - **OpenSSF Scorecard**: 280/526 → 301/526 (+21 rules).
+    SCM-020..040 fold into the Branch-Protection / Code-Review
+    / Token-Permissions / Pinned-Dependencies / SAST checks
+    Scorecard already evidences via SCM-001..017.
+  - **NSA/CISA ESF supply chain**: 293/526 → 326/526 (+33
+    rules). First SCM coverage on this framework — the rules
+    declared ``esf=`` tags in their definitions all along, but
+    the standard's data file had zero SCM mappings. SCM-001..040
+    map to ESF-D-CODE-REVIEW for branch-protection / review-
+    control concerns, ESF-D-SECRETS for scanning, ESF-D-TOKEN-
+    HYGIENE for long-lived credentials, ESF-C-LEAST-PRIV for
+    governance scope, and ESF-C-APPROVAL / ESF-C-ENV-SEP for
+    environment protection. Six SCM rules (SCM-003 SAST,
+    SCM-006/036 signed commits, SCM-016 private vuln reporting,
+    SCM-026 webhook, SCM-028 fork policy, SCM-040 code-scanning
+    gate) have no clean ESF control fit and are left unmapped
+    with a comment explaining why.
+
 - **SCM-032..040 now check that rulesets actually target the
   default branch.** All nine ruleset rule-type checks used to
   iterate active rulesets without consulting
