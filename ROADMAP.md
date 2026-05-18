@@ -157,6 +157,46 @@ visibility they currently leave the scanner to get from a SaaS
 competitor. No DB; just a directory of timestamped JSON files the
 user already produces from CI.
 
+### Org-wide fleet scanning (``pipeline_check fleet``)
+
+One command, N repos, one rolled-up posture digest. ``pipeline_check
+fleet --repos repos.yml`` reads a list of repo coordinates
+(``owner/name`` for GitHub, ``group/subgroup/project`` for GitLab,
+``workspace/repo_slug`` for Bitbucket), shallow-clones each into a
+per-repo tmpdir, runs the auto-detect scan against it, and emits a
+unified digest covering every repo in one place.
+``--from-org dmartinochoa`` skips the YAML and pulls the repo list
+from the SCM provider's REST API (``$GITHUB_TOKEN`` /
+``$GITLAB_TOKEN`` / ``$BITBUCKET_TOKEN`` per platform).
+``--include`` / ``--exclude`` globs scope the set.
+
+Output is a directory tree: each repo gets its own
+``<repo>/findings.json``, ``<repo>/scan.sarif``, and optional
+``<repo>/threats.md``, plus a top-level ``fleet.json`` roll-up and
+``fleet.md`` digest. The digest groups findings by repo and severity,
+ranks repos by score, and surfaces the org-wide A/B/C/D distribution
+at the top. ``--baseline-dir`` reads a prior fleet run's per-repo
+``findings.json`` baselines so the gate only fires on new regressions
+across the org. Every existing scan flag (``--fail-on``, ``--min-grade``,
+``--standard``, ``--checks``, ``--resolve-remote``) is forwarded
+unchanged to each sub-scan, so a fleet run is just the existing
+scanner running N times with results stitched.
+
+Closes the "do we even have visibility?" gap that pushes security
+teams from CLIs into SaaS posture-management tools. Compounds with the
+self-hosted dashboard (above): the same dashboard reads a fleet
+``--output-dir`` directly with no extra plumbing. The fleet command
+itself stays no-SaaS, no-telemetry, no DB; just a directory of files
+the user can grep, version, and feed into their existing reporting.
+
+Architecture: ``pipeline_check/cli.py`` gains a ``fleet`` subcommand;
+``pipeline_check/core/fleet.py`` owns shallow-clone, per-repo
+orchestration, and digest emission. The repo-list YAML and
+``--from-org`` parsing reuse the existing SCM platform helpers.
+Cross-repo XPC chains stay out of scope for v1; the chain engine
+already runs per-repo and "an attack chain spanning two repos in the
+same org" is a separate (interesting) problem worth its own design.
+
 ### VS Code extension / LSP
 
 Thin LSP wrapping the existing ``--explain`` output and per-rule
@@ -181,6 +221,63 @@ don't ship Python (Go-shop CI, JVM-shop CI, container-only build
 environments). Pure packaging move, no rule code change. The
 marketplace ``action.yml`` already shipped is the GHA half of this;
 the binary + container image cover every other CI.
+
+### Real-world GOAT corpus benchmark (``bench/goats/``)
+
+Phase 1's in-repo synthetic fixtures cover the recall floor: one
+folder per attack pattern, each minimal enough to trigger the
+intended rule. The complement is a corpus of *real* vulnerable-by-
+design testbeds, scanned in CI on a schedule and on PRs that touch
+rule code, so the team can watch recall and false-positive rates
+move when a rule pack changes.
+
+Target corpus (each pinned to a fixed commit SHA for
+reproducibility):
+
+  * ``cider-security-research/cicd-goat`` — all 10 OWASP CI/CD risks
+    across GitHub Actions, GitLab CI, and Jenkins. The canonical
+    CI/CD goat.
+  * ``bridgecrewio/terragoat`` — Terraform misconfigurations.
+    Exercises the plan-JSON path today; would also drive direct-HCL
+    parsing if that path lands.
+  * ``bridgecrewio/cfngoat`` — CloudFormation misconfigurations.
+  * ``madhuakula/kubernetes-goat`` — Kubernetes workload + cluster
+    misconfigurations.
+  * ``bridgecrewio/dvca`` — Damn Vulnerable Cloud Application; AWS
+    IAM via CloudFormation.
+
+Shape: ``bench/goats.yml`` declares the corpus with pinned SHAs.
+``bench/goat_runner.py`` shallow-clones each into a tmpdir, runs
+pipeline-check with the right provider, and writes JSON output to
+``bench/goats/<slug>/findings.json``. The runner diffs each goat's
+findings against a checked-in ``bench/goats/<slug>/expected.txt``
+(the curated "this goat intends to demonstrate these check IDs"
+list) and an ``allowlist.txt`` (the known-false-positive set, one
+line of justification per entry). Output is a markdown digest with
+per-goat recall, FP count, and trend vs the prior committed
+baseline. ``--suggest`` mirrors the existing ``bench/run.py
+--suggest`` so the operator can seed ``expected.txt`` from a real
+scan.
+
+CI shape: ``.github/workflows/goat-bench.yml`` runs nightly on
+``master`` and on every PR that touches ``pipeline_check/core/checks/``,
+``pipeline_check/core/chains/``, or the goat-bench code itself.
+Nightly opens (or updates) a tracking issue when recall regresses on
+any goat. The PR job posts a comment with the goat delta vs the
+base ref.
+
+Honest curation cost: ``expected.txt`` and ``allowlist.txt`` are
+hand-written, one PR per goat, and that's the dominant work item.
+Untouched goats can land with an empty ``expected.txt`` — the
+trend-vs-baseline signal alone is useful, and recall curation
+arrives incrementally per goat.
+
+Earns its own entry instead of folding into phase 2 below: phase 2
+measures "do we catch what other tools catch on the same repo?";
+this entry measures "do we catch what the goat *intends* to
+demonstrate?" Different ground truth, different curation effort,
+and phase 2's cross-scanner matrix needs a real-world corpus to
+exist first — that corpus is what this entry produces.
 
 ### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
 
