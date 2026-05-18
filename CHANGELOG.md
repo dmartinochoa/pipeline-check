@@ -344,6 +344,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Only OCI-006 (excessive layer count) remains unmapped — pure
   image-bloat hygiene with no SSDF analog.
 
+- **Broadened NIST SP 800-53 Rev. 5 to 100% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 269 net-new entries.
+  800-53 is the federal control catalog and is broad enough that
+  every scanner rule lands. Follows the existing per-rule pattern:
+  pinning + 3rd-party verification → SR-3 + SR-11 (+ SI-2 for
+  flaw remediation cadence, + RA-5 for vuln monitoring on
+  compromised-pkg variants); script injection / dangerous shell →
+  CM-6 + SA-11; secret leakage → IA-5 (+ SC-28 for at-rest
+  variants, + AU-9 for protection-of-audit on egress variants);
+  signing / SBOM / attestation → SI-7 + SR-4 (+ CM-8 for
+  component inventory on SBOM-content); TLS bypass → SC-8 +
+  SC-13; privileged / runtime hardening → AC-6 + CM-6 + CM-7;
+  approval gates / branch governance → SA-10 + SA-15 + AC-3;
+  timeout / retention / audit hygiene → CM-6 + AU-2 + AU-11 +
+  AU-12; vuln scan / SCA / malicious indicators → RA-5 + SI-2.
+  Picks up the full GHA-006..058 + GL-006..033 + BB-006..029 +
+  ADO-006..030 + CC-024..031 + JF-002..032 + DR-001..011 +
+  BK-014/015 + TKN-014/015 + ARGO-014/015 + GCB-004 surface, the
+  NPM/PyPI/Maven dep-supply-chain pack, OCI manifest gaps
+  (OCI-001..008), the ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension (DF-024..030), AWS extras (CB-008..011,
+  CP-005/007, ECR-006/007, IAM-007/008, PBAC-003/005), TF/CF
+  IaC-native rules, SCM-016 + SCM-043..047, and the `-000`
+  degraded-mode discovery findings on AU-2 + AU-12 (audit-event
+  gap, mirroring the cross-standard visibility-gap precedent).
+  After: 516/516 = 100% (was 247, 48%). The 800-53 family
+  catalog is broad enough that every scanner rule has a home;
+  no carve-outs remain.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
