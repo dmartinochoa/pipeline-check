@@ -11,11 +11,17 @@ from pipeline_check.core import chains as chains_pkg
 from pipeline_check.core.chains.base import (
     Chain,
     failing,
+    group_by_anchor,
     group_by_resource,
     has_failing,
     min_confidence,
 )
-from pipeline_check.core.checks.base import Confidence, Finding, Severity
+from pipeline_check.core.checks.base import (
+    Confidence,
+    Finding,
+    ResourceAnchor,
+    Severity,
+)
 from pipeline_check.core.gate import GateConfig, evaluate_gate
 
 # ── Synthetic finding factory ─────────────────────────────────────────
@@ -30,6 +36,7 @@ def _f(
     severity: Severity = Severity.HIGH,
     job_anchors: tuple[str, ...] = (),
     path_evidence: tuple[str, ...] = (),
+    resource_anchors: tuple[ResourceAnchor, ...] = (),
 ) -> Finding:
     return Finding(
         check_id=check_id,
@@ -42,6 +49,7 @@ def _f(
         confidence=confidence,
         job_anchors=job_anchors,
         path_evidence=path_evidence,
+        resource_anchors=resource_anchors,
     )
 
 
@@ -90,6 +98,78 @@ class TestHelpers:
         # Defensive: an empty list shouldn't crash callers; HIGH is the
         # sensible default since "no evidence" can't lower confidence.
         assert min_confidence([]) is Confidence.HIGH
+
+    def test_group_by_anchor_intersects_on_identity(self):
+        # Two findings reference the same IAM role ARN; group_by_anchor
+        # composes them under that ARN as the key.
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        wf = _f("X-1", "wf.yml", resource_anchors=(role,))
+        iam = _f("X-2", role.identity, resource_anchors=(role,))
+        groups = group_by_anchor([wf, iam], ["X-1", "X-2"], "iam_role")
+        assert set(groups) == {role.identity}
+        assert set(groups[role.identity]) == {"X-1", "X-2"}
+
+    def test_group_by_anchor_drops_partial_groups(self):
+        # Only X-1 anchors on the role — not enough to form the group.
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        wf = _f("X-1", "wf.yml", resource_anchors=(role,))
+        groups = group_by_anchor([wf], ["X-1", "X-2"], "iam_role")
+        assert groups == {}
+
+    def test_group_by_anchor_ignores_other_kinds(self):
+        # A finding that anchors only an ecr_repo doesn't contribute
+        # to an iam_role intersection.
+        repo = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/r",
+        )
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        a = _f("X-1", "wf.yml", resource_anchors=(repo,))
+        b = _f("X-2", role.identity, resource_anchors=(role,))
+        groups = group_by_anchor([a, b], ["X-1", "X-2"], "iam_role")
+        assert groups == {}
+
+    def test_group_by_anchor_handles_multi_anchor_findings(self):
+        # A workflow that references three IAM roles emits three
+        # anchors; only the one that intersects with the IAM finding
+        # contributes a group.
+        roles = [
+            ResourceAnchor(
+                kind="iam_role",
+                identity=f"arn:aws:iam::123456789012:role/r{i}",
+            )
+            for i in range(3)
+        ]
+        wf = _f("X-1", "wf.yml", resource_anchors=tuple(roles))
+        iam = _f(
+            "X-2", roles[1].identity, resource_anchors=(roles[1],),
+        )
+        groups = group_by_anchor([wf, iam], ["X-1", "X-2"], "iam_role")
+        assert set(groups) == {roles[1].identity}
+
+    def test_group_by_anchor_ignores_passed_findings(self):
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        groups = group_by_anchor(
+            [
+                _f("X-1", "wf.yml", passed=True, resource_anchors=(role,)),
+                _f("X-2", role.identity, resource_anchors=(role,)),
+            ],
+            ["X-1", "X-2"],
+            "iam_role",
+        )
+        assert groups == {}
 
 
 # ── Engine ──────────────────────────────────────────────────────────

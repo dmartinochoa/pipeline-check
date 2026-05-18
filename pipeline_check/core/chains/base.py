@@ -171,6 +171,53 @@ def group_by_resource(
     }
 
 
+def group_by_anchor(
+    findings: list[Finding], required: list[str], kind: str,
+) -> dict[str, dict[str, Finding]]:
+    """Cross-provider counterpart to :func:`group_by_resource`.
+
+    Walks failing findings, groups by the ``ResourceAnchor.identity``
+    of every anchor with the matching *kind* the finding carries,
+    and keeps groups where every check_id in *required* fired.
+
+    Returned shape: ``{anchor_identity: {check_id: Finding}}``.
+
+    Where ``group_by_resource`` answers "did both legs fire on the
+    same file?", this answers "did both legs reference the same
+    external resource (role / repo / SA / image / function)?". A
+    GitHub workflow whose ``role-to-assume`` ARN matches the role
+    IAM-002 flagged as wildcard would group here under the role's
+    ARN as the key.
+
+    A single finding can carry multiple anchors (a workflow that
+    pushes to three ECR repos emits three ``ecr_repo`` anchors); we
+    record the finding under every identity it names, so any
+    matching repo composes the chain. Findings whose anchor set
+    doesn't include *kind* are ignored — chain rules using this
+    helper opt in to one taxonomy per chain rather than mixing
+    kinds.
+
+    The first finding per ``(identity, check_id)`` wins for the
+    description rendering; the chain only needs evidence the leg
+    fired, not every hit on the same resource.
+    """
+    by_id: dict[str, dict[str, Finding]] = defaultdict(dict)
+    needed = set(required)
+    for f in findings:
+        if f.passed or f.check_id not in needed:
+            continue
+        for anchor in f.resource_anchors:
+            if anchor.kind != kind:
+                continue
+            slot = by_id[anchor.identity]
+            if f.check_id not in slot:
+                slot[f.check_id] = f
+    return {
+        identity: ckmap for identity, ckmap in by_id.items()
+        if all(c in ckmap for c in required)
+    }
+
+
 def min_confidence(findings: list[Finding]) -> Confidence:
     """Return the lowest confidence among *findings* (LOW > MEDIUM > HIGH).
 

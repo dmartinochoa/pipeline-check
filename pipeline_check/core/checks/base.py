@@ -32,6 +32,7 @@ __all__ = [
     "confidence_rank",
     "Finding",
     "Location",
+    "ResourceAnchor",
     "ControlRef",
     "BaseCheck",
     # re-exported from blob
@@ -167,6 +168,38 @@ class Location:
         return out
 
 
+@dataclass(frozen=True, slots=True)
+class ResourceAnchor:
+    """A cross-provider reference to an external resource.
+
+    The cross-provider counterpart to :class:`Finding.job_anchors`.
+    ``job_anchors`` ties two findings together when they fire on the
+    same execution unit (job, step) of the *same* pipeline file. That
+    works for within-provider chains but doesn't fit cross-provider
+    cases where the natural reachability claim is "two findings
+    reference the same external resource" — e.g. a GitHub workflow's
+    ``role-to-assume`` ARN matching the role IAM-002 flagged as
+    wildcard.
+
+    ``kind`` is the resource taxonomy (``iam_role``, ``ecr_repo``,
+    ``k8s_sa``, ``lambda_fn``, ``oci_image``, …); ``identity`` is the
+    canonical string for that kind. Rules go through
+    :mod:`pipeline_check.core.checks._primitives.anchors` to build
+    these so both legs of a cross-provider chain agree on a single
+    canonical form and intersect mechanically.
+
+    ``(kind, identity)`` is the equality key; chain rules intersect
+    by treating the per-leg anchor sets as ``set[(kind, identity)]``
+    and looking for non-empty overlap.
+    """
+
+    kind: str
+    identity: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"kind": self.kind, "identity": self.identity}
+
+
 @dataclass(slots=True)
 class Finding:
     check_id: str
@@ -234,6 +267,18 @@ class Finding:
     #: aware chain rules and by ``--explain`` so a reader sees the
     #: full source-to-sink hop chain without re-reading the description.
     path_evidence: tuple[str, ...] = ()
+    #: External resources this finding references, in canonical form.
+    #: Used by the cross-provider chain engine: when two legs of a
+    #: chain anchor on the same ``(kind, identity)``, the chain is
+    #: reachable across providers (e.g. a GHA workflow's
+    #: ``role-to-assume`` ARN matching the role IAM-002 analyzed).
+    #: Empty tuple (the default) means the rule didn't compute any
+    #: cross-resource anchor; cross-provider chains then treat the
+    #: leg as co-occurrence only. Distinct from ``job_anchors``,
+    #: which is within-pipeline-file. Rules go through
+    #: ``checks/_primitives/anchors.py`` to build entries so both
+    #: legs agree on a canonical form.
+    resource_anchors: tuple[ResourceAnchor, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -258,6 +303,8 @@ class Finding:
             out["job_anchors"] = list(self.job_anchors)
         if self.path_evidence:
             out["path_evidence"] = list(self.path_evidence)
+        if self.resource_anchors:
+            out["resource_anchors"] = [a.to_dict() for a in self.resource_anchors]
         return out
 
 

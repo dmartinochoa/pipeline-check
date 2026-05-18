@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`ResourceAnchor` foundation for cross-provider reachability
+  (phase 0).** `Finding` gains a new
+  ``resource_anchors: tuple[ResourceAnchor, ...]`` field, the
+  cross-provider counterpart to ``job_anchors``. Where
+  ``job_anchors`` ties findings to the same job in one pipeline
+  file, ``resource_anchors`` ties them to the same external
+  resource (an IAM role ARN, an ECR repo URI, a K8s ServiceAccount,
+  a Lambda function ARN, an OCI image). A new
+  ``pipeline_check/core/checks/_primitives/anchors.py`` module
+  ships per-kind canonicalizers (``iam_role``, ``iam_role_name``,
+  ``ecr_repo``, ``lambda_fn``, ``k8s_sa``, ``oci_image``) so every
+  rule that needs to emit an anchor goes through one helper and
+  the two legs of a cross-provider chain mechanically agree on a
+  canonical form. ``chains/base.py`` gains a ``group_by_anchor``
+  helper alongside ``group_by_resource``, the chain-rule
+  counterpart that intersects on ``(kind, identity)``. No chain
+  rule consumes the new field yet; phase 1 starts the per-chain
+  migration (AC-007, AC-016, AC-019, AC-011, AC-020, AC-017,
+  AC-024, XPC-002, XPC-003). ``Finding.to_dict()`` surfaces
+  ``resource_anchors`` under a new ``"resource_anchors"`` key
+  when present.
+
 - **SLSA Build L3 + Sigstore badges and install-time nudge.** The
   README header gains a SLSA Build L3 badge and a Sigstore-signed
   badge linking to the existing "Verifying a release" section, and
