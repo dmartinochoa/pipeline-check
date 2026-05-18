@@ -1,8 +1,8 @@
 """Per-rule tests for MVN-001..005."""
+
 from __future__ import annotations
 
 from .conftest import pom_with_dep, run_check
-
 
 # ── MVN-001 floating Maven version range ───────────────────────────────
 

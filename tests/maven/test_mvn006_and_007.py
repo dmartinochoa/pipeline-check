@@ -1,9 +1,9 @@
 """Per-rule tests for MVN-006 (compromised-package registry) and
 MVN-007 (settings.xml wildcard mirror)."""
+
 from __future__ import annotations
 
 from .conftest import pom_with_dep, run_check
-
 
 # ── MVN-006 compromised-package registry ───────────────────────────────
 
