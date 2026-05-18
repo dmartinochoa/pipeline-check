@@ -11,6 +11,8 @@ functions so they can't drift apart in semantics.
 """
 from __future__ import annotations
 
+from typing import cast
+
 from ..base import Finding
 from ..rule import discover_rules
 from .base import CloudFormationBaseCheck, CloudFormationContext
@@ -30,7 +32,11 @@ class CloudFormationRuleChecks(CloudFormationBaseCheck):
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for rule, check_fn in self._rules:
-            batch = check_fn(self.ctx) or []
+            # ``discover_rules`` types each callable's return as a
+            # single ``Finding`` (the github-style signature), but the
+            # AWS / TF / CF rule shape returns ``list[Finding]``. Cast
+            # at the call site so mypy understands the batch is iterable.
+            batch = cast("list[Finding]", check_fn(self.ctx) or [])
             for finding in batch:
                 if not finding.cwe:
                     finding.cwe = list(rule.cwe)

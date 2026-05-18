@@ -14,7 +14,6 @@ from __future__ import annotations
 import os
 from pathlib import PurePosixPath
 
-
 # (provider, predicate-on-PurePosixPath) entries. First match wins.
 # Order mirrors :data:`pipeline_check.cli._PROVIDER_DETECT_FILES`
 # where applicable so the LSP and the CLI agree on which provider

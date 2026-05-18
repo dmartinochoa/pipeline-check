@@ -14,6 +14,8 @@ system from a single source of truth.
 """
 from __future__ import annotations
 
+from typing import cast
+
 from ..base import Finding
 from ..rule import discover_rules
 from .base import TerraformBaseCheck, TerraformContext
@@ -33,7 +35,11 @@ class TerraformRuleChecks(TerraformBaseCheck):
     def run(self) -> list[Finding]:
         findings: list[Finding] = []
         for rule, check_fn in self._rules:
-            batch = check_fn(self.ctx) or []
+            # ``discover_rules`` types each callable's return as a
+            # single ``Finding`` (the github-style signature), but the
+            # AWS / TF / CF rule shape returns ``list[Finding]``. Cast
+            # at the call site so mypy understands the batch is iterable.
+            batch = cast("list[Finding]", check_fn(self.ctx) or [])
             for finding in batch:
                 # Backfill metadata the rule carries but the helper
                 # function may not have populated (CWE, incident refs,

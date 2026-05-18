@@ -11,11 +11,20 @@ This module ships under an optional install extra::
 
     pip install pipeline-check[lsp]
 
-The base install does not pull in ``pygls`` so the AWS-Lambda /
-minimal-install footprints stay unchanged.
+The base install does not pull in ``pygls``. ``main`` is exposed lazily
+through ``__getattr__`` so the pure-Python helpers in this package
+(``detection.detect_provider``) stay importable without the extra.
 """
 from __future__ import annotations
 
-from .server import main
+from typing import Any
 
 __all__ = ["main"]
+
+
+def __getattr__(name: str) -> Any:
+    if name == "main":
+        from .server import main
+
+        return main
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

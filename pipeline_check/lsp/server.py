@@ -26,6 +26,7 @@ sees that scanning failed (vs. silently producing no findings).
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 import os
 import tempfile
@@ -130,8 +131,11 @@ def _scan_uri(
     # :func:`findings_to_diagnostics` simple: it matches by string
     # equality against the document path we control.
     for f in findings:
-        for loc in f.locations:
-            loc.path = path
+        # ``Location`` is a frozen dataclass, so rebuild each entry
+        # rather than assigning to ``loc.path``.
+        f.locations = [
+            dataclasses.replace(loc, path=path) for loc in f.locations
+        ]
     return findings_to_diagnostics(findings, path, provider)
 
 
