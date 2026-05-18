@@ -629,6 +629,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Broadened PCI DSS v4.0 to full coverage.** Cross-mapping pass:
+  no new rule modules, only mapping changes plus 31 net-new entries
+  for AWS rules registered but not yet attached to a PCI family.
+  Fills **7.2.2** (job classification) by cross-mapping
+  PBAC-002 / TKN-007 / ARGO-003 / GCB-013 / GCB-020 (default /
+  shared service-account identities) plus CCM-001 (no approval
+  rule template) as the change-control surface. Lifts **10.3.3**
+  (centralized log backup) off single-rule status with CT-001/003
+  (trail = centralized destination) and CWL-001 (retention = backup
+  window). New entries also fill Req 10.x / 7.x / 8.x with CT, CWL,
+  CW, EB, IAM-007/008, KMS-002, LMB, SIGN, SM, SSM, CA, CCM,
+  ECR-006/007, PBAC-003/005. After: 13/13 controls covered, 0 thin,
+  227 mappings (was 196).
+
 - **Broadened NIST CSF 2.0 mappings on thin Detect / Respond /
   Recover controls.** No new rule modules; cross-maps existing rules
   to subcategories the registry already had signal for. **DE.CM-06**
