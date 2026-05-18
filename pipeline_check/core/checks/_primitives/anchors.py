@@ -131,7 +131,7 @@ _LAMBDA_ARN_RE = re.compile(
     r"(?P<region>[a-z0-9-]+):"
     r"(?P<account>\d{12}):function:"
     r"(?P<name>[a-zA-Z0-9-_]+)"
-    r"(?::(?P<qualifier>[a-zA-Z0-9$-_]+))?$"
+    r"(?::(?P<qualifier>[a-zA-Z0-9$_-]+))?$"
 )
 
 

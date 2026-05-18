@@ -809,6 +809,28 @@ class TestLambdaFnAnchor:
             "arn:aws:s3:::123456789012:function:my-fn"
         ) is None
 
+    def test_qualifier_with_punctuation_rejected(self):
+        # The buggy qualifier class ``[a-zA-Z0-9$-_]`` read ``$-_``
+        # as a range from 0x24 to 0x5F and so accepted ``[``, ``]``,
+        # ``@`` and other punctuation. After the fix (hyphen at end)
+        # only the three literals ``$``, ``_``, ``-`` join the
+        # alphanumerics.
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:bad[name]"
+        ) is None
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:bad@name"
+        ) is None
+
+    def test_name_with_slash_rejected(self):
+        # Slash never appears in Lambda function names; the name
+        # class is ``[a-zA-Z0-9-_]+``. Locks the contract so a
+        # future "loosen the class" refactor has to update this
+        # test deliberately.
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my/fn"
+        ) is None
+
 
 class TestK8sSaAnchor:
     def test_explicit_namespace(self):

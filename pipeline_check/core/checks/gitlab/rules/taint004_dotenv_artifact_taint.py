@@ -107,13 +107,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{'...' if len(rendered) > 3 else ''}."
     )
     # Sink-side consumer jobs. GitLab's TaintPath.sink_location is
-    # ``"<job_name>:script[<idx>]"`` — split on ``":"`` (the GHA twin
-    # splits on ``"["`` because its format differs). The reachability-
-    # aware AC-022 chain intersects these with GL-004's ungated-deploy
+    # ``"<job_name>:script[<idx>]"``. ``rsplit`` on the trailing
+    # ``":"`` so job names that legitimately contain ``":"`` (e.g.
+    # ``deploy:prod``) survive the strip; only the trailing
+    # ``:script[<idx>]`` segment gets shed. The GHA twin splits on
+    # ``"["`` because its format differs. The reachability-aware
+    # AC-022 chain intersects these with GL-004's ungated-deploy
     # job IDs to confirm an end-to-end path.
     anchor_jobs: dict[str, None] = {}
     for p in paths:
-        anchor_jobs[p.sink_location.split(":", 1)[0]] = None
+        anchor_jobs[p.sink_location.rsplit(":", 1)[0]] = None
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
