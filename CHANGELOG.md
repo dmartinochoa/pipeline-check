@@ -373,6 +373,41 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   catalog is broad enough that every scanner rule has a home;
   no carve-outs remain.
 
+- **Broadened NIST SP 800-190 to 65% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 153 net-new entries. 800-190
+  is the container security guide — narrowly scoped to image
+  risks (§4.1), registry risks (§4.2), and container runtime
+  (§4.4). The existing docstring carves out orchestrator (§4.3),
+  host OS (§4.5), and signing/SBOM/provenance (those live in
+  SLSA / 800-53). Expansion focuses on the rules that genuinely
+  touch the image / registry / container risk surface: Dockerfile
+  env-bypass pack (DF-007/9/11/21..30) — TLS-disabling envs map
+  to 4.2.1, runtime-affecting envs map to 4.1.2 + 4.4.5;
+  NPM/PyPI/Maven dep-supply-chain — non-registry/HTTP/wildcard-
+  mirror → 4.2.1, mutable / unpinned → 4.1.5, compromised → 4.1.3,
+  lifecycle scripts → 4.4.5, secret globs → 4.1.4; OCI manifest
+  gaps — provenance metadata + integrity → 4.1.5, foreign-layer
+  URL → 4.2.1, layer count → 4.1.2; Helm per-field provenance →
+  4.1.5, HELM-008 stale Chart.lock → 4.2.2. Per-CI provider gaps
+  pick up the container-touching subset: no-timeout / untrusted-
+  context / cache-poisoning / dangerous-shell → 4.4.5; persisted
+  tokens + secret echoes → 4.1.4; unpinned service / runner /
+  plugin images → 4.1.5; TLS bypass / remote-install → 4.2.1;
+  worm IOCs → 4.1.3; resource-class / egress / shared role /
+  no-worker-pool → 4.4.3; rogue triggers (cache poisoning, agent
+  any, build-job ignores downstream, fork-PR webhooks) → 4.4.6.
+  TAINT-001..008 lands on 4.4.5 (untrusted code reaches build
+  runtime). SCM-022 (allowed_actions unrestricted) → 4.1.5 as
+  the lone SCM rule that touches container risk; other SCM
+  governance stays scoped out. After: 339/516 = 65% (was 186,
+  36%). The 177 unmapped rules are scoped outside 800-190's
+  container surface: SCM governance (47), signing/SBOM/SLSA
+  across providers (per the existing carve-out), cloud IAM (9),
+  KMS/SM/SSM secret stores (9), CT/CWL/CW/EB audit logs (10),
+  TF/CF IaC, ATTEST family, `-000` discovery findings, and
+  pipeline-flow rules that are governance rather than container-
+  runtime concerns.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
