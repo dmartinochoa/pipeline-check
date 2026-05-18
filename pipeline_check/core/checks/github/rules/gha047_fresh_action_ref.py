@@ -33,7 +33,7 @@ flag the rule passes silently with a nudge.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ...base import Finding, Severity
@@ -227,6 +227,6 @@ def _age_days(iso8601: str) -> int | None:
     except ValueError:
         return None
     if committed.tzinfo is None:
-        committed = committed.replace(tzinfo=timezone.utc)
-    delta = datetime.now(tz=timezone.utc) - committed
+        committed = committed.replace(tzinfo=UTC)
+    delta = datetime.now(tz=UTC) - committed
     return delta.days

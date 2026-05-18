@@ -1,7 +1,7 @@
 """IAM-007 — access-key age."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from pipeline_check.core.checks.aws.rules import iam007_key_age as rule
 from tests.aws.rules.conftest import FakeClient
@@ -23,7 +23,7 @@ def _key(key_id, days_old, status="Active"):
     return {
         "AccessKeyId": key_id,
         "Status": status,
-        "CreateDate": datetime.now(tz=timezone.utc) - timedelta(days=days_old),
+        "CreateDate": datetime.now(tz=UTC) - timedelta(days=days_old),
     }
 
 

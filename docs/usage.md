@@ -10,7 +10,7 @@ pip install pipeline-check       # package name: hyphenated
 pipeline_check --version         # command name: underscored
 ```
 
-Python 3.10+ is required. `pipx install pipeline-check` also works and
+Python 3.11+ is required. `pipx install pipeline-check` also works and
 keeps the CLI out of your project environment.
 
 ### Container image

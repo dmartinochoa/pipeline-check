@@ -9,6 +9,7 @@ YAML loaders and the individual check implementations.
 """
 from __future__ import annotations
 
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -58,7 +59,7 @@ class TestGitHubFixtures:
     )
 
     def _scan(self, filename: str):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         from pipeline_check.core.checks.github._action_reputation import (
             ActionRepoMetadata,
@@ -81,8 +82,8 @@ class TestGitHubFixtures:
         # date so it passes.
         is_secure = filename.startswith("secure")
         if is_secure:
-            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=1000)
-            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=180)
+            repo_now = datetime.now(tz=UTC) - timedelta(days=1000)
+            ref_now = datetime.now(tz=UTC) - timedelta(days=180)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=42,
@@ -93,8 +94,8 @@ class TestGitHubFixtures:
                 owner_type="Organization",
             )
         else:
-            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=10)
-            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=1)
+            repo_now = datetime.now(tz=UTC) - timedelta(days=10)
+            ref_now = datetime.now(tz=UTC) - timedelta(days=1)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=1,

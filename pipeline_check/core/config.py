@@ -27,13 +27,9 @@ from __future__ import annotations
 
 import os
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import tomllib  # py3.11+
-except ImportError:  # pragma: no cover
-    import tomli as tomllib
 
 import yaml
 

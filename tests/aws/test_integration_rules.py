@@ -12,7 +12,7 @@ emitted — not one per dependent rule.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -167,7 +167,7 @@ def _insecure_iam():
         "UserName": "legacy-ci",
         "AccessKeyId": "AKIAOLDKEY",
         "Status": "Active",
-        "CreateDate": datetime.now(tz=timezone.utc) - timedelta(days=400),
+        "CreateDate": datetime.now(tz=UTC) - timedelta(days=400),
     }
     client.list_access_keys.return_value = {"AccessKeyMetadata": [stale_key]}
     client.get_access_key_last_used.return_value = {"AccessKeyLastUsed": {}}

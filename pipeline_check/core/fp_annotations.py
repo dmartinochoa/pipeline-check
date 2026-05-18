@@ -63,7 +63,7 @@ class FPAnnotation:
 
 def _now_iso() -> str:
     """Current UTC time in ISO 8601 form. Extracted so tests can mock it."""
-    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def load_annotations(path: str | Path = DEFAULT_FP_PATH) -> list[FPAnnotation]:
