@@ -183,6 +183,7 @@ nav:
       - OpenSSF Scorecard: standards/openssf_scorecard.md
       - S2C2F: standards/s2c2f.md
       - SOC 2: standards/soc2.md
+  - Comparison: comparison.md
   - Configuration: config.md
   - Stability: stability.md
   - Scoring & gate:

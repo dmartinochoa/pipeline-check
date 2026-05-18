@@ -3,7 +3,7 @@
 Quick-reference task-oriented guide. For deep dives, follow the links at
 the bottom of each section.
 
-## 📦 Install
+## Install
 
 ```bash
 pip install pipeline-check       # package name: hyphenated
@@ -45,7 +45,7 @@ digest (`@sha256:…`) rather than tag. The digest for each release is
 visible on the [Docker Hub tags page](https://hub.docker.com/r/dmartinochoa/pipeline-check/tags)
 and on the [GHCR package page](https://github.com/dmartinochoa/pipeline-check/pkgs/container/pipeline-check).
 
-## 📖 In-terminal help
+## In-terminal help
 
 `--help` covers every flag. For deeper topic walk-throughs without
 leaving the terminal, `--man <topic>` ships expanded prose on the
@@ -63,7 +63,7 @@ The same prose is mirrored on this site, e.g.
 [ci_gate.md](ci_gate.md), but `--man` is the offline / no-browser
 copy.
 
-## 🚀 First scan (auto-detect)
+## First scan (auto-detect)
 
 Run with no flags in any supported repo, the working directory is
 walked for every supported provider's canonical file:
@@ -101,7 +101,7 @@ When `Chart.yaml` is present alongside a `kubernetes/` /
 helm renders the templates and feeds them to the K8s rule pack
 already, so scanning both would double-count.
 
-## 🎯 Scan a specific provider
+## Scan a specific provider
 
 ```bash
 pipeline_check -p github                        # short flag
@@ -146,7 +146,7 @@ pipeline_check --pipeline scm --scm-platform github \
 
 Full per-provider reference: [providers/](providers/README.md).
 
-## 🧩 Scan multiple providers in one run
+## Scan multiple providers in one run
 
 Cross-provider attack chains (the `XPC-NNN` family) only fire when the
 engine sees findings from more than one provider in the same scan. Use
@@ -166,7 +166,7 @@ pipeline_check --pipelines dockerfile,kubernetes \
 
 `--pipelines` is mutually exclusive with the single-valued `--pipeline`.
 
-## 🛠️ Set up the repo: `init`
+## Set up the repo: `init`
 
 ```bash
 pipeline_check init                 # smart init: scan + baseline + tuned gate
@@ -196,7 +196,7 @@ baseline file.
 
 Config file reference: [config.md](config.md).
 
-## 📖 Explain a single check: `explain`
+## Explain a single check: `explain`
 
 ```bash
 pipeline_check explain GHA-001      # severity, recommendation, controls, fixers
@@ -207,7 +207,7 @@ Equivalent to `pipeline_check --explain CHECK_ID` (which still works);
 the subcommand form is more discoverable and is what the smart-init
 top-5 summary and the gate-failure trailer point users at.
 
-## 🚦 Gate a CI build on results
+## Gate a CI build on results
 
 ```bash
 # Fail the build if any HIGH or CRITICAL finding exists
@@ -243,7 +243,7 @@ pipeline_check --list-policies
 Gate details: [ci_gate.md](ci_gate.md). Policy schema:
 [config.md](config.md#named-scan-profiles).
 
-## 🔑 AWS live scans: credentials
+## AWS live scans: credentials
 
 The AWS provider uses the standard boto3 credential chain. Any of these
 work:
@@ -266,7 +266,7 @@ AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
 Required IAM permissions for a full scan, with a copy-paste IAM policy:
 see [providers/aws.md#required-iam-permissions](providers/aws.md#required-iam-permissions).
 
-## 📤 Output formats
+## Output formats
 
 ```bash
 pipeline_check --output terminal                   # default (rich table)
@@ -280,7 +280,7 @@ pipeline_check --output both                       # terminal→stderr, JSON→s
 
 Format schemas: [output.md](output.md).
 
-## 🔍 Filter what gets scanned
+## Filter what gets scanned
 
 ```bash
 # Only run specific checks
@@ -296,7 +296,7 @@ pipeline_check --diff-base origin/main
 echo "GHA-019" > .pipelinecheckignore
 ```
 
-## 🩹 Auto-fix findings
+## Auto-fix findings
 
 ```bash
 pipeline_check --fix              # print unified-diff patches to stdout
@@ -308,7 +308,7 @@ pipeline_check --fix | git apply  # review first, then apply
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 
-## 📋 Compliance annotations
+## Compliance annotations
 
 Every finding carries control IDs from every enabled standard. Filter:
 
@@ -328,7 +328,7 @@ pipeline_check --standard-report slsa
 
 Standards reference: [standards/](standards/README.md).
 
-## ⛓️ Attack chains
+## Attack chains
 
 The scanner correlates independent findings into MITRE ATT&CK-mapped
 kill chains (e.g. "unpinned action + overpermissive token + no approval
@@ -350,7 +350,7 @@ legs were baselined separately.
 
 Chain reference: [attack_chains.md](attack_chains.md).
 
-## 🧪 Cross-provider dataflow taint analysis
+## Cross-provider dataflow taint analysis
 
 The `TAINT-NNN` family is a workflow-wide / pipeline-wide
 taint engine that follows attacker-controllable input across
@@ -376,7 +376,7 @@ TKN-003 / ARGO-005) and miss the actual injection sink one
 step (or one job, or one template) later. The TAINT family
 is what catches the cross-boundary flow.
 
-## 🔐 Dataflow secret detection
+## Dataflow secret detection
 
 `--detect-entropy` adds a Shannon-entropy pass to the secret detector.
 It catches custom org tokens with no public prefix (an internal
@@ -393,7 +393,7 @@ length floor, token shape, deterministic-detector overlap, placeholder
 markers) keeps signal high; hits are labeled `entropy:<redacted>` so
 operators can write targeted ignore rules per-class.
 
-## 🤖 AI-augmented `--explain`
+## AI-augmented `--explain`
 
 `--ai-explain CHECK_ID` prints the deterministic `--explain` body,
 then a banner-prefixed AI section that grounds an LLM remediation
@@ -414,7 +414,7 @@ deterministic surfaces (`--explain`, `--list-checks`,
 `--list-standards`, JSON / SARIF / scoring / gating, attack chains)
 are unaffected, no AI call fires unless `--ai-explain` is passed.
 
-## 📚 Inventory
+## Inventory
 
 Emit the list of resources / workflows / templates the scanner
 discovered, with per-type metadata:
@@ -425,7 +425,7 @@ pipeline_check --inventory-only                   # skip checks entirely
 pipeline_check --inventory-type 'AWS::IAM::*'     # glob filter (repeatable)
 ```
 
-## 📥 Multi-scanner SARIF ingest
+## Multi-scanner SARIF ingest
 
 `--ingest <file>.sarif` (repeatable) absorbs findings from any
 SARIF 2.1.0-conformant scanner (Trivy, Checkov, Snyk, KICS,
@@ -460,7 +460,7 @@ scan keeps going. Caps: 25 MiB per file, 5,000 results per file
 (both configurable via the public Python API in
 `pipeline_check.core.sarif_ingest`).
 
-## 🎓 Vulnerable-by-design benchmark
+## Vulnerable-by-design benchmark
 
 `bench/` ships intentionally-vulnerable fixture sets (one folder
 per attack pattern, anchored to a real-world incident) plus a
@@ -489,7 +489,7 @@ Poutine / Checkov / KICS / Trivy) is tracked under
 `bench/COMPARISON.md` with the trade-offs that justify deferring
 its build.
 
-## 🌳 Environment variables
+## Environment variables
 
 Every CLI flag has an env-var equivalent: `PIPELINE_CHECK_<FLAG>` with
 dashes converted to underscores. Gate flags nest under `GATE`:
@@ -502,7 +502,7 @@ pipeline_check
 
 Precedence: CLI > env > config file > defaults.
 
-## 🚪 Exit codes
+## Exit codes
 
 This is the canonical table. Other pages link here rather than
 restating it.
