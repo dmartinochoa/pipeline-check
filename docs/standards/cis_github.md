@@ -1,7 +1,7 @@
 # CIS GitHub Benchmark
 
-- **Version:** 1.0.0
-- **URL:** <https://www.cisecurity.org/benchmark/github>
+- **Version:** 1.1.0
+- **URL:** <https://benchmarks.cisecurity.org/cis-benchmarks>
 - **Source of truth:** `pipeline_check/core/standards/data/cis_github.py`
 
 CIS GitHub Benchmark, platform-side posture for a single GitHub

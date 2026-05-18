@@ -36,8 +36,8 @@ from ..base import Standard
 STANDARD = Standard(
     name="cis_github",
     title="CIS GitHub Benchmark",
-    version="1.0.0",
-    url="https://www.cisecurity.org/benchmark/github",
+    version="1.1.0",
+    url="https://benchmarks.cisecurity.org/cis-benchmarks",
     controls={
         # 1.1 Code Changes
         "1.1.3":  "Ensure any change to code is approved by two strongly authenticated users",

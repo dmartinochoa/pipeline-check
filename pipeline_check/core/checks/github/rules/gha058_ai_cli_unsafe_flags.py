@@ -107,7 +107,15 @@ _CLI_RE = re.compile(rf"\b{_CLI_NAMES}\b", re.IGNORECASE)
 _BYPASS_FLAGS_RE = re.compile(
     r"--(?:dangerously-skip-permissions|yolo|trust-all-tools"
     r"|full-auto|auto-approve|no-confirm)\b"
-    r"|--allowedTools\s+[\"']?(?:\*|\.\*|all|.*\*.*)[\"']?",
+    # --allowedTools with a "trust everything" value. Anchored at the
+    # first non-space char of the value so we don't match the literal
+    # substring "all" inside a real tool name (CallTool, rally, …).
+    r"|--allowedTools\s+(?:"
+    r"[\"']?\*[\"']?"                    # *, "*", '*'
+    r"|[\"']?\.\*[\"']?"                 # .*, ".*", '.*'
+    r"|[\"']?all[\"']?(?!\w)"            # bare all (whole word), "all"
+    r"|[\"'][^\"'\n]*\*[^\"'\n]*[\"']"   # quoted value containing *
+    r")",
     re.IGNORECASE,
 )
 

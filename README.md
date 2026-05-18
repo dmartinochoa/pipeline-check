@@ -337,7 +337,7 @@ covers multiple audits.
 | [CIS Software Supply Chain](docs/standards/cis_supply_chain.md) | 1.0 | CI/CD subset |
 | [CIS AWS Foundations](docs/standards/cis_aws_foundations.md) | 3.0.0 | CI/CD subset |
 | [CIS Kubernetes Benchmark](docs/standards/cis_kubernetes.md) | 1.10 | Section 5 (Policies) |
-| [CIS GitHub Benchmark](docs/standards/cis_github.md) | 1.0.0 | Sections 1.1, 1.4, 1.5 |
+| [CIS GitHub Benchmark](docs/standards/cis_github.md) | 1.1.0 | Sections 1.1, 1.4, 1.5 |
 | [PCI DSS v4.0](docs/standards/pci_dss_v4.md) | 4.0 | CI/CD subset |
 | [SOC 2 Trust Services Criteria](docs/standards/soc2.md) | 2017 (rev. 2022) | CC6/CC7/CC8 subset |
 | [NSA/CISA ESF Supply Chain](docs/standards/esf_supply_chain.md) | 2022 | CI/CD subset |

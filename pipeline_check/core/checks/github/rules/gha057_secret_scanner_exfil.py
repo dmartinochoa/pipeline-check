@@ -119,12 +119,23 @@ _UNTRUSTED_TRIGGERS = frozenset({
     "pull_request_target", "issue_comment", "workflow_run",
 })
 
+# Event names whose firing implies the workflow run is privileged but
+# not attacker-influenced. A step gated to one of these via an ``if:``
+# predicate is safe even when the workflow declares an untrusted
+# trigger alongside (the common ``on: [push, pull_request_target]``
+# shape).
+_TRUSTED_EVENT_GUARD_RE = re.compile(
+    r"github\.event_name\s*==\s*['\"]"
+    r"(?:push|schedule|workflow_dispatch)['\"]",
+    re.IGNORECASE,
+)
+
 
 def _scanner_piped_to_egress(line: str) -> bool:
     """True when *line* runs a secret scanner whose stdout is piped
-    to a network egress tool. Single-line check, because a multi-
-    line pipe in YAML still parses as one shell line per run-block
-    line.
+    to a network egress tool. The caller is expected to have folded
+    backslash-continued lines into a single string first; see
+    ``_join_shell_continuations``.
     """
     if not _SCANNER_RE.search(line):
         return False
@@ -136,6 +147,30 @@ def _scanner_piped_to_egress(line: str) -> bool:
         return False
     left, right = parts
     return bool(_SCANNER_RE.search(left) and _EGRESS_RE.search(right))
+
+
+def _join_shell_continuations(body: str) -> str:
+    r"""Fold ``<backslash><newline>`` line continuations into a single
+    logical line so a pipeline like ``trufflehog ... \`` followed by
+    ``| curl ...`` is seen as one shell command."""
+    return re.sub(r"\\\n", " ", body)
+
+
+def _if_restricts_to_trusted_event(expr: object) -> bool:
+    """True when an ``if:`` predicate gates execution to a trusted
+    event only. Conservative: any reference to an untrusted trigger
+    name (in either side of ``==`` / ``!=`` / ``||`` etc.) defeats
+    the guard, because we can't statically prove the expression
+    excludes that path."""
+    if not isinstance(expr, str):
+        return False
+    e = expr.strip()
+    if e.startswith("${{") and e.endswith("}}"):
+        e = e[3:-2].strip()
+    e_lower = e.lower()
+    if any(utr in e_lower for utr in _UNTRUSTED_TRIGGERS):
+        return False
+    return bool(_TRUSTED_EVENT_GUARD_RE.search(e))
 
 
 def _scanner_in_step(step: dict[str, Any]) -> bool:
@@ -157,20 +192,27 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations = []
     for job_id, job in iter_jobs(doc):
+        job_if_restricted = _if_restricts_to_trusted_event(job.get("if"))
         for idx, step in enumerate(iter_steps(job)):
             name = step.get("name") or step.get("id") or f"steps[{idx}]"
             label: str | None = None
             run = step.get("run")
             if isinstance(run, str):
-                for line in run.splitlines():
+                joined = _join_shell_continuations(run)
+                for line in joined.splitlines():
                     if _scanner_piped_to_egress(line):
                         label = "scanner output piped to network egress"
                         break
             if label is None and untrusted_trigger and _scanner_in_step(step):
-                label = (
-                    "secret scanner invoked under untrusted trigger "
-                    f"({', '.join(sorted(triggers & _UNTRUSTED_TRIGGERS))})"
-                )
+                # Skip when the step or its parent job restricts execution
+                # to a trusted event (push / schedule / workflow_dispatch);
+                # an untrusted trigger declared alongside is then unreachable.
+                step_if_restricted = _if_restricts_to_trusted_event(step.get("if"))
+                if not (step_if_restricted or job_if_restricted):
+                    label = (
+                        "secret scanner invoked under untrusted trigger "
+                        f"({', '.join(sorted(triggers & _UNTRUSTED_TRIGGERS))})"
+                    )
             if label is None:
                 continue
             offenders.append(f"{job_id}.{name}: {label}")
