@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.0.5] - 2026-05-18
+
 ### Added
 
 - **SCM signed-commit + code-scanning posture pack (SCM-043..047).**
