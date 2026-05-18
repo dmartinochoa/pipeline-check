@@ -239,6 +239,44 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   OCI-002, the in-toto / SLSA attestation content rules. After:
   211 mappings (was 152), all 11 controls evidenced.
 
+- **Broadened OpenSSF Scorecard mappings to 85% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 138 net-new entries.
+  Scorecard's check set (Pinned-Dependencies, Dangerous-Workflow,
+  Token-Permissions, Signed-Releases, SBOM, Vulnerabilities, SAST,
+  Code-Review, Branch-Protection, Dependency-Update-Tool) is
+  narrower than CIS SSCS, so the expansion targets the rules that
+  fit those checks. **Pinned-Dependencies** picks up the
+  NPM/PyPI/Maven dep-supply-chain pack (NPM-001..006,
+  PYPI-001..006, MVN-001..007), the Dockerfile env-bypass pack
+  (DF-021/22/24/26..29 + DF-009), reusable-workflow / services
+  pinning (GHA-017/051, BB-029), HELM-008 stale Chart.lock, and
+  the Cloud Build curl-pipe / TLS / pkg-integrity surface
+  (GCB-010/011/013). **Dangerous-Workflow** picks up
+  **TAINT-001..008** (cross-step injection), the GHA worm-
+  mitigation + advanced-PPE pack (GHA-030..036, 041..049, 052/53/
+  56/57/58), cross-pipeline / cross-project artifact ingestion
+  rules (ADO-010, BB-010, GL-010), docker-privileged variants
+  across providers (BB-005/13, CB-002, CC-010/15/17, GL-017,
+  JF-17/25, TKN-13), the GCB shell / tainted-substitution pack
+  (GCB-016/019/022/023), and Dockerfile privileged / env-bypass
+  shapes (DF-008/12/23/30 + NPM-004/007). **Token-Permissions**
+  picks up GHA-030/33/34/43/49/50/54/55/57, NPM-011, CC-004/14/31,
+  DR-004, GL-031, JF-003/33/34, ARGO-013, GCB-012/18/20, DF-025,
+  CA-003, PBAC-002/005, and Terraform / CloudFormation IaC-native
+  long-lived-key + hard-coded-secret rules (TF-001/2, CF-001/2).
+  **Signed-Releases** picks up GCB-017/024 and the in-toto / SLSA
+  attestation content rules (ATTEST-001/002/005/006). **SBOM**
+  picks up GCB-015, ATTEST-003/004/007, OCI-003/005, and JF-027
+  (archiveArtifacts fingerprint). **SAST** + **Branch-Protection**
+  pick up the SCM-043..047 signed-commit + code-scanning pack.
+  **Code-Review** picks up ADO-029, BB-013/28, BK-013, CC-031.
+  After: 441 mappings (was 303), all 10 controls evidenced. The
+  75 rules that remain unmapped are scoped outside Scorecard's
+  check set (timeout / ephemeral / discoverability hygiene,
+  network-boundary AWS rules, container-runtime hygiene,
+  `-000` degraded-mode discovery findings, secret-scanning posture
+  per the existing carve-outs).
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

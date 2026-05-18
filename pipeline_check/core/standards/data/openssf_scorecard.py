@@ -99,6 +99,49 @@ STANDARD = Standard(
         "TKN-014":  ["Pinned-Dependencies"],                           # tkn lockfile-bypass / insecure pkg install
         "ARGO-014": ["Pinned-Dependencies"],                           # argo lockfile-bypass / insecure pkg install
         "DR-010":   ["Pinned-Dependencies"],                           # drone lockfile-bypass / insecure pkg install
+        # NPM / PyPI / Maven manifest static analysis. Scorecard's
+        # Pinned-Dependencies covers "actions, images, includes, and
+        # packages" — these are the package-leg failures: floating
+        # range, no integrity hash, mutable VCS ref, non-registry
+        # source, dep-confusion mirror, compromised version.
+        "NPM-001":  ["Pinned-Dependencies"],                           # floating range in package.json
+        "NPM-002":  ["Pinned-Dependencies"],                           # lock entry missing integrity
+        "NPM-003":  ["Pinned-Dependencies"],                           # non-registry source (git/path/tarball)
+        "NPM-005":  ["Pinned-Dependencies"],                           # git dep with mutable ref
+        "NPM-006":  ["Pinned-Dependencies", "Vulnerabilities"],        # compromised npm version
+        "PYPI-001": ["Pinned-Dependencies"],                           # requirements lacks ==pin
+        "PYPI-002": ["Pinned-Dependencies"],                           # hash pinning missing
+        "PYPI-003": ["Pinned-Dependencies"],                           # http index / --trusted-host
+        "PYPI-004": ["Pinned-Dependencies"],                           # VCS dep without commit SHA
+        "PYPI-005": ["Pinned-Dependencies"],                           # --extra-index-url (dep confusion)
+        "PYPI-006": ["Pinned-Dependencies", "Vulnerabilities"],        # compromised PyPI version
+        "MVN-001":  ["Pinned-Dependencies"],                           # floating Maven range
+        "MVN-002":  ["Pinned-Dependencies"],                           # mutable SNAPSHOT dep
+        "MVN-003":  ["Pinned-Dependencies"],                           # plaintext-HTTP repository
+        "MVN-004":  ["Pinned-Dependencies"],                           # missing <version>
+        "MVN-005":  ["Pinned-Dependencies"],                           # lax checksumPolicy
+        "MVN-006":  ["Pinned-Dependencies", "Vulnerabilities"],        # compromised Maven version
+        "MVN-007":  ["Pinned-Dependencies"],                           # settings.xml wildcard mirror
+        # Reusable workflow / services-image / cross-step pinning
+        "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
+        "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
+        "BB-029":   ["Pinned-Dependencies"],                           # step + service image not digest-pinned
+        # Helm: stale Chart.lock is a pin-drift failure
+        "HELM-008": ["Pinned-Dependencies"],                           # stale Chart.lock > 90 days
+        # Cloud Build curl-pipe / TLS / pkg integrity surface
+        "GCB-010":  ["Pinned-Dependencies", "Dangerous-Workflow"],     # remote script piped to shell
+        "GCB-011":  ["Pinned-Dependencies"],                           # TLS / cert verification bypass
+        "GCB-013":  ["Pinned-Dependencies"],                           # pkg install bypasses registry integrity
+        # Dockerfile env-bypass pack disables the trusted-source
+        # channel for any in-image install
+        "DF-009":   ["Pinned-Dependencies"],                           # ADD where COPY suffices
+        "DF-021":   ["Pinned-Dependencies"],                           # pip TLS bypass / http index
+        "DF-022":   ["Pinned-Dependencies"],                           # npm install (not npm ci)
+        "DF-024":   ["Pinned-Dependencies", "Dangerous-Workflow"],     # npm install runs lifecycle
+        "DF-026":   ["Pinned-Dependencies"],                           # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["Pinned-Dependencies"],                           # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["Pinned-Dependencies"],                           # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["Pinned-Dependencies"],                           # REQUESTS_CA_BUNDLE neutered
 
         # ── Dangerous-Workflow ───────────────────────────────────────
         "CB-010":   ["Dangerous-Workflow"],                            # fork PR builds without actor filter
@@ -158,6 +201,93 @@ STANDARD = Standard(
         "ADO-016":  ["Dangerous-Workflow"],
         "JF-016":   ["Dangerous-Workflow"],
         "CC-016":   ["Dangerous-Workflow"],
+        # Cross-step / cross-job taint flows = untrusted data reaches a
+        # privileged sink, the canonical Dangerous-Workflow shape.
+        "TAINT-001": ["Dangerous-Workflow"],                           # cross-step $GITHUB_OUTPUT
+        "TAINT-002": ["Dangerous-Workflow"],                           # cross-job jobs.<id>.outputs
+        "TAINT-003": ["Dangerous-Workflow"],                           # tainted with: into reusable
+        "TAINT-004": ["Dangerous-Workflow"],                           # GitLab dotenv cross-job
+        "TAINT-005": ["Dangerous-Workflow"],                           # Buildkite meta-data
+        "TAINT-006": ["Dangerous-Workflow"],                           # Tekton results
+        "TAINT-007": ["Dangerous-Workflow"],                           # Argo outputs.parameters
+        "TAINT-008": ["Dangerous-Workflow"],                           # GitLab extends-chain
+        # GHA worm-mitigation / advanced-PPE pack
+        "GHA-030":  ["Dangerous-Workflow", "Token-Permissions"],       # OIDC w/o env-protected job
+        "GHA-031":  ["Dangerous-Workflow"],                            # retired set-output / save-state
+        "GHA-032":  ["Dangerous-Workflow"],                            # local script on untrusted trigger
+        "GHA-033":  ["Token-Permissions"],                             # secret echoed in run:
+        "GHA-034":  ["Token-Permissions"],                             # secrets: inherit (broad cred surface)
+        "GHA-035":  ["Dangerous-Workflow"],                            # github-script untrusted context
+        "GHA-036":  ["Dangerous-Workflow"],                            # runs-on untrusted context
+        "GHA-041":  ["Dangerous-Workflow"],                            # single-maintainer action (reputation)
+        "GHA-042":  ["Dangerous-Workflow"],                            # very-young action repo
+        "GHA-043":  ["Dangerous-Workflow", "Token-Permissions"],       # low-star + sensitive perms
+        "GHA-044":  ["Dangerous-Workflow"],                            # build-tool PPE on untrusted trigger
+        "GHA-045":  ["Dangerous-Workflow"],                            # caller-ref input drives checkout
+        "GHA-046":  ["Dangerous-Workflow"],                            # manual PR-head fetch
+        "GHA-047":  ["Dangerous-Workflow"],                            # fresh-ref cooldown
+        "GHA-048":  ["Dangerous-Workflow"],                            # workflow self-mutation
+        "GHA-049":  ["Dangerous-Workflow", "Token-Permissions"],       # cross-repo push from CI
+        "GHA-050":  ["Token-Permissions"],                             # long-lived registry publish token
+        "GHA-052":  ["Dangerous-Workflow"],                            # cache key untrusted-input poisoning
+        "GHA-053":  ["Dangerous-Workflow"],                            # if: predicate untrusted-context
+        "GHA-054":  ["Token-Permissions"],                             # checkout ssh-key persists
+        "GHA-055":  ["Token-Permissions"],                             # reusable outputs leak secret
+        "GHA-056":  ["Dangerous-Workflow"],                            # supply-chain worm IOC strings
+        "GHA-057":  ["Dangerous-Workflow", "Token-Permissions"],       # secret-scanner output → egress
+        "GHA-058":  ["Dangerous-Workflow"],                            # agentic CLI permission-bypass
+        # Cross-pipeline / cross-project artifact ingestion = same
+        # source-poisoning shape as the GHA workflow_run rule
+        "ADO-010":  ["Dangerous-Workflow"],                            # cross-pipeline download
+        "ADO-017":  ["Dangerous-Workflow"],                            # docker run privileged/host
+        "ADO-029":  ["Code-Review"],                                   # service-conn no env gate
+        "ADO-030":  ["Dangerous-Workflow"],                            # pool interpolates untrusted
+        "BB-005":   ["Dangerous-Workflow"],                            # docker privileged
+        "BB-010":   ["Dangerous-Workflow"],                            # deploy step PR artifact unverified
+        "BB-013":   ["Dangerous-Workflow"],                            # docker run privileged/host
+        "BB-028":   ["Code-Review"],                                   # OIDC step w/o env gate
+        "CB-002":   ["Dangerous-Workflow"],                            # CodeBuild privileged mode
+        "CB-007":   ["Dangerous-Workflow"],                            # CodeBuild webhook no filter
+        "CC-004":   ["Token-Permissions"],                             # secret in env
+        "CC-010":   ["Dangerous-Workflow"],                            # docker privileged
+        "CC-014":   ["Token-Permissions"],                             # unrestricted token equivalent
+        "CC-015":   ["Dangerous-Workflow"],                            # docker privileged
+        "CC-017":   ["Dangerous-Workflow"],                            # docker privileged
+        "CC-031":   ["Code-Review", "Token-Permissions"],              # OIDC role w/o branch filter
+        "DR-004":   ["Token-Permissions"],                             # literal credential
+        "GL-010":   ["Dangerous-Workflow"],                            # multi-project artifact unverified
+        "GL-017":   ["Dangerous-Workflow"],                            # docker run privileged
+        "GL-031":   ["Token-Permissions"],                             # id_tokens missing audience
+        "GL-032":   ["Dangerous-Workflow"],                            # tags interpolates untrusted
+        "JF-017":   ["Dangerous-Workflow"],                            # docker run privileged/host
+        "JF-025":   ["Dangerous-Workflow"],                            # K8s agent privileged / hostPath
+        "JF-032":   ["Dangerous-Workflow"],                            # agent label interpolates untrusted
+        "JF-033":   ["Token-Permissions"],                             # withCredentials leaked via Groovy ${}
+        "JF-034":   ["Token-Permissions"],                             # password() build parameter
+        "JF-035":   ["Dangerous-Workflow", "Pinned-Dependencies"],     # httpRequest SSL off
+        "TKN-013":  ["Dangerous-Workflow"],                            # sidecar privileged / root
+        "TKN-015":  ["Dangerous-Workflow"],                            # workspace subPath param injection
+        "ARGO-013": ["Token-Permissions"],                             # SA token automount default
+        "ARGO-015": ["Pinned-Dependencies"],                           # insecure (non-HTTPS) artifact URL
+        "BK-013":   ["Code-Review"],                                   # deploy step no branches filter
+        # Cloud Build tainted-substitution / shell pack
+        "GCB-012":  ["Token-Permissions"],                             # credential-shaped literal
+        "GCB-016":  ["Dangerous-Workflow"],                            # dir path escape
+        "GCB-018":  ["Token-Permissions"],                             # legacy KMS secrets block
+        "GCB-019":  ["Dangerous-Workflow"],                            # shell entrypoint + user substitution
+        "GCB-020":  ["Token-Permissions"],                             # default Cloud Build SA
+        "GCB-022":  ["Dangerous-Workflow"],                            # ALLOW_LOOSE substitution
+        "GCB-023":  ["Dangerous-Workflow"],                            # undeclared user substitution
+        # Dockerfile env-bypass + privileged shape
+        "DF-008":   ["Dangerous-Workflow"],                            # docker --privileged
+        "DF-012":   ["Dangerous-Workflow"],                            # sudo in RUN
+        "DF-023":   ["Dangerous-Workflow"],                            # LD_PRELOAD / LD_LIBRARY_PATH
+        "DF-025":   ["Token-Permissions"],                             # registry token in image layer
+        "DF-030":   ["Dangerous-Workflow"],                            # NODE_OPTIONS --require / --inspect
+        # NPM install-time lifecycle scripts = untrusted code path
+        "NPM-004":  ["Dangerous-Workflow"],                            # install-time lifecycle script
+        "NPM-007":  ["Dangerous-Workflow"],                            # .npmrc ignore-scripts enforcement
+        "NPM-011":  ["Token-Permissions"],                             # secret-shaped paths in files field
 
         # ── Token-Permissions ────────────────────────────────────────
         # Scorecard's check targets GITHUB_TOKEN scope, but applies in
@@ -212,6 +342,10 @@ STANDARD = Standard(
         "SM-002":   ["Token-Permissions"],                             # Secrets Manager public policy
         "SSM-001":  ["Token-Permissions"],
         "SSM-002":  ["Token-Permissions"],                             # SSM SecureString default key
+        "JF-003":   ["Token-Permissions"],                             # agent any (no executor isolation)
+        "CA-003":   ["Token-Permissions"],                             # CodeArtifact domain cross-account wildcard
+        "PBAC-002": ["Token-Permissions"],                             # shared service role across stages
+        "PBAC-005": ["Token-Permissions"],                             # stage action roles mirror pipeline role
 
         # ── Signed-Releases ──────────────────────────────────────────
         "SIGN-001": ["Signed-Releases"],
@@ -233,6 +367,15 @@ STANDARD = Standard(
         "CC-006":   ["Signed-Releases"],
         "CC-024":   ["Signed-Releases"],
         "GCB-009":  ["Signed-Releases"],
+        "GCB-017":  ["Signed-Releases", "SBOM"],                       # image build without SLSA provenance
+        "GCB-024":  ["Signed-Releases"],                               # images: missing for docker push
+        # in-toto / SLSA attestation content rules: each flags the
+        # provenance document itself (untrusted builder, source
+        # claim, subject digest, buildType).
+        "ATTEST-001": ["Signed-Releases"],                             # untrusted SLSA builder identity
+        "ATTEST-002": ["Signed-Releases"],                             # source-repo claim unverifiable
+        "ATTEST-005": ["Signed-Releases", "Pinned-Dependencies"],      # in-toto subject digest unpinned
+        "ATTEST-006": ["Signed-Releases"],                             # buildType missing / placeholder
 
         # ── SBOM ─────────────────────────────────────────────────────
         "GHA-007":  ["SBOM"],
@@ -241,6 +384,18 @@ STANDARD = Standard(
         "ADO-007":  ["SBOM"],
         "JF-007":   ["SBOM"],
         "CC-007":   ["SBOM"],
+        "GCB-015":  ["SBOM"],                                          # no CycloneDX / syft / Trivy-SBOM step
+        # SBOM-content failures (the SBOM exists but under-specifies
+        # what it should track).
+        "ATTEST-003": ["SBOM", "Pinned-Dependencies"],                 # SBOM floating versions
+        "ATTEST-004": ["SBOM"],                                        # provenance lacks resolved materials
+        "ATTEST-007": ["SBOM"],                                        # SBOM missing supplier attribution
+        # OCI image provenance annotations are the per-image SBOM
+        # surface (image.created / image.licenses).
+        "OCI-003":   ["SBOM"],                                         # missing image.created
+        "OCI-005":   ["SBOM"],                                         # missing image.licenses
+        # Jenkins archiveArtifacts fingerprint = artifact-tracking
+        "JF-027":    ["SBOM"],                                         # no fingerprint = no artifact trace
 
         # ── Vulnerabilities / SAST ───────────────────────────────────
         "ECR-001":  ["Vulnerabilities", "SAST"],
@@ -401,5 +556,19 @@ STANDARD = Standard(
         "SCM-040": ["Branch-Protection", "SAST"],  # ruleset lacks code_scanning gate
         "SCM-041": ["Branch-Protection"],          # ruleset lacks deployment-env gate
         "SCM-042": ["Branch-Protection"],          # ruleset lacks merge queue
+        # Signed-commit + code-scanning posture (SCM-043..047)
+        "SCM-043": ["Branch-Protection"],          # tag-ruleset lacks signed_commits
+        "SCM-044": ["Branch-Protection"],          # required_signatures admin bypass
+        "SCM-045": ["SAST"],                       # default code scanning limited query suite
+        "SCM-046": ["SAST"],                       # default code scanning configured but paused
+        "SCM-047": ["SAST"],                       # repo language not covered by default scanning
+        # ── Terraform / CloudFormation (IaC-native) ──────────────────
+        # Long-lived IAM access keys declared as code and hard-coded
+        # credentials surface a Token-Permissions failure — the same
+        # shape as DF-006 / DF-019 / DF-020 above (cred-as-code).
+        "TF-001":  ["Token-Permissions"],          # aws_iam_access_key declared as code
+        "TF-002":  ["Token-Permissions"],          # hard-coded secret in resource attr
+        "CF-001":  ["Token-Permissions"],          # AWS::IAM::AccessKey declared as code
+        "CF-002":  ["Token-Permissions"],          # hard-coded secret in resource property
     },
 )
