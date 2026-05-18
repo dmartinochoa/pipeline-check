@@ -408,6 +408,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   pipeline-flow rules that are governance rather than container-
   runtime concerns.
 
+- **Broadened NIST CSF 2.0 to 100% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 193 net-new entries. CSF 2.0
+  is the cross-function cybersecurity framework — Govern,
+  Protect, Detect, Respond, Recover — so almost every rule has
+  a subcategory home. Follows the existing per-rule pattern:
+  pinning + 3rd-party verification → GV.SC-05 (+ GV.SC-07 for
+  ongoing monitoring on compromised-pkg / reputation variants);
+  SBOM → GV.SC-03 + GV.SC-04; secrets / creds → PR.AA-01 (+
+  PR.DS-01 for at-rest); IAM access → PR.AA-05 + PR.AA-03;
+  privileged / runtime hardening → PR.PS-01; dangerous-shell /
+  interpolation / poisoned-pipeline → PR.PS-05; signing / deploy
+  gates / branch governance → PR.PS-06; outdated deps / vuln scan
+  → PR.PS-02; TLS bypass / data-in-transit → PR.DS-02; network
+  boundary / cache-poisoning / fork-PR triggers → PR.IR-01;
+  resilience / rollback → PR.IR-03 + RC.RP-01; audit logs →
+  PR.PS-04 + DE.CM-09; external-provider monitoring → DE.CM-06;
+  multi-source correlation → DE.AE-03; incident triggers →
+  RS.MA-01. Picks up the full per-CI extension surface
+  (GHA-014/030..058, GL-004/29..33, BB-004/28/29, ADO-004/29/30,
+  CC-004/9/31, JF-005/24/26/27/32, DR-001..011), the Tekton /
+  Argo K8s-native packs (TKN-001..015, ARGO-001..015), the
+  Cloud Build extension (GCB-010..026), the AWS extras
+  (CB-008/10, CP-001/5, CD-002, CCM-001/2, CA-003, ECR-004),
+  TF/CF IaC-native rules, SCM-043..047, the NPM/PyPI/Maven dep-
+  supply-chain pack, OCI manifest (OCI-001..008), ATTEST family,
+  TAINT-001..008, Dockerfile env-bypass extension (DF-009/24..30),
+  and the `-000` degraded-mode discovery findings on PR.PS-04 +
+  DE.CM-09 (visibility gap, mirroring the cross-standard
+  precedent). After: 516/516 = 100% (was 323, 62%). All 22
+  subcategories evidenced.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

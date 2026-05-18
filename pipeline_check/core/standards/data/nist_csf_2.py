@@ -447,6 +447,150 @@ STANDARD = Standard(
         "BK-011": ["GV.SC-05"],                 # no SLSA provenance
         "BK-012": ["PR.PS-02", "DE.CM-09"],     # no vuln scan
         "BK-013": ["PR.AA-05"],                 # no branches filter
+        "BK-014": ["GV.SC-05"],                 # unpinned package install
+        "BK-015": ["PR.PS-05"],                 # agents map untrusted interpolation
+        # ── Per-CI provider container-relevant gaps ─────────────
+        # Follow the existing pattern: pinning/3rd-party → GV.SC-05;
+        # secrets/creds → PR.AA-01 (+ PR.DS-01 for at-rest variants);
+        # IAM access → PR.AA-05; privileged/runtime → PR.PS-01;
+        # dangerous-shell / interpolation / poisoned-pipeline →
+        # PR.PS-05; deploy gates / approval / branch filter →
+        # PR.PS-06; TLS bypass / data-in-transit → PR.DS-02;
+        # cache-poisoning / cross-step taint / fork-PR triggers →
+        # PR.IR-01; SBOM → GV.SC-03 + GV.SC-04; signing → PR.PS-06;
+        # vuln scan / outdated deps → PR.PS-02; reputation →
+        # GV.SC-04 + GV.SC-07; logs → PR.PS-04 + DE.CM-09.
+        # ── GitHub Actions ───────────────────────────────────────
+        "GHA-014":  ["PR.PS-06"],               # deploy job missing environment
+        "GHA-030":  ["PR.AA-05"],               # OIDC w/o env-protected job
+        "GHA-031":  ["PR.PS-05"],               # retired set-output / save-state
+        "GHA-032":  ["PR.PS-05"],               # local script on untrusted trigger
+        "GHA-033":  ["PR.AA-01", "PR.DS-01"],   # secret echoed
+        "GHA-034":  ["PR.AA-05", "PR.AA-01"],   # secrets: inherit
+        "GHA-035":  ["PR.PS-05"],               # github-script untrusted context
+        "GHA-036":  ["PR.PS-05"],               # runs-on untrusted context
+        "GHA-037":  ["PR.AA-01"],               # checkout persists GITHUB_TOKEN
+        "GHA-038":  ["PR.PS-05"],               # ACTIONS_ALLOW_UNSECURE_COMMANDS
+        "GHA-039":  ["PR.AA-01"],               # services / container creds literal
+        "GHA-040":  ["GV.SC-05", "GV.SC-07"],   # known-compromised action ref
+        "GHA-041":  ["GV.SC-04", "GV.SC-07"],   # single-maintainer action
+        "GHA-042":  ["GV.SC-04", "GV.SC-07"],   # very-young action repo
+        "GHA-043":  ["GV.SC-04", "GV.SC-07"],   # low-star + sensitive perms
+        "GHA-047":  ["GV.SC-07"],               # fresh-ref cooldown
+        "GHA-048":  ["PR.PS-01"],               # workflow self-mutation
+        "GHA-049":  ["PR.AA-05"],               # cross-repo push from CI
+        "GHA-050":  ["PR.AA-01"],               # long-lived registry publish token
+        "GHA-051":  ["GV.SC-05"],               # services / container image unpinned
+        "GHA-052":  ["PR.IR-01"],               # cache key untrusted-input poisoning
+        "GHA-053":  ["PR.PS-05"],               # if: predicate untrusted-context
+        "GHA-054":  ["PR.AA-01"],               # checkout ssh-key persists
+        "GHA-055":  ["PR.AA-01"],               # reusable outputs leak secret
+        "GHA-056":  ["PR.PS-05", "GV.SC-07"],   # worm IOC strings
+        "GHA-057":  ["PR.DS-01", "DE.CM-06"],   # secret-scanner output → egress
+        "GHA-058":  ["PR.PS-05"],               # agentic CLI permission-bypass
+        # ── GitLab CI ─────────────────────────────────────────────
+        "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
+        "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
+        "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
+        "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
+        "GL-033":  ["PR.PS-05"],                # global before_script taint
+        # ── Bitbucket Pipelines ──────────────────────────────────
+        "BB-004":  ["PR.PS-06"],                # deploy step missing environment
+        "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
+        "BB-029":  ["GV.SC-05"],                # step+service image not pinned
+        # ── Azure DevOps Pipelines ───────────────────────────────
+        "ADO-004": ["PR.PS-06"],                # deploy missing environment
+        "ADO-029": ["PR.PS-06"],                # service-conn job w/o env gate
+        "ADO-030": ["PR.PS-05"],                # pool interpolates untrusted
+        # ── CircleCI ──────────────────────────────────────────────
+        "CC-004":  ["PR.AA-01"],                # unrestricted context
+        "CC-009":  ["PR.PS-06"],                # job missing approval gate
+        "CC-031":  ["PR.AA-05"],                # OIDC role w/o branch filter
+        # ── Jenkins ──────────────────────────────────────────────
+        "JF-005":  ["PR.PS-06"],                # deploy stage missing manual input
+        "JF-024":  ["PR.PS-06"],                # input approval missing submitter restriction
+        "JF-026":  ["PR.PS-01"],                # build job: trigger ignores downstream failure
+        "JF-027":  ["GV.SC-04"],                # archiveArtifacts no fingerprint
+        "JF-032":  ["PR.PS-05"],                # agent label interpolates untrusted
+        # ── Drone CI ─────────────────────────────────────────────
+        "DR-001":  ["GV.SC-05"],                # step image not digest-pinned
+        "DR-002":  ["PR.PS-01"],                # privileged step
+        "DR-003":  ["PR.PS-05"],                # Drone variable injection
+        "DR-004":  ["PR.AA-01"],                # literal credential
+        "DR-005":  ["GV.SC-05"],                # plugin floating tag
+        "DR-006":  ["PR.DS-02"],                # TLS bypass in commands
+        "DR-007":  ["PR.PS-01"],                # sensitive host-path mount
+        "DR-008":  ["GV.SC-05"],                # pull: never (skips registry verify)
+        "DR-009":  ["PR.IR-01"],                # cache key tainted
+        "DR-010":  ["GV.SC-05"],                # unpinned package install
+        "DR-011":  ["PR.PS-05"],                # node map interpolates untrusted
+        # ── Tekton (K8s-native pipeline kinds) ────────────────────
+        "TKN-001": ["GV.SC-05", "PR.PS-02"],    # step image not digest-pinned
+        "TKN-002": ["PR.PS-01"],                # step privileged / root
+        "TKN-003": ["PR.PS-05"],                # param injection in script
+        "TKN-004": ["PR.PS-01"],                # hostPath / host namespaces
+        "TKN-005": ["PR.AA-01", "PR.DS-01"],    # leaked creds
+        "TKN-006": ["PR.PS-01"],                # no explicit timeout
+        "TKN-007": ["PR.AA-05"],                # default ServiceAccount
+        "TKN-008": ["GV.SC-05", "PR.DS-02"],    # remote install / TLS bypass
+        "TKN-009": ["PR.PS-06"],                # artifacts not signed
+        "TKN-010": ["GV.SC-03", "GV.SC-04"],    # SBOM not generated
+        "TKN-011": ["PR.PS-06", "GV.SC-05"],    # SLSA provenance
+        "TKN-012": ["PR.PS-02"],                # no vulnerability scanning
+        "TKN-013": ["PR.PS-01"],                # sidecar privileged / root
+        "TKN-014": ["GV.SC-05"],                # unpinned package install
+        "TKN-015": ["PR.PS-05"],                # workspace subPath param injection
+        # ── Argo Workflows ───────────────────────────────────────
+        "ARGO-001": ["GV.SC-05", "PR.PS-02"],   # template image not digest-pinned
+        "ARGO-002": ["PR.PS-01"],               # template privileged / root
+        "ARGO-003": ["PR.AA-05"],               # default ServiceAccount
+        "ARGO-004": ["PR.PS-01"],               # hostPath / host namespaces
+        "ARGO-005": ["PR.PS-05"],               # parameter injection
+        "ARGO-006": ["PR.AA-01", "PR.DS-01"],   # leaked creds
+        "ARGO-007": ["PR.PS-01"],               # missing activeDeadlineSeconds
+        "ARGO-008": ["GV.SC-05", "PR.DS-02"],   # remote install / TLS bypass
+        "ARGO-009": ["PR.PS-06"],               # artifacts not signed
+        "ARGO-010": ["GV.SC-03", "GV.SC-04"],   # SBOM not generated
+        "ARGO-011": ["PR.PS-06", "GV.SC-05"],   # SLSA provenance
+        "ARGO-012": ["PR.PS-02"],               # no vulnerability scanning
+        "ARGO-013": ["PR.AA-01"],               # SA token automount default
+        "ARGO-014": ["GV.SC-05"],               # unpinned package install
+        "ARGO-015": ["PR.DS-02"],               # insecure (non-HTTPS) artifact URL
+        # ── Cloud Build container-touching extras ─────────────────
+        "GCB-010": ["GV.SC-05", "PR.DS-02"],    # remote script piped to shell
+        "GCB-011": ["PR.DS-02"],                # TLS bypass
+        "GCB-012": ["PR.AA-01"],                # literal secret in pipeline body
+        "GCB-013": ["GV.SC-05"],                # pkg install bypasses registry integrity
+        "GCB-014": ["PR.PS-04", "DE.CM-09"],    # build logging disabled
+        "GCB-015": ["GV.SC-03", "GV.SC-04"],    # no SBOM step
+        "GCB-016": ["PR.PS-05"],                # dir path escape
+        "GCB-017": ["PR.PS-06", "GV.SC-05"],    # no SLSA provenance
+        "GCB-018": ["PR.AA-01"],                # legacy KMS secrets block
+        "GCB-019": ["PR.PS-05"],                # shell entrypoint + user substitution
+        "GCB-020": ["PR.AA-05"],                # default Cloud Build SA
+        "GCB-021": ["PR.IR-01"],                # no private worker pool
+        "GCB-022": ["PR.PS-05"],                # ALLOW_LOOSE substitution
+        "GCB-023": ["PR.PS-05"],                # undeclared user substitution
+        "GCB-024": ["GV.SC-04"],                # images: missing for docker push
+        "GCB-025": ["PR.PS-04"],                # tags: empty (audit/discoverability)
+        "GCB-026": ["PR.PS-01"],                # waitFor unknown step id
+        # ── AWS extras ───────────────────────────────────────────
+        "CB-008":  ["PR.PS-06"],                # inline buildspec, not from protected repo
+        "CB-010":  ["PR.IR-01"],                # fork-PR webhook unfiltered
+        "CP-001":  ["PR.PS-06"],                # no manual approval
+        "CP-005":  ["PR.PS-06"],                # prod Deploy stage no manual approval
+        "CD-002":  ["PR.IR-03"],                # AllAtOnce deployment
+        "CCM-001": ["PR.PS-06"],                # CodeCommit no approval rule
+        "CCM-002": ["PR.DS-01"],                # CodeCommit repo not CMK
+        "CA-003":  ["PR.AA-05"],                # CodeArtifact cross-account wildcard
+        "ECR-004": ["PR.PS-02"],                # ECR no lifecycle policy
+        # ── Terraform / CloudFormation (IaC-native) ───────────────
+        "TF-001":   ["PR.AA-01"],               # aws_iam_access_key declared as code
+        "TF-002":   ["PR.AA-01", "PR.DS-01"],   # hard-coded secret in resource attr
+        "TF-003":   ["PR.IR-01"],               # CodeBuild VPC shares public subnet
+        "CF-001":   ["PR.AA-01"],               # AWS::IAM::AccessKey declared as code
+        "CF-002":   ["PR.AA-01", "PR.DS-01"],   # hard-coded secret in resource property
+        "CF-003":   ["PR.IR-01"],               # CodeBuild VPC shares public subnet
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map primarily to
         # PR.PS-06 (secure software development practices). Access-
@@ -498,5 +642,97 @@ STANDARD = Standard(
         "SCM-040":  ["DE.CM-09", "PR.PS-06"],   # ruleset lacks code_scanning gate
         "SCM-041":  ["PR.PS-06", "PR.PS-01"],   # ruleset lacks deployment-env gate
         "SCM-042":  ["PR.PS-06"],               # ruleset lacks merge queue
+        "SCM-043":  ["PR.PS-06", "PR.AA-03"],   # tag-ruleset lacks signed_commits
+        "SCM-044":  ["PR.PS-06"],               # required_signatures bypassed for admins
+        "SCM-045":  ["DE.CM-09", "PR.PS-06"],   # default code scanning limited query suite
+        "SCM-046":  ["DE.CM-09", "PR.PS-06"],   # default code scanning configured but paused
+        "SCM-047":  ["DE.CM-09", "PR.PS-06"],   # repo language not covered
+        # ── NPM / PyPI / Maven dep supply-chain ──────────────────
+        # Per-package pinning / integrity / non-registry source
+        # → GV.SC-05 (third-party verification). Compromised
+        # versions also evidence GV.SC-07 (supplier-risk monitoring)
+        # and PR.PS-02 (software maintained commensurate with risk).
+        # HTTP indexes / wildcard mirrors / TLS bypass add PR.DS-02
+        # (data in transit). Install-time lifecycle scripts and
+        # secret-shaped file globs evidence PR.PS-05 / PR.AA-01.
+        "NPM-001":  ["GV.SC-05"],               # floating range
+        "NPM-002":  ["GV.SC-05"],               # lock entry missing integrity
+        "NPM-003":  ["GV.SC-05"],               # non-registry source
+        "NPM-004":  ["PR.PS-05"],               # install-time lifecycle script
+        "NPM-005":  ["GV.SC-05"],               # git dep mutable ref
+        "NPM-006":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised npm version
+        "NPM-007":  ["PR.PS-05"],               # .npmrc ignore-scripts
+        "NPM-011":  ["PR.AA-01", "PR.DS-01"],   # secret-shaped paths in files field
+        "PYPI-001": ["GV.SC-05"],               # missing ==pin
+        "PYPI-002": ["GV.SC-05"],               # hash pinning missing
+        "PYPI-003": ["GV.SC-05", "PR.DS-02"],   # http index / --trusted-host
+        "PYPI-004": ["GV.SC-05"],               # VCS dep without commit SHA
+        "PYPI-005": ["GV.SC-05"],               # --extra-index-url (dep confusion)
+        "PYPI-006": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised PyPI version
+        "MVN-001":  ["GV.SC-05"],               # floating Maven range
+        "MVN-002":  ["GV.SC-05"],               # mutable SNAPSHOT dep
+        "MVN-003":  ["GV.SC-05", "PR.DS-02"],   # plaintext-HTTP repository
+        "MVN-004":  ["GV.SC-05"],               # missing <version>
+        "MVN-005":  ["GV.SC-05"],               # lax checksumPolicy
+        "MVN-006":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised Maven version
+        "MVN-007":  ["GV.SC-05"],               # settings.xml wildcard mirror
+        # ── OCI image manifest gaps ──────────────────────────────
+        "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
+        "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing
+        "OCI-003":  ["GV.SC-05"],               # missing image.created
+        "OCI-004":  ["GV.SC-05"],               # foreign-layer URL reference
+        "OCI-005":  ["GV.SC-04"],               # missing image.licenses
+        "OCI-006":  ["PR.PS-01"],               # excessive layer count
+        "OCI-007":  ["GV.SC-05"],               # legacy schemaVersion 1
+        "OCI-008":  ["GV.SC-05"],               # weak digest algorithm
+        # ── SLSA / in-toto attestation content ───────────────────
+        "ATTEST-001": ["PR.PS-06", "GV.SC-05"], # untrusted SLSA builder identity
+        "ATTEST-002": ["PR.PS-06", "GV.SC-05"], # source-repo claim unverifiable
+        "ATTEST-003": ["GV.SC-04"],             # SBOM floating versions
+        "ATTEST-004": ["GV.SC-04"],             # provenance lacks materials
+        "ATTEST-005": ["PR.PS-06", "GV.SC-05"], # in-toto subject digest unpinned
+        "ATTEST-006": ["PR.PS-06"],             # buildType missing / placeholder
+        "ATTEST-007": ["GV.SC-04"],             # SBOM missing supplier
+        # ── Cross-cutting dataflow / taint engine ────────────────
+        # Cross-step / cross-job untrusted data reaching a privileged
+        # sink is both an isolation failure (PR.IR-01) and an unauth-
+        # software-execution surface (PR.PS-05).
+        "TAINT-001": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-002": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-003": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-004": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-005": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-006": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-007": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-008": ["PR.IR-01", "PR.PS-05"],
+        # ── Dockerfile extras ───────────────────────────────────
+        "DF-009":   ["GV.SC-05"],               # ADD where COPY suffices
+        "DF-024":   ["PR.PS-05"],               # npm install runs lifecycle scripts
+        "DF-025":   ["PR.AA-01"],               # registry token in image layer
+        "DF-026":   ["GV.SC-05", "PR.DS-02"],   # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["GV.SC-05", "PR.DS-02"],   # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["GV.SC-05", "PR.DS-02"],   # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["GV.SC-05", "PR.DS-02"],   # REQUESTS_CA_BUNDLE neutered
+        "DF-030":   ["PR.PS-01", "PR.PS-05"],   # NODE_OPTIONS --require / --inspect
+        # ── Degraded-mode findings (API access failures) ─────────
+        # When the scanner cannot enumerate a provider surface, the
+        # visibility gap surfaces as a log/monitoring gap — PR.PS-04
+        # (log records generated) + DE.CM-09 (computing hw/sw
+        # monitored). Mirrors the cross-standard precedent.
+        "CB-000":   ["PR.PS-04", "DE.CM-09"],
+        "CP-000":   ["PR.PS-04", "DE.CM-09"],
+        "CD-000":   ["PR.PS-04", "DE.CM-09"],
+        "ECR-000":  ["PR.PS-04", "DE.CM-09"],
+        "IAM-000":  ["PR.PS-04", "DE.CM-09"],
+        "PBAC-000": ["PR.PS-04", "DE.CM-09"],
+        "CT-000":   ["PR.PS-04", "DE.CM-09"],
+        "CWL-000":  ["PR.PS-04", "DE.CM-09"],
+        "EB-000":   ["PR.PS-04", "DE.CM-09"],
+        "CA-000":   ["PR.PS-04", "DE.CM-09"],
+        "CCM-000":  ["PR.PS-04", "DE.CM-09"],
+        "LMB-000":  ["PR.PS-04", "DE.CM-09"],
+        "KMS-000":  ["PR.PS-04", "DE.CM-09"],
+        "SM-000":   ["PR.PS-04", "DE.CM-09"],
+        "SSM-000":  ["PR.PS-04", "DE.CM-09"],
     },
 )
