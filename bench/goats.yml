@@ -19,14 +19,13 @@ goats:
   - slug: cicd-goat
     repo: https://github.com/cider-security-research/cicd-goat
     ref: main
-    pipelines: [github]
-    # Auto-detect picks up ``.github/workflows/`` at the canonical
-    # path. The goat also ships Jenkinsfiles, but they live deep in
-    # ``gitea/repositories/<name>/Jenkinsfile`` rather than at the
-    # repo root, which pipeline-check's ``--jenkinsfile-path``
-    # cannot glob today. Scoping cicd-goat to GHA in the MVP;
-    # Jenkinsfile-discovery is a follow-up that wants
-    # runner-level globbing.
+    pipelines: [github, jenkins]
+    # GHA workflows live at the canonical ``.github/workflows/``
+    # path. Jenkinsfiles live under ``gitea/repositories/<name>/``
+    # (the goat's seven vulnerable pipelines); the runner globs the
+    # tree for files exactly named ``Jenkinsfile`` and dispatches
+    # one Jenkins scan per file, skipping ``solutions/`` (cicd-goat
+    # ships answer-key copies there) and standard VCS noise.
     description: >
       Cider's CI/CD security training lab. Anchored against all 10
       OWASP CI/CD risks. Canonical goat for this scanner's wedge.

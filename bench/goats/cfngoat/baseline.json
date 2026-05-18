@@ -1,0 +1,41 @@
+{
+  "slug": "cfngoat",
+  "ref_resolved": "0c09b69cfc3dbc6cb3ef01883415c35c588ced48",
+  "findings": [
+    {
+      "check_id": "CF-001",
+      "severity": "CRITICAL",
+      "resource": "AWS::IAM::AccessKey.AccessKey"
+    },
+    {
+      "check_id": "CT-001",
+      "severity": "HIGH",
+      "resource": "AWS::CloudTrail::Trail (template-wide)"
+    },
+    {
+      "check_id": "KMS-001",
+      "severity": "MEDIUM",
+      "resource": "AWS::KMS::Key.LogsKey"
+    },
+    {
+      "check_id": "KMS-002",
+      "severity": "HIGH",
+      "resource": "AWS::KMS::Key.LogsKey"
+    },
+    {
+      "check_id": "LMB-001",
+      "severity": "HIGH",
+      "resource": "AWS::Lambda::Function.AnalysisLambda"
+    },
+    {
+      "check_id": "LMB-001",
+      "severity": "HIGH",
+      "resource": "AWS::Lambda::Function.CleanBucketFunction"
+    },
+    {
+      "check_id": "LMB-003",
+      "severity": "HIGH",
+      "resource": "AWS::Lambda::Function.AnalysisLambda"
+    }
+  ]
+}

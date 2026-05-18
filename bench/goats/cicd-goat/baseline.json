@@ -1,0 +1,146 @@
+{
+  "slug": "cicd-goat",
+  "ref_resolved": "0ed10925f3983857cf219b2ac1c327b861fcccca",
+  "findings": [
+    {
+      "check_id": "GHA-003",
+      "severity": "HIGH",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
+      "check_id": "GHA-014",
+      "severity": "MEDIUM",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
+      "check_id": "GHA-015",
+      "severity": "MEDIUM",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\cheshire-cat\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\dormouse\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\mad-hatter-pipeline\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\mock-turtle\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\reportcov\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-003",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\white-rabbit\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-005",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\cheshire-cat\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\dormouse\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\mad-hatter-pipeline\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\mock-turtle\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\reportcov\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-011",
+      "severity": "LOW",
+      "resource": "gitea\\repositories\\white-rabbit\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\cheshire-cat\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\dormouse\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\mad-hatter-pipeline\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\mock-turtle\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\reportcov\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-015",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\white-rabbit\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-028",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-028",
+      "severity": "MEDIUM",
+      "resource": "gitea\\repositories\\reportcov\\Jenkinsfile"
+    },
+    {
+      "check_id": "JF-030",
+      "severity": "HIGH",
+      "resource": "gitea\\repositories\\mock-turtle\\Jenkinsfile"
+    }
+  ]
+}

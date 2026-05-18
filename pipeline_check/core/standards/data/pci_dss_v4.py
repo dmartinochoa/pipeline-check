@@ -300,5 +300,331 @@ STANDARD = Standard(
         "SCM-040":  ["6.3.1"],                           # ruleset lacks code_scanning gate
         "SCM-041":  ["6.4.3", "6.5.1"],                  # ruleset lacks deployment-env gate
         "SCM-042":  ["6.4.3", "6.5.1"],                  # ruleset lacks merge queue
+        "SCM-043":  ["8.2.1", "6.5.1"],                  # tag-ruleset lacks signed_commits
+        "SCM-044":  ["8.2.1", "7.2.1"],                  # required_signatures bypassed for admins
+        "SCM-045":  ["6.3.1"],                           # default code scanning limited query suite
+        "SCM-046":  ["6.3.1"],                           # default code scanning paused
+        "SCM-047":  ["6.3.1"],                           # repo language not covered
+        # ── AWS extras ───────────────────────────────────────────
+        "CB-008":  ["6.4.3", "6.5.1"],                   # inline buildspec
+        "CB-009":  ["6.4.3", "6.5.1"],                   # build image not digest-pinned
+        "CB-010":  ["6.4.1", "6.4.3"],                   # fork-PR webhook unfiltered
+        "CB-011":  ["6.3.1", "6.5.1"],                   # buildspec malicious-activity
+        "CP-005":  ["6.4.3", "6.5.1"],                   # prod Deploy stage no approval
+        "CP-007":  ["6.4.1", "6.4.3"],                   # v2 PR trigger all branches
+        "LMB-003": ["8.2.1"],                            # Lambda plaintext env secrets
+        "KMS-001": ["10.3.2"],                           # CMK rotation disabled
+        # ── Terraform / CloudFormation (IaC-native) ──────────────
+        "TF-001":  ["8.2.1"],                            # aws_iam_access_key as code
+        "TF-002":  ["8.2.1"],                            # hard-coded secret in resource attr
+        "TF-003":  ["6.4.1"],                            # CodeBuild VPC public subnet
+        "CF-001":  ["8.2.1"],                            # AWS::IAM::AccessKey as code
+        "CF-002":  ["8.2.1"],                            # hard-coded secret in resource property
+        "CF-003":  ["6.4.1"],                            # CodeBuild VPC public subnet
+        # ── GitHub Actions ───────────────────────────────────────
+        "GHA-006":  ["6.5.1", "10.3.2"],                 # unsigned artifacts
+        "GHA-007":  ["6.5.1"],                           # no SBOM
+        "GHA-008":  ["8.2.1", "6.5.1"],                  # literal secrets in workflow
+        "GHA-009":  ["6.4.1", "6.5.1"],                  # workflow_run upstream artifact unverified
+        "GHA-010":  ["6.4.1", "6.5.1"],                  # local action on untrusted trigger
+        "GHA-011":  ["6.4.1", "6.5.1"],                  # cache key tainted
+        "GHA-012":  ["6.4.1"],                           # self-hosted runner not ephemeral
+        "GHA-013":  ["6.4.1", "6.5.1"],                  # issue_comment no author guard
+        "GHA-014":  ["6.4.3"],                           # deploy job missing environment
+        "GHA-015":  ["6.4.1"],                           # no timeout-minutes
+        "GHA-016":  ["6.3.3", "6.5.1"],                  # remote script piped to shell
+        "GHA-017":  ["6.3.3", "6.5.1"],                  # package install insecure source
+        "GHA-018":  ["8.2.1"],                           # GITHUB_TOKEN persisted to storage
+        "GHA-019":  ["6.3.3", "6.5.1"],                  # install without lockfile
+        "GHA-020":  ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "GHA-021":  ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins
+        "GHA-022":  ["6.5.1"],                           # TLS / cert verification bypass
+        "GHA-023":  ["6.3.3", "6.5.1"],                  # reusable workflow not SHA-pinned
+        "GHA-024":  ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
+        "GHA-025":  ["6.3.3", "6.5.1"],                  # unpinned reusable workflow
+        "GHA-026":  ["6.4.1", "6.5.1"],                  # container job disables isolation
+        "GHA-027":  ["6.5.1"],                           # dangerous shell idiom
+        "GHA-028":  ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "GHA-029":  ["6.3.3", "6.5.1"],                  # package source bypasses lockfile
+        "GHA-030":  ["7.2.1", "8.2.1"],                  # OIDC w/o env-protected job
+        "GHA-031":  ["6.5.1"],                           # retired set-output / save-state
+        "GHA-032":  ["6.4.1", "6.5.1"],                  # local script on untrusted trigger
+        "GHA-033":  ["8.2.1", "10.3.2"],                 # secret echoed
+        "GHA-034":  ["8.2.1", "7.2.5"],                  # secrets: inherit
+        "GHA-035":  ["6.5.1"],                           # github-script untrusted context
+        "GHA-036":  ["6.5.1"],                           # runs-on untrusted context
+        "GHA-037":  ["8.2.1"],                           # checkout persists GITHUB_TOKEN
+        "GHA-038":  ["6.5.1"],                           # ACTIONS_ALLOW_UNSECURE_COMMANDS
+        "GHA-039":  ["8.2.1"],                           # services / container creds literal
+        "GHA-040":  ["6.3.1", "6.3.3"],                  # known-compromised action ref
+        "GHA-041":  ["6.3.3"],                           # single-maintainer action
+        "GHA-042":  ["6.3.3"],                           # very-young action repo
+        "GHA-043":  ["6.3.3", "7.2.5"],                  # low-star + sensitive perms
+        "GHA-044":  ["6.4.1", "6.5.1"],                  # build-tool PPE on untrusted trigger
+        "GHA-045":  ["6.4.1", "6.5.1"],                  # caller-ref input drives checkout
+        "GHA-046":  ["6.4.1", "6.5.1"],                  # manual PR-head fetch
+        "GHA-047":  ["6.3.3"],                           # fresh-ref cooldown
+        "GHA-048":  ["6.4.3", "10.3.2"],                 # workflow self-mutation
+        "GHA-049":  ["7.2.5", "6.4.3"],                  # cross-repo push from CI
+        "GHA-050":  ["8.2.1"],                           # long-lived registry publish token
+        "GHA-051":  ["6.3.3", "6.5.1"],                  # services / container image unpinned
+        "GHA-052":  ["6.4.1", "6.5.1"],                  # cache key untrusted-input poisoning
+        "GHA-053":  ["6.5.1"],                           # if: predicate untrusted-context
+        "GHA-054":  ["8.2.1"],                           # checkout ssh-key persists
+        "GHA-055":  ["8.2.1"],                           # reusable outputs leak secret
+        "GHA-056":  ["6.3.1", "6.5.1"],                  # worm IOC strings
+        "GHA-057":  ["8.2.1", "10.3.2"],                 # secret-scanner output → egress
+        "GHA-058":  ["6.4.1", "6.5.1"],                  # agentic CLI permission-bypass
+        # ── GitLab CI ─────────────────────────────────────────────
+        "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
+        "GL-007":   ["6.5.1"],                           # no SBOM
+        "GL-008":   ["8.2.1", "6.5.1"],                  # literal secrets
+        "GL-009":   ["6.3.3", "6.5.1"],                  # image not digest-pinned
+        "GL-010":   ["6.4.1", "6.5.1"],                  # multi-project artifact unverified
+        "GL-011":   ["6.4.1", "6.5.1"],                  # include: local on MR pipeline
+        "GL-012":   ["6.4.1", "6.5.1"],                  # cache key tainted
+        "GL-013":   ["8.2.1"],                           # long-lived AWS keys
+        "GL-014":   ["6.4.1"],                           # self-managed runner not ephemeral
+        "GL-015":   ["6.4.1"],                           # no timeout
+        "GL-016":   ["6.3.3", "6.5.1"],                  # remote script piped to shell
+        "GL-017":   ["6.4.1", "6.5.1"],                  # docker privileged
+        "GL-018":   ["6.3.3", "6.5.1"],                  # package install insecure source
+        "GL-019":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "GL-020":   ["8.2.1"],                           # CI_JOB_TOKEN persisted
+        "GL-021":   ["6.3.3", "6.5.1"],                  # install without lockfile
+        "GL-022":   ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins
+        "GL-023":   ["6.5.1"],                           # TLS bypass
+        "GL-024":   ["6.5.1", "10.3.2"],                 # no SLSA provenance
+        "GL-025":   ["6.3.1", "6.5.1"],                  # malicious-activity indicators
+        "GL-026":   ["6.5.1"],                           # dangerous shell idiom
+        "GL-027":   ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "GL-028":   ["6.3.3", "6.5.1"],                  # services: image not pinned
+        "GL-029":   ["6.4.3"],                           # manual deploy allow_failure
+        "GL-030":   ["6.3.3", "6.5.1"],                  # trigger: include w/o pinned ref
+        "GL-031":   ["7.2.1", "8.2.1"],                  # id_tokens missing audience pin
+        "GL-032":   ["6.5.1"],                           # tags interpolates untrusted
+        "GL-033":   ["6.4.1", "6.5.1"],                  # global before_script taint
+        # ── Bitbucket Pipelines ──────────────────────────────────
+        "BB-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
+        "BB-007":   ["6.5.1"],                           # no SBOM
+        "BB-008":   ["8.2.1", "6.5.1"],                  # literal secrets
+        "BB-009":   ["6.3.3", "6.5.1"],                  # pipe not digest-pinned
+        "BB-010":   ["6.4.1", "6.5.1"],                  # deploy step PR artifact unverified
+        "BB-011":   ["8.2.1"],                           # long-lived AWS keys
+        "BB-012":   ["6.3.3", "6.5.1"],                  # remote script piped to shell
+        "BB-013":   ["6.4.1", "6.5.1"],                  # docker privileged
+        "BB-014":   ["6.3.3", "6.5.1"],                  # package install insecure source
+        "BB-015":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "BB-016":   ["6.4.1"],                           # self-hosted runner not ephemeral
+        "BB-017":   ["8.2.1"],                           # repo token persisted to storage
+        "BB-018":   ["6.4.1", "6.5.1"],                  # cache key tainted
+        "BB-019":   ["8.2.1"],                           # after-script references secrets
+        "BB-020":   ["8.2.1"],                           # full clone depth exposes history
+        "BB-021":   ["6.3.3", "6.5.1"],                  # install without lockfile
+        "BB-022":   ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins
+        "BB-023":   ["6.5.1"],                           # TLS bypass
+        "BB-024":   ["6.5.1", "10.3.2"],                 # no SLSA provenance
+        "BB-025":   ["6.3.1", "6.5.1"],                  # malicious-activity indicators
+        "BB-026":   ["6.5.1"],                           # dangerous shell idiom
+        "BB-027":   ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "BB-028":   ["7.2.1", "8.2.1"],                  # OIDC step w/o env gate
+        "BB-029":   ["6.3.3", "6.5.1"],                  # step + service image not pinned
+        # ── Azure DevOps Pipelines ───────────────────────────────
+        "ADO-006":  ["6.5.1", "10.3.2"],                 # unsigned artifacts
+        "ADO-007":  ["6.5.1"],                           # no SBOM
+        "ADO-008":  ["8.2.1", "6.5.1"],                  # literal secrets
+        "ADO-009":  ["6.3.3", "6.5.1"],                  # container image not digest-pinned
+        "ADO-010":  ["6.4.1", "6.5.1"],                  # cross-pipeline download unverified
+        "ADO-011":  ["6.4.1", "6.5.1"],                  # template: local on PR-validated
+        "ADO-012":  ["6.4.1", "6.5.1"],                  # Cache@2 PullRequest context
+        "ADO-013":  ["6.4.1"],                           # self-hosted pool not ephemeral
+        "ADO-014":  ["8.2.1"],                           # long-lived AWS keys
+        "ADO-015":  ["6.4.1"],                           # no timeoutInMinutes
+        "ADO-016":  ["6.3.3", "6.5.1"],                  # remote script piped to shell
+        "ADO-017":  ["6.4.1", "6.5.1"],                  # docker privileged
+        "ADO-018":  ["6.3.3", "6.5.1"],                  # package install insecure source
+        "ADO-019":  ["6.4.1", "6.5.1"],                  # extends template injection
+        "ADO-020":  ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "ADO-021":  ["6.3.3", "6.5.1"],                  # install without lockfile
+        "ADO-022":  ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins
+        "ADO-023":  ["6.5.1"],                           # TLS bypass
+        "ADO-024":  ["6.5.1", "10.3.2"],                 # no SLSA provenance
+        "ADO-025":  ["6.3.3", "6.5.1"],                  # unpinned cross-repo template
+        "ADO-026":  ["6.3.1", "6.5.1"],                  # malicious-activity indicators
+        "ADO-027":  ["6.5.1"],                           # dangerous shell idiom
+        "ADO-028":  ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "ADO-029":  ["6.4.3"],                           # service-conn job w/o env gate
+        "ADO-030":  ["6.5.1"],                           # pool interpolates untrusted
+        # ── CircleCI extras ──────────────────────────────────────
+        "CC-024":   ["6.5.1", "10.3.2"],                 # no SLSA provenance
+        "CC-025":   ["6.4.1", "6.5.1"],                  # cache key tainted
+        "CC-026":   ["6.3.1", "6.5.1"],                  # malicious-activity indicators
+        "CC-027":   ["6.5.1"],                           # dangerous shell idiom
+        "CC-028":   ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "CC-029":   ["6.3.3", "6.5.1"],                  # machine executor image not pinned
+        "CC-030":   ["6.4.3"],                           # job w/o branch filter / approval gate
+        "CC-031":   ["7.2.1", "8.2.1"],                  # OIDC role w/o branch filter
+        # ── Jenkins ──────────────────────────────────────────────
+        "JF-001":   ["6.3.3", "6.5.1"],                  # shared library not pinned
+        "JF-002":   ["6.5.1"],                           # script step untrusted env
+        "JF-003":   ["7.2.5"],                           # agent any (no executor isolation)
+        "JF-004":   ["8.2.1"],                           # AWS long-lived keys via withCredentials
+        "JF-005":   ["6.4.3"],                           # deploy stage missing manual input
+        "JF-006":   ["6.5.1", "10.3.2"],                 # artifacts not signed
+        "JF-007":   ["6.5.1"],                           # SBOM not produced
+        "JF-008":   ["8.2.1", "6.5.1"],                  # credential-shaped literal
+        "JF-009":   ["6.3.3", "6.5.1"],                  # agent docker image not digest-pinned
+        "JF-010":   ["8.2.1"],                           # long-lived AWS keys in environment {}
+        "JF-011":   ["10.2.1"],                          # no buildDiscarder retention
+        "JF-012":   ["6.3.3", "6.5.1"],                  # load step pulls Groovy w/o integrity pin
+        "JF-013":   ["6.4.1", "6.5.1"],                  # copyArtifacts ingests upstream unverified
+        "JF-014":   ["6.4.1"],                           # agent label missing ephemeral marker
+        "JF-015":   ["6.4.1"],                           # pipeline has no timeout wrapper
+        "JF-016":   ["6.3.3", "6.5.1"],                  # remote script piped to shell
+        "JF-017":   ["6.4.1", "6.5.1"],                  # docker run privileged
+        "JF-018":   ["6.3.3", "6.5.1"],                  # package install insecure source
+        "JF-019":   ["6.4.1", "6.5.1"],                  # Groovy sandbox escape pattern
+        "JF-020":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "JF-021":   ["6.3.3", "6.5.1"],                  # install without lockfile
+        "JF-022":   ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins
+        "JF-023":   ["6.5.1"],                           # TLS bypass
+        "JF-024":   ["6.4.3"],                           # input approval missing submitter restriction
+        "JF-025":   ["6.4.1", "6.5.1"],                  # K8s agent pod privileged / hostPath
+        "JF-026":   ["6.4.3"],                           # build job: trigger ignores downstream failure
+        "JF-027":   ["6.5.1"],                           # archiveArtifacts no fingerprint
+        "JF-028":   ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
+        "JF-029":   ["6.3.1", "6.5.1"],                  # malicious-activity indicators
+        "JF-030":   ["6.5.1"],                           # dangerous shell idiom
+        "JF-031":   ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
+        "JF-032":   ["6.5.1"],                           # agent label interpolates untrusted
+        "JF-033":   ["8.2.1", "10.3.2"],                 # withCredentials leaked via Groovy ${}
+        "JF-034":   ["8.2.1"],                           # password() build parameter
+        "JF-035":   ["6.5.1"],                           # httpRequest SSL off
+        # ── Drone CI ─────────────────────────────────────────────
+        "DR-001":   ["6.3.3", "6.5.1"],                  # step image not digest-pinned
+        "DR-002":   ["6.4.1", "6.5.1"],                  # privileged step
+        "DR-003":   ["6.5.1"],                           # Drone variable injection
+        "DR-004":   ["8.2.1", "6.5.1"],                  # literal credential
+        "DR-005":   ["6.3.3", "6.5.1"],                  # plugin floating tag
+        "DR-006":   ["6.5.1"],                           # TLS bypass in commands
+        "DR-007":   ["6.4.1", "6.5.1"],                  # sensitive host-path mount
+        "DR-008":   ["6.3.3", "6.5.1"],                  # pull: never
+        "DR-009":   ["6.4.1", "6.5.1"],                  # cache key tainted
+        "DR-010":   ["6.3.3", "6.5.1"],                  # unpinned package install
+        "DR-011":   ["6.5.1"],                           # node map interpolates untrusted
+        # ── Buildkite extras ─────────────────────────────────────
+        "BK-014":   ["6.3.3", "6.5.1"],                  # unpinned package install
+        "BK-015":   ["6.5.1"],                           # agents map untrusted interpolation
+        # ── Tekton extras ────────────────────────────────────────
+        "TKN-014":  ["6.3.3", "6.5.1"],                  # unpinned package install
+        "TKN-015":  ["6.5.1"],                           # workspace subPath param injection
+        # ── Argo extras ──────────────────────────────────────────
+        "ARGO-014": ["6.3.3", "6.5.1"],                  # unpinned package install
+        "ARGO-015": ["6.5.1"],                           # insecure (non-HTTPS) artifact URL
+        # ── Cloud Build extras ───────────────────────────────────
+        "GCB-007":  ["8.2.1"],                           # availableSecrets versions/latest
+        "GCB-017":  ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
+        "GCB-018":  ["8.2.1"],                           # legacy KMS secrets block
+        "GCB-021":  ["6.4.1"],                           # no private worker pool
+        "GCB-024":  ["6.5.1"],                           # images: missing for docker push
+        "GCB-025":  ["10.2.1"],                          # tags: empty (audit/discoverability)
+        # ── NPM / PyPI / Maven dep supply-chain ──────────────────
+        # Pinning / integrity → 6.3.3 (vuln prevention via patch) +
+        # 6.5.1 (secure dev). Compromised pkgs add 6.3.1 (vuln id).
+        # Lifecycle scripts evidence 6.5.1. Secret-shaped globs add
+        # 8.2.1.
+        "NPM-001":  ["6.3.3", "6.5.1"],
+        "NPM-002":  ["6.3.3", "6.5.1"],
+        "NPM-003":  ["6.3.3", "6.5.1"],
+        "NPM-004":  ["6.5.1"],
+        "NPM-005":  ["6.3.3", "6.5.1"],
+        "NPM-006":  ["6.3.1", "6.3.3"],
+        "NPM-007":  ["6.5.1"],
+        "NPM-011":  ["8.2.1"],
+        "PYPI-001": ["6.3.3", "6.5.1"],
+        "PYPI-002": ["6.3.3", "6.5.1"],
+        "PYPI-003": ["6.3.3", "6.5.1"],
+        "PYPI-004": ["6.3.3", "6.5.1"],
+        "PYPI-005": ["6.3.3", "6.5.1"],
+        "PYPI-006": ["6.3.1", "6.3.3"],
+        "MVN-001":  ["6.3.3", "6.5.1"],
+        "MVN-002":  ["6.3.3", "6.5.1"],
+        "MVN-003":  ["6.3.3", "6.5.1"],
+        "MVN-004":  ["6.3.3", "6.5.1"],
+        "MVN-005":  ["6.3.3", "6.5.1"],
+        "MVN-006":  ["6.3.1", "6.3.3"],
+        "MVN-007":  ["6.3.3", "6.5.1"],
+        # ── OCI image manifest gaps ──────────────────────────────
+        "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
+        "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing
+        "OCI-003":  ["6.5.1"],                           # missing image.created
+        "OCI-004":  ["6.3.3"],                           # foreign-layer URL reference
+        "OCI-005":  ["6.5.1"],                           # missing image.licenses
+        "OCI-006":  ["6.5.1"],                           # excessive layer count
+        "OCI-007":  ["6.3.3", "6.5.1"],                  # legacy schemaVersion 1
+        "OCI-008":  ["6.3.3", "6.5.1"],                  # weak digest algorithm
+        # ── SLSA / in-toto attestation content ───────────────────
+        "ATTEST-001": ["6.5.1", "10.3.2"],               # untrusted SLSA builder identity
+        "ATTEST-002": ["6.5.1", "10.3.2"],               # source-repo claim unverifiable
+        "ATTEST-003": ["6.5.1"],                         # SBOM floating versions
+        "ATTEST-004": ["6.5.1"],                         # provenance lacks materials
+        "ATTEST-005": ["6.5.1", "10.3.2"],               # in-toto subject digest unpinned
+        "ATTEST-006": ["6.5.1"],                         # buildType missing
+        "ATTEST-007": ["6.5.1"],                         # SBOM missing supplier
+        # ── Cross-cutting dataflow / taint engine ────────────────
+        # Cross-step / cross-job untrusted-data flow into privileged
+        # sinks = both a secure-config failure (6.4.1) and secure-
+        # development failure (6.5.1).
+        "TAINT-001": ["6.4.1", "6.5.1"],
+        "TAINT-002": ["6.4.1", "6.5.1"],
+        "TAINT-003": ["6.4.1", "6.5.1"],
+        "TAINT-004": ["6.4.1", "6.5.1"],
+        "TAINT-005": ["6.4.1", "6.5.1"],
+        "TAINT-006": ["6.4.1", "6.5.1"],
+        "TAINT-007": ["6.4.1", "6.5.1"],
+        "TAINT-008": ["6.4.1", "6.5.1"],
+        # ── Dockerfile extras ───────────────────────────────────
+        "DF-007":   ["10.2.1"],                          # no HEALTHCHECK
+        "DF-009":   ["6.5.1"],                           # ADD where COPY suffices
+        "DF-011":   ["6.5.1"],                           # apt cache not cleaned
+        "DF-014":   ["6.4.1"],                           # WORKDIR /etc
+        "DF-017":   ["6.4.1"],                           # ENV PATH writable prefix
+        "DF-018":   ["6.4.1"],                           # RUN chown system path
+        "DF-021":   ["6.5.1"],                           # pip TLS bypass / http index
+        "DF-022":   ["6.3.3", "6.5.1"],                  # npm install (not npm ci)
+        "DF-023":   ["6.4.1"],                           # LD_PRELOAD / LD_LIBRARY_PATH
+        "DF-024":   ["6.5.1"],                           # npm install runs lifecycle scripts
+        "DF-025":   ["8.2.1"],                           # registry token in image layer
+        "DF-026":   ["6.5.1"],                           # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["6.5.1"],                           # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["6.5.1"],                           # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["6.5.1"],                           # REQUESTS_CA_BUNDLE neutered
+        "DF-030":   ["6.4.1", "6.5.1"],                  # NODE_OPTIONS --require / --inspect
+        # ── Helm chart provenance metadata extras ────────────────
+        "HELM-005": ["6.5.1"],                           # missing maintainers
+        "HELM-006": ["6.5.1"],                           # missing kubeVersion
+        "HELM-007": ["6.5.1"],                           # missing description
+        "HELM-010": ["6.5.1"],                           # missing appVersion
+        # ── Degraded-mode findings (API access failures) ─────────
+        # Visibility gap = audit-log surface gap; req 10.2.1 says
+        # "Audit logs are enabled and active for all system
+        # components" — when the scanner can't enumerate a surface,
+        # that requirement isn't demonstrable. Mirrors the cross-
+        # standard precedent.
+        "CB-000":   ["10.2.1"],
+        "CP-000":   ["10.2.1"],
+        "CD-000":   ["10.2.1"],
+        "ECR-000":  ["10.2.1"],
+        "IAM-000":  ["10.2.1"],
+        "PBAC-000": ["10.2.1"],
+        "CT-000":   ["10.2.1"],
+        "CWL-000":  ["10.2.1"],
+        "EB-000":   ["10.2.1"],
+        "CA-000":   ["10.2.1"],
+        "CCM-000":  ["10.2.1"],
+        "LMB-000":  ["10.2.1"],
+        "KMS-000":  ["10.2.1"],
+        "SM-000":   ["10.2.1"],
+        "SSM-000":  ["10.2.1"],
     },
 )

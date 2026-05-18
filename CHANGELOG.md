@@ -344,6 +344,243 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Only OCI-006 (excessive layer count) remains unmapped — pure
   image-bloat hygiene with no SSDF analog.
 
+- **Broadened NIST SP 800-53 Rev. 5 to 100% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 269 net-new entries.
+  800-53 is the federal control catalog and is broad enough that
+  every scanner rule lands. Follows the existing per-rule pattern:
+  pinning + 3rd-party verification → SR-3 + SR-11 (+ SI-2 for
+  flaw remediation cadence, + RA-5 for vuln monitoring on
+  compromised-pkg variants); script injection / dangerous shell →
+  CM-6 + SA-11; secret leakage → IA-5 (+ SC-28 for at-rest
+  variants, + AU-9 for protection-of-audit on egress variants);
+  signing / SBOM / attestation → SI-7 + SR-4 (+ CM-8 for
+  component inventory on SBOM-content); TLS bypass → SC-8 +
+  SC-13; privileged / runtime hardening → AC-6 + CM-6 + CM-7;
+  approval gates / branch governance → SA-10 + SA-15 + AC-3;
+  timeout / retention / audit hygiene → CM-6 + AU-2 + AU-11 +
+  AU-12; vuln scan / SCA / malicious indicators → RA-5 + SI-2.
+  Picks up the full GHA-006..058 + GL-006..033 + BB-006..029 +
+  ADO-006..030 + CC-024..031 + JF-002..032 + DR-001..011 +
+  BK-014/015 + TKN-014/015 + ARGO-014/015 + GCB-004 surface, the
+  NPM/PyPI/Maven dep-supply-chain pack, OCI manifest gaps
+  (OCI-001..008), the ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension (DF-024..030), AWS extras (CB-008..011,
+  CP-005/007, ECR-006/007, IAM-007/008, PBAC-003/005), TF/CF
+  IaC-native rules, SCM-016 + SCM-043..047, and the `-000`
+  degraded-mode discovery findings on AU-2 + AU-12 (audit-event
+  gap, mirroring the cross-standard visibility-gap precedent).
+  After: 516/516 = 100% (was 247, 48%). The 800-53 family
+  catalog is broad enough that every scanner rule has a home;
+  no carve-outs remain.
+
+- **Broadened NIST SP 800-190 to 65% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 153 net-new entries. 800-190
+  is the container security guide — narrowly scoped to image
+  risks (§4.1), registry risks (§4.2), and container runtime
+  (§4.4). The existing docstring carves out orchestrator (§4.3),
+  host OS (§4.5), and signing/SBOM/provenance (those live in
+  SLSA / 800-53). Expansion focuses on the rules that genuinely
+  touch the image / registry / container risk surface: Dockerfile
+  env-bypass pack (DF-007/9/11/21..30) — TLS-disabling envs map
+  to 4.2.1, runtime-affecting envs map to 4.1.2 + 4.4.5;
+  NPM/PyPI/Maven dep-supply-chain — non-registry/HTTP/wildcard-
+  mirror → 4.2.1, mutable / unpinned → 4.1.5, compromised → 4.1.3,
+  lifecycle scripts → 4.4.5, secret globs → 4.1.4; OCI manifest
+  gaps — provenance metadata + integrity → 4.1.5, foreign-layer
+  URL → 4.2.1, layer count → 4.1.2; Helm per-field provenance →
+  4.1.5, HELM-008 stale Chart.lock → 4.2.2. Per-CI provider gaps
+  pick up the container-touching subset: no-timeout / untrusted-
+  context / cache-poisoning / dangerous-shell → 4.4.5; persisted
+  tokens + secret echoes → 4.1.4; unpinned service / runner /
+  plugin images → 4.1.5; TLS bypass / remote-install → 4.2.1;
+  worm IOCs → 4.1.3; resource-class / egress / shared role /
+  no-worker-pool → 4.4.3; rogue triggers (cache poisoning, agent
+  any, build-job ignores downstream, fork-PR webhooks) → 4.4.6.
+  TAINT-001..008 lands on 4.4.5 (untrusted code reaches build
+  runtime). SCM-022 (allowed_actions unrestricted) → 4.1.5 as
+  the lone SCM rule that touches container risk; other SCM
+  governance stays scoped out. After: 339/516 = 65% (was 186,
+  36%). The 177 unmapped rules are scoped outside 800-190's
+  container surface: SCM governance (47), signing/SBOM/SLSA
+  across providers (per the existing carve-out), cloud IAM (9),
+  KMS/SM/SSM secret stores (9), CT/CWL/CW/EB audit logs (10),
+  TF/CF IaC, ATTEST family, `-000` discovery findings, and
+  pipeline-flow rules that are governance rather than container-
+  runtime concerns.
+
+- **Broadened NIST CSF 2.0 to 100% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 193 net-new entries. CSF 2.0
+  is the cross-function cybersecurity framework — Govern,
+  Protect, Detect, Respond, Recover — so almost every rule has
+  a subcategory home. Follows the existing per-rule pattern:
+  pinning + 3rd-party verification → GV.SC-05 (+ GV.SC-07 for
+  ongoing monitoring on compromised-pkg / reputation variants);
+  SBOM → GV.SC-03 + GV.SC-04; secrets / creds → PR.AA-01 (+
+  PR.DS-01 for at-rest); IAM access → PR.AA-05 + PR.AA-03;
+  privileged / runtime hardening → PR.PS-01; dangerous-shell /
+  interpolation / poisoned-pipeline → PR.PS-05; signing / deploy
+  gates / branch governance → PR.PS-06; outdated deps / vuln scan
+  → PR.PS-02; TLS bypass / data-in-transit → PR.DS-02; network
+  boundary / cache-poisoning / fork-PR triggers → PR.IR-01;
+  resilience / rollback → PR.IR-03 + RC.RP-01; audit logs →
+  PR.PS-04 + DE.CM-09; external-provider monitoring → DE.CM-06;
+  multi-source correlation → DE.AE-03; incident triggers →
+  RS.MA-01. Picks up the full per-CI extension surface
+  (GHA-014/030..058, GL-004/29..33, BB-004/28/29, ADO-004/29/30,
+  CC-004/9/31, JF-005/24/26/27/32, DR-001..011), the Tekton /
+  Argo K8s-native packs (TKN-001..015, ARGO-001..015), the
+  Cloud Build extension (GCB-010..026), the AWS extras
+  (CB-008/10, CP-001/5, CD-002, CCM-001/2, CA-003, ECR-004),
+  TF/CF IaC-native rules, SCM-043..047, the NPM/PyPI/Maven dep-
+  supply-chain pack, OCI manifest (OCI-001..008), ATTEST family,
+  TAINT-001..008, Dockerfile env-bypass extension (DF-009/24..30),
+  and the `-000` degraded-mode discovery findings on PR.PS-04 +
+  DE.CM-09 (visibility gap, mirroring the cross-standard
+  precedent). After: 516/516 = 100% (was 323, 62%). All 22
+  subcategories evidenced.
+
+- **Broadened SOC 2 to 100% catalog coverage.** Cross-mapping pass,
+  no new rule modules, 277 net-new entries. SOC 2's Common Criteria
+  (CC6 logical access, CC7 system operations, CC8 change management)
+  cover almost every pipeline-config posture rule. Follows the
+  existing per-rule pattern: secrets / creds / long-lived tokens →
+  CC6.1 (+ CC6.2 / CC6.3 for provisioning + revocation); boundary
+  / privileged / fork-PR / cache-poisoning → CC6.6; TLS bypass →
+  CC6.7; malicious-software / dangerous-shell / interpolation /
+  worm IOCs → CC6.8; vuln scan / outdated deps / compromised pkgs
+  → CC7.1; audit / monitoring / build logs → CC7.2; event response
+  / rollback → CC7.3 + CC7.4; signing / SBOM / attestation /
+  pinning / deploy gates / branch governance → CC8.1. Picks up
+  the full per-CI extension surface (GHA-006..058, GL-006..033,
+  BB-005..029, ADO-005..030, CC-003..031, JF-006..032, DR-001..011),
+  the Tekton + Argo K8s-native packs (TKN-001..015, ARGO-001..015),
+  the Cloud Build extension (GCB-004..026), AWS extras (CB-004/7/
+  9/10, CP-002, CCM-002, CA-001..003, ECR-004/5/6, EB-002, KMS-001,
+  SM-001, SSM-001/2, LMB-001/3), TF/CF IaC-native rules,
+  SCM-043..047, the NPM/PyPI/Maven dep-supply-chain pack, OCI
+  manifest (OCI-001..008), ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension (DF-009/11/24..30), Helm chart provenance
+  metadata (HELM-005..010 remaining), and the `-000` degraded-mode
+  discovery findings on CC7.2 (monitoring-anomaly gap, mirroring
+  the cross-standard visibility-gap precedent). After: 516/516 =
+  100% (was 239, 46%). All 11 Common Criteria evidenced. As the
+  docstring caveat reminds — passing all mapped checks demonstrates
+  config substrate but not the auditor-reviewed operational
+  evidence required for SOC 2 attestation.
+
+- **Broadened PCI DSS v4.0 to 100% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 294 net-new entries. PCI DSS
+  v4's Req-6 (secure systems and software), Req-7 (access control
+  by need-to-know), Req-8 (identify + authenticate), and Req-10
+  (log + monitor) collectively cover almost every pipeline-config
+  rule. Follows the existing per-rule pattern: pinning + 3rd-party
+  verification → 6.3.3 + 6.5.1; secrets / creds / long-lived
+  tokens → 8.2.1 (+ 8.2.2 for shared accounts); privileged /
+  runtime hardening / no-timeout → 6.4.1; TLS bypass / dangerous-
+  shell / interpolation → 6.5.1; vuln scan / SCA / compromised
+  packages → 6.3.1 + 6.3.3; approval gates / branch governance /
+  deploy gates → 6.4.3; signing / SBOM / attestation → 6.5.1 +
+  10.3.2; IAM / RBAC / OIDC trust → 7.2.x; audit logs → 10.2.1 +
+  10.3.2 + 10.3.3. Picks up the full GHA-006..058, GL-006..033,
+  BB-006..029, ADO-006..030, CC-024..031, the entire Jenkins
+  (JF-001..035) and Drone (DR-001..011) provider packs,
+  BK-014/015 + TKN-014/15 + ARGO-014/15 + GCB-007/17/18/21/24/25,
+  the NPM/PyPI/Maven dep-supply-chain pack, OCI manifest
+  (OCI-001..008), ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension + extras (DF-007/9/11/14/17/18/21..30),
+  Helm chart provenance metadata (HELM-005..010 remaining), AWS
+  extras (CB-008..11, CP-005/7, KMS-001, LMB-003), TF/CF IaC-
+  native rules, SCM-043..047, and the `-000` degraded-mode
+  discovery findings on 10.2.1 (audit-log enablement gap,
+  mirroring the cross-standard visibility-gap precedent). After:
+  516/516 = 100% (was 222, 43%). All 13 PCI DSS v4 controls
+  evidenced.
+
+- **Broadened NSA/CISA ESF Supply Chain to 100% catalog coverage,
+  plus integrity-test fix.** Cross-mapping pass, no new rule
+  modules, 184 net-new entries. ESF spans the SDLC across three
+  volumes (Developer / Supplier / Customer), so the expansion has
+  a natural home for most rules. Picks up the full GHA-030..058
+  worm-mitigation pack, GL-028..033, BB-028/29, ADO-029/30,
+  CC-029..031, JF-032..035, BK-014/15, TKN-014/15, ARGO-014/15,
+  the entire Drone provider (DR-001..011), the NPM/PyPI/Maven dep-
+  supply-chain pack, OCI manifest (OCI-001..008), ATTEST family on
+  ESF-S-PROVENANCE + ESF-D-SBOM, TAINT-001..008 on ESF-D-INJECTION,
+  Dockerfile env-bypass extension + extras (DF-009/11/17/18/21..30),
+  AWS extras (CB-008..010, CP-005/7, CA-001..004, CCM-001..3,
+  ECR-006/7, KMS-001/2, SM-001/2, SSM-001/2, LMB-001..4, IAM-007/8,
+  PBAC-003/5, CT-001..3, CWL-001/2, EB-002, SIGN-001/2), TF/CF
+  IaC-native rules, SCM-003/006/016/026/028/036/040/043..047
+  (signed-commit + vuln intake + code-scanning surfaces that
+  cleanly map to ESF-D-TAMPER + ESF-S-VULN-MGMT + ESF-D-CODE-
+  REVIEW), and the remaining `-000` degraded-mode discovery
+  findings on ESF-C-AUDIT (mirroring the existing pattern).
+  **Bug fix:** the file had four pre-existing dangling control
+  references that the integrity test didn't catch because
+  esf_supply_chain wasn't in the parametrize list. JF-027 →
+  ``ESF-D-TAMPER`` (now a defined control: "Protect build
+  artifacts from tampering and detect unauthorized modification");
+  BK-011 / TKN-011 / ARGO-011 → ``ESF-S-PROVENANCE`` (now a
+  defined control: "Generate and verify provenance metadata
+  (SLSA / in-toto) for produced artifacts"); TKN-013 →
+  ``ESF-D-RUNTIME-HARDENING`` fixed to ``ESF-D-PRIV-BUILD``;
+  ARGO-013 → ``ESF-D-LEAST-PRIV`` fixed to ``ESF-C-LEAST-PRIV``.
+  ESF is now in the `TestStandardIntegrity` and
+  `TestCheckIdIntegrity` parametrize lists so future dangling refs
+  get caught at CI time.
+
+  After: 516/516 = 100% (was 332, 64%). All 24 ESF controls
+  evidenced (22 original + the 2 newly-added that backfill
+  previously-dangling references).
+
+- **Targeted expansions for the three intentionally-narrow CIS
+  benchmarks.** Each of these standards is scoped narrowly per
+  its existing docstring carve-outs (AWS Foundations covers
+  AWS-pack rules; GitHub covers GitHub-platform + IaC scanner
+  surfaces; Kubernetes covers manifest-evidenceable Section-5
+  policies). Expansion stays inside those scopes:
+
+  - **CIS AWS Foundations:** 18 net-new entries. CB-006 (long-
+    lived source token) and CP-004 (legacy OAuth) land on 1.14
+    (90-day key rotation), generalizing the rotation principle
+    beyond IAM access keys. The `-000` degraded-mode discovery
+    findings (16 rules) land on 3.1 (CloudTrail enabled in all
+    regions) — when the scanner cannot enumerate an AWS surface,
+    the visibility gap is the audit-trail evidence gap 3.1 is
+    designed to prevent; S3-000 also maps to 3.6 (S3 access
+    logging). After: 62/565 = 10% (was 44, 7%). The standard
+    remains intentionally narrow — most AWS-pack rules don't
+    have CIS Foundations controls within the benchmark's
+    IAM/encryption/audit scope.
+
+  - **CIS GitHub:** 54 net-new entries. **1.5.2** (CI/CD
+    pipeline-instruction scanning) absorbs the GHA-030..058
+    worm-mitigation + advanced-PPE pack (anchored at GitHub-
+    specific patterns the benchmark enumerates) and the
+    TAINT-001..008 cross-step injection family. **1.5.3** (IaC
+    scanning) extends across Dockerfile (DF-006/8/19/20/21/24/
+    26..29), Kubernetes (K8S-005/13/17/18/37), and TF/CF
+    (TF-002/3, CF-002/3) so the IaC scanner surface matches the
+    manifest reality. After: 118/565 = 20% (was 64, 11%). The
+    standard stays GitHub-platform-scoped — non-SCM / non-GHA /
+    non-IaC rules remain out of scope.
+
+  - **CIS Kubernetes:** 10 net-new entries. The Section-5 policy
+    surface extends to **Tekton** TaskRun / PipelineRun Pod-
+    producing kinds (TKN-002 privileged → 5.2.2 + 5.2.7; TKN-004
+    hostPath → 5.2.5 + 5.2.12; TKN-007 default SA → 5.1.5;
+    TKN-013 sidecar privileged → 5.2.2 + 5.2.7) and **Argo
+    Workflow** templates (ARGO-002/3/4/6/13). HELM-006 (missing
+    kubeVersion compat range) lands on 5.7.1 since Helm renders
+    to Kubernetes manifests at deploy time. After: 45/565 = 7%
+    (was 35, 6%). The standard stays manifest-policy-scoped —
+    pipeline-side rules and non-K8s providers remain out of
+    scope.
+
+  All three benchmarks are intentionally narrow caps on the
+  catalog, not gaps to close. The percentages here reflect
+  realistic ceilings given each benchmark's scope.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

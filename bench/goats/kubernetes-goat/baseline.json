@@ -1,0 +1,141 @@
+{
+  "slug": "kubernetes-goat",
+  "ref_resolved": "723a0db478f050d173d23b4ce5044b65bce0bdd0",
+  "findings": [
+    {
+      "check_id": "K8S-001",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-002",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-003",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-004",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-005",
+      "severity": "CRITICAL",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-006",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-007",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-008",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-009",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-010",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-011",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-012",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-013",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-014",
+      "severity": "CRITICAL",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-015",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-016",
+      "severity": "LOW",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-018",
+      "severity": "CRITICAL",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-019",
+      "severity": "LOW",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-020",
+      "severity": "CRITICAL",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-023",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-024",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-030",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-031",
+      "severity": "LOW",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-032",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-033",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-034",
+      "severity": "MEDIUM",
+      "resource": "kubernetes/manifests"
+    },
+    {
+      "check_id": "K8S-035",
+      "severity": "HIGH",
+      "resource": "kubernetes/manifests"
+    }
+  ]
+}

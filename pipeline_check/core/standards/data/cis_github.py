@@ -166,13 +166,75 @@ STANDARD = Standard(
         "GHA-019": ["1.5.2"],                                 # job-level permissions broader than needed
         "GHA-038": ["1.5.2"],                                 # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GHA-040": ["1.5.2"],                                 # known-compromised action ref
+        # GHA worm-mitigation + advanced-PPE pack: each rule
+        # represents a CI/CD pipeline-instruction security gap that
+        # 1.5.2 is designed to catch. Anchoring this subset (not the
+        # full GHA pack) keeps the surface scoped to GitHub-specific
+        # patterns the CIS benchmark explicitly enumerates.
+        "GHA-030": ["1.5.2"],                                 # OIDC w/o env-protected job
+        "GHA-031": ["1.5.2"],                                 # retired set-output / save-state
+        "GHA-032": ["1.5.2"],                                 # local script on untrusted trigger
+        "GHA-033": ["1.5.2", "1.5.1"],                        # secret echoed in run:
+        "GHA-034": ["1.5.2"],                                 # secrets: inherit
+        "GHA-035": ["1.5.2"],                                 # github-script untrusted context
+        "GHA-036": ["1.5.2"],                                 # runs-on untrusted context
+        "GHA-037": ["1.5.2"],                                 # checkout persists GITHUB_TOKEN
+        "GHA-039": ["1.5.2", "1.5.1"],                        # services container creds literal
+        "GHA-041": ["1.5.2"],                                 # single-maintainer action (reputation)
+        "GHA-042": ["1.5.2"],                                 # very-young action repo
+        "GHA-043": ["1.5.2"],                                 # low-star + sensitive perms
+        "GHA-044": ["1.5.2"],                                 # build-tool PPE on untrusted trigger
+        "GHA-045": ["1.5.2"],                                 # caller-ref input drives checkout
+        "GHA-046": ["1.5.2"],                                 # manual PR-head fetch
+        "GHA-047": ["1.5.2"],                                 # fresh-ref cooldown
+        "GHA-048": ["1.5.2"],                                 # workflow self-mutation
+        "GHA-049": ["1.5.2"],                                 # cross-repo push from CI
+        "GHA-050": ["1.5.2"],                                 # long-lived registry publish token
+        "GHA-051": ["1.5.2"],                                 # services / container image unpinned
+        "GHA-052": ["1.5.2"],                                 # cache key untrusted-input poisoning
+        "GHA-053": ["1.5.2"],                                 # if: predicate untrusted-context
+        "GHA-054": ["1.5.2"],                                 # checkout ssh-key persists
+        "GHA-055": ["1.5.2", "1.5.1"],                        # reusable outputs leak secret
+        "GHA-056": ["1.5.2"],                                 # worm IOC strings
+        "GHA-057": ["1.5.2", "1.5.1"],                        # secret-scanner output → egress
+        "GHA-058": ["1.5.2"],                                 # agentic CLI permission-bypass
+        # TAINT family: cross-step / cross-job untrusted-data flow
+        # into privileged sinks is the canonical pipeline-instruction
+        # security failure the 1.5.2 scanner is meant to find.
+        "TAINT-001": ["1.5.2"],
+        "TAINT-002": ["1.5.2"],
+        "TAINT-003": ["1.5.2"],
+        "TAINT-004": ["1.5.2"],
+        "TAINT-005": ["1.5.2"],
+        "TAINT-006": ["1.5.2"],
+        "TAINT-007": ["1.5.2"],
+        "TAINT-008": ["1.5.2"],
         # Dockerfile / IaC scanning, 1.5.3
         "DF-001":  ["1.5.3"],                                 # FROM image not digest-pinned
         "DF-005":  ["1.5.3"],                                 # shell-eval pattern
+        "DF-006":  ["1.5.3", "1.5.1"],                        # ENV credential literal
+        "DF-008":  ["1.5.3"],                                 # docker --privileged
+        "DF-019":  ["1.5.3", "1.5.1"],                        # COPY credential file
+        "DF-020":  ["1.5.3", "1.5.1"],                        # credential ARG
+        "DF-021":  ["1.5.3"],                                 # pip TLS bypass / http index
+        "DF-024":  ["1.5.3"],                                 # npm install runs lifecycle scripts
+        "DF-026":  ["1.5.3"],                                 # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":  ["1.5.3"],                                 # PYTHONHTTPSVERIFY=0
+        "DF-028":  ["1.5.3"],                                 # GIT_SSL_NO_VERIFY=1
+        "DF-029":  ["1.5.3"],                                 # REQUESTS_CA_BUNDLE neutered
         "K8S-001": ["1.5.3"],                                 # image not pinned in manifest
         "K8S-002": ["1.5.3"],                                 # privileged container
+        "K8S-005": ["1.5.3"],                                 # privileged container (securityContext)
+        "K8S-013": ["1.5.3"],                                 # hostPath volume
+        "K8S-017": ["1.5.3", "1.5.1"],                        # env credential literal
+        "K8S-018": ["1.5.3", "1.5.1"],                        # Secret carries plaintext
+        "K8S-037": ["1.5.3", "1.5.1"],                        # ConfigMap credential
         "TF-001":  ["1.5.3"],                                 # aws_iam_access_key long-lived
+        "TF-002":  ["1.5.3", "1.5.1"],                        # hard-coded secret in TF resource attr
+        "TF-003":  ["1.5.3"],                                 # CodeBuild VPC public subnet
         "CF-001":  ["1.5.3"],                                 # inline credential in CFN
+        "CF-002":  ["1.5.3", "1.5.1"],                        # hard-coded secret in CFN property
+        "CF-003":  ["1.5.3"],                                 # CodeBuild VPC public subnet
         # Vulnerability scanning, 1.5.4 (registry + workflow side)
         "ECR-001": ["1.5.4"],                                 # ECR scan-on-push disabled
         "ECR-007": ["1.5.4"],                                 # Inspector v2 enhanced scanning

@@ -112,6 +112,35 @@ STANDARD = Standard(
         # Secrets Manager rotation extends the same expectation to
         # the secret material the pipeline issues to applications.
         "SM-001":  ["1.14"],  # Secrets Manager no rotation
+        # CIS 1.14 generalizes to "no long-lived authenticators" for
+        # any pipeline credential surface; the same rotation
+        # principle applies to CI-side source tokens and OAuth.
+        "CB-006":  ["1.14"],  # long-lived source token in CodeBuild
+        "CP-004":  ["1.14"],  # legacy OAuth-token source in CodePipeline
+        # ── Degraded-mode findings (API access failures) ────────
+        # When the scanner cannot enumerate an AWS provider surface,
+        # CIS 3.1 (CloudTrail enabled in all regions) is the natural
+        # home: the visibility gap is the audit-trail evidence gap
+        # CIS 3.1 is designed to prevent. Mirrors the cross-standard
+        # precedent for `-000` findings (CIS SSCS 2.3.7, NIST 800-53
+        # AU-2/AU-12, NIST CSF 2.0 PR.PS-04+DE.CM-09, SOC 2 CC7.2,
+        # PCI DSS v4 10.2.1).
+        "CB-000":   ["3.1"],
+        "CP-000":   ["3.1"],
+        "CD-000":   ["3.1"],
+        "ECR-000":  ["3.1"],
+        "IAM-000":  ["3.1"],
+        "PBAC-000": ["3.1"],
+        "CT-000":   ["3.1"],
+        "CWL-000":  ["3.1"],
+        "EB-000":   ["3.1"],
+        "CA-000":   ["3.1"],
+        "CCM-000":  ["3.1"],
+        "LMB-000":  ["3.1"],
+        "KMS-000":  ["3.1"],
+        "SM-000":   ["3.1"],
+        "SSM-000":  ["3.1"],
+        "S3-000":   ["3.1", "3.6"],   # S3 specifically also evidences 3.6 (access logging)
         # ── Security Hub posture (4.16) ──
         # CIS 4.16 asks for Security Hub on as the org's findings
         # aggregator. ECR scanning checks already feed it (above);
