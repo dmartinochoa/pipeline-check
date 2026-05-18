@@ -74,6 +74,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
   recipe end-to-end (find the build run, download the wheel +
   provenance, verify source URI + tag, install). The scanner that
   flags missing provenance ships its own attested wheel.
+- **Real-world GOAT corpus benchmark (post-1.0.5)** —
+  `bench/goats/` ships a pinned-clone benchmark complementing
+  the existing synthetic `bench/cases/` set. The runner
+  (`bench/goat_runner.py`) shallow-clones each declared goat into
+  a tmpdir, scans via the same CLI a user invokes (with automatic
+  Jenkinsfile globbing for goats that ship multiple), and diffs
+  findings against a committed `expected.txt` + `allowlist.txt` +
+  `baseline.json` per goat. Initial corpus: ``cicd-goat`` (GHA +
+  7 Jenkinsfiles, 9/9 recall), ``cfngoat`` (CloudFormation, 6/6
+  recall), ``kubernetes-goat`` (27/27 recall across
+  ``scenarios/``), ``terragoat`` (skipped pending direct-HCL
+  parsing). 42 check IDs locked total, each entry hand-tied to a
+  documented goat challenge or CIS benchmark control. CI workflow
+  ``.github/workflows/goat-bench.yml`` runs nightly + on PRs that
+  touch the rule pack; uploads a ``goat-bench-report`` artifact
+  and posts a sticky PR comment. See ``docs/goat_bench.md``.
 - v0.4.x / v0.5.x / v0.6.x — pre-1.0 milestone work folded into
   v1.0.x. See `CHANGELOG.md` for the per-version trail.
 - v0.3.x — Kubernetes provider, docs site, attack chains engine,
@@ -221,63 +237,6 @@ don't ship Python (Go-shop CI, JVM-shop CI, container-only build
 environments). Pure packaging move, no rule code change. The
 marketplace ``action.yml`` already shipped is the GHA half of this;
 the binary + container image cover every other CI.
-
-### Real-world GOAT corpus benchmark (``bench/goats/``)
-
-Phase 1's in-repo synthetic fixtures cover the recall floor: one
-folder per attack pattern, each minimal enough to trigger the
-intended rule. The complement is a corpus of *real* vulnerable-by-
-design testbeds, scanned in CI on a schedule and on PRs that touch
-rule code, so the team can watch recall and false-positive rates
-move when a rule pack changes.
-
-Target corpus (each pinned to a fixed commit SHA for
-reproducibility):
-
-  * ``cider-security-research/cicd-goat`` — all 10 OWASP CI/CD risks
-    across GitHub Actions, GitLab CI, and Jenkins. The canonical
-    CI/CD goat.
-  * ``bridgecrewio/terragoat`` — Terraform misconfigurations.
-    Exercises the plan-JSON path today; would also drive direct-HCL
-    parsing if that path lands.
-  * ``bridgecrewio/cfngoat`` — CloudFormation misconfigurations.
-  * ``madhuakula/kubernetes-goat`` — Kubernetes workload + cluster
-    misconfigurations.
-  * ``bridgecrewio/dvca`` — Damn Vulnerable Cloud Application; AWS
-    IAM via CloudFormation.
-
-Shape: ``bench/goats.yml`` declares the corpus with pinned SHAs.
-``bench/goat_runner.py`` shallow-clones each into a tmpdir, runs
-pipeline-check with the right provider, and writes JSON output to
-``bench/goats/<slug>/findings.json``. The runner diffs each goat's
-findings against a checked-in ``bench/goats/<slug>/expected.txt``
-(the curated "this goat intends to demonstrate these check IDs"
-list) and an ``allowlist.txt`` (the known-false-positive set, one
-line of justification per entry). Output is a markdown digest with
-per-goat recall, FP count, and trend vs the prior committed
-baseline. ``--suggest`` mirrors the existing ``bench/run.py
---suggest`` so the operator can seed ``expected.txt`` from a real
-scan.
-
-CI shape: ``.github/workflows/goat-bench.yml`` runs nightly on
-``master`` and on every PR that touches ``pipeline_check/core/checks/``,
-``pipeline_check/core/chains/``, or the goat-bench code itself.
-Nightly opens (or updates) a tracking issue when recall regresses on
-any goat. The PR job posts a comment with the goat delta vs the
-base ref.
-
-Honest curation cost: ``expected.txt`` and ``allowlist.txt`` are
-hand-written, one PR per goat, and that's the dominant work item.
-Untouched goats can land with an empty ``expected.txt`` — the
-trend-vs-baseline signal alone is useful, and recall curation
-arrives incrementally per goat.
-
-Earns its own entry instead of folding into phase 2 below: phase 2
-measures "do we catch what other tools catch on the same repo?";
-this entry measures "do we catch what the goat *intends* to
-demonstrate?" Different ground truth, different curation effort,
-and phase 2's cross-scanner matrix needs a real-world corpus to
-exist first — that corpus is what this entry produces.
 
 ### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
 
