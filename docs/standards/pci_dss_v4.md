@@ -12,8 +12,8 @@ scanner can witness.
 ## At a glance
 
 - **Controls in this standard:** 13
-- **Controls evidenced by at least one check:** 12 / 13
-- **Distinct checks evidencing this standard:** 196
+- **Controls evidenced by at least one check:** 13 / 13
+- **Distinct checks evidencing this standard:** 227
 - **Of those, autofixable with `--fix`:** 40
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -24,19 +24,19 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 11 | 1C · 1H · 6M · 3L |
-| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 34 | 1C · 21H · 10M · 2L |
-| [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 26 | 4C · 10H · 7M · 5L |
-| [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 42 | 14H · 22M · 6L |
-| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 67 | 11C · 26H · 25M · 5L |
-| [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 9 | 1C · 5H · 2M · 1L |
-| [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 0 | — |
-| [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 24 | 2C · 11H · 11M |
-| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 25 | 9C · 10H · 5M · 1L |
-| [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 8 | 1C · 3H · 4M |
-| [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 5 | 1H · 2M · 2L |
-| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 20 | 1C · 4H · 14M · 1L |
-| [`10.3.3`](#ctrl-10-3-3) | Audit logs are promptly backed up to a centralized log server | 1 | 1L |
+| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 12 | 1C · 1H · 7M · 3L |
+| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 35 | 1C · 22H · 10M · 2L |
+| [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 27 | 4C · 10H · 8M · 5L |
+| [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 43 | 15H · 22M · 6L |
+| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 70 | 11C · 28H · 26M · 5L |
+| [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 10 | 1C · 6H · 2M · 1L |
+| [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 6 | 2H · 4M |
+| [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 34 | 5C · 17H · 12M |
+| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 29 | 9C · 14H · 5M · 1L |
+| [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 9 | 1C · 4H · 4M |
+| [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 11 | 2H · 5M · 4L |
+| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 25 | 1C · 4H · 19M · 1L |
+| [`10.3.3`](#ctrl-10-3-3) | Audit logs are promptly backed up to a centralized log server | 4 | 1H · 1M · 2L |
 
 ## Filter at runtime
 
@@ -57,7 +57,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.1: Security vulnerabilities are identified and managed { #ctrl-6-3-1 }
 
-**Evidenced by 11 checks** across 7 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, SCM, Tekton).
+**Evidenced by 12 checks** across 7 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -65,6 +65,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`BK-012`](#detail-bk-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-020`](#detail-cc-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`ECR-001`](#detail-ecr-001) | Image scanning on push not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-007`](#detail-ecr-007) | Inspector v2 enhanced scanning disabled for ECR | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-012`](#detail-gcb-012) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
@@ -75,7 +76,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.3: All system components protected from known vulnerabilities by installing applicable patches { #ctrl-6-3-3 }
 
-**Evidenced by 34 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, SCM, Tekton).
+**Evidenced by 35 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -100,6 +101,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`DF-004`](#detail-df-004) | RUN executes a remote script via curl-pipe / wget-pipe | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-010`](#detail-df-010) | apt-get dist-upgrade / upgrade pulls unknown package versions | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`ECR-001`](#detail-ecr-001) | Image scanning on push not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-006`](#detail-ecr-006) | ECR pull-through cache rule uses an untrusted upstream | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-011`](#detail-gcb-011) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GCB-012`](#detail-gcb-012) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-001`](#detail-gha-001) | Action not pinned to commit SHA | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -116,7 +118,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.4.1: Public-facing web apps are protected against attacks (secure build/config) { #ctrl-6-4-1 }
 
-**Evidenced by 26 checks** across 9 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, SCM, Tekton).
+**Evidenced by 27 checks** across 9 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -140,6 +142,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GCB-016`](#detail-gcb-016) | Step dir field contains parent-directory escape (..) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-019`](#detail-gcb-019) | Shell entrypoint inlines a user substitution into args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`PBAC-001`](#detail-pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`PBAC-003`](#detail-pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -149,7 +152,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.4.3: Changes to systems are managed via documented change control { #ctrl-6-4-3 }
 
-**Evidenced by 42 checks** across 10 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitLab CI, Helm, SCM).
+**Evidenced by 43 checks** across 10 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitLab CI, Helm, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -159,6 +162,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`BK-013`](#detail-bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-009`](#detail-cc-009) | Deploy job missing manual approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-013`](#detail-cc-013) | Deploy job in workflow has no branch filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CCM-001`](#detail-ccm-001) | CodeCommit repository has no approval rule template attached | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CD-001`](#detail-cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CD-002`](#detail-cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-001`](#detail-cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -198,7 +202,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.5.1: Changes to system components follow secure development procedures { #ctrl-6-5-1 }
 
-**Evidenced by 67 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, SCM, Tekton).
+**Evidenced by 70 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -251,6 +255,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-002`](#detail-helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](#detail-helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
+| [`LMB-001`](#detail-lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-001`](#detail-scm-001) | Default branch has no protection rule | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-002`](#detail-scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
@@ -262,6 +267,8 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-041`](#detail-scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-042`](#detail-scm-042) | Active ruleset doesn't require merge queue | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SIGN-001`](#detail-sign-001) | No AWS Signer profile defined for Lambda deploys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`SIGN-002`](#detail-sign-002) | AWS Signer profile is revoked or inactive | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-003`](#detail-tkn-003) | Tekton param interpolated unsafely in step script | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -272,7 +279,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 7.2.1: Access control is defined per job role with least privilege { #ctrl-7-2-1 }
 
-**Evidenced by 9 checks** across 3 providers (AWS, Cloud Build, SCM).
+**Evidenced by 10 checks** across 3 providers (AWS, Cloud Build, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -280,6 +287,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](#detail-iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-005`](#detail-iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-008`](#detail-iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-010`](#detail-scm-010) | Branch protection allows administrators to bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-018`](#detail-scm-018) | Required PR reviews can be bypassed by named identities | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-019`](#detail-scm-019) | Push restrictions allowlist names individual users | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
@@ -288,20 +296,34 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 7.2.2: Access is assigned based on job classification and function { #ctrl-7-2-2 }
 
-_No checks in this scanner currently evidence this control. Open an issue if your team would value coverage._
+**Evidenced by 6 checks** across 4 providers (AWS, Argo Workflows, Cloud Build, Tekton).
+
+| Check | Title | Severity | Provider | Fix |
+|-------|-------|----------|----------|-----|
+| [`ARGO-003`](#detail-argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`CCM-001`](#detail-ccm-001) | CodeCommit repository has no approval rule template attached | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`GCB-013`](#detail-gcb-013) | Package install bypasses registry integrity (git / path / tarball) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
+| [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
+| [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 7.2.5: System and application accounts have least-privilege access { #ctrl-7-2-5 }
 
-**Evidenced by 24 checks** across 8 providers (AWS, Argo Workflows, CircleCI, Cloud Build, Dockerfile, GitHub Actions, SCM, Tekton).
+**Evidenced by 34 checks** across 8 providers (AWS, Argo Workflows, CircleCI, Cloud Build, Dockerfile, GitHub Actions, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ARGO-003`](#detail-argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-013`](#detail-argo-013) | Argo workflow does not opt out of SA token automount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`CA-002`](#detail-ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
+| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-014`](#detail-cc-014) | Job missing `resource_class` declaration | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`DF-002`](#detail-df-002) | Container runs as root (missing or root USER directive) | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-008`](#detail-df-008) | RUN invokes docker --privileged or escalates capabilities | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-012`](#detail-df-012) | RUN invokes sudo | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-010`](#detail-gcb-010) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-013`](#detail-gcb-013) | Package install bypasses registry integrity (git / path / tarball) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
@@ -314,16 +336,21 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`IAM-003`](#detail-iam-003) | CI/CD role has no permission boundary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-004`](#detail-iam-004) | CI/CD role can PassRole to any role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-006`](#detail-iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`KMS-002`](#detail-kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`PBAC-005`](#detail-pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-027`](#detail-scm-027) | Outside collaborator holds write / maintain / admin access | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-028`](#detail-scm-028) | Private repo allows forking | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SM-002`](#detail-sm-002) | Secrets Manager resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 8.2.1: Strong unique identifiers are assigned to each user and service account { #ctrl-8-2-1 }
 
-**Evidenced by 25 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, SCM, Tekton).
+**Evidenced by 29 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -346,16 +373,20 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GCB-005`](#detail-gcb-005) | Build timeout unset or excessive | <span class="pg-sev pg-sev--low">LOW</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-005`](#detail-gha-005) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`IAM-007`](#detail-iam-007) | IAM user has access key older than 90 days | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-008`](#detail-iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ### 8.2.2: Group, shared, or generic accounts are managed and justified { #ctrl-8-2-2 }
 
-**Evidenced by 8 checks** across 5 providers (AWS, Argo Workflows, Cloud Build, Dockerfile, Tekton).
+**Evidenced by 9 checks** across 5 providers (AWS, Argo Workflows, Cloud Build, Dockerfile, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -366,23 +397,30 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GCB-013`](#detail-gcb-013) | Package install bypasses registry integrity (git / path / tarball) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`PBAC-005`](#detail-pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 10.2.1: Audit logs are enabled and active for all system components { #ctrl-10-2-1 }
 
-**Evidenced by 5 checks** across 3 providers (AWS, CircleCI, Cloud Build).
+**Evidenced by 11 checks** across 3 providers (AWS, CircleCI, Cloud Build).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CB-003`](#detail-cb-003) | Build logging not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CC-011`](#detail-cc-011) | No store_test_results step (test results not archived) | <span class="pg-sev pg-sev--low">LOW</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`CWL-001`](#detail-cwl-001) | CodeBuild log group has no retention policy | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-006`](#detail-gcb-006) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 
 ### 10.3.2: Audit logs are protected from unauthorized modifications { #ctrl-10-3-2 }
 
-**Evidenced by 20 checks** across 9 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, Dockerfile, Helm, SCM, Tekton).
+**Evidenced by 25 checks** across 9 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, Dockerfile, Helm, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -390,8 +428,12 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`ARGO-011`](#detail-argo-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`BK-009`](#detail-bk-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-011`](#detail-bk-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
+| [`CA-001`](#detail-ca-001) | CodeArtifact domain not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CC-006`](#detail-cc-006) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CCM-002`](#detail-ccm-002) | CodeCommit repository not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CP-002`](#detail-cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CWL-002`](#detail-cwl-002) | CodeBuild log group not KMS-encrypted | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`DF-016`](#detail-df-016) | Image lacks OCI provenance labels | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`ECR-002`](#detail-ecr-002) | Image tags are mutable | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-005`](#detail-ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -404,15 +446,19 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`S3-003`](#detail-s3-003) | Artifact bucket versioning not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`S3-005`](#detail-s3-005) | Artifact bucket missing aws:SecureTransport deny | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SSM-002`](#detail-ssm-002) | SSM SecureString uses the default AWS-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`TKN-009`](#detail-tkn-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-011`](#detail-tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 10.3.3: Audit logs are promptly backed up to a centralized log server { #ctrl-10-3-3 }
 
-**Evidenced by 1 check** across AWS.
+**Evidenced by 4 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CWL-001`](#detail-cwl-001) | CodeBuild log group has no retention policy | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 
 ## Check details
@@ -532,7 +578,7 @@ jobs:
 
 #### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
 
-**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+**Evidences:** [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function, [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
 
 **How this is detected.** Applies to ``Workflow`` and ``CronWorkflow``. ``WorkflowTemplate`` / ``ClusterWorkflowTemplate`` are exempt because the SA is set on the run that references them. An explicit ``serviceAccountName: default`` is treated the same as omission.
 
@@ -948,6 +994,46 @@ pipelines:
 
 **Source:** [`BK-013`](../providers/buildkite.md#bk-013) in the [Buildkite provider](../providers/buildkite.md).
 
+#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+
+**Evidences:** [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** AWS-owned encryption (the default ``alias/aws/codeartifact`` key) keeps the key policy under AWS's control, not yours. That's fine for confidentiality but means cross-account auditability of every Decrypt event lives with AWS, and you can't revoke or scope key access without recreating the domain. A customer-managed CMK puts both controls back in your hands.
+
+**Recommendation.** Recreate the CodeArtifact domain with an encryption-key argument pointing at a customer-managed CMK. Domain encryption is set at creation and cannot be changed after.
+
+**Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** An external connection to ``public:npmjs`` / ``public:pypi`` / ``public:nuget`` / ``public:maven-central`` fetches packages from the public registry on first resolution. A typo-squat (``request`` vs ``requests``) or a compromised upstream lands in the cache the first time anyone names it; every subsequent build pulls the cached substitute. The pull-through cache with an allow-list is the same risk shape solved by an explicit allowlist.
+
+**Recommendation.** Route public package consumption through a pull-through cache repository governed by an allow-list of package names, and point build-time repos at that cache rather than directly at ``public:npmjs``/``public:pypi``. Unscoped public upstreams expose builds to dependency-confusion and typosquatting attacks.
+
+**Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** A wildcard-principal Allow on a CodeArtifact domain lets any AWS account reach the domain's permissions surface. The exact damage depends on the action set, but at minimum it lets external accounts read package names and versions, which is enough for typosquat-against-private-package attacks. ``aws:PrincipalOrgID`` is the org-level rescue without enumerating accounts.
+
+**Recommendation.** Remove Allow statements with ``Principal: '*'`` from every CodeArtifact domain permissions policy, or restrict them with an ``aws:PrincipalOrgID`` condition so only accounts in your org can consume packages from the domain.
+
+**Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CA-004`: CodeArtifact repo policy grants codeartifact:* with Resource '*' <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** ``codeartifact:*`` on ``Resource: '*'`` collapses the entire repository's authority into one grant: the holder can read, write, delete, dispose, and re-publish every package. Even for a service principal that nominally only consumes packages, the grant lets a compromise of that consumer rewrite every dependency the team relies on.
+
+**Recommendation.** Scope Allow statements to specific ``codeartifact:`` actions (e.g. ``codeartifact:ReadFromRepository``) and to specific package-group ARNs. Wildcard action + wildcard resource is the classic over-broad grant that lets a consumer also publish.
+
+**Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
 
 **Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures, [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
@@ -1322,6 +1408,36 @@ pipelines:
 
 **Source:** [`CC-023`](../providers/circleci.md#cc-023) in the [CircleCI provider](../providers/circleci.md).
 
+#### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
+
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function.
+
+**How this is detected.** Approval-rule templates are CodeCommit's analog of GitHub's branch-protection require-review. Without one associated, the repository accepts merges from any push-permitted principal, including the PR author themselves, without any second-pair-of-eyes gate.
+
+**Recommendation.** Create a CodeCommit approval-rule template requiring at least one approval from a designated pool of reviewers and associate it with every repository. Without one, any PR author with push rights can self-approve and merge.
+
+**Source:** [`CCM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
+
+**Evidences:** [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** Same shape as CA-001 / ECR-005 / S3 default encryption: the AWS-owned default key keeps the key policy under AWS, removing your ability to scope or audit Decrypt operations. Source code in the repo deserves the same key-policy + CloudTrail story you'd apply to artifacts in S3.
+
+**Recommendation.** Recreate the repository with a ``kmsKeyId`` argument pointing at a customer-managed KMS key. CodeCommit encryption is set at creation and cannot be changed afterwards.
+
+**Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** A repo trigger pointing at an SNS topic or Lambda in a different account fires under the receiving account's permissions on every push. Sometimes this is the intended shape (a centralized notifications account), but a cross-account fan-out from a compromised repo can drive actions in the receiving account that the source-account owner can't directly observe.
+
+**Recommendation.** Move trigger targets into the same account as the repository or explicitly document the cross-account relationship. Cross-account triggers extend the blast radius of a repository compromise to whatever the target ARN can do.
+
+**Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
 
 **Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
@@ -1395,6 +1511,66 @@ pipelines:
 **Recommendation.** Migrate to owner=AWS, provider=CodeStarSourceConnection and reference a CodeConnections connection ARN.
 
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components, [`10.3.3`](#ctrl-10-3-3) Audit logs are promptly backed up to a centralized log server.
+
+**How this is detected.** CloudTrail is the only AWS-native source of record for management-plane API calls. A region with no active trail blinds incident responders: a pipeline compromise is invisible once the in-memory CloudWatch buffer rolls over.
+
+**Recommendation.** Create a CloudTrail trail that logs management events in this region and start logging. Without a trail, CodeBuild/CodePipeline/IAM API activity, including credential changes during a compromise, has no durable audit record.
+
+**Source:** [`CT-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** CloudTrail logs are S3 objects. Without log-file validation, an attacker with ``s3:PutObject`` on the trail bucket can edit log files to remove evidence of their activity, and there's no digest to compare against. With validation on, every hour of logs is summarized in a signed digest file under ``CloudTrail-Digest/``.
+
+**Recommendation.** Set ``LogFileValidationEnabled=true`` on every CloudTrail trail. Log validation produces a signed digest file alongside each log object so tampering by an attacker who also has S3 write access can be detected after the fact.
+
+**Source:** [`CT-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components, [`10.3.3`](#ctrl-10-3-3) Audit logs are promptly backed up to a centralized log server.
+
+**How this is detected.** An attacker who knows your CloudTrail trail is regional deliberately operates from a different region. Multi-region trails capture management events from every region into a single trail, closing the gap without you having to enumerate which regions you actually use.
+
+**Recommendation.** Convert the trail to a multi-region trail. A single-region trail misses activity in every other region, an attacker aware of the scope can drive reconnaissance or persistence from an unlogged region.
+
+**Source:** [`CT-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components.
+
+**How this is detected.** Failure-rate signals are how on-call learns about an unfamiliar build crashing in a loop, an attacker probing the build environment, or a CI quota being exhausted. CloudWatch captures the ``FailedBuilds`` metric automatically, the alarm is the missing fan-out.
+
+**Recommendation.** Create a CloudWatch alarm on the ``AWS/CodeBuild`` namespace ``FailedBuilds`` metric (aggregated or per-project). Without one, repeated build failures during a compromise, or a runaway fork-PR build, won't reach on-call.
+
+**Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components, [`10.3.3`](#ctrl-10-3-3) Audit logs are promptly backed up to a centralized log server.
+
+**How this is detected.** CloudWatch Logs created by CodeBuild default to ``Never Expire`` retention. Build logs frequently echo secrets accidentally (a `set -x` script, an `env` dump in an error trace), so unbounded retention extends the exposure window for every secret a build has ever leaked. A short-but-finite retention also caps cost.
+
+**Recommendation.** Set a retention policy on every ``/aws/codebuild/*`` log group. The default is 'Never Expire', which both racks up storage cost and keeps logs indefinitely past any compliance window.
+
+**Source:** [`CWL-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
+
+**Evidences:** [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** CloudWatch Logs default encryption is service-managed, fine for confidentiality, but no audit trail or scoping. Build logs are a frequent secret-leak vector (CWL-001's rationale extended), so the same key-policy + Decrypt-event story you'd apply to S3 / Lambda / Secrets Manager is warranted here too.
+
+**Recommendation.** Associate a customer-managed KMS key with every ``/aws/codebuild/*`` log group via ``associate-kms-key``. Logs often contain secret material accidentally echoed by builds; encrypting them with a CMK means the key policy controls who can read the logs, not just S3/CloudWatch IAM.
+
+**Source:** [`CWL-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
 
@@ -1608,6 +1784,26 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
+#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+
+**Evidences:** [`10.2.1`](#ctrl-10-2-1) Audit logs are enabled and active for all system components.
+
+**How this is detected.** Pipeline failure events are emitted to EventBridge automatically; the missing piece is a rule that pipes them to somewhere a human reads (SNS, Slack, PagerDuty). Without it, failures only surface via the CodePipeline console, which no one watches.
+
+**Recommendation.** Create an EventBridge rule matching ``detail-type: 'CodePipeline Pipeline Execution State Change'`` and ``state: FAILED``, and point it at an SNS topic or chat webhook. Without it, pipeline failures during an incident (a compromise triggering rollback, for example) go unnoticed.
+
+**Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** Wildcard target ARNs (e.g. ``arn:aws:lambda:us-east-1:123456789012:function:*``) match every resource that fits the prefix. This is rarely intentional, usually a copy-paste from a more permissive resource ARN, and means the rule fans out to a much larger set of consumers than the author meant.
+
+**Recommendation.** Replace wildcard target ARNs with specific resource ARNs. EventBridge targets with ``*`` route events to any resource that matches the prefix, frequently triggering unintended Lambda invocations or SNS sends.
+
+**Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
 **Evidences:** [`6.3.1`](#ctrl-6-3-1) Security vulnerabilities are identified and managed, [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
@@ -1657,6 +1853,26 @@ CMD ["python3", "/app/app.py"]
 **Recommendation.** Set encryptionType=KMS with a customer-managed key ARN.
 
 **Source:** [`ECR-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
+
+**Evidences:** [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
+
+**How this is detected.** AWS supports pull-through cache for ECR Public, Quay, K8s, GitHub Container Registry, GitLab, and Docker Hub. A rule pointing at ``registry-1.docker.io`` without an authenticated credential silently caches whatever the public namespace resolves to.
+
+**Recommendation.** Scope pull-through cache rules to AWS-trusted registries (ECR Public, Quay.io with authentication, or a vetted private registry). Avoid wildcard or unauthenticated upstreams, a malicious image there gets cached into your account registry on first pull.
+
+**Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
+
+**Evidences:** [`6.3.1`](#ctrl-6-3-1) Security vulnerabilities are identified and managed.
+
+**How this is detected.** ECR-001's basic on-push scan covers OS-level packages, apt / yum / apk lineage. Most production CVE risk is in language ecosystems (npm, pip, gem, mvn) which the basic scanner ignores. Inspector v2 enhanced scanning closes that gap and runs continuously, so a CVE published two weeks after a build still surfaces against the deployed image.
+
+**Recommendation.** Enable Amazon Inspector v2 for the ``ECR`` scan type on this account. Basic ECR scanning on-push only covers OS packages; Inspector v2 enhanced scanning adds language-ecosystem CVEs and runs continuously as new vulnerabilities are published.
+
+**Source:** [`ECR-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
 
@@ -1788,7 +2004,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `GCB-013`: Package install bypasses registry integrity (git / path / tarball) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-013 }
 
-**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+**Evidences:** [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function, [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
 
 **How this is detected.** Complements GCB-012 (literal secrets) and GCB-010 (curl-pipe). Where those catch attacker content at fetch time, this rule catches installs that silently bypass the lockfile/registry integrity model, the build is technically reproducible but the source of truth is whatever the git ref / filesystem / tarball URL served most recently.
 
@@ -1844,7 +2060,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
 
-**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+**Evidences:** [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function, [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
 
 **How this is detected.** Complements GCB-002, which only fires when ``serviceAccount:`` is unset. This rule fires when an explicit value is set but still resolves to the project default, typically the email shape ``<digits>@cloudbuild.gserviceaccount.com``, optionally wrapped in the ``projects/<id>/serviceAccounts/...`` URI form. The April-2024 GCP default-identity change kept the same SA shape; the broad-permissions concern remains.
 
@@ -2350,6 +2566,66 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
+
+**How this is detected.** Every user in the account is evaluated. CI/CD tooling that still uses IAM users (older Jenkins agents, GitHub Actions pre-OIDC, third-party schedulers) shows up here. The 90-day window matches the common compliance baseline; rotate sooner if the key is used from on-prem or an untrusted runner.
+
+**Recommendation.** Rotate or delete IAM access keys older than 90 days. Long-lived static credentials are the #1 way compromised CI credentials get reused across environments, prefer short-lived STS tokens via OIDC federation or an assumed role.
+
+**Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
+
+**Evidences:** [`7.2.1`](#ctrl-7-2-1) Access control is defined per job role with least privilege, [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
+
+**How this is detected.** IAM-005 already covers cross-account AWS principals. This rule targets the OIDC federation path specifically because the blast radius of a missed audience/subject pin is the entire identity provider's tenant base (e.g. all GitHub users, not just your org).
+
+**Recommendation.** Every Allow statement that trusts a federated OIDC provider (``token.actions.githubusercontent.com``, GitLab, CircleCI, Terraform Cloud, etc.) must pin both the audience (``...:aud = sts.amazonaws.com``) and a subject prefix (``...:sub`` matching ``repo:myorg/*``). Without these, any workflow from any tenant can assume the role.
+
+**Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** ``kms:*`` on a key policy is administrative authority over the cipher boundary: ``CancelKeyDeletion``, ``ScheduleKeyDeletion``, ``ReEncrypt``, ``UpdateKeyDescription``, and the data-plane decrypt actions all collapse into one grant. A CI/CD principal almost never needs more than the data-plane subset (``Decrypt`` / ``GenerateDataKey`` / ``Encrypt``).
+
+**Recommendation.** Replace ``kms:*`` grants with specific actions needed by the caller (e.g. ``kms:Decrypt``, ``kms:GenerateDataKey``). Key-policy wildcard grants let any holder of the principal re-key, schedule deletion, or export material at will.
+
+**Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
+
+**Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
+
+**How this is detected.** Lambda code-signing config + a Signer profile (SIGN-001) validates that an uploaded zip was signed by a known profile before it's allowed to run. Without one, anyone who reaches ``lambda:UpdateFunctionCode``, a CI/CD role compromise, a misattached IAM policy, can replace the function's code with no chain-of-custody check.
+
+**Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
+
+**Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** A Lambda function URL with ``AuthType=NONE`` is a public HTTPS endpoint. Anyone who knows the URL can invoke. This is sometimes deliberate (a webhook receiver) but the deliberate version typically signs / validates inside the function, the rule fires regardless because the IAM-side control isn't there.
+
+**Recommendation.** Set the function URL ``auth_type`` to ``AWS_IAM`` and grant ``lambda:InvokeFunctionUrl`` through IAM. ``NONE`` exposes the function to the public internet without authentication.
+
+**Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** A wildcard-principal Allow on a Lambda function resource policy lets anyone invoke. The legitimate case is a service principal (API Gateway, S3 events) where AWS fills in the SourceArn/SourceAccount at invoke time, without those conditions, any account using that service can invoke.
+
+**Recommendation.** Remove Allow statements with ``Principal: '*'`` from every Lambda function resource policy, or scope them with a ``SourceArn`` / ``SourceAccount`` condition. Service principals (e.g. ``apigateway.amazonaws.com``) are the common legitimate case, ensure they carry a condition.
+
+**Source:** [`LMB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
 
 **Evidences:** [`6.4.1`](#ctrl-6-4-1) Public-facing web apps are protected against attacks (secure build/config).
@@ -2362,13 +2638,33 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 #### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
 
-**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+**Evidences:** [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function, [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
 
 **How this is detected.** One CodeBuild service role across many projects means a compromise of any project's build environment grants access to whatever resources every other project's build needs. Per-project roles cap the radius, a backdoor in the ``foo-tests`` build can't reach the ``deploy-prod`` build's secrets if they each have their own role.
 
 **Recommendation.** Create a dedicated IAM service role for each CodeBuild project, scoped to only the permissions that specific project requires. This limits the blast radius if one project's build is compromised.
 
 **Source:** [`PBAC-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `PBAC-003`: CodeBuild security group allows 0.0.0.0/0 all-port egress <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-003 }
+
+**Evidences:** [`6.4.1`](#ctrl-6-4-1) Public-facing web apps are protected against attacks (secure build/config).
+
+**How this is detected.** A security-group egress rule of ``0.0.0.0/0`` on all ports/protocols means a compromised build can connect to any endpoint on the internet, typosquat-package registry, C2 server, attacker-owned dump endpoint. Even when the build is inside a VPC (PBAC-001), this egress rule negates the network-side gating.
+
+**Recommendation.** Restrict CodeBuild security-group egress to the specific endpoints builds need (package registries, artifact repositories, STS). A wildcard egress rule lets a compromised build exfiltrate to anywhere on the internet.
+
+**Source:** [`PBAC-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+
+**How this is detected.** When stage actions don't set their own ``roleArn``, they fall back to the pipeline-level role, which is the union of every stage's needs. A compromise of any one stage (typically the build, which runs untrusted code) gains the deploy stage's authority, including production deploy credentials. Per-action roles cap the radius.
+
+**Recommendation.** Give each stage action (Source, Build, Deploy) its own narrowly-scoped IAM role via ``roleArn`` on the action declaration. Sharing the pipeline-level role means a compromise of one action (e.g. a build) gains the permissions the deploy stage also needs.
+
+**Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
 
@@ -3132,6 +3428,96 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
 
+#### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
+
+**Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
+
+**How this is detected.** AWS Signer profiles are the upstream of LMB-001's code-signing config. Without a profile defined, no function in the account can enforce code-signing, LMB-001's recommendation has nothing to point at. The profile is the foundation; the per-function code-signing config attaches it.
+
+**Recommendation.** Create an AWS Signer profile with platform ``AWSLambda-SHA384-ECDSA`` and reference it from every Lambda code-signing config used by the pipeline. Without a profile, LMB-001 remediation isn't possible and release artifacts can't be signed at build time.
+
+**Source:** [`SIGN-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
+
+**Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
+
+**How this is detected.** A revoked or canceled Signer profile invalidates every signature it ever produced. Lambda functions configured to enforce code-signing fail to deploy until the profile is replaced (or, if ``UntrustedArtifactOnDeployment = Warn``, deploy with a CloudWatch warning the operator rarely reads).
+
+**Recommendation.** Rotate the signing profile: create a replacement and update every code-signing config that references the revoked profile. A revoked or canceled profile invalidates every signature it produced, lambdas relying on it will fail verification.
+
+**Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SM-001`: Secrets Manager secret has no rotation configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sm-001 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
+
+**How this is detected.** Only secrets actually referenced by CodeBuild are checked, secrets used purely by application workloads are out of scope for a CI/CD scanner.
+
+**Recommendation.** Enable automatic rotation on every Secrets Manager secret referenced by a CodeBuild project or CodePipeline. Unrotated secrets persist indefinitely, so a single leak (e.g. a build log that echoed the value) compromises the secret for its full lifetime.
+
+**Source:** [`SM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
+
+**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access.
+
+**How this is detected.** A wildcard-principal Allow on a Secrets Manager resource policy means any principal in any AWS account can call ``GetSecretValue`` (subject to conditions, if any). Always combine with at least ``aws:SourceAccount`` or ``aws:PrincipalOrgID``, the lift-and-shift cross-account secret-access pattern needs scoping.
+
+**Recommendation.** Remove Allow statements whose Principal is ``*`` from every Secrets Manager resource policy, or scope them with a ``Condition`` restricting the source account/org (``aws:PrincipalOrgID``). A wildcard-principal policy allows any AWS account to call ``GetSecretValue`` on the secret.
+
+**Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
+
+**How this is detected.** An SSM ``String`` parameter is plaintext at rest and at API; ``ssm:GetParameter`` without any KMS Decrypt authority returns the value. ``SecureString`` adds KMS-encryption + the ``WithDecryption=true`` flag (which forces an explicit KMS authorization step). Secret-named parameters (``TOKEN``, ``PASSWORD``, ``KEY``) are almost always intended to be SecureString and rarely should not be.
+
+**Recommendation.** Recreate the parameter with ``Type=SecureString`` and migrate consumers to the new name if needed. Plain ``String`` parameters are visible via ``ssm:GetParameter`` without any KMS authorization.
+
+**Proof of exploit.**
+
+# Vulnerable: secret-named parameter stored as plain ``String``.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type String
+
+# Attack: any principal with the minimal ``ssm:GetParameter``
+# permission reads the cleartext, no KMS authorization needed:
+#
+#   aws ssm get-parameter --name /prod/api/GITHUB_TOKEN
+#   # Returns the plaintext, even for principals with
+#   # ``kms:Decrypt`` explicitly denied account-wide.
+#
+# CloudTrail records the GetParameter call but not the value;
+# defenders see the access only by name + principal, not what
+# was read.
+
+# Safe: SecureString forces a separate KMS authorization step.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type SecureString \
+    --key-id alias/prod-secrets
+
+# Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``
+# on the named CMK, and the call only returns plaintext when
+# ``WithDecryption=true`` is set (an explicit, auditable opt-in).
+
+**Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
+
+**Evidences:** [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** ``alias/aws/ssm`` is the AWS-managed default for SecureString. Its key policy is fixed and account-wide. A customer-managed key gives you the same per-parameter key-policy + CloudTrail audit story you'd apply to Secrets Manager (which always uses a CMK).
+
+**Recommendation.** Recreate SecureString parameters with ``KeyId`` pointing at a customer-managed KMS key. The default ``alias/aws/ssm`` key is shared across the account and its key policy cannot be audited or scoped per parameter.
+
+**Source:** [`SSM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
 
 **Evidences:** [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
@@ -3196,7 +3582,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 #### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
 
-**Evidences:** [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
+**Evidences:** [`7.2.2`](#ctrl-7-2-2) Access is assigned based on job classification and function, [`7.2.5`](#ctrl-7-2-5) System and application accounts have least-privilege access, [`8.2.2`](#ctrl-8-2-2) Group, shared, or generic accounts are managed and justified.
 
 **How this is detected.** An explicit ``serviceAccountName: default`` setting is treated the same as omission.
 

@@ -57,6 +57,37 @@ STANDARD = Standard(
         "ECR-003":  ["7.2.5"],                           # public repo policy
         "ECR-004":  ["6.5.1"],                           # no lifecycle policy
         "ECR-005":  ["10.3.2"],                          # AES256 not CMK
+        "ECR-006":  ["6.3.3"],                           # pull-through cache untrusted upstream
+        "ECR-007":  ["6.3.1"],                           # Inspector v2 enhanced scanning disabled
+        # CodeArtifact, CodeCommit (registry + source posture)
+        "CA-001":   ["10.3.2"],                          # CodeArtifact domain no CMK
+        "CA-002":   ["7.2.5"],                           # public external connection
+        "CA-003":   ["7.2.5"],                           # domain policy cross-account wildcard
+        "CA-004":   ["7.2.5"],                           # repo policy wildcard codeartifact:*
+        "CCM-001":  ["6.4.3", "7.2.2"],                  # no approval rule template = no job-classification gate
+        "CCM-002":  ["10.3.2"],                          # CodeCommit no CMK
+        "CCM-003":  ["7.2.5"],                           # cross-account trigger sink
+        # KMS / Secrets Manager / SSM (key + secret posture)
+        "KMS-002":  ["7.2.5"],                           # KMS policy wildcard actions
+        "SM-001":   ["8.2.1"],                           # Secrets Manager no rotation
+        "SM-002":   ["7.2.5"],                           # Secrets Manager resource policy wildcard
+        "SSM-001":  ["8.2.1"],                           # SSM secret-named String (not SecureString)
+        "SSM-002":  ["10.3.2"],                          # SSM SecureString uses AWS-managed key
+        # Lambda + AWS Signer (deployment artifact signing)
+        "LMB-001":  ["6.5.1"],                           # no code-signing config
+        "LMB-002":  ["7.2.5"],                           # function URL AuthType=NONE
+        "LMB-004":  ["7.2.5"],                           # resource policy wildcard principal
+        "SIGN-001": ["6.5.1"],                           # no AWS Signer profile
+        "SIGN-002": ["6.5.1"],                           # Signer profile revoked / inactive
+        # CloudTrail + CloudWatch Logs + alarms + EventBridge (audit + monitoring)
+        "CT-001":   ["10.2.1", "10.3.3"],                # no active trail = nothing centrally logged
+        "CT-002":   ["10.2.1", "10.3.2"],                # log-file validation off
+        "CT-003":   ["10.2.1", "10.3.3"],                # single-region trail = not centralized
+        "CWL-001":  ["10.2.1", "10.3.3"],                # log group no retention
+        "CWL-002":  ["10.3.2"],                          # log group not KMS-encrypted
+        "CW-001":   ["10.2.1"],                          # no FailedBuilds alarm
+        "EB-001":   ["10.2.1"],                          # no EventBridge rule for pipeline failure
+        "EB-002":   ["7.2.5"],                           # EventBridge wildcard target ARN
         # IAM
         "IAM-001":  ["7.2.1", "7.2.5"],
         "IAM-002":  ["7.2.1", "7.2.5"],
@@ -64,9 +95,13 @@ STANDARD = Standard(
         "IAM-004":  ["7.2.5"],
         "IAM-005":  ["7.2.1"],                           # sts:ExternalId confused-deputy
         "IAM-006":  ["7.2.5"],
+        "IAM-007":  ["8.2.1"],                           # access key > 90 days
+        "IAM-008":  ["7.2.1", "8.2.1"],                  # OIDC trust no aud/sub pin
         # PBAC
         "PBAC-001": ["6.4.1"],                           # no VPC boundary
-        "PBAC-002": ["7.2.5", "8.2.2"],                  # shared service role
+        "PBAC-002": ["7.2.2", "7.2.5", "8.2.2"],         # shared role = no per-classification access
+        "PBAC-003": ["6.4.1"],                           # SG 0.0.0.0/0 egress
+        "PBAC-005": ["7.2.5", "8.2.2"],                  # pipeline stage role reuse
         # S3 artifact bucket
         "S3-001":   ["10.3.2"],
         "S3-002":   ["10.3.2"],
@@ -143,7 +178,7 @@ STANDARD = Standard(
         "TKN-004":  ["6.4.1"],                           # hostPath / host namespaces
         "TKN-005":  ["8.2.1", "6.5.1"],                  # literal secrets
         "TKN-006":  ["6.4.1"],                           # no timeout
-        "TKN-007":  ["7.2.5", "8.2.2"],                  # default ServiceAccount
+        "TKN-007":  ["7.2.2", "7.2.5", "8.2.2"],         # default SA = shared identity, no per-classification access
         "TKN-008":  ["6.3.3"],                           # remote install / TLS
         "TKN-009":  ["6.5.1", "10.3.2"],                 # artifacts not signed
         "TKN-010":  ["6.5.1"],                           # no SBOM
@@ -153,7 +188,7 @@ STANDARD = Standard(
         # Argo Workflows.
         "ARGO-001": ["6.3.3"],                           # template image not pinned
         "ARGO-002": ["6.4.1", "6.5.1"],                  # template privileged / root
-        "ARGO-003": ["7.2.5", "8.2.2"],                  # default ServiceAccount
+        "ARGO-003": ["7.2.2", "7.2.5", "8.2.2"],         # default SA
         "ARGO-004": ["6.4.1"],                           # hostPath / host namespaces
         "ARGO-005": ["6.5.1"],                           # param injection
         "ARGO-006": ["8.2.1", "6.5.1"],                  # literal secrets
@@ -203,12 +238,12 @@ STANDARD = Standard(
         "GCB-010": ["7.2.5"],                            # default network egress
         "GCB-011": ["6.3.3"],                            # TLS bypass
         "GCB-012": ["6.3.1", "6.3.3"],                   # no vuln scan
-        "GCB-013": ["7.2.5", "8.2.2"],                   # default service account
+        "GCB-013": ["7.2.2", "7.2.5", "8.2.2"],          # default service account
         "GCB-014": ["6.5.1"],                            # untrusted substitution
         "GCB-015": ["6.5.1", "10.3.2"],                  # no provenance
         "GCB-016": ["6.4.1"],                            # no timeout
         "GCB-019": ["6.4.1", "7.2.5"],                   # privileged step
-        "GCB-020": ["7.2.5", "8.2.2"],                   # default SA email
+        "GCB-020": ["7.2.2", "7.2.5", "8.2.2"],          # default SA email
         "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
         "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
         "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
