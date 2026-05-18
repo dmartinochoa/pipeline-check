@@ -392,7 +392,7 @@ STANDARD = Standard(
         "SCM-035":  ["SI-7"],                           # ruleset allows deletion
         "SCM-036":  ["SI-7", "SR-4"],                   # ruleset lacks signed_commits
         "SCM-037":  ["SA-15"],                          # ruleset stale-review dismissal
-        "SCM-038":  ["SA-15"],                          # ruleset lacks linear_history (audit hygiene, not info-integrity)
+        "SCM-038":  ["SA-15"],                          # ruleset lacks linear_history (audit hygiene, not SI-7)
         "SCM-039":  ["SA-11", "SA-15"],                 # ruleset lacks required_workflows
         "SCM-040":  ["SA-11", "RA-5"],                  # ruleset lacks code_scanning gate
         "SCM-041":  ["SA-10", "SA-15"],                 # ruleset lacks deployment-env gate
