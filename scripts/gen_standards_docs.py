@@ -66,6 +66,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
     ("aws",        "pipeline_check.core.checks.aws.rules",        "AWS"),
+    ("maven",      "pipeline_check.core.checks.maven.rules",      "maven"),
 )
 
 # --------------------------------------------------------------------------- #
@@ -78,7 +79,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
 _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
     "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
-    "kubernetes", "scm", "oci",
+    "kubernetes", "scm", "oci", "maven",
     # AWS provider doc carries hand-written ``### CB-001: …`` headers
     # that mkdocs slugifies to anchors of shape
     # ``cb-001-secrets-in-plaintext-environment-variables``. Linking with
@@ -427,6 +428,36 @@ sits outside the scan surface.
 CIS AWS Foundations Benchmark, CI/CD-relevant subset. IAM hardening,
 S3 protection, KMS hygiene, and the CloudTrail / CloudWatch logging
 controls the AWS provider scans against a live account.
+""",
+    ),
+    "cis_github": _StandardConfig(
+        intro="""\
+- **Version:** 1.0.0
+- **URL:** <https://www.cisecurity.org/benchmark/github>
+- **Source of truth:** `pipeline_check/core/standards/data/cis_github.py`
+
+CIS GitHub Benchmark, platform-side posture for a single GitHub
+organization or repository. Sections 1.1 (Code Changes), 1.4
+(Third-Party), and 1.5 (Code Risks) are evidenced directly by the
+`SCM-*` rule pack, which reads the GitHub REST API; a representative
+slice of `GHA-*` workflow rules anchors 1.5.2 (CI/CD pipeline
+instructions).
+
+Use this page alongside the
+[CIS Software Supply Chain Guide](cis_supply_chain.md) when a GitHub
+audit asks for both the platform settings and the build-chain
+posture. Pair with [OpenSSF Scorecard](openssf_scorecard.md) and
+[SCM provider docs](../providers/scm.md) for the underlying signals.
+""",
+        footer="""\
+## Not covered
+
+Org-admin controls that require account-level audit endpoints, MFA
+enforcement (1.3.4), member inventories (1.3.1), installed-app lists
+(1.4.2), and similar — are listed in the benchmark but not yet
+evidenced by an `SCM-*` rule. Open an issue if your team would value
+coverage; the GitHub Admin API surface is the next planned expansion
+of the SCM provider.
 """,
     ),
     "cis_kubernetes": _StandardConfig(

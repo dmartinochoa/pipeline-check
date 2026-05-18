@@ -14,9 +14,9 @@
 
 #### Full documentation: [https://dmartinochoa.github.io/pipeline-check/](https://dmartinochoa.github.io/pipeline-check/)
 
-Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
+Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**640+ checks** across **21 providers**, mapped to **14 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**650+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **36 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -126,6 +126,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **OCI image manifest** | `docker buildx imagetools inspect --raw <ref>` JSON | `--oci-manifest` | 15 checks (`OCI-001`--`008` plus `ATTEST-001..007`): provenance annotations, build attestations (SLSA / SBOM), `image.created` timestamp, foreign-layer URL refs, license annotation, layer-count hygiene, legacy schemaVersion 1, weak (non-sha256) digest, builder identity, source-repo claim, SBOM floating versions, resolved-dependencies coverage, in-toto Statement subject binding, meaningful SLSA `buildType`, SBOM package supplier / originator attribution |
 | **SCM (GitHub / GitLab / Bitbucket)** | Platform REST API (`--scm-platform github\|gitlab\|bitbucket --scm-repo …`) | `--scm-repo` | 42 checks (`SCM-001`--`042`). GitHub: full pack — branch protection presence / required reviews / required status checks / signed commits / force-push denial / deletion denial / admin enforcement; CODEOWNERS reviews + file presence / stale-review dismissal / conversation resolution / last-push approval; default code scanning, secret scanning + push protection, Dependabot security updates, private vulnerability reporting; PR-review bypass allowance + push-restriction allowlist auditing; Actions governance (default workflow token scope, self-approval, allowed-actions allowlist); deployment-environment protection (required reviewers, branch policy); write-enabled deploy keys; webhook security (HTTP transport, TLS verification, HMAC secret); outside-collaborator elevated-permissions audit; private-repo fork-policy; ruleset enforcement / always-bypass / PR-review-presence / status-checks / force-push denial / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate (full ruleset analog of legacy branch protection plus history-shape hygiene, scan-removal-resistant CI gating, code-scanning-results merge gating, and per-PR deployment-env smoke-test gating); auto-merge enabled. GitLab and Bitbucket: 7-rule universal subset (`SCM-001/002/006/007/008/009/017`). Hermetic mode: `--scm-fixture-dir DIR` reads JSON responses from disk instead of hitting the network. |
 | **Package registries (npm / pypi)** | **npm:** `package.json` / `package-lock.json` / `npm-shrinkwrap.json` / `.npmrc`. **pypi:** `requirements*.txt` / `*.in`. | `--npm-path` / `--pypi-path` | **npm: 8 checks (`NPM-001`--`007` plus `NPM-011`)** — floating version ranges, lockfile entries missing `integrity`, non-registry sources (git+ssh, http://, git+https without 40-char SHA pin), install-time lifecycle scripts (`preinstall` / `install` / `postinstall` / `prepare`), git deps using mutable refs, known-compromised package versions (curated `_compromised_packages.py` registry seeded with event-stream / ua-parser-js / coa / rc / node-ipc), `.npmrc` missing or disabling `ignore-scripts=true` (the file-side complement to DF-024), and `package.json` `files` field listing secret-shaped paths (`.env`, `.npmrc`, `*.pem`, SSH keys, AWS credentials). Skips `node_modules/`. NPM-008..010 are reserved for the deferred registry-fetch rules (cooldown, transitive-diff, audit-signatures) per ROADMAP. **pypi: 6 checks (`PYPI-001`--`006`)** — requirements lines missing `==` pin, files missing `--require-hashes` / per-line `--hash=`, HTTP indexes (`-i http://`, `--trusted-host`), VCS deps without 40-char commit SHA, `--extra-index-url` (dependency-confusion vector), and known-compromised package versions (curated registry seeded with ctx 0.2.2-0.2.8 / requests-darwin-lite 2.27.1). `*.in` (pip-tools input) exempt from PYPI-001/002 since hashing lives in the compiled output. |
+| **Maven** | `pom.xml` / `settings.xml` | `--maven-path` | 7 checks (`MVN-001`--`007`) — floating Maven version ranges (`[1.0,2.0)`, `LATEST`, `RELEASE`), mutable `-SNAPSHOT` dependencies, plaintext-HTTP repository URLs, dependencies missing `<version>` (silently resolved by parent BOMs), lax `<checksumPolicy>` on non-Central repositories (Maven's default `warn` continues on tampered jars), known-compromised Maven Central versions (curated registry seeded with Log4Shell / Spring4Shell / Text4Shell), and `<settings.xml>` `<mirrorOf>*</mirrorOf>` wildcard mirrors. `<dependencyManagement>` entries are surfaced separately from real consumption so version-management blocks don't trigger consumption-side rules. Property substitution (`${log4j.version}`) is resolved against the POM's `<properties>` before each rule evaluates. Skips `target/` and `.m2/`. |
 
 Each CI provider checks for: dependency pinning, script injection, credential
 leaks, deploy approval gates, artifact signing, SBOM generation, Docker
@@ -147,7 +148,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   640+ checks across 21 providers
+  Config files   |  Scanner  |   650+ checks across 22 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -335,6 +336,8 @@ covers multiple audits.
 | [NIST CSF 2.0](docs/standards/nist_csf_2.md) | 2.0 | CI/CD subset |
 | [CIS Software Supply Chain](docs/standards/cis_supply_chain.md) | 1.0 | CI/CD subset |
 | [CIS AWS Foundations](docs/standards/cis_aws_foundations.md) | 3.0.0 | CI/CD subset |
+| [CIS Kubernetes Benchmark](docs/standards/cis_kubernetes.md) | 1.10 | Section 5 (Policies) |
+| [CIS GitHub Benchmark](docs/standards/cis_github.md) | 1.0.0 | Sections 1.1, 1.4, 1.5 |
 | [PCI DSS v4.0](docs/standards/pci_dss_v4.md) | 4.0 | CI/CD subset |
 | [SOC 2 Trust Services Criteria](docs/standards/soc2.md) | 2017 (rev. 2022) | CC6/CC7/CC8 subset |
 | [NSA/CISA ESF Supply Chain](docs/standards/esf_supply_chain.md) | 2022 | CI/CD subset |
@@ -358,7 +361,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm`, `npm`, `pypi`, `maven` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` |
@@ -469,6 +472,7 @@ pipeline_check/
         ├── scm/rules/         # SCM-001 .. SCM-042 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit; GitLab + Bitbucket universal subset)
         ├── npm/rules/         # NPM-001 .. NPM-007 + NPM-011 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector
         ├── pypi/rules/        # PYPI-001 .. PYPI-006 — requirements.txt supply-chain hygiene + curated compromised-package registry
+        ├── maven/rules/       # MVN-001 .. MVN-007 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell)
         └── custom/            # YAML rule loader + predicate engine
 ```
 

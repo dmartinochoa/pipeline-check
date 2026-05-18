@@ -885,6 +885,60 @@ is the wrong layer. The rules still fire on the compiled
 covered.
 """,
     ),
+    "maven": (
+        "maven",
+        "pipeline_check.core.checks.maven.rules",
+        _REPO_ROOT / "docs" / "providers" / "maven.md",
+        """\
+# maven provider
+
+Parses Maven `pom.xml` project descriptors and per-user / per-CI
+`settings.xml` files on disk. Text-only static analysis, no
+`mvn install`, no Maven Central API access, no resolver run. Rule
+modules see a parsed `PomFile` (dependencies, repositories,
+properties, mirrors) and flag the patterns that produced the
+Log4Shell (Dec 2021), Spring4Shell (March 2022), and Text4Shell (Oct
+2022) historical incidents.
+
+## Producer workflow
+
+```bash
+# --maven-path is auto-detected when pom.xml exists at cwd.
+pipeline_check --pipeline maven
+
+# …or pass it explicitly.
+pipeline_check --pipeline maven --maven-path pom.xml
+
+# Recursively scan a multi-module reactor: every pom.xml under the
+# path (excluding ``target/`` and ``.m2/``) is picked up.
+pipeline_check --pipeline maven --maven-path .
+```
+
+## Scope
+
+* `pom.xml` (project descriptor, both top-level and submodule)
+* `settings.xml` (per-user / per-CI Maven config, scanned for
+  `<mirrors>` posture)
+* `<dependencyManagement>` entries are surfaced separately from real
+  dependencies so version-management blocks don't trigger consumption-
+  side rules.
+
+`gradle.lockfile`, `build.gradle`, and `build.gradle.kts` are out of
+scope for the initial pack; a separate `gradle` provider is queued
+for a follow-up. The Maven half covers Maven Central and any
+Maven-compatible registry (Nexus, Artifactory, GitHub Packages) the
+project resolves through `pom.xml`.
+
+## Property resolution
+
+Single-level `${prop}` substitution against the POM's `<properties>`
+block is performed before each rule evaluates a version literal, so a
+property pointing at a floating range or a known-compromised version
+still trips the relevant rule. Nested substitution is intentionally
+left unresolved; deeply-recursive property graphs are rare in
+real-world POMs and out of scope for static analysis.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -1001,6 +1055,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "PYPI", "prefix_lc": "pypi", "pkg": "pypi",
         "signature": "check(rf: RequirementsFile) -> Finding",
         "arg_kind": "``RequirementsFile``",
+    },
+    "maven": {
+        "prefix": "MVN", "prefix_lc": "mvn", "pkg": "maven",
+        "signature": "check(pom: PomFile) -> Finding",
+        "arg_kind": "``PomFile``",
     },
     "oci": {
         "prefix": "OCI", "prefix_lc": "oci", "pkg": "oci",

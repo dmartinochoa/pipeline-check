@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Maven package provider (`--pipeline maven`).** Static analysis of
+  `pom.xml` and `settings.xml` mirroring the npm / pypi pattern: seven
+  rules covering floating Maven version ranges (`[1.0,2.0)`, `LATEST`,
+  `RELEASE`), mutable `-SNAPSHOT` dependencies, plaintext-HTTP
+  repository URLs, dependencies that omit `<version>`, lax
+  `<checksumPolicy>` on non-Central repositories, known-compromised
+  Maven Central versions (curated registry seeded with Log4Shell /
+  Spring4Shell / Text4Shell), and `<settings.xml>` `<mirrorOf>*` /
+  `external:*` wildcard mirrors. Property substitution (`${...}`) is
+  resolved against the POM's `<properties>` block before each rule
+  evaluates. `<dependencyManagement>` entries are surfaced separately
+  so version-management blocks don't trigger consumption-side rules.
+  Brings the provider count to 22. Adds `--maven-path` and pom.xml
+  auto-detection.
+
+- **CIS GitHub Benchmark standard (`cis_github`).** Platform-side
+  posture mapping for a single GitHub org or repo, sections 1.1
+  (Code Changes), 1.4 (Third-Party), and 1.5 (Code Risks). Evidenced
+  directly by the existing `SCM-*` rule pack via the GitHub REST API,
+  plus a representative slice of `GHA-*` workflow rules anchoring
+  1.5.2 (CI/CD pipeline instructions). Adds `--standard cis_github`
+  filtering and a generated `docs/standards/cis_github.md` page.
+  Brings the standards count to 15.
+
 - **Smart `pipeline_check init`.** ``init`` now runs one scan against
   whatever pipeline it auto-detects, writes
   ``.pipeline-check-baseline.json`` capturing the current failing

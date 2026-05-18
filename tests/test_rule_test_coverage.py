@@ -45,6 +45,7 @@ PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
     "helm":       ("pipeline_check.core.checks.helm.rules",       100),
     "oci":        ("pipeline_check.core.checks.oci.rules",        100),
     "drone":      ("pipeline_check.core.checks.drone.rules",      100),
+    "maven":      ("pipeline_check.core.checks.maven.rules",      100),
 }
 
 

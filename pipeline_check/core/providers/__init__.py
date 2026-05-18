@@ -28,6 +28,7 @@ from .gitlab import GitLabProvider
 from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
+from .maven import MavenProvider
 from .npm import NpmProvider
 from .oci import OCIProvider
 from .pypi import PypiProvider
@@ -77,3 +78,4 @@ register(DroneProvider())
 register(SCMProvider())
 register(NpmProvider())
 register(PypiProvider())
+register(MavenProvider())

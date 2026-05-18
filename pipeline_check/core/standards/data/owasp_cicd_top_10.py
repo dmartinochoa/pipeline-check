@@ -481,6 +481,14 @@ STANDARD = Standard(
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
+        # maven (pom.xml + settings.xml static analysis)
+        "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
+        "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency
+        "MVN-003":  ["CICD-SEC-8", "CICD-SEC-3"],  # plaintext-HTTP repository
+        "MVN-004":  ["CICD-SEC-3"],                # missing <version> element
+        "MVN-005":  ["CICD-SEC-3", "CICD-SEC-8"],  # lax repository checksumPolicy
+        "MVN-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
+        "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

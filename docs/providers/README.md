@@ -111,6 +111,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>requirements.txt</code>. Range-pinned versions, missing hashes, compromised-package registry.</p>
     <span class="pg-doc-card__meta">{{ providers.pypi.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="maven/">
+    <h3>Maven</h3>
+    <p>Parses <code>pom.xml</code> and <code>settings.xml</code>. Floating ranges and SNAPSHOTs, plaintext-HTTP repositories, lax checksumPolicy, wildcard mirrors, Log4Shell-class compromised-package registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.maven.checks }}</span>
+  </a>
 </div>
 
 ## Adding a new provider
