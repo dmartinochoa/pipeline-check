@@ -60,6 +60,20 @@ What's planned, what's shipped, and what's deliberately out of scope.
   bypass-allowance audit (SCM-018), and push-restriction
   allowlist audit (SCM-019) closed the remaining GitHub-side
   feature gaps in the same cycle.
+- **SLSA Build L3 provenance on the wheel (v1.0.4).** Every
+  tagged release runs the ``slsa-framework/slsa-github-generator``
+  reusable workflow inside GitHub's isolated builder, signing the
+  sdist + wheel via Sigstore with a short-lived OIDC token. The
+  in-toto provenance file (``pipeline-check.intoto.jsonl``) lands
+  as a workflow-run artifact (the repo runs immutable releases, so
+  the generator can't attach to the release directly). PyPI
+  trusted publishing uses ``id-token: write`` with PEP 740
+  ``attestations: true`` so the in-toto attestation rides
+  alongside the wheel on the package index. README's "Verifying a
+  release" section ships the ``slsa-verifier verify-artifact``
+  recipe end-to-end (find the build run, download the wheel +
+  provenance, verify source URI + tag, install). The scanner that
+  flags missing provenance ships its own attested wheel.
 - v0.4.x / v0.5.x / v0.6.x — pre-1.0 milestone work folded into
   v1.0.x. See `CHANGELOG.md` for the per-version trail.
 - v0.3.x — Kubernetes provider, docs site, attack chains engine,
@@ -167,15 +181,6 @@ don't ship Python (Go-shop CI, JVM-shop CI, container-only build
 environments). Pure packaging move, no rule code change. The
 marketplace ``action.yml`` already shipped is the GHA half of this;
 the binary + container image cover every other CI.
-
-### Reproducible build with SLSA provenance on the wheel
-
-Releases ship via ``slsa-github-generator``, with a verification
-snippet in the README showing how to confirm the wheel's provenance
-before installing. The scanner that flags missing SLSA provenance
-shipping its own attested wheel is the cheapest trust signal
-available, costs roughly a day of CI plumbing, and gives the README
-a live screenshot of what good looks like.
 
 ### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
 

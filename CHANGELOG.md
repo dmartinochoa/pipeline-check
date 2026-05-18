@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SLSA Build L3 + Sigstore badges and install-time nudge.** The
+  README header gains a SLSA Build L3 badge and a Sigstore-signed
+  badge linking to the existing "Verifying a release" section, and
+  the Quick start block carries a one-line note pointing users at
+  the verifier recipe before they run ``pip install``. The
+  provenance pipeline itself (release.yml +
+  ``slsa-github-generator@v2.1.0`` + PyPI PEP 740 attestations)
+  has been live since v1.0.4; this surfaces it above the fold.
+
 - **Reachability-aware attack chains (AC-002 pilot).** The chain
   engine previously fired on co-occurrence: any two trigger findings
   on the same resource composed a chain. The new model intersects
