@@ -460,7 +460,7 @@ STANDARD = Standard(
         "SCM-016":  ["RS.MA-01"],               # private vulnerability reporting off
         "SCM-017":  ["PR.PS-06"],               # CODEOWNERS file missing
         "SCM-018":  ["PR.PS-06", "PR.AA-05"],   # PR review bypass allowed
-        "SCM-019":  ["PR.AA-05"],               # push-restriction allowlist names users
+        "SCM-019":  ["PR.AA-05", "PR.PS-06"],   # push-restriction allowlist names users
         # Actions governance + environments + deploy keys
         "SCM-020":  ["PR.AA-01", "PR.AA-05"],   # workflow_token default write
         "SCM-021":  ["PR.PS-06"],               # Actions can approve PRs

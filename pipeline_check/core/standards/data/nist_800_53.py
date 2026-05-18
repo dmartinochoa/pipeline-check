@@ -347,18 +347,19 @@ STANDARD = Standard(
         # Branch protection / review controls map primarily to SA-15
         # (Development Process, Standards, and Tools) — the developer-
         # side governance regime — supplemented by AC-3 / AC-6 for
-        # access enforcement, SI-7 / AU-9 for history-integrity
-        # surfaces, and IA-5 for credential-shaped surfaces (workflow
-        # tokens, deploy keys).
+        # access enforcement, SI-7 for history-integrity surfaces,
+        # and IA-5 for credential-shaped surfaces (workflow tokens,
+        # deploy keys). AU-9 (audit-log tamper protection) is not used
+        # here: git-history rewrite is not an audit log.
         "SCM-001":  ["SA-15", "AC-3"],                  # default branch unprotected
         "SCM-002":  ["SA-15"],                          # required reviews missing
         "SCM-003":  ["SA-11"],                          # default code scanning disabled (SAST)
         "SCM-004":  ["SI-7", "IA-5"],                   # secret scanning disabled
         "SCM-005":  ["RA-5", "SI-2"],                   # Dependabot security updates off
         "SCM-006":  ["SI-7", "SR-4"],                   # signed commits not required (provenance)
-        "SCM-007":  ["SI-7", "AU-9"],                   # force-push allowed (history rewrite)
+        "SCM-007":  ["SI-7"],                           # force-push allowed (history rewrite)
         "SCM-008":  ["SA-15", "SA-11"],                 # required status checks missing
-        "SCM-009":  ["SI-7", "AU-9"],                   # branch deletions allowed
+        "SCM-009":  ["SI-7"],                           # branch deletions allowed
         "SCM-010":  ["AC-6", "SA-15"],                  # admin bypass allowed
         "SCM-011":  ["SA-15", "AC-3"],                  # CODEOWNERS reviews not required
         "SCM-012":  ["SA-15"],                          # stale reviews not dismissed
@@ -387,11 +388,11 @@ STANDARD = Standard(
         "SCM-031":  ["SA-15"],                          # auto-merge enabled
         "SCM-032":  ["SA-15"],                          # ruleset lacks PR review
         "SCM-033":  ["SA-11", "SA-15"],                 # ruleset lacks status_checks
-        "SCM-034":  ["SI-7", "AU-9"],                   # ruleset allows force_push
-        "SCM-035":  ["SI-7", "AU-9"],                   # ruleset allows deletion
+        "SCM-034":  ["SI-7"],                           # ruleset allows force_push
+        "SCM-035":  ["SI-7"],                           # ruleset allows deletion
         "SCM-036":  ["SI-7", "SR-4"],                   # ruleset lacks signed_commits
         "SCM-037":  ["SA-15"],                          # ruleset stale-review dismissal
-        "SCM-038":  ["SI-7", "AU-9"],                   # ruleset lacks linear_history
+        "SCM-038":  ["SA-15"],                          # ruleset lacks linear_history (audit hygiene, not SI-7)
         "SCM-039":  ["SA-11", "SA-15"],                 # ruleset lacks required_workflows
         "SCM-040":  ["SA-11", "RA-5"],                  # ruleset lacks code_scanning gate
         "SCM-041":  ["SA-10", "SA-15"],                 # ruleset lacks deployment-env gate
