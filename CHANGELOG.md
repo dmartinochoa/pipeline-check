@@ -212,6 +212,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (DF-007 / OCI-006 container-runtime hygiene, KMS-001 / SM-001
   key + secret rotation lifecycle).
 
+- **Broadened S2C2F (Secure Supply Chain Consumption Framework)
+  mappings on the OSS-consumption surface.** Cross-mapping pass,
+  no new rule modules, 59 net-new entries. S2C2F is narrower than
+  CIS SSCS — it only covers Ingest / Scan / Inventory / Update /
+  Enforce / Audit / Rebuild / Fix for consuming open-source
+  software, so the expansion targets just the surfaces that fit:
+  **ING-1** (trusted package managers) picks up cross-provider TLS
+  bypass (GL-023, BB-023, ADO-023, JF-023/35, DR-006, GCB-011),
+  GHA remote-script / insecure-install (GHA-016, GHA-017), and the
+  NPM/PyPI/Maven non-registry / extra-index / wildcard-mirror
+  shape (NPM-003/004/007, PYPI-003/005, MVN-003/007). Dockerfile
+  env-bypass pack (DF-021/22/24/26..29) lands on ING-1 too, since
+  the env vars disable the trusted-source channel for any in-image
+  install. **ING-3** (deny-list) picks up the GHA reputation pack
+  (GHA-041/042/043/047) as deny-list-candidate signals. **UPD-1**
+  (pin + track) extends across Drone (DR-001/005/008), NPM/PyPI/
+  Maven pinning (NPM-001/002/005, PYPI-001/002/004,
+  MVN-001/002/004/005), OCI legacy / weak-digest shapes (OCI-007/
+  008), and the GHA-023 reusable-workflow / GHA-051 services-image
+  / BB-029 step+service pinning surface. **REB-3** (SBOM) extends
+  to OCI provenance annotations (OCI-001/003/005), Helm chart
+  metadata (HELM-005/007/010), and SBOM-content gaps in the
+  ATTEST family (ATTEST-003/004/007). **REB-4** (signed-SBOM /
+  attested provenance) extends to ATTEST-001/002/005/006 +
+  OCI-002, the in-toto / SLSA attestation content rules. After:
+  211 mappings (was 152), all 11 controls evidenced.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
