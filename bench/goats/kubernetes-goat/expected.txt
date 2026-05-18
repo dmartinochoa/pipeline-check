@@ -1,3 +1,55 @@
-# Check IDs the kubernetes-goat is intended to demonstrate. Seed
-# with ``python bench/goat_runner.py --goat kubernetes-goat --suggest``
-# and hand-edit down to the IDs that the goat is actually anchoring.
+# kubernetes-goat expected check IDs (curated 2026-05-18 against
+# kubernetes-goat@HEAD-of-master). Each entry maps to one of the
+# goat's 22 documented challenges (see README's "Scenarios" list)
+# or to the CIS Kubernetes Benchmark coverage that challenge #6
+# ("Kubernetes CIS benchmarks analysis") is explicitly teaching.
+# Resource string is the manifest tree under ``scenarios/``.
+
+# ── Container escape surface (challenge 4 + DIND challenge 2) ──
+K8S-002   # Pod hostNetwork: true (escape via host net stack)
+K8S-003   # Pod hostPID: true (PID namespace escape)
+K8S-004   # Pod hostIPC: true (IPC namespace escape)
+K8S-005   # securityContext.privileged: true (DIND, full escape)
+K8S-013   # hostPath volume (docker.sock mount path)
+K8S-014   # hostPath references sensitive host dir (/, /etc, /var)
+
+# ── Privilege escalation / root hardening ──
+K8S-006   # allowPrivilegeEscalation not explicitly false
+K8S-007   # runAsNonRoot not true / runAsUser 0 (root container)
+K8S-009   # capabilities not dropping ALL / adds dangerous caps
+K8S-035   # securityContext.runAsUser is 0 (explicit root)
+
+# ── Defense-in-depth (sandboxing) ──
+K8S-008   # readOnlyRootFilesystem not true
+K8S-010   # seccompProfile not RuntimeDefault / Localhost
+
+# ── ServiceAccount token surface (challenge 12: env info / SA token) ──
+K8S-011   # Pod serviceAccountName unset or 'default'
+K8S-012   # Pod automountServiceAccountToken not false
+K8S-034   # ServiceAccount automountServiceAccountToken not false
+
+# ── RBAC (challenge 16: RBAC least-privilege misconfig) ──
+K8S-020   # ClusterRoleBinding grants cluster-admin / system:masters
+
+# ── Sensitive credentials (challenge 1: sensitive keys in codebases) ──
+K8S-018   # Secret stringData/data has credential-shaped literal
+
+# ── Namespace / network isolation (challenge 11 + 20) ──
+K8S-019   # Workload in 'default' namespace
+K8S-023   # Namespace missing Pod Security Admission enforce label
+K8S-031   # Namespace missing Pod Security Admission warn label
+K8S-032   # Namespace lacks default-deny NetworkPolicy
+
+# ── Image supply chain (challenges 7, 15) ──
+K8S-001   # Container image not pinned by sha256 digest
+
+# ── DoS / resource exhaustion (challenge 13: DoS memory/CPU) ──
+K8S-015   # Container missing resources.limits.memory
+K8S-016   # Container missing resources.limits.cpu
+K8S-033   # Namespace lacks ResourceQuota or LimitRange
+
+# ── Cluster / control-plane abuse ──
+K8S-030   # Workload schedules onto a control-plane node
+
+# ── Operational hygiene ──
+K8S-024   # Container missing both livenessProbe and readinessProbe
