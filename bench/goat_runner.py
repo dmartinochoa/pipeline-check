@@ -277,15 +277,46 @@ def clone_goat(spec: GoatSpec, dest: Path) -> str:
     return out.stdout.strip()
 
 
-def scan_goat(
+# Directories the bench skips when walking a goat tree for
+# scannable files. ``solutions`` is goat-specific (cicd-goat
+# ships patched copies of its vulnerable files under
+# ``solutions/`` as the answer key); the rest is VCS / build /
+# vendoring noise.
+_GOAT_SCAN_SKIP_DIRS = frozenset({
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    "solutions",
+})
+
+
+def _discover_files(root: Path, filename: str) -> list[Path]:
+    """Walk ``root`` for files exactly named ``filename``, dropping
+    paths that pass through any directory in ``_GOAT_SCAN_SKIP_DIRS``.
+    Sorted output keeps per-run ordering deterministic."""
+    out: list[Path] = []
+    for p in root.rglob(filename):
+        if not p.is_file():
+            continue
+        rel_parts = p.relative_to(root).parts
+        if any(part in _GOAT_SCAN_SKIP_DIRS for part in rel_parts):
+            continue
+        out.append(p)
+    return sorted(out)
+
+
+def _run_scan(
     workdir: Path,
     pipelines: list[str],
-    extra_args: list[str] | None = None,
+    extra_args: list[str],
 ) -> list[dict[str, Any]]:
-    """Run pipeline-check against ``workdir`` and return the parsed
-    findings list. Treats exit codes 0 and 1 (clean / gate-failed)
-    as success since both still emit findings JSON; 2 / 3 are
-    scanner / config errors and surface as a raise."""
+    """Single pipeline_check subprocess invocation. Treats exit
+    codes 0 and 1 (clean / gate-failed) as success since both still
+    emit findings JSON; 2 / 3 are scanner / config errors and
+    surface as a raise."""
     if len(pipelines) == 1:
         provider_flag = ["--pipeline", pipelines[0]]
     elif len(pipelines) > 1:
@@ -294,7 +325,7 @@ def scan_goat(
         provider_flag = []
     cmd = [
         "pipeline_check", *provider_flag,
-        *(extra_args or []),
+        *extra_args,
         "--output", "json",
     ]
     proc = subprocess.run(
@@ -321,6 +352,45 @@ def scan_goat(
             f"pipeline_check JSON has non-list ``findings`` field "
             f"of type {type(findings).__name__}"
         )
+    return findings
+
+
+def scan_goat(
+    workdir: Path,
+    pipelines: list[str],
+    extra_args: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Run pipeline-check against ``workdir`` and return the merged
+    findings list across however many invocations the goat's
+    provider mix requires.
+
+    Most providers scan the whole goat in one shot. Jenkins is the
+    exception: ``--jenkinsfile-path`` is per-file and the CLI
+    doesn't glob, so a goat with multiple Jenkinsfiles (cicd-goat
+    ships seven under ``gitea/repositories/<name>/``) needs one
+    invocation per file. When ``jenkins`` is in ``pipelines`` and
+    the manifest didn't pre-pin a specific path, the runner globs
+    the tree (skipping ``solutions/`` / VCS noise) and dispatches a
+    Jenkins scan per discovered file. Non-Jenkins providers still
+    batch into a single multi-pipeline scan alongside.
+    """
+    extra = list(extra_args or [])
+    needs_jenkins_glob = (
+        "jenkins" in pipelines
+        and "--jenkinsfile-path" not in extra
+    )
+    if not needs_jenkins_glob:
+        return _run_scan(workdir, pipelines, extra)
+
+    non_jenkins = [p for p in pipelines if p != "jenkins"]
+    findings: list[dict[str, Any]] = []
+    if non_jenkins:
+        findings.extend(_run_scan(workdir, non_jenkins, extra))
+    for jf in _discover_files(workdir, "Jenkinsfile"):
+        rel = jf.relative_to(workdir).as_posix()
+        findings.extend(_run_scan(
+            workdir, ["jenkins"], ["--jenkinsfile-path", rel],
+        ))
     return findings
 
 
