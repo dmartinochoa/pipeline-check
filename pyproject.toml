@@ -58,6 +58,11 @@ ai = [
 # The default install carries no MCP SDK so the AWS-Lambda /
 # minimal-install paths stay slim.
 mcp = ["mcp>=1.0.0"]
+# Opt-in LSP server (``python -m pipeline_check.lsp``). Spawned by
+# the greylag-ci/pipeline-check-vscode editor extension over stdio.
+# Kept out of the default install so contributors who never touch
+# the editor surface don't pay the pygls / lsprotocol weight.
+lsp = ["pygls>=2.1.0"]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
