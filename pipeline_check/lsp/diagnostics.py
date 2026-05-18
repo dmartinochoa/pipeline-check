@@ -8,8 +8,14 @@ The mapping is intentionally narrow:
     range (0-based by LSP convention).
   - ``Finding.check_id`` lands in ``Diagnostic.code`` so the client
     can surface it next to the rule title.
+  - ``Diagnostic.codeDescription.href`` points at the rule's anchor
+    in the published provider doc, so the editor renders the
+    ``check_id`` as a hyperlink ("Open documentation" in VS Code).
   - ``Diagnostic.source`` is always ``"pipeline-check"`` so the
     editor's Problems panel groups our findings together.
+  - ``Diagnostic.message`` carries the title, the per-finding
+    description, and the fix recommendation, so the editor hover is
+    self-contained.
 
 Findings whose ``passed`` is ``True`` are dropped; only failing
 findings produce diagnostics. Findings without any ``locations`` get
@@ -33,6 +39,24 @@ _SEVERITY_MAP: dict[Severity, lsp.DiagnosticSeverity] = {
     Severity.INFO: lsp.DiagnosticSeverity.Hint,
 }
 
+# Base URL of the published reference docs. Per-rule anchors are
+# ``providers/<provider>/#<check-id-lower>`` (the per-rule headings in
+# ``scripts/gen_provider_docs.py`` emit attr-list IDs like ``{ #gha-001 }``).
+_DOCS_BASE_URL = "https://dmartinochoa.github.io/pipeline-check"
+
+
+def _docs_href(provider: str, check_id: str) -> str:
+    return f"{_DOCS_BASE_URL}/providers/{provider}/#{check_id.lower()}"
+
+
+def _compose_message(finding: Finding) -> str:
+    parts: list[str] = [finding.title]
+    if finding.description.strip():
+        parts.append(finding.description.strip())
+    if finding.recommendation.strip():
+        parts.append(f"Fix: {finding.recommendation.strip()}")
+    return "\n\n".join(parts)
+
 
 def _range_from_finding(finding: Finding) -> lsp.Range:
     if not finding.locations:
@@ -55,19 +79,34 @@ def _range_from_finding(finding: Finding) -> lsp.Range:
     )
 
 
-def finding_to_diagnostic(finding: Finding) -> lsp.Diagnostic:
-    """Convert one failing :class:`Finding` to an LSP ``Diagnostic``."""
+def finding_to_diagnostic(
+    finding: Finding, provider: str | None = None,
+) -> lsp.Diagnostic:
+    """Convert one failing :class:`Finding` to an LSP ``Diagnostic``.
+
+    When *provider* is supplied the diagnostic gets a
+    ``codeDescription.href`` that links the ``check_id`` to the
+    rule's anchor in the published provider doc. Callers that don't
+    know which provider produced the finding (e.g. ad-hoc tests) can
+    omit it; the diagnostic still functions, but the ``check_id``
+    renders as inert text rather than a hyperlink.
+    """
     return lsp.Diagnostic(
         range=_range_from_finding(finding),
         severity=_SEVERITY_MAP.get(finding.severity, lsp.DiagnosticSeverity.Warning),
         code=finding.check_id,
+        code_description=(
+            lsp.CodeDescription(href=_docs_href(provider, finding.check_id))
+            if provider
+            else None
+        ),
         source="pipeline-check",
-        message=f"{finding.title}\n\n{finding.description}",
+        message=_compose_message(finding),
     )
 
 
 def findings_to_diagnostics(
-    findings: list[Finding], path: str,
+    findings: list[Finding], path: str, provider: str | None = None,
 ) -> list[lsp.Diagnostic]:
     """Translate every failing finding pinned to *path* into a diagnostic.
 
@@ -75,7 +114,9 @@ def findings_to_diagnostics(
     so the editor's Problems panel still surfaces them). Findings whose
     first location's ``path`` doesn't match *path* are dropped — the
     LSP publishes diagnostics per-URI and a finding pinned elsewhere
-    belongs to a different publish.
+    belongs to a different publish. *provider* is the dispatched
+    provider name and threads through to ``finding_to_diagnostic`` so
+    the docs link can be constructed from the rule's check_id.
     """
     out: list[lsp.Diagnostic] = []
     for f in findings:
@@ -89,7 +130,7 @@ def findings_to_diagnostics(
                 f.locations[0].path, path,
             ):
                 continue
-        out.append(finding_to_diagnostic(f))
+        out.append(finding_to_diagnostic(f, provider))
     return out
 
 

@@ -132,7 +132,7 @@ def _scan_uri(
     for f in findings:
         for loc in f.locations:
             loc.path = path
-    return findings_to_diagnostics(findings, path)
+    return findings_to_diagnostics(findings, path, provider)
 
 
 def _publish(

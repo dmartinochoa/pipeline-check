@@ -66,10 +66,31 @@ def test_check_id_lands_in_code_field() -> None:
     assert d.source == "pipeline-check"
 
 
-def test_message_includes_title_and_description() -> None:
+def test_message_includes_title_description_and_recommendation() -> None:
     d = finding_to_diagnostic(_make_finding())
     assert "Action not pinned" in d.message
     assert "actions/checkout@v4" in d.message
+    # The recommendation is the actionable bit; the editor hover is
+    # the user's first chance to see the fix without leaving the file.
+    assert "Pin every uses:" in d.message
+    assert "Fix:" in d.message
+
+
+def test_code_description_links_to_provider_docs_when_provider_given() -> None:
+    d = finding_to_diagnostic(_make_finding(), provider="github")
+    assert d.code_description is not None
+    assert d.code_description.href == (
+        "https://dmartinochoa.github.io/pipeline-check"
+        "/providers/github/#gha-001"
+    )
+
+
+def test_code_description_omitted_when_provider_unknown() -> None:
+    # Callers (tests, future surfaces) that don't know which provider
+    # produced the finding should still get a usable diagnostic; the
+    # check_id just renders as inert text without a hyperlink.
+    d = finding_to_diagnostic(_make_finding())
+    assert d.code_description is None
 
 
 def test_range_from_location_one_based_to_zero_based() -> None:
@@ -128,3 +149,13 @@ def test_findings_to_diagnostics_keeps_no_location_findings() -> None:
         [no_loc], ".github/workflows/release.yml",
     )
     assert len(out) == 1
+
+
+def test_findings_to_diagnostics_threads_provider_to_code_description() -> None:
+    f = _make_finding()
+    out = findings_to_diagnostics(
+        [f], ".github/workflows/release.yml", provider="github",
+    )
+    assert len(out) == 1
+    assert out[0].code_description is not None
+    assert out[0].code_description.href.endswith("/providers/github/#gha-001")

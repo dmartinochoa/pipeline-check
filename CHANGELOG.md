@@ -175,6 +175,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **LSP diagnostics now self-contain the fix and link to the rule
+  doc.** ``finding_to_diagnostic`` and ``findings_to_diagnostics``
+  accept the dispatched provider name and set
+  ``Diagnostic.codeDescription.href`` to
+  ``https://dmartinochoa.github.io/pipeline-check/providers/<provider>/#<id>``,
+  so the rule ID rendered next to each finding (e.g. ``GHA-001`` in
+  the Problems panel) becomes a clickable "Open documentation" link
+  in the editor. The diagnostic message also gains a ``Fix:``-prefixed
+  line carrying ``Finding.recommendation`` (the title and dynamic
+  description still lead), so a hover surfaces problem → why → fix
+  without sending the user to the docs site first. Both args are
+  optional and back-compatible: callers that don't supply a provider
+  get the old plain ``code``-only diagnostic.
+
 - **Broadened CIS Software Supply Chain Security Guide to near-full
   catalog coverage.** Cross-mapping pass: no new rule modules, 217
   net-new entries that fill the queued backfills called out in
