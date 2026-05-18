@@ -420,6 +420,11 @@ def report_chains_terminal(
             "",
             f"[bold]Triggering checks:[/bold] {', '.join(chain.triggering_check_ids)}",
         ]
+        if chain.confirmed_reachable:
+            reach_line = "[bold green]✓ Reachability confirmed[/bold green]"
+            if chain.reachability_note:
+                reach_line += f": {chain.reachability_note}"
+            body_lines.append(reach_line)
         if chain.mitre_attack:
             body_lines.append(
                 f"[bold]MITRE ATT&CK:[/bold] {', '.join(chain.mitre_attack)}"

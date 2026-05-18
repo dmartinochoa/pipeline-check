@@ -369,6 +369,8 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict[str, Any]
             "mitre_attack": list(chain.mitre_attack),
             "kill_chain_phase": chain.kill_chain_phase,
             "references": list(chain.references),
+            "confirmed_reachable": chain.confirmed_reachable,
+            "reachability_note": chain.reachability_note,
         },
     }
 

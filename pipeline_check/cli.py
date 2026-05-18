@@ -1767,6 +1767,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--chains-require-reachability",
+    "chains_require_reachability",
+    is_flag=True,
+    default=False,
+    help=(
+        "Drop attack chains whose legs co-occur on the same resource "
+        "but have no confirmed dataflow connection between them. Only "
+        "chains whose triggering findings share an anchor job (an "
+        "executable path connects the source to the sink) survive. "
+        "Strictest signal, lowest false-positive rate; pair with "
+        "``--fail-on-chain CRITICAL`` for a high-confidence CI gate."
+    ),
+)
+@click.option(
     "--list-chains",
     is_flag=True,
     default=False,
@@ -1923,6 +1937,7 @@ def scan(
     show_passed: bool,
     no_group: bool,
     no_chains: bool,
+    chains_require_reachability: bool,
     list_chains: bool,
     annotate_fp: tuple[str, str] | None,
     fp_path: str | None,
@@ -2598,6 +2613,22 @@ def scan(
             components = []
 
     chains = list(getattr(scanner, "chains", []) or [])
+    # ``--chains-require-reachability`` filters out chains whose
+    # triggering findings only co-occur on the same resource without
+    # a confirmed dataflow link between them. Chains that opted out
+    # of the reachability model (most XPC-NNN cross-tool chains and
+    # legacy AC-NNN chains that haven't been migrated) keep the
+    # default ``confirmed_reachable=False`` and are dropped here.
+    # The flag is opt-in precisely so that pre-migration chains
+    # don't silently disappear from existing CI runs.
+    if chains_require_reachability and chains:
+        before = len(chains)
+        chains = [c for c in chains if c.confirmed_reachable]
+        if verbose and before != len(chains):
+            _debug(
+                f"--chains-require-reachability: dropped "
+                f"{before - len(chains)} unreachable chain(s)"
+            )
 
     if not quiet:
         if output in ("terminal", "both"):

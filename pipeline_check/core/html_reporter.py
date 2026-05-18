@@ -1183,6 +1183,19 @@ def _chains_section_html(chains: list[Chain]) -> str:
             if c.kill_chain_phase
             else ""
         )
+        reach_html = ""
+        if c.confirmed_reachable:
+            reach_body = (
+                f": {_e(c.reachability_note)}"
+                if c.reachability_note
+                else ""
+            )
+            reach_html = (
+                '<div class="chain-card__line chain-card__reachable" '
+                'style="color:#1f7a3a">'
+                '<strong>&#10003; Reachability confirmed</strong>'
+                f'{reach_body}</div>'
+            )
         refs_html = ""
         if c.references:
             refs_html = (
@@ -1211,7 +1224,7 @@ def _chains_section_html(chains: list[Chain]) -> str:
             f'<pre class="chain-card__narrative">{_e(c.narrative)}</pre>'
             f'<div class="chain-card__line chain-card__triggers">'
             f'<strong>Triggering checks:</strong> {triggers}</div>'
-            f'{mitre_html}{kc_html}'
+            f'{reach_html}{mitre_html}{kc_html}'
             f'<div class="chain-card__line">'
             f'<strong>Recommendation:</strong> {_e(c.recommendation)}'
             f'</div>'

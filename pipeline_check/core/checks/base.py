@@ -219,6 +219,21 @@ class Finding:
     #: Dockerfile, K8s/Helm/Tekton/Argo). AWS / Terraform / CloudFormation
     #: stay at ``[]`` because their inputs aren't line-anchored source.
     locations: list[Location] = field(default_factory=list)
+    #: Job identifiers the finding pertains to within ``resource``.
+    #: Used by the reachability-aware chain engine to intersect the
+    #: jobs an injection source fires in with the jobs an impact rule
+    #: (deploy, privilege) fires in: a non-empty intersection means the
+    #: two legs of the chain are co-located in the same job and the
+    #: chain is reachable, not just co-occurrence in the same file.
+    #: ``()`` (the default) means the rule didn't compute per-job
+    #: anchors; chain rules treat that as "co-occurrence only".
+    job_anchors: tuple[str, ...] = ()
+    #: Rendered taint paths the finding evidences (e.g.
+    #: ``${{ github.event.issue.title }}@extract[0] -> steps.extract.outputs.title -> sink@deploy[2](kubectl)``).
+    #: Populated by the TAINT-NNN family; consumed by reachability-
+    #: aware chain rules and by ``--explain`` so a reader sees the
+    #: full source-to-sink hop chain without re-reading the description.
+    path_evidence: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -239,6 +254,10 @@ class Finding:
             out["exploit_example"] = self.exploit_example
         if self.locations:
             out["locations"] = [loc.to_dict() for loc in self.locations]
+        if self.job_anchors:
+            out["job_anchors"] = list(self.job_anchors)
+        if self.path_evidence:
+            out["path_evidence"] = list(self.path_evidence)
         return out
 
 

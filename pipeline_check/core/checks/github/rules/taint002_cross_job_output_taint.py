@@ -102,8 +102,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
+    # Sink-side job IDs from cross-job paths. Same shape contract as
+    # TAINT-001 (sink_location = ``job_id[step_idx]``); chain rules
+    # intersect this with the deploy-job set surfaced by GHA-014.
+    anchor_jobs: dict[str, None] = {}
+    for p in cross_job_paths:
+        anchor_jobs[p.sink_location.split("[", 1)[0]] = None
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        job_anchors=tuple(anchor_jobs),
+        path_evidence=tuple(rendered),
     )

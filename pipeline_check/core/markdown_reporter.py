@@ -141,6 +141,11 @@ def report_markdown(
                 "**Triggering checks:** "
                 + " ".join(f"`{cid}`" for cid in c.triggering_check_ids)
             )
+            if c.confirmed_reachable:
+                badge = ":white_check_mark: **Reachability confirmed**"
+                if c.reachability_note:
+                    badge += f": {c.reachability_note}"
+                lines.append(badge)
             if c.mitre_attack:
                 lines.append(
                     "**MITRE ATT&CK:** "
