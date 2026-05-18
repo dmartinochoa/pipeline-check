@@ -80,6 +80,7 @@ STANDARD = Standard(
         "KMS-000":  ["AU-2", "AU-12"],
         "SM-000":   ["AU-2", "AU-12"],
         "SSM-000":  ["AU-2", "AU-12"],
+        "S3-000":   ["AU-2", "AU-12"],
         # CodeBuild
         "CB-001":   ["IA-5"],                            # plaintext secrets
         "CB-002":   ["CM-6", "CM-7"],                    # privileged mode

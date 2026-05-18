@@ -71,6 +71,7 @@ STANDARD = Standard(
         "KMS-000":  ["2.3.7"],                           # KMS (secret store) unobservable
         "SM-000":   ["2.3.7"],                           # Secrets Manager unobservable
         "SSM-000":  ["2.3.7"],                           # SSM Parameter Store unobservable
+        "S3-000":   ["2.3.7"],                           # S3 artifact-bucket surface unobservable
         # CodeBuild
         "CB-001":   ["1.5.1", "2.3.4", "2.4.3"],         # plaintext secrets
         "CB-002":   ["2.1.3", "2.1.6"],                  # privileged mode / host network
@@ -139,7 +140,9 @@ STANDARD = Standard(
         "LMB-003":  ["1.5.1", "2.3.4"],                  # Lambda env vars contain plaintext secrets
         "LMB-004":  ["4.2.1"],                           # Lambda resource policy wildcard principal
         # KMS / Secrets Manager / SSM Parameter Store
+        "KMS-001":  ["4.1.1"],                           # CMK rotation disabled (artifact-signing key hygiene)
         "KMS-002":  ["4.2.1"],                           # KMS key policy grants wildcard actions
+        "SM-001":   ["1.3.4"],                           # Secrets Manager no rotation (long-lived secret material)
         "SM-002":   ["4.2.1"],                           # Secrets Manager resource policy wildcard principal
         "SSM-001":  ["1.5.1"],                           # secret-like Parameter not SecureString
         "SSM-002":  ["4.2.1"],                           # SecureString uses default AWS-managed key (broad decrypt)
@@ -637,5 +640,63 @@ STANDARD = Standard(
         "SCM-045":  ["1.1.7"],                      # default code scanning limited query suite
         "SCM-046":  ["1.1.7"],                      # default code scanning configured but paused
         "SCM-047":  ["1.1.7"],                      # repo language not covered by default scanning
+        # ── Kubernetes manifests (deployment-side supply chain) ───
+        # K8s manifests are the build's deployment payload — every
+        # rule that flags an unsafe Pod / RBAC / Network shape is
+        # evidence of either 5.1.4 (deployment configuration
+        # manifests are reviewed before apply), 5.2.1 (deployment
+        # environments are separated), or 5.2.3 (deployment-env
+        # activity audited). Image-pinning rules ride on 1.4.1 /
+        # 3.1.3 (3rd-party verified, signed metadata). Secret-
+        # exposure rules ride on 1.5.1 (sensitive data scanned).
+        # RBAC / SA rules ride on 2.4.3 (pipeline-exec access
+        # restricted) since the deployed workload inherits the SA's
+        # cluster API access.
+        "K8S-001":  ["1.4.1", "3.1.3"],             # image not pinned to digest
+        "K8S-002":  ["5.1.4", "2.1.6"],             # hostNetwork
+        "K8S-003":  ["5.1.4"],                      # hostPID
+        "K8S-004":  ["5.1.4"],                      # hostIPC
+        "K8S-005":  ["5.1.4", "2.1.3"],             # privileged container
+        "K8S-006":  ["5.1.4"],                      # allowPrivilegeEscalation
+        "K8S-007":  ["5.1.4"],                      # runAsNonRoot missing
+        "K8S-008":  ["5.1.4"],                      # readOnlyRootFilesystem missing
+        "K8S-009":  ["5.1.4"],                      # added Linux capabilities
+        "K8S-010":  ["5.1.4"],                      # seccompProfile missing
+        "K8S-011":  ["2.4.3"],                      # default ServiceAccount in workload
+        "K8S-012":  ["2.4.3"],                      # automountServiceAccountToken default
+        "K8S-013":  ["5.1.4"],                      # hostPath volume
+        "K8S-014":  ["5.1.4"],                      # sensitive hostPath
+        "K8S-015":  ["5.1.4"],                      # no memory limit
+        "K8S-016":  ["5.1.4"],                      # no CPU limit
+        "K8S-017":  ["1.5.1"],                      # credential literal in env
+        "K8S-018":  ["1.5.1"],                      # Secret data carries plaintext
+        "K8S-019":  ["5.2.1"],                      # default namespace = no env separation
+        "K8S-020":  ["2.4.3"],                      # cluster-admin RoleBinding
+        "K8S-021":  ["2.4.3"],                      # wildcard RBAC verbs
+        "K8S-022":  ["5.1.4", "2.1.6"],             # Service exposes SSH host port
+        "K8S-023":  ["5.1.4"],                      # PSA enforce label missing
+        "K8S-024":  ["5.2.3"],                      # missing readiness / liveness probes
+        "K8S-025":  ["5.1.4"],                      # system priority class outside kube-system
+        "K8S-026":  ["5.1.4", "2.1.6"],             # LoadBalancer without source ranges
+        "K8S-027":  ["4.1.1"],                      # Ingress without TLS = artifact-in-transit integrity
+        "K8S-028":  ["5.1.4", "2.1.6"],             # container hostPort
+        "K8S-029":  ["2.4.3", "5.2.1"],             # default-SA RoleBinding
+        "K8S-030":  ["5.1.4"],                      # control-plane scheduling
+        "K8S-031":  ["5.1.4"],                      # PSA warn label missing
+        "K8S-032":  ["2.1.6", "5.1.4"],             # NetworkPolicy default-deny missing
+        "K8S-033":  ["5.1.4"],                      # ResourceQuota / LimitRange missing
+        "K8S-034":  ["2.4.3"],                      # SA token automount default
+        "K8S-035":  ["5.1.4"],                      # runAsUser: 0
+        "K8S-036":  ["1.4.1"],                      # SA imagePullSecret missing
+        "K8S-037":  ["1.5.1"],                      # ConfigMap credential literal
+        "K8S-038":  ["2.1.6", "5.1.4"],             # NetworkPolicy allow-all
+        "K8S-039":  ["5.1.4"],                      # shareProcessNamespace: true
+        "K8S-040":  ["5.1.4"],                      # procMount: Unmasked
+        "K8S-041":  ["2.1.6", "5.1.4"],             # Service externalIPs (CVE-2020-8554)
+        "K8S-042":  ["2.4.3"],                      # anonymous RoleBinding
+        "K8S-043":  ["5.1.4"],                      # Ingress wildcard host
+        # ── Dockerfile runtime-hygiene rule that lacks a CIS SSCS
+        # fit (HEALTHCHECK is post-build observability, not supply
+        # chain). Keep DF-007 unmapped per existing carve-out.
     },
 )

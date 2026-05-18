@@ -370,127 +370,37 @@ class TestPerFrameworkCoverageFloor:
     # tripping; a coordinated pack add or framework regression does
     # trip. Bump the floor in the same PR that lifts the actual
     # number — that's the ratchet.
+    # Floors ratcheted after the standards-expansion campaign. Six
+    # standards reached legitimate 100% (every OWASP-mapped rule has
+    # an evidence relationship); two more sit at 99% with documented
+    # carve-outs (OCI-006 layer-count hygiene + DF-007 HEALTHCHECK).
+    # Each floor is set a couple percent below current state so a
+    # single-rule regression (a new check landing without backfilling
+    # its mappings here) trips the assertion, while a coordinated
+    # multi-rule pack drop still wins the user enough buffer to
+    # finish the backfill in-PR.
+    # Denominator is the full rule-discovery count (684 with the
+    # current pack), which is broader than the OWASP catalog
+    # (565 mappings). The percentages here are floor values against
+    # that denominator. Six standards reached legitimate 100% via
+    # the campaign + audit-driven backfill; two more sit at 99%
+    # with documented per-rule carve-outs.
     FLOORS: dict[str, int] = {
-        "owasp_cicd_top_10":   100,
-        # nist_csf_2 lowered from 70 to 69 when GHA-040 + the SCM
-        # rule pack landed without nist_csf_2 mappings. Backfill is
-        # queued for a follow-up; nist_csf_2 mappings cluster around
-        # asset / risk-management controls that don't apply to most
-        # of the new rules. Lowered from 69 to 68 when ATTEST-005
-        # (subject-digest unpinned) landed; the ATTEST-NNN family
-        # has no nist_csf_2 mappings today, same denominator-
-        # dilution case as the SCM pack. Lowered from 68 to 67 when
-        # the npm + pypi dependency-supply-chain packs (NPM-001..005
-        # / PYPI-001..005) landed OWASP-only; backfill is queued.
-        # Lowered from 67 to 66 when NPM-006 / PYPI-006 (curated
-        # compromised-package registries) landed OWASP-only.
-        # Lowered from 66 to 65 when SCM-020..025 (Actions governance
-        # + environments + deploy-keys) landed OWASP-only. Lowered
-        # from 65 to 64 when SCM-031 (auto-merge) landed OWASP-only;
-        # NIST CSF 2.0 doesn't have a direct mapping for merge-policy
-        # surface area today.
-        # Lowered 64→63 when SCM-033..037 (ruleset rule-type
-        # coverage pack) landed OWASP-only.
-        # Lowered 63→62 when DF-026..030 (ENV-based runtime-bypass
-        # pack) landed OWASP-only.
-        "nist_csf_2":           62,
-        # Lowered from 58 to 57 when SCM-030 (ruleset always-bypass)
-        # landed OWASP-only; ESF backfill queued. Lowered 57→56
-        # when SCM-033..037 landed OWASP-only. Lowered 56→55 when
-        # SCM-038 (ruleset linear-history) landed OWASP-only.
-        "esf_supply_chain":     55,
-        # openssf_scorecard lowered from 57 to 56 when NPM-011
-        # (secrets-in-files-field) landed OWASP-only; Scorecard
-        # backfill queued. (SCM-020..025 are already a no-op here.)
-        # Lowered from 56 to 55 when SCM-026/027/028 landed
-        # OWASP-only (Scorecard backfill queued). Lowered 55→54
-        # when SCM-032 (ruleset PR-review presence) landed
-        # OWASP-only. Lowered 54→53 when DF-026..030 (ENV-based
-        # runtime-bypass pack) landed OWASP-only.
-        "openssf_scorecard":    53,
-        # nist_800_53 lowered from 55 to 54 when the SCM provider
-        # added 10 rules (none NIST 800-53 mapped today; SCM is
-        # already in OWASP, CIS SSCS, and Scorecard, and 800-53
-        # mapping is queued for a follow-up). Rounded the
-        # percentage below the original threshold without any
-        # regression on the underlying mappings. Lowered again from
-        # 54 to 53 when SCM-017/018/019 (CODEOWNERS / bypass /
-        # push restrictions) added three more denominator entries
-        # without 800-53 mappings, same denominator-dilution case.
-        # nist_800_53 absorbs two unmapped landings on this merge:
-        # ATTEST-004 (materials gap) from master and GHA-047 (fresh-
-        # ref cooldown) from this branch. Neither family has an
-        # 800-53 mapping today; SR-family + ATTEST-NNN backfills are
-        # queued separately. Same denominator-dilution case.
-        # Lowered from 51 to 50 when the SCM-020..025 pack landed
-        # OWASP-only; backfill queued. Lowered from 50 to 49 when
-        # the GHA-051..055 advanced-PPE pack landed OWASP-only.
-        # Lowered 49→48 when DF-026..030 (ENV-based runtime-bypass
-        # pack) landed OWASP-only.
-        "nist_800_53":          48,
-        # Lowered from 45 to 44 when ATTEST-006 + ATTEST-007 landed.
-        # The ATTEST-NNN family has no nist_800_190 mappings today
-        # (800-190 is container-isolation focused, the attestation-
-        # content rules are provenance-focused). Same denominator-
-        # dilution case as earlier ATTEST landings. Lowered from 44
-        # to 43 when the worm-mitigation pack (GHA-048/049/050 +
-        # DF-024/025) landed without nist_800_190 mappings; backfill
-        # is queued. Lowered from 43 to 42 when the npm + pypi
-        # dependency-supply-chain packs landed OWASP-only.
-        # Lowered from 42 to 41 when SCM-020..025 landed OWASP-only.
-        # Lowered 41→40 when SCM-032 landed OWASP-only. Lowered
-        # 40→39 when SCM-040 (ruleset code-scanning gate) landed
-        # OWASP-only. Lowered 39→38 when SCM-043..047 landed
-        # OWASP-only (signed commits + code scanning posture).
-        "nist_800_190":         38,
-        # slsa lowered from 42 to 41 for the same SCM-017/018/019
-        # denominator-dilution case: SLSA is provenance-focused and
-        # the three new SCM rules cover review-control surface, not
-        # provenance. No regression on the existing SLSA mappings.
-        # Lowered from 41 to 40 when NPM-001..005 / PYPI-001..005
-        # landed OWASP-only; SLSA backfill is queued for the
-        # dependency-supply-chain pack.
-        # Lowered from 40 to 39 when SCM-020..025 landed OWASP-only.
-        # Lowered 39→38 when SCM-032 landed OWASP-only.
-        "slsa":                 38,
-        # Lowered from 48 to 47 when SCM-020..025 landed OWASP-only.
-        # Lowered from 47 to 46 when GHA-051..055 landed OWASP-only.
-        # Lowered 46→45 when DF-026..030 (ENV-based runtime-bypass
-        # pack) landed OWASP-only.
-        "soc2":                 45,
-        "cis_supply_chain":     28,
-        # s2c2f absorbs two unmapped landings on this merge: ATTEST-
-        # 004 from master and GHA-047 from this branch. Neither
-        # family has an S2C2F mapping today (GHA-04x reputation pack
-        # is uncovered; ATTEST-NNN backfill is queued). Denominator-
-        # dilution case. Lowered from 28 to 27 when the worm-
-        # mitigation pack (GHA-048/049/050 + DF-024/025) landed
-        # without S2C2F mappings; backfill is queued.
-        # Lowered from 27 to 26 when SCM-020..025 landed OWASP-only.
-        # Lowered 26→25 when SCM-033..037 landed OWASP-only.
-        "s2c2f":                25,
-        "nist_ssdf":            18,
-        "pci_dss_v4":           27,
-        # cis_aws_foundations is intentionally narrow: only AWS-pack
-        # rules can map to it, and not all of them have a CIS
-        # Foundations analog. The floor caps catalog-wide coverage
-        # at the AWS-pack share, not the full 363 rules.
-        # Lowered from 9 to 8 when the SCM provider added 10 rules
-        # (none AWS-relevant); same denominator-dilution case as
-        # cis_kubernetes below. Lowered from 8 to 7 when SCM-020..
-        # 025 (Actions / environments / deploy-keys) landed, same
-        # case — none AWS-relevant.
-        "cis_aws_foundations":   7,
-        # cis_kubernetes is also intentionally narrow: only the K8s
-        # pack (and a few Helm-rendered K8s rules) map to it. The
-        # floor caps coverage at the K8s-pack share — most of the
-        # catalog is non-K8s and never enters the denominator.
-        # Lowered from 7 to 6 when the SCM provider added 8 rules
-        # (none K8s-relevant) and rounded the percentage below the
-        # original threshold without any K8s-coverage regression.
-        # Lowered 6→5 when SCM-033..037 landed; K8s pack share
-        # of the catalog dropped under the threshold by rounding.
-        "cis_kubernetes":        5,
+        "owasp_cicd_top_10":     100,
+        "nist_800_53":            98,   # current 100%
+        "nist_csf_2":             98,   # current 100%
+        "soc2":                   98,   # current 100%
+        "pci_dss_v4":             98,   # current 100%
+        "esf_supply_chain":       98,   # current 100%
+        "cis_supply_chain":       97,   # current 99%, DF-007 + OCI-006 carve-outs
+        "nist_ssdf":              97,   # current 99%, OCI-006 carve-out
+        "openssf_scorecard":      75,   # current 77%
+        "slsa":                   67,   # current 69%
+        "nist_800_190":           58,   # current 60%, container-scoped
+        "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
+        "cis_aws_foundations":    17,   # current 19%, AWS-pack-only
+        "cis_github":             15,   # current 17%, GitHub-platform-scoped
+        "cis_kubernetes":          5,   # current 6%, K8s-manifest-scoped
     }
 
     def test_floors_hold(self):

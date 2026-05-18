@@ -337,7 +337,7 @@ covers multiple audits.
 | Standard | Version | Coverage |
 |----------|---------|----------|
 | [OWASP Top 10 CI/CD Security Risks](docs/standards/owasp_cicd_top_10.md) | 2022 | 10/10 risks |
-| [SLSA Build Track](docs/standards/slsa.md) | 1.0 | 6/7 levels (110 check mappings) |
+| [SLSA Build Track](docs/standards/slsa.md) | 1.0 | 6/7 levels (413 check mappings) |
 | [NIST SSDF (SP 800-218)](docs/standards/nist_ssdf.md) | v1.1 | CI/CD subset |
 | [NIST SP 800-53](docs/standards/nist_800_53.md) | Rev. 5 | CI/CD subset |
 | [NIST SP 800-190](docs/standards/nist_800_190.md) | 2017 | Container CI/CD subset |

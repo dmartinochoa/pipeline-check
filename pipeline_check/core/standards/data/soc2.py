@@ -118,6 +118,7 @@ STANDARD = Standard(
         "CC-010":   ["CC6.6"],
         "ECR-003":  ["CC6.6"],             # public repo
         "S3-001":   ["CC6.6"],             # public artifact bucket
+        "S3-002":   ["CC6.1"],             # bucket not encrypted at rest
         "LMB-002":  ["CC6.6"],             # public Lambda URL
         "LMB-004":  ["CC6.6"],             # public Lambda policy
         "SM-002":   ["CC6.6"],             # Secrets Manager public
@@ -268,6 +269,10 @@ STANDARD = Standard(
         "K8S-022":  ["CC6.6"],            # SSH service exposed
         "K8S-023":  ["CC7.1"],            # PSA enforce missing
         "K8S-024":  ["CC7.2"],            # readiness/liveness probes
+        "K8S-015":  ["CC6.6"],            # no memory limit (availability boundary)
+        "K8S-016":  ["CC6.6"],            # no CPU limit (availability boundary)
+        "K8S-025":  ["CC6.1"],            # system priority class
+        "K8S-030":  ["CC6.1", "CC6.6"],   # control-plane scheduling
         "K8S-026":  ["CC6.6"],            # LB without source ranges
         "K8S-027":  ["CC6.7"],            # Ingress without TLS
         "K8S-028":  ["CC6.6"],            # host port
@@ -642,6 +647,7 @@ STANDARD = Standard(
         "KMS-000":  ["CC7.2"],
         "SM-000":   ["CC7.2"],
         "SSM-000":  ["CC7.2"],
+        "S3-000":   ["CC7.2"],
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change
         # Management) since the SOC 2 framing of source-code review

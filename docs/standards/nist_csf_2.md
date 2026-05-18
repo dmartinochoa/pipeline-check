@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 22 / 23
-- **Distinct checks evidencing this standard:** 550
+- **Distinct checks evidencing this standard:** 551
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -37,14 +37,14 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PR.DS-02`](#ctrl-pr-ds-02) | The confidentiality, integrity, and availability of data-in-transit are protected | 28 | 24H · 3M · 1L |
 | [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 73 | 13C · 25H · 25M · 10L |
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 22 | 1C · 5H · 13M · 3L |
-| [`PR.PS-04`](#ctrl-pr-ps-04) | Log records are generated and made available for continuous monitoring | 26 | 2H · 4M · 5L · 15I |
+| [`PR.PS-04`](#ctrl-pr-ps-04) | Log records are generated and made available for continuous monitoring | 27 | 2H · 4M · 5L · 16I |
 | [`PR.PS-05`](#ctrl-pr-ps-05) | Installation and execution of unauthorized software are prevented | 66 | 14C · 45H · 5M · 2L |
 | [`PR.PS-06`](#ctrl-pr-ps-06) | Secure software development practices are integrated, and their performance is monitored throughout the SDLC | 77 | 19H · 49M · 9L |
 | [`PR.IR-01`](#ctrl-pr-ir-01) | Networks and environments are protected from unauthorized logical access and usage | 53 | 12C · 25H · 15M · 1L |
 | [`PR.IR-03`](#ctrl-pr-ir-03) | Mechanisms are implemented to achieve resilience requirements in normal and adverse situations | 7 | 1H · 5M · 1L |
 | [`DE.CM-01`](#ctrl-de-cm-01) | Networks and network services are monitored to find potentially adverse events | 1 | 1L |
 | [`DE.CM-06`](#ctrl-de-cm-06) | External service provider activities and services are monitored | 6 | 1C · 3H · 2M |
-| [`DE.CM-09`](#ctrl-de-cm-09) | Computing hardware and software, runtime environments, and their data are monitored | 34 | 4H · 10M · 5L · 15I |
+| [`DE.CM-09`](#ctrl-de-cm-09) | Computing hardware and software, runtime environments, and their data are monitored | 35 | 4H · 10M · 5L · 16I |
 | [`DE.AE-03`](#ctrl-de-ae-03) | Information is correlated from multiple sources | 5 | 1H · 2M · 2L |
 | [`RS.MA-01`](#ctrl-rs-ma-01) | The incident response plan is executed once an incident is declared | 4 | 2M · 2L |
 | [`RC.RP-01`](#ctrl-rc-rp-01) | The recovery portion of the incident response plan is executed once initiated | 3 | 1H · 2M |
@@ -557,7 +557,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PR.PS-04: Log records are generated and made available for continuous monitoring { #ctrl-pr-ps-04 }
 
-**Evidenced by 26 checks** across 4 providers (AWS, CircleCI, Cloud Build, Jenkins).
+**Evidenced by 27 checks** across 4 providers (AWS, CircleCI, Cloud Build, Jenkins).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -584,6 +584,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`KMS-000`](#detail-kms-000) | KMS API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-000`](#detail-lmb-000) | Lambda API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-000`](#detail-pbac-000) | PBAC enumeration failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`S3-000`](#detail-s3-000) | S3 API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`SM-000`](#detail-sm-000) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](#detail-ssm-000) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
@@ -842,7 +843,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE.CM-09: Computing hardware and software, runtime environments, and their data are monitored { #ctrl-de-cm-09 }
 
-**Evidenced by 34 checks** across 6 providers (AWS, Buildkite, Cloud Build, Dockerfile, Kubernetes, SCM).
+**Evidenced by 35 checks** across 6 providers (AWS, Buildkite, Cloud Build, Dockerfile, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -871,6 +872,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`KMS-000`](#detail-kms-000) | KMS API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-000`](#detail-lmb-000) | Lambda API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-000`](#detail-pbac-000) | PBAC enumeration failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`S3-000`](#detail-s3-000) | S3 API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
@@ -7952,6 +7954,16 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Recommendation.** Give each stage action (Source, Build, Deploy) its own narrowly-scoped IAM role via ``roleArn`` on the action declaration. Sharing the pipeline-level role means a compromise of one action (e.g. a build) gains the permissions the deploy stage also needs.
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
+
+**Evidences:** [`PR.PS-04`](#ctrl-pr-ps-04) Log records are generated and made available for continuous monitoring, [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`S3-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
 

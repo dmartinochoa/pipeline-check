@@ -581,6 +581,55 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   catalog, not gaps to close. The percentages here reflect
   realistic ceilings given each benchmark's scope.
 
+- **Standards-coverage audit + corrections.** The standards-
+  expansion campaign above used 516 as the OWASP catalog
+  denominator. The true catalog size is 565 — the regex used to
+  count entries didn't allow digits in the rule-prefix, so it
+  missed the K8S-* and S3-* families. Restating the post-campaign
+  coverage against the correct denominator:
+
+  | Standard | Was reported | Actual (pre-backfill) |
+  |---|---|---|
+  | nist_800_53 | 100% | 99% (S3-000 missing) |
+  | nist_csf_2 | 100% | 99% (S3-000 missing) |
+  | soc2 | 100% | 98% (K8S-015/16/25/30 + S3-000/002) |
+  | pci_dss_v4 | 100% | 92% (full K8s pack missing) |
+  | esf_supply_chain | 100% | 92% (full K8s pack missing) |
+  | nist_ssdf | 99% | 92% (full K8s pack missing) |
+  | cis_supply_chain | 99% | 91% (full K8s pack + KMS-001/SM-001/S3-000) |
+
+  Audit-driven backfill restores the previously-claimed 100% as
+  honest numbers. The K8s manifest pack (K8S-001..043) is added to
+  cis_supply_chain (deployment Section 5), esf_supply_chain
+  (Customer-side deployment), nist_ssdf (PO/PW deployment env), and
+  pci_dss_v4 (Req-6 system-component change surface). Each
+  standard's K8s mappings follow the rule's natural fit within
+  that standard's vocabulary — image-pinning to dependency-verify
+  controls, RBAC / SA to least-privilege, secret literals to
+  credential-protection, runtime-hardening to env-separation /
+  secure-defaults. soc2 picks up the four missing K8s rules
+  (K8S-015/16/25/30) plus S3-002. nist_800_53 / nist_csf_2 / soc2
+  / cis_supply_chain absorb the S3-000 visibility-gap finding on
+  the same audit-trail controls the other -000 family already uses.
+  cis_supply_chain additionally maps KMS-001 (CMK rotation) and
+  SM-001 (Secrets Manager rotation) to 4.1.1 / 1.3.4 — the
+  rotation principle that already governs IAM-007 / CB-006 / CP-004.
+
+  After: six standards at legitimate **565/565 = 100%** (NIST 800-53,
+  NIST CSF 2.0, SOC 2, PCI DSS v4, ESF Supply Chain, OWASP). Two
+  more at 99% with documented per-rule carve-outs: CIS SSCS
+  (DF-007 HEALTHCHECK + OCI-006 layer count) and NIST SSDF (OCI-006
+  alone). Coverage-floor table in `tests/test_standards.py` is
+  ratcheted to a couple percent below current state for every
+  framework, including the previously-missing cis_github entry.
+
+- **Doc-claim drift fixes.** README.md compliance-standards table
+  listed SLSA Build Track as "6/7 levels (110 check mappings)";
+  actual after expansion is 413. The OWASP page intro in
+  `scripts/gen_standards_docs.py` said "the other 13 frameworks
+  layer their own labels"; correct count is 14 (15 total minus
+  OWASP itself). Both regenerated.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

@@ -635,5 +635,57 @@ STANDARD = Standard(
         "CF-001":   ["PS.1.1"],                        # AWS::IAM::AccessKey declared as code
         "CF-002":   ["PS.1.1"],                        # hard-coded secret in resource property
         "CF-003":   ["PO.5.1"],                        # CodeBuild VPC shares public subnet
+        # ── Kubernetes manifests (deployment payload) ───────────
+        # K8s workload manifests are the build's deployment output.
+        # Image-pinning → PW.4.1 + PW.4.4 (acquire/verify components);
+        # privileged / runtime hardening → PO.5.1 (env separation) +
+        # PW.9.1 (secure defaults); RBAC / SA → PO.5.1; secret
+        # exposure → PS.1.1; network policy → PO.5.1.
+        "K8S-001":  ["PW.4.1", "PW.4.4"],              # image not digest-pinned
+        "K8S-002":  ["PO.5.1", "PW.9.1"],              # hostNetwork
+        "K8S-003":  ["PO.5.1", "PW.9.1"],              # hostPID
+        "K8S-004":  ["PO.5.1", "PW.9.1"],              # hostIPC
+        "K8S-005":  ["PO.5.1", "PW.9.1"],              # privileged container
+        "K8S-006":  ["PO.5.1", "PW.9.1"],              # allowPrivilegeEscalation
+        "K8S-007":  ["PO.5.1", "PW.9.1"],              # runAsNonRoot missing
+        "K8S-008":  ["PW.9.1"],                        # readOnlyRootFilesystem missing
+        "K8S-009":  ["PO.5.1", "PW.9.1"],              # added capabilities
+        "K8S-010":  ["PW.9.1"],                        # seccompProfile missing
+        "K8S-011":  ["PO.5.1"],                        # default ServiceAccount
+        "K8S-012":  ["PS.1.1"],                        # automountServiceAccountToken default
+        "K8S-013":  ["PO.5.1", "PW.9.1"],              # hostPath volume
+        "K8S-014":  ["PO.5.1", "PW.9.1"],              # sensitive hostPath
+        "K8S-015":  ["PW.9.1"],                        # no memory limit
+        "K8S-016":  ["PW.9.1"],                        # no CPU limit
+        "K8S-017":  ["PS.1.1"],                        # credential literal in env
+        "K8S-018":  ["PS.1.1"],                        # Secret data plaintext
+        "K8S-019":  ["PO.5.1"],                        # default namespace
+        "K8S-020":  ["PO.5.1"],                        # cluster-admin RoleBinding
+        "K8S-021":  ["PO.5.1"],                        # wildcard RBAC verbs
+        "K8S-022":  ["PO.5.1", "PW.9.1"],              # Service exposes SSH
+        "K8S-023":  ["PW.9.1"],                        # PSA enforce label missing
+        "K8S-024":  ["PO.3.3"],                        # missing readiness / liveness probes
+        "K8S-025":  ["PO.5.1"],                        # system priority class
+        "K8S-026":  ["PO.5.1"],                        # LB without source ranges
+        "K8S-027":  ["PS.1.1", "PW.9.1"],              # Ingress without TLS
+        "K8S-028":  ["PO.5.1", "PW.9.1"],              # container hostPort
+        "K8S-029":  ["PO.5.1"],                        # default-SA RoleBinding
+        "K8S-030":  ["PO.5.1"],                        # control-plane scheduling
+        "K8S-031":  ["PW.9.1"],                        # PSA warn missing
+        "K8S-032":  ["PO.5.1"],                        # NetworkPolicy default-deny missing
+        "K8S-033":  ["PW.9.1"],                        # ResourceQuota / LimitRange missing
+        "K8S-034":  ["PS.1.1"],                        # SA token automount default
+        "K8S-035":  ["PO.5.1", "PW.9.1"],              # runAsUser: 0
+        "K8S-036":  ["PW.4.1"],                        # SA imagePullSecret missing
+        "K8S-037":  ["PS.1.1"],                        # ConfigMap credential
+        "K8S-038":  ["PO.5.1"],                        # NetworkPolicy allow-all
+        "K8S-039":  ["PO.5.1", "PW.9.1"],              # shareProcessNamespace
+        "K8S-040":  ["PO.5.1", "PW.9.1"],              # procMount: Unmasked
+        "K8S-041":  ["PO.5.1"],                        # Service externalIPs (MITM)
+        "K8S-042":  ["PO.5.1"],                        # anonymous RoleBinding
+        "K8S-043":  ["PO.5.1"],                        # Ingress wildcard host
+        # S3-000 (discovery failure) — visibility gap, same precedent
+        # as the other -000 family entries above.
+        "S3-000":   ["PO.3.3"],
     },
 )

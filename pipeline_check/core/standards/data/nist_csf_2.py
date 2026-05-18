@@ -734,5 +734,6 @@ STANDARD = Standard(
         "KMS-000":  ["PR.PS-04", "DE.CM-09"],
         "SM-000":   ["PR.PS-04", "DE.CM-09"],
         "SSM-000":  ["PR.PS-04", "DE.CM-09"],
+        "S3-000":   ["PR.PS-04", "DE.CM-09"],
     },
 )
