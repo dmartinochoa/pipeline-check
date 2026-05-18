@@ -20,7 +20,6 @@ import pytest
 
 from pipeline_check.core import providers as _providers
 
-
 # ── build_context ValueError paths ─────────────────────────────────
 
 

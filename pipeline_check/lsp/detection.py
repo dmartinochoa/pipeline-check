@@ -11,7 +11,6 @@ set.
 """
 from __future__ import annotations
 
-import os
 from pathlib import PurePosixPath
 
 # (provider, predicate-on-PurePosixPath) entries. First match wins.
@@ -43,9 +42,13 @@ def detect_provider(path: str) -> str | None:
     if not path:
         return None
     # Normalize separators so the same rule files match on Windows and
-    # POSIX. ``PurePosixPath`` lets us compare against forward-slash
-    # idioms (``.github/workflows/...``) regardless of source OS.
-    posix = PurePosixPath(path.replace(os.sep, "/"))
+    # POSIX. Always replace backslashes (not just ``os.sep``): an LSP
+    # client running on Windows can hand a backslashed path to a
+    # Linux-side scan, and the test suite asserts this works on both
+    # platforms. ``PurePosixPath`` lets us compare against
+    # forward-slash idioms (``.github/workflows/...``) regardless of
+    # the source OS.
+    posix = PurePosixPath(path.replace("\\", "/"))
     parts = tuple(p.lower() for p in posix.parts)
     name = posix.name
     name_lc = name.lower()
