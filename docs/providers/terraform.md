@@ -583,7 +583,7 @@ Point ``aws_codecommit_trigger.destination_arn`` at an SNS topic or Lambda funct
 ## CD-001: Automatic rollback on failure not enabled { #cd-001 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
 Reads ``aws_codedeploy_deployment_group.auto_rollback_configuration[0]``. The block needs ``enabled = true`` AND ``"DEPLOYMENT_FAILURE"`` present in ``events`` for the deployment group to self-heal.
@@ -603,7 +603,7 @@ Enable ``auto_rollback_configuration`` with at least the ``DEPLOYMENT_FAILURE`` 
 ## CD-002: AllAtOnce deployment config, no canary or rolling strategy { #cd-002 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
 Reads ``aws_codedeploy_deployment_group.deployment_config_name``. Fires when the value is ``CodeDeployDefault.AllAtOnce``, ``LambdaAllAtOnce``, or ``ECSAllAtOnce`` — these route every request to the new revision simultaneously, leaving no canary validation window.
@@ -1623,7 +1623,7 @@ Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and r
 ## TF-003: CodeBuild VPC config references a public subnet { #tf-003 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
 </div>
 
 When ``aws_codebuild_project.vpc_config[0].vpc_id`` resolves to a concrete string, walks every ``aws_subnet`` in the same VPC and fires if any has ``map_public_ip_on_launch = true``. Silent when ``vpc_id`` is unresolved (``known after apply``).

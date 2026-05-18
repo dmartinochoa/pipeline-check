@@ -24,11 +24,13 @@ joins the two and renders Markdown.
 
 Usage
 -----
-    python scripts/gen_standards_docs.py                 # all standards
-    python scripts/gen_standards_docs.py owasp_cicd_top_10  # one
+    python scripts/gen_standards_docs.py                   # all standards
+    python scripts/gen_standards_docs.py owasp_cicd_top_10 # one
+    python scripts/gen_standards_docs.py --check           # exit 1 if stale
 """
 from __future__ import annotations
 
+import argparse
 import importlib
 import sys
 from collections.abc import Iterable
@@ -1033,10 +1035,24 @@ def _standards_to_render(argv: Iterable[str]) -> list[str]:
     return argv
 
 
-def main(argv: Iterable[str] | None = None) -> None:
-    targets = _standards_to_render(argv if argv is not None else sys.argv[1:])
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit 1 if any standard doc would change. Useful in CI.",
+    )
+    parser.add_argument(
+        "standards",
+        nargs="*",
+        help="Subset of standards to render (default: all).",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    targets = _standards_to_render(args.standards)
     index = _build_index()
     out_dir = _REPO_ROOT / "docs" / "standards"
+    stale: list[str] = []
     for name in targets:
         cfg = _STANDARDS[name]
         mod = importlib.import_module(
@@ -1044,12 +1060,30 @@ def main(argv: Iterable[str] | None = None) -> None:
         )
         body = _render(name, mod.STANDARD, cfg, index)
         out_path = out_dir / f"{name}.md"
+        rel = out_path.relative_to(_REPO_ROOT)
+        if args.check:
+            current = out_path.read_text(encoding="utf-8") if out_path.exists() else ""
+            if current != body:
+                stale.append(str(rel))
+                print(f"[gen-standards-docs] {rel}: out of sync", file=sys.stderr)
+            else:
+                print(f"[gen-standards-docs] {rel}: in sync")
+            continue
         out_path.write_text(body, encoding="utf-8")
         print(
-            f"[gen-standards-docs] wrote {out_path.relative_to(_REPO_ROOT)} "
+            f"[gen-standards-docs] wrote {rel} "
             f"({body.count(chr(10))} lines)"
         )
 
+    if args.check and stale:
+        print(
+            f"[gen-standards-docs] {len(stale)} doc(s) out of sync. "
+            f"Re-run scripts/gen_standards_docs.py to update.",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

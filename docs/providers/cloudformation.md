@@ -524,7 +524,7 @@ Point ``Triggers[*].DestinationArn`` at an SNS topic or Lambda function in the s
 ## CD-001: Automatic rollback on failure not enabled { #cd-001 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
 Reads ``AWS::CodeDeploy::DeploymentGroup.Properties.AutoRollbackConfiguration``. The block needs ``Enabled: true`` AND ``"DEPLOYMENT_FAILURE"`` present in ``Events`` for the deployment group to self-heal.
@@ -544,7 +544,7 @@ Enable ``AutoRollbackConfiguration`` with at least the ``DEPLOYMENT_FAILURE`` ev
 ## CD-002: AllAtOnce deployment config, no canary or rolling strategy { #cd-002 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
 Reads ``AWS::CodeDeploy::DeploymentGroup.Properties.DeploymentConfigName``. Fires when the value is ``CodeDeployDefault.AllAtOnce``, ``LambdaAllAtOnce``, or ``ECSAllAtOnce`` — these route every request to the new revision simultaneously.
@@ -624,7 +624,7 @@ Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and r
 ## CF-003: CodeBuild VPC config references a public subnet { #cf-003 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
 </div>
 
 When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` resolves to a concrete reference, walks every ``AWS::EC2::Subnet`` in the same VPC and fires if any has ``MapPublicIpOnLaunch: true``.

@@ -10,7 +10,7 @@ RULE = Rule(
     id="CD-002",
     title="AllAtOnce deployment config, no canary or rolling strategy",
     severity=Severity.HIGH,
-    owasp=("CICD-SEC-7",),
+    owasp=("CICD-SEC-1",),
     cwe=("CWE-754",),
     recommendation=(
         "Switch ``DeploymentConfigName`` to a canary or linear "

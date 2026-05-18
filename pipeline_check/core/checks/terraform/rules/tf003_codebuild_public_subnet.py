@@ -10,7 +10,7 @@ RULE = Rule(
     id="TF-003",
     title="CodeBuild VPC config references a public subnet",
     severity=Severity.HIGH,
-    owasp=("CICD-SEC-5",),
+    owasp=("CICD-SEC-7",),
     cwe=("CWE-1327",),
     recommendation=(
         "Place CodeBuild projects in private subnets "

@@ -16,14 +16,17 @@ the source of truth and the doc can never drift.
 
 Usage
 -----
-    python scripts/gen_provider_docs.py           # write every supported provider
-    python scripts/gen_provider_docs.py github    # write just one provider
+    python scripts/gen_provider_docs.py             # write every supported provider
+    python scripts/gen_provider_docs.py github      # write just one provider
+    python scripts/gen_provider_docs.py --check     # exit 1 if any doc is stale
+    python scripts/gen_provider_docs.py --check aws # check just one
 
 The supported provider list is enumerated by ``SUPPORTED_PROVIDERS``
 below; pass ``--help`` to a fresh checkout to see the current set.
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -2024,15 +2027,46 @@ def _providers_to_render(argv: Iterable[str]) -> list[str]:
     return argv
 
 
-def main(argv: Iterable[str] | None = None) -> None:
-    targets = _providers_to_render(argv if argv is not None else sys.argv[1:])
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit 1 if any provider doc would change. Useful in CI.",
+    )
+    parser.add_argument(
+        "providers",
+        nargs="*",
+        help="Subset of providers to render (default: all).",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    targets = _providers_to_render(args.providers)
+    stale: list[str] = []
     for slug in targets:
         title, rules_fqn, out_path, header = SUPPORTED_PROVIDERS[slug]
         body = _render_provider(title, header, rules_fqn, slug)
+        rel = out_path.relative_to(_REPO_ROOT)
+        if args.check:
+            current = out_path.read_text(encoding="utf-8") if out_path.exists() else ""
+            if current != body:
+                stale.append(str(rel))
+                print(f"[gen-docs] {rel}: out of sync", file=sys.stderr)
+            else:
+                print(f"[gen-docs] {rel}: in sync")
+            continue
         out_path.write_text(body, encoding="utf-8")
-        print(f"[gen-docs] wrote {out_path.relative_to(_REPO_ROOT)} "
-              f"({body.count(chr(10))} lines)")
+        print(f"[gen-docs] wrote {rel} ({body.count(chr(10))} lines)")
+
+    if args.check and stale:
+        print(
+            f"[gen-docs] {len(stale)} provider doc(s) out of sync. "
+            f"Re-run scripts/gen_provider_docs.py to update.",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

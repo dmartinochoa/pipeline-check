@@ -644,6 +644,39 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   layer their own labels"; correct count is 14 (15 total minus
   OWASP itself). Both regenerated.
 
+### Fixed
+
+- **Doc drift on Terraform / CloudFormation provider pages.**
+  Published `docs/providers/terraform.md` and
+  `docs/providers/cloudformation.md` carried stale OWASP tags:
+  CD-001 / CD-002 showed `CICD-SEC-7` against `CWE-754`, TF-003 /
+  CF-003 showed `CICD-SEC-5` against `CWE-1327`. The underlying
+  rule modules had been retagged to `CICD-SEC-1` (deployment
+  rollback) and `CICD-SEC-7` (artifact-integrity boundary)
+  respectively, but the generator wasn't re-run, so GitHub Pages
+  served the old values. Regenerated both files.
+
+- **`scripts/link_standards_check_ids.py` corrupted in-page anchor
+  links.** Running the linker after `gen_standards_docs.py` would
+  nest the heading anchor `[`X-N`](#detail-x-n)` inside a second
+  markdown link, producing malformed `[[`X-N`](../providers/aws.md)](#detail-x-n)`
+  tokens. Tightened the regex (reject `[` / `]` lookbehind and `]`
+  lookahead) and scoped the linker to mapping-table rows only,
+  matching its documented intent. The full doc-generation pipeline
+  is now idempotent end-to-end.
+
+- **Per-generator `--check` mode is now uniform.**
+  `gen_provider_docs.py`, `gen_standards_docs.py`, and
+  `link_standards_check_ids.py` gain `--check` flags
+  (`gen_attack_chains_doc.py` already had one). Each exits 1 if any
+  on-disk doc would change. A new
+  `tests/test_generated_docs_in_sync.py` runs all four in `--check`
+  mode and is the catch-all drift guard, complementing the existing
+  numerical-claim tests (`tests/test_doc_claims.py`) and rule-id
+  presence tests (`tests/test_rule_framework.py`). The two
+  pre-existing terraform / cloudformation drifts above were caught
+  by this new test on first run.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

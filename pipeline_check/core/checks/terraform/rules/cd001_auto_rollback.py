@@ -10,7 +10,7 @@ RULE = Rule(
     id="CD-001",
     title="Automatic rollback on failure not enabled",
     severity=Severity.MEDIUM,
-    owasp=("CICD-SEC-7",),
+    owasp=("CICD-SEC-1",),
     cwe=("CWE-754",),
     recommendation=(
         "Enable ``auto_rollback_configuration`` with at least the "
