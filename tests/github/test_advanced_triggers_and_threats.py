@@ -531,6 +531,91 @@ class TestGHA044BuildToolPPE:
         f = run_check(wf, "GHA-044")
         assert f.passed
 
+    def test_fails_on_bun_install_under_pull_request_target(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+                with: { ref: '${{ github.event.pull_request.head.sha }}' }
+              - run: bun install
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "bun install" in f.description.lower()
+
+    def test_fails_on_bun_i_alias(self):
+        """``bun i`` is the documented shorthand for ``bun install``
+        and runs the same package.json lifecycle hooks."""
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: bun i
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_passes_on_bun_run_script(self):
+        """``bun run <script>`` targets a named script, mirror of
+        the ``npm run lint`` exemption."""
+        wf = """
+        name: pr-lint
+        on: pull_request_target
+        jobs:
+          lint:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 5
+            permissions: { contents: read }
+            steps:
+              - run: bun run lint
+        """
+        f = run_check(wf, "GHA-044")
+        assert f.passed
+
+    def test_fails_on_deno_install_under_pull_request_target(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: deno install
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "deno install" in f.description.lower()
+
+    def test_passes_on_deno_task(self):
+        """``deno task <name>`` runs a named task from
+        ``deno.json``, mirror of the ``npm run`` exemption."""
+        wf = """
+        name: pr-test
+        on: pull_request_target
+        jobs:
+          test:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 5
+            permissions: { contents: read }
+            steps:
+              - run: deno task test
+        """
+        f = run_check(wf, "GHA-044")
+        assert f.passed
+
 
 # ── GHA-045 caller-controlled ref input feeds actions/checkout ──────
 
