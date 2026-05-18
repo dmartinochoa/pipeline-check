@@ -1,0 +1,3 @@
+# Check IDs the cfngoat is intended to demonstrate. Seed with
+# ``python bench/goat_runner.py --goat cfngoat --suggest`` and
+# hand-edit down to the IDs that the goat is actually anchoring.

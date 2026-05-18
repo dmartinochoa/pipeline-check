@@ -1,0 +1,3 @@
+# Check IDs the kubernetes-goat is intended to demonstrate. Seed
+# with ``python bench/goat_runner.py --goat kubernetes-goat --suggest``
+# and hand-edit down to the IDs that the goat is actually anchoring.

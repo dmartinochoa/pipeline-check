@@ -1,0 +1,60 @@
+# Real-world GOAT corpus for pipeline-check.
+#
+# Each entry pins a vulnerable-by-design testbed to a fixed ref so a
+# goat's upstream churn doesn't move pipeline-check's recall numbers
+# under our feet. Refs can be branches, tags, or full 40-char SHAs;
+# branches and tags are convenient on day one but a nightly cron
+# eventually wants SHAs so the bench is reproducible across time.
+#
+# The runner records the resolved commit SHA in
+# ``bench/goats/<slug>/baseline.json`` even when ``ref`` is a branch,
+# so drift remains detectable until the manifest is hand-pinned.
+#
+# To skip a goat (e.g. one that needs infrastructure pipeline-check
+# does not yet support), set ``skip: true`` with a ``skip_reason``
+# string explaining why. The goat still shows up in the report as
+# ``skipped`` so the gap stays visible rather than getting silently
+# dropped.
+goats:
+  - slug: cicd-goat
+    repo: https://github.com/cider-security-research/cicd-goat
+    ref: main
+    pipelines: [github, jenkins]
+    description: >
+      Cider's CI/CD security training lab. Anchored against all 10
+      OWASP CI/CD risks. The canonical goat for this scanner's
+      wedge: GitHub Actions + Jenkins (the GitLab side ships as a
+      runtime container, not on-disk config).
+
+  - slug: terragoat
+    repo: https://github.com/bridgecrewio/terragoat
+    ref: master
+    pipelines: [terraform]
+    skip: true
+    skip_reason: >
+      pipeline-check's Terraform provider consumes ``terraform show
+      -json`` plan output, not raw HCL. terragoat ships .tf source
+      only. Unskip once direct-HCL parsing lands (tracked in
+      ROADMAP.md under post-1.0 candidates).
+    description: Vulnerable Terraform configurations.
+
+  - slug: cfngoat
+    repo: https://github.com/bridgecrewio/cfngoat
+    ref: master
+    pipelines: [cloudformation]
+    description: Vulnerable CloudFormation templates.
+
+  - slug: kubernetes-goat
+    repo: https://github.com/madhuakula/kubernetes-goat
+    ref: master
+    pipelines: [kubernetes]
+    description: >
+      Vulnerable Kubernetes cluster + workloads. Goat ships both
+      cluster setup and per-scenario manifests; the scanner runs
+      against the manifest tree.
+
+  - slug: dvca
+    repo: https://github.com/bridgecrewio/dvca
+    ref: master
+    pipelines: [cloudformation]
+    description: Damn Vulnerable Cloud Application (CFN/AWS IAM).

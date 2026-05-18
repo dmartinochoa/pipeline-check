@@ -1,0 +1,4 @@
+# Check IDs the terragoat is intended to demonstrate. Currently
+# skipped in goats.yml because pipeline-check's Terraform provider
+# consumes ``terraform show -json`` plan output and terragoat ships
+# .tf source only. Unskip + populate once direct-HCL parsing lands.

@@ -1,0 +1,2 @@
+# Known false positives on cicd-goat. Format: CHECK-ID  # reason.
+# Allowlisted IDs that fire don't count against the FP rate.
