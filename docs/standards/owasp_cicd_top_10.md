@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 546
+- **Distinct checks evidencing this standard:** 551
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,16 +30,16 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 67 | 4C · 28H · 27M · 8L |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 69 | 4C · 28H · 29M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 36 | 3C · 22H · 10M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 151 | 3C · 74H · 58M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 87 | 23C · 45H · 14M · 5L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 29 | 4C · 18H · 7M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 66 | 27C · 25H · 14M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 67 | 27C · 25H · 15M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 97 | 22C · 35H · 33M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 23 | 6C · 9H · 8M |
-| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 67 | 1C · 13H · 46M · 7L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 44 | 4H · 12M · 12L · 16I |
+| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 68 | 1C · 13H · 47M · 7L |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 47 | 4H · 14M · 13L · 16I |
 
 ## Filter at runtime
 
@@ -62,7 +62,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 67 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 69 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -124,6 +124,8 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`SCM-040`](#detail-scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-041`](#detail-scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-042`](#detail-scm-042) | Active ruleset doesn't require merge queue | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TAINT-001`](#detail-taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](#detail-taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-003`](#detail-taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -148,7 +150,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`ATTEST-001`](#detail-attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-028`](#detail-bb-028) | OIDC step without deployment-gated environment | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-007`](#detail-bk-007) | Deploy step not gated by a manual block / input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
-| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-031`](#detail-cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`GCB-002`](#detail-gcb-002) | Cloud Build uses the default service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
@@ -319,7 +321,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`MVN-001`](#detail-mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](#detail-mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
-| [`MVN-004`](#detail-mvn-004) | pom.xml dependency omits an explicit <version> | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
+| [`MVN-004`](#detail-mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-005`](#detail-mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
@@ -477,7 +479,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 66 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
+**Evidenced by 67 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -542,6 +544,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
@@ -690,7 +693,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 
 Without provenance, attestations, signatures, or SBOMs, consumers (including production) cannot verify that the artifact running in production is the one the pipeline built.
 
-**Evidenced by 67 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, SCM, Tekton).
+**Evidenced by 68 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -753,6 +756,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 | [`S3-003`](#detail-s3-003) | Artifact bucket versioning not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`S3-005`](#detail-s3-005) | Artifact bucket missing aws:SecureTransport deny | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SIGN-001`](#detail-sign-001) | No AWS Signer profile defined for Lambda deploys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SIGN-002`](#detail-sign-002) | AWS Signer profile is revoked or inactive | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-002`](#detail-ssm-002) | SSM SecureString uses the default AWS-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -766,7 +770,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 44 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
+**Evidenced by 47 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -812,6 +816,9 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`SCM-008`](#detail-scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-045`](#detail-scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-046`](#detail-scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-047`](#detail-scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-000`](#detail-sm-000) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](#detail-ssm-000) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 
@@ -841,6 +848,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title macro interpolated straight into script.
 trigger: none
 pr:
@@ -873,6 +881,7 @@ jobs:
         env:
           PR_BRANCH: $(System.PullRequest.SourceBranch)
           COMMIT_MSG: $(Build.SourceVersionMessage)
+```
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1074,6 +1083,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR-validated pipeline extends a LOCAL template.
 trigger: none
 pr:
@@ -1108,6 +1118,7 @@ resources:
       ref: refs/tags/v1.4.2     # immutable, signed tag
 extends:
   template: templates/standard-build.yml@pipeline-templates
+```
 
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1246,6 +1257,7 @@ extends:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pool name computed from caller-controlled parameter.
 parameters:
   - name: targetPool
@@ -1280,6 +1292,7 @@ parameters:
 jobs:
   - job: build
     pool: { name: ${{ parameters.targetPool }} }
+```
 
 **Source:** [`ADO-030`](../providers/azure.md#ado-030) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1337,6 +1350,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: webhook-triggered workflow interpolates a
 # user-supplied parameter directly into a shell script.
 apiVersion: argoproj.io/v1alpha1
@@ -1378,6 +1392,7 @@ spec:
             value: '{{inputs.parameters.who}}'
         source: |
           echo "Hello $WHO"
+```
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1600,6 +1615,7 @@ Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs,
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a hand-rolled or older-Buildx provenance
 # emitter ships a Statement whose materials list is empty.
 # (Modern BuildKit ``--attest=type=provenance`` populates a
@@ -1642,6 +1658,7 @@ $ docker buildx build \
 #     {"uri": "git+https://github.com/foo/bar@v1.4.2",
 #      "digest": {"sha1": "<commit sha>"}}
 #   ]
+```
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1670,6 +1687,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a Statement signed by a trusted builder but
 # carrying an empty subject digest. The signature is valid;
 # the bind to the image bytes is not.
@@ -1707,6 +1725,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
   "predicateType": "https://slsa.dev/provenance/v1",
   "predicate": { ... }
 }
+```
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1732,6 +1751,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a self-rolled SLSA generator that omits the
 # buildType field. The predicate carries every other
 # claim (builder, materials, configSource) but consumers
@@ -1769,6 +1789,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
     }
   }
 }
+```
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1820,6 +1841,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: branch name interpolated unquoted into shell.
 image: alpine:latest
 pipelines:
@@ -1853,6 +1875,7 @@ pipelines:
           # via shell so the value is captured as a single
           # argv element from the controlled assignment.
           # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
+```
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2405,7 +2428,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants codeartifact:* with Resource '*' <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management.
 
@@ -2435,6 +2458,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild project with a plaintext PAT in env.
 {
   "name": "deploy",
@@ -2470,6 +2494,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
     ]
   }
 }
+```
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3231,6 +3256,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Proof of exploit.**
 
+```
 # Vulnerable: image runs as root by default (no USER set).
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y python3
@@ -3260,6 +3286,7 @@ RUN apt-get update && apt-get install -y python3 \
 COPY --chown=app:app app.py /app/
 USER 1001
 CMD ["python3", "/app/app.py"]
+```
 
 **Source:** [`DF-002`](../providers/dockerfile.md#df-002) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3535,6 +3562,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
+```
 # Vulnerable: postinstall in a transitive dep runs with the
 # builder's environment (NPM_TOKEN, GH_TOKEN, AWS_*).
 FROM node:20@sha256:<digest>
@@ -3555,6 +3583,7 @@ ENV NPM_CONFIG_IGNORE_SCRIPTS=true
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 RUN npm rebuild better-sqlite3 sharp    # audited allowlist
+```
 
 **Source:** [`DF-024`](../providers/dockerfile.md#df-024) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3576,6 +3605,7 @@ RUN npm rebuild better-sqlite3 sharp    # audited allowlist
 
 **Proof of exploit.**
 
+```
 # Vulnerable: token interpolated from a build ARG and written
 # into a layer. The arg value is recoverable by anyone with
 # image pull access (and from public image scans).
@@ -3596,6 +3626,7 @@ RUN echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
 FROM node:20@sha256:<digest>
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     npm ci --ignore-scripts
+```
 
 **Source:** [`DF-025`](../providers/dockerfile.md#df-025) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -4300,6 +4331,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -4314,6 +4346,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4334,6 +4367,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -4384,6 +4418,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # checks out PR head
       - run: make test                    # no secrets in scope
+```
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4404,6 +4439,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -4433,6 +4469,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "New PR: $PR_TITLE"
+```
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4514,6 +4551,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: AWS access key pasted into the workflow body.
 env:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
@@ -4546,6 +4584,7 @@ steps:
     with:
       role-to-assume: arn:aws:iam::123456789012:role/CIRole
       aws-region: us-east-1
+```
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4656,6 +4695,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: install script piped straight to bash.
 steps:
   - run: curl -sL https://example.com/install.sh | bash
@@ -4679,6 +4719,7 @@ steps:
       curl -sLo install.sh https://example.com/install.sh
       echo "abc123...expected_sha256  install.sh" | sha256sum -c
       bash install.sh
+```
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4718,6 +4759,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -4755,6 +4797,7 @@ jobs:
       - run: gh release create v1.0.0 dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5036,6 +5079,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -5058,6 +5102,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 # republished in the advisory (consult the GHSA the registry
 # cites for the exact value):
 - uses: tj-actions/changed-files@<advisory-clean-sha>
+```
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5134,6 +5179,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + npm install.
 name: pr-build
 on:
@@ -5172,6 +5218,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>
       - run: npm install         # no secrets in scope
+```
 
 **Source:** [`GHA-044`](../providers/github.md#gha-044) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5193,6 +5240,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: caller picks the ref.
 name: build-release
 on:
@@ -5230,6 +5278,7 @@ jobs:
       - uses: actions/checkout@<sha>
         with:
           ref: ${{ inputs.ref }}
+```
 
 **Source:** [`GHA-045`](../providers/github.md#gha-045) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5251,6 +5300,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + gh pr checkout.
 name: triage
 on:
@@ -5282,6 +5332,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # PR head, no secrets
       - run: make test
+```
 
 **Source:** [`GHA-046`](../providers/github.md#gha-046) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5324,6 +5375,7 @@ Distinct from GHA-019 (token-to-file persistence) and GHA-049 (cross-repo push):
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a build step writes a sibling workflow file.
 # After the next push to the default branch, the new
 # workflow runs with the repo's permissions and propagates.
@@ -5351,6 +5403,7 @@ jobs:
 # Safe: never author workflow YAML from inside another
 # workflow. Scaffold via an external bootstrapping job
 # that runs outside the runner's GITHUB_TOKEN scope.
+```
 
 **Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5378,6 +5431,7 @@ Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/work
 
 **Proof of exploit.**
 
+```
 # Vulnerable: every repo the token can write to becomes a
 # propagation target on the next push trigger.
 jobs:
@@ -5403,6 +5457,7 @@ jobs:
     permissions: { contents: read }
     steps:
       - run: git push https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/our-org/our-mirror.git main
+```
 
 **Source:** [`GHA-049`](../providers/github.md#gha-049) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5443,6 +5498,7 @@ A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stol
 
 **Proof of exploit.**
 
+```
 # Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
 # postinstall in a transitive dep reaches the token via the
 # step env and can re-publish other packages the token can
@@ -5475,6 +5531,7 @@ jobs:
         with: { registry-url: 'https://registry.npmjs.org' }
       - run: npm ci --ignore-scripts
       - run: npm publish --provenance --access public
+```
 
 **Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5598,6 +5655,7 @@ The IOC list is curated and append-only, mirroring the shape of ``_compromised_a
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the IOC strings below are literal Shai-Hulud /
 # s1ngularity indicators. A workflow containing any of them
 # is post-compromise evidence, not pre-compromise risk.
@@ -5617,6 +5675,7 @@ jobs:
 # Safe: there is no legitimate version of this workflow.
 # Delete it, rotate every credential the runner can reach,
 # and audit the org for sibling drops.
+```
 
 **Source:** [`GHA-056`](../providers/github.md#gha-056) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5643,6 +5702,7 @@ Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the scanner harvests secrets, the pipe sends
 # them to a public collector. The Shai-Hulud postinstall
 # ran an in-line equivalent of this exact pipeline.
@@ -5667,6 +5727,7 @@ jobs:
       - run: trufflehog filesystem . --json > findings.sarif
       - uses: github/codeql-action/upload-sarif@<sha>
         with: { sarif_file: findings.sarif }
+```
 
 **Source:** [`GHA-057`](../providers/github.md#gha-057) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5697,6 +5758,7 @@ Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the bypass flag turns the agent into an
 # unattended shell that can read ``${{ secrets.* }}`` and
 # POST anywhere on the internet. This is the s1ngularity
@@ -5721,6 +5783,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>
       - run: claude --allowedTools 'Read,Grep' -p "$PROMPT"
+```
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
@@ -6269,6 +6332,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -6301,6 +6365,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.deploy_specific.json
 }
+```
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -6334,6 +6399,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -6368,6 +6434,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
     "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
   }
 }
+```
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -6982,6 +7049,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pod mounts the host's root filesystem.
 apiVersion: v1
 kind: Pod
@@ -7020,6 +7088,7 @@ spec:
     - name: data
       persistentVolumeClaim:
         claimName: app-data
+```
 
 **Source:** [`K8S-013`](../providers/kubernetes.md#k8s-013) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -7485,6 +7554,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
+```
 <!-- Vulnerable: range admits a future patch version. -->
 <dependency>
   <groupId>org.example</groupId>
@@ -7504,6 +7574,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
   <artifactId>util</artifactId>
   <version>1.7.0</version>
 </dependency>
+```
 
 **Source:** [`MVN-001`](../providers/maven.md#mvn-001) in the [maven provider](../providers/maven.md).
 
@@ -7539,11 +7610,11 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
-#### `MVN-004`: pom.xml dependency omits an explicit <version> <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
+#### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Fires on any non-managed ``<dependency>`` whose ``<version>`` element is absent or empty. Managed entries in ``<dependencyManagement>`` are the *source* of the version; they are checked separately by MVN-001 / MVN-002 for floating ranges and SNAPSHOTs but not by this rule.
+**How this is detected.** Fires on any non-managed ``<dependency>`` whose ``<version>`` element is absent or empty. Managed entries in ``<dependencyManagement>`` are the *source* of the version and intentionally out of scope for the entire Maven rule pack (MVN-001 / MVN-002 / MVN-004 all iterate ``iter_real_dependencies(...)``, which skips managed entries) — a BOM-style version-management block is its own surface and is audited via the inherited POM.
 
 **Recommendation.** Every ``<dependency>`` must carry a ``<version>``, either inline or via a ``<dependencyManagement>`` block in this POM or a parent. Implicit-version dependencies inherit whatever Maven resolves at build time (often the highest available release), so a maintainer push to a higher version reaches the build unobserved. If the version is genuinely managed by a parent POM, declare it in this POM's ``<dependencyManagement>`` so the resolved version is at least pinned at the project level.
 
@@ -7586,6 +7657,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
+```
 <!-- Vulnerable: pinned to a Log4Shell-affected version. -->
 <dependency>
   <groupId>org.apache.logging.log4j</groupId>
@@ -7605,6 +7677,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
   <artifactId>log4j-core</artifactId>
   <version>2.17.1</version>
 </dependency>
+```
 
 **Source:** [`MVN-006`](../providers/maven.md#mvn-006) in the [maven provider](../providers/maven.md).
 
@@ -7862,6 +7935,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
+```
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -7877,6 +7951,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 # A protection rule with `required_pull_request_reviews` set
 # and `allow_force_pushes: false` blocks both the push and
 # the rewrite without giving up an inch of velocity.
+```
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
@@ -7894,6 +7969,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
+```
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -7908,6 +7984,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 #
 # Setting ``required_approving_review_count`` to >= 1 forces
 # a separate identity to acknowledge the change before merge.
+```
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
@@ -7925,6 +8002,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
+```
 # Without code scanning, the only signal that a PR
 # introduces (e.g.) a SQL injection or hardcoded secret
 # comes from the human reviewer:
@@ -7939,6 +8017,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 # in the PR check, surfaces it inline in the diff, and
 # blocks the merge if the protection rule wires it up as
 # a required status check (see SCM-008).
+```
 
 **Source:** [`SCM-003`](../providers/scm.md#scm-003) in the [SCM provider](../providers/scm.md).
 
@@ -8240,6 +8319,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -8267,6 +8347,7 @@ GET /repos/acme/payments-api/keys
 # genuinely required for CI tagging, switch to a GitHub
 # App with constrained scope plus a one-line audit-log
 # entry per push.
+```
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
@@ -8560,6 +8641,76 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
 
+#### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Iterates active rulesets where ``target == "tag"`` and fires when none enforce ``required_signatures`` on the tag refs they cover. Passes silently when no tag-targeted rulesets exist at all (a separate gap: there's no tag protection to evaluate).
+
+**Recommendation.** Add a ``required_signatures`` rule to every active ruleset whose ``target == tag`` (Settings → Rules → <ruleset> → Add rule → Require signed commits). Tag objects under a release-like glob (``refs/tags/v*`` or ``refs/tags/**``) are downstream consumers' lookup keys; an unsigned tag means a stolen PAT can stamp a release with arbitrary author metadata while the branch-side signing requirement (SCM-006 / SCM-036) passes.
+
+**Known false positives.**
+
+- Repos that sign tags via a release workflow rather than the ruleset gate (e.g. ``cosign sign`` on the release artifact) get equivalent provenance. Suppress per repo with a rationale that names the workflow.
+
+**Source:** [`SCM-043`](../providers/scm.md#scm-043) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Fires when ``required_signatures.enabled == True`` and ``enforce_admins.enabled`` is missing or ``False``. The rule passes silently in two cases: when signed commits aren't required at all (SCM-006 owns that surface) and when branch protection is missing entirely (SCM-001).
+
+**Recommendation.** Enable ``Include administrators`` (``enforce_admins``) on the default-branch protection rule so the signed-commit requirement applies to admins too. Alternatively, migrate the requirement into a repository ruleset where bypass actors are explicit and auditable — admin bypass via the legacy protection knob is implicit, while a ruleset bypass list names each actor and is visible in the audit log (see SCM-030 for the ruleset-side bypass check).
+
+**Known false positives.**
+
+- Solo-maintainer repos where the single admin is also the only signing-key holder may turn off enforce_admins to self-recover from a lost key. Suppress per repo with a rationale that names the recovery workflow.
+
+**Source:** [`SCM-044`](../providers/scm.md#scm-044) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
+
+**Evidences:** [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Reads ``query_suite`` from the default code-scanning setup endpoint. Fires only when ``state == configured`` AND ``query_suite == default``. Passes silently when scanning is off (SCM-003 owns that case) or when the suite is already ``extended``.
+
+**Recommendation.** In ``Settings → Code security → Code scanning → Default setup``, switch ``Query suite`` from ``Default`` to ``Extended``. The extended suite adds CodeQL's ``security-and-quality`` pack, which catches maintainability and reliability issues that often co-occur with security findings (e.g. dead-code paths that hide an unauthenticated branch). Teams that ship a hand-authored CodeQL workflow can pin ``queries: security-extended`` in ``.github/codeql/codeql-config.yml`` for the same effect.
+
+**Known false positives.**
+
+- Teams that route code-scanning via a hand-authored CodeQL workflow rather than default setup will see SCM-045 pass by virtue of ``state != configured``; verify the workflow pins the extended suite. Some repos intentionally keep the default suite to bound CI minutes; suppress per repo with a rationale.
+
+**Source:** [`SCM-045`](../providers/scm.md#scm-045) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
+
+**Evidences:** [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Reads ``schedule`` from the default code-scanning setup endpoint. Fires when ``state == configured`` AND schedule is ``None`` / ``"none"`` / missing. Passes silently when scanning is off entirely (SCM-003) or when a schedule is set.
+
+**Recommendation.** Set ``schedule`` to ``weekly`` (or ``daily`` if CI minutes allow) on the default code-scanning setup, and confirm ``On push`` + ``On pull request`` triggers are enabled in ``Settings → Code security → Code scanning → Default setup → Edit configuration``. Without a schedule or event trigger, the setup record exists but no scan output ever lands; the Code Scanning UI stays empty and SCM-003 passes because ``state == configured``.
+
+**Known false positives.**
+
+- Repos that route scanning via a hand-authored workflow may keep default setup configured but unscheduled intentionally. Suppress per repo with a rationale that names the workflow file.
+
+**Source:** [`SCM-046`](../providers/scm.md#scm-046) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
+
+**Evidences:** [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Cross-references the linguist ``languages`` endpoint against the default-setup ``languages`` slot. Fires when a CodeQL-supported language present at ≥5% of repo bytes is missing from the scanning set. Passes silently when default scanning isn't configured (SCM-003 / SCM-046 own those cases) or when the languages endpoint is unavailable.
+
+**Recommendation.** Open the default code-scanning setup configuration (``Settings → Code security → Code scanning → Default setup → Edit configuration``) and add the missing languages to the analyzed set. If a language isn't CodeQL-supported (e.g. Shell, Lua), set up a third-party SAST workflow that uploads SARIF for that subset — default setup's auto-detect doesn't cover every language.
+
+**Known false positives.**
+
+- Monorepos may intentionally exclude legacy subdirectories from CodeQL analysis (e.g. a vendored fork). Suppress per repo with a rationale that names the excluded path; the default-setup language toggle is repo-wide, so a per-path exclusion requires a hand-authored workflow.
+
+**Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
+
 #### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
@@ -8630,6 +8781,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Proof of exploit.**
 
+```
 # Vulnerable: secret-named parameter stored as plain ``String``.
 $ aws ssm put-parameter \
     --name /prod/api/GITHUB_TOKEN \
@@ -8657,6 +8809,7 @@ $ aws ssm put-parameter \
 # Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``
 # on the named CMK, and the call only returns plaintext when
 # ``WithDecryption=true`` is set (an explicit, auditable opt-in).
+```
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -8782,6 +8935,7 @@ v1 limitations: ``workflowTemplateRef:`` cross-document references aren't resolv
 
 **Proof of exploit.**
 
+```
 # Vulnerable: producer template hands a tainted parameter
 # through outputs.parameters; consumer interpolates it into
 # its own shell.
@@ -8857,6 +9011,7 @@ spec:
           - name: RAW
             value: '{{inputs.parameters.title}}'
         source: printf '%s' "$RAW" | tr -dc 'a-zA-Z0-9 ' > /tmp/title.txt
+```
 
 **Source:** [`TAINT-007`](../providers/argo.md#taint-007) in the [Argo Workflows provider](../providers/argo.md).
 

@@ -674,6 +674,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title macro interpolated straight into script.
 trigger: none
 pr:
@@ -706,6 +707,7 @@ jobs:
         env:
           PR_BRANCH: $(System.PullRequest.SourceBranch)
           COMMIT_MSG: $(Build.SourceVersionMessage)
+```
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -907,6 +909,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR-validated pipeline extends a LOCAL template.
 trigger: none
 pr:
@@ -941,6 +944,7 @@ resources:
       ref: refs/tags/v1.4.2     # immutable, signed tag
 extends:
   template: templates/standard-build.yml@pipeline-templates
+```
 
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1107,6 +1111,7 @@ extends:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: webhook-triggered workflow interpolates a
 # user-supplied parameter directly into a shell script.
 apiVersion: argoproj.io/v1alpha1
@@ -1148,6 +1153,7 @@ spec:
             value: '{{inputs.parameters.who}}'
         source: |
           echo "Hello $WHO"
+```
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1251,6 +1257,7 @@ spec:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: branch name interpolated unquoted into shell.
 image: alpine:latest
 pipelines:
@@ -1284,6 +1291,7 @@ pipelines:
           # via shell so the value is captured as a single
           # argv element from the controlled assignment.
           # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
+```
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -1760,6 +1768,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild project with a plaintext PAT in env.
 {
   "name": "deploy",
@@ -1795,6 +1804,7 @@ pipelines:
     ]
   }
 }
+```
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2336,6 +2346,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: image runs as root by default (no USER set).
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y python3
@@ -2365,6 +2376,7 @@ RUN apt-get update && apt-get install -y python3 \
 COPY --chown=app:app app.py /app/
 USER 1001
 CMD ["python3", "/app/app.py"]
+```
 
 **Source:** [`DF-002`](../providers/dockerfile.md#df-002) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -2941,6 +2953,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -2955,6 +2968,7 @@ CMD ["python3", "/app/app.py"]
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2975,6 +2989,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -3025,6 +3040,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # checks out PR head
       - run: make test                    # no secrets in scope
+```
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3045,6 +3061,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -3074,6 +3091,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "New PR: $PR_TITLE"
+```
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3155,6 +3173,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: AWS access key pasted into the workflow body.
 env:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
@@ -3187,6 +3206,7 @@ steps:
     with:
       role-to-assume: arn:aws:iam::123456789012:role/CIRole
       aws-region: us-east-1
+```
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3297,6 +3317,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: install script piped straight to bash.
 steps:
   - run: curl -sL https://example.com/install.sh | bash
@@ -3320,6 +3341,7 @@ steps:
       curl -sLo install.sh https://example.com/install.sh
       echo "abc123...expected_sha256  install.sh" | sha256sum -c
       bash install.sh
+```
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3359,6 +3381,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -3396,6 +3419,7 @@ jobs:
       - run: gh release create v1.0.0 dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3984,6 +4008,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -4016,6 +4041,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.deploy_specific.json
 }
+```
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -4049,6 +4075,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -4083,6 +4110,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
     "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
   }
 }
+```
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -4557,6 +4585,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -4572,6 +4601,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 # A protection rule with `required_pull_request_reviews` set
 # and `allow_force_pushes: false` blocks both the push and
 # the rewrite without giving up an inch of velocity.
+```
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
@@ -4589,6 +4619,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -4603,6 +4634,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 #
 # Setting ``required_approving_review_count`` to >= 1 forces
 # a separate identity to acknowledge the change before merge.
+```
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
@@ -4879,6 +4911,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -4906,6 +4939,7 @@ GET /repos/acme/payments-api/keys
 # genuinely required for CI tagging, switch to a GitHub
 # App with constrained scope plus a one-line audit-log
 # entry per push.
+```
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 

@@ -621,5 +621,10 @@ STANDARD = Standard(
         "SCM-040":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't gate on code scanning
         "SCM-041":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't gate on a deployment env
         "SCM-042":  ["CICD-SEC-1", "CICD-SEC-4"],  # active ruleset doesn't require merge queue
+        "SCM-043":  ["CICD-SEC-1", "CICD-SEC-9"],  # tag-ruleset lacks signed_commits
+        "SCM-044":  ["CICD-SEC-1", "CICD-SEC-6"],  # required_signatures bypassed for admins
+        "SCM-045":  ["CICD-SEC-10"],               # default code scanning limited query suite
+        "SCM-046":  ["CICD-SEC-10"],               # default code scanning configured but paused
+        "SCM-047":  ["CICD-SEC-10"],               # repo language not covered by default scanning
     },
 )

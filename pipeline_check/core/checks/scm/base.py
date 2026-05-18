@@ -234,6 +234,14 @@ class SCMRepoSnapshot:
     #: rulesets are configured (in which case the SCM-001..010
     #: legacy branch-protection rules carry the governance load).
     rulesets: list[dict[str, Any]] | None = None
+    #: ``GET /repos/{owner}/{repo}/languages``. Mapping of language
+    #: name (GitHub's linguist label, e.g. ``"Python"``, ``"Go"``,
+    #: ``"JavaScript"``) to byte count. SCM-047 cross-checks this
+    #: against ``code_scanning_default_setup.languages`` to flag
+    #: CodeQL-supported languages present in the repo but excluded
+    #: from default scanning. ``None`` when the endpoint failed;
+    #: empty dict when the repo has no detectable source.
+    repo_languages: dict[str, int] | None = None
 
 
 @dataclass(slots=True)
@@ -323,6 +331,7 @@ class SCMContext:
         webhooks: list[dict[str, Any]] | None = None
         outside_collaborators: list[dict[str, Any]] | None = None
         rulesets: list[dict[str, Any]] | None = None
+        repo_languages: dict[str, int] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -398,6 +407,17 @@ class SCMContext:
                         # "couldn't fetch the bypass list" (data
                         # unavailable) — the silent-pass mistake.
                         rs["_detail_unavailable"] = True
+            # Linguist-detected language byte counts. SCM-047 reads
+            # this to flag CodeQL-supported languages present in the
+            # repo but excluded from default code scanning. Endpoint
+            # is public-readable; a None return means the fetch
+            # failed (rule passes with an "unavailable" note).
+            raw_languages = fetcher.fetch(f"repos/{owner}/{name}/languages")
+            if isinstance(raw_languages, dict):
+                repo_languages = {
+                    k: v for k, v in raw_languages.items()
+                    if isinstance(k, str) and isinstance(v, int)
+                }
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -412,6 +432,7 @@ class SCMContext:
             webhooks=webhooks,
             outside_collaborators=outside_collaborators,
             rulesets=rulesets,
+            repo_languages=repo_languages,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

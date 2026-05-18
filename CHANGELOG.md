@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SCM signed-commit + code-scanning posture pack (SCM-043..047).**
+  Five new GitHub-only SCM rules that fill the previously-thin
+  signed-commit and SAST surfaces. `SCM-043` flags active
+  tag-targeted rulesets that don't enforce ``required_signatures``
+  on tag pushes (release-tag forgery surface that branch-side
+  SCM-006 / SCM-036 don't cover). `SCM-044` flags the default
+  branch protection requiring signed commits while
+  ``enforce_admins`` is off — admin / stolen-admin-PAT bypass on
+  the cryptographic signing requirement, narrower than SCM-010's
+  generic admin-bypass shape. `SCM-045` flags default code
+  scanning configured with the ``default`` query suite instead of
+  ``extended`` (gate exists but is shallower than one-click
+  achievable). `SCM-046` flags default scanning where
+  ``state == configured`` but no ``schedule`` is set — the silent-
+  pass shape SCM-003 misses, where the setup record exists but no
+  scan output ever lands. `SCM-047` flags CodeQL-supported
+  repository languages (≥5% byte share) that are missing from the
+  default-setup ``languages`` set; reads a new ``repo_languages``
+  slot hydrated from ``GET /repos/{owner}/{repo}/languages``.
+  Mapped to ``cis_supply_chain`` 1.1.6 / 1.1.7 / 1.1.17,
+  ``cis_github`` 1.1.12 / 1.1.14 / 1.1.17 / 1.1.18 / 1.5.4, and
+  ``owasp_cicd_top_10`` CICD-SEC-1 / -6 / -9 / -10.
+
 - **Supply-chain worm detection pack (GHA-056..058, AC-028..029).**
   New GitHub Actions rules targeting the post-`tj-actions` wave of
   worm-class attacks. `GHA-056` flags literal IOC strings from the

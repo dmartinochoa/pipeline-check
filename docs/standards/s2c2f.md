@@ -1175,6 +1175,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -1189,6 +1190,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1347,6 +1349,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -1369,6 +1372,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 # republished in the advisory (consult the GHSA the registry
 # cites for the exact value):
 - uses: tj-actions/changed-files@<advisory-clean-sha>
+```
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1399,6 +1403,7 @@ The IOC list is curated and append-only, mirroring the shape of ``_compromised_a
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the IOC strings below are literal Shai-Hulud /
 # s1ngularity indicators. A workflow containing any of them
 # is post-compromise evidence, not pre-compromise risk.
@@ -1418,6 +1423,7 @@ jobs:
 # Safe: there is no legitimate version of this workflow.
 # Delete it, rotate every credential the runner can reach,
 # and audit the org for sibling drops.
+```
 
 **Source:** [`GHA-056`](../providers/github.md#gha-056) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1444,6 +1450,7 @@ Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the scanner harvests secrets, the pipe sends
 # them to a public collector. The Shai-Hulud postinstall
 # ran an in-line equivalent of this exact pipeline.
@@ -1468,6 +1475,7 @@ jobs:
       - run: trufflehog filesystem . --json > findings.sarif
       - uses: github/codeql-action/upload-sarif@<sha>
         with: { sarif_file: findings.sarif }
+```
 
 **Source:** [`GHA-057`](../providers/github.md#gha-057) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1498,6 +1506,7 @@ Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read
 
 **Proof of exploit.**
 
+```
 # Vulnerable: the bypass flag turns the agent into an
 # unattended shell that can read ``${{ secrets.* }}`` and
 # POST anywhere on the internet. This is the s1ngularity
@@ -1522,6 +1531,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>
       - run: claude --allowedTools 'Read,Grep' -p "$PROMPT"
+```
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1961,6 +1971,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
+```
 <!-- Vulnerable: pinned to a Log4Shell-affected version. -->
 <dependency>
   <groupId>org.apache.logging.log4j</groupId>
@@ -1980,6 +1991,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
   <artifactId>log4j-core</artifactId>
   <version>2.17.1</version>
 </dependency>
+```
 
 **Source:** [`MVN-006`](../providers/maven.md#mvn-006) in the [maven provider](../providers/maven.md).
 

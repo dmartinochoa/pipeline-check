@@ -16,7 +16,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**650+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**670+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -148,7 +148,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   650+ checks across 22 providers
+  Config files   |  Scanner  |   670+ checks across 22 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -469,7 +469,7 @@ pipeline_check/
         ├── dockerfile/rules/  # DF-001 .. DF-030
         ├── kubernetes/rules/  # K8S-001 .. K8S-043
         ├── helm/rules/        # HELM-001 .. HELM-010 + renders charts so the K8S rule pack also applies
-        ├── scm/rules/         # SCM-001 .. SCM-042 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit; GitLab + Bitbucket universal subset)
+        ├── scm/rules/         # SCM-001 .. SCM-047 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab + Bitbucket universal subset)
         ├── npm/rules/         # NPM-001 .. NPM-007 + NPM-011 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector
         ├── pypi/rules/        # PYPI-001 .. PYPI-006 — requirements.txt supply-chain hygiene + curated compromised-package registry
         ├── maven/rules/       # MVN-001 .. MVN-007 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell)
