@@ -35,6 +35,16 @@ GHA-007:.github/workflows/scorecard.yml
 GHA-020:.github/workflows/scorecard.yml
 GHA-024:.github/workflows/scorecard.yml
 
+# ── goat-bench.yml — real-world GOAT corpus recall + drift bench ────
+# Uploads the bench report + JSON as a run artifact for reviewers.
+# Same heuristic as scorecard.yml: ``upload-artifact`` is read as
+# "produces a release" but the bench artifact is a diagnostic, not
+# software anyone consumes.
+GHA-006:.github/workflows/goat-bench.yml
+GHA-007:.github/workflows/goat-bench.yml
+GHA-020:.github/workflows/goat-bench.yml
+GHA-024:.github/workflows/goat-bench.yml
+
 # ── python-app.yml — lint / type-check / test runner ────────────────
 # The hash-locked ``--require-hashes -r requirements-dev.txt`` install
 # covers the actual dependency surface; ruff / mypy ride that

@@ -11,11 +11,17 @@ from pipeline_check.core import chains as chains_pkg
 from pipeline_check.core.chains.base import (
     Chain,
     failing,
+    group_by_anchor,
     group_by_resource,
     has_failing,
     min_confidence,
 )
-from pipeline_check.core.checks.base import Confidence, Finding, Severity
+from pipeline_check.core.checks.base import (
+    Confidence,
+    Finding,
+    ResourceAnchor,
+    Severity,
+)
 from pipeline_check.core.gate import GateConfig, evaluate_gate
 
 # ── Synthetic finding factory ─────────────────────────────────────────
@@ -30,6 +36,7 @@ def _f(
     severity: Severity = Severity.HIGH,
     job_anchors: tuple[str, ...] = (),
     path_evidence: tuple[str, ...] = (),
+    resource_anchors: tuple[ResourceAnchor, ...] = (),
 ) -> Finding:
     return Finding(
         check_id=check_id,
@@ -42,6 +49,7 @@ def _f(
         confidence=confidence,
         job_anchors=job_anchors,
         path_evidence=path_evidence,
+        resource_anchors=resource_anchors,
     )
 
 
@@ -90,6 +98,78 @@ class TestHelpers:
         # Defensive: an empty list shouldn't crash callers; HIGH is the
         # sensible default since "no evidence" can't lower confidence.
         assert min_confidence([]) is Confidence.HIGH
+
+    def test_group_by_anchor_intersects_on_identity(self):
+        # Two findings reference the same IAM role ARN; group_by_anchor
+        # composes them under that ARN as the key.
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        wf = _f("X-1", "wf.yml", resource_anchors=(role,))
+        iam = _f("X-2", role.identity, resource_anchors=(role,))
+        groups = group_by_anchor([wf, iam], ["X-1", "X-2"], "iam_role")
+        assert set(groups) == {role.identity}
+        assert set(groups[role.identity]) == {"X-1", "X-2"}
+
+    def test_group_by_anchor_drops_partial_groups(self):
+        # Only X-1 anchors on the role — not enough to form the group.
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        wf = _f("X-1", "wf.yml", resource_anchors=(role,))
+        groups = group_by_anchor([wf], ["X-1", "X-2"], "iam_role")
+        assert groups == {}
+
+    def test_group_by_anchor_ignores_other_kinds(self):
+        # A finding that anchors only an ecr_repo doesn't contribute
+        # to an iam_role intersection.
+        repo = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/r",
+        )
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        a = _f("X-1", "wf.yml", resource_anchors=(repo,))
+        b = _f("X-2", role.identity, resource_anchors=(role,))
+        groups = group_by_anchor([a, b], ["X-1", "X-2"], "iam_role")
+        assert groups == {}
+
+    def test_group_by_anchor_handles_multi_anchor_findings(self):
+        # A workflow that references three IAM roles emits three
+        # anchors; only the one that intersects with the IAM finding
+        # contributes a group.
+        roles = [
+            ResourceAnchor(
+                kind="iam_role",
+                identity=f"arn:aws:iam::123456789012:role/r{i}",
+            )
+            for i in range(3)
+        ]
+        wf = _f("X-1", "wf.yml", resource_anchors=tuple(roles))
+        iam = _f(
+            "X-2", roles[1].identity, resource_anchors=(roles[1],),
+        )
+        groups = group_by_anchor([wf, iam], ["X-1", "X-2"], "iam_role")
+        assert set(groups) == {roles[1].identity}
+
+    def test_group_by_anchor_ignores_passed_findings(self):
+        role = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/deploy",
+        )
+        groups = group_by_anchor(
+            [
+                _f("X-1", "wf.yml", passed=True, resource_anchors=(role,)),
+                _f("X-2", role.identity, resource_anchors=(role,)),
+            ],
+            ["X-1", "X-2"],
+            "iam_role",
+        )
+        assert groups == {}
 
 
 # ── Engine ──────────────────────────────────────────────────────────
@@ -184,6 +264,38 @@ class TestChainAC001:
         ])
         ac1 = next(c for c in out if c.chain_id == "AC-001")
         assert ac1.confidence is Confidence.LOW
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-002", wf, job_anchors=("publish",)),
+            _f(
+                "GHA-005",
+                wf,
+                job_anchors=("publish",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac1 = next(c for c in out if c.chain_id == "AC-001")
+        assert ac1.confirmed_reachable is True
+        assert "publish" in ac1.reachability_note
+        assert ac1.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-002", wf, job_anchors=("label",)),
+            _f(
+                "GHA-005",
+                wf,
+                job_anchors=("publish",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac1 = next(c for c in out if c.chain_id == "AC-001")
+        assert ac1.confirmed_reachable is False
+        assert ac1.reachability_note == ""
+        assert ac1.confidence is Confidence.MEDIUM
 
 
 class TestChainAC005:
@@ -294,8 +406,55 @@ class TestChainAC002:
         assert "TAINT-002" in ac2.triggering_check_ids
 
 
+class TestChainAC003:
+    """AC-003 — Unpinned action to credential exfiltration."""
+
+    WF = ".github/workflows/release.yml"
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # GHA-001 fires in job ``release`` (an unpinned action lives
+        # in a step there); GHA-005 anchors on ``release`` too,
+        # either because the job sets static keys or because the
+        # workflow-level env propagated. Intersection is non-empty;
+        # the chain is confirmed reachable with HIGH confidence.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-005",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac3 = next(c for c in out if c.chain_id == "AC-003")
+        assert ac3.confirmed_reachable is True
+        assert "release" in ac3.reachability_note
+        assert ac3.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # The unpinned action runs in ``build`` while the long-
+        # lived AWS keys are confined to a different job. The chain
+        # still fires (legacy behavior) but ``confirmed_reachable``
+        # is False and confidence stays at the weakest leg.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-005",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac3 = next(c for c in out if c.chain_id == "AC-003")
+        assert ac3.confirmed_reachable is False
+        assert ac3.reachability_note == ""
+        assert ac3.confidence is Confidence.MEDIUM
+
+
 class TestChainAC004:
     """AC-004 — Self-Hosted Runner Persistent Foothold."""
+
+    WF = ".github/workflows/ci.yml"
 
     def test_fires_with_pull_request_target_and_non_ephemeral_runner(self):
         wf = ".github/workflows/ci.yml"
@@ -304,9 +463,40 @@ class TestChainAC004:
         assert len(ac4) == 1
         assert "T1543" in ac4[0].mitre_attack
 
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-012",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac4 = next(c for c in out if c.chain_id == "AC-004")
+        assert ac4.confirmed_reachable is True
+        assert "build" in ac4.reachability_note
+        assert ac4.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("label",)),
+            _f(
+                "GHA-012",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac4 = next(c for c in out if c.chain_id == "AC-004")
+        assert ac4.confirmed_reachable is False
+        assert ac4.confidence is Confidence.MEDIUM
+
 
 class TestChainAC006:
     """AC-006 — Cache Poisoning via Untrusted Trigger."""
+
+    WF = ".github/workflows/build.yml"
 
     def test_fires_with_pull_request_target_and_cache_key_issue(self):
         wf = ".github/workflows/build.yml"
@@ -314,6 +504,38 @@ class TestChainAC006:
         ac6 = [c for c in out if c.chain_id == "AC-006"]
         assert len(ac6) == 1
         assert ac6[0].severity is Severity.HIGH
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # Same job runs PR-head code AND has a poisonable cache key.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-011",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac6 = next(c for c in out if c.chain_id == "AC-006")
+        assert ac6.confirmed_reachable is True
+        assert "build" in ac6.reachability_note
+        assert ac6.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # PR-head checkout in ``label``, poisonable cache in ``build``.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("label",)),
+            _f(
+                "GHA-011",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac6 = next(c for c in out if c.chain_id == "AC-006")
+        assert ac6.confirmed_reachable is False
+        assert ac6.reachability_note == ""
+        assert ac6.confidence is Confidence.MEDIUM
 
 
 class TestChainAC008:
@@ -431,6 +653,37 @@ class TestChainAC010:
         wf = ".github/workflows/build.yml"
         out = chains_pkg.evaluate([_f("GHA-012", wf)])
         assert not any(c.chain_id == "AC-010" for c in out)
+
+    def test_reachability_confirmed_via_gha019_intersection(self):
+        # Same job both runs on a non-ephemeral self-hosted runner
+        # AND persists a token to disk — confirmed reachable.
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-012", wf, job_anchors=("build",)),
+            _f(
+                "GHA-019",
+                wf,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac10 = next(c for c in out if c.chain_id == "AC-010")
+        assert ac10.confirmed_reachable is True
+        assert "build" in ac10.reachability_note
+        assert ac10.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_with_only_gha016(self):
+        # GHA-016 is a blob scan with no per-job anchors; we don't
+        # have enough to confirm reachability from a curl-pipe-only
+        # secondary leg.
+        wf = ".github/workflows/release.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-012", wf, job_anchors=("build",)),
+            _f("GHA-016", wf, confidence=Confidence.LOW),
+        ])
+        ac10 = next(c for c in out if c.chain_id == "AC-010")
+        assert ac10.confirmed_reachable is False
+        assert ac10.confidence is Confidence.LOW
 
 
 class TestChainAC011:
@@ -574,6 +827,35 @@ class TestChainAC013:
         ac13 = next(c for c in out if c.chain_id == "AC-013")
         assert ac13.confidence is Confidence.LOW
 
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-036", self.WF, job_anchors=("deploy",)),
+            _f(
+                "GHA-019",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac13 = next(c for c in out if c.chain_id == "AC-013")
+        assert ac13.confirmed_reachable is True
+        assert "deploy" in ac13.reachability_note
+        assert ac13.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-036", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-019",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac13 = next(c for c in out if c.chain_id == "AC-013")
+        assert ac13.confirmed_reachable is False
+        assert ac13.confidence is Confidence.MEDIUM
+
 
 class TestChainAC014:
     """AC-014 — Caller-Controlled Runner with Token Persistence (GitLab)."""
@@ -620,6 +902,35 @@ class TestChainAC014:
             _f("GL-020", self.PIPELINE, confidence=Confidence.MEDIUM),
         ])
         ac14 = next(c for c in out if c.chain_id == "AC-014")
+        assert ac14.confidence is Confidence.MEDIUM
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", self.PIPELINE, job_anchors=("release",)),
+            _f(
+                "GL-020",
+                self.PIPELINE,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac14 = next(c for c in out if c.chain_id == "AC-014")
+        assert ac14.confirmed_reachable is True
+        assert "release" in ac14.reachability_note
+        assert ac14.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        out = chains_pkg.evaluate([
+            _f("GL-032", self.PIPELINE, job_anchors=("build",)),
+            _f(
+                "GL-020",
+                self.PIPELINE,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac14 = next(c for c in out if c.chain_id == "AC-014")
+        assert ac14.confirmed_reachable is False
         assert ac14.confidence is Confidence.MEDIUM
 
 
@@ -839,6 +1150,45 @@ class TestChainAC018:
         chain = next(c for c in out if c.chain_id == "AC-018")
         assert "initial-access" in chain.kill_chain_phase
         assert "execution" in chain.kill_chain_phase
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # GHA-001 fires in job ``release`` (an unpinned action lives
+        # in a step there), GHA-014 reports ``release`` as an
+        # ungated deploy. Intersection is non-empty so the chain is
+        # confirmed reachable; composite confidence promoted to HIGH
+        # even when GHA-014 is MEDIUM on its own.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-014",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac18 = next(c for c in out if c.chain_id == "AC-018")
+        assert ac18.confirmed_reachable is True
+        assert "release" in ac18.reachability_note
+        assert ac18.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Unpinned action in ``build``, ungated deploy in ``release``,
+        # no dataflow link recorded. Chain still fires (legacy
+        # behavior) but confirmed_reachable is False and confidence
+        # stays at the weakest leg.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-014",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac18 = next(c for c in out if c.chain_id == "AC-018")
+        assert ac18.confirmed_reachable is False
+        assert ac18.reachability_note == ""
+        assert ac18.confidence is Confidence.MEDIUM
 
 
 class TestChainAC019:
@@ -1076,6 +1426,98 @@ class TestChainAC022:
         ac22 = [c for c in out if c.chain_id == "AC-022"]
         assert len(ac22) == 2
         assert {c.resources[0] for c in ac22} == {self.WF, self.OTHER_WF}
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # GL-002 fires in job ``release``, GL-004 reports ``release``
+        # as an ungated deploy job. The intersection is non-empty so
+        # the chain is confirmed reachable, composite confidence
+        # promoted to HIGH even when a leg is MEDIUM on its own.
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, job_anchors=("release",)),
+            _f(
+                "GL-004",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac22 = next(c for c in out if c.chain_id == "AC-022")
+        assert ac22.confirmed_reachable is True
+        assert "release" in ac22.reachability_note
+        assert ac22.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Two legs fire on the same file but in distinct jobs and no
+        # dataflow rule corroborates a cross-job hop. The chain still
+        # fires (legacy behavior) but ``confirmed_reachable`` is False
+        # and the confidence stays at the weakest leg.
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, job_anchors=("triage",)),
+            _f(
+                "GL-004",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac22 = next(c for c in out if c.chain_id == "AC-022")
+        assert ac22.confirmed_reachable is False
+        assert ac22.reachability_note == ""
+        assert ac22.confidence is Confidence.MEDIUM
+
+    def test_taint004_widens_injection_side_for_reachability(self):
+        # GL-002 fires only in ``extract``, but TAINT-004 reports a
+        # dotenv-routed taint whose sink lands in ``release`` — the
+        # same job GL-004 names as ungated. The chain is reachable
+        # via the dotenv hop even though GL-002 alone wouldn't
+        # intersect.
+        rendered_path = (
+            "$CI_COMMIT_TITLE@extract:script[0] -> "
+            "jobs.extract.artifacts.reports.dotenv -> $TITLE -> "
+            "sink@release:script[2]($TITLE)"
+        )
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, job_anchors=("extract",)),
+            _f(
+                "TAINT-004",
+                self.WF,
+                job_anchors=("release",),
+                path_evidence=(rendered_path,),
+            ),
+            _f("GL-004", self.WF, job_anchors=("release",)),
+        ])
+        ac22 = next(c for c in out if c.chain_id == "AC-022")
+        assert ac22.confirmed_reachable is True
+        assert "release" in ac22.reachability_note
+        assert rendered_path in ac22.narrative
+        assert "TAINT-004" in ac22.triggering_check_ids
+
+    def test_taint008_widens_injection_side_for_reachability(self):
+        # GL-002 fires only in a hidden producer template, but
+        # TAINT-008 reports an ``extends:`` inheritance taint whose
+        # sink lands in ``release`` — the same job GL-004 names as
+        # ungated. The chain is reachable via the extends-chain hop
+        # even though GL-002 anchored elsewhere.
+        rendered_path = (
+            "$CI_COMMIT_TITLE@.base.variables.TITLE -> "
+            "extends.<chain> -> $TITLE -> "
+            "sink@release:script[1]($TITLE)"
+        )
+        out = chains_pkg.evaluate([
+            _f("GL-002", self.WF, job_anchors=("seed",)),
+            _f(
+                "TAINT-008",
+                self.WF,
+                job_anchors=("release",),
+                path_evidence=(rendered_path,),
+            ),
+            _f("GL-004", self.WF, job_anchors=("release",)),
+        ])
+        ac22 = next(c for c in out if c.chain_id == "AC-022")
+        assert ac22.confirmed_reachable is True
+        assert "release" in ac22.reachability_note
+        assert rendered_path in ac22.narrative
+        assert "TAINT-008" in ac22.triggering_check_ids
 
 
 class TestChainAC023:
@@ -1401,6 +1843,43 @@ class TestChainAC026:
         chain = next(c for c in out if c.chain_id == "AC-026")
         assert chain.confidence is Confidence.LOW
 
+    def test_reachability_confirmed_when_step_anchors_intersect(self):
+        # BK-003 fires on step ``release``, BK-007 names ``release``
+        # as the ungated deploy. Same step is both the injection
+        # sink AND the unmanual deploy — the strongest signal.
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, job_anchors=("release",)),
+            _f(
+                "BK-007",
+                self.PIPELINE,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac26 = next(c for c in out if c.chain_id == "AC-026")
+        assert ac26.confirmed_reachable is True
+        assert "release" in ac26.reachability_note
+        assert ac26.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_steps_disjoint(self):
+        # Two legs fire on the same pipeline but on distinct steps,
+        # no cross-step dataflow rule corroborates. The chain still
+        # fires (legacy behavior) but ``confirmed_reachable`` is
+        # False and confidence stays at the weakest leg.
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, job_anchors=("build",)),
+            _f(
+                "BK-007",
+                self.PIPELINE,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac26 = next(c for c in out if c.chain_id == "AC-026")
+        assert ac26.confirmed_reachable is False
+        assert ac26.reachability_note == ""
+        assert ac26.confidence is Confidence.MEDIUM
+
 
 class TestChainAC027:
     """AC-027 — Dockerfile credential file + exposed remote-access port."""
@@ -1577,8 +2056,10 @@ class TestCLI:
     ):
         # Fixture deliberately produces multiple chains:
         #   * AC-001 (pull_request_target + PR-sha checkout + AWS creds)
-        #     — not yet migrated to reachability, ``confirmed_reachable``
-        #     is False.
+        #     — split across two jobs so ``GHA-002`` anchors on
+        #     ``build`` while ``GHA-005`` anchors on ``publish``;
+        #     the anchor sets are disjoint, so
+        #     ``confirmed_reachable=False`` (co-occurrence only).
         #   * AC-002 (GHA-003 + GHA-014 in the same ``release`` job) —
         #     reachability confirmed.
         # With the flag off both fire; with the flag on only AC-002
@@ -1591,13 +2072,17 @@ class TestCLI:
             "jobs:\n"
             "  build:\n"
             "    runs-on: ubuntu-latest\n"
-            "    env:\n"
-            "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
-            "      AWS_SECRET_ACCESS_KEY: notarealsecret/notarealsecret/notarealsecret\n"
             "    steps:\n"
             "      - uses: actions/checkout@v4\n"
             "        with:\n"
             "          ref: ${{ github.event.pull_request.head.sha }}\n"
+            "  publish:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    env:\n"
+            "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+            "      AWS_SECRET_ACCESS_KEY: notarealsecret/notarealsecret/notarealsecret\n"
+            "    steps:\n"
+            "      - run: aws s3 cp build/ s3://prod/\n"
         )
         # Same workflow file, different job: GHA-003 + GHA-014 anchored
         # on the same ``release`` job ID.

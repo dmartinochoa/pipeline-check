@@ -19,7 +19,7 @@ and either fix breaks the chain on its own.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -64,10 +64,51 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability mirrors the AC-002 pilot: intersect the supply-
+    # chain leg's ``job_anchors`` (GHA-001, the jobs whose steps use
+    # an unpinned ``uses:``) with the deploy-side ``job_anchors``
+    # (GHA-014, the jobs that deploy without an environment gate).
+    # A non-empty intersection means the same job both pulls
+    # attacker-controllable upstream code AND ships unattended — a
+    # confirmed end-to-end path. The chain still fires on disjoint
+    # anchors so the legacy file-co-occurrence signal isn't
+    # regressed, but the report flags it as unconfirmed.
     grouped = group_by_resource(findings, ["GHA-001", "GHA-014"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GHA-001"], ck_map["GHA-014"]]
+        gha001 = ck_map["GHA-001"]
+        gha014 = ck_map["GHA-014"]
+        triggers = [gha001, gha014]
+
+        unpinned_jobs = set(gha001.job_anchors)
+        deploy_jobs = set(gha014.job_anchors)
+        shared = sorted(deploy_jobs & unpinned_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"unpinned action and ungated deploy share job "
+                f"{shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the unpinned "
+                f"action and the ungated deploy fire in the same "
+                f"job(s) ({shared_repr}). A compromised upstream "
+                f"release runs in the deploy job itself, with its "
+                f"environment secrets and credentials in scope."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the unpinned "
+                "action and the ungated deploy fire on the same "
+                "workflow file but in different jobs. The attack "
+                "is still possible when the unpinned action "
+                "produces artifacts the deploy job consumes; "
+                "treat as a co-occurrence signal rather than a "
+                "proven path."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A third-party action is pinned by tag or branch "
@@ -86,13 +127,20 @@ def match(findings: list[Finding]) -> list[Chain]:
             "from a compromised upstream action straight to "
             "production. SHA-pinning alone defeats leg 1; "
             "environment-gating alone defeats leg 2; either "
-            "fix breaks the chain."
+            "fix breaks the chain.\n"
+            f"{reach_narrative}"
         )
+
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -102,5 +150,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

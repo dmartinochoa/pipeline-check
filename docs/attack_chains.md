@@ -157,9 +157,53 @@ Migrated chains:
 - `AC-002` (GHA: script injection to unprotected deploy) — pilot. Uses
   `GHA-003` / `TAINT-001` / `TAINT-002` ∩ `GHA-014` job anchors.
 - `AC-022` (GitLab: script injection lands on deploy job with no manual
-  gate) — port of the AC-002 pattern. Uses `GL-002` ∩ `GL-004` job
-  anchors. GitLab's `TAINT-004` dotenv-propagation rule isn't job-
-  anchored yet, so cross-job dataflow widening is left to a follow-up.
+  gate) — port of the AC-002 pattern. Uses `GL-002` / `TAINT-004` /
+  `TAINT-008` ∩ `GL-004` job anchors. `TAINT-004` widens the injection
+  side with sink jobs reachable via ``artifacts.reports.dotenv``
+  propagation; `TAINT-008` widens with sink jobs reachable through
+  ``extends:`` template-inheritance taint. Either GitLab cross-job
+  dataflow channel, paired with a producer-side `GL-002`, still
+  confirms reachability when the sink lands in the deploy job.
+- `AC-026` (Buildkite: injection lands on auto-deploy step with no
+  manual gate) — port of the AC-002 pattern. Uses `BK-003` ∩ `BK-007`
+  step anchors (Buildkite pipelines are a flat list of steps, so the
+  anchor is the step label rather than a job ID). Confirmed when the
+  same step is both the injection sink AND the unmanual deploy.
+  Cross-step widening (meta-data, artifacts) is a future hop;
+  Buildkite has no TAINT-NNN rule family yet.
+- `AC-018` (GHA: unpinned action lands on deploy job with no
+  environment gate) — supply-chain leg of the AC-002 family. Uses
+  `GHA-001` ∩ `GHA-014` job anchors. Confirmed when the same job
+  both pulls a tag-pinned / branch-pinned ``uses:`` AND is the
+  ungated deploy — the tj-actions shape, where the compromised
+  upstream release executes in the deploy job's context with its
+  environment secrets in scope.
+- `AC-003` (GHA: unpinned action to credential exfiltration) — uses
+  `GHA-001` ∩ `GHA-005` job anchors. Confirmed when the same job
+  both pulls an unpinned upstream action AND can read long-lived
+  ``$AWS_ACCESS_KEY_ID`` / ``$AWS_SECRET_ACCESS_KEY``. GHA-005's
+  workflow-level ``env:`` is treated as visible from every job
+  (GitHub's actual inheritance semantics), so a top-level static-
+  key declaration anchors against every job in the workflow.
+- `AC-006` (GHA: cache poisoning via untrusted trigger) — uses
+  `GHA-002` ∩ `GHA-011` job anchors. Confirmed when the same job
+  both checks out PR-head code AND has a poisonable cache key.
+- `AC-001` (GHA: fork-PR credential theft via ``pull_request_target``)
+  — uses `GHA-002` ∩ `GHA-005` job anchors. Confirmed when the same
+  job both runs PR-head code AND can read long-lived AWS keys —
+  the PyTorch supply-chain shape.
+- `AC-004` (GHA: self-hosted runner persistent foothold) — uses
+  `GHA-002` ∩ `GHA-012` job anchors. Confirmed when the same job
+  both runs PR-head code AND lands on a non-ephemeral self-hosted
+  runner.
+- `AC-010` (GHA: self-hosted runner environment exfil) — uses
+  `GHA-012` ∩ `GHA-019` job anchors when GHA-019 fires. The
+  `GHA-016` (curl-pipe) branch stays on co-occurrence because the
+  blob scan doesn't carry per-job attribution.
+- `AC-013` (GHA: caller-controlled runner + token persistence)
+  — uses `GHA-036` ∩ `GHA-019` job anchors.
+- `AC-014` (GitLab: caller-controlled tags + CI-token persistence)
+  — uses `GL-032` ∩ `GL-020` job anchors.
 
 Add `--chains-require-reachability` to drop unconfirmed chains entirely,
 the strictest signal available:

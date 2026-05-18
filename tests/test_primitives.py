@@ -13,6 +13,7 @@ from __future__ import annotations
 import pytest
 
 from pipeline_check.core.checks._primitives import (
+    anchors,
     container_image,
     deploy_names,
     image_pinning,
@@ -654,3 +655,252 @@ class TestHasUnsafeReference:
         assert tainted_variables.has_unsafe_reference(
             ["deploy --branch $(TAINTED)"], {"TAINTED"}, ref_pattern=_shell_ref,
         ) is False
+
+
+# ──────────────────────────────────────────────────────────────────
+# anchors
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestIamRoleAnchor:
+    def test_canonical_arn_round_trips(self):
+        arn = "arn:aws:iam::123456789012:role/deploy-admin"
+        a = anchors.iam_role(arn)
+        assert a is not None
+        assert a.kind == "iam_role"
+        assert a.identity == arn
+
+    def test_govcloud_partition_accepted(self):
+        arn = "arn:aws-us-gov:iam::123456789012:role/deploy"
+        a = anchors.iam_role(arn)
+        assert a is not None
+        assert a.identity == arn
+
+    def test_role_path_preserved(self):
+        # IAM role names can carry a path: ``service-role/svc-foo``.
+        arn = "arn:aws:iam::123456789012:role/service-role/svc-foo"
+        a = anchors.iam_role(arn)
+        assert a is not None
+
+    def test_short_name_rejected(self):
+        # A bare role name MUST NOT be accepted as a full-ARN anchor;
+        # use iam_role_name() for that.
+        assert anchors.iam_role("deploy-admin") is None
+
+    def test_malformed_arn_rejected(self):
+        # ``user/`` instead of ``role/``.
+        assert anchors.iam_role(
+            "arn:aws:iam::123456789012:user/deploy-admin"
+        ) is None
+        # Missing account ID.
+        assert anchors.iam_role("arn:aws:iam:::role/deploy") is None
+        # Empty string.
+        assert anchors.iam_role("") is None
+
+    def test_non_string_input_returns_none(self):
+        assert anchors.iam_role(None) is None  # type: ignore[arg-type]
+        assert anchors.iam_role(12345) is None  # type: ignore[arg-type]
+
+
+class TestIamRoleNameAnchor:
+    def test_accepts_bare_name(self):
+        a = anchors.iam_role_name("deploy-admin")
+        assert a is not None
+        assert a.kind == "iam_role_name"
+        assert a.identity == "deploy-admin"
+
+    def test_does_not_match_full_arn_to_iam_role(self):
+        # Critical contract: iam_role_name and iam_role are
+        # different kinds, the chain engine must not fuzzy-match
+        # one to the other.
+        name = anchors.iam_role_name("deploy-admin")
+        arn = anchors.iam_role(
+            "arn:aws:iam::123456789012:role/deploy-admin"
+        )
+        assert name is not None
+        assert arn is not None
+        assert name != arn
+        assert name.kind != arn.kind
+
+    def test_rejects_invalid_characters(self):
+        # A space in a role name is not legal in IAM.
+        assert anchors.iam_role_name("deploy admin") is None
+
+    def test_strips_whitespace(self):
+        a = anchors.iam_role_name("  deploy-admin  ")
+        assert a is not None
+        assert a.identity == "deploy-admin"
+
+
+class TestEcrRepoAnchor:
+    def test_canonical_uri(self):
+        uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-repo"
+        a = anchors.ecr_repo(uri)
+        assert a is not None
+        assert a.kind == "ecr_repo"
+        assert a.identity == uri
+
+    def test_namespaced_repo(self):
+        uri = (
+            "123456789012.dkr.ecr.us-east-1.amazonaws.com/team-a/svc"
+        )
+        a = anchors.ecr_repo(uri)
+        assert a is not None
+        assert a.identity == uri
+
+    def test_tag_stripped(self):
+        a = anchors.ecr_repo(
+            "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-repo:v1"
+        )
+        assert a is not None
+        assert a.identity.endswith("/my-repo")
+
+    def test_digest_stripped(self):
+        a = anchors.ecr_repo(
+            "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-repo"
+            "@sha256:" + "0" * 64
+        )
+        assert a is not None
+        assert a.identity.endswith("/my-repo")
+
+    def test_short_form_rejected(self):
+        # Short repo names match across accounts — not safe as a
+        # chain anchor.
+        assert anchors.ecr_repo("my-repo") is None
+
+    def test_dockerhub_uri_rejected(self):
+        # Not an ECR URI.
+        assert anchors.ecr_repo("docker.io/library/redis") is None
+
+
+class TestLambdaFnAnchor:
+    def test_canonical_arn(self):
+        arn = "arn:aws:lambda:us-east-1:123456789012:function:my-fn"
+        a = anchors.lambda_fn(arn)
+        assert a is not None
+        assert a.kind == "lambda_fn"
+        assert a.identity == arn
+
+    def test_alias_qualifier_stripped(self):
+        # Two callers — one referencing the function by alias, one
+        # by bare name — should meet at the same identity so a
+        # chain rule reasoning about "this function's role" finds
+        # them.
+        with_alias = anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:prod"
+        )
+        bare = anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn"
+        )
+        assert with_alias is not None
+        assert bare is not None
+        assert with_alias == bare
+
+    def test_version_qualifier_stripped(self):
+        a = anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:$LATEST"
+        )
+        assert a is not None
+        assert a.identity.endswith("function:my-fn")
+
+    def test_malformed_arn_rejected(self):
+        assert anchors.lambda_fn("my-fn") is None
+        assert anchors.lambda_fn(
+            "arn:aws:s3:::123456789012:function:my-fn"
+        ) is None
+
+    def test_qualifier_with_punctuation_rejected(self):
+        # The buggy qualifier class ``[a-zA-Z0-9$-_]`` read ``$-_``
+        # as a range from 0x24 to 0x5F and so accepted ``[``, ``]``,
+        # ``@`` and other punctuation. After the fix (hyphen at end)
+        # only the three literals ``$``, ``_``, ``-`` join the
+        # alphanumerics.
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:bad[name]"
+        ) is None
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my-fn:bad@name"
+        ) is None
+
+    def test_name_with_slash_rejected(self):
+        # Slash never appears in Lambda function names; the name
+        # class is ``[a-zA-Z0-9-_]+``. Locks the contract so a
+        # future "loosen the class" refactor has to update this
+        # test deliberately.
+        assert anchors.lambda_fn(
+            "arn:aws:lambda:us-east-1:123456789012:function:my/fn"
+        ) is None
+
+
+class TestK8sSaAnchor:
+    def test_explicit_namespace(self):
+        a = anchors.k8s_sa("kube-system", "default")
+        assert a is not None
+        assert a.kind == "k8s_sa"
+        assert a.identity == "kube-system/default"
+
+    def test_omitted_namespace_defaults_to_default(self):
+        a = anchors.k8s_sa(None, "build-sa")
+        assert a is not None
+        assert a.identity == "default/build-sa"
+
+    def test_empty_namespace_defaults_to_default(self):
+        a = anchors.k8s_sa("", "build-sa")
+        assert a is not None
+        assert a.identity == "default/build-sa"
+
+    def test_namespace_and_name_intersect_match(self):
+        # Two anchors built independently must compare equal so
+        # set intersection works as the chain engine expects.
+        a = anchors.k8s_sa("ci", "runner")
+        b = anchors.k8s_sa("ci", "runner")
+        assert a == b
+        assert {a} & {b} == {a}
+
+    def test_uppercase_rejected(self):
+        # K8s names are lowercase RFC 1123.
+        assert anchors.k8s_sa("kube-system", "Default") is None
+
+    def test_empty_name_rejected(self):
+        assert anchors.k8s_sa("ci", "") is None
+
+
+class TestOciImageAnchor:
+    def test_tag_stripped(self):
+        a = anchors.oci_image("nginx:1.27")
+        assert a is not None
+        assert a.kind == "oci_image"
+        assert a.identity == "docker.io/library/nginx"
+
+    def test_digest_stripped(self):
+        a = anchors.oci_image("nginx@sha256:" + "a" * 64)
+        assert a is not None
+        assert a.identity == "docker.io/library/nginx"
+
+    def test_implicit_dockerhub_library_namespace(self):
+        # Bare name implies docker.io/library/<name>; the canonical
+        # form makes two callers (one writes ``redis``, one writes
+        # ``docker.io/library/redis``) meet at the same identity.
+        bare = anchors.oci_image("redis")
+        full = anchors.oci_image("docker.io/library/redis")
+        assert bare == full
+
+    def test_user_repo_on_dockerhub(self):
+        # Two-component name under Docker Hub keeps its namespace
+        # (``user/repo`` style, not implicitly ``library/``).
+        a = anchors.oci_image("dmartinochoa/pipeline-check")
+        assert a is not None
+        assert a.identity == "docker.io/dmartinochoa/pipeline-check"
+
+    def test_custom_registry_preserved(self):
+        a = anchors.oci_image("ghcr.io/owner/repo:v1")
+        assert a is not None
+        assert a.identity == "ghcr.io/owner/repo"
+
+    def test_registry_with_port_preserved(self):
+        a = anchors.oci_image("registry.local:5000/owner/repo:v1")
+        assert a is not None
+        assert a.identity == "registry.local:5000/owner/repo"
+
+    def test_empty_string_rejected(self):
+        assert anchors.oci_image("") is None

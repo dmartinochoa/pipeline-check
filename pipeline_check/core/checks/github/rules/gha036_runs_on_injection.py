@@ -109,4 +109,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # Dedupe via dict.fromkeys: a single job that lists multiple
+        # tainted labels still contributes one anchor. AC-013
+        # intersects this with GHA-019's persistence anchors.
+        job_anchors=tuple(dict.fromkeys(offenders)),
     )

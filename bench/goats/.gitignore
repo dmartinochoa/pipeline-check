@@ -1,0 +1,5 @@
+# Per-run scratch output from goat_runner.py. The committed signal
+# is ``baseline.json``; ``findings.json`` is the latest scan, which
+# drifts with every rule-pack change and would dwarf the actual
+# bench diff in PR review.
+findings.json

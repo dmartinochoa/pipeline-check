@@ -36,6 +36,11 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    # Preserve insertion order; one job with multiple offending cache
+    # keys contributes once. AC-006 intersects this with GHA-002 to
+    # confirm a poisoning path runs in the same job as the PR-head
+    # code that supplies the malicious cache content.
+    anchor_jobs: dict[str, None] = {}
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses") or ""
@@ -51,6 +56,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 text = raw if isinstance(raw, str) else "\n".join(str(v) for v in raw)
                 if CACHE_TAINT_RE.search(text):
                     offenders.append(f"{job_id}[{idx}].{key_name}")
+                    anchor_jobs[job_id] = None
     passed = not offenders
     desc = (
         "No actions/cache key derives from attacker-controllable input."
@@ -65,4 +71,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_jobs),
     )

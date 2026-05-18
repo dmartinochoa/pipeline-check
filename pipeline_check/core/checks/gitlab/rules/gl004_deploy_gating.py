@@ -79,4 +79,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # ``job_anchors`` carries the ungated deploy-job IDs so the
+        # reachability-aware chain engine (AC-022) can intersect them
+        # with the jobs GL-002 fired in. Empty tuple on a passed finding.
+        job_anchors=tuple(ungated),
     )

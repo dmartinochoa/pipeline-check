@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`ResourceAnchor` foundation for cross-provider reachability
+  (phase 0).** `Finding` gains a new
+  ``resource_anchors: tuple[ResourceAnchor, ...]`` field, the
+  cross-provider counterpart to ``job_anchors``. Where
+  ``job_anchors`` ties findings to the same job in one pipeline
+  file, ``resource_anchors`` ties them to the same external
+  resource (an IAM role ARN, an ECR repo URI, a K8s ServiceAccount,
+  a Lambda function ARN, an OCI image). A new
+  ``pipeline_check/core/checks/_primitives/anchors.py`` module
+  ships per-kind canonicalizers (``iam_role``, ``iam_role_name``,
+  ``ecr_repo``, ``lambda_fn``, ``k8s_sa``, ``oci_image``) so every
+  rule that needs to emit an anchor goes through one helper and
+  the two legs of a cross-provider chain mechanically agree on a
+  canonical form. ``chains/base.py`` gains a ``group_by_anchor``
+  helper alongside ``group_by_resource``, the chain-rule
+  counterpart that intersects on ``(kind, identity)``. No chain
+  rule consumes the new field yet; phase 1 starts the per-chain
+  migration (AC-007, AC-016, AC-019, AC-011, AC-020, AC-017,
+  AC-024, XPC-002, XPC-003). ``Finding.to_dict()`` surfaces
+  ``resource_anchors`` under a new ``"resource_anchors"`` key
+  when present.
+
 - **SLSA Build L3 + Sigstore badges and install-time nudge.** The
   README header gains a SLSA Build L3 badge and a Sigstore-signed
   badge linking to the existing "Verifying a release" section, and
@@ -39,6 +61,288 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   terminal outputs all surface the new fields. `Finding` gained
   `job_anchors: tuple[str, ...]` and `path_evidence: tuple[str, ...]`;
   `GHA-003`, `GHA-014`, `TAINT-001`, and `TAINT-002` populate them.
+
+- **Reachability-aware AC-022 (GitLab port).** `AC-022` (GitLab
+  script injection meets unguarded deploy) now uses the same
+  `job_anchors` intersection model as the `AC-002` pilot. `GL-002`
+  records the job IDs whose ``script:`` interpolated an untrusted
+  ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` variable; `GL-004`
+  records the job IDs that deploy without a ``when: manual`` /
+  protected ``environment:`` gate. When the two sets share a job,
+  the chain emits with `confirmed_reachable=True`, confidence
+  promoted to `HIGH`, and a `reachability_note` citing the shared
+  job(s). Disjoint sets fall back to the legacy co-occurrence
+  signal (`confirmed_reachable=False`, weakest-leg confidence) so
+  no existing gate changes.
+
+- **TAINT-004 dotenv dataflow widens AC-022.** `TAINT-004` (GitLab
+  cross-job taint via ``artifacts.reports.dotenv``) now populates
+  `Finding.job_anchors` with the sink-side consumer job IDs and
+  `Finding.path_evidence` with the rendered source-to-sink paths,
+  mirroring the GHA `TAINT-002` shape. `AC-022` consumes those
+  anchors when computing reachability: a producer-side `GL-002` in
+  one job paired with a dotenv-routed sink that lands in the same
+  job `GL-004` flagged as ungated now resolves to a confirmed
+  chain, with the rendered dotenv path included in the narrative
+  under "Dataflow evidence".
+
+- **TAINT-008 extends-inheritance dataflow widens AC-022.**
+  `TAINT-008` (GitLab cross-job taint via ``extends:`` template
+  inheritance) populates `Finding.job_anchors` and
+  `Finding.path_evidence` the same way `TAINT-004` does, so a
+  tainted ``variables:`` block in a hidden template that's read
+  unquoted in a downstream deploy job now contributes injection-
+  side reachability for `AC-022`. Both of GitLab's cross-job
+  dataflow channels (dotenv + extends) feed the AC-022 reachability
+  check, closing the GitLab-side parity with the GHA pilot.
+
+- **Reachability-aware AC-026 (Buildkite port).** `AC-026`
+  (Buildkite injection lands on auto-deploy step with no manual
+  gate) now uses the same `job_anchors` intersection model as the
+  `AC-002` / `AC-022` chains. Buildkite pipelines are a flat list
+  of steps rather than named jobs, so the anchor each leg surfaces
+  is the step label (``key`` > ``label`` > ``steps[N]`` fallback).
+  `BK-003` records the labels of steps whose ``command:``
+  interpolated a tainted Buildkite variable; `BK-007` records the
+  labels of deploy-named steps lacking a ``manual:`` / ``input:``
+  gate. When the two sets share a step — the same step is the
+  injection sink AND the unmanual deploy — the chain emits with
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared step(s). Disjoint sets
+  fall back to the legacy file-co-occurrence signal. Buildkite has
+  no TAINT-NNN family yet, so cross-step dataflow widening (meta-
+  data / artifacts) is a follow-up.
+
+- **Reachability-aware AC-018 (supply-chain leg).** `AC-018`
+  (unpinned action lands on deploy job with no environment gate)
+  now uses the `job_anchors` intersection model. `GHA-001` records
+  the job IDs whose steps reference a tag-pinned or branch-pinned
+  ``uses:``; `GHA-014`'s deploy-job anchors were already wired by
+  the `AC-002` pilot. When the same job both pulls an unpinned
+  upstream action AND is the ungated deploy, the chain emits with
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared job(s) — the tj-actions
+  shape, where the compromised upstream code executes in the
+  deploy job's own context with its environment secrets in scope.
+  Disjoint anchors fall back to the legacy co-occurrence signal.
+
+- **Reachability-aware AC-003 (credential-exfil leg).** `AC-003`
+  (unpinned action to credential exfiltration) now intersects
+  `GHA-001` ∩ `GHA-005` job anchors. `GHA-005` populates anchors
+  per-scope: job-level / step-level static AWS keys anchor to the
+  containing job; workflow-level ``env:`` inherits to every job
+  and so unions with every job ID in the workflow. When the same
+  job both pulls an unpinned upstream action AND can read
+  ``$AWS_ACCESS_KEY_ID`` / ``$AWS_SECRET_ACCESS_KEY``, the chain
+  emits with `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared job(s) —
+  the canonical credential-exfiltration path. Disjoint anchors
+  fall back to the legacy co-occurrence signal.
+
+- **Reachability-aware AC-006 (cache poisoning).** `AC-006`
+  (cache poisoning via untrusted trigger) now intersects
+  `GHA-002` ∩ `GHA-011` job anchors. `GHA-002` populates anchors
+  with the jobs that check out PR-head code; `GHA-011` populates
+  anchors with the jobs whose ``actions/cache`` step has a tainted
+  key. A shared job confirms the direct poisoning primitive — the
+  malicious PR-head build script writes the same cache entry the
+  job populates, which a later privileged run will restore.
+  Disjoint anchors keep the legacy co-occurrence signal.
+
+- **Reachability-aware AC-001 + AC-004 (fork-PR family).** Both
+  `AC-001` (fork-PR credential theft) and `AC-004` (self-hosted
+  runner persistent foothold) now use the `job_anchors`
+  intersection model. AC-001 intersects `GHA-002` ∩ `GHA-005`
+  (the same job both runs PR-head code AND can read long-lived
+  AWS keys — the PyTorch supply-chain shape). AC-004 intersects
+  `GHA-002` ∩ `GHA-012` (the same job both runs PR-head code AND
+  hosts on a non-ephemeral self-hosted runner). `GHA-012` gained
+  `job_anchors` carrying the non-ephemeral job IDs to support
+  this and the future `AC-010` / `AC-013` migrations.
+
+- **Reachability-aware AC-010 / AC-013 / AC-014 (runner +
+  token-persistence family).** `AC-010` (self-hosted runner +
+  curl-pipe / token persistence), `AC-013` (caller-controlled
+  GHA runner + token persistence), and `AC-014` (the GitLab
+  analog: caller-controlled tags + CI-token persistence) all
+  use the `job_anchors` intersection model. AC-010 confirms when
+  `GHA-012` ∩ `GHA-019` share a job (the curl-pipe-only branch
+  via `GHA-016` is a blob scan with no per-job attribution, so
+  it stays as the legacy co-occurrence signal). AC-013 confirms
+  when `GHA-036` ∩ `GHA-019` share a job; AC-014 confirms when
+  `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
+  `GL-020` all gained `Finding.job_anchors`.
+
+### Changed
+
+- **Broadened CIS Software Supply Chain Security Guide to near-full
+  catalog coverage.** Cross-mapping pass: no new rule modules, 217
+  net-new entries that fill the queued backfills called out in
+  `tests/test_standards.py`. New entries land in their natural
+  Section-3 (Build Dependencies) home for the **NPM-001..007 / 011**,
+  **PYPI-001..006**, and **MVN-001..007** dep-supply-chain packs;
+  Section-2 (Build Pipelines) for the **TAINT-001..008** cross-step
+  flow family and the matching Jenkins (**JF-001..034**, minus the
+  two already mapped), Drone (**DR-001..011**, minus DR-004), and
+  per-CI defensive packs (GHA-009..058, GL-009..033, BB-009..029,
+  ADO-009..030, CC-025..029, BK-014/015, TKN-013..015,
+  ARGO-013..015); Section-4 (Artifacts) for the OCI gap-fill
+  (OCI-004/007/008). Dockerfile expansion (DF-009, DF-021..030)
+  picks up the environment-based runtime-bypass pack against 3.1.5
+  (trusted package managers). AWS leg extends CodeBuild
+  (CB-008..011), CodePipeline (CP-005/007), PBAC-005, CodeArtifact
+  (CA-001), CodeCommit (CCM-001/002/003), Lambda (LMB-002/003),
+  KMS-002, SM-002, SSM-001/002, and EB-002. Terraform / CloudFormation
+  IaC-native gap-fill maps **TF-001..003** and **CF-001..003**
+  (long-lived access keys as code → 1.3.4, hard-coded secret
+  shapes → 1.5.1 + 2.3.4, CodeBuild VPC public subnet → 2.1.6).
+  SCM-026 (webhook insecure transport / no HMAC) is reversed from
+  its previous unmapped state and lands at 2.4.3 (unauthenticated
+  pipeline-exec trigger surface). The 15 `-000` degraded-mode
+  discovery findings (CB-000, CP-000, CD-000, ECR-000, IAM-000,
+  PBAC-000, CT-000, CWL-000, EB-000, CA-000, CCM-000, LMB-000,
+  KMS-000, SM-000, SSM-000) land at 2.3.7 (pipeline audit logs) /
+  5.2.3 (deploy env audit), mirroring the OWASP CICD-SEC-10 +
+  ESF-C-AUDIT precedent — when the scanner cannot enumerate a
+  provider surface the visibility gap surfaces as an unobservable
+  pipeline / deployment audit trail, the same conceptual scope as
+  the CIS audit sub-controls. After: 512 mappings (was 278), all
+  25 controls evidenced, 99% of the OWASP catalog mapped. The 4
+  rules left unmapped are scoped outside the supply-chain surface
+  (DF-007 / OCI-006 container-runtime hygiene, KMS-001 / SM-001
+  key + secret rotation lifecycle).
+
+- **Broadened S2C2F (Secure Supply Chain Consumption Framework)
+  mappings on the OSS-consumption surface.** Cross-mapping pass,
+  no new rule modules, 59 net-new entries. S2C2F is narrower than
+  CIS SSCS — it only covers Ingest / Scan / Inventory / Update /
+  Enforce / Audit / Rebuild / Fix for consuming open-source
+  software, so the expansion targets just the surfaces that fit:
+  **ING-1** (trusted package managers) picks up cross-provider TLS
+  bypass (GL-023, BB-023, ADO-023, JF-023/35, DR-006, GCB-011),
+  GHA remote-script / insecure-install (GHA-016, GHA-017), and the
+  NPM/PyPI/Maven non-registry / extra-index / wildcard-mirror
+  shape (NPM-003/004/007, PYPI-003/005, MVN-003/007). Dockerfile
+  env-bypass pack (DF-021/22/24/26..29) lands on ING-1 too, since
+  the env vars disable the trusted-source channel for any in-image
+  install. **ING-3** (deny-list) picks up the GHA reputation pack
+  (GHA-041/042/043/047) as deny-list-candidate signals. **UPD-1**
+  (pin + track) extends across Drone (DR-001/005/008), NPM/PyPI/
+  Maven pinning (NPM-001/002/005, PYPI-001/002/004,
+  MVN-001/002/004/005), OCI legacy / weak-digest shapes (OCI-007/
+  008), and the GHA-023 reusable-workflow / GHA-051 services-image
+  / BB-029 step+service pinning surface. **REB-3** (SBOM) extends
+  to OCI provenance annotations (OCI-001/003/005), Helm chart
+  metadata (HELM-005/007/010), and SBOM-content gaps in the
+  ATTEST family (ATTEST-003/004/007). **REB-4** (signed-SBOM /
+  attested provenance) extends to ATTEST-001/002/005/006 +
+  OCI-002, the in-toto / SLSA attestation content rules. After:
+  211 mappings (was 152), all 11 controls evidenced.
+
+- **Broadened OpenSSF Scorecard mappings to 85% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 138 net-new entries.
+  Scorecard's check set (Pinned-Dependencies, Dangerous-Workflow,
+  Token-Permissions, Signed-Releases, SBOM, Vulnerabilities, SAST,
+  Code-Review, Branch-Protection, Dependency-Update-Tool) is
+  narrower than CIS SSCS, so the expansion targets the rules that
+  fit those checks. **Pinned-Dependencies** picks up the
+  NPM/PyPI/Maven dep-supply-chain pack (NPM-001..006,
+  PYPI-001..006, MVN-001..007), the Dockerfile env-bypass pack
+  (DF-021/22/24/26..29 + DF-009), reusable-workflow / services
+  pinning (GHA-017/051, BB-029), HELM-008 stale Chart.lock, and
+  the Cloud Build curl-pipe / TLS / pkg-integrity surface
+  (GCB-010/011/013). **Dangerous-Workflow** picks up
+  **TAINT-001..008** (cross-step injection), the GHA worm-
+  mitigation + advanced-PPE pack (GHA-030..036, 041..049, 052/53/
+  56/57/58), cross-pipeline / cross-project artifact ingestion
+  rules (ADO-010, BB-010, GL-010), docker-privileged variants
+  across providers (BB-005/13, CB-002, CC-010/15/17, GL-017,
+  JF-17/25, TKN-13), the GCB shell / tainted-substitution pack
+  (GCB-016/019/022/023), and Dockerfile privileged / env-bypass
+  shapes (DF-008/12/23/30 + NPM-004/007). **Token-Permissions**
+  picks up GHA-030/33/34/43/49/50/54/55/57, NPM-011, CC-004/14/31,
+  DR-004, GL-031, JF-003/33/34, ARGO-013, GCB-012/18/20, DF-025,
+  CA-003, PBAC-002/005, and Terraform / CloudFormation IaC-native
+  long-lived-key + hard-coded-secret rules (TF-001/2, CF-001/2).
+  **Signed-Releases** picks up GCB-017/024 and the in-toto / SLSA
+  attestation content rules (ATTEST-001/002/005/006). **SBOM**
+  picks up GCB-015, ATTEST-003/004/007, OCI-003/005, and JF-027
+  (archiveArtifacts fingerprint). **SAST** + **Branch-Protection**
+  pick up the SCM-043..047 signed-commit + code-scanning pack.
+  **Code-Review** picks up ADO-029, BB-013/28, BK-013, CC-031.
+  After: 441 mappings (was 303), all 10 controls evidenced. The
+  75 rules that remain unmapped are scoped outside Scorecard's
+  check set (timeout / ephemeral / discoverability hygiene,
+  network-boundary AWS rules, container-runtime hygiene,
+  `-000` degraded-mode discovery findings, secret-scanning posture
+  per the existing carve-outs).
+
+- **Broadened SLSA Build Track to 80% catalog coverage, plus
+  GCB rule-numbering fix.** Cross-mapping pass, no new rule modules,
+  188 net-new entries. **Build.L3.NonFalsifiable** absorbs the
+  per-CI secret / cred / unpinned / untrusted-trigger surface
+  across CodeBuild (CB-001/05/06/08/09/10/11), CodePipeline (CP-04/
+  05/07), CircleCI (CC-005/09/13/18/19/22/26/29/30/31), Drone
+  (DR-001..011), and the GitHub Actions / GitLab / Bitbucket /
+  Azure DevOps / Jenkins long-lived-creds + deploy-gate + service-
+  image-unpinned + malicious-indicator gaps. The dep-supply-chain
+  pack (NPM-001..007/11, PYPI-001..006, MVN-001..007) lands on
+  L3.NonFalsifiable since each unpinned / non-registry /
+  compromised-version finding is a tenant-substitutable input.
+  **Build.L3.Isolated** absorbs **TAINT-001..008** (cross-step
+  influence on the build env), the Dockerfile env-bypass pack
+  (DF-005/12/21..30), TKN-013/15, ARGO-015, BK-15, GL-032/33,
+  ADO-030, JF-25/32/35, and the GCB tainted-substitution shell
+  pack. **L1.Provenance** picks up SIGN-001/002, LMB-001, CA-001,
+  ECR-005, JF-027 (archiveArtifacts fingerprint), HELM-007/010,
+  OCI-003/005, and the SBOM rule GCB-015. **L2.Signed** picks up
+  SCM-043 / SCM-044 (signed-commit posture). IAM extends to the
+  full IAM-001..008 NonFalsifiable surface. Terraform /
+  CloudFormation IaC-native rules (TF-001..003, CF-001..003)
+  land on L3.NonFalsifiable + L3.Isolated. **Bug fix:** the
+  existing GCB-008/009/014/015 mappings were inverted — the rule
+  IDs got renumbered at some point but the SLSA file's comments
+  + targets weren't updated. GCB-008 (vuln scanning) is no longer
+  mis-credited to L1.Provenance / L2.Signed; GCB-009 (signing) now
+  maps to L2.Signed; GCB-014 (logging disabled) is no longer
+  mis-mapped to L3.Isolated; GCB-015 (SBOM) now correctly maps
+  to L1.Provenance only; and the actual provenance rule GCB-017
+  is now mapped to [L1.Provenance, L2.Signed, L3.NonFalsifiable].
+  After: 413 mappings (was 225), all SLSA controls evidenced,
+  80% of the OWASP catalog. The 103 rules left unmapped are
+  scoped outside the Build track (vuln scanning, audit logs,
+  deploy env, AWS lifecycle hygiene, source-side SCM review
+  controls, container runtime hygiene, `-000` discovery findings).
+
+- **Broadened NIST SSDF (SP 800-218 v1.1) to 99% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 334 net-new entries.
+  SSDF is the broadest framework the scanner targets — 13 controls
+  across Prepare-the-Org (PO), Protect-the-Software (PS),
+  Produce-Well-Secured (PW), and Respond-to-Vulnerabilities (RV) —
+  so almost every rule lands. Follows the existing per-rule pattern:
+  pinning + TLS + dep verify → PW.4.1 + PW.4.4; shell-eval +
+  interpolation + sandbox-escape → PW.6.1 + PW.9.1; secret leakage
+  + long-lived creds + persistence → PS.1.1; signing + SBOM +
+  attestation → PS.2.1 + PS.3.2; approval gates + env separation
+  + branch-filter → PO.5.1; timeout + ephemeral + runtime hardening
+  → PO.5.2 + PW.9.1; audit-trail + retention → PO.3.3; vuln scan
+  + compromised-pkg + malicious-activity → RV.1.1. Picks up the
+  full GHA-006..058 worm-mitigation + advanced-PPE catalog,
+  GL-006..033, BB-006..029, ADO-006..030, CC-024..031, BK-014/015,
+  the entire Jenkins (JF-001..035), Drone (DR-001..011), Tekton
+  (TKN-001..015), and Argo (ARGO-001..015) provider packs, the
+  NPM/PyPI/Maven dep-supply-chain pack, Dockerfile env-bypass pack
+  (DF-021..030), OCI manifest gaps (OCI-001..008 minus OCI-006),
+  the ATTEST family, TAINT-001..008, the AWS extras (CB-008..11,
+  CP-005/7, CA-001..4, CCM-001..3, SIGN-001/2, LMB-001..4,
+  KMS-001/2, SM-001/2, SSM-001/2, CT/CWL/CW/EB audit-trail,
+  ECR-006/7, PBAC-003/5, IAM-007/8), SCM-043..047, and TF/CF
+  IaC-native long-lived-key + hard-coded-secret + VPC-public-subnet
+  rules. The `-000` degraded-mode discovery findings all map to
+  PO.3.3 (audit trail), mirroring the CIS SSCS / OWASP / ESF
+  visibility-gap precedent. After: 515/516 = 99% (was 181, 35%).
+  Only OCI-006 (excessive layer count) remains unmapped — pure
+  image-bloat hygiene with no SSDF analog.
 
 ## [1.0.5] - 2026-05-18
 

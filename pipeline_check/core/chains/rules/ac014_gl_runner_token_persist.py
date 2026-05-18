@@ -25,7 +25,7 @@ have to be in the same execution.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -74,10 +74,41 @@ RULE = ChainRule(
 def match(findings: list[Finding]) -> list[Chain]:
     # Same-pipeline pairing matters: GL-032 in pipeline A and
     # GL-020 in pipeline B are independent risks, not a chain.
+    # Reachability: a shared job between GL-032 (the trigger picks
+    # this job's runner via a tainted ``tags:``) and GL-020 (this
+    # job writes the CI token to disk) confirms the single-job
+    # credential delivery path.
     grouped = group_by_resource(findings, ["GL-032", "GL-020"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GL-032"], ck_map["GL-020"]]
+        gl032 = ck_map["GL-032"]
+        gl020 = ck_map["GL-020"]
+        triggers = [gl032, gl020]
+
+        target_jobs = set(gl032.job_anchors)
+        persist_jobs = set(gl020.job_anchors)
+        shared = sorted(target_jobs & persist_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"caller-targeted runner and token persistence share "
+                f"job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) both let the pipeline trigger pick "
+                f"the runner via a tainted ``tags:`` AND write the "
+                f"CI token to disk on whatever runner was picked."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: caller-targeted "
+                "``tags:`` and CI-token persistence land in different "
+                "jobs. Treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A job's ``tags:`` is computed from an attacker-"
@@ -98,13 +129,20 @@ def match(findings: list[Finding]) -> list[Chain]:
             "the rest of the token's lifetime, pushing to "
             "branches, accessing the package registry, downloading "
             "protected artifacts, all under the job's credential "
-            "scope."
+            "scope.\n"
+            f"{reach_narrative}"
         )
+
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -114,5 +152,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

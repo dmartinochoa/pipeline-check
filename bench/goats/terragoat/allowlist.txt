@@ -1,0 +1,1 @@
+# Known false positives on terragoat. Format: CHECK-ID  # reason.

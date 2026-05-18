@@ -63,6 +63,34 @@ STANDARD = Standard(
         "BK-008":   ["ING-1"],             # TLS bypass
         "TKN-008":  ["ING-1"],             # remote install / TLS bypass
         "ARGO-008": ["ING-1"],             # remote install / TLS bypass
+        # TLS / certificate verification bypass across CI providers
+        # = breaks the trusted-source guarantee for OSS install steps.
+        "GL-023":   ["ING-1"],             # GitLab TLS bypass
+        "BB-023":   ["ING-1"],             # Bitbucket TLS bypass
+        "ADO-023":  ["ING-1"],             # Azure DevOps TLS bypass
+        "JF-023":   ["ING-1"],             # Jenkins TLS bypass
+        "JF-035":   ["ING-1"],             # httpRequest ignoreSslErrors: true
+        "DR-006":   ["ING-1"],             # Drone TLS bypass
+        "GCB-011":  ["ING-1"],             # Cloud Build TLS bypass
+        "GHA-016":  ["ING-1"],             # remote script piped to shell
+        "GHA-017":  ["ING-1"],             # package install from insecure source
+        # NPM / PyPI / Maven manifest static analysis
+        "NPM-003":  ["ING-1"],             # non-registry source (git/path/tarball)
+        "NPM-004":  ["ING-1"],             # install-time lifecycle script
+        "NPM-007":  ["ING-1"],             # .npmrc ignore-scripts enforcement
+        "PYPI-003": ["ING-1"],             # http index / --trusted-host
+        "PYPI-005": ["ING-1"],             # --extra-index-url (dep confusion)
+        "MVN-003":  ["ING-1"],             # plaintext-HTTP repository
+        "MVN-007":  ["ING-1"],             # settings.xml wildcard mirror
+        # Dockerfile env-bypass pack disables the trusted-source channel
+        # for any subsequent OSS install in the image.
+        "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
+        "DF-022":   ["ING-1", "UPD-1"],    # npm install (not npm ci) — re-resolves
+        "DF-024":   ["ING-1"],             # npm install runs lifecycle scripts
+        "DF-026":   ["ING-1"],             # NODE_TLS_REJECT_UNAUTHORIZED=0
+        "DF-027":   ["ING-1"],             # PYTHONHTTPSVERIFY=0
+        "DF-028":   ["ING-1"],             # GIT_SSL_NO_VERIFY=1
+        "DF-029":   ["ING-1"],             # REQUESTS_CA_BUNDLE neutered
 
         # ── SCA-1: scan for known vulns ────────────────────────────
         "GHA-020":  ["SCA-1"],
@@ -93,6 +121,14 @@ STANDARD = Standard(
         "NPM-006":  ["SCA-3", "ING-3"],     # compromised npm version
         "PYPI-006": ["SCA-3", "ING-3"],     # compromised PyPI version
         "MVN-006":  ["SCA-3", "ING-3"],     # compromised Maven version
+        # Reputation-class deny-list signals: not malware-confirmed,
+        # but each finding is one entry on a curated deny-list of
+        # references that should require human-in-the-loop review
+        # before installation.
+        "GHA-041":  ["ING-3"],              # single-maintainer action
+        "GHA-042":  ["ING-3"],              # very-young action repo
+        "GHA-043":  ["ING-3"],              # low-star + sensitive perms
+        "GHA-047":  ["ING-3"],              # fresh-ref cooldown
         "GL-025":   ["SCA-3"],
         "BB-025":   ["SCA-3"],
         "ADO-026":  ["SCA-3"],
@@ -131,6 +167,28 @@ STANDARD = Standard(
         "BK-001":   ["UPD-1"],
         "TKN-001":  ["UPD-1"],
         "ARGO-001": ["UPD-1"],
+        # Drone pinning surface
+        "DR-001":   ["UPD-1"],             # step image not digest-pinned
+        "DR-005":   ["UPD-1"],             # plugin floating tag
+        "DR-008":   ["UPD-1"],             # pull: never (skips registry verification)
+        # NPM / PyPI / Maven pinning
+        "NPM-001":  ["UPD-1"],             # floating range in package.json
+        "NPM-002":  ["UPD-1"],             # lock entry missing integrity
+        "NPM-005":  ["UPD-1"],             # git dep with mutable ref
+        "PYPI-001": ["UPD-1"],             # requirements lacks ==pin
+        "PYPI-002": ["UPD-1"],             # hash pinning missing
+        "PYPI-004": ["UPD-1"],             # VCS dep without commit SHA
+        "MVN-001":  ["UPD-1"],             # floating Maven version range
+        "MVN-002":  ["UPD-1"],             # mutable SNAPSHOT dep
+        "MVN-004":  ["UPD-1"],             # missing <version> element
+        "MVN-005":  ["UPD-1"],             # lax repository checksumPolicy
+        # OCI image manifest pinning
+        "OCI-007":  ["UPD-1"],             # legacy schemaVersion 1 (no digest immutability)
+        "OCI-008":  ["UPD-1"],             # weak digest algorithm
+        # Reusable / cross-template pinning surface
+        "GHA-023":  ["UPD-1"],             # reusable workflow not SHA-pinned
+        "GHA-051":  ["UPD-1"],             # services / container image unpinned
+        "BB-029":   ["UPD-1"],             # step + service image not digest-pinned
 
         # ── UPD-2: automated update tool ───────────────────────────
         "GHA-022":  ["UPD-2"],
@@ -185,6 +243,21 @@ STANDARD = Standard(
         "BK-010":   ["REB-3"],
         "TKN-010":  ["REB-3"],
         "ARGO-010": ["REB-3"],
+        # OCI image provenance annotations are the "SBOM accompanies
+        # artifact" surface for container artifacts; same shape as
+        # DF-016 above.
+        "OCI-001":  ["REB-3"],             # missing OCI provenance annotations
+        "OCI-003":  ["REB-3"],             # missing image.created
+        "OCI-005":  ["REB-3"],             # missing image.licenses
+        # Helm chart provenance metadata
+        "HELM-005": ["REB-3"],             # maintainers chain-of-custody
+        "HELM-007": ["REB-3"],             # description empty
+        "HELM-010": ["REB-3"],             # appVersion empty
+        # SBOM content gaps live here too (the SBOM exists but
+        # under-specifies what it should track).
+        "ATTEST-003": ["REB-3"],           # SBOM floating versions
+        "ATTEST-004": ["REB-3"],           # provenance lacks resolved materials
+        "ATTEST-007": ["REB-3"],           # SBOM missing supplier attribution
 
         # ── REB-4: signed-SBOM / attested provenance ───────────────
         "GHA-024":  ["REB-4"],
@@ -196,6 +269,15 @@ STANDARD = Standard(
         "BK-011":   ["REB-4"],
         "TKN-011":  ["REB-4"],
         "ARGO-011": ["REB-4"],
+        # in-toto / SLSA attestation content rules: each flags the
+        # provenance document itself (untrusted builder, unverifiable
+        # source claim, unpinned subject, missing buildType) — these
+        # are the REB-4 "attested provenance" failure modes.
+        "ATTEST-001": ["REB-4"],           # untrusted SLSA builder identity
+        "ATTEST-002": ["REB-4"],           # source-repo claim missing/unverifiable
+        "ATTEST-005": ["REB-4"],           # in-toto subject digest unpinned
+        "ATTEST-006": ["REB-4"],           # buildType missing / placeholder
+        "OCI-002":    ["REB-4"],           # missing OCI build attestation
 
         # ── Dockerfile (image build = OSS consumption boundary) ───
         # ING-1 covers using trusted package managers / registries;

@@ -14,7 +14,7 @@ once, harvest forever" property.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, failing, min_confidence
 
 RULE = ChainRule(
@@ -94,6 +94,44 @@ def match(findings: list[Finding]) -> list[Chain]:
                 "job retains access to the token for the lifetime "
                 "of the runner process."
             )
+
+        # Reachability is computed from GHA-019's job_anchors only;
+        # GHA-016 currently runs as a blob scan with no per-job
+        # attribution, so we can't anchor that leg precisely. When
+        # GHA-019 is the secondary leg AND its anchors intersect
+        # the non-ephemeral self-hosted job set from GHA-012, the
+        # persistence-to-secret-harvest path is confirmed in a single
+        # job. The GHA-016-only branch stays as co-occurrence.
+        runner_jobs = set(ck_map["GHA-012"].job_anchors)
+        confirmed = False
+        shared: list[str] = []
+        if "GHA-019" in ck_map:
+            persist_jobs = set(ck_map["GHA-019"].job_anchors)
+            shared = sorted(runner_jobs & persist_jobs)
+            confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"token persistence and non-ephemeral runner share "
+                f"job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) both persist the GitHub token AND "
+                f"run on a non-ephemeral self-hosted runner. The "
+                f"token outlives the step that wrote it on a host "
+                f"that outlives the job."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the persistence "
+                "primitive and the non-ephemeral runner fire on the "
+                "same workflow file but no shared-job claim is "
+                "available (GHA-016 is a blob scan; GHA-019 anchors "
+                "didn't intersect). Treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. The workflow runs on a self-hosted runner that "
@@ -103,13 +141,20 @@ def match(findings: list[Finding]) -> list[Chain]:
             + "\n".join(leg_descriptions) + "\n"
             "  3. Once persistence lands, every subsequent workflow "
             "execution leaks its secrets via the runner's "
-            "filesystem to the attacker's foothold."
+            "filesystem to the attacker's foothold.\n"
+            f"{reach_narrative}"
         )
+
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -119,5 +164,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

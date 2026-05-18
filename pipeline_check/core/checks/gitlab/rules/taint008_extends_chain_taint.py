@@ -106,8 +106,21 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"job script: {'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
+    # Sink-side consumer jobs. Same ``<job>:script[<idx>]`` shape as
+    # TAINT-004. ``rsplit`` on the trailing ``":"`` preserves job
+    # names that legitimately contain ``":"`` (e.g. ``deploy:prod``)
+    # while shedding the trailing sink suffix. AC-022's reachability-
+    # aware matcher unions these with the producer-side GL-002
+    # anchors and intersects against GL-004's ungated-deploy set, so
+    # an extends-chain hop into a deploy job confirms an end-to-end
+    # path.
+    anchor_jobs: dict[str, None] = {}
+    for p in paths:
+        anchor_jobs[p.sink_location.rsplit(":", 1)[0]] = None
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        job_anchors=tuple(anchor_jobs),
+        path_evidence=tuple(rendered),
     )

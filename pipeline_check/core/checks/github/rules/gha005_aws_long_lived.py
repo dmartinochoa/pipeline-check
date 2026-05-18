@@ -68,19 +68,31 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     static_keys = False
     oidc_role = False
     locations: list[Location] = []
+    # Preserve insertion order without duplicates. Job-level and step-
+    # level static keys anchor to the containing job; workflow-level
+    # env applies to every job (GitHub inherits ``env:`` declared at
+    # the top into each job's environment) so workflow-scope leaks are
+    # unioned with every job_id at the end. The reachability-aware
+    # AC-003 chain intersects these with GHA-001's unpinned-action jobs
+    # to confirm the credential-exfil path.
+    anchor_jobs: dict[str, None] = {}
+    all_job_ids: list[str] = []
 
-    def _flag_static(anchor: Any) -> None:
+    def _flag_static(anchor: Any, job_id: str | None) -> None:
         """Mark static-key found and record a Location at *anchor*."""
         nonlocal static_keys
         static_keys = True
         if isinstance(anchor, dict):
             line = _line_of(anchor)
             locations.append(Location(path=path, start_line=line, end_line=line))
+        if job_id is not None:
+            anchor_jobs[job_id] = None
 
-    for _, job in iter_jobs(doc):
+    for job_id, job in iter_jobs(doc):
+        all_job_ids.append(job_id)
         # Check job-level env for non-secrets AWS key assignments.
         if _env_has_static_key(job.get("env")):
-            _flag_static(job.get("env"))
+            _flag_static(job.get("env"), job_id)
         for step in iter_steps(job):
             uses = step.get("uses") or ""
             if isinstance(uses, str) and uses.startswith(
@@ -92,6 +104,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 if "aws-access-key-id" in w or "aws-secret-access-key" in w:
                     static_keys = True
                     locations.append(step_location(path, step))
+                    anchor_jobs[job_id] = None
             env = step.get("env") or {}
             if isinstance(env, dict):
                 for value in env.values():
@@ -99,27 +112,36 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                         "AWS_ACCESS_KEY_ID" in value
                         or "AWS_SECRET_ACCESS_KEY" in value
                     ):
-                        _flag_static(env)
+                        _flag_static(env, job_id)
                         break
             # Detect `aws configure set aws_access_key_id ...` in run blocks.
             run = step.get("run")
             if isinstance(run, str) and _AWS_CONFIGURE_RE.search(run):
                 static_keys = True
                 locations.append(step_location(path, step))
+                anchor_jobs[job_id] = None
             # Check step-level env for non-secrets AWS key assignments.
             if _env_has_static_key(step.get("env")):
-                _flag_static(step.get("env"))
+                _flag_static(step.get("env"), job_id)
     doc_env = doc.get("env") or {}
+    wf_env_static = False
     if isinstance(doc_env, dict):
         for value in doc_env.values():
             if isinstance(value, str) and (
                 "AWS_ACCESS_KEY_ID" in value
                 or "AWS_SECRET_ACCESS_KEY" in value
             ):
-                _flag_static(doc_env)
+                _flag_static(doc_env, None)
+                wf_env_static = True
                 break
     if _env_has_static_key(doc_env):
-        _flag_static(doc_env)
+        _flag_static(doc_env, None)
+        wf_env_static = True
+    # Workflow-level env inherits into every job, so the credential
+    # is reachable from any job. Anchor on all job_ids accordingly.
+    if wf_env_static:
+        for jid in all_job_ids:
+            anchor_jobs[jid] = None
     if not static_keys and not oidc_role:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -145,4 +167,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations if not passed else [],
+        job_anchors=tuple(anchor_jobs) if not passed else (),
     )

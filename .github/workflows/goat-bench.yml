@@ -1,0 +1,130 @@
+name: GOAT bench
+
+# Real-world vulnerable-by-design corpus benchmark. Clones the
+# goats declared in ``bench/goats.yml``, scans each one with the
+# installed pipeline-check, and reports recall + drift vs the
+# committed baselines.
+#
+# Triggers:
+#   * Nightly cron on master.
+#   * Every PR that touches the rule pack, the chain engine, or the
+#     bench code itself.
+#   * Manual dispatch.
+#
+# The job runner exits non-zero when recall regresses or a new
+# finding appears against the baseline that isn't in the goat's
+# allowlist. The PR comment / job warning surface that failure;
+# the artifact uploaded on every run lets reviewers eyeball deltas
+# even on green runs.
+
+on:
+  schedule:
+    - cron: "37 4 * * *"  # nightly 04:37 UTC, off the hour to dodge runner congestion
+  pull_request:
+    paths:
+      - "pipeline_check/core/checks/**"
+      - "pipeline_check/core/chains/**"
+      - "bench/goats.yml"
+      - "bench/goat_runner.py"
+      - "bench/goats/**"
+      - ".github/workflows/goat-bench.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  goat-bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Needed by the sticky PR comment step below. Has no effect
+      # when the trigger is ``schedule`` or ``workflow_dispatch``.
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          # GHA-002 covers checkout steps that leave the GITHUB_TOKEN
+          # persisted in the git config. The bench workflow clones
+          # external goats via plain git (no token needed) so dropping
+          # the persisted credential is harmless and keeps dogfood
+          # passing.
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install pipeline_check
+        run: |
+          pip install --require-hashes -r requirements-dev.txt
+          pip install -e .
+
+      - name: Run GOAT bench
+        id: bench
+        # ``continue-on-error`` so the artifact upload + PR comment
+        # downstream still run on a regression. The job's overall
+        # status is restored at the end via the "Surface bench
+        # status" step.
+        continue-on-error: true
+        run: |
+          python bench/goat_runner.py --markdown > goat-report.md
+          python bench/goat_runner.py --json    > goat-results.json
+
+      - name: Upload bench artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: goat-bench-report
+          path: |
+            goat-report.md
+            goat-results.json
+
+      - name: Post sticky PR comment
+        # Forks get a read-only GITHUB_TOKEN, so the comment step
+        # fails on PRs from a fork. Skip the step there; the
+        # uploaded artifact is still visible on the PR's Checks tab.
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        # Look up an existing comment by the runner's HTML marker
+        # (the ``<!-- goat-bench-comment -->`` line at the top of
+        # render_markdown's output) and PATCH it in place if found,
+        # otherwise post a fresh comment. Keeps the PR thread free
+        # of duplicated bench reports across force-pushes.
+        run: |
+          set -euo pipefail
+          MARKER="<!-- goat-bench-comment -->"
+          EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" \
+            | head -n1)
+          if [ -n "$EXISTING" ]; then
+            jq -Rs '{body: .}' < goat-report.md \
+              | gh api --method PATCH \
+                  "repos/$REPO/issues/comments/$EXISTING" \
+                  --input -
+          else
+            gh pr comment "$PR_NUMBER" --body-file goat-report.md
+          fi
+
+      - name: Surface bench status
+        # Translate the runner's exit code back into a job result.
+        # ``continue-on-error`` above lets the artifact upload run
+        # even on regression; this step is what makes the run red.
+        if: steps.bench.outcome == 'failure'
+        run: |
+          echo "::warning::GOAT bench reported regressions, missing expected check IDs, or scan errors. See artifact 'goat-bench-report'."
+          exit 1
