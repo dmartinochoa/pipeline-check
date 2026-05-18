@@ -173,6 +173,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+### Changed
+
+- **Broadened CIS Software Supply Chain Security Guide to near-full
+  catalog coverage.** Cross-mapping pass: no new rule modules, 206
+  net-new entries that fill the queued backfills called out in
+  `tests/test_standards.py`. New entries land in their natural
+  Section-3 (Build Dependencies) home for the **NPM-001..007 / 011**,
+  **PYPI-001..006**, and **MVN-001..007** dep-supply-chain packs;
+  Section-2 (Build Pipelines) for the **TAINT-001..008** cross-step
+  flow family and the matching Jenkins (**JF-001..034**, minus the
+  two already mapped), Drone (**DR-001..011**, minus DR-004), and
+  per-CI defensive packs (GHA-009..058, GL-009..033, BB-009..029,
+  ADO-009..030, CC-025..029, BK-014/015, TKN-013..015,
+  ARGO-013..015); Section-4 (Artifacts) for the OCI gap-fill
+  (OCI-004/007/008). Dockerfile expansion (DF-009, DF-021..030)
+  picks up the environment-based runtime-bypass pack against 3.1.5
+  (trusted package managers). AWS leg extends CodeBuild
+  (CB-008..011), CodePipeline (CP-005/007), and PBAC-005. After:
+  484 mappings (was 278), all 25 controls evidenced, no rules left
+  in the OWASP catalog without a CIS SSCS mapping aside from the
+  intentional carve-outs documented in the file (SCM-026 webhook,
+  OCI-006 layer count, the `-000` degraded-mode findings, and the
+  AWS KMS/SM/SSM/EB-002 + TF/CF native packs that have no clean
+  CIS SSCS sub-control fit).
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
