@@ -189,6 +189,9 @@ STANDARD = Standard(
         "GHA-053":  ["CICD-SEC-4"],                # if: predicate untrusted-context
         "GHA-054":  ["CICD-SEC-6"],                # checkout ssh-key persists
         "GHA-055":  ["CICD-SEC-6"],                # reusable outputs leak secret
+        "GHA-056":  ["CICD-SEC-1", "CICD-SEC-4"],  # known supply-chain worm IOC strings
+        "GHA-057":  ["CICD-SEC-4", "CICD-SEC-6"],  # secret-scanner output piped to egress
+        "GHA-058":  ["CICD-SEC-4", "CICD-SEC-7"],  # agentic CLI with permission-bypass flags
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

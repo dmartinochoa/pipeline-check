@@ -12,6 +12,55 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Supply-chain worm detection pack (GHA-056..058, AC-028..029).**
+  New GitHub Actions rules targeting the post-`tj-actions` wave of
+  worm-class attacks. `GHA-056` flags literal IOC strings from the
+  Sept 2025 Shai-Hulud npm worm and the Aug 2025 Nx `s1ngularity`
+  compromise (the `shai-hulud-workflow.yml` filename, the worm's
+  webhook.site UUID, repo names matching `Shai-Hulud` /
+  `Shai-Hulud Migration` / `s1ngularity-repository`), backed by a
+  new curated `_worm_indicators.py` registry mirroring the existing
+  `_compromised_actions.py` shape. `GHA-057` flags secret-scanner
+  output (TruffleHog, gitleaks) piped to network egress or invoked
+  on untrusted triggers (`pull_request_target`, `issue_comment`,
+  `workflow_run`), the harvest-leg primitive Shai-Hulud's postinstall
+  used. `GHA-058` flags agentic CLIs (`claude`, `gemini`, `q`,
+  `cursor-agent`, `aider`, `openhands`, `goose`) invoked with
+  permission-bypass flags (`--dangerously-skip-permissions`,
+  `--yolo`, `--trust-all-tools`, `--allowedTools '*'`), the
+  s1ngularity follow-up vector. `AC-028` correlates `NPM-004`
+  (install-time lifecycle scripts) with `GHA-048` (workflow
+  self-mutation) or `GHA-049` (cross-repo push) — the co-location
+  is the Shai-Hulud propagation topology. `AC-029` correlates an
+  attacker-influenced trigger (GHA-002 / GHA-009 / GHA-013) with a
+  long-lived publish credential (GHA-050 / GHA-005) and an
+  unguarded dep-install path (GHA-021 / GHA-029) — the lane both
+  the Ultralytics PyPI cache-poison (Dec 2024) and the Nx
+  s1ngularity compromise ran through.
+
+- **Compromised-package registry refresh (NPM-006, PYPI-006).**
+  `_compromised_packages.py` for both ecosystems now carries the
+  2023–2025 incident wave: Ledger Connect Kit 1.1.5–1.1.7 (Dec 2023),
+  Lottie Player 2.0.5–2.0.7 (Oct 2024), `@rspack/core` /
+  `@rspack/cli` / `vant` 2.x–4.x (Dec 2024), `@solana/web3.js`
+  1.95.6–1.95.7 (CVE-2024-54134), Ultralytics 8.3.41–8.3.46
+  (cache-poisoned PyPI release, Dec 2024), the `eslint-config-prettier`
+  CVE-2025-54313 family (`eslint-plugin-prettier`, `synckit`,
+  `@pkgr/core`, `napi-postinstall`), `nx` 20.9–21.8 (s1ngularity,
+  Aug 2025), and a curated subset of the Shai-Hulud Sept 2025
+  affected list (`@ctrl/*`, `@crowdstrike/*`, `ngx-bootstrap`,
+  `rxnt-*`). Operators wanting the long tail of Shai-Hulud IOCs
+  should cross-reference the Microsoft advisory cited in each entry.
+
+- **Exfil-channel IOC refresh (`_malicious.py`).** GHA-027's
+  exfil-channel pattern set now covers ngrok subdomains
+  (`*.ngrok.io`, `*.ngrok-free.app`, `*.ngrok.app`), Cloudflare
+  Quick Tunnels (`*.trycloudflare.com`), serveo SSH tunnels
+  (`*.serveo.net`), pipedream / requestbin / requestcatcher
+  collectors, and a wider secondary paste-site list (`dpaste.com`,
+  `0bin.net`, `ghostbin.co`, `paste.bingner.com`, `hastebin.com`,
+  `paste.rs`, `controlc.com`, `justpaste.it`).
+
 - **Maven package provider (`--pipeline maven`).** Static analysis of
   `pom.xml` and `settings.xml` mirroring the npm / pypi pattern: seven
   rules covering floating Maven version ranges (`[1.0,2.0)`, `LATEST`,

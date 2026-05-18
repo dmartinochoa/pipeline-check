@@ -847,6 +847,58 @@ Move the credential out of the image. Mount it at runtime: a Kubernetes secret (
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-028: npm worm propagation primitive co-located { #ac-028 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">npm</span>
+</div>
+
+A repo carries both halves of the Shai-Hulud-class npm worm propagation primitive: a package.json with install-time lifecycle scripts (NPM-004) sits alongside a GitHub Actions workflow that authors sibling workflow files (GHA-048) or pushes to parameterized external repos (GHA-049). The combination is the topology the Shai-Hulud npm worm used to spread, postinstall harvests credentials from every consumer; the workflow leg writes the next stage of the worm into every repo the stolen token can reach.
+
+**References**
+
+- <https://www.wiz.io/blog/shai-hulud-npm-supply-chain-attack>
+- <https://www.microsoft.com/en-us/security/blog/2025/12/09/shai-hulud-2-0-guidance-for-detecting-investigating-and-defending-against-the-supply-chain-attack/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg: (a) move install-time logic out of ``preinstall`` / ``install`` / ``postinstall`` / ``prepare`` into a documented CLI subcommand consumers invoke deliberately, OR (b) remove the workflow's ability to author workflow YAML on the runner and to push to non-allow-listed external repos. With either leg severed the worm has no propagation primitive in this repo. Long-term: rotate every credential the repo's CI can reach if the GHA-048 / GHA-049 finding suggests the workflow has already executed once.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-029: Untrusted trigger reaches a long-lived publish credential { #ac-029 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1606</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access -> impact</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A single workflow file combines an attacker-influenced trigger (GHA-002 / GHA-009 / GHA-013), a long-lived publish or cloud credential (GHA-050 / GHA-005), and an unguarded dependency-install path (GHA-021 / GHA-029). The combination is the Ultralytics / s1ngularity attack lane: an attacker lands code via PR or comment, the same workflow publishes their payload to a public registry under the victim's identity.
+
+**References**
+
+- <https://blog.pypi.org/posts/2024-12-11-ultralytics-attack-analysis/>
+- <https://nx.dev/blog/s1ngularity-postmortem>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break the lane at any one leg. Either: (a) re-trigger publish on tag-only / push-to-default-branch (drop ``pull_request_target`` / ``issue_comment`` / ``workflow_run`` from the publish workflow), (b) swap the long-lived token for OIDC Trusted Publishing (PyPI) / a federated identity (AWS) / GitHub's ``id-token: write`` flow, (c) enforce a committed lockfile and registry-integrity verification on the dep install. Doing all three is the long-term posture; doing any one breaks the chain.
+
+</div>
+
+</div>
+
 <div class="pg-rule pg-rule--high" markdown>
 
 ### XPC-001: Deploy without verifiable provenance (workflow + image) { #xpc-001 }

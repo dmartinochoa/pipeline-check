@@ -81,6 +81,9 @@ STANDARD = Standard(
         # ── SCA-3: scan for malware / malicious activity ───────────
         "CB-011":   ["SCA-3"],
         "GHA-027":  ["SCA-3"],
+        "GHA-056":  ["SCA-3", "ING-3"],     # known worm IOC = denyable + malware-class
+        "GHA-057":  ["SCA-3"],              # scanner-output-to-egress is malicious shape
+        "GHA-058":  ["SCA-3"],              # AI-CLI bypass turns the runner into a scanner
         "GL-025":   ["SCA-3"],
         "BB-025":   ["SCA-3"],
         "ADO-026":  ["SCA-3"],

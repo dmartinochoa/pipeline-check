@@ -373,6 +373,53 @@ _EXFIL_CHANNEL: tuple[MaliciousPattern, ...] = (
             re.IGNORECASE,
         ),
     ),
+    # ngrok / Cloudflare / serveo public-tunneling endpoints. Real
+    # development tools used in development; in a CI run they're
+    # almost always an exfil tunnel because no production pipeline
+    # should ever reach a tunneled developer host. Wildcard subdomain
+    # form covers ``abc123.ngrok-free.app`` / ``foo.trycloudflare.com``
+    # / ``user.serveo.net``.
+    MaliciousPattern(
+        "exfil-channel", "ngrok tunnel endpoint",
+        re.compile(
+            r"\b[\w-]+\.ngrok(?:-free)?\.(?:io|app|dev)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    MaliciousPattern(
+        "exfil-channel", "Cloudflare quick tunnel",
+        re.compile(r"\b[\w-]+\.trycloudflare\.com\b", re.IGNORECASE),
+    ),
+    MaliciousPattern(
+        "exfil-channel", "serveo SSH tunnel",
+        re.compile(r"\b[\w-]+\.serveo\.net\b", re.IGNORECASE),
+    ),
+    # pipedream / requestbin: the post-webhook.site generation of
+    # public collector endpoints. Both let an attacker register a
+    # disposable bucket in 30 seconds and POST any payload to it.
+    MaliciousPattern(
+        "exfil-channel", "pipedream / requestbin collector",
+        re.compile(
+            r"\b(?:[\w-]+\.m\.pipedream\.net"
+            r"|requestbin\.com|requestbin\.net|requestcatcher\.com"
+            r"|eo[\w-]+\.m\.pipedream\.net)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # Additional paste / file-drop sites not covered by the earlier
+    # ``anonymous file-drop site`` pattern. Mostly cosmetic — the
+    # underlying behavior (POST a payload, get a public URL back) is
+    # the same — but the IOC list aligns with what current malware
+    # actually uses.
+    MaliciousPattern(
+        "exfil-channel", "secondary paste / drop sites",
+        re.compile(
+            r"\b(?:dpaste\.com|0bin\.net|ghostbin\.co"
+            r"|paste\.bingner\.com|hastebin\.com|paste\.rs"
+            r"|controlc\.com|justpaste\.it)\b",
+            re.IGNORECASE,
+        ),
+    ),
     MaliciousPattern(
         "exfil-channel", "Tor hidden-service URL",
         re.compile(r"\b[a-z2-7]{16,56}\.onion\b", re.IGNORECASE),

@@ -54,7 +54,7 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 56)}
+        {f"GHA-{i:03d}" for i in range(1, 59)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
@@ -506,7 +506,7 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 56)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 59)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
