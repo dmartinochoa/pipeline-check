@@ -314,6 +314,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   deploy env, AWS lifecycle hygiene, source-side SCM review
   controls, container runtime hygiene, `-000` discovery findings).
 
+- **Broadened NIST SSDF (SP 800-218 v1.1) to 99% catalog coverage.**
+  Cross-mapping pass, no new rule modules, 334 net-new entries.
+  SSDF is the broadest framework the scanner targets — 13 controls
+  across Prepare-the-Org (PO), Protect-the-Software (PS),
+  Produce-Well-Secured (PW), and Respond-to-Vulnerabilities (RV) —
+  so almost every rule lands. Follows the existing per-rule pattern:
+  pinning + TLS + dep verify → PW.4.1 + PW.4.4; shell-eval +
+  interpolation + sandbox-escape → PW.6.1 + PW.9.1; secret leakage
+  + long-lived creds + persistence → PS.1.1; signing + SBOM +
+  attestation → PS.2.1 + PS.3.2; approval gates + env separation
+  + branch-filter → PO.5.1; timeout + ephemeral + runtime hardening
+  → PO.5.2 + PW.9.1; audit-trail + retention → PO.3.3; vuln scan
+  + compromised-pkg + malicious-activity → RV.1.1. Picks up the
+  full GHA-006..058 worm-mitigation + advanced-PPE catalog,
+  GL-006..033, BB-006..029, ADO-006..030, CC-024..031, BK-014/015,
+  the entire Jenkins (JF-001..035), Drone (DR-001..011), Tekton
+  (TKN-001..015), and Argo (ARGO-001..015) provider packs, the
+  NPM/PyPI/Maven dep-supply-chain pack, Dockerfile env-bypass pack
+  (DF-021..030), OCI manifest gaps (OCI-001..008 minus OCI-006),
+  the ATTEST family, TAINT-001..008, the AWS extras (CB-008..11,
+  CP-005/7, CA-001..4, CCM-001..3, SIGN-001/2, LMB-001..4,
+  KMS-001/2, SM-001/2, SSM-001/2, CT/CWL/CW/EB audit-trail,
+  ECR-006/7, PBAC-003/5, IAM-007/8), SCM-043..047, and TF/CF
+  IaC-native long-lived-key + hard-coded-secret + VPC-public-subnet
+  rules. The `-000` degraded-mode discovery findings all map to
+  PO.3.3 (audit trail), mirroring the CIS SSCS / OWASP / ESF
+  visibility-gap precedent. After: 515/516 = 99% (was 181, 35%).
+  Only OCI-006 (excessive layer count) remains unmapped — pure
+  image-bloat hygiene with no SSDF analog.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
