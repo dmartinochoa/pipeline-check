@@ -152,13 +152,21 @@ regardless of their constituent legs and rendered with a
 `✓ Reachability confirmed` badge in the terminal / Markdown / HTML
 outputs.
 
-`AC-002` (script injection to unprotected deploy) is the first chain
-migrated. Add `--chains-require-reachability` to drop unconfirmed
-chains entirely, the strictest signal available:
+Migrated chains:
+
+- `AC-002` (GHA: script injection to unprotected deploy) — pilot. Uses
+  `GHA-003` / `TAINT-001` / `TAINT-002` ∩ `GHA-014` job anchors.
+- `AC-022` (GitLab: script injection lands on deploy job with no manual
+  gate) — port of the AC-002 pattern. Uses `GL-002` ∩ `GL-004` job
+  anchors. GitLab's `TAINT-004` dotenv-propagation rule isn't job-
+  anchored yet, so cross-job dataflow widening is left to a follow-up.
+
+Add `--chains-require-reachability` to drop unconfirmed chains entirely,
+the strictest signal available:
 
 ```bash
 pipeline_check -p github --chains-require-reachability \
-    --fail-on-chain CRITICAL
+    --fail-on-chain AC-002
 ```
 
 ## Confidence inheritance

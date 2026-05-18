@@ -1777,7 +1777,8 @@ def _install_completion_callback(
         "chains whose triggering findings share an anchor job (an "
         "executable path connects the source to the sink) survive. "
         "Strictest signal, lowest false-positive rate; pair with "
-        "``--fail-on-chain CRITICAL`` for a high-confidence CI gate."
+        "``--fail-on-any-chain`` (or a specific "
+        "``--fail-on-chain AC-...``) for a high-confidence CI gate."
     ),
 )
 @click.option(
