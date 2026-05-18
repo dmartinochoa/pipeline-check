@@ -19,6 +19,17 @@ RUN pip install --no-cache-dir --upgrade pip build \
  && python -m build --wheel --outdir /wheels
 
 FROM python:3.12-slim AS runtime
+# Pick up Debian security patches that the base image hasn't rebuilt
+# against yet. The python:slim tags trail trixie-security by days to
+# weeks, so glibc / openssl / zlib CVEs fixed upstream still show up
+# in Docker Scout scans of a freshly-pulled base. Running
+# ``apt-get upgrade`` here pulls the latest deb13uN of every package
+# already installed, then drops the apt lists so the runtime layer
+# doesn't carry the index.
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 1000 scanner
 COPY --from=builder /wheels/*.whl /tmp/
 # Upgrade pip before installing the wheel so the final image does not
