@@ -629,6 +629,60 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Broadened NIST CSF 2.0 mappings on thin Detect / Respond /
+  Recover controls.** No new rule modules; cross-maps existing rules
+  to subcategories the registry already had signal for. **DE.CM-06**
+  (external-provider monitoring) picks up ECR-006 pull-through
+  upstream, CCM-003 cross-account trigger, and SCM-026 webhook.
+  **DE.AE-03** (multi-source correlation) picks up CT-001 / CT-003
+  multi-region trail and SCM-016 private vuln-reporting intake.
+  **RS.MA-01** (incident response) picks up CW-001 alarm and EB-001
+  event rule as the trigger surfaces. **RC.RP-01** (recovery) picks
+  up ECR-002 (mutable tags break recovery-by-digest). The GV.SC-08
+  (supplier incident planning) gap is documented inline; the control
+  is contractual / process and has no manifest signal to evidence
+  against.
+
+- **Broadened CIS AWS Foundations mappings on thin controls.** No
+  new rule modules; cross-maps four existing rules. **1.16**
+  (over-broad principal) picks up CCM-003 cross-account triggers
+  and EB-002 wildcard EventBridge targets — the same admin-privilege
+  shape the control calls out for IAM. **4.16** (Security Hub
+  posture) picks up CW-001 CodeBuild failure alarms and EB-001
+  pipeline-failure events, mirroring the existing ECR-scanning
+  mapping pattern. The two uncovered controls (1.17 support role,
+  4.3 root-account alarm) are documented inline so future
+  contributors know they need net-new rules, not mappings.
+
+- **Broadened CIS SSCS / Kubernetes / GitHub control coverage.**
+  Cross-mapping pass; only mapping changes plus a small set of new
+  entries for rules already in the registry but absent from each
+  standard's table.
+  - **CIS SSCS**: 220 → 278 mappings. 4.3.3, 1.1.6, 1.1.8, 1.5.1,
+    2.4.2, 4.4.1, 5.2.x audit, and 1.3.4 long-lived tokens
+    broadened. SCM-030 bypass also evidences signing. New OCI /
+    ATTEST / CT / CWL / SIGN / LMB / CA / EB entries fill
+    artifact-provenance and audit-logging surfaces.
+  - **CIS Kubernetes**: filled 5.1.4 (pod-create) and 5.7.1
+    (namespace boundaries) — the two previously uncovered controls.
+    RBAC broadening: K8S-020 / 021 / 042 now evidence the
+    wildcard / pod-create / bind+impersonate cluster of 5.1.x. The
+    SecurityContext umbrella 5.7.3 now covers every
+    securityContext-field rule.
+  - **CIS GitHub**: thin-control count 19 → 15. SCM-030 bypass now
+    evidences every ruleset-enforced control (signing, linear
+    history, admin enforcement, force-push, deletion). CODEOWNERS
+    pair (SCM-011 ↔ SCM-017) cross-coupled. SCM-008 strict status
+    checks also evidence the "branches up to date" knob.
+
+- **GHA-044 now detects `bun i` and `deno install`.** The
+  Direct-PPE rule already caught `bun install`; this extends it to
+  the documented `bun i` shorthand and Deno 2.x's `deno install`,
+  which resolves project deps from `deno.json` / `package.json` and
+  runs npm lifecycle hooks when `--allow-scripts` is set. Mirrors
+  the existing `npm run lint` exemption: `bun run` and `deno task`
+  target named scripts, not install-time hooks.
+
 - **Added SCM coverage to PCI DSS v4 and SLSA.** PCI DSS gets
   the full SCM range (40 rules); SLSA gets a narrow selection
   (11 rules) since most SCM rules cover review-control

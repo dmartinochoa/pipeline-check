@@ -57,7 +57,7 @@ A read-only scanner for 22 providers, graded against 15 compliance frameworks.
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num">650+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">22</div><div class="pg-stat__label">Providers</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">14</div><div class="pg-stat__label">Compliance standards</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">15</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
@@ -111,7 +111,7 @@ the default; turning it off is opt-in.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-36 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+38 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
 findings line up in one scan. The `TAINT-NNN` dataflow engine follows
 attacker-controllable input across cross-step boundaries on five providers
