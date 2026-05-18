@@ -496,6 +496,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   516/516 = 100% (was 222, 43%). All 13 PCI DSS v4 controls
   evidenced.
 
+- **Broadened NSA/CISA ESF Supply Chain to 100% catalog coverage,
+  plus integrity-test fix.** Cross-mapping pass, no new rule
+  modules, 184 net-new entries. ESF spans the SDLC across three
+  volumes (Developer / Supplier / Customer), so the expansion has
+  a natural home for most rules. Picks up the full GHA-030..058
+  worm-mitigation pack, GL-028..033, BB-028/29, ADO-029/30,
+  CC-029..031, JF-032..035, BK-014/15, TKN-014/15, ARGO-014/15,
+  the entire Drone provider (DR-001..011), the NPM/PyPI/Maven dep-
+  supply-chain pack, OCI manifest (OCI-001..008), ATTEST family on
+  ESF-S-PROVENANCE + ESF-D-SBOM, TAINT-001..008 on ESF-D-INJECTION,
+  Dockerfile env-bypass extension + extras (DF-009/11/17/18/21..30),
+  AWS extras (CB-008..010, CP-005/7, CA-001..004, CCM-001..3,
+  ECR-006/7, KMS-001/2, SM-001/2, SSM-001/2, LMB-001..4, IAM-007/8,
+  PBAC-003/5, CT-001..3, CWL-001/2, EB-002, SIGN-001/2), TF/CF
+  IaC-native rules, SCM-003/006/016/026/028/036/040/043..047
+  (signed-commit + vuln intake + code-scanning surfaces that
+  cleanly map to ESF-D-TAMPER + ESF-S-VULN-MGMT + ESF-D-CODE-
+  REVIEW), and the remaining `-000` degraded-mode discovery
+  findings on ESF-C-AUDIT (mirroring the existing pattern).
+  **Bug fix:** the file had four pre-existing dangling control
+  references that the integrity test didn't catch because
+  esf_supply_chain wasn't in the parametrize list. JF-027 →
+  ``ESF-D-TAMPER`` (now a defined control: "Protect build
+  artifacts from tampering and detect unauthorized modification");
+  BK-011 / TKN-011 / ARGO-011 → ``ESF-S-PROVENANCE`` (now a
+  defined control: "Generate and verify provenance metadata
+  (SLSA / in-toto) for produced artifacts"); TKN-013 →
+  ``ESF-D-RUNTIME-HARDENING`` fixed to ``ESF-D-PRIV-BUILD``;
+  ARGO-013 → ``ESF-D-LEAST-PRIV`` fixed to ``ESF-C-LEAST-PRIV``.
+  ESF is now in the `TestStandardIntegrity` and
+  `TestCheckIdIntegrity` parametrize lists so future dangling refs
+  get caught at CI time.
+
+  After: 516/516 = 100% (was 332, 64%). All 24 ESF controls
+  evidenced (22 original + the 2 newly-added that backfill
+  previously-dangling references).
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

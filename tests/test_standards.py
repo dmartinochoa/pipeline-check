@@ -75,6 +75,7 @@ class TestStandardIntegrity:
         "soc2",
         "nist_csf_2",
         "nist_800_190",
+        "esf_supply_chain",
     ])
     def test_every_mapped_control_is_defined(self, name):
         std = standards.get(name)
@@ -98,6 +99,7 @@ class TestStandardIntegrity:
         "soc2",
         "nist_csf_2",
         "nist_800_190",
+        "esf_supply_chain",
     ])
     def test_standard_has_metadata(self, name):
         std = standards.get(name)
@@ -123,6 +125,7 @@ class TestCheckIdIntegrity:
         "soc2",
         "nist_csf_2",
         "nist_800_190",
+        "esf_supply_chain",
     ])
     def test_check_ids_are_known(self, name):
         owasp = standards.get("owasp_cicd_top_10")
