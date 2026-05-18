@@ -99,14 +99,26 @@ STANDARD = Standard(
         "S3-004":   ["2.3.7", "5.2.3"],
         "S3-005":   ["4.2.1"],
         # CodeArtifact (package registry)
+        "CA-001":   ["4.1.1", "4.3.3"],                  # domain not encrypted with customer CMK
         "CA-002":   ["4.3.3", "1.4.1"],                  # public external connection
         "CA-003":   ["4.3.3", "4.2.1"],                  # domain policy cross-account wildcard
         "CA-004":   ["4.3.3", "4.2.1"],                  # repo policy wildcard codeartifact:*
+        # CodeCommit (source repository)
+        "CCM-001":  ["1.1.5"],                           # no approval rule template (required-reviews surface)
+        "CCM-002":  ["4.1.1"],                           # not encrypted with customer CMK (integrity)
+        "CCM-003":  ["4.2.1"],                           # trigger targets cross-account SNS/Lambda
         # Lambda deployment / AWS Signer
         "SIGN-001": ["2.4.2", "4.1.1"],                  # no AWS Signer profile for Lambda
         "SIGN-002": ["2.4.2", "4.1.1"],                  # Signer profile revoked / inactive
         "LMB-001":  ["2.4.2", "4.1.1"],                  # Lambda has no code-signing config
+        "LMB-002":  ["4.2.1"],                           # Lambda function URL has AuthType=NONE
+        "LMB-003":  ["1.5.1", "2.3.4"],                  # Lambda env vars contain plaintext secrets
         "LMB-004":  ["4.2.1"],                           # Lambda resource policy wildcard principal
+        # KMS / Secrets Manager / SSM Parameter Store
+        "KMS-002":  ["4.2.1"],                           # KMS key policy grants wildcard actions
+        "SM-002":   ["4.2.1"],                           # Secrets Manager resource policy wildcard principal
+        "SSM-001":  ["1.5.1"],                           # secret-like Parameter not SecureString
+        "SSM-002":  ["4.2.1"],                           # SecureString uses default AWS-managed key (broad decrypt)
         # CloudTrail / CloudWatch / EventBridge (pipeline + deploy audit)
         "CT-001":   ["2.3.7", "5.2.3"],                  # no active CloudTrail
         "CT-002":   ["2.3.7", "5.2.3"],                  # log-file validation disabled
@@ -115,6 +127,7 @@ STANDARD = Standard(
         "CWL-002":  ["2.3.7"],                           # CodeBuild log group not KMS-encrypted
         "CW-001":   ["2.3.7", "5.2.3"],                  # no CloudWatch alarm on FailedBuilds
         "EB-001":   ["2.3.7"],                           # no EventBridge rule for pipeline failure
+        "EB-002":   ["2.4.3"],                           # EventBridge rule wildcard target ARN
         # GitHub Actions
         "GHA-001":  ["1.4.1", "3.1.5"],                  # unpinned 3rd-party action
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
@@ -536,6 +549,20 @@ STANDARD = Standard(
         "TAINT-006": ["2.3.8", "2.1.3"],           # Tekton results cross-task taint flow
         "TAINT-007": ["2.3.8", "2.1.3"],           # Argo outputs.parameters cross-template
         "TAINT-008": ["2.3.8", "2.1.3"],           # GitLab extends-chain inheritance
+        # ── Terraform / CloudFormation (IaC-native gap-fill) ──────
+        # Long-lived IAM access keys declared as code conflict with
+        # 1.3.4 (no long-lived credentials) and also leak through
+        # the source surface (1.5.1). Hard-coded secrets in resource
+        # attributes are the same code-leak shape as DF-006 / GHA-008
+        # (1.5.1 + 2.3.4). CodeBuild VPC sharing a public-subnet
+        # network is the textbook 2.1.6 (build worker minimal
+        # network connectivity) failure mode.
+        "TF-001":   ["1.3.4", "1.5.1"],            # aws_iam_access_key declared as code
+        "TF-002":   ["1.5.1", "2.3.4"],            # hard-coded secret in resource attr
+        "TF-003":   ["2.1.6"],                     # CodeBuild VPC shares public subnet
+        "CF-001":   ["1.3.4", "1.5.1"],            # AWS::IAM::AccessKey declared as code
+        "CF-002":   ["1.5.1", "2.3.4"],            # hard-coded secret in resource property
+        "CF-003":   ["2.1.6"],                     # CodeBuild VPC shares public subnet
         # SCM posture (governance scanned via the GitHub REST API)
         "SCM-001":  ["1.1.17"],                     # default branch unprotected
         "SCM-002":  ["1.1.5"],                      # required reviews missing
@@ -563,9 +590,7 @@ STANDARD = Standard(
         "SCM-023":  ["5.1.4", "1.1.5"],             # env missing reviewers (deployment config review)
         "SCM-024":  ["5.2.1"],                      # env branch policy missing (deployment env separation)
         "SCM-025":  ["2.4.3", "1.3.4"],             # deploy keys write-enabled (long-lived push credential)
-        # SCM-026 (webhook insecure transport / no HMAC): CIS SSCS
-        # has no control covering the webhook-as-event-channel
-        # surface; left unmapped.
+        "SCM-026":  ["2.4.3"],                      # webhook insecure = unauthenticated pipeline-exec trigger
         "SCM-027":  ["1.1.5"],                      # outside collaborator elevated (review trust boundary)
         "SCM-028":  ["4.2.1"],                      # private repo allows forking (source-leak surface)
         # ── Ruleset enforcement (modern variant of branch protection) ──

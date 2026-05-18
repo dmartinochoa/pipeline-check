@@ -176,7 +176,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Changed
 
 - **Broadened CIS Software Supply Chain Security Guide to near-full
-  catalog coverage.** Cross-mapping pass: no new rule modules, 206
+  catalog coverage.** Cross-mapping pass: no new rule modules, 217
   net-new entries that fill the queued backfills called out in
   `tests/test_standards.py`. New entries land in their natural
   Section-3 (Build Dependencies) home for the **NPM-001..007 / 011**,
@@ -190,13 +190,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (OCI-004/007/008). Dockerfile expansion (DF-009, DF-021..030)
   picks up the environment-based runtime-bypass pack against 3.1.5
   (trusted package managers). AWS leg extends CodeBuild
-  (CB-008..011), CodePipeline (CP-005/007), and PBAC-005. After:
-  484 mappings (was 278), all 25 controls evidenced, no rules left
-  in the OWASP catalog without a CIS SSCS mapping aside from the
-  intentional carve-outs documented in the file (SCM-026 webhook,
-  OCI-006 layer count, the `-000` degraded-mode findings, and the
-  AWS KMS/SM/SSM/EB-002 + TF/CF native packs that have no clean
-  CIS SSCS sub-control fit).
+  (CB-008..011), CodePipeline (CP-005/007), PBAC-005, CodeArtifact
+  (CA-001), CodeCommit (CCM-001/002/003), Lambda (LMB-002/003),
+  KMS-002, SM-002, SSM-001/002, and EB-002. Terraform / CloudFormation
+  IaC-native gap-fill maps **TF-001..003** and **CF-001..003**
+  (long-lived access keys as code → 1.3.4, hard-coded secret
+  shapes → 1.5.1 + 2.3.4, CodeBuild VPC public subnet → 2.1.6).
+  SCM-026 (webhook insecure transport / no HMAC) is reversed from
+  its previous unmapped state and lands at 2.4.3 (unauthenticated
+  pipeline-exec trigger surface). After: 497 mappings (was 278),
+  all 25 controls evidenced, 96% of the OWASP catalog mapped. The
+  19 rules that remain unmapped are scoped outside the supply-chain
+  surface (the `-000` degraded-mode discovery findings, container
+  runtime hygiene DF-007 / OCI-006, and the AWS rotation / lifecycle
+  hygiene rules KMS-001 / SM-001).
 
 ## [1.0.5] - 2026-05-18
 

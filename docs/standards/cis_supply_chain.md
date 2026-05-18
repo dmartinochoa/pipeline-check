@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 470
+- **Distinct checks evidencing this standard:** 488
 - **Of those, autofixable with `--fix`:** 97
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -22,27 +22,27 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`1.1.5`](#ctrl-1-1-5) | Ensure any change to code requires the review of additional strong authenticators | 19 | 7H · 10M · 2L |
+| [`1.1.5`](#ctrl-1-1-5) | Ensure any change to code requires the review of additional strong authenticators | 20 | 8H · 10M · 2L |
 | [`1.1.6`](#ctrl-1-1-6) | Ensure any change to code is signed | 5 | 1H · 4M |
 | [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 7 | 4M · 3L |
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 12 | 1C · 10M · 1L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 12 | 1C · 5H · 3M · 3L |
-| [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 24 | 2C · 16H · 6M |
+| [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 26 | 3C · 17H · 6M |
 | [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 129 | 17C · 59H · 45M · 8L |
-| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 32 | 19C · 9H · 2M · 2L |
+| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 38 | 21C · 13H · 2M · 2L |
 | [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 98 | 25C · 59H · 13M · 1L |
-| [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 12 | 2C · 5H · 5M |
+| [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 14 | 2C · 7H · 5M |
 | [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 16 | 12M · 4L |
-| [`2.3.4`](#ctrl-2-3-4) | Ensure pipelines are scanned for secrets and sensitive data | 27 | 18C · 7H · 1M · 1L |
+| [`2.3.4`](#ctrl-2-3-4) | Ensure pipelines are scanned for secrets and sensitive data | 30 | 19C · 9H · 1M · 1L |
 | [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 13 | 2H · 6M · 5L |
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 54 | 12C · 29H · 10M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 16 | 5H · 11M |
-| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 33 | 8C · 14H · 11M |
+| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 35 | 8C · 16H · 11M |
 | [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 63 | 3C · 23H · 33M · 4L |
 | [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 57 | 1C · 41H · 14M · 1L |
-| [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 26 | 10H · 16M |
-| [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 8 | 4C · 2H · 2M |
-| [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 6 | 3C · 3H |
+| [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 28 | 10H · 18M |
+| [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 13 | 5C · 4H · 4M |
+| [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 7 | 3C · 3H · 1M |
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 38 | 5H · 24M · 9L |
 | [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 18 | 4H · 13M · 1L |
 | [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 18 | 7H · 10M · 1L |
@@ -67,10 +67,11 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.1.5: Ensure any change to code requires the review of additional strong authenticators { #ctrl-1-1-5 }
 
-**Evidenced by 19 checks** across 2 providers (Jenkins, SCM).
+**Evidenced by 20 checks** across 3 providers (AWS, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CCM-001`](#detail-ccm-001) | CodeCommit repository has no approval rule template attached | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`JF-024`](#detail-jf-024) | `input` approval step missing submitter restriction | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`SCM-002`](#detail-scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-008`](#detail-scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
@@ -157,7 +158,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.3.4: Ensure organization identity is required for contribution (no long-lived personal tokens) { #ctrl-1-3-4 }
 
-**Evidenced by 24 checks** across 8 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
+**Evidenced by 26 checks** across 10 providers (AWS, Azure DevOps, Bitbucket, CircleCI, CloudFormation, GitHub Actions, GitLab CI, Jenkins, SCM, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -169,6 +170,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`CC-005`](#detail-cc-005) | AWS auth uses long-lived access keys in environment block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-019`](#detail-cc-019) | `add_ssh_keys` without fingerprint restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-031`](#detail-cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CF-001`](#detail-cf-001) | Inline credential parameter on a CloudFormation resource | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`CP-004`](#detail-cp-004) | Legacy ThirdParty/GitHub source action (OAuth token) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-005`](#detail-gha-005) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-018`](#detail-gha-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -185,6 +187,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`JF-004`](#detail-jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-010`](#detail-jf-010) | Long-lived AWS keys exposed via environment {} block | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 
 ### 1.4.1: Ensure third-party artifacts and open-source libraries are verified { #ctrl-1-4-1 }
 
@@ -324,7 +327,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.5.1: Ensure scanners are in place to identify and prevent sensitive data in code { #ctrl-1-5-1 }
 
-**Evidenced by 32 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 38 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -339,6 +342,8 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`CB-001`](#detail-cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](#detail-cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-008`](#detail-cc-008) | Credential-shaped literal in config body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`CF-001`](#detail-cf-001) | Inline credential parameter on a CloudFormation resource | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`CF-002`](#detail-cf-002) | CloudFormation parameter declares a default secret value | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`DF-006`](#detail-df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-019`](#detail-df-019) | COPY/ADD source path looks like a credential file | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-020`](#detail-df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -357,8 +362,12 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`JF-008`](#detail-jf-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-033`](#detail-jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-034`](#detail-jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`LMB-003`](#detail-lmb-003) | Lambda function env vars may contain plaintext secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
+| [`TF-002`](#detail-tf-002) | Resource attribute carries a hard-coded secret shape | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ### 2.1.3: Ensure the build environment is hardened { #ctrl-2-1-3 }
@@ -468,13 +477,14 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.1.6: Ensure build workers have minimal network connectivity { #ctrl-2-1-6 }
 
-**Evidenced by 12 checks** across 6 providers (AWS, CircleCI, Cloud Build, Dockerfile, GitHub Actions, Jenkins).
+**Evidenced by 14 checks** across 8 providers (AWS, CircleCI, Cloud Build, CloudFormation, Dockerfile, GitHub Actions, Jenkins, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CB-002`](#detail-cb-002) | Privileged mode enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-010`](#detail-cc-010) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-014`](#detail-cc-014) | Job missing `resource_class` declaration | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CF-003`](#detail-cf-003) | CloudFormation resource opens a 0.0.0.0/0 ingress | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`DF-013`](#detail-df-013) | EXPOSE declares sensitive remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GCB-010`](#detail-gcb-010) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-013`](#detail-gcb-013) | Package install bypasses registry integrity (git / path / tarball) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
@@ -484,6 +494,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`JF-025`](#detail-jf-025) | Kubernetes agent pod template runs privileged or mounts hostPath | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`PBAC-001`](#detail-pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](#detail-pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`TF-003`](#detail-tf-003) | CodeBuild VPC shares its VPC with a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 
 ### 2.2.2: Ensure build workers are single-use { #ctrl-2-2-2 }
 
@@ -510,7 +521,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.3.4: Ensure pipelines are scanned for secrets and sensitive data { #ctrl-2-3-4 }
 
-**Evidenced by 27 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 30 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -524,6 +535,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`CB-001`](#detail-cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](#detail-cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-008`](#detail-cc-008) | Credential-shaped literal in config body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`CF-002`](#detail-cf-002) | CloudFormation parameter declares a default secret value | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`DF-006`](#detail-df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-019`](#detail-df-019) | COPY/ADD source path looks like a credential file | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-020`](#detail-df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -540,6 +552,8 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`JF-008`](#detail-jf-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-033`](#detail-jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-034`](#detail-jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`LMB-003`](#detail-lmb-003) | Lambda function env vars may contain plaintext secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`TF-002`](#detail-tf-002) | Resource attribute carries a hard-coded secret shape | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ### 2.3.7: Ensure pipeline steps produce audit logs { #ctrl-2-3-7 }
@@ -648,7 +662,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.4.3: Ensure access to the pipeline execution environment is restricted { #ctrl-2-4-3 }
 
-**Evidenced by 33 checks** across 11 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 35 checks** across 11 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -661,6 +675,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`CB-001`](#detail-cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](#detail-cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-008`](#detail-cc-008) | Credential-shaped literal in config body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-026`](#detail-gcb-026) | Step waitFor: references an unknown step id | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-004`](#detail-gha-004) | Workflow has no explicit permissions block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-018`](#detail-gha-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -684,6 +699,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`PBAC-005`](#detail-pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 3.1.3: Ensure signed metadata of dependencies is verified { #ctrl-3-1-3 }
@@ -822,7 +838,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 4.1.1: Ensure all artifacts on all releases are verified (signed, integrity-checked) { #ctrl-4-1-1 }
 
-**Evidenced by 26 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
+**Evidenced by 28 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -834,7 +850,9 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`BB-006`](#detail-bb-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-009`](#detail-bk-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-011`](#detail-bk-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
+| [`CA-001`](#detail-ca-001) | CodeArtifact domain not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CC-006`](#detail-cc-006) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CCM-002`](#detail-ccm-002) | CodeCommit repository not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CP-002`](#detail-cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-002`](#detail-ecr-002) | Image tags are mutable | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-005`](#detail-ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -855,25 +873,31 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 4.2.1: Ensure access to artifacts is limited { #ctrl-4-2-1 }
 
-**Evidenced by 8 checks** across 3 providers (AWS, Cloud Build, SCM).
+**Evidenced by 13 checks** across 3 providers (AWS, Cloud Build, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
+| [`KMS-002`](#detail-kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`S3-001`](#detail-s3-001) | Artifact bucket public access block not fully enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`S3-005`](#detail-s3-005) | Artifact bucket missing aws:SecureTransport deny | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-028`](#detail-scm-028) | Private repo allows forking | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SM-002`](#detail-sm-002) | Secrets Manager resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
+| [`SSM-002`](#detail-ssm-002) | SSM SecureString uses the default AWS-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 
 ### 4.3.3: Ensure package registries use authentication and authorization { #ctrl-4-3-3 }
 
-**Evidenced by 6 checks** across 2 providers (AWS, GitHub Actions).
+**Evidenced by 7 checks** across 2 providers (AWS, GitHub Actions).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CA-001`](#detail-ca-001) | CodeArtifact domain not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CA-002`](#detail-ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -2555,6 +2579,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
+#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+
+**Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
+
+**How this is detected.** AWS-owned encryption (the default ``alias/aws/codeartifact`` key) keeps the key policy under AWS's control, not yours. That's fine for confidentiality but means cross-account auditability of every Decrypt event lives with AWS, and you can't revoke or scope key access without recreating the domain. A customer-managed CMK puts both controls back in your hands.
+
+**Recommendation.** Recreate the CodeArtifact domain with an encryption-key argument pointing at a customer-managed CMK. Domain encryption is set at creation and cannot be changed after.
+
+**Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
@@ -3095,6 +3129,36 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-031`](../providers/circleci.md#cc-031) in the [CircleCI provider](../providers/circleci.md).
 
+#### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
+
+**Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
+
+**How this is detected.** Approval-rule templates are CodeCommit's analog of GitHub's branch-protection require-review. Without one associated, the repository accepts merges from any push-permitted principal, including the PR author themselves, without any second-pair-of-eyes gate.
+
+**Recommendation.** Create a CodeCommit approval-rule template requiring at least one approval from a designated pool of reviewers and associate it with every repository. Without one, any PR author with push rights can self-approve and merge.
+
+**Source:** [`CCM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
+
+**Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
+
+**How this is detected.** Same shape as CA-001 / ECR-005 / S3 default encryption: the AWS-owned default key keeps the key policy under AWS, removing your ability to scope or audit Decrypt operations. Source code in the repo deserves the same key-policy + CloudTrail story you'd apply to artifacts in S3.
+
+**Recommendation.** Recreate the repository with a ``kmsKeyId`` argument pointing at a customer-managed KMS key. CodeCommit encryption is set at creation and cannot be changed afterwards.
+
+**Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
+
+**How this is detected.** A repo trigger pointing at an SNS topic or Lambda in a different account fires under the receiving account's permissions on every push. Sometimes this is the intended shape (a centralized notifications account), but a cross-account fan-out from a compromised repo can drive actions in the receiving account that the source-account owner can't directly observe.
+
+**Recommendation.** Move trigger targets into the same account as the repository or explicitly document the cross-account relationship. Cross-account triggers extend the blast radius of a repository compromise to whatever the target ARN can do.
+
+**Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
@@ -3124,6 +3188,36 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** Add CloudWatch alarms (e.g. error rate, 5xx count, latency p99) to the deployment group's alarmConfiguration. Enable automatic rollback on DEPLOYMENT_STOP_ON_ALARM to halt bad deployments.
 
 **Source:** [`CD-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
+
+**Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
+
+**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+
+**Source:** [`CF-001`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
+
+#### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
+
+**Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
+
+**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+
+**Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
+
+#### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
+
+**Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
+
+**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+
+**Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
 #### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
 
@@ -3910,6 +4004,16 @@ Detection is value-only and case-sensitive against the documented variable names
 **Recommendation.** Create an EventBridge rule matching ``detail-type: 'CodePipeline Pipeline Execution State Change'`` and ``state: FAILED``, and point it at an SNS topic or chat webhook. Without it, pipeline failures during an incident (a compromise triggering rollback, for example) go unnoticed.
 
 **Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+
+**Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
+
+**How this is detected.** Wildcard target ARNs (e.g. ``arn:aws:lambda:us-east-1:123456789012:function:*``) match every resource that fits the prefix. This is rarely intentional, usually a copy-paste from a more permissive resource ARN, and means the rule fans out to a much larger set of consumers than the author meant.
+
+**Recommendation.** Replace wildcard target ARNs with specific resource ARNs. EventBridge targets with ``*`` route events to any resource that matches the prefix, frequently triggering unintended Lambda invocations or SNS sends.
+
+**Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
@@ -6864,6 +6968,16 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
+#### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
+
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
+
+**How this is detected.** ``kms:*`` on a key policy is administrative authority over the cipher boundary: ``CancelKeyDeletion``, ``ScheduleKeyDeletion``, ``ReEncrypt``, ``UpdateKeyDescription``, and the data-plane decrypt actions all collapse into one grant. A CI/CD principal almost never needs more than the data-plane subset (``Decrypt`` / ``GenerateDataKey`` / ``Encrypt``).
+
+**Recommendation.** Replace ``kms:*`` grants with specific actions needed by the caller (e.g. ``kms:Decrypt``, ``kms:GenerateDataKey``). Key-policy wildcard grants let any holder of the principal re-key, schedule deletion, or export material at will.
+
+**Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
@@ -6873,6 +6987,26 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
 
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
+
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
+
+**How this is detected.** A Lambda function URL with ``AuthType=NONE`` is a public HTTPS endpoint. Anyone who knows the URL can invoke. This is sometimes deliberate (a webhook receiver) but the deliberate version typically signs / validates inside the function, the rule fires regardless because the IAM-side control isn't there.
+
+**Recommendation.** Set the function URL ``auth_type`` to ``AWS_IAM`` and grant ``lambda:InvokeFunctionUrl`` through IAM. ``NONE`` exposes the function to the public internet without authentication.
+
+**Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
+
+**Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
+
+**How this is detected.** Lambda env vars are world-readable to any principal with ``lambda:GetFunctionConfiguration``, much wider than the principal that can invoke the function. They also persist in CloudFormation drift, change-sets, and CloudTrail events. A secret in a Lambda env var is essentially exposed to anyone with read access to the account.
+
+**Recommendation.** Move secrets out of Lambda environment variables and into Secrets Manager or SSM Parameter Store. Environment variables are visible to anyone with ``lambda:GetFunctionConfiguration`` and persist in CloudTrail events, which keeps the secret in audit logs.
+
+**Source:** [`LMB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
 
@@ -7667,6 +7801,35 @@ GET /repos/acme/payments-api/keys
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
+#### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
+
+**Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
+
+**How this is detected.** Reads ``GET /repos/{owner}/{repo}/hooks`` and flags any active webhook with one or more failure modes:
+
+* ``config.url`` starts with ``http://`` — push payloads   including code diffs leak over plain HTTP
+* ``config.insecure_ssl == "1"`` — TLS certificate   verification disabled, MITM possible on the HTTPS   endpoint
+* ``config.secret`` is null / missing — no HMAC   signature, so anyone who learns the URL can forge   events into the receiver
+
+Inactive webhooks (``active: false``) are skipped — they don't fire. Each finding's description lists every failure mode hit so the operator sees the full fix scope per webhook. Requires admin scope; without it the endpoint returns 403 / 404 and the rule passes silently. GitHub never returns the actual secret value via the API; the slot reports either ``"********"`` (configured) or ``null`` (missing), so this rule detects the absence without ever handling the credential itself.
+
+**Recommendation.** For each flagged webhook, fix all three knobs at once (Settings → Webhooks → <hook> → Edit):
+
+* Switch the Payload URL to ``https://`` and enable ``Verify SSL`` (the field is labeled ``SSL verification`` on the form; setting it to ``Enable SSL verification`` is the safe value).
+* Set the ``Secret`` field to a long random value and validate the incoming ``X-Hub-Signature-256`` header on the receiving end. Without the secret + verification, an attacker who learns the URL (URLs are not secrets; they appear in receiving-system logs, in CI screenshots, in support tickets) can forge events.
+
+If the receiving service genuinely cannot handle HTTPS or shared secrets, terminate TLS at a reverse proxy in front of the receiver and keep the public-facing URL ``https://`` with a real cert. The webhook content carries the full event payload — pull requests with diff content, push events with the commits, secret scanning alerts — which is exactly what an unauthenticated MITM is looking for.
+
+**Known false positives.**
+
+- Long-running internal-only webhooks pointing at a hostname only resolvable inside a private network (``http://internal.svc/hook``) often skip TLS by convention. The right fix is still to terminate TLS at an ingress and use a non-empty secret; the rule does not have visibility into network topology and cannot distinguish 'public HTTP' from 'private-network HTTP', so it errs toward flagging. Suppress per webhook id with a rationale that names the receiving service.
+
+**Seen in the wild.**
+
+- Long-running pattern of webhook payloads leaking via plain-HTTP receivers (Zapier, IFTTT, custom legacy endpoints) — the GitHub repo's commit-diff content, pull-request body, and secret-scanning alert payloads all land on the wire unencrypted. Public catalogs of compromised internal webhooks document the receiver-side breach where the URL alone was enough to inject forged events when no shared secret was configured.
+
+**Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
+
 #### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
@@ -8018,6 +8181,68 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
+
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
+
+**How this is detected.** A wildcard-principal Allow on a Secrets Manager resource policy means any principal in any AWS account can call ``GetSecretValue`` (subject to conditions, if any). Always combine with at least ``aws:SourceAccount`` or ``aws:PrincipalOrgID``, the lift-and-shift cross-account secret-access pattern needs scoping.
+
+**Recommendation.** Remove Allow statements whose Principal is ``*`` from every Secrets Manager resource policy, or scope them with a ``Condition`` restricting the source account/org (``aws:PrincipalOrgID``). A wildcard-principal policy allows any AWS account to call ``GetSecretValue`` on the secret.
+
+**Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
+
+**Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
+
+**How this is detected.** An SSM ``String`` parameter is plaintext at rest and at API; ``ssm:GetParameter`` without any KMS Decrypt authority returns the value. ``SecureString`` adds KMS-encryption + the ``WithDecryption=true`` flag (which forces an explicit KMS authorization step). Secret-named parameters (``TOKEN``, ``PASSWORD``, ``KEY``) are almost always intended to be SecureString and rarely should not be.
+
+**Recommendation.** Recreate the parameter with ``Type=SecureString`` and migrate consumers to the new name if needed. Plain ``String`` parameters are visible via ``ssm:GetParameter`` without any KMS authorization.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: secret-named parameter stored as plain ``String``.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type String
+
+# Attack: any principal with the minimal ``ssm:GetParameter``
+# permission reads the cleartext, no KMS authorization needed:
+#
+#   aws ssm get-parameter --name /prod/api/GITHUB_TOKEN
+#   # Returns the plaintext, even for principals with
+#   # ``kms:Decrypt`` explicitly denied account-wide.
+#
+# CloudTrail records the GetParameter call but not the value;
+# defenders see the access only by name + principal, not what
+# was read.
+
+# Safe: SecureString forces a separate KMS authorization step.
+$ aws ssm put-parameter \
+    --name /prod/api/GITHUB_TOKEN \
+    --value ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+    --type SecureString \
+    --key-id alias/prod-secrets
+
+# Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``
+# on the named CMK, and the call only returns plaintext when
+# ``WithDecryption=true`` is set (an explicit, auditable opt-in).
+```
+
+**Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
+
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
+
+**How this is detected.** ``alias/aws/ssm`` is the AWS-managed default for SecureString. Its key policy is fixed and account-wide. A customer-managed key gives you the same per-parameter key-policy + CloudTrail audit story you'd apply to Secrets Manager (which always uses a CMK).
+
+**Recommendation.** Recreate SecureString parameters with ``KeyId`` pointing at a customer-managed KMS key. The default ``alias/aws/ssm`` key is shared across the account and its key policy cannot be audited or scoped per parameter.
+
+**Source:** [`SSM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `TAINT-001`: Untrusted input flows across step boundaries via step outputs <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-001 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
@@ -8225,6 +8450,36 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 - If the consuming job sanitises the inherited variable before referencing it (``CLEAN=$(echo "$TITLE" | tr -dc 'a-zA-Z0-9 '); echo $CLEAN``), the rule still fires on the original ``$TITLE`` reference even though the sanitised value is what reaches the shell. Suppress via ignore-file scoped to the consuming job's name when the sanitiser is audited and load-bearing.
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
+
+#### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
+
+**Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
+
+**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+
+**Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
+
+#### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
+
+**Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
+
+**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+
+**Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
+
+#### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
+
+**Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
+
+**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+
+**Source:** [`TF-003`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
 #### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
 
