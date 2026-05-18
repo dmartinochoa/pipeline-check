@@ -103,6 +103,8 @@ STANDARD = Standard(
         # 1.1.12 signed commit verification
         "SCM-006": ["1.1.12"],
         "SCM-036": ["1.1.12"],
+        "SCM-043": ["1.1.12", "1.1.17"],                      # tag-side signing + history protection
+        "SCM-044": ["1.1.12", "1.1.14"],                      # admin bypass on signed-commits = admin-enforcement gap
         # 1.1.13 linear history
         "SCM-038": ["1.1.13"],
         # 1.1.14 admin enforcement
@@ -125,6 +127,9 @@ STANDARD = Standard(
         # 1.1.18 security scanning gate on merge
         "SCM-003": ["1.1.18", "1.5.4"],
         "SCM-040": ["1.1.18"],
+        "SCM-045": ["1.1.18", "1.5.4"],                       # limited query suite = shallow gate
+        "SCM-046": ["1.1.18", "1.5.4"],                       # configured but paused = no effective gate
+        "SCM-047": ["1.1.18", "1.5.4"],                       # missing language = scan blind spot
         # 1.1.19 vulnerability scanning on merge
         "SCM-005": ["1.1.19", "1.2.6", "1.5.4"],
         # 1.1.20 secret scanning on merge

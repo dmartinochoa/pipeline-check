@@ -21,7 +21,7 @@ posture. Pair with [OpenSSF Scorecard](openssf_scorecard.md) and
 
 - **Controls in this standard:** 28
 - **Controls evidenced by at least one check:** 28 / 28
-- **Distinct checks evidencing this standard:** 59
+- **Distinct checks evidencing this standard:** 64
 - **Of those, autofixable with `--fix`:** 9
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -40,13 +40,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.9`](#ctrl-1-1-9) | Ensure all checks have passed before merging new code | 3 | 2M · 1L |
 | [`1.1.10`](#ctrl-1-1-10) | Ensure open Git branches are up to date before they can be merged | 2 | 1M · 1L |
 | [`1.1.11`](#ctrl-1-1-11) | Ensure all open comments are resolved before merging code | 1 | 1L |
-| [`1.1.12`](#ctrl-1-1-12) | Ensure verification of signed commits for new changes | 3 | 1H · 2M |
+| [`1.1.12`](#ctrl-1-1-12) | Ensure verification of signed commits for new changes | 5 | 1H · 4M |
 | [`1.1.13`](#ctrl-1-1-13) | Ensure linear history is required | 2 | 1H · 1L |
-| [`1.1.14`](#ctrl-1-1-14) | Ensure branch protection rules are enforced for administrators | 2 | 2H |
+| [`1.1.14`](#ctrl-1-1-14) | Ensure branch protection rules are enforced for administrators | 3 | 2H · 1M |
 | [`1.1.15`](#ctrl-1-1-15) | Ensure pushing/merging on default branches is restricted | 4 | 1H · 2M · 1L |
 | [`1.1.16`](#ctrl-1-1-16) | Ensure force push is denied | 3 | 2H · 1M |
-| [`1.1.17`](#ctrl-1-1-17) | Ensure branch deletion is denied | 3 | 2H · 1L |
-| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 3 | 1M · 2L |
+| [`1.1.17`](#ctrl-1-1-17) | Ensure branch deletion is denied | 4 | 2H · 1M · 1L |
+| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 6 | 3M · 3L |
 | [`1.1.19`](#ctrl-1-1-19) | Ensure any merging of code is automatically scanned for vulnerabilities | 1 | 1M |
 | [`1.1.20`](#ctrl-1-1-20) | Ensure any merging of code is automatically scanned for secrets | 2 | 2H |
 | [`1.2.5`](#ctrl-1-2-5) | Ensure all copies (forks) of code are tracked and accounted for | 1 | 1M |
@@ -59,7 +59,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 4 | 2H · 1M · 1L |
 | [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 10 | 4C · 3H · 2M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 6 | 1C · 5H |
-| [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 5 | 1H · 4M |
+| [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
 
 ## Filter at runtime
 
@@ -157,13 +157,15 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.12: Ensure verification of signed commits for new changes { #ctrl-1-1-12 }
 
-**Evidenced by 3 checks** across SCM.
+**Evidenced by 5 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.13: Ensure linear history is required { #ctrl-1-1-13 }
 
@@ -176,12 +178,13 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.14: Ensure branch protection rules are enforced for administrators { #ctrl-1-1-14 }
 
-**Evidenced by 2 checks** across SCM.
+**Evidenced by 3 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-010`](#detail-scm-010) | Branch protection allows administrators to bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.15: Ensure pushing/merging on default branches is restricted { #ctrl-1-1-15 }
 
@@ -206,23 +209,27 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.17: Ensure branch deletion is denied { #ctrl-1-1-17 }
 
-**Evidenced by 3 checks** across SCM.
+**Evidenced by 4 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-009`](#detail-scm-009) | Default branch protection allows branch deletion | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-035`](#detail-scm-035) | Active ruleset doesn't block branch deletion | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.18: Ensure any merging of code is automatically scanned for security { #ctrl-1-1-18 }
 
-**Evidenced by 3 checks** across SCM.
+**Evidenced by 6 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-039`](#detail-scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-040`](#detail-scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-045`](#detail-scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-046`](#detail-scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-047`](#detail-scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.19: Ensure any merging of code is automatically scanned for vulnerabilities { #ctrl-1-1-19 }
 
@@ -344,7 +351,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.5.4: Ensure scanners are in place to identify and confirm presence of vulnerabilities { #ctrl-1-5-4 }
 
-**Evidenced by 5 checks** across 3 providers (AWS, GitHub Actions, SCM).
+**Evidenced by 8 checks** across 3 providers (AWS, GitHub Actions, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -353,6 +360,9 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`GHA-020`](#detail-gha-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-045`](#detail-scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-046`](#detail-scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-047`](#detail-scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ## Check details
 
@@ -432,6 +442,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -446,6 +457,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -466,6 +478,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -516,6 +529,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # checks out PR head
       - run: make test                    # no secrets in scope
+```
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
@@ -536,6 +550,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -565,6 +580,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "New PR: $PR_TITLE"
+```
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -612,6 +628,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -649,6 +666,7 @@ jobs:
       - run: gh release create v1.0.0 dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
@@ -697,6 +715,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -719,6 +738,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 # republished in the advisory (consult the GHSA the registry
 # cites for the exact value):
 - uses: tj-actions/changed-files@<advisory-clean-sha>
+```
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -760,6 +780,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
+```
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -775,6 +796,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 # A protection rule with `required_pull_request_reviews` set
 # and `allow_force_pushes: false` blocks both the push and
 # the rewrite without giving up an inch of velocity.
+```
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
@@ -792,6 +814,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
+```
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -806,6 +829,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 #
 # Setting ``required_approving_review_count`` to >= 1 forces
 # a separate identity to acknowledge the change before merge.
+```
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
@@ -823,6 +847,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
+```
 # Without code scanning, the only signal that a PR
 # introduces (e.g.) a SQL injection or hardcoded secret
 # comes from the human reviewer:
@@ -837,6 +862,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 # in the PR check, surfaces it inline in the diff, and
 # blocks the merge if the protection rule wires it up as
 # a required status check (see SCM-008).
+```
 
 **Source:** [`SCM-003`](../providers/scm.md#scm-003) in the [SCM provider](../providers/scm.md).
 
@@ -1138,6 +1164,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -1165,6 +1192,7 @@ GET /repos/acme/payments-api/keys
 # genuinely required for CI tagging, switch to a GitHub
 # App with constrained scope plus a one-line audit-log
 # entry per push.
+```
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
@@ -1457,6 +1485,76 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 - Low-throughput repos (one or two PRs landing per day) don't typically hit the merge-race shape this rule addresses; the operational cost of a merge queue can outweigh the benefit. Suppress with a rationale that names the merge-velocity profile. The rule fires LOW because most teams' CI integrity comes from status-checks (SCM-033); merge_queue is the additional concurrency-hardening control.
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
+
+**Evidences:** [`1.1.12`](#ctrl-1-1-12) Ensure verification of signed commits for new changes, [`1.1.17`](#ctrl-1-1-17) Ensure branch deletion is denied.
+
+**How this is detected.** Iterates active rulesets where ``target == "tag"`` and fires when none enforce ``required_signatures`` on the tag refs they cover. Passes silently when no tag-targeted rulesets exist at all (a separate gap: there's no tag protection to evaluate).
+
+**Recommendation.** Add a ``required_signatures`` rule to every active ruleset whose ``target == tag`` (Settings → Rules → <ruleset> → Add rule → Require signed commits). Tag objects under a release-like glob (``refs/tags/v*`` or ``refs/tags/**``) are downstream consumers' lookup keys; an unsigned tag means a stolen PAT can stamp a release with arbitrary author metadata while the branch-side signing requirement (SCM-006 / SCM-036) passes.
+
+**Known false positives.**
+
+- Repos that sign tags via a release workflow rather than the ruleset gate (e.g. ``cosign sign`` on the release artifact) get equivalent provenance. Suppress per repo with a rationale that names the workflow.
+
+**Source:** [`SCM-043`](../providers/scm.md#scm-043) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
+
+**Evidences:** [`1.1.12`](#ctrl-1-1-12) Ensure verification of signed commits for new changes, [`1.1.14`](#ctrl-1-1-14) Ensure branch protection rules are enforced for administrators.
+
+**How this is detected.** Fires when ``required_signatures.enabled == True`` and ``enforce_admins.enabled`` is missing or ``False``. The rule passes silently in two cases: when signed commits aren't required at all (SCM-006 owns that surface) and when branch protection is missing entirely (SCM-001).
+
+**Recommendation.** Enable ``Include administrators`` (``enforce_admins``) on the default-branch protection rule so the signed-commit requirement applies to admins too. Alternatively, migrate the requirement into a repository ruleset where bypass actors are explicit and auditable — admin bypass via the legacy protection knob is implicit, while a ruleset bypass list names each actor and is visible in the audit log (see SCM-030 for the ruleset-side bypass check).
+
+**Known false positives.**
+
+- Solo-maintainer repos where the single admin is also the only signing-key holder may turn off enforce_admins to self-recover from a lost key. Suppress per repo with a rationale that names the recovery workflow.
+
+**Source:** [`SCM-044`](../providers/scm.md#scm-044) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
+
+**Evidences:** [`1.1.18`](#ctrl-1-1-18) Ensure any merging of code is automatically scanned for security, [`1.5.4`](#ctrl-1-5-4) Ensure scanners are in place to identify and confirm presence of vulnerabilities.
+
+**How this is detected.** Reads ``query_suite`` from the default code-scanning setup endpoint. Fires only when ``state == configured`` AND ``query_suite == default``. Passes silently when scanning is off (SCM-003 owns that case) or when the suite is already ``extended``.
+
+**Recommendation.** In ``Settings → Code security → Code scanning → Default setup``, switch ``Query suite`` from ``Default`` to ``Extended``. The extended suite adds CodeQL's ``security-and-quality`` pack, which catches maintainability and reliability issues that often co-occur with security findings (e.g. dead-code paths that hide an unauthenticated branch). Teams that ship a hand-authored CodeQL workflow can pin ``queries: security-extended`` in ``.github/codeql/codeql-config.yml`` for the same effect.
+
+**Known false positives.**
+
+- Teams that route code-scanning via a hand-authored CodeQL workflow rather than default setup will see SCM-045 pass by virtue of ``state != configured``; verify the workflow pins the extended suite. Some repos intentionally keep the default suite to bound CI minutes; suppress per repo with a rationale.
+
+**Source:** [`SCM-045`](../providers/scm.md#scm-045) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
+
+**Evidences:** [`1.1.18`](#ctrl-1-1-18) Ensure any merging of code is automatically scanned for security, [`1.5.4`](#ctrl-1-5-4) Ensure scanners are in place to identify and confirm presence of vulnerabilities.
+
+**How this is detected.** Reads ``schedule`` from the default code-scanning setup endpoint. Fires when ``state == configured`` AND schedule is ``None`` / ``"none"`` / missing. Passes silently when scanning is off entirely (SCM-003) or when a schedule is set.
+
+**Recommendation.** Set ``schedule`` to ``weekly`` (or ``daily`` if CI minutes allow) on the default code-scanning setup, and confirm ``On push`` + ``On pull request`` triggers are enabled in ``Settings → Code security → Code scanning → Default setup → Edit configuration``. Without a schedule or event trigger, the setup record exists but no scan output ever lands; the Code Scanning UI stays empty and SCM-003 passes because ``state == configured``.
+
+**Known false positives.**
+
+- Repos that route scanning via a hand-authored workflow may keep default setup configured but unscheduled intentionally. Suppress per repo with a rationale that names the workflow file.
+
+**Source:** [`SCM-046`](../providers/scm.md#scm-046) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
+
+**Evidences:** [`1.1.18`](#ctrl-1-1-18) Ensure any merging of code is automatically scanned for security, [`1.5.4`](#ctrl-1-5-4) Ensure scanners are in place to identify and confirm presence of vulnerabilities.
+
+**How this is detected.** Cross-references the linguist ``languages`` endpoint against the default-setup ``languages`` slot. Fires when a CodeQL-supported language present at ≥5% of repo bytes is missing from the scanning set. Passes silently when default scanning isn't configured (SCM-003 / SCM-046 own those cases) or when the languages endpoint is unavailable.
+
+**Recommendation.** Open the default code-scanning setup configuration (``Settings → Code security → Code scanning → Default setup → Edit configuration``) and add the missing languages to the analyzed set. If a language isn't CodeQL-supported (e.g. Shell, Lua), set up a third-party SAST workflow that uploads SARIF for that subset — default setup's auto-detect doesn't cover every language.
+
+**Known false positives.**
+
+- Monorepos may intentionally exclude legacy subdirectories from CodeQL analysis (e.g. a vendored fork). Suppress per repo with a rationale that names the excluded path; the default-setup language toggle is repo-wide, so a per-path exclusion requires a hand-authored workflow.
+
+**Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
 
 #### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
 

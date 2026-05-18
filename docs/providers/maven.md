@@ -55,7 +55,7 @@ real-world POMs and out of scope for static analysis.
 | [MVN-001](#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-002](#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-003](#mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [MVN-004](#mvn-004) | pom.xml dependency omits an explicit <version> | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [MVN-004](#mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-005](#mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-006](#mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [MVN-007](#mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -146,13 +146,13 @@ Change every ``<repository><url>`` to ``https://`` and delete any ``<repository>
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## MVN-004: pom.xml dependency omits an explicit <version> { #mvn-004 }
+## MVN-004: pom.xml dependency omits an explicit ``<version>`` { #mvn-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Fires on any non-managed ``<dependency>`` whose ``<version>`` element is absent or empty. Managed entries in ``<dependencyManagement>`` are the *source* of the version; they are checked separately by MVN-001 / MVN-002 for floating ranges and SNAPSHOTs but not by this rule.
+Fires on any non-managed ``<dependency>`` whose ``<version>`` element is absent or empty. Managed entries in ``<dependencyManagement>`` are the *source* of the version and intentionally out of scope for the entire Maven rule pack (MVN-001 / MVN-002 / MVN-004 all iterate ``iter_real_dependencies(...)``, which skips managed entries) — a BOM-style version-management block is its own surface and is audited via the inherited POM.
 
 **Known false-positive modes**
 

@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 278
+- **Distinct checks evidencing this standard:** 283
 - **Of those, autofixable with `--fix`:** 50
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,10 +23,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`1.1.5`](#ctrl-1-1-5) | Ensure any change to code requires the review of additional strong authenticators | 18 | 7H · 9M · 2L |
-| [`1.1.6`](#ctrl-1-1-6) | Ensure any change to code is signed | 3 | 1H · 2M |
-| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 4 | 2M · 2L |
+| [`1.1.6`](#ctrl-1-1-6) | Ensure any change to code is signed | 5 | 1H · 4M |
+| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 7 | 4M · 3L |
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 9 | 1C · 7M · 1L |
-| [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 9 | 4H · 2M · 3L |
+| [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 10 | 4H · 3M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 15 | 11H · 4M |
 | [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 44 | 2C · 25H · 13M · 4L |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 23 | 16C · 5H · 1M · 1L |
@@ -92,17 +92,19 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.1.6: Ensure any change to code is signed { #ctrl-1-1-6 }
 
-**Evidenced by 3 checks** across SCM.
+**Evidenced by 5 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.7: Ensure any change to code is automatically scanned for risks (SAST) { #ctrl-1-1-7 }
 
-**Evidenced by 4 checks** across SCM.
+**Evidenced by 7 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -110,6 +112,9 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`SCM-033`](#detail-scm-033) | Active ruleset doesn't require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-039`](#detail-scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-040`](#detail-scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-045`](#detail-scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-046`](#detail-scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-047`](#detail-scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.8: Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) { #ctrl-1-1-8 }
 
@@ -129,7 +134,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.1.17: Ensure default branches' commits are protected from being deleted/rewritten { #ctrl-1-1-17 }
 
-**Evidenced by 9 checks** across SCM.
+**Evidenced by 10 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -142,6 +147,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`SCM-034`](#detail-scm-034) | Active ruleset doesn't block force-push | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-035`](#detail-scm-035) | Active ruleset doesn't block branch deletion | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-038`](#detail-scm-038) | Active ruleset doesn't require linear history | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.3.4: Ensure organization identity is required for contribution (no long-lived personal tokens) { #ctrl-1-3-4 }
 
@@ -538,7 +544,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
-| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-020`](#detail-gcb-020) | serviceAccount points at the default Cloud Build service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
@@ -554,7 +560,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 |-------|-------|----------|----------|-----|
 | [`CA-002`](#detail-ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
-| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-050`](#detail-gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`S3-001`](#detail-s3-001) | Artifact bucket public access block not fully enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
@@ -681,6 +687,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title macro interpolated straight into script.
 trigger: none
 pr:
@@ -713,6 +720,7 @@ jobs:
         env:
           PR_BRANCH: $(System.PullRequest.SourceBranch)
           COMMIT_MSG: $(Build.SourceVersionMessage)
+```
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -896,6 +904,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: webhook-triggered workflow interpolates a
 # user-supplied parameter directly into a shell script.
 apiVersion: argoproj.io/v1alpha1
@@ -937,6 +946,7 @@ spec:
             value: '{{inputs.parameters.who}}'
         source: |
           echo "Hello $WHO"
+```
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1109,6 +1119,7 @@ Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs,
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a hand-rolled or older-Buildx provenance
 # emitter ships a Statement whose materials list is empty.
 # (Modern BuildKit ``--attest=type=provenance`` populates a
@@ -1151,6 +1162,7 @@ $ docker buildx build \
 #     {"uri": "git+https://github.com/foo/bar@v1.4.2",
 #      "digest": {"sha1": "<commit sha>"}}
 #   ]
+```
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1179,6 +1191,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a Statement signed by a trusted builder but
 # carrying an empty subject digest. The signature is valid;
 # the bind to the image bytes is not.
@@ -1216,6 +1229,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
   "predicateType": "https://slsa.dev/provenance/v1",
   "predicate": { ... }
 }
+```
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1241,6 +1255,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a self-rolled SLSA generator that omits the
 # buildType field. The predicate carries every other
 # claim (builder, materials, configSource) but consumers
@@ -1278,6 +1293,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
     }
   }
 }
+```
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1329,6 +1345,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: branch name interpolated unquoted into shell.
 image: alpine:latest
 pipelines:
@@ -1362,6 +1379,7 @@ pipelines:
           # via shell so the value is captured as a single
           # argv element from the controlled assignment.
           # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
+```
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -1621,7 +1639,7 @@ pipelines:
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants codeartifact:* with Resource '*' <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -1641,6 +1659,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild project with a plaintext PAT in env.
 {
   "name": "deploy",
@@ -1676,6 +1695,7 @@ pipelines:
     ]
   }
 }
+```
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2203,6 +2223,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: image runs as root by default (no USER set).
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y python3
@@ -2232,6 +2253,7 @@ RUN apt-get update && apt-get install -y python3 \
 COPY --chown=app:app app.py /app/
 USER 1001
 CMD ["python3", "/app/app.py"]
+```
 
 **Source:** [`DF-002`](../providers/dockerfile.md#df-002) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -2852,6 +2874,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -2866,6 +2889,7 @@ CMD ["python3", "/app/app.py"]
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2886,6 +2910,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -2936,6 +2961,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # checks out PR head
       - run: make test                    # no secrets in scope
+```
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2956,6 +2982,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -2985,6 +3012,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "New PR: $PR_TITLE"
+```
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3066,6 +3094,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: AWS access key pasted into the workflow body.
 env:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
@@ -3098,6 +3127,7 @@ steps:
     with:
       role-to-assume: arn:aws:iam::123456789012:role/CIRole
       aws-region: us-east-1
+```
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3234,6 +3264,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -3256,6 +3287,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 # republished in the advisory (consult the GHSA the registry
 # cites for the exact value):
 - uses: tj-actions/changed-files@<advisory-clean-sha>
+```
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3368,6 +3400,7 @@ A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stol
 
 **Proof of exploit.**
 
+```
 # Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
 # postinstall in a transitive dep reaches the token via the
 # step env and can re-publish other packages the token can
@@ -3400,6 +3433,7 @@ jobs:
         with: { registry-url: 'https://registry.npmjs.org' }
       - run: npm ci --ignore-scripts
       - run: npm publish --provenance --access public
+```
 
 **Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3656,6 +3690,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -3688,6 +3723,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.deploy_specific.json
 }
+```
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3721,6 +3757,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -3755,6 +3792,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
     "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
   }
 }
+```
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3990,6 +4028,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -4005,6 +4044,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 # A protection rule with `required_pull_request_reviews` set
 # and `allow_force_pushes: false` blocks both the push and
 # the rewrite without giving up an inch of velocity.
+```
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
@@ -4022,6 +4062,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -4036,6 +4077,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 #
 # Setting ``required_approving_review_count`` to >= 1 forces
 # a separate identity to acknowledge the change before merge.
+```
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
@@ -4053,6 +4095,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Without code scanning, the only signal that a PR
 # introduces (e.g.) a SQL injection or hardcoded secret
 # comes from the human reviewer:
@@ -4067,6 +4110,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 # in the PR check, surfaces it inline in the diff, and
 # blocks the merge if the protection rule wires it up as
 # a required status check (see SCM-008).
+```
 
 **Source:** [`SCM-003`](../providers/scm.md#scm-003) in the [SCM provider](../providers/scm.md).
 
@@ -4368,6 +4412,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -4395,6 +4440,7 @@ GET /repos/acme/payments-api/keys
 # genuinely required for CI tagging, switch to a GitHub
 # App with constrained scope plus a one-line audit-log
 # entry per push.
+```
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
@@ -4658,6 +4704,76 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 - Low-throughput repos (one or two PRs landing per day) don't typically hit the merge-race shape this rule addresses; the operational cost of a merge queue can outweigh the benefit. Suppress with a rationale that names the merge-velocity profile. The rule fires LOW because most teams' CI integrity comes from status-checks (SCM-033); merge_queue is the additional concurrency-hardening control.
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
+
+**Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed, [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
+
+**How this is detected.** Iterates active rulesets where ``target == "tag"`` and fires when none enforce ``required_signatures`` on the tag refs they cover. Passes silently when no tag-targeted rulesets exist at all (a separate gap: there's no tag protection to evaluate).
+
+**Recommendation.** Add a ``required_signatures`` rule to every active ruleset whose ``target == tag`` (Settings → Rules → <ruleset> → Add rule → Require signed commits). Tag objects under a release-like glob (``refs/tags/v*`` or ``refs/tags/**``) are downstream consumers' lookup keys; an unsigned tag means a stolen PAT can stamp a release with arbitrary author metadata while the branch-side signing requirement (SCM-006 / SCM-036) passes.
+
+**Known false positives.**
+
+- Repos that sign tags via a release workflow rather than the ruleset gate (e.g. ``cosign sign`` on the release artifact) get equivalent provenance. Suppress per repo with a rationale that names the workflow.
+
+**Source:** [`SCM-043`](../providers/scm.md#scm-043) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
+
+**Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed.
+
+**How this is detected.** Fires when ``required_signatures.enabled == True`` and ``enforce_admins.enabled`` is missing or ``False``. The rule passes silently in two cases: when signed commits aren't required at all (SCM-006 owns that surface) and when branch protection is missing entirely (SCM-001).
+
+**Recommendation.** Enable ``Include administrators`` (``enforce_admins``) on the default-branch protection rule so the signed-commit requirement applies to admins too. Alternatively, migrate the requirement into a repository ruleset where bypass actors are explicit and auditable — admin bypass via the legacy protection knob is implicit, while a ruleset bypass list names each actor and is visible in the audit log (see SCM-030 for the ruleset-side bypass check).
+
+**Known false positives.**
+
+- Solo-maintainer repos where the single admin is also the only signing-key holder may turn off enforce_admins to self-recover from a lost key. Suppress per repo with a rationale that names the recovery workflow.
+
+**Source:** [`SCM-044`](../providers/scm.md#scm-044) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
+
+**Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
+
+**How this is detected.** Reads ``query_suite`` from the default code-scanning setup endpoint. Fires only when ``state == configured`` AND ``query_suite == default``. Passes silently when scanning is off (SCM-003 owns that case) or when the suite is already ``extended``.
+
+**Recommendation.** In ``Settings → Code security → Code scanning → Default setup``, switch ``Query suite`` from ``Default`` to ``Extended``. The extended suite adds CodeQL's ``security-and-quality`` pack, which catches maintainability and reliability issues that often co-occur with security findings (e.g. dead-code paths that hide an unauthenticated branch). Teams that ship a hand-authored CodeQL workflow can pin ``queries: security-extended`` in ``.github/codeql/codeql-config.yml`` for the same effect.
+
+**Known false positives.**
+
+- Teams that route code-scanning via a hand-authored CodeQL workflow rather than default setup will see SCM-045 pass by virtue of ``state != configured``; verify the workflow pins the extended suite. Some repos intentionally keep the default suite to bound CI minutes; suppress per repo with a rationale.
+
+**Source:** [`SCM-045`](../providers/scm.md#scm-045) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
+
+**Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
+
+**How this is detected.** Reads ``schedule`` from the default code-scanning setup endpoint. Fires when ``state == configured`` AND schedule is ``None`` / ``"none"`` / missing. Passes silently when scanning is off entirely (SCM-003) or when a schedule is set.
+
+**Recommendation.** Set ``schedule`` to ``weekly`` (or ``daily`` if CI minutes allow) on the default code-scanning setup, and confirm ``On push`` + ``On pull request`` triggers are enabled in ``Settings → Code security → Code scanning → Default setup → Edit configuration``. Without a schedule or event trigger, the setup record exists but no scan output ever lands; the Code Scanning UI stays empty and SCM-003 passes because ``state == configured``.
+
+**Known false positives.**
+
+- Repos that route scanning via a hand-authored workflow may keep default setup configured but unscheduled intentionally. Suppress per repo with a rationale that names the workflow file.
+
+**Source:** [`SCM-046`](../providers/scm.md#scm-046) in the [SCM provider](../providers/scm.md).
+
+#### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
+
+**Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
+
+**How this is detected.** Cross-references the linguist ``languages`` endpoint against the default-setup ``languages`` slot. Fires when a CodeQL-supported language present at ≥5% of repo bytes is missing from the scanning set. Passes silently when default scanning isn't configured (SCM-003 / SCM-046 own those cases) or when the languages endpoint is unavailable.
+
+**Recommendation.** Open the default code-scanning setup configuration (``Settings → Code security → Code scanning → Default setup → Edit configuration``) and add the missing languages to the analyzed set. If a language isn't CodeQL-supported (e.g. Shell, Lua), set up a third-party SAST workflow that uploads SARIF for that subset — default setup's auto-detect doesn't cover every language.
+
+**Known false positives.**
+
+- Monorepos may intentionally exclude legacy subdirectories from CodeQL analysis (e.g. a vendored fork). Suppress per repo with a rationale that names the excluded path; the default-setup language toggle is repo-wide, so a per-path exclusion requires a hand-authored workflow.
+
+**Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
 
 #### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 

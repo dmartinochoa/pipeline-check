@@ -818,9 +818,15 @@ def _render_check_detail(
         parts.append("\n")
 
     if row.exploit_example:
+        # Wrap the raw example in a fenced code block so any
+        # ``# Vulnerable: ...`` / ``# Safe: ...`` comment lines render
+        # as code rather than getting parsed as Markdown headings
+        # (which trip MD019 / MD022 / MD024 and break section depth).
         parts.append(
             "**Proof of exploit.**\n\n"
-            f"{row.exploit_example.rstrip()}\n\n"
+            "```\n"
+            f"{row.exploit_example.rstrip()}\n"
+            "```\n\n"
         )
 
     parts.append(

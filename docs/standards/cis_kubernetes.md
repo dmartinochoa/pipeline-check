@@ -446,6 +446,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pod mounts the host's root filesystem.
 apiVersion: v1
 kind: Pod
@@ -484,6 +485,7 @@ spec:
     - name: data
       persistentVolumeClaim:
         claimName: app-data
+```
 
 **Source:** [`K8S-013`](../providers/kubernetes.md#k8s-013) in the [Kubernetes provider](../providers/kubernetes.md).
 

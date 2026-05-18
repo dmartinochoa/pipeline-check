@@ -1347,8 +1347,14 @@ class TestWholePackBehavior:
                 "allow_force_pushes": {"enabled": False},
                 "allow_deletions": {"enabled": False},
             },
-            code_scanning_default_setup={"state": "configured"},
+            code_scanning_default_setup={
+                "state": "configured",
+                "query_suite": "extended",
+                "schedule": "weekly",
+                "languages": ["python"],
+            },
             codeowners_path=".github/CODEOWNERS",
+            repo_languages={"Python": 100000},
         )
         findings = _findings(snap)
         failures = [f.check_id for f in findings if not f.passed]
@@ -3414,6 +3420,346 @@ class TestSCM042MergeQueue:
         f = _by_id(_findings(snap), "SCM-042")
         assert f.passed
         assert "no legacy branch-protection" in f.description.lower()
+
+
+# ── SCM-043: tag-ruleset signed commits ─────────────────────────────
+
+
+def _active_tag_ruleset(
+    rules: list,
+    *,
+    name: str = "tags",
+    rs_id: int = 99,
+) -> dict:
+    return {
+        "id": rs_id, "name": name, "enforcement": "active",
+        "target": "tag",
+        "conditions": {"ref_name": {
+            "include": ["refs/tags/v*"],
+            "exclude": [],
+        }},
+        "rules": rules,
+    }
+
+
+class TestSCM043TagSigning:
+    def test_tag_ruleset_without_signing_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_tag_ruleset([{"type": "deletion"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-043")
+        assert not f.passed
+        assert "tags" in f.description
+
+    def test_tag_ruleset_with_signing_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_tag_ruleset(
+                [{"type": "required_signatures"}],
+            )],
+        )
+        f = _by_id(_findings(snap), "SCM-043")
+        assert f.passed
+
+    def test_no_tag_rulesets_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_ruleset([{"type": "required_signatures"}])],
+        )
+        f = _by_id(_findings(snap), "SCM-043")
+        assert f.passed
+        assert "no active tag-targeted rulesets" in f.description.lower()
+
+    def test_branch_ruleset_does_not_count(self):
+        """A branch-targeted ruleset with signed_commits does NOT
+        satisfy the tag-signing requirement: tag pushes don't
+        traverse the branch ruleset."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset([{"type": "required_signatures"}]),
+                _active_tag_ruleset([{"type": "deletion"}]),
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-043")
+        assert not f.passed
+
+    def test_rulesets_none_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=None,
+        )
+        f = _by_id(_findings(snap), "SCM-043")
+        assert f.passed
+        assert "unavailable" in f.description
+
+
+# ── SCM-044: required_signatures admin bypass ───────────────────────
+
+
+class TestSCM044AdminBypassSigning:
+    def test_signing_without_admin_enforcement_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_signatures": {"enabled": True},
+                "enforce_admins": {"enabled": False},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert not f.passed
+        assert "enforce_admins" in f.description
+
+    def test_signing_with_admin_enforcement_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_signatures": {"enabled": True},
+                "enforce_admins": {"enabled": True},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert f.passed
+
+    def test_no_signing_requirement_defers_to_scm006(self):
+        """When signed_commits isn't required at all, SCM-006 owns
+        the failure; SCM-044 should pass silently."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_pull_request_reviews": {
+                    "required_approving_review_count": 1,
+                },
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert f.passed
+        assert "SCM-006" in f.description
+
+    def test_no_protection_defers_to_scm001(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection=None,
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert f.passed
+        assert "SCM-001" in f.description
+
+    def test_enforce_admins_missing_field_fails(self):
+        """GitHub omits the enforce_admins block when admins are not
+        included; treat missing same as disabled."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            default_branch_protection={
+                "required_signatures": {"enabled": True},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert not f.passed
+
+
+# ── SCM-045: code scanning query suite ──────────────────────────────
+
+
+class TestSCM045QuerySuite:
+    def test_default_suite_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "query_suite": "default",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-045")
+        assert not f.passed
+        assert f.severity == Severity.LOW
+
+    def test_extended_suite_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "query_suite": "extended",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-045")
+        assert f.passed
+
+    def test_not_configured_defers_to_scm003(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={"state": "not-configured"},
+        )
+        f = _by_id(_findings(snap), "SCM-045")
+        assert f.passed
+        assert "SCM-003" in f.description
+
+    def test_setup_missing_defers_to_scm003(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup=None,
+        )
+        f = _by_id(_findings(snap), "SCM-045")
+        assert f.passed
+
+
+# ── SCM-046: code scanning paused ───────────────────────────────────
+
+
+class TestSCM046Paused:
+    def test_no_schedule_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "schedule": None,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-046")
+        assert not f.passed
+        assert "schedule" in f.description.lower()
+
+    def test_weekly_schedule_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "schedule": "weekly",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-046")
+        assert f.passed
+
+    def test_schedule_as_block_passes(self):
+        """Newer API shape wraps the schedule in a sub-object."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "schedule": {"frequency": "daily"},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-046")
+        assert f.passed
+
+    def test_none_string_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "schedule": "none",
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-046")
+        assert not f.passed
+
+    def test_not_configured_defers_to_scm003(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={"state": "not-configured"},
+        )
+        f = _by_id(_findings(snap), "SCM-046")
+        assert f.passed
+
+
+# ── SCM-047: repo language not covered ──────────────────────────────
+
+
+class TestSCM047LanguageCoverage:
+    def test_python_repo_with_python_scanning_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            repo_languages={"Python": 100000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_python_repo_without_python_scanning_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["go"],
+            },
+            repo_languages={"Python": 100000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert not f.passed
+        assert "Python" in f.description
+
+    def test_tiny_language_share_ignored(self):
+        """A <5% share doesn't trigger a finding."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            # 100 bytes of Ruby in a 10000-byte Python repo = 1%, ignored.
+            repo_languages={"Python": 9900, "Ruby": 100},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_unsupported_language_ignored(self):
+        """Shell isn't CodeQL-supported; absence from scanning doesn't
+        trigger a finding."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            repo_languages={"Python": 50000, "Shell": 50000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_java_and_kotlin_collapse_to_same_codeql_id(self):
+        """Java and Kotlin both map to ``java-kotlin``; one in
+        scanning satisfies both."""
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["java-kotlin"],
+            },
+            repo_languages={"Java": 50000, "Kotlin": 50000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_languages_endpoint_unavailable_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            repo_languages=None,
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+    def test_scanning_not_configured_defers(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={"state": "not-configured"},
+            repo_languages={"Python": 100000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
 
 
 # ── Default-branch scoping: rulesets exist but scope away from main ──

@@ -367,5 +367,10 @@ STANDARD = Standard(
         "SCM-040":  ["1.1.7"],                      # ruleset lacks code_scanning gate (SAST gate)
         "SCM-041":  ["5.1.4", "5.2.1"],             # ruleset lacks deployment-env gate
         "SCM-042":  ["1.1.5"],                      # ruleset lacks merge queue (review-control)
+        "SCM-043":  ["1.1.6", "1.1.17"],            # tag-ruleset lacks signed_commits
+        "SCM-044":  ["1.1.6"],                      # required_signatures bypassed for admins
+        "SCM-045":  ["1.1.7"],                      # default code scanning limited query suite
+        "SCM-046":  ["1.1.7"],                      # default code scanning configured but paused
+        "SCM-047":  ["1.1.7"],                      # repo language not covered by default scanning
     },
 )

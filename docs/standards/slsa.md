@@ -412,6 +412,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title macro interpolated straight into script.
 trigger: none
 pr:
@@ -444,6 +445,7 @@ jobs:
         env:
           PR_BRANCH: $(System.PullRequest.SourceBranch)
           COMMIT_MSG: $(Build.SourceVersionMessage)
+```
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -593,6 +595,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR-validated pipeline extends a LOCAL template.
 trigger: none
 pr:
@@ -627,6 +630,7 @@ resources:
       ref: refs/tags/v1.4.2     # immutable, signed tag
 extends:
   template: templates/standard-build.yml@pipeline-templates
+```
 
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -752,6 +756,7 @@ extends:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: webhook-triggered workflow interpolates a
 # user-supplied parameter directly into a shell script.
 apiVersion: argoproj.io/v1alpha1
@@ -793,6 +798,7 @@ spec:
             value: '{{inputs.parameters.who}}'
         source: |
           echo "Hello $WHO"
+```
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -955,6 +961,7 @@ Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs,
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a hand-rolled or older-Buildx provenance
 # emitter ships a Statement whose materials list is empty.
 # (Modern BuildKit ``--attest=type=provenance`` populates a
@@ -997,6 +1004,7 @@ $ docker buildx build \
 #     {"uri": "git+https://github.com/foo/bar@v1.4.2",
 #      "digest": {"sha1": "<commit sha>"}}
 #   ]
+```
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1025,6 +1033,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a Statement signed by a trusted builder but
 # carrying an empty subject digest. The signature is valid;
 # the bind to the image bytes is not.
@@ -1062,6 +1071,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
   "predicateType": "https://slsa.dev/provenance/v1",
   "predicate": { ... }
 }
+```
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1087,6 +1097,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a self-rolled SLSA generator that omits the
 # buildType field. The predicate carries every other
 # claim (builder, materials, configSource) but consumers
@@ -1124,6 +1135,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
     }
   }
 }
+```
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1175,6 +1187,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Proof of exploit.**
 
+```
 # Vulnerable: branch name interpolated unquoted into shell.
 image: alpine:latest
 pipelines:
@@ -1208,6 +1221,7 @@ pipelines:
           # via shell so the value is captured as a single
           # argv element from the controlled assignment.
           # (Equivalent: BRANCH="$BITBUCKET_BRANCH"; ...)
+```
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2081,6 +2095,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -2095,6 +2110,7 @@ pipelines:
 
 # Safe: pin to a 40-char commit SHA (immutable):
 - uses: tj-actions/changed-files@a284dc1814e3fdd1a3a7f16c11f02e2cd5a98f93  # v45.0.0
+```
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2115,6 +2131,7 @@ pipelines:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -2165,6 +2182,7 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>     # checks out PR head
       - run: make test                    # no secrets in scope
+```
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2185,6 +2203,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -2214,6 +2233,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "New PR: $PR_TITLE"
+```
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2279,6 +2299,7 @@ jobs:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: AWS access key pasted into the workflow body.
 env:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
@@ -2311,6 +2332,7 @@ steps:
     with:
       role-to-assume: arn:aws:iam::123456789012:role/CIRole
       aws-region: us-east-1
+```
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2405,6 +2427,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: install script piped straight to bash.
 steps:
   - run: curl -sL https://example.com/install.sh | bash
@@ -2428,6 +2451,7 @@ steps:
       curl -sLo install.sh https://example.com/install.sh
       echo "abc123...expected_sha256  install.sh" | sha256sum -c
       bash install.sh
+```
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2455,6 +2479,7 @@ steps:
 
 **Proof of exploit.**
 
+```
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -2492,6 +2517,7 @@ jobs:
       - run: gh release create v1.0.0 dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2620,6 +2646,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -2642,6 +2669,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 # republished in the advisory (consult the GHSA the registry
 # cites for the exact value):
 - uses: tj-actions/changed-files@<advisory-clean-sha>
+```
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2738,6 +2766,7 @@ Distinct from GHA-019 (token-to-file persistence) and GHA-049 (cross-repo push):
 
 **Proof of exploit.**
 
+```
 # Vulnerable: a build step writes a sibling workflow file.
 # After the next push to the default branch, the new
 # workflow runs with the repo's permissions and propagates.
@@ -2765,6 +2794,7 @@ jobs:
 # Safe: never author workflow YAML from inside another
 # workflow. Scaffold via an external bootstrapping job
 # that runs outside the runner's GITHUB_TOKEN scope.
+```
 
 **Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2792,6 +2822,7 @@ Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/work
 
 **Proof of exploit.**
 
+```
 # Vulnerable: every repo the token can write to becomes a
 # propagation target on the next push trigger.
 jobs:
@@ -2817,6 +2848,7 @@ jobs:
     permissions: { contents: read }
     steps:
       - run: git push https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/our-org/our-mirror.git main
+```
 
 **Source:** [`GHA-049`](../providers/github.md#gha-049) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2857,6 +2889,7 @@ A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stol
 
 **Proof of exploit.**
 
+```
 # Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
 # postinstall in a transitive dep reaches the token via the
 # step env and can re-publish other packages the token can
@@ -2889,6 +2922,7 @@ jobs:
         with: { registry-url: 'https://registry.npmjs.org' }
       - run: npm ci --ignore-scripts
       - run: npm publish --provenance --access public
+```
 
 **Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3294,6 +3328,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -3326,6 +3361,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.deploy_specific.json
 }
+```
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3349,6 +3385,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -3383,6 +3420,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
     "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
   }
 }
+```
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 

@@ -106,7 +106,7 @@ def _codeartifact(ctx: TerraformContext) -> list[Finding]:
                 break
         out.append(Finding(
             check_id="CA-004",
-            title="CodeArtifact repo policy grants codeartifact:* with Resource '*'",
+            title="CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'``",
             severity=Severity.HIGH,
             resource=p.address,
             description=(

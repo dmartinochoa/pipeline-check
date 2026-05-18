@@ -40,6 +40,11 @@ _GITHUB_ONLY_IDS: frozenset[str] = frozenset({
     "SCM-016",  # private_vulnerability_reporting
     "SCM-018",  # bypass_pull_request_allowances
     "SCM-019",  # push restrictions individual users (GitHub shape)
+    "SCM-043",  # tag-ruleset signed_commits (GitHub Rulesets API)
+    "SCM-044",  # required_signatures + enforce_admins (GitHub branch protection)
+    "SCM-045",  # default code scanning query_suite (GitHub default setup)
+    "SCM-046",  # default code scanning schedule (GitHub default setup)
+    "SCM-047",  # repo languages vs default-setup languages (GitHub linguist)
 })
 
 

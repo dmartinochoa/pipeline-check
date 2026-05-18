@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 22 providers, graded against 15 compliance frameworks. 
-111 of the 650+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+111 of the 670+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,7 +55,7 @@ A read-only scanner for 22 providers, graded against 15 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">650+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">670+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">22</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">15</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
@@ -230,7 +230,7 @@ flowchart LR
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "22 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "650+ checks emit findings with severity, location, fix"
+    click C "attack_chains/" "670+ checks emit findings with severity, location, fix"
     click D "standards/" "15 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

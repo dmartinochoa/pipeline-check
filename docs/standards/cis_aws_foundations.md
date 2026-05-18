@@ -71,7 +71,7 @@ pipeline_check --pipeline aws --standard cis_aws_foundations --standard owasp_ci
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
-| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
@@ -216,7 +216,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants codeartifact:* with Resource '*' <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -406,6 +406,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
+```
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -438,6 +439,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.deploy_specific.json
 }
+```
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -471,6 +473,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -505,6 +508,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
     "StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}
   }
 }
+```
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -698,6 +702,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
+```
 # Vulnerable: secret-named parameter stored as plain ``String``.
 $ aws ssm put-parameter \
     --name /prod/api/GITHUB_TOKEN \
@@ -725,6 +730,7 @@ $ aws ssm put-parameter \
 # Now readers need BOTH ``ssm:GetParameter`` AND ``kms:Decrypt``
 # on the named CMK, and the call only returns plaintext when
 # ``WithDecryption=true`` is set (an explicit, auditable opt-in).
+```
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
