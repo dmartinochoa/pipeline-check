@@ -118,8 +118,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
+    # Extract the sink-side job IDs so chain rules can intersect them
+    # with deploy / privileged-step job sets to confirm reachability.
+    # ``sink_location`` is ``job_id[step_idx]``, the prefix before
+    # ``[`` is the job ID. Preserve order, drop duplicates.
+    anchor_jobs: dict[str, None] = {}
+    for p in same_job_paths:
+        anchor_jobs[p.sink_location.split("[", 1)[0]] = None
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        job_anchors=tuple(anchor_jobs),
+        path_evidence=tuple(rendered),
     )

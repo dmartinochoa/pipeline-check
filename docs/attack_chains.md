@@ -127,6 +127,48 @@ from the JSON payload. Useful when a downstream consumer doesn't
 understand the field, or to shave a few milliseconds off a CI hot
 path (chain evaluation is O(findings × rules), cheap in practice).
 
+## Reachability-aware chains
+
+Most attack-chain detectors fire on co-occurrence: two trigger
+findings on the same resource are taken as evidence that the
+composite attack is possible. That answer is correct as a screening
+signal but weaker than what's available: each finding knows the job
+it fired in, and intersecting those job sets confirms whether the
+two legs share an executable path or only happen to live in the same
+file.
+
+Chains that have opted in to the model expose two extra fields:
+
+- `confirmed_reachable: bool` — `true` when the trigger findings'
+  `job_anchors` intersect (or a `TAINT-001` / `TAINT-002` dataflow
+  path bridges them). `false` is the default for chains that haven't
+  been migrated yet.
+- `reachability_note: str` — a short rationale, e.g.
+  `"injection and ungated deploy share job `release`"`. Empty when
+  the chain isn't confirmed reachable.
+
+Confirmed-reachable chains are promoted to `HIGH` confidence
+regardless of their constituent legs and rendered with a
+`✓ Reachability confirmed` badge in the terminal / Markdown / HTML
+outputs.
+
+Migrated chains:
+
+- `AC-002` (GHA: script injection to unprotected deploy) — pilot. Uses
+  `GHA-003` / `TAINT-001` / `TAINT-002` ∩ `GHA-014` job anchors.
+- `AC-022` (GitLab: script injection lands on deploy job with no manual
+  gate) — port of the AC-002 pattern. Uses `GL-002` ∩ `GL-004` job
+  anchors. GitLab's `TAINT-004` dotenv-propagation rule isn't job-
+  anchored yet, so cross-job dataflow widening is left to a follow-up.
+
+Add `--chains-require-reachability` to drop unconfirmed chains entirely,
+the strictest signal available:
+
+```bash
+pipeline_check -p github --chains-require-reachability \
+    --fail-on-chain AC-002
+```
+
 ## Confidence inheritance
 
 A chain is only as trustworthy as its weakest leg. `Chain.confidence`

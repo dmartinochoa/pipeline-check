@@ -9,6 +9,9 @@
 [![Docker Hub](https://img.shields.io/docker/v/dmartinochoa/pipeline-check?logo=docker&logoColor=white&label=docker&sort=semver)](https://hub.docker.com/r/dmartinochoa/pipeline-check)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dmartinochoa/pipeline-check?utm_source=oss&utm_medium=github&utm_campaign=dmartinochoa%2Fpipeline-check&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+[![Socket Badge](https://badge.socket.dev/pypi/package/pipeline-check/1.0.1?artifact_id=tar-gz)](https://badge.socket.dev/pypi/package/pipeline-check/1.0.1?artifact_id=tar-gz)
+[![SLSA Build L3](https://img.shields.io/badge/SLSA-Build_L3-22c55e?logo=slsa)](#-verifying-a-release)
+[![Sigstore signed](https://img.shields.io/badge/Sigstore-signed-orange?logo=sigstore)](#-verifying-a-release)
 
 ### **Find security risks in your CI/CD pipelines before attackers do.**
 
@@ -42,6 +45,10 @@ pipeline_check explain GHA-001      # full per-check reference (severity, fix, c
 pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
 ```
+
+> 🔐 Want to verify the wheel was built by this repo in CI before
+> installing it? Every tagged release ships SLSA Build L3 provenance
+> and PEP 740 attestations. See [Verifying a release](#-verifying-a-release).
 
 Or run from the published container image (no Python install needed):
 

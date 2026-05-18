@@ -103,6 +103,10 @@ def _gha_ref_pattern(name: str) -> str:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    # Preserve insertion order without duplicates so reachability-aware
+    # chains can see every job that contains an injection sink, not
+    # just the first one. ``dict.fromkeys`` is the ordered-set idiom.
+    anchor_jobs: dict[str, None] = {}
     # Workflow-level tainted env vars, inherited by all jobs.
     wf_tainted = _tainted_env_vars(doc.get("env"))
     for job_id, job in iter_jobs(doc):
@@ -119,12 +123,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if has_direct_taint(lines, UNTRUSTED_CONTEXT_RE):
                 offenders.append(f"{job_id}[{idx}]")
                 locations.append(step_location(path, step))
+                anchor_jobs[job_id] = None
             # 2. Indirect: tainted env var referenced in run block.
             elif step_tainted and has_unsafe_reference(
                 lines, step_tainted, ref_pattern=_gha_ref_pattern
             ):
                 offenders.append(f"{job_id}[{idx}]")
                 locations.append(step_location(path, step))
+                anchor_jobs[job_id] = None
     passed = not offenders
     desc = (
         "No `run:` block interpolates attacker-controllable context fields."
@@ -139,4 +145,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

@@ -361,6 +361,18 @@ body {
   transform: translateY(-0.05em);
 }
 
+/* Suppress the arrow inside CTA buttons — they're already styled
+   as buttons; an inline arrow inside the padding box reads as a
+   typo. The same goes for nav tabs and footer chrome. */
+.md-typeset a.md-button[href^="http"]::after,
+.md-typeset .pg-hero__cta a[href^="http"]::after,
+.md-typeset .pg-cta a[href^="http"]::after,
+.md-tabs a[href^="http"]::after,
+.md-footer a[href^="http"]::after {
+  content: "" !important;
+  margin-left: 0 !important;
+}
+
 /* ----- Tables --------------------------------------------- */
 .md-typeset table:not([class]) {
   display: table;
@@ -697,19 +709,23 @@ body {
   color: var(--pg-warn-500);
 }
 
-.pg-doc-card__meta {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.72rem;
-  color: var(--md-default-fg-color--lighter);
-  letter-spacing: 0.02em;
-  margin-top: 0.55rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--md-default-fg-color--lightest);
-}
-
 .pg-doc-card__meta code {
   font-size: 0.86em;
   padding: 0.1em 0.35em;
+}
+
+/* Featured doc card — the flagship "OWASP Top 10" tile on the
+   standards index. Subtle teal accent on the top edge + a hover
+   that lifts the same way the unfeatured cards do, so it reads
+   as "primary" without competing with the rest of the grid. */
+.pg-doc-card--featured {
+  border-color: color-mix(in oklab, var(--pg-teal-500) 35%, var(--md-default-fg-color--lightest) 65%);
+  box-shadow: inset 0 2px 0 0 var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"] .pg-doc-card--featured {
+  border-color: color-mix(in oklab, var(--pg-teal-400) 40%, var(--md-default-fg-color--lightest) 60%);
+  box-shadow: inset 0 2px 0 0 var(--pg-teal-400);
 }
 
 /* Strip external-link arrows from doc cards */

@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **SLSA Build L3 + Sigstore badges and install-time nudge.** The
+  README header gains a SLSA Build L3 badge and a Sigstore-signed
+  badge linking to the existing "Verifying a release" section, and
+  the Quick start block carries a one-line note pointing users at
+  the verifier recipe before they run ``pip install``. The
+  provenance pipeline itself (release.yml +
+  ``slsa-github-generator@v2.1.0`` + PyPI PEP 740 attestations)
+  has been live since v1.0.4; this surfaces it above the fold.
+
+- **Reachability-aware attack chains (AC-002 pilot).** The chain
+  engine previously fired on co-occurrence: any two trigger findings
+  on the same resource composed a chain. The new model intersects
+  per-finding `job_anchors` (the job IDs each leg fires in) to
+  confirm an executable connection between the two legs. `AC-002`
+  (script injection to unprotected deploy) is the pilot: when
+  `GHA-003` and `GHA-014` anchor on the same job, or when a
+  `TAINT-001` / `TAINT-002` cross-job dataflow path lands in the
+  same job as the ungated deploy, the chain emits with
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  short `reachability_note` citing the shared job(s). Unmigrated
+  chains keep firing with `confirmed_reachable=False` (the additive
+  default) so existing CI gates do not change. New flag
+  `--chains-require-reachability` filters out unconfirmed chains
+  for the strictest signal. JSON / SARIF / HTML / Markdown /
+  terminal outputs all surface the new fields. `Finding` gained
+  `job_anchors: tuple[str, ...]` and `path_evidence: tuple[str, ...]`;
+  `GHA-003`, `GHA-014`, `TAINT-001`, and `TAINT-002` populate them.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

@@ -68,9 +68,24 @@ class Chain:
     resources: list[str]
     references: list[str]
     recommendation: str
+    #: True when a chain rule intersected the triggering findings'
+    #: ``Finding.job_anchors`` and confirmed an executable connection
+    #: (e.g. the same job both interpolates untrusted input and
+    #: performs an ungated deploy). False is the default: the chain
+    #: still fired (typically on resource co-occurrence) but no
+    #: dataflow link between the legs has been confirmed. Reporters
+    #: render reachable chains with a distinct badge and CI consumers
+    #: can filter on this via ``--chains-require-reachability``.
+    confirmed_reachable: bool = False
+    #: Short human-readable rationale for ``confirmed_reachable``,
+    #: e.g. ``"injection and deploy share job 'release'"``. Empty
+    #: string when no per-instance evidence applies. Reporters surface
+    #: this alongside the badge so a reader sees *why* the chain is
+    #: reachable, not just that it is.
+    reachability_note: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "chain_id": self.chain_id,
             "title": self.title,
             "severity": self.severity.value,
@@ -87,7 +102,11 @@ class Chain:
             "resources": list(self.resources),
             "references": list(self.references),
             "recommendation": self.recommendation,
+            "confirmed_reachable": self.confirmed_reachable,
         }
+        if self.reachability_note:
+            out["reachability_note"] = self.reachability_note
+        return out
 
 
 # ── Helpers shared by chain rules ────────────────────────────────────

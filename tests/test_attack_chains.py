@@ -28,6 +28,8 @@ def _f(
     passed: bool = False,
     confidence: Confidence = Confidence.HIGH,
     severity: Severity = Severity.HIGH,
+    job_anchors: tuple[str, ...] = (),
+    path_evidence: tuple[str, ...] = (),
 ) -> Finding:
     return Finding(
         check_id=check_id,
@@ -38,6 +40,8 @@ def _f(
         recommendation="",
         passed=passed,
         confidence=confidence,
+        job_anchors=job_anchors,
+        path_evidence=path_evidence,
     )
 
 
@@ -218,6 +222,76 @@ class TestChainAC002:
             _f("GHA-014", ".github/workflows/b.yml"),
         ])
         assert not any(c.chain_id == "AC-002" for c in out)
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # GHA-003 fires in job ``release``, GHA-014 reports
+        # ``release`` as an ungated deploy job. The intersection is
+        # non-empty so the chain is confirmed reachable, with the
+        # composite confidence promoted to HIGH.
+        wf = ".github/workflows/deploy.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, job_anchors=("release",)),
+            _f(
+                "GHA-014",
+                wf,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac2 = next(c for c in out if c.chain_id == "AC-002")
+        assert ac2.confirmed_reachable is True
+        assert "release" in ac2.reachability_note
+        assert ac2.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Two legs fire on the same workflow but in distinct jobs and
+        # no taint propagation rule corroborates a cross-job hop.
+        # The chain still fires (legacy behavior) but ``confirmed
+        # _reachable`` is False and the confidence stays at the
+        # weakest leg.
+        wf = ".github/workflows/deploy.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, job_anchors=("triage",)),
+            _f(
+                "GHA-014",
+                wf,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac2 = next(c for c in out if c.chain_id == "AC-002")
+        assert ac2.confirmed_reachable is False
+        assert ac2.reachability_note == ""
+        assert ac2.confidence is Confidence.MEDIUM
+
+    def test_taint_path_widens_injection_side_for_reachability(self):
+        # GHA-003 fires only in ``extract``, but TAINT-002 reports a
+        # cross-job path whose sink lands in ``release`` — the same
+        # job GHA-014 names. The chain is reachable via the dataflow
+        # hop even though GHA-003 alone wouldn't intersect.
+        wf = ".github/workflows/deploy.yml"
+        rendered_path = (
+            "${{ github.event.issue.title }}@extract[0] -> "
+            "steps.extract.outputs.title -> "
+            "jobs.extract.outputs.title -> "
+            "needs.extract.outputs.title -> "
+            "sink@release[2](kubectl)"
+        )
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, job_anchors=("extract",)),
+            _f(
+                "TAINT-002",
+                wf,
+                job_anchors=("release",),
+                path_evidence=(rendered_path,),
+            ),
+            _f("GHA-014", wf, job_anchors=("release",)),
+        ])
+        ac2 = next(c for c in out if c.chain_id == "AC-002")
+        assert ac2.confirmed_reachable is True
+        assert "release" in ac2.reachability_note
+        assert rendered_path in ac2.narrative
+        assert "TAINT-002" in ac2.triggering_check_ids
 
 
 class TestChainAC004:
@@ -1497,3 +1571,71 @@ class TestCLI:
         )
         payload = _json_from_output(result.output)
         assert "chains" not in payload
+
+    def test_chains_require_reachability_filters_unmigrated_chains(
+        self, tmp_path, monkeypatch,
+    ):
+        # Fixture deliberately produces multiple chains:
+        #   * AC-001 (pull_request_target + PR-sha checkout + AWS creds)
+        #     — not yet migrated to reachability, ``confirmed_reachable``
+        #     is False.
+        #   * AC-002 (GHA-003 + GHA-014 in the same ``release`` job) —
+        #     reachability confirmed.
+        # With the flag off both fire; with the flag on only AC-002
+        # survives.
+        wf_dir = tmp_path / ".github" / "workflows"
+        wf_dir.mkdir(parents=True)
+        (wf_dir / "ci.yml").write_text(
+            "name: ci\n"
+            "on: pull_request_target\n"
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    env:\n"
+            "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+            "      AWS_SECRET_ACCESS_KEY: notarealsecret/notarealsecret/notarealsecret\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          ref: ${{ github.event.pull_request.head.sha }}\n"
+        )
+        # Same workflow file, different job: GHA-003 + GHA-014 anchored
+        # on the same ``release`` job ID.
+        (wf_dir / "deploy.yml").write_text(
+            "name: deploy\n"
+            "on: pull_request\n"
+            "jobs:\n"
+            "  release:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: |\n"
+            "          echo \"PR: ${{ github.event.pull_request.title }}\"\n"
+            "          kubectl apply -f k8s/\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        def _json_from_output(text: str) -> dict:
+            i = text.index("{")
+            return json.loads(text[i:])
+
+        # Baseline: both AC-001 and AC-002 fire.
+        result = CliRunner().invoke(scan, ["-p", "github", "-o", "json"])
+        payload = _json_from_output(result.output)
+        chain_ids = {c["chain_id"] for c in payload.get("chains", [])}
+        assert "AC-001" in chain_ids
+        assert "AC-002" in chain_ids
+        ac002 = next(
+            c for c in payload["chains"] if c["chain_id"] == "AC-002"
+        )
+        assert ac002["confirmed_reachable"] is True
+
+        # With --chains-require-reachability: AC-001 (unreachable)
+        # dropped, AC-002 (reachable) kept.
+        result = CliRunner().invoke(scan, [
+            "-p", "github", "-o", "json",
+            "--chains-require-reachability",
+        ])
+        payload = _json_from_output(result.output)
+        chain_ids = {c["chain_id"] for c in payload.get("chains", [])}
+        assert "AC-001" not in chain_ids
+        assert "AC-002" in chain_ids

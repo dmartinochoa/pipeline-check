@@ -97,24 +97,14 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <span class="pg-doc-card__meta">{{ providers.oci.checks }}</span>
   </a>
   <a class="pg-doc-card" href="scm/">
-    <h3>SCM (GitHub / GitLab / Bitbucket) posture</h3>
+    <h3>SCM posture (GitHub / GitLab / Bitbucket)</h3>
     <p>Hits the GitHub, GitLab, or Bitbucket REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits, deploy keys, webhook security, ruleset enforcement. Full pack on GitHub, 7-rule universal subset on GitLab and Bitbucket. Closes the gap with Legitify and OpenSSF Scorecard.</p>
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
   </a>
-  <a class="pg-doc-card" href="npm/">
-    <h3>npm</h3>
-    <p>Parses <code>package.json</code>, <code>package-lock.json</code>, and <code>.npmrc</code>. Lockfile presence, lifecycle scripts, secret-in-files, compromised-package registry.</p>
-    <span class="pg-doc-card__meta">{{ providers.npm.checks }}</span>
-  </a>
-  <a class="pg-doc-card" href="pypi/">
-    <h3>PyPI</h3>
-    <p>Parses <code>requirements.txt</code>. Range-pinned versions, missing hashes, compromised-package registry.</p>
-    <span class="pg-doc-card__meta">{{ providers.pypi.checks }}</span>
-  </a>
-  <a class="pg-doc-card" href="maven/">
-    <h3>Maven</h3>
-    <p>Parses <code>pom.xml</code> and <code>settings.xml</code>. Floating ranges and SNAPSHOTs, plaintext-HTTP repositories, lax checksumPolicy, wildcard mirrors, Log4Shell-class compromised-package registry.</p>
-    <span class="pg-doc-card__meta">{{ providers.maven.checks }}</span>
+  <a class="pg-doc-card" href="registries/">
+    <h3>Package registries (npm / PyPI / Maven)</h3>
+    <p>Static parse of <code>package.json</code> / <code>package-lock.json</code> / <code>.npmrc</code>, <code>requirements*.txt</code>, and <code>pom.xml</code> / <code>settings.xml</code>. Floating versions, missing integrity / hash anchoring, plaintext-HTTP indexes, lifecycle scripts, lax checksum policy, and curated known-compromised version registries (Shai-Hulud, ctx, Log4Shell). Per-platform deep-dive pages linked inside.</p>
+    <span class="pg-doc-card__meta">{{ providers.registries.checks }}</span>
   </a>
 </div>
 

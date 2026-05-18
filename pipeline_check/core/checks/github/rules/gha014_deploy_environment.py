@@ -120,4 +120,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        # ``job_anchors`` carries the ungated deploy-job IDs so the
+        # reachability-aware chain engine can intersect them with the
+        # jobs an injection rule (GHA-003 / TAINT-001 / TAINT-002)
+        # fired in. Empty tuple on a passed finding.
+        job_anchors=tuple(ungated),
     )
