@@ -108,9 +108,16 @@ jobs:
         run: |
           set -euo pipefail
           MARKER="<!-- goat-bench-comment -->"
-          EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+          # ``--paginate`` walks every page (default 30 results
+          # per page); a long-running PR easily has more than one
+          # page of comments and the lookup would otherwise miss a
+          # marker on page 2+ and post a duplicate sticky every
+          # push. ``tail -n1`` picks the newest matching comment
+          # so we patch the freshest sticky in place when historic
+          # dupes exist.
+          EXISTING=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" \
-            | head -n1)
+            | tail -n1)
           if [ -n "$EXISTING" ]; then
             jq -Rs '{body: .}' < goat-report.md \
               | gh api --method PATCH \

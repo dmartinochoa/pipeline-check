@@ -136,6 +136,22 @@ class GoatResult:
 # ── Manifest + per-goat IO ──────────────────────────────────────
 
 
+def _coerce_str_list(val: Any) -> list[str]:
+    """Manifest fields like ``pipelines`` and ``args`` accept either
+    a list or a single string. ``list(some_str)`` silently splits
+    into characters, which would corrupt a scalar entry like
+    ``pipelines: github`` without raising. Validate the shape
+    explicitly: wrap a string as a one-element list, pass a list
+    through with element-wise ``str()``, and treat anything else
+    as empty so a typo (e.g. a mapping) surfaces visibly later
+    rather than as a confusing pipeline_check usage error."""
+    if isinstance(val, str):
+        return [val]
+    if isinstance(val, list):
+        return [str(x) for x in val]
+    return []
+
+
 def load_manifest(path: Path = MANIFEST) -> list[GoatSpec]:
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     out: list[GoatSpec] = []
@@ -144,8 +160,8 @@ def load_manifest(path: Path = MANIFEST) -> list[GoatSpec]:
             slug=entry["slug"],
             repo=entry["repo"],
             ref=str(entry.get("ref", "HEAD")),
-            pipelines=list(entry.get("pipelines", [])),
-            extra_args=[str(a) for a in entry.get("args", [])],
+            pipelines=_coerce_str_list(entry.get("pipelines")),
+            extra_args=_coerce_str_list(entry.get("args")),
             description=str(entry.get("description", "")).strip(),
             skip=bool(entry.get("skip", False)),
             skip_reason=str(entry.get("skip_reason", "")).strip(),
