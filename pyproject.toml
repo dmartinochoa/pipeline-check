@@ -23,8 +23,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "boto3>=1.34.0",
-    "click>=8.1.0",
+    "boto3>=1.43.9",
+    "click>=8.4.0",
     "PyYAML>=6.0",
     "rich>=13.0.0",
 ]
