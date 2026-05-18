@@ -31,8 +31,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 60 | 11C · 34H · 15M |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 11 | 2H · 5M · 4L |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 15 | 1H · 8M · 6L |
-| [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 2 | 1M · 1L |
-| [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 3 | 2M · 1L |
+| [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 7 | 1H · 4M · 2L |
+| [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 5 | 3M · 2L |
 | [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 85 | 32H · 44M · 9L |
 
 ## Filter at runtime
@@ -332,21 +332,28 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC7.3: Security events are evaluated to determine if they require response { #ctrl-cc7-3 }
 
-**Evidenced by 2 checks** across 2 providers (AWS, SCM).
+**Evidenced by 7 checks** across 2 providers (AWS, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### CC7.4: Identified security incidents trigger a response process { #ctrl-cc7-4 }
 
-**Evidenced by 3 checks** across 2 providers (AWS, SCM).
+**Evidenced by 5 checks** across 2 providers (AWS, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-001`](#detail-cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
@@ -1478,7 +1485,7 @@ pipelines:
 
 #### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
-**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures.
+**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures, [`CC7.3`](#ctrl-cc7-3) Security events are evaluated to determine if they require response.
 
 **How this is detected.** CloudTrail is the only AWS-native source of record for management-plane API calls. A region with no active trail blinds incident responders: a pipeline compromise is invisible once the in-memory CloudWatch buffer rolls over.
 
@@ -1488,7 +1495,7 @@ pipelines:
 
 #### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
 
-**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures.
+**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures, [`CC7.3`](#ctrl-cc7-3) Security events are evaluated to determine if they require response.
 
 **How this is detected.** CloudTrail logs are S3 objects. Without log-file validation, an attacker with ``s3:PutObject`` on the trail bucket can edit log files to remove evidence of their activity, and there's no digest to compare against. With validation on, every hour of logs is summarized in a signed digest file under ``CloudTrail-Digest/``.
 
@@ -1498,7 +1505,7 @@ pipelines:
 
 #### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
 
-**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures.
+**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures, [`CC7.3`](#ctrl-cc7-3) Security events are evaluated to determine if they require response.
 
 **How this is detected.** An attacker who knows your CloudTrail trail is regional deliberately operates from a different region. Multi-region trails capture management events from every region into a single trail, closing the gap without you having to enumerate which regions you actually use.
 
@@ -1508,7 +1515,7 @@ pipelines:
 
 #### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
 
-**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures.
+**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures, [`CC7.3`](#ctrl-cc7-3) Security events are evaluated to determine if they require response, [`CC7.4`](#ctrl-cc7-4) Identified security incidents trigger a response process.
 
 **How this is detected.** Failure-rate signals are how on-call learns about an unfamiliar build crashing in a loop, an attacker probing the build environment, or a CI quota being exhausted. CloudWatch captures the ``FailedBuilds`` metric automatically, the alarm is the missing fan-out.
 
@@ -1837,7 +1844,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
-**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures.
+**Evidences:** [`CC7.2`](#ctrl-cc7-2) System components are monitored for anomalies indicative of malicious acts or failures, [`CC7.3`](#ctrl-cc7-3) Security events are evaluated to determine if they require response, [`CC7.4`](#ctrl-cc7-4) Identified security incidents trigger a response process.
 
 **How this is detected.** Pipeline failure events are emitted to EventBridge automatically; the missing piece is a rule that pipes them to somewhere a human reads (SNS, Slack, PagerDuty). Without it, failures only surface via the CodePipeline console, which no one watches.
 
