@@ -175,6 +175,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Image-reference parsing consolidated into one primitive.** New
+  ``pipeline_check/core/checks/_primitives/image_ref.py`` carries the
+  structural decomposition (registry / repository / tag / digest) for
+  OCI / Docker image references. ``container_image.classify`` (AWS-
+  managed / digest / trusted-registry verdict) and
+  ``image_pinning.classify`` (pin-tightness ``PinKind``) now delegate
+  to it instead of each carrying their own ``@sha256:`` regex and
+  ``rpartition('/')`` dance. Domain verdicts stay with their
+  classifier; only the grammar moved. ``DIGEST_RE`` and
+  ``VERSION_TAG_RE`` remain as module-level exports on
+  ``image_pinning`` because four provider ``_helpers.py`` modules
+  re-export them by identity. Edge-case behavior shift in
+  ``image_pinning.classify``: a trailing colon with no tag
+  (``foo:``) and a bare colon (``:``) now return ``PinKind.NO_TAG``
+  rather than ``PinKind.FLOATING`` (an explicit colon with no tag
+  really is an absent tag, not a mutable one); ``classify(None)``
+  returns ``PinKind.NO_TAG`` instead of raising ``TypeError``. The
+  common cases (``:latest``, ``:3.12.1``, ``@sha256:<64 hex>``,
+  bare ``alpine``) are unchanged.
+
 - **LSP diagnostics carry the upstream severity name in ``data``.**
   ``finding_to_diagnostic`` now sets
   ``Diagnostic.data = {"severity": finding.severity.name}`` (one of
