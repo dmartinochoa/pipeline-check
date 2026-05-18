@@ -90,6 +90,9 @@ def _command_unsafe(cmd: str) -> list[str]:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    # Preserve insertion order without duplicates so the reachability-
+    # aware AC-026 chain sees every step containing an injection sink.
+    anchor_steps: dict[str, None] = {}
     for idx, step in iter_command_steps(doc):
         for cmd in step_commands(step):
             hits = _command_unsafe(cmd)
@@ -97,9 +100,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 # Deduplicate per-step so a 50-line script that uses
                 # $BUILDKITE_BRANCH 8 times reads as one offender.
                 uniq = sorted(set(hits))
-                offenders.append(
-                    f"{step_label(step, idx)}: {', '.join(uniq[:3])}"
-                )
+                label = step_label(step, idx)
+                offenders.append(f"{label}: {', '.join(uniq[:3])}")
+                anchor_steps[label] = None
                 break
     passed = not offenders
     desc = (
@@ -115,4 +118,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # Buildkite pipelines are a flat list of steps rather than
+        # named jobs; we anchor on step labels (``key`` > ``label`` >
+        # ``steps[N]``). The reachability-aware AC-026 chain
+        # intersects these with BK-007's ungated-deploy step set.
+        job_anchors=tuple(anchor_steps),
     )

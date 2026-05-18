@@ -60,6 +60,9 @@ def _gl_ref_pattern(name: str) -> str:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    # Preserve insertion order without duplicates so the reachability-
+    # aware chain engine sees every job that contains an injection sink.
+    anchor_jobs: dict[str, None] = {}
     # Pipeline-level tainted variables, inherited by all jobs.
     global_tainted = _tainted_vars(doc.get("variables"))
     for name, job in iter_jobs(doc):
@@ -83,6 +86,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             locations.append(Location(
                 path=path, start_line=line, end_line=line,
             ))
+            anchor_jobs[name] = None
     passed = not offenders
     desc = (
         "No script interpolates attacker-controllable commit/MR metadata."
@@ -97,4 +101,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

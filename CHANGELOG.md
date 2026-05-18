@@ -40,6 +40,117 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `job_anchors: tuple[str, ...]` and `path_evidence: tuple[str, ...]`;
   `GHA-003`, `GHA-014`, `TAINT-001`, and `TAINT-002` populate them.
 
+- **Reachability-aware AC-022 (GitLab port).** `AC-022` (GitLab
+  script injection meets unguarded deploy) now uses the same
+  `job_anchors` intersection model as the `AC-002` pilot. `GL-002`
+  records the job IDs whose ``script:`` interpolated an untrusted
+  ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` variable; `GL-004`
+  records the job IDs that deploy without a ``when: manual`` /
+  protected ``environment:`` gate. When the two sets share a job,
+  the chain emits with `confirmed_reachable=True`, confidence
+  promoted to `HIGH`, and a `reachability_note` citing the shared
+  job(s). Disjoint sets fall back to the legacy co-occurrence
+  signal (`confirmed_reachable=False`, weakest-leg confidence) so
+  no existing gate changes.
+
+- **TAINT-004 dotenv dataflow widens AC-022.** `TAINT-004` (GitLab
+  cross-job taint via ``artifacts.reports.dotenv``) now populates
+  `Finding.job_anchors` with the sink-side consumer job IDs and
+  `Finding.path_evidence` with the rendered source-to-sink paths,
+  mirroring the GHA `TAINT-002` shape. `AC-022` consumes those
+  anchors when computing reachability: a producer-side `GL-002` in
+  one job paired with a dotenv-routed sink that lands in the same
+  job `GL-004` flagged as ungated now resolves to a confirmed
+  chain, with the rendered dotenv path included in the narrative
+  under "Dataflow evidence".
+
+- **TAINT-008 extends-inheritance dataflow widens AC-022.**
+  `TAINT-008` (GitLab cross-job taint via ``extends:`` template
+  inheritance) populates `Finding.job_anchors` and
+  `Finding.path_evidence` the same way `TAINT-004` does, so a
+  tainted ``variables:`` block in a hidden template that's read
+  unquoted in a downstream deploy job now contributes injection-
+  side reachability for `AC-022`. Both of GitLab's cross-job
+  dataflow channels (dotenv + extends) feed the AC-022 reachability
+  check, closing the GitLab-side parity with the GHA pilot.
+
+- **Reachability-aware AC-026 (Buildkite port).** `AC-026`
+  (Buildkite injection lands on auto-deploy step with no manual
+  gate) now uses the same `job_anchors` intersection model as the
+  `AC-002` / `AC-022` chains. Buildkite pipelines are a flat list
+  of steps rather than named jobs, so the anchor each leg surfaces
+  is the step label (``key`` > ``label`` > ``steps[N]`` fallback).
+  `BK-003` records the labels of steps whose ``command:``
+  interpolated a tainted Buildkite variable; `BK-007` records the
+  labels of deploy-named steps lacking a ``manual:`` / ``input:``
+  gate. When the two sets share a step — the same step is the
+  injection sink AND the unmanual deploy — the chain emits with
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared step(s). Disjoint sets
+  fall back to the legacy file-co-occurrence signal. Buildkite has
+  no TAINT-NNN family yet, so cross-step dataflow widening (meta-
+  data / artifacts) is a follow-up.
+
+- **Reachability-aware AC-018 (supply-chain leg).** `AC-018`
+  (unpinned action lands on deploy job with no environment gate)
+  now uses the `job_anchors` intersection model. `GHA-001` records
+  the job IDs whose steps reference a tag-pinned or branch-pinned
+  ``uses:``; `GHA-014`'s deploy-job anchors were already wired by
+  the `AC-002` pilot. When the same job both pulls an unpinned
+  upstream action AND is the ungated deploy, the chain emits with
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared job(s) — the tj-actions
+  shape, where the compromised upstream code executes in the
+  deploy job's own context with its environment secrets in scope.
+  Disjoint anchors fall back to the legacy co-occurrence signal.
+
+- **Reachability-aware AC-003 (credential-exfil leg).** `AC-003`
+  (unpinned action to credential exfiltration) now intersects
+  `GHA-001` ∩ `GHA-005` job anchors. `GHA-005` populates anchors
+  per-scope: job-level / step-level static AWS keys anchor to the
+  containing job; workflow-level ``env:`` inherits to every job
+  and so unions with every job ID in the workflow. When the same
+  job both pulls an unpinned upstream action AND can read
+  ``$AWS_ACCESS_KEY_ID`` / ``$AWS_SECRET_ACCESS_KEY``, the chain
+  emits with `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared job(s) —
+  the canonical credential-exfiltration path. Disjoint anchors
+  fall back to the legacy co-occurrence signal.
+
+- **Reachability-aware AC-006 (cache poisoning).** `AC-006`
+  (cache poisoning via untrusted trigger) now intersects
+  `GHA-002` ∩ `GHA-011` job anchors. `GHA-002` populates anchors
+  with the jobs that check out PR-head code; `GHA-011` populates
+  anchors with the jobs whose ``actions/cache`` step has a tainted
+  key. A shared job confirms the direct poisoning primitive — the
+  malicious PR-head build script writes the same cache entry the
+  job populates, which a later privileged run will restore.
+  Disjoint anchors keep the legacy co-occurrence signal.
+
+- **Reachability-aware AC-001 + AC-004 (fork-PR family).** Both
+  `AC-001` (fork-PR credential theft) and `AC-004` (self-hosted
+  runner persistent foothold) now use the `job_anchors`
+  intersection model. AC-001 intersects `GHA-002` ∩ `GHA-005`
+  (the same job both runs PR-head code AND can read long-lived
+  AWS keys — the PyTorch supply-chain shape). AC-004 intersects
+  `GHA-002` ∩ `GHA-012` (the same job both runs PR-head code AND
+  hosts on a non-ephemeral self-hosted runner). `GHA-012` gained
+  `job_anchors` carrying the non-ephemeral job IDs to support
+  this and the future `AC-010` / `AC-013` migrations.
+
+- **Reachability-aware AC-010 / AC-013 / AC-014 (runner +
+  token-persistence family).** `AC-010` (self-hosted runner +
+  curl-pipe / token persistence), `AC-013` (caller-controlled
+  GHA runner + token persistence), and `AC-014` (the GitLab
+  analog: caller-controlled tags + CI-token persistence) all
+  use the `job_anchors` intersection model. AC-010 confirms when
+  `GHA-012` ∩ `GHA-019` share a job (the curl-pipe-only branch
+  via `GHA-016` is a blob scan with no per-job attribution, so
+  it stays as the legacy co-occurrence signal). AC-013 confirms
+  when `GHA-036` ∩ `GHA-019` share a job; AC-014 confirms when
+  `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
+  `GL-020` all gained `Finding.job_anchors`.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added

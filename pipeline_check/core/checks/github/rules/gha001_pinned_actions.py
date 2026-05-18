@@ -62,7 +62,10 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unpinned: list[str] = []
     locations: list[Location] = []
-    for _, job in iter_jobs(doc):
+    # Preserve insertion order without duplicates so the reachability-
+    # aware AC-018 chain sees every job that contains an unpinned step.
+    anchor_jobs: dict[str, None] = {}
+    for job_id, job in iter_jobs(doc):
         for step in iter_steps(job):
             ref = parse_uses(step.get("uses"))
             if ref is None or ref.kind != "remote-action":
@@ -70,6 +73,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if not ref.is_pinned_to_sha:
                 unpinned.append(ref.raw)
                 locations.append(step_location(path, step))
+                anchor_jobs[job_id] = None
     passed = not unpinned
     desc = (
         "Every `uses:` reference is pinned to a 40-char commit SHA."
@@ -86,4 +90,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

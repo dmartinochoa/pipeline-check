@@ -80,6 +80,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding:
     offenders: list[str] = []
+    anchor_jobs: dict[str, None] = {}
     for job_id, job in iter_jobs(doc):
         for step in iter_steps(job):
             run = step.get("run")
@@ -88,6 +89,7 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
             if _TOKEN_PERSIST_RE.search(run):
                 name = step.get("name") or step.get("id") or "unnamed"
                 offenders.append(f"{job_id}.{name}")
+                anchor_jobs[job_id] = None
     passed = not offenders
     # When this workflow is a resolved callee invoked with
     # ``secrets: inherit``, the persistence vector is strictly
@@ -110,4 +112,7 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # AC-010 / AC-013 / XPC-004 intersect these anchors with the
+        # impact-side anchors (GHA-012, GHA-036, branch-protection).
+        job_anchors=tuple(anchor_jobs),
     )

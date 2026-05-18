@@ -78,4 +78,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # AC-004 / AC-010 / AC-013 intersect these self-hosted-job
+        # anchors with their respective impact-side anchors.
+        job_anchors=tuple(offending),
     )

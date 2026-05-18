@@ -65,4 +65,6 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         description=desc,
         recommendation=RULE.recommendation,
         passed=passed,
+        # AC-014 intersects with GL-032's tag-targeted job anchors.
+        job_anchors=tuple(dict.fromkeys(offenders)),
     )

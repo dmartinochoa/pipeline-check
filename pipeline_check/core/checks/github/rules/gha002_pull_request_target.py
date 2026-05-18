@@ -109,6 +109,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         )
     offending: list[str] = []
     locations: list[Location] = []
+    # Preserve insertion order without duplicates so the reachability-
+    # aware chain engine (AC-001 / AC-006 / AC-009 / AC-029) can
+    # intersect with the impact-side anchors. A job with multiple
+    # offending checkouts only contributes once.
+    anchor_jobs: dict[str, None] = {}
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses")
@@ -120,6 +125,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if isinstance(ref, str) and PR_HEAD_REF_RE.search(ref):
                 offending.append(f"{job_id}[{idx}]")
                 locations.append(step_location(path, step))
+                anchor_jobs[job_id] = None
     passed = not offending
     desc = (
         "pull_request_target workflow does not check out untrusted PR head code."
@@ -134,4 +140,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

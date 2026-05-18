@@ -43,7 +43,7 @@ is both: defense in depth on the same kill chain.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -94,10 +94,49 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability mirrors the AC-002 / AC-022 pattern, with the
+    # caveat that Buildkite pipelines are a flat list of steps, not
+    # named jobs. The "anchor" each leg surfaces is the step label
+    # (``key`` > ``label`` > ``steps[N]`` fallback). A non-empty
+    # intersection means the same step both interpolates untrusted
+    # input AND is the ungated deploy — the strongest possible
+    # signal short of a dataflow rule, since Buildkite has no
+    # TAINT-NNN family yet to model meta-data / artifact propagation
+    # across steps. Disjoint anchors fall back to the legacy file-
+    # co-occurrence signal so existing detections don't regress.
     grouped = group_by_resource(findings, ["BK-003", "BK-007"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["BK-003"], ck_map["BK-007"]]
+        bk003 = ck_map["BK-003"]
+        bk007 = ck_map["BK-007"]
+        triggers = [bk003, bk007]
+
+        injection_steps = set(bk003.job_anchors)
+        deploy_steps = set(bk007.job_anchors)
+        shared = sorted(deploy_steps & injection_steps)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{s}`" for s in shared)
+            reach_note = (
+                f"injection and unmanual deploy share step {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the untrusted "
+                f"interpolation and the unmanual deploy fire on the "
+                f"same step(s) ({shared_repr}). The injected command "
+                f"executes in the deploy step's own runner with its "
+                f"secrets in scope."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the injection and "
+                "the unmanual deploy fire on the same pipeline file "
+                "but on different steps, with no cross-step dataflow "
+                "link (meta-data, artifacts) modeled. Treat as a co-"
+                "occurrence signal rather than a proven path."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A step's ``command:`` interpolates an untrusted "
@@ -118,13 +157,20 @@ def match(findings: list[Finding]) -> list[Chain]:
             "the deploy step's secrets and credentials. Quote the "
             "interpolation (or push it through ``env:``) AND add "
             "a ``manual:`` block to the deploy step; either fix "
-            "breaks the chain, both is best."
+            "breaks the chain, both is best.\n"
+            f"{reach_narrative}"
         )
+
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -134,5 +180,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

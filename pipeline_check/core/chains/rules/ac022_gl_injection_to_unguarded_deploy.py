@@ -37,7 +37,7 @@ $CI_COMMIT_TITLE``) or move the deploy job behind ``when: manual``
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -87,10 +87,76 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability mirrors the AC-002 (GHA) pilot: intersect the
+    # injection-side ``job_anchors`` (GL-002, the jobs whose ``script:``
+    # interpolated an untrusted CI variable) with the deploy-side
+    # ``job_anchors`` (GL-004, the jobs that deploy without a manual
+    # gate or protected environment). A non-empty intersection means
+    # the same job both interpolates untrusted input AND ships
+    # unattended — a confirmed end-to-end path, not just file co-
+    # occurrence. TAINT-004 (dotenv-artifact cross-job propagation)
+    # and TAINT-008 (``extends:`` template-inheritance propagation)
+    # widen the injection-side set with sink jobs reachable via
+    # GitLab's two cross-job dataflow channels, so a producer-side
+    # GL-002 in one job and a consumer-side read in another job still
+    # resolves to a confirmed chain. The chain still fires when the
+    # intersection is empty so we don't regress the legacy co-
+    # occurrence signal, but the report flags it as unconfirmed and
+    # keeps the weakest-leg confidence.
     grouped = group_by_resource(findings, ["GL-002", "GL-004"])
+    # Map resource -> { check_id -> Finding } for the injection-side
+    # corroborators, picked up if present on the same pipeline file.
+    taint_by_resource: dict[str, dict[str, Finding]] = {}
+    for f in findings:
+        if f.passed or f.check_id not in {"TAINT-004", "TAINT-008"}:
+            continue
+        taint_by_resource.setdefault(f.resource, {})[f.check_id] = f
+
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GL-002"], ck_map["GL-004"]]
+        gl002 = ck_map["GL-002"]
+        gl004 = ck_map["GL-004"]
+        triggers: list[Finding] = [gl002, gl004]
+
+        injection_jobs = set(gl002.job_anchors)
+        deploy_jobs = set(gl004.job_anchors)
+        # TAINT-004 (dotenv) and TAINT-008 (extends) widen the
+        # injection-side set with sink jobs reachable via cross-job
+        # propagation.
+        taint_paths: list[str] = []
+        for check_id in ("TAINT-004", "TAINT-008"):
+            tf = taint_by_resource.get(resource, {}).get(check_id)
+            if tf is None:
+                continue
+            triggers.append(tf)
+            injection_jobs |= set(tf.job_anchors)
+            taint_paths.extend(tf.path_evidence)
+
+        shared = sorted(deploy_jobs & injection_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"injection and ungated deploy share job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the untrusted "
+                f"interpolation and the ungated deploy fire in the "
+                f"same job(s) ({shared_repr}). The two legs are not "
+                f"just co-located in `{resource}`, they execute "
+                f"together."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the injection sink "
+                "and the ungated deploy fire on the same pipeline "
+                "file but on different jobs, with no dotenv-"
+                "artifact or ``extends:`` dataflow link detected "
+                "between them. Treat as a co-occurrence signal "
+                "rather than a proven path."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A job's ``script:`` interpolates an attacker-"
@@ -113,21 +179,37 @@ def match(findings: list[Finding]) -> list[Chain]:
             "production secrets execute attacker-controlled "
             "behavior. Quote the interpolation through a "
             "``variables:`` indirection or move the deploy behind "
-            "``when: manual``. Either breaks the chain."
+            "``when: manual``. Either breaks the chain.\n"
+            f"{reach_narrative}"
         )
+        if taint_paths:
+            narrative += "\n  Dataflow evidence: " + "; ".join(taint_paths[:3])
+            if len(taint_paths) > 3:
+                narrative += "..."
+
+        # Confirmed reachability promotes the composite to HIGH
+        # confidence; unconfirmed chains keep the weakest-leg
+        # confidence so they don't outrank a single HIGH finding.
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
             kill_chain_phase=RULE.kill_chain_phase,
-            triggering_check_ids=["GL-002", "GL-004"],
+            triggering_check_ids=sorted({f.check_id for f in triggers}),
             triggering_findings=triggers,
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

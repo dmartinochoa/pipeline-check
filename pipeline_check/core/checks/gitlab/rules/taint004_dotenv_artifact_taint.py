@@ -106,8 +106,18 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"sink via dotenv artifact: {'; '.join(rendered[:3])}"
         f"{'...' if len(rendered) > 3 else ''}."
     )
+    # Sink-side consumer jobs. GitLab's TaintPath.sink_location is
+    # ``"<job_name>:script[<idx>]"`` — split on ``":"`` (the GHA twin
+    # splits on ``"["`` because its format differs). The reachability-
+    # aware AC-022 chain intersects these with GL-004's ungated-deploy
+    # job IDs to confirm an end-to-end path.
+    anchor_jobs: dict[str, None] = {}
+    for p in paths:
+        anchor_jobs[p.sink_location.split(":", 1)[0]] = None
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        job_anchors=tuple(anchor_jobs),
+        path_evidence=tuple(rendered),
     )

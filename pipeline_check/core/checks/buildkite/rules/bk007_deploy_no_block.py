@@ -116,4 +116,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # ``job_anchors`` carries the ungated deploy-step labels so the
+        # reachability-aware AC-026 chain can intersect them with the
+        # injection-bearing steps BK-003 surfaces. Buildkite has no
+        # named-job concept; the step label is the natural anchor.
+        job_anchors=tuple(ungated),
     )

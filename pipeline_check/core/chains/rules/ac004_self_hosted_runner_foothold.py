@@ -6,7 +6,7 @@ plant a daemon that waits for the next privileged job.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -42,10 +42,45 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability: a shared job between GHA-002 (PR-head checkout)
+    # and GHA-012 (self-hosted, non-ephemeral runner) confirms the
+    # foothold primitive — the malicious PR-head code runs on the
+    # same runner instance that will later host a privileged job.
+    # Disjoint jobs are still suspicious because the runner pool may
+    # be shared across jobs, but no direct same-runner claim holds.
     grouped = group_by_resource(findings, ["GHA-002", "GHA-012"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GHA-002"], ck_map["GHA-012"]]
+        gha002 = ck_map["GHA-002"]
+        gha012 = ck_map["GHA-012"]
+        triggers = [gha002, gha012]
+
+        prhead_jobs = set(gha002.job_anchors)
+        runner_jobs = set(gha012.job_anchors)
+        shared = sorted(prhead_jobs & runner_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"PR-head checkout and non-ephemeral runner share job "
+                f"{shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) both check out PR-head code AND "
+                f"run on a self-hosted, non-ephemeral runner. The "
+                f"attacker's payload runs on a runner instance "
+                f"that survives the job."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: PR-head checkout "
+                "and non-ephemeral runner fire in different jobs. "
+                "The foothold attack still works when jobs share a "
+                "runner pool; treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. Workflow accepts `pull_request_target` and checks "
@@ -55,13 +90,20 @@ def match(findings: list[Finding]) -> list[Chain]:
             "  3. Attacker opens fork PR with code that writes a cron "
             "or systemd unit. The next job on that runner, a privileged "
             "deploy from a maintainer's branch, runs in an environment "
-            "the attacker still owns."
+            "the attacker still owns.\n"
+            f"{reach_narrative}"
         )
+
+        if confirmed:
+            chain_confidence = Confidence.HIGH
+        else:
+            chain_confidence = min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -71,5 +113,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out
