@@ -125,5 +125,29 @@ STANDARD = Standard(
         "K8S-010":  ["5.7.2", "5.7.3"],                          # seccompProfile not docker/default
         "K8S-039":  ["5.7.3"],                                   # shareProcessNamespace
         "K8S-040":  ["5.7.3"],                                   # procMount: Unmasked
+        # ── Tekton (K8s-native pipeline kinds) ───────────────────
+        # Tekton TaskRun / PipelineRun objects produce real Pods.
+        # The same Section-5 controls that bind on K8s manifests
+        # bind here: privileged + hostPath + default SA + token
+        # automount + sidecar privileged are 5.1.5 / 5.1.6 / 5.2.2
+        # / 5.2.7 / 5.2.12 evidence.
+        "TKN-002":  ["5.2.2", "5.2.7", "5.7.3"],                 # step privileged / root
+        "TKN-004":  ["5.2.5", "5.2.12"],                         # hostPath / host namespaces
+        "TKN-007":  ["5.1.5"],                                   # default ServiceAccount
+        "TKN-013":  ["5.2.2", "5.2.7"],                          # sidecar privileged / root
+        # ── Argo Workflows ───────────────────────────────────────
+        # Argo Workflow templates instantiate Pods. Same mapping
+        # rationale as Tekton.
+        "ARGO-002": ["5.2.2", "5.2.7", "5.7.3"],                 # template privileged / root
+        "ARGO-003": ["5.1.5"],                                   # default ServiceAccount
+        "ARGO-004": ["5.2.5", "5.2.12"],                         # hostPath / host namespaces
+        "ARGO-006": ["5.1.2", "5.4.1", "5.4.2"],                 # leaked creds in env / param
+        "ARGO-013": ["5.1.6"],                                   # SA token automount default
+        # ── Helm chart-rendered K8s manifests ────────────────────
+        # Helm renders to Kubernetes manifests at deploy time; the
+        # chart's kubeVersion compat range gates which API versions
+        # the rendered manifests target (a namespace-policy /
+        # cluster-version concern that maps to 5.7.1).
+        "HELM-006": ["5.7.1"],                                   # missing kubeVersion compat range
     },
 )

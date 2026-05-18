@@ -533,6 +533,54 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   evidenced (22 original + the 2 newly-added that backfill
   previously-dangling references).
 
+- **Targeted expansions for the three intentionally-narrow CIS
+  benchmarks.** Each of these standards is scoped narrowly per
+  its existing docstring carve-outs (AWS Foundations covers
+  AWS-pack rules; GitHub covers GitHub-platform + IaC scanner
+  surfaces; Kubernetes covers manifest-evidenceable Section-5
+  policies). Expansion stays inside those scopes:
+
+  - **CIS AWS Foundations:** 18 net-new entries. CB-006 (long-
+    lived source token) and CP-004 (legacy OAuth) land on 1.14
+    (90-day key rotation), generalizing the rotation principle
+    beyond IAM access keys. The `-000` degraded-mode discovery
+    findings (16 rules) land on 3.1 (CloudTrail enabled in all
+    regions) — when the scanner cannot enumerate an AWS surface,
+    the visibility gap is the audit-trail evidence gap 3.1 is
+    designed to prevent; S3-000 also maps to 3.6 (S3 access
+    logging). After: 62/565 = 10% (was 44, 7%). The standard
+    remains intentionally narrow — most AWS-pack rules don't
+    have CIS Foundations controls within the benchmark's
+    IAM/encryption/audit scope.
+
+  - **CIS GitHub:** 54 net-new entries. **1.5.2** (CI/CD
+    pipeline-instruction scanning) absorbs the GHA-030..058
+    worm-mitigation + advanced-PPE pack (anchored at GitHub-
+    specific patterns the benchmark enumerates) and the
+    TAINT-001..008 cross-step injection family. **1.5.3** (IaC
+    scanning) extends across Dockerfile (DF-006/8/19/20/21/24/
+    26..29), Kubernetes (K8S-005/13/17/18/37), and TF/CF
+    (TF-002/3, CF-002/3) so the IaC scanner surface matches the
+    manifest reality. After: 118/565 = 20% (was 64, 11%). The
+    standard stays GitHub-platform-scoped — non-SCM / non-GHA /
+    non-IaC rules remain out of scope.
+
+  - **CIS Kubernetes:** 10 net-new entries. The Section-5 policy
+    surface extends to **Tekton** TaskRun / PipelineRun Pod-
+    producing kinds (TKN-002 privileged → 5.2.2 + 5.2.7; TKN-004
+    hostPath → 5.2.5 + 5.2.12; TKN-007 default SA → 5.1.5;
+    TKN-013 sidecar privileged → 5.2.2 + 5.2.7) and **Argo
+    Workflow** templates (ARGO-002/3/4/6/13). HELM-006 (missing
+    kubeVersion compat range) lands on 5.7.1 since Helm renders
+    to Kubernetes manifests at deploy time. After: 45/565 = 7%
+    (was 35, 6%). The standard stays manifest-policy-scoped —
+    pipeline-side rules and non-K8s providers remain out of
+    scope.
+
+  All three benchmarks are intentionally narrow caps on the
+  catalog, not gaps to close. The percentages here reflect
+  realistic ceilings given each benchmark's scope.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
