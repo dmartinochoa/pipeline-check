@@ -439,6 +439,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   precedent). After: 516/516 = 100% (was 323, 62%). All 22
   subcategories evidenced.
 
+- **Broadened SOC 2 to 100% catalog coverage.** Cross-mapping pass,
+  no new rule modules, 277 net-new entries. SOC 2's Common Criteria
+  (CC6 logical access, CC7 system operations, CC8 change management)
+  cover almost every pipeline-config posture rule. Follows the
+  existing per-rule pattern: secrets / creds / long-lived tokens →
+  CC6.1 (+ CC6.2 / CC6.3 for provisioning + revocation); boundary
+  / privileged / fork-PR / cache-poisoning → CC6.6; TLS bypass →
+  CC6.7; malicious-software / dangerous-shell / interpolation /
+  worm IOCs → CC6.8; vuln scan / outdated deps / compromised pkgs
+  → CC7.1; audit / monitoring / build logs → CC7.2; event response
+  / rollback → CC7.3 + CC7.4; signing / SBOM / attestation /
+  pinning / deploy gates / branch governance → CC8.1. Picks up
+  the full per-CI extension surface (GHA-006..058, GL-006..033,
+  BB-005..029, ADO-005..030, CC-003..031, JF-006..032, DR-001..011),
+  the Tekton + Argo K8s-native packs (TKN-001..015, ARGO-001..015),
+  the Cloud Build extension (GCB-004..026), AWS extras (CB-004/7/
+  9/10, CP-002, CCM-002, CA-001..003, ECR-004/5/6, EB-002, KMS-001,
+  SM-001, SSM-001/2, LMB-001/3), TF/CF IaC-native rules,
+  SCM-043..047, the NPM/PyPI/Maven dep-supply-chain pack, OCI
+  manifest (OCI-001..008), ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension (DF-009/11/24..30), Helm chart provenance
+  metadata (HELM-005..010 remaining), and the `-000` degraded-mode
+  discovery findings on CC7.2 (monitoring-anomaly gap, mirroring
+  the cross-standard visibility-gap precedent). After: 516/516 =
+  100% (was 239, 46%). All 11 Common Criteria evidenced. As the
+  docstring caveat reminds — passing all mapped checks demonstrates
+  config substrate but not the auditor-reviewed operational
+  evidence required for SOC 2 attestation.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
