@@ -76,6 +76,11 @@ class GoatSpec:
     repo: str
     ref: str
     pipelines: list[str]
+    # Extra CLI args appended to the pipeline_check invocation,
+    # forwarded verbatim. Used to point per-provider path flags
+    # (``--cfn-template``, ``--k8s-path``, ...) at non-canonical
+    # layouts a given goat happens to use.
+    extra_args: list[str] = field(default_factory=list)
     description: str = ""
     skip: bool = False
     skip_reason: str = ""
@@ -140,6 +145,7 @@ def load_manifest(path: Path = MANIFEST) -> list[GoatSpec]:
             repo=entry["repo"],
             ref=str(entry.get("ref", "HEAD")),
             pipelines=list(entry.get("pipelines", [])),
+            extra_args=[str(a) for a in entry.get("args", [])],
             description=str(entry.get("description", "")).strip(),
             skip=bool(entry.get("skip", False)),
             skip_reason=str(entry.get("skip_reason", "")).strip(),
@@ -271,7 +277,11 @@ def clone_goat(spec: GoatSpec, dest: Path) -> str:
     return out.stdout.strip()
 
 
-def scan_goat(workdir: Path, pipelines: list[str]) -> list[dict[str, Any]]:
+def scan_goat(
+    workdir: Path,
+    pipelines: list[str],
+    extra_args: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Run pipeline-check against ``workdir`` and return the parsed
     findings list. Treats exit codes 0 and 1 (clean / gate-failed)
     as success since both still emit findings JSON; 2 / 3 are
@@ -284,6 +294,7 @@ def scan_goat(workdir: Path, pipelines: list[str]) -> list[dict[str, Any]]:
         provider_flag = []
     cmd = [
         "pipeline_check", *provider_flag,
+        *(extra_args or []),
         "--output", "json",
     ]
     proc = subprocess.run(
@@ -331,7 +342,7 @@ def evaluate_goat(spec: GoatSpec) -> GoatResult:
     tmp = Path(tempfile.mkdtemp(prefix=f"goat-{spec.slug}-"))
     try:
         sha = clone_goat(spec, tmp)
-        findings = scan_goat(tmp, spec.pipelines)
+        findings = scan_goat(tmp, spec.pipelines, spec.extra_args)
         return GoatResult(
             spec=spec,
             ref_resolved=sha,
