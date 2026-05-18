@@ -31,6 +31,13 @@ STANDARD = Standard(
         "Build.L3.NonFalsifiable": "Build L3: Provenance cannot be falsified by the build's own tenant",
     },
     mappings={
+        # Build.L1.Scripted is structurally satisfied by any pipeline
+        # pipeline_check can scan: if a CI config exists, the build
+        # is "scripted" in SLSA's sense (as opposed to a developer
+        # running commands by hand on a workstation). No posture rule
+        # fires on the "build is not scripted" case because such a
+        # build wouldn't be parseable by this scanner in the first
+        # place. Left unmapped on purpose.
         # CodeBuild, isolation & ephemerality
         "CB-002":   ["Build.L3.Isolated"],                         # privileged mode breaks isolation
         "CB-004":   ["Build.L3.Ephemeral"],                        # unbounded timeout ≠ ephemeral
@@ -73,6 +80,21 @@ STANDARD = Standard(
         "GHA-026":  ["Build.L3.Isolated"],                         # container escape via options
         "GHA-028":  ["Build.L3.Isolated"],                         # eval / shell re-invocation
         "GHA-029":  ["Build.L3.Isolated"],                         # package source bypasses lockfile
+        "GHA-030":  ["Build.L3.NonFalsifiable"],                   # OIDC w/o env-protected job (provenance binding weak)
+        "GHA-037":  ["Build.L3.NonFalsifiable"],                   # checkout persists GITHUB_TOKEN
+        "GHA-040":  ["Build.L3.NonFalsifiable"],                   # known-compromised action ref
+        "GHA-041":  ["Build.L3.NonFalsifiable"],                   # single-maintainer action
+        "GHA-042":  ["Build.L3.NonFalsifiable"],                   # very-young action repo
+        "GHA-043":  ["Build.L3.NonFalsifiable"],                   # low-star + sensitive perms
+        "GHA-047":  ["Build.L3.NonFalsifiable"],                   # fresh-ref cooldown
+        "GHA-048":  ["Build.L3.NonFalsifiable",
+                     "Build.L3.Isolated"],                         # workflow self-mutation
+        "GHA-049":  ["Build.L3.NonFalsifiable"],                   # cross-repo push
+        "GHA-050":  ["Build.L2.Signed"],                           # publish w/o OIDC = long-lived sig identity
+        "GHA-051":  ["Build.L3.NonFalsifiable"],                   # services / container image unpinned
+        "GHA-052":  ["Build.L3.Isolated"],                         # cache key derives from untrusted input
+        "GHA-053":  ["Build.L3.Isolated"],                         # if-predicate evaluates untrusted context
+        "GHA-054":  ["Build.L3.NonFalsifiable"],                   # checkout ssh-key persists into .git/config
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
