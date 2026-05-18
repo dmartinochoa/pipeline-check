@@ -1,3 +1,24 @@
-# Check IDs the cicd-goat is intended to demonstrate. Seed with
-# ``python bench/goat_runner.py --goat cicd-goat --suggest`` and
-# hand-edit down to the IDs that the goat is actually anchoring.
+# cicd-goat expected check IDs (curated 2026-05-18 against
+# cicd-goat@HEAD-of-main; the goat refreshes on a floating ref
+# until pin-to-SHA lands). Each entry below is a misconfiguration
+# cicd-goat ships intentionally as part of its 11 OWASP CI/CD
+# Top-10 anchored CTF challenges (Alice-in-Wonderland themed).
+# Mappings cross-reference ``solutions/<character>.md`` for the
+# goat's own documented attack scenario per pipeline.
+
+# ── GitHub Actions side (.github/workflows/release.yaml) ──
+GHA-003   # Script injection via ``${{ github.event.* }}`` in ``run:``. CICD-SEC-4 PPE.
+GHA-014   # Deploy job missing ``environment:`` binding (no reviewer gate). CICD-SEC-1.
+GHA-015   # Deploy job missing ``timeout-minutes`` (unbounded build). CICD-SEC-7.
+
+# ── Jenkins side (gitea/repositories/<character>/Jenkinsfile, 7 files) ──
+JF-003    # ``agent any`` on every Jenkinsfile (no executor isolation). Drives
+          # cheshire-cat's Direct-PPE-to-Controller challenge. CICD-SEC-5 / SEC-7.
+JF-005    # caterpillar deploy stage missing manual ``input`` approval. CICD-SEC-1.
+JF-011    # No ``buildDiscarder`` retention policy on any pipeline. CICD-SEC-10.
+JF-015    # No ``timeout {}`` wrapper on any pipeline. CICD-SEC-7.
+JF-028    # caterpillar + reportcov publish artifacts without SLSA provenance.
+          # CICD-SEC-9 (Improper Artifact Integrity), matches dormouse's
+          # Codecov-style 3rd-party-script-tamper scenario.
+JF-030    # mock-turtle uses dangerous shell idiom; the auto-merge wc-based
+          # heuristic that the challenge exploits. CICD-SEC-1.
