@@ -175,10 +175,8 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">{{ providers.oci.checks }}</span></a>
-  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
-  <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">Package registries: npm</span><span class="pg-provider__count">{{ providers.npm.checks }}</span></a>
-  <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">Package registries: pypi</span><span class="pg-provider__count">{{ providers.pypi.checks }}</span></a>
-  <a class="pg-provider" href="providers/maven/"><span class="pg-provider__name">Maven</span><span class="pg-provider__count">{{ providers.maven.checks }}</span></a>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM posture (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+  <a class="pg-provider" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
 </div>
 </section>
 

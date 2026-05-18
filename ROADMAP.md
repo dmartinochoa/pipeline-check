@@ -37,6 +37,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
   install, skips ``node_modules/``. Closes the gap between the
   existing CI-pattern rules (DF-024, GHA-044) and the dependency
   files themselves.
+- **Maven dependency-supply-chain provider (v1.0.5)** —
+  Third hermetic registry provider. ``--pipeline maven`` parses
+  ``pom.xml`` and ``settings.xml`` with property substitution
+  (``${log4j.version}``) resolved against ``<properties>`` before
+  each rule fires. Seven rules (MVN-001..007) covering floating
+  Maven version ranges (``[1.0,2.0)``, ``LATEST``, ``RELEASE``),
+  mutable ``-SNAPSHOT`` dependencies, plaintext-HTTP repository
+  URLs, dependencies omitting an explicit ``<version>`` (silently
+  resolved by parent BOMs), lax ``<checksumPolicy>`` on non-Central
+  repositories, known-compromised Maven Central versions (curated
+  registry seeded with Log4Shell / Spring4Shell / Text4Shell), and
+  ``<mirrorOf>*</mirrorOf>`` wildcard mirrors. Surfaces
+  ``<dependencyManagement>`` entries separately from real
+  consumption so version-management blocks don't fire consumption-
+  side rules. Skips ``target/`` and ``.m2/``. Brings provider count
+  to 22 and the Package-registries category to npm + PyPI + Maven.
 - **SCM GitLab + Bitbucket platform parity** — ``--scm-platform
   gitlab`` and ``--scm-platform bitbucket`` ship a 7-rule
   universal subset against the GitLab and Bitbucket APIs.
@@ -58,13 +74,13 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items proposed after v1.0.4. Not yet scoped to a specific
 release; landing order is open.
 
-### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2)
+### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2 / maven v2)
 
-*Shipped so far: NPM-001..007, NPM-011, PYPI-001..006 — static
-manifest / lockfile / .npmrc analysis plus the curated
-compromised-package registries and the ``files``-field
-secret-leak detector (no network, refresh by PR with citing
-advisory).*
+*Shipped so far: NPM-001..007, NPM-011, PYPI-001..006, MVN-001..007
+— static manifest / lockfile / .npmrc / pom.xml / settings.xml
+analysis plus the curated compromised-package registries (npm,
+PyPI, Maven Central) and the ``files``-field secret-leak detector
+(no network, refresh by PR with citing advisory).*
 The follow-up rules below require either a registry fetch behind
 ``--resolve-remote`` or new infrastructure (lockfile diff against
 a base ref) and so are deferred:
@@ -96,13 +112,23 @@ a base ref) and so are deferred:
   publish-time hash verification step missing from CI. PYPI-008
   cooldown gate (PyPI ``release_date`` from the JSON API behind
   ``--resolve-remote``).
+- **MVN-008** — Maven artifact cooldown gate. Fail when any direct
+  dependency in ``pom.xml`` was published to Maven Central within
+  N days (default 7). Maven Central exposes per-version timestamps
+  via the search API (``search.maven.org/solrsearch/select``);
+  gates behind ``--resolve-remote`` for symmetry with ``GHA-047``
+  and the proposed ``NPM-008`` / ``PYPI-008``.
+- **Maven extensions.** ``build.gradle`` / ``build.gradle.kts``
+  parsers so Gradle projects get the same registry-side coverage
+  Maven projects already get from MVN-001..007.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
-npm/`` and ``pypi/`` packages; ``--resolve-remote`` reuses the
-``ActionRepoMetadata`` fetcher pattern but targets the npm registry
-(``https://registry.npmjs.org/<pkg>``) and PyPI JSON API
-(``https://pypi.org/pypi/<pkg>/json``); offline / fixture mode
-reads JSON from disk for hermetic CI. The XPC-NNN chain engine
+npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``
+reuses the ``ActionRepoMetadata`` fetcher pattern but targets the
+npm registry (``https://registry.npmjs.org/<pkg>``), PyPI JSON API
+(``https://pypi.org/pypi/<pkg>/json``), and Maven Central search
+API (``https://search.maven.org/solrsearch/select``); offline /
+fixture mode reads JSON from disk for hermetic CI. The XPC-NNN chain engine
 gains chains pairing NPM-008 cooldown-miss with DF-024 lifecycle-
 scripts-enabled so the composite escalates when both gates fail
 in the same scan.

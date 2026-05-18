@@ -24,6 +24,12 @@ Two provider categories produce non-numeric labels:
   rule-file-based. The label is ``"AWS-parity"`` / ``"~N class-based"``
   since both registries are AWS-derived by design.
 
+One synthetic slug, ``registries``, has no on-disk directory. The hook
+aggregates ``npm`` + ``pypi`` + ``maven`` rule-file counts under it so
+the home page can render a single "Package registries" category tile
+instead of three near-empty per-platform tiles. The deep-dive pages
+remain per-platform under ``docs/providers/<name>.md``.
+
 Registered via the ``hooks:`` key in ``mkdocs.yml``.
 """
 from __future__ import annotations
@@ -101,6 +107,20 @@ def _build_index() -> dict[str, dict[str, str]]:
     if helm and k8s:
         out["helm"] = {
             "checks": f"{helm + k8s} checks ({k8s} K8S + {helm} HELM)"
+        }
+
+    # Synthetic "registries" slug: npm + pypi + maven combined so the
+    # home page can show one Package-registries category tile in line
+    # with the SCM tile (one category, multiple platforms inside).
+    npm = _count_rule_files("npm")
+    pypi = _count_rule_files("pypi")
+    maven = _count_rule_files("maven")
+    if npm and pypi and maven:
+        out["registries"] = {
+            "checks": (
+                f"{npm + pypi + maven} checks "
+                f"(npm {npm} + PyPI {pypi} + Maven {maven})"
+            )
         }
 
     return out
