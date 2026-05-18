@@ -90,7 +90,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Compute image tags + labels
+      - name: Compute promotion tags + labels
         id: meta
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf  # v6.0.0
         with:
@@ -103,6 +103,11 @@ jobs:
           # (master). Non-default branches still publish the
           # version+sha pair, so preview builds from feature
           # branches don't pollute ``latest``.
+          #
+          # These tags are NOT applied at build time. They are only
+          # attached to the manifest after Docker Scout has scanned
+          # the quarantine digest below, so a failed scan never
+          # leaves a publicly-visible release tag on either registry.
           tags: |
             type=raw,value=${{ steps.ver.outputs.version }}
             type=sha,format=short
@@ -113,32 +118,45 @@ jobs:
             org.opencontainers.image.source=https://github.com/dmartinochoa/pipeline-check
             org.opencontainers.image.licenses=MIT
 
-      - name: Build and push
+      - name: Build and push to quarantine tag
+        # Build the multi-arch image and push it to GHCR under a
+        # single, throwaway ``scan-${sha}`` tag. The user-facing
+        # tags (``:latest``, ``:${version}``, ``:sha-${short}``) and
+        # the Docker Hub mirror are deliberately NOT created here.
+        # They are only attached by the promote step after Scout
+        # signs off on the digest. ``--load`` is not an option for
+        # multi-arch (the local daemon only holds one platform), so
+        # the only place a multi-arch manifest can live for Scout to
+        # scan is the registry, hence the quarantine tag.
         id: build
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/dmartinochoa/pipeline-check:scan-${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           # SLSA build provenance and an SBOM attached to the image
           # manifest. Keeps parity with release.yml's CycloneDX SBOM
-          # for the wheel.
+          # for the wheel. Both attestations are bound to the digest,
+          # so they follow the manifest when ``imagetools create``
+          # adds the promoted tags below.
           provenance: true
           sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Scan image with Docker Scout
-        # Vulnerability scan against the digest just pushed to GHCR.
-        # ``exit-code: true`` + ``only-severities: critical,high``
-        # fails the workflow on any new critical or high CVE, mirroring
-        # release.yml's ``pip-audit --strict`` posture for the wheel.
-        # SARIF output is uploaded in the next step so findings land on
-        # the repo's Security tab even when this step fails the job.
-        # Scout authenticates via the Docker Hub login already
-        # performed above; no separate secret is needed.
+        # Vulnerability scan against the quarantine digest. ``exit-
+        # code: true`` + ``only-severities: critical,high`` fails the
+        # workflow on any new critical or high CVE BEFORE the promote
+        # step runs, so a vulnerable image never escapes the
+        # quarantine tag. Mirrors release.yml's ``pip-audit
+        # --strict`` posture for the wheel. SARIF output is uploaded
+        # in the next step so findings land on the repo's Security
+        # tab even when this step fails the job. Scout authenticates
+        # via the Docker Hub login already performed above; no
+        # separate secret is needed.
         id: scout
         uses: docker/scout-action@bacf462e8d090c09660de30a6ccc718035f961e3  # v1.20.4
         with:
@@ -158,3 +176,28 @@ jobs:
         with:
           sarif_file: scout-cves.sarif
           category: docker-scout
+
+      - name: Promote scanned digest to release tags
+        # Only runs when every previous step (including Scout)
+        # succeeded. ``docker buildx imagetools create`` attaches new
+        # tags to the already-scanned manifest without rebuilding,
+        # and the SBOM + provenance attestations follow because they
+        # are bound to the digest, not the source tag. This is the
+        # step that actually publishes ``:latest`` / ``:${version}``
+        # / ``:sha-${short}`` to GHCR and Docker Hub.
+        #
+        # The quarantine ``scan-${sha}`` tag on GHCR is intentionally
+        # left in place. It points at the same scanned digest, costs
+        # nothing storage-wise (shared layers), and provides an
+        # audit trail of every digest that passed Scout. Trim it via
+        # GHCR's retention policy if it ever becomes noisy.
+        env:
+          SRC: ghcr.io/dmartinochoa/pipeline-check@${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            echo "promoting $SRC -> $tag"
+            docker buildx imagetools create --tag "$tag" "$SRC"
+          done <<< "$TAGS"
