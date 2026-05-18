@@ -468,6 +468,34 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   config substrate but not the auditor-reviewed operational
   evidence required for SOC 2 attestation.
 
+- **Broadened PCI DSS v4.0 to 100% catalog coverage.** Cross-
+  mapping pass, no new rule modules, 294 net-new entries. PCI DSS
+  v4's Req-6 (secure systems and software), Req-7 (access control
+  by need-to-know), Req-8 (identify + authenticate), and Req-10
+  (log + monitor) collectively cover almost every pipeline-config
+  rule. Follows the existing per-rule pattern: pinning + 3rd-party
+  verification → 6.3.3 + 6.5.1; secrets / creds / long-lived
+  tokens → 8.2.1 (+ 8.2.2 for shared accounts); privileged /
+  runtime hardening / no-timeout → 6.4.1; TLS bypass / dangerous-
+  shell / interpolation → 6.5.1; vuln scan / SCA / compromised
+  packages → 6.3.1 + 6.3.3; approval gates / branch governance /
+  deploy gates → 6.4.3; signing / SBOM / attestation → 6.5.1 +
+  10.3.2; IAM / RBAC / OIDC trust → 7.2.x; audit logs → 10.2.1 +
+  10.3.2 + 10.3.3. Picks up the full GHA-006..058, GL-006..033,
+  BB-006..029, ADO-006..030, CC-024..031, the entire Jenkins
+  (JF-001..035) and Drone (DR-001..011) provider packs,
+  BK-014/015 + TKN-014/15 + ARGO-014/15 + GCB-007/17/18/21/24/25,
+  the NPM/PyPI/Maven dep-supply-chain pack, OCI manifest
+  (OCI-001..008), ATTEST family, TAINT-001..008, Dockerfile
+  env-bypass extension + extras (DF-007/9/11/14/17/18/21..30),
+  Helm chart provenance metadata (HELM-005..010 remaining), AWS
+  extras (CB-008..11, CP-005/7, KMS-001, LMB-003), TF/CF IaC-
+  native rules, SCM-043..047, and the `-000` degraded-mode
+  discovery findings on 10.2.1 (audit-log enablement gap,
+  mirroring the cross-standard visibility-gap precedent). After:
+  516/516 = 100% (was 222, 43%). All 13 PCI DSS v4 controls
+  evidenced.
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
