@@ -80,8 +80,10 @@ STANDARD = Standard(
         # ── 5.1 RBAC and Service Accounts ────────────────────────
         "K8S-011":  ["5.1.5"],                                   # default ServiceAccount in workload
         "K8S-012":  ["5.1.6"],                                   # automountServiceAccountToken
-        "K8S-020":  ["5.1.1", "5.1.3", "5.1.4", "5.1.8"],        # cluster-admin = wildcard at every verb incl. pods + bind/impersonate
-        "K8S-021":  ["5.1.2", "5.1.3", "5.1.4", "5.1.8"],        # wildcard verbs sweep secrets, pod-create, bind/impersonate/escalate
+        # cluster-admin = wildcard at every verb incl. pods + bind/impersonate
+        "K8S-020":  ["5.1.1", "5.1.3", "5.1.4", "5.1.8"],
+        # wildcard verbs sweep secrets, pod-create, bind/impersonate/escalate
+        "K8S-021":  ["5.1.2", "5.1.3", "5.1.4", "5.1.8"],
         "K8S-029":  ["5.1.5"],                                   # default-SA RoleBinding
         "K8S-034":  ["5.1.6"],                                   # SA-side automount default
         "K8S-036":  ["5.1.6"],                                   # SA imagePullSecret resolves
@@ -100,7 +102,8 @@ STANDARD = Standard(
         "K8S-006":  ["5.2.6", "5.7.3"],                          # allowPrivilegeEscalation (securityContext field)
         "K8S-007":  ["5.2.7", "5.7.3"],                          # runAsNonRoot (securityContext field)
         "K8S-035":  ["5.2.7", "5.7.3"],                          # runAsUser: 0 (securityContext field)
-        "K8S-009":  ["5.2.8", "5.2.9", "5.7.3"],                 # capabilities (NET_RAW + added caps, securityContext field)
+        # capabilities (NET_RAW + added caps, securityContext field)
+        "K8S-009":  ["5.2.8", "5.2.9", "5.7.3"],
         "K8S-013":  ["5.2.12"],                                  # hostPath
         "K8S-014":  ["5.2.12"],                                  # sensitive hostPath
         "K8S-028":  ["5.2.13"],                                  # host port
@@ -109,7 +112,8 @@ STANDARD = Standard(
         "K8S-032":  ["5.3.2"],                                   # default-deny missing
         "K8S-038":  ["5.3.2"],                                   # allow-all rule (no peers)
         # ── 5.4 Secrets Management ───────────────────────────────
-        "K8S-017":  ["5.4.1", "5.4.2"],                          # env-credential literal: env-mounted AND skips external storage
+        # env-credential literal: env-mounted AND skips external storage
+        "K8S-017":  ["5.4.1", "5.4.2"],
         # ── 5.7 General Policies ─────────────────────────────────
         "K8S-019":  ["5.7.1", "5.7.4"],                          # default namespace = no admin boundary
         "K8S-023":  ["5.7.1", "5.7.3"],                          # PSA enforce missing = no admission boundary

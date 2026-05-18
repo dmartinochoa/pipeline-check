@@ -80,7 +80,8 @@ STANDARD = Standard(
         "GHA-026":  ["Build.L3.Isolated"],                         # container escape via options
         "GHA-028":  ["Build.L3.Isolated"],                         # eval / shell re-invocation
         "GHA-029":  ["Build.L3.Isolated"],                         # package source bypasses lockfile
-        "GHA-030":  ["Build.L3.NonFalsifiable"],                   # OIDC w/o env-protected job (provenance binding weak)
+        # OIDC w/o env-protected job (provenance binding weak)
+        "GHA-030":  ["Build.L3.NonFalsifiable"],
         "GHA-037":  ["Build.L3.NonFalsifiable"],                   # checkout persists GITHUB_TOKEN
         "GHA-040":  ["Build.L3.NonFalsifiable"],                   # known-compromised action ref
         "GHA-041":  ["Build.L3.NonFalsifiable"],                   # single-maintainer action

@@ -93,7 +93,7 @@ def match(findings: list[Finding]) -> list[Chain]:
         "install`` executes this code with their own credentials in "
         "scope, the inbound primitive a worm needs to steal tokens "
         "from victims.\n"
-        f"  2. A workflow in the same repo "
+        "  2. A workflow in the same repo "
         + (
             "writes a file under ``.github/workflows/`` (GHA-048). A "
             "workflow that authors a sibling workflow is the worm's "
