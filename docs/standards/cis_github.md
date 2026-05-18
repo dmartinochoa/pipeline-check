@@ -35,26 +35,26 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.3`](#ctrl-1-1-3) | Ensure any change to code is approved by two strongly authenticated users | 5 | 3H · 2M |
 | [`1.1.4`](#ctrl-1-1-4) | Ensure previous approvals are dismissed when updates are introduced | 3 | 3M |
 | [`1.1.5`](#ctrl-1-1-5) | Ensure there are restrictions on who can dismiss code change reviews | 3 | 1H · 2M |
-| [`1.1.6`](#ctrl-1-1-6) | Ensure code owners are set for extra sensitive code or configuration | 1 | 1M |
-| [`1.1.7`](#ctrl-1-1-7) | Ensure code owner's review is required when a change affects owned code | 1 | 1M |
+| [`1.1.6`](#ctrl-1-1-6) | Ensure code owners are set for extra sensitive code or configuration | 2 | 2M |
+| [`1.1.7`](#ctrl-1-1-7) | Ensure code owner's review is required when a change affects owned code | 2 | 2M |
 | [`1.1.9`](#ctrl-1-1-9) | Ensure all checks have passed before merging new code | 3 | 2M · 1L |
-| [`1.1.10`](#ctrl-1-1-10) | Ensure open Git branches are up to date before they can be merged | 1 | 1L |
+| [`1.1.10`](#ctrl-1-1-10) | Ensure open Git branches are up to date before they can be merged | 2 | 1M · 1L |
 | [`1.1.11`](#ctrl-1-1-11) | Ensure all open comments are resolved before merging code | 1 | 1L |
-| [`1.1.12`](#ctrl-1-1-12) | Ensure verification of signed commits for new changes | 2 | 2M |
-| [`1.1.13`](#ctrl-1-1-13) | Ensure linear history is required | 1 | 1L |
+| [`1.1.12`](#ctrl-1-1-12) | Ensure verification of signed commits for new changes | 3 | 1H · 2M |
+| [`1.1.13`](#ctrl-1-1-13) | Ensure linear history is required | 2 | 1H · 1L |
 | [`1.1.14`](#ctrl-1-1-14) | Ensure branch protection rules are enforced for administrators | 2 | 2H |
 | [`1.1.15`](#ctrl-1-1-15) | Ensure pushing/merging on default branches is restricted | 4 | 1H · 2M · 1L |
-| [`1.1.16`](#ctrl-1-1-16) | Ensure force push is denied | 2 | 1H · 1M |
-| [`1.1.17`](#ctrl-1-1-17) | Ensure branch deletion is denied | 2 | 1H · 1L |
-| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 2 | 1M · 1L |
+| [`1.1.16`](#ctrl-1-1-16) | Ensure force push is denied | 3 | 2H · 1M |
+| [`1.1.17`](#ctrl-1-1-17) | Ensure branch deletion is denied | 3 | 2H · 1L |
+| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 3 | 1M · 2L |
 | [`1.1.19`](#ctrl-1-1-19) | Ensure any merging of code is automatically scanned for vulnerabilities | 1 | 1M |
 | [`1.1.20`](#ctrl-1-1-20) | Ensure any merging of code is automatically scanned for secrets | 2 | 2H |
 | [`1.2.5`](#ctrl-1-2-5) | Ensure all copies (forks) of code are tracked and accounted for | 1 | 1M |
-| [`1.2.6`](#ctrl-1-2-6) | Ensure all code projects are tracked for changes in dependents/dependencies | 1 | 1M |
+| [`1.2.6`](#ctrl-1-2-6) | Ensure all code projects are tracked for changes in dependents/dependencies | 2 | 1M · 1L |
 | [`1.3.8`](#ctrl-1-3-8) | Ensure strict base permissions are set for repositories | 1 | 1H |
-| [`1.3.10`](#ctrl-1-3-10) | Ensure SCM administrators control contribution access (deploy keys, write) | 1 | 1H |
-| [`1.4.1`](#ctrl-1-4-1) | Ensure administrator approval is required for every installed application | 1 | 1M |
-| [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 1 | 1M |
+| [`1.3.10`](#ctrl-1-3-10) | Ensure SCM administrators control contribution access (deploy keys, write) | 2 | 2H |
+| [`1.4.1`](#ctrl-1-4-1) | Ensure administrator approval is required for every installed application | 2 | 1H · 1M |
+| [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 2 | 1H · 1M |
 | [`1.4.4`](#ctrl-1-4-4) | Ensure only secured webhooks are used | 1 | 1H |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 4 | 2H · 1M · 1L |
 | [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 10 | 4C · 3H · 2M · 1L |
@@ -112,19 +112,21 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.6: Ensure code owners are set for extra sensitive code or configuration { #ctrl-1-1-6 }
 
-**Evidenced by 1 check** across SCM.
-
-| Check | Title | Severity | Provider | Fix |
-|-------|-------|----------|----------|-----|
-| [`SCM-017`](#detail-scm-017) | Repository has no CODEOWNERS file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
-
-### 1.1.7: Ensure code owner's review is required when a change affects owned code { #ctrl-1-1-7 }
-
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-011`](#detail-scm-011) | Default branch protection does not require CODEOWNERS reviews | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-017`](#detail-scm-017) | Repository has no CODEOWNERS file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+
+### 1.1.7: Ensure code owner's review is required when a change affects owned code { #ctrl-1-1-7 }
+
+**Evidenced by 2 checks** across SCM.
+
+| Check | Title | Severity | Provider | Fix |
+|-------|-------|----------|----------|-----|
+| [`SCM-011`](#detail-scm-011) | Default branch protection does not require CODEOWNERS reviews | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-017`](#detail-scm-017) | Repository has no CODEOWNERS file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.9: Ensure all checks have passed before merging new code { #ctrl-1-1-9 }
 
@@ -138,10 +140,11 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.10: Ensure open Git branches are up to date before they can be merged { #ctrl-1-1-10 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`SCM-008`](#detail-scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-042`](#detail-scm-042) | Active ruleset doesn't require merge queue | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.11: Ensure all open comments are resolved before merging code { #ctrl-1-1-11 }
@@ -154,19 +157,21 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.12: Ensure verification of signed commits for new changes { #ctrl-1-1-12 }
 
-**Evidenced by 2 checks** across SCM.
+**Evidenced by 3 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-006`](#detail-scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.13: Ensure linear history is required { #ctrl-1-1-13 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-038`](#detail-scm-038) | Active ruleset doesn't require linear history | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.14: Ensure branch protection rules are enforced for administrators { #ctrl-1-1-14 }
@@ -191,29 +196,32 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.1.16: Ensure force push is denied { #ctrl-1-1-16 }
 
-**Evidenced by 2 checks** across SCM.
+**Evidenced by 3 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-007`](#detail-scm-007) | Default branch protection allows force-pushes | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-034`](#detail-scm-034) | Active ruleset doesn't block force-push | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.17: Ensure branch deletion is denied { #ctrl-1-1-17 }
 
-**Evidenced by 2 checks** across SCM.
+**Evidenced by 3 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-009`](#detail-scm-009) | Default branch protection allows branch deletion | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-035`](#detail-scm-035) | Active ruleset doesn't block branch deletion | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.18: Ensure any merging of code is automatically scanned for security { #ctrl-1-1-18 }
 
-**Evidenced by 2 checks** across SCM.
+**Evidenced by 3 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-039`](#detail-scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-040`](#detail-scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.1.19: Ensure any merging of code is automatically scanned for vulnerabilities { #ctrl-1-1-19 }
@@ -243,11 +251,12 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.2.6: Ensure all code projects are tracked for changes in dependents/dependencies { #ctrl-1-2-6 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.3.8: Ensure strict base permissions are set for repositories { #ctrl-1-3-8 }
 
@@ -259,26 +268,29 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.3.10: Ensure SCM administrators control contribution access (deploy keys, write) { #ctrl-1-3-10 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-027`](#detail-scm-027) | Outside collaborator holds write / maintain / admin access | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.4.1: Ensure administrator approval is required for every installed application { #ctrl-1-4-1 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`SCM-021`](#detail-scm-021) | Actions can approve pull requests (self-approval bypass) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.4.3: Ensure the access granted to each installed application is limited { #ctrl-1-4-3 }
 
-**Evidenced by 1 check** across SCM.
+**Evidenced by 2 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
 ### 1.4.4: Ensure only secured webhooks are used { #ctrl-1-4-4 }
@@ -883,7 +895,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
 
-**Evidences:** [`1.1.9`](#ctrl-1-1-9) Ensure all checks have passed before merging new code.
+**Evidences:** [`1.1.9`](#ctrl-1-1-9) Ensure all checks have passed before merging new code, [`1.1.10`](#ctrl-1-1-10) Ensure open Git branches are up to date before they can be merged.
 
 **How this is detected.** Reads ``required_status_checks.contexts`` (or the newer ``checks`` shape) from the branch protection payload. Fires when the field is missing or the contexts list is empty. Without required checks the merge gate degrades to human-only review; SCM-002 covers the review knob, this rule covers the automated-verification knob, and both should be on for high-trust default branches.
 
@@ -918,7 +930,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-011`: Default branch protection does not require CODEOWNERS reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-011 }
 
-**Evidences:** [`1.1.3`](#ctrl-1-1-3) Ensure any change to code is approved by two strongly authenticated users, [`1.1.7`](#ctrl-1-1-7) Ensure code owner's review is required when a change affects owned code.
+**Evidences:** [`1.1.3`](#ctrl-1-1-3) Ensure any change to code is approved by two strongly authenticated users, [`1.1.6`](#ctrl-1-1-6) Ensure code owners are set for extra sensitive code or configuration, [`1.1.7`](#ctrl-1-1-7) Ensure code owner's review is required when a change affects owned code.
 
 **How this is detected.** Reads ``required_pull_request_reviews.require_code_owner_reviews`` from the branch protection payload. Fires when the value is False or the field is missing. ``SCM-002`` covers the bare review-count knob; this rule scopes specifically to whose review counts. The check evaluates only the protection-rule toggle; verifying that an actual ``CODEOWNERS`` file exists at ``.github/CODEOWNERS`` (and covers the right paths) is left to the recommendation, since the GitHub API surfaces the file's presence as a separate contents request the SCM provider does not fetch.
 
@@ -977,7 +989,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
 
-**Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
+**Evidences:** [`1.2.6`](#ctrl-1-2-6) Ensure all code projects are tracked for changes in dependents/dependencies, [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
 **How this is detected.** Reads ``security_and_analysis.private_vulnerability_reporting.status`` from the repo metadata payload. Fires when the value is anything other than ``enabled``. Severity is LOW because the rule documents process readiness rather than a structural vulnerability — but having no private reporting channel means the next external researcher's report is either a public issue or nothing.
 
@@ -992,7 +1004,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-017`: Repository has no CODEOWNERS file <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-017 }
 
-**Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure code owners are set for extra sensitive code or configuration.
+**Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure code owners are set for extra sensitive code or configuration, [`1.1.7`](#ctrl-1-1-7) Ensure code owner's review is required when a change affects owned code.
 
 **How this is detected.** Probes the three canonical CODEOWNERS locations via ``GET /repos/{owner}/{repo}/contents/<path>``. Fires when none of the three returns a file response. Pairs with SCM-011 (the protection-rule toggle): SCM-011 covers intent, SCM-017 covers reality. A repo with both set is auditing the path-scoped review actually happens.
 
@@ -1034,7 +1046,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
 
-**Evidences:** [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
+**Evidences:** [`1.4.3`](#ctrl-1-4-3) Ensure the access granted to each installed application is limited, [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
 
 **How this is detected.** Reads ``default_workflow_permissions`` from ``GET /repos/{owner}/{repo}/actions/permissions/workflow``. Values are ``"read"`` (safe) or ``"write"`` (fail). Requires the token to have ``admin`` scope on the repo; without it GitHub returns 403 and the rule passes silently with an unavailability note. Complements GHA-048 / GHA-049 — those catch the *workflow* asking for write; SCM-020 catches the *org / repo* handing out write by default.
 
@@ -1052,7 +1064,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 #### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
 
-**Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure there are restrictions on who can dismiss code change reviews.
+**Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure there are restrictions on who can dismiss code change reviews, [`1.4.1`](#ctrl-1-4-1) Ensure administrator approval is required for every installed application.
 
 **How this is detected.** Reads ``can_approve_pull_request_reviews`` from ``GET /repos/{owner}/{repo}/actions/permissions/workflow``. ``True`` is the fail signal; ``False`` (or absent) passes. Requires admin scope on the repo. Complements SCM-002 / SCM-011 / SCM-014 — without SCM-021, those rules document intent rather than enforcement, because Actions can fulfil the review requirement itself.
 
@@ -1187,7 +1199,7 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 #### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
 
-**Evidences:** [`1.3.8`](#ctrl-1-3-8) Ensure strict base permissions are set for repositories.
+**Evidences:** [`1.3.8`](#ctrl-1-3-8) Ensure strict base permissions are set for repositories, [`1.3.10`](#ctrl-1-3-10) Ensure SCM administrators control contribution access (deploy keys, write).
 
 **How this is detected.** Walks ``GET /repos/{owner}/{repo}/collaborators?affiliation=outside`` and flags every entry whose ``permissions`` block has any of ``admin: true``, ``maintain: true``, or ``push: true``. Read-only (``permissions.pull: true`` with no higher tier) and triage entries pass. Each finding's description names every elevated collaborator with the granular level so the operator can prioritize.
 
@@ -1244,7 +1256,7 @@ Note: the legacy-branch-protection rules in this pack (SCM-001..010) do NOT see 
 
 #### `SCM-030`: Repository ruleset has bypass actor with bypass_mode: always <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-030 }
 
-**Evidences:** [`1.1.14`](#ctrl-1-1-14) Ensure branch protection rules are enforced for administrators.
+**Evidences:** [`1.1.12`](#ctrl-1-1-12) Ensure verification of signed commits for new changes, [`1.1.13`](#ctrl-1-1-13) Ensure linear history is required, [`1.1.14`](#ctrl-1-1-14) Ensure branch protection rules are enforced for administrators, [`1.1.16`](#ctrl-1-1-16) Ensure force push is denied, [`1.1.17`](#ctrl-1-1-17) Ensure branch deletion is denied.
 
 **How this is detected.** For each ``active`` ruleset, walks ``bypass_actors`` (populated by the per-ruleset detail fetch) and flags every entry with ``bypass_mode: "always"`` whose ``actor_type`` is not ``"Integration"`` (GitHub Apps). Non-app actors are listed by ``actor_type`` + ``actor_id``; the rule does not resolve those IDs to human-readable names (that would require another API round-trip per actor; the operator already sees the names in the UI when they go to fix it).
 
@@ -1384,7 +1396,7 @@ Merge commits aren't a direct attacker primitive — force-push (SCM-034) is the
 
 #### `SCM-039`: Active ruleset doesn't pin a required workflow <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-039 }
 
-**Evidences:** [`1.1.9`](#ctrl-1-1-9) Ensure all checks have passed before merging new code.
+**Evidences:** [`1.1.9`](#ctrl-1-1-9) Ensure all checks have passed before merging new code, [`1.1.18`](#ctrl-1-1-18) Ensure any merging of code is automatically scanned for security.
 
 **How this is detected.** For every active ruleset, walks the merged ``rules`` array looking for an entry with ``type: "workflows"`` whose ``parameters.workflows`` is a non-empty list. An empty workflows list is treated as no rule (it documents the gate without filling it). Passes silently when no rulesets are configured — required workflows have no legacy branch-protection analog, so absence of rulesets means the gate simply doesn't exist (not that it's enforced elsewhere).
 

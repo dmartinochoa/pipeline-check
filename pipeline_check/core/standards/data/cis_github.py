@@ -77,7 +77,7 @@ STANDARD = Standard(
         # ── 1.1 Code Changes ─────────────────────────────────────────
         # 1.1.3 require approving review(s)
         "SCM-002": ["1.1.3"],
-        "SCM-011": ["1.1.3", "1.1.7"],
+        "SCM-011": ["1.1.3", "1.1.6", "1.1.7"],               # CODEOWNERS-review missing = no owner-review AND CODEOWNERS toothless
         "SCM-014": ["1.1.3", "1.1.4"],
         "SCM-023": ["1.1.3"],                                 # deployment environment reviewers
         "SCM-032": ["1.1.3"],                                 # ruleset lacks PR review
@@ -86,14 +86,14 @@ STANDARD = Standard(
         "SCM-037": ["1.1.4"],
         # 1.1.5 restrict who can dismiss / bypass review
         "SCM-018": ["1.1.5"],
-        "SCM-021": ["1.1.5"],
+        "SCM-021": ["1.1.5", "1.4.1"],                        # Actions-approve = PR-authoritative installed app
         "SCM-031": ["1.1.5"],                                 # auto-merge enabled (review-bypass surface)
         # 1.1.6 CODEOWNERS file present for sensitive code
-        "SCM-017": ["1.1.6"],
+        "SCM-017": ["1.1.6", "1.1.7"],                        # no CODEOWNERS = no owner-review possible either
         # 1.1.9 status checks must pass before merge
-        "SCM-008": ["1.1.9"],
+        "SCM-008": ["1.1.9", "1.1.10"],                       # required status checks AND the strict ``up-to-date`` knob ride together
         "SCM-033": ["1.1.9"],
-        "SCM-039": ["1.1.9"],                                 # required workflows
+        "SCM-039": ["1.1.9", "1.1.18"],                       # required workflows (often SAST/SCA gates)
         # 1.1.10 branch up to date before merge (merge queue is the GitHub control)
         "SCM-042": ["1.1.10"],
         # 1.1.11 conversation resolution
@@ -105,7 +105,9 @@ STANDARD = Standard(
         "SCM-038": ["1.1.13"],
         # 1.1.14 admin enforcement
         "SCM-010": ["1.1.14"],
-        "SCM-030": ["1.1.14"],
+        "SCM-030": [                                          # bypass list defeats every rule the ruleset is supposed to enforce
+            "1.1.12", "1.1.13", "1.1.14", "1.1.16", "1.1.17",
+        ],
         # 1.1.15 restrict push / merge on default branch
         "SCM-001": ["1.1.15"],
         "SCM-019": ["1.1.15"],
@@ -128,7 +130,7 @@ STANDARD = Standard(
         # 1.2.5 fork tracking
         "SCM-028": ["1.2.5"],
         # 1.3.8 strict base permissions (outside-collaborator audit)
-        "SCM-027": ["1.3.8"],
+        "SCM-027": ["1.3.8", "1.3.10"],                       # outside-collab elevation also bypasses admin write control
         # 1.3.10 deploy keys / SCM-admin controlled write
         "SCM-025": ["1.3.10"],
         # 1.4.1 / 1.4.3 third-party app / action governance
@@ -140,8 +142,8 @@ STANDARD = Standard(
         # Actions can do; the ``GHA-*`` half (pipeline-config scanning)
         # is captured by a representative subset that maps onto the same
         # control without forcing every workflow rule into this surface.
-        "SCM-016": ["1.5.1"],                                 # private vuln reporting (intake)
-        "SCM-020": ["1.5.2"],                                 # default workflow_token scope
+        "SCM-016": ["1.5.1", "1.2.6"],                        # private vuln reporting = supply-chain tracking intake
+        "SCM-020": ["1.5.2", "1.4.3"],                        # default workflow_token scope = installed-app access ceiling
         "SCM-041": ["1.5.2"],                                 # ruleset deployment-env gate
         # GHA pipeline-instruction security: dangerous-workflow / token /
         # privileged-runtime patterns. Anchors of 1.5.2 evidence; the
