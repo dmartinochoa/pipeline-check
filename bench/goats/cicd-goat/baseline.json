@@ -1,0 +1,21 @@
+{
+  "slug": "cicd-goat",
+  "ref_resolved": "0ed10925f3983857cf219b2ac1c327b861fcccca",
+  "findings": [
+    {
+      "check_id": "GHA-003",
+      "severity": "HIGH",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
+      "check_id": "GHA-014",
+      "severity": "MEDIUM",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
+      "check_id": "GHA-015",
+      "severity": "MEDIUM",
+      "resource": ".github\\workflows\\release.yaml"
+    }
+  ]
+}
