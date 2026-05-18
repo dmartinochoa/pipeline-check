@@ -754,7 +754,7 @@ def _render_check_detail(
     anchor = _check_detail_anchor(row.check_id)
     parts: list[str] = []
     parts.append(
-        f"#### `{row.check_id}`: {row.title} "
+        f"### `{row.check_id}`: {row.title} "
         f"{_severity_chip(row.severity)} "
         f"{_autofix_chip(row.autofix)}".rstrip()
         + f" {{ #{anchor} }}\n\n"

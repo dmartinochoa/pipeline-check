@@ -1033,7 +1033,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-#### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
+### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1045,7 +1045,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-002 }
+### `ADO-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1092,7 +1092,7 @@ jobs:
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-003 }
+### `ADO-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-003 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -1102,7 +1102,7 @@ jobs:
 
 **Source:** [`ADO-003`](../providers/azure.md#ado-003) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
+### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -1116,7 +1116,7 @@ jobs:
 
 **Source:** [`ADO-004`](../providers/azure.md#ado-004) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
+### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1126,7 +1126,7 @@ jobs:
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
+### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -1136,7 +1136,7 @@ jobs:
 
 **Source:** [`ADO-006`](../providers/azure.md#ado-006) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
+### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1146,7 +1146,7 @@ jobs:
 
 **Source:** [`ADO-007`](../providers/azure.md#ado-007) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-008 }
+### `ADO-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -1162,7 +1162,7 @@ jobs:
 
 **Source:** [`ADO-008`](../providers/azure.md#ado-008) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
+### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1172,7 +1172,7 @@ jobs:
 
 **Source:** [`ADO-009`](../providers/azure.md#ado-009) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-010`: Cross-pipeline `download:` ingestion unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-010 }
+### `ADO-010`: Cross-pipeline `download:` ingestion unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-010 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1182,7 +1182,7 @@ jobs:
 
 **Source:** [`ADO-010`](../providers/azure.md#ado-010) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-011`: `template: <local-path>` on PR-validated pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-011 }
+### `ADO-011`: `template: <local-path>` on PR-validated pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-011 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1192,7 +1192,7 @@ jobs:
 
 **Source:** [`ADO-011`](../providers/azure.md#ado-011) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-012`: Cache@2 key derives from $(System.PullRequest.*) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-012 }
+### `ADO-012`: Cache@2 key derives from $(System.PullRequest.*) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-012 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1202,7 +1202,7 @@ jobs:
 
 **Source:** [`ADO-012`](../providers/azure.md#ado-012) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-013`: Self-hosted pool without explicit ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-013 }
+### `ADO-013`: Self-hosted pool without explicit ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-013 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -1212,7 +1212,7 @@ jobs:
 
 **Source:** [`ADO-013`](../providers/azure.md#ado-013) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-014`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-014 }
+### `ADO-014`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-014 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -1228,7 +1228,7 @@ jobs:
 
 **Source:** [`ADO-014`](../providers/azure.md#ado-014) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-015`: Job has no `timeoutInMinutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-015 }
+### `ADO-015`: Job has no `timeoutInMinutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-015 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -1240,7 +1240,7 @@ jobs:
 
 **Source:** [`ADO-015`](../providers/azure.md#ado-015) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-016 }
+### `ADO-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1256,7 +1256,7 @@ jobs:
 
 **Source:** [`ADO-016`](../providers/azure.md#ado-016) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-017 }
+### `ADO-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-017 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1268,7 +1268,7 @@ jobs:
 
 **Source:** [`ADO-017`](../providers/azure.md#ado-017) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
+### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1280,7 +1280,7 @@ jobs:
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-019`: `extends:` template on PR-validated pipeline points to local path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-019 }
+### `ADO-019`: `extends:` template on PR-validated pipeline points to local path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-019 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1329,7 +1329,7 @@ extends:
 
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
+### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -1339,7 +1339,7 @@ extends:
 
 **Source:** [`ADO-020`](../providers/azure.md#ado-020) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
+### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1351,7 +1351,7 @@ extends:
 
 **Source:** [`ADO-021`](../providers/azure.md#ado-021) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
+### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1367,7 +1367,7 @@ extends:
 
 **Source:** [`ADO-022`](../providers/azure.md#ado-022) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
+### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1379,7 +1379,7 @@ extends:
 
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
+### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1389,7 +1389,7 @@ extends:
 
 **Source:** [`ADO-024`](../providers/azure.md#ado-024) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
+### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1399,7 +1399,7 @@ extends:
 
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
+### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1414,7 +1414,7 @@ extends:
 
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-027 }
+### `ADO-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-027 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1428,7 +1428,7 @@ extends:
 
 **Source:** [`ADO-027`](../providers/azure.md#ado-027) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
+### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1438,7 +1438,7 @@ extends:
 
 **Source:** [`ADO-028`](../providers/azure.md#ado-028) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-029`: Service-connection-using job without environment or branch gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-029 }
+### `ADO-029`: Service-connection-using job without environment or branch gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-029 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -1448,7 +1448,7 @@ extends:
 
 **Source:** [`ADO-029`](../providers/azure.md#ado-029) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-030`: pool interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-030 }
+### `ADO-030`: pool interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-030 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1503,7 +1503,7 @@ jobs:
 
 **Source:** [`ADO-030`](../providers/azure.md#ado-030) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
+### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1513,7 +1513,7 @@ jobs:
 
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
+### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1523,7 +1523,7 @@ jobs:
 
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
+### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -1533,7 +1533,7 @@ jobs:
 
 **Source:** [`ARGO-003`](../providers/argo.md#argo-003) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
+### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -1543,7 +1543,7 @@ jobs:
 
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-005`: Argo input parameter interpolated unsafely in script / args <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-005 }
+### `ARGO-005`: Argo input parameter interpolated unsafely in script / args <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-005 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -1603,7 +1603,7 @@ spec:
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
+### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -1615,7 +1615,7 @@ spec:
 
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-007`: Argo workflow has no activeDeadlineSeconds <span class="pg-sev pg-sev--low">LOW</span> { #detail-argo-007 }
+### `ARGO-007`: Argo workflow has no activeDeadlineSeconds <span class="pg-sev pg-sev--low">LOW</span> { #detail-argo-007 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -1625,7 +1625,7 @@ spec:
 
 **Source:** [`ARGO-007`](../providers/argo.md#argo-007) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
+### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1637,7 +1637,7 @@ spec:
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
+### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -1647,7 +1647,7 @@ spec:
 
 **Source:** [`ARGO-009`](../providers/argo.md#argo-009) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
+### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1657,7 +1657,7 @@ spec:
 
 **Source:** [`ARGO-010`](../providers/argo.md#argo-010) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
+### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1667,7 +1667,7 @@ spec:
 
 **Source:** [`ARGO-011`](../providers/argo.md#argo-011) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
+### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -1677,7 +1677,7 @@ spec:
 
 **Source:** [`ARGO-012`](../providers/argo.md#argo-012) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
+### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -1691,7 +1691,7 @@ spec:
 
 **Source:** [`ARGO-013`](../providers/argo.md#argo-013) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-014`: Argo template script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-014 }
+### `ARGO-014`: Argo template script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-014 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -1707,7 +1707,7 @@ Walks ``script.source`` plus joined ``container.args`` / ``container.command`` t
 
 **Source:** [`ARGO-014`](../providers/argo.md#argo-014) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-015`: Input artifact pulls from an insecure (non-HTTPS) URL <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-015 }
+### `ARGO-015`: Input artifact pulls from an insecure (non-HTTPS) URL <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-015 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -1727,7 +1727,7 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 
 **Source:** [`ARGO-015`](../providers/argo.md#argo-015) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
+### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1749,7 +1749,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
+### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1778,7 +1778,7 @@ Fires when:
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
+### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1800,7 +1800,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Source:** [`ATTEST-003`](../providers/oci.md#attest-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
+### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1869,7 +1869,7 @@ $ docker buildx build \
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
+### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -1936,7 +1936,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
+### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2000,7 +2000,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
+### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2022,7 +2022,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`ATTEST-007`](../providers/oci.md#attest-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
+### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2034,7 +2034,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
+### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2086,7 +2086,7 @@ pipelines:
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-003 }
+### `BB-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-003 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -2096,7 +2096,7 @@ pipelines:
 
 **Source:** [`BB-003`](../providers/bitbucket.md#bb-003) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
+### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -2106,7 +2106,7 @@ pipelines:
 
 **Source:** [`BB-004`](../providers/bitbucket.md#bb-004) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-005`: Step has no `max-time`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-005 }
+### `BB-005`: Step has no `max-time`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-005 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -2118,7 +2118,7 @@ pipelines:
 
 **Source:** [`BB-005`](../providers/bitbucket.md#bb-005) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
+### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -2128,7 +2128,7 @@ pipelines:
 
 **Source:** [`BB-006`](../providers/bitbucket.md#bb-006) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
+### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2138,7 +2138,7 @@ pipelines:
 
 **Source:** [`BB-007`](../providers/bitbucket.md#bb-007) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-008 }
+### `BB-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -2154,7 +2154,7 @@ pipelines:
 
 **Source:** [`BB-008`](../providers/bitbucket.md#bb-008) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
+### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2164,7 +2164,7 @@ pipelines:
 
 **Source:** [`BB-009`](../providers/bitbucket.md#bb-009) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-010`: Deploy step ingests pull-request artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-010 }
+### `BB-010`: Deploy step ingests pull-request artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-010 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2174,7 +2174,7 @@ pipelines:
 
 **Source:** [`BB-010`](../providers/bitbucket.md#bb-010) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-011`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-011 }
+### `BB-011`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-011 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -2186,7 +2186,7 @@ pipelines:
 
 **Source:** [`BB-011`](../providers/bitbucket.md#bb-011) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-012`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-012 }
+### `BB-012`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-012 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2202,7 +2202,7 @@ pipelines:
 
 **Source:** [`BB-012`](../providers/bitbucket.md#bb-012) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
+### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2214,7 +2214,7 @@ pipelines:
 
 **Source:** [`BB-013`](../providers/bitbucket.md#bb-013) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
+### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2226,7 +2226,7 @@ pipelines:
 
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
+### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -2236,7 +2236,7 @@ pipelines:
 
 **Source:** [`BB-015`](../providers/bitbucket.md#bb-015) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-016`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-016 }
+### `BB-016`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-016 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -2246,7 +2246,7 @@ pipelines:
 
 **Source:** [`BB-016`](../providers/bitbucket.md#bb-016) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-017`: Repository token written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-017 }
+### `BB-017`: Repository token written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-017 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -2258,7 +2258,7 @@ pipelines:
 
 **Source:** [`BB-017`](../providers/bitbucket.md#bb-017) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
+### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2268,7 +2268,7 @@ pipelines:
 
 **Source:** [`BB-018`](../providers/bitbucket.md#bb-018) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-019`: after-script references secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-019 }
+### `BB-019`: after-script references secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-019 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -2282,7 +2282,7 @@ pipelines:
 
 **Source:** [`BB-019`](../providers/bitbucket.md#bb-019) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-020`: Full clone depth exposes complete history <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-020 }
+### `BB-020`: Full clone depth exposes complete history <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-020 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -2292,7 +2292,7 @@ pipelines:
 
 **Source:** [`BB-020`](../providers/bitbucket.md#bb-020) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
+### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2304,7 +2304,7 @@ pipelines:
 
 **Source:** [`BB-021`](../providers/bitbucket.md#bb-021) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
+### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2320,7 +2320,7 @@ pipelines:
 
 **Source:** [`BB-022`](../providers/bitbucket.md#bb-022) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
+### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2332,7 +2332,7 @@ pipelines:
 
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
+### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2342,7 +2342,7 @@ pipelines:
 
 **Source:** [`BB-024`](../providers/bitbucket.md#bb-024) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
+### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2357,7 +2357,7 @@ pipelines:
 
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
+### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2371,7 +2371,7 @@ pipelines:
 
 **Source:** [`BB-026`](../providers/bitbucket.md#bb-026) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
+### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2381,7 +2381,7 @@ pipelines:
 
 **Source:** [`BB-027`](../providers/bitbucket.md#bb-027) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-028`: OIDC step without deployment-gated environment <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-028 }
+### `BB-028`: OIDC step without deployment-gated environment <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-028 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -2391,7 +2391,7 @@ pipelines:
 
 **Source:** [`BB-028`](../providers/bitbucket.md#bb-028) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
+### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2405,7 +2405,7 @@ pipelines:
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
+### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2415,7 +2415,7 @@ pipelines:
 
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
+### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -2431,7 +2431,7 @@ pipelines:
 
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
+### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2445,7 +2445,7 @@ pipelines:
 
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
+### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2457,7 +2457,7 @@ pipelines:
 
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
+### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2469,7 +2469,7 @@ pipelines:
 
 **Source:** [`BK-005`](../providers/buildkite.md#bk-005) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-006`: Step has no timeout_in_minutes <span class="pg-sev pg-sev--low">LOW</span> { #detail-bk-006 }
+### `BK-006`: Step has no timeout_in_minutes <span class="pg-sev pg-sev--low">LOW</span> { #detail-bk-006 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -2483,7 +2483,7 @@ pipelines:
 
 **Source:** [`BK-006`](../providers/buildkite.md#bk-006) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
+### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution, [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -2497,7 +2497,7 @@ pipelines:
 
 **Source:** [`BK-007`](../providers/buildkite.md#bk-007) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
+### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2509,7 +2509,7 @@ pipelines:
 
 **Source:** [`BK-008`](../providers/buildkite.md#bk-008) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
+### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -2519,7 +2519,7 @@ pipelines:
 
 **Source:** [`BK-009`](../providers/buildkite.md#bk-009) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
+### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2529,7 +2529,7 @@ pipelines:
 
 **Source:** [`BK-010`](../providers/buildkite.md#bk-010) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
+### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2539,7 +2539,7 @@ pipelines:
 
 **Source:** [`BK-011`](../providers/buildkite.md#bk-011) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
+### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2549,7 +2549,7 @@ pipelines:
 
 **Source:** [`BK-012`](../providers/buildkite.md#bk-012) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
+### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -2563,7 +2563,7 @@ pipelines:
 
 **Source:** [`BK-013`](../providers/buildkite.md#bk-013) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-014`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-014 }
+### `BK-014`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-014 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2579,7 +2579,7 @@ Insecure variants (``PKG_INSECURE_RE``): ``pip --index-url http://``, ``pip --tr
 
 **Source:** [`BK-014`](../providers/buildkite.md#bk-014) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-015`: agents map interpolates attacker-controllable Buildkite variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-015 }
+### `BK-015`: agents map interpolates attacker-controllable Buildkite variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-015 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2595,7 +2595,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
+### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -2605,7 +2605,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -2615,7 +2615,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
+### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -2625,7 +2625,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
+### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -2635,7 +2635,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -2645,7 +2645,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
+### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -2655,7 +2655,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
+### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -2705,7 +2705,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-002`: Privileged mode enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-002 }
+### `CB-002`: Privileged mode enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -2715,7 +2715,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
+### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -2725,7 +2725,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-004`: No build timeout configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-cb-004 }
+### `CB-004`: No build timeout configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-cb-004 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -2735,7 +2735,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
+### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2749,7 +2749,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
+### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -2759,7 +2759,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
+### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2769,7 +2769,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
+### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2779,7 +2779,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
+### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -2789,7 +2789,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-009`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-010`: CodeBuild webhook allows fork-PR builds without actor filtering <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-010 }
+### `CB-010`: CodeBuild webhook allows fork-PR builds without actor filtering <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-010 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2799,7 +2799,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-010`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
+### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2814,7 +2814,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
+### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2826,7 +2826,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-002`: Script injection via untrusted environment variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-002 }
+### `CC-002`: Script injection via untrusted environment variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2836,7 +2836,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-002`](../providers/circleci.md#cc-002) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
+### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2846,7 +2846,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-004`: Secret-like environment variable not managed via context <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-004 }
+### `CC-004`: Secret-like environment variable not managed via context <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-004 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -2856,7 +2856,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-004`](../providers/circleci.md#cc-004) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-005`: AWS auth uses long-lived access keys in environment block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-005 }
+### `CC-005`: AWS auth uses long-lived access keys in environment block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-005 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -2868,7 +2868,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-005`](../providers/circleci.md#cc-005) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
+### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -2878,7 +2878,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-006`](../providers/circleci.md#cc-006) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
+### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -2888,7 +2888,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-007`](../providers/circleci.md#cc-007) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-008`: Credential-shaped literal in config body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-008 }
+### `CC-008`: Credential-shaped literal in config body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -2904,7 +2904,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-008`](../providers/circleci.md#cc-008) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
+### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution, [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -2914,7 +2914,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-009`](../providers/circleci.md#cc-009) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-010`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-010 }
+### `CC-010`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-010 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -2924,7 +2924,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-010`](../providers/circleci.md#cc-010) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-011`: No store_test_results step (test results not archived) <span class="pg-sev pg-sev--low">LOW</span> { #detail-cc-011 }
+### `CC-011`: No store_test_results step (test results not archived) <span class="pg-sev pg-sev--low">LOW</span> { #detail-cc-011 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -2934,7 +2934,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-011`](../providers/circleci.md#cc-011) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-012`: Dynamic config via `setup: true` enables code injection <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-012 }
+### `CC-012`: Dynamic config via `setup: true` enables code injection <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-012 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -2944,7 +2944,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-012`](../providers/circleci.md#cc-012) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-013`: Deploy job in workflow has no branch filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-013 }
+### `CC-013`: Deploy job in workflow has no branch filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-013 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -2954,7 +2954,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-013`](../providers/circleci.md#cc-013) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-014`: Job missing `resource_class` declaration <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-014 }
+### `CC-014`: Job missing `resource_class` declaration <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-014 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -2964,7 +2964,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-014`](../providers/circleci.md#cc-014) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-015`: No `no_output_timeout` configured <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-015 }
+### `CC-015`: No `no_output_timeout` configured <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-015 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -2976,7 +2976,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-015`](../providers/circleci.md#cc-015) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-016 }
+### `CC-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -2992,7 +2992,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-016`](../providers/circleci.md#cc-016) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-017 }
+### `CC-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-017 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3004,7 +3004,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-017`](../providers/circleci.md#cc-017) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
+### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3016,7 +3016,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-019`: `add_ssh_keys` without fingerprint restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-019 }
+### `CC-019`: `add_ssh_keys` without fingerprint restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-019 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -3026,7 +3026,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-019`](../providers/circleci.md#cc-019) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
+### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3036,7 +3036,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-020`](../providers/circleci.md#cc-020) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
+### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3048,7 +3048,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-021`](../providers/circleci.md#cc-021) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
+### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3064,7 +3064,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-022`](../providers/circleci.md#cc-022) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-023 }
+### `CC-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-023 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3076,7 +3076,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-023`](../providers/circleci.md#cc-023) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
+### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -3086,7 +3086,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-024`](../providers/circleci.md#cc-024) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-025`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-025 }
+### `CC-025`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-025 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -3096,7 +3096,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-025`](../providers/circleci.md#cc-025) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
+### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3111,7 +3111,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-027 }
+### `CC-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-027 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3125,7 +3125,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-027`](../providers/circleci.md#cc-027) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
+### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3135,7 +3135,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-028`](../providers/circleci.md#cc-028) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
+### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3145,7 +3145,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-030`: Workflow job uses context without branch filter or approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-030 }
+### `CC-030`: Workflow job uses context without branch filter or approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-030 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -3155,7 +3155,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-030`](../providers/circleci.md#cc-030) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-031`: OIDC role assumption without branch filter or approval gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-031 }
+### `CC-031`: OIDC role assumption without branch filter or approval gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-031 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -3165,7 +3165,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-031`](../providers/circleci.md#cc-031) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
+### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -3175,7 +3175,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
+### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -3185,7 +3185,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
+### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -3195,7 +3195,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -3205,7 +3205,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
+### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
 
 **Evidences:** [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3215,7 +3215,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
+### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -3225,7 +3225,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
+### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -3235,7 +3235,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
+### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
 
 **Evidences:** [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3245,7 +3245,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
+### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -3255,7 +3255,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-001`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
+### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3265,7 +3265,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
+### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -3275,7 +3275,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
+### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -3285,7 +3285,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
+### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution, [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -3295,7 +3295,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
+### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -3305,7 +3305,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-003`: Source stage using polling instead of event-driven trigger <span class="pg-sev pg-sev--low">LOW</span> { #detail-cp-003 }
+### `CP-003`: Source stage using polling instead of event-driven trigger <span class="pg-sev pg-sev--low">LOW</span> { #detail-cp-003 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -3319,7 +3319,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
+### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -3329,7 +3329,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
+### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -3339,7 +3339,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-007`: CodePipeline v2 PR trigger accepts all branches <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-007 }
+### `CP-007`: CodePipeline v2 PR trigger accepts all branches <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-007 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -3349,7 +3349,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
+### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3359,7 +3359,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
+### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3369,7 +3369,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
+### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3379,7 +3379,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
+### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3389,7 +3389,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -3399,7 +3399,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
+### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -3409,7 +3409,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
+### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -3419,7 +3419,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
+### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -3429,7 +3429,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
+### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3446,7 +3446,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-002`: Container runs as root (missing or root USER directive) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-002 }
+### `DF-002`: Container runs as root (missing or root USER directive) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3497,7 +3497,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-002`](../providers/dockerfile.md#df-002) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
+### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3511,7 +3511,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
+### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3521,7 +3521,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-004`](../providers/dockerfile.md#df-004) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-005`: RUN uses shell-eval (eval / sh -c on a variable / backticks) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-005 }
+### `DF-005`: RUN uses shell-eval (eval / sh -c on a variable / backticks) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-005 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3531,7 +3531,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-005`](../providers/dockerfile.md#df-005) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-006`: ENV or ARG carries a credential-shaped literal value <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-006 }
+### `DF-006`: ENV or ARG carries a credential-shaped literal value <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-006 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3541,7 +3541,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-006`](../providers/dockerfile.md#df-006) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-008`: RUN invokes docker --privileged or escalates capabilities <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-008 }
+### `DF-008`: RUN invokes docker --privileged or escalates capabilities <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-008 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3551,7 +3551,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-008`](../providers/dockerfile.md#df-008) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
+### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3561,7 +3561,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-009`](../providers/dockerfile.md#df-009) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
+### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -3571,7 +3571,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-010`](../providers/dockerfile.md#df-010) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
+### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -3581,7 +3581,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-011`](../providers/dockerfile.md#df-011) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-012`: RUN invokes sudo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-012 }
+### `DF-012`: RUN invokes sudo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-012 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3591,7 +3591,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-012`](../providers/dockerfile.md#df-012) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
+### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -3603,7 +3603,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-013`](../providers/dockerfile.md#df-013) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
+### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3613,7 +3613,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-014`](../providers/dockerfile.md#df-014) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-015`: RUN grants world-writable permissions (chmod 777 / a+w) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-015 }
+### `DF-015`: RUN grants world-writable permissions (chmod 777 / a+w) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-015 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3627,7 +3627,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-015`](../providers/dockerfile.md#df-015) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
+### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -3641,7 +3641,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-016`](../providers/dockerfile.md#df-016) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-017`: ENV PATH prepends a world-writable directory <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-017 }
+### `DF-017`: ENV PATH prepends a world-writable directory <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-017 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3653,7 +3653,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-017`](../providers/dockerfile.md#df-017) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-018`: RUN chown rewrites ownership of a system path <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-018 }
+### `DF-018`: RUN chown rewrites ownership of a system path <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-018 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3663,7 +3663,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-018`](../providers/dockerfile.md#df-018) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-019`: COPY/ADD source path looks like a credential file <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-019 }
+### `DF-019`: COPY/ADD source path looks like a credential file <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-019 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3679,7 +3679,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-019`](../providers/dockerfile.md#df-019) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
+### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3695,7 +3695,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
+### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3709,7 +3709,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
+### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3724,7 +3724,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-022`](../providers/dockerfile.md#df-022) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-023`: ENV sets a dynamic-loader hijack variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-023 }
+### `DF-023`: ENV sets a dynamic-loader hijack variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-023 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3738,7 +3738,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-023`](../providers/dockerfile.md#df-023) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
+### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3782,7 +3782,7 @@ RUN npm rebuild better-sqlite3 sharp    # audited allowlist
 
 **Source:** [`DF-024`](../providers/dockerfile.md#df-024) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-025`: RUN writes a registry auth token into a Docker layer <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-025 }
+### `DF-025`: RUN writes a registry auth token into a Docker layer <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-025 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3825,7 +3825,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
 
 **Source:** [`DF-025`](../providers/dockerfile.md#df-025) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
+### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3841,7 +3841,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
+### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3855,7 +3855,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
+### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3873,7 +3873,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
+### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3891,7 +3891,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-030`: ENV NODE_OPTIONS preloads code or opens an inspector <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-030 }
+### `DF-030`: ENV NODE_OPTIONS preloads code or opens an inspector <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-030 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3915,7 +3915,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DF-030`](../providers/dockerfile.md#df-030) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
+### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3929,7 +3929,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
+### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -3939,7 +3939,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DR-002`](../providers/drone.md#dr-002) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-003`: Untrusted Drone template variable in shell command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-003 }
+### `DR-003`: Untrusted Drone template variable in shell command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-003 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -3961,7 +3961,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-003`](../providers/drone.md#dr-003) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
+### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -3975,7 +3975,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-004`](../providers/drone.md#dr-004) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
+### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -3989,7 +3989,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
+### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -3999,7 +3999,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-007`: Step mounts a sensitive host path <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-007 }
+### `DR-007`: Step mounts a sensitive host path <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-007 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4021,7 +4021,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-007`](../providers/drone.md#dr-007) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
+### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4035,7 +4035,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-008`](../providers/drone.md#dr-008) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-009`: Cache plugin key embeds an attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-009 }
+### `DR-009`: Cache plugin key embeds an attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-009 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4049,7 +4049,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-009`](../providers/drone.md#dr-009) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-010`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-010 }
+### `DR-010`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-010 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4065,7 +4065,7 @@ Insecure variants matched (``PKG_INSECURE_RE``): ``pip --index-url http://``, ``
 
 **Source:** [`DR-010`](../providers/drone.md#dr-010) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-011`: node map interpolates attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-011 }
+### `DR-011`: node map interpolates attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-011 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4081,7 +4081,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`DR-011`](../providers/drone.md#dr-011) in the [Drone CI provider](../providers/drone.md).
 
-#### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
+### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -4091,7 +4091,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -4101,7 +4101,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -4111,7 +4111,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
+### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -4121,7 +4121,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
+### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4131,7 +4131,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
+### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -4141,7 +4141,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
+### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -4151,7 +4151,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-004`: No lifecycle policy configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-ecr-004 }
+### `ECR-004`: No lifecycle policy configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-ecr-004 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4161,7 +4161,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
+### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -4171,7 +4171,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
+### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4181,7 +4181,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
+### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -4191,7 +4191,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
+### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4203,7 +4203,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
+### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4213,7 +4213,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-002`](../providers/cloudbuild.md#gcb-002) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-003`: Secret Manager value referenced in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-003 }
+### `GCB-003`: Secret Manager value referenced in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-003 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -4227,7 +4227,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
+### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4241,7 +4241,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-005`: Build timeout unset or excessive <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-005 }
+### `GCB-005`: Build timeout unset or excessive <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-005 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -4253,7 +4253,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-005`](../providers/cloudbuild.md#gcb-005) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-006`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-006 }
+### `GCB-006`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-006 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -4267,7 +4267,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-006`](../providers/cloudbuild.md#gcb-006) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-007`: availableSecrets references ``versions/latest`` <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-007 }
+### `GCB-007`: availableSecrets references ``versions/latest`` <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-007 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4279,7 +4279,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-007`](../providers/cloudbuild.md#gcb-007) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
+### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline.
 
@@ -4289,7 +4289,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-008`](../providers/cloudbuild.md#gcb-008) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
+### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -4299,7 +4299,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-009`](../providers/cloudbuild.md#gcb-009) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-010`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-010 }
+### `GCB-010`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-010 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -4309,7 +4309,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-010`](../providers/cloudbuild.md#gcb-010) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
+### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4321,7 +4321,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
+### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -4331,7 +4331,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-012`](../providers/cloudbuild.md#gcb-012) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-013`: Package install bypasses registry integrity (git / path / tarball) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-013 }
+### `GCB-013`: Package install bypasses registry integrity (git / path / tarball) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-013 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -4341,7 +4341,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-013`](../providers/cloudbuild.md#gcb-013) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-014`: Build logging disabled (options.logging: NONE) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-014 }
+### `GCB-014`: Build logging disabled (options.logging: NONE) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-014 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4353,7 +4353,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-014`](../providers/cloudbuild.md#gcb-014) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-015`: SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-015 }
+### `GCB-015`: SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-015 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline.
 
@@ -4363,7 +4363,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-015`](../providers/cloudbuild.md#gcb-015) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-016`: Step dir field contains parent-directory escape (..) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-016 }
+### `GCB-016`: Step dir field contains parent-directory escape (..) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-016 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4373,7 +4373,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-016`](../providers/cloudbuild.md#gcb-016) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-017`: Image-producing build does not request SLSA provenance <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-017 }
+### `GCB-017`: Image-producing build does not request SLSA provenance <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-017 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -4383,7 +4383,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-017`](../providers/cloudbuild.md#gcb-017) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-018`: Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-018 }
+### `GCB-018`: Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-018 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4397,7 +4397,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-018`](../providers/cloudbuild.md#gcb-018) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-019`: Shell entrypoint inlines a user substitution into args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-019 }
+### `GCB-019`: Shell entrypoint inlines a user substitution into args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-019 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4411,7 +4411,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
+### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -4425,7 +4425,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-020`](../providers/cloudbuild.md#gcb-020) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-021`: No private worker pool, build runs on the shared default pool <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-021 }
+### `GCB-021`: No private worker pool, build runs on the shared default pool <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-021 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -4441,7 +4441,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-021`](../providers/cloudbuild.md#gcb-021) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-022`: options.substitutionOption set to ALLOW_LOOSE <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-022 }
+### `GCB-022`: options.substitutionOption set to ALLOW_LOOSE <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-022 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4457,7 +4457,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-022`](../providers/cloudbuild.md#gcb-022) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-023`: Step references a user substitution not declared in substitutions: <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-023 }
+### `GCB-023`: Step references a user substitution not declared in substitutions: <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-023 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline.
 
@@ -4471,7 +4471,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-023`](../providers/cloudbuild.md#gcb-023) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-024`: Build pushes Docker images but top-level images: is empty <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-024 }
+### `GCB-024`: Build pushes Docker images but top-level images: is empty <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-024 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -4485,7 +4485,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-024`](../providers/cloudbuild.md#gcb-024) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-025`: Build has no tags for audit / discoverability <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-025 }
+### `GCB-025`: Build has no tags for audit / discoverability <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-025 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -4499,7 +4499,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-025`](../providers/cloudbuild.md#gcb-025) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-026`: Step waitFor: references an unknown step id <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-026 }
+### `GCB-026`: Step waitFor: references an unknown step id <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-026 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -4509,7 +4509,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-026`](../providers/cloudbuild.md#gcb-026) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
+### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4545,7 +4545,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-002`: pull_request_target checks out PR head <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-002 }
+### `GHA-002`: pull_request_target checks out PR head <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4617,7 +4617,7 @@ jobs:
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-003`: Script injection via untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-003 }
+### `GHA-003`: Script injection via untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-003 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -4668,7 +4668,7 @@ jobs:
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-004`: Workflow has no explicit permissions block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-004 }
+### `GHA-004`: Workflow has no explicit permissions block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-004 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -4684,7 +4684,7 @@ jobs:
 
 **Source:** [`GHA-004`](../providers/github.md#gha-004) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-005`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-005 }
+### `GHA-005`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-005 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -4700,7 +4700,7 @@ jobs:
 
 **Source:** [`GHA-005`](../providers/github.md#gha-005) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
+### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -4715,7 +4715,7 @@ jobs:
 
 **Source:** [`GHA-006`](../providers/github.md#gha-006) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
+### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -4725,7 +4725,7 @@ jobs:
 
 **Source:** [`GHA-007`](../providers/github.md#gha-007) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-008`: Credential-shaped literal in workflow body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-008 }
+### `GHA-008`: Credential-shaped literal in workflow body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -4783,7 +4783,7 @@ steps:
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-009`: workflow_run downloads upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-009 }
+### `GHA-009`: workflow_run downloads upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4793,7 +4793,7 @@ steps:
 
 **Source:** [`GHA-009`](../providers/github.md#gha-009) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-010`: Local action (./path) on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-010 }
+### `GHA-010`: Local action (./path) on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-010 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4803,7 +4803,7 @@ steps:
 
 **Source:** [`GHA-010`](../providers/github.md#gha-010) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-011`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-011 }
+### `GHA-011`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-011 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4813,7 +4813,7 @@ steps:
 
 **Source:** [`GHA-011`](../providers/github.md#gha-011) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-012`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-012 }
+### `GHA-012`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-012 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -4827,7 +4827,7 @@ steps:
 
 **Source:** [`GHA-012`](../providers/github.md#gha-012) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-013`: issue_comment trigger without author guard <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-013 }
+### `GHA-013`: issue_comment trigger without author guard <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-013 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -4841,7 +4841,7 @@ steps:
 
 **Source:** [`GHA-013`](../providers/github.md#gha-013) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
+### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -4857,7 +4857,7 @@ steps:
 
 **Source:** [`GHA-014`](../providers/github.md#gha-014) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-015`: Job has no `timeout-minutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-015 }
+### `GHA-015`: Job has no `timeout-minutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-015 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -4869,7 +4869,7 @@ steps:
 
 **Source:** [`GHA-015`](../providers/github.md#gha-015) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
+### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4918,7 +4918,7 @@ steps:
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
+### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -4930,7 +4930,7 @@ steps:
 
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
+### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -4942,7 +4942,7 @@ steps:
 
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-019`: GITHUB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-019 }
+### `GHA-019`: GITHUB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-019 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -4996,7 +4996,7 @@ jobs:
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
+### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -5006,7 +5006,7 @@ jobs:
 
 **Source:** [`GHA-020`](../providers/github.md#gha-020) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
+### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5018,7 +5018,7 @@ jobs:
 
 **Source:** [`GHA-021`](../providers/github.md#gha-021) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
+### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -5034,7 +5034,7 @@ jobs:
 
 **Source:** [`GHA-022`](../providers/github.md#gha-022) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
+### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5046,7 +5046,7 @@ jobs:
 
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
+### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -5056,7 +5056,7 @@ jobs:
 
 **Source:** [`GHA-024`](../providers/github.md#gha-024) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
+### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5066,7 +5066,7 @@ jobs:
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-026`: Container job disables isolation via `options:` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-026 }
+### `GHA-026`: Container job disables isolation via `options:` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-026 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -5076,7 +5076,7 @@ jobs:
 
 **Source:** [`GHA-026`](../providers/github.md#gha-026) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
+### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5091,7 +5091,7 @@ jobs:
 
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-028`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-028 }
+### `GHA-028`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-028 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -5105,7 +5105,7 @@ jobs:
 
 **Source:** [`GHA-028`](../providers/github.md#gha-028) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
+### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -5115,7 +5115,7 @@ jobs:
 
 **Source:** [`GHA-029`](../providers/github.md#gha-029) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-030`: OIDC token requested without environment-protected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-030 }
+### `GHA-030`: OIDC token requested without environment-protected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-030 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -5125,7 +5125,7 @@ jobs:
 
 **Source:** [`GHA-030`](../providers/github.md#gha-030) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-031`: Workflow uses retired set-output / save-state command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-031 }
+### `GHA-031`: Workflow uses retired set-output / save-state command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-031 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5135,7 +5135,7 @@ jobs:
 
 **Source:** [`GHA-031`](../providers/github.md#gha-031) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-032`: run: invokes local script on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-032 }
+### `GHA-032`: run: invokes local script on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-032 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5149,7 +5149,7 @@ jobs:
 
 **Source:** [`GHA-032`](../providers/github.md#gha-032) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-033`: Secret value echoed / printed in a run: block <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-033 }
+### `GHA-033`: Secret value echoed / printed in a run: block <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-033 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -5159,7 +5159,7 @@ jobs:
 
 **Source:** [`GHA-033`](../providers/github.md#gha-033) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-034`: Reusable workflow called with secrets: inherit <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-034 }
+### `GHA-034`: Reusable workflow called with secrets: inherit <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-034 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -5175,7 +5175,7 @@ jobs:
 
 **Source:** [`GHA-034`](../providers/github.md#gha-034) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-035`: github-script step interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-035 }
+### `GHA-035`: github-script step interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-035 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5189,7 +5189,7 @@ jobs:
 
 **Source:** [`GHA-035`](../providers/github.md#gha-035) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
+### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5205,7 +5205,7 @@ jobs:
 
 **Source:** [`GHA-036`](../providers/github.md#gha-036) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-037`: actions/checkout persists GITHUB_TOKEN into .git/config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-037 }
+### `GHA-037`: actions/checkout persists GITHUB_TOKEN into .git/config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-037 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -5223,7 +5223,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 **Source:** [`GHA-037`](../providers/github.md#gha-037) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-038`: Workflow re-enables retired ::set-env / ::add-path commands <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-038 }
+### `GHA-038`: Workflow re-enables retired ::set-env / ::add-path commands <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-038 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5239,7 +5239,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Source:** [`GHA-038`](../providers/github.md#gha-038) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-039`: services / container credentials embedded as literal in workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-039 }
+### `GHA-039`: services / container credentials embedded as literal in workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-039 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -5255,7 +5255,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-039`](../providers/github.md#gha-039) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
+### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5301,7 +5301,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
+### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5319,7 +5319,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-041`](../providers/github.md#gha-041) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
+### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5337,7 +5337,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-042`](../providers/github.md#gha-042) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
+### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5355,7 +5355,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-044`: Build tool runs lifecycle scripts on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-044 }
+### `GHA-044`: Build tool runs lifecycle scripts on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-044 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5417,7 +5417,7 @@ jobs:
 
 **Source:** [`GHA-044`](../providers/github.md#gha-044) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-045`: Caller-controlled ref input feeds actions/checkout <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-045 }
+### `GHA-045`: Caller-controlled ref input feeds actions/checkout <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-045 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5477,7 +5477,7 @@ jobs:
 
 **Source:** [`GHA-045`](../providers/github.md#gha-045) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-046`: Manual PR-head fetch on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-046 }
+### `GHA-046`: Manual PR-head fetch on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-046 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5531,7 +5531,7 @@ jobs:
 
 **Source:** [`GHA-046`](../providers/github.md#gha-046) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
+### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5549,7 +5549,7 @@ jobs:
 
 **Source:** [`GHA-047`](../providers/github.md#gha-047) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-048`: Workflow step writes a file under .github/workflows/ <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-048 }
+### `GHA-048`: Workflow step writes a file under .github/workflows/ <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-048 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5602,7 +5602,7 @@ jobs:
 
 **Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
+### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -5656,7 +5656,7 @@ jobs:
 
 **Source:** [`GHA-049`](../providers/github.md#gha-049) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-050`: Publish step relies on long-lived registry token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-050 }
+### `GHA-050`: Publish step relies on long-lived registry token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-050 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -5730,7 +5730,7 @@ jobs:
 
 **Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
+### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -5746,7 +5746,7 @@ Complements DF-001 (Dockerfile ``FROM`` pinning), GHA-001 (action ``uses:`` pinn
 
 **Source:** [`GHA-051`](../providers/github.md#gha-051) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-052`: actions/cache key includes untrusted PR-controllable input <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-052 }
+### `GHA-052`: actions/cache key includes untrusted PR-controllable input <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-052 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -5764,7 +5764,7 @@ The attack is cache poisoning: an attacker opens a PR whose branch name (``head_
 
 **Source:** [`GHA-052`](../providers/github.md#gha-052) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-053`: if: predicate evaluates attacker-controllable context as expression <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-053 }
+### `GHA-053`: if: predicate evaluates attacker-controllable context as expression <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-053 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5784,7 +5784,7 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 
 **Source:** [`GHA-053`](../providers/github.md#gha-053) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-054`: actions/checkout with ssh-key persists SSH credential in repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-054 }
+### `GHA-054`: actions/checkout with ssh-key persists SSH credential in repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-054 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -5805,7 +5805,7 @@ The safe pattern: ``actions/checkout@<sha>`` with ``ssh-key: ${{ secrets.DEPLOY_
 
 **Source:** [`GHA-054`](../providers/github.md#gha-054) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-055`: Reusable workflow outputs derive a secret or caller-input value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-055 }
+### `GHA-055`: Reusable workflow outputs derive a secret or caller-input value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-055 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -5823,7 +5823,7 @@ If the caller genuinely needs information derived from a secret (e.g., a build a
 
 **Source:** [`GHA-055`](../providers/github.md#gha-055) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
+### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5874,7 +5874,7 @@ jobs:
 
 **Source:** [`GHA-056`](../providers/github.md#gha-056) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
+### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -5926,7 +5926,7 @@ jobs:
 
 **Source:** [`GHA-057`](../providers/github.md#gha-057) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
+### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -5982,7 +5982,7 @@ jobs:
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
+### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -5994,7 +5994,7 @@ jobs:
 
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
+### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6004,7 +6004,7 @@ jobs:
 
 **Source:** [`GL-002`](../providers/gitlab.md#gl-002) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
+### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6014,7 +6014,7 @@ jobs:
 
 **Source:** [`GL-003`](../providers/gitlab.md#gl-003) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
+### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -6024,7 +6024,7 @@ jobs:
 
 **Source:** [`GL-004`](../providers/gitlab.md#gl-004) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
+### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6034,7 +6034,7 @@ jobs:
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
+### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -6044,7 +6044,7 @@ jobs:
 
 **Source:** [`GL-006`](../providers/gitlab.md#gl-006) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
+### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6054,7 +6054,7 @@ jobs:
 
 **Source:** [`GL-007`](../providers/gitlab.md#gl-007) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-008 }
+### `GL-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -6070,7 +6070,7 @@ jobs:
 
 **Source:** [`GL-008`](../providers/gitlab.md#gl-008) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
+### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6080,7 +6080,7 @@ jobs:
 
 **Source:** [`GL-009`](../providers/gitlab.md#gl-009) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-010`: Multi-project pipeline ingests upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-010 }
+### `GL-010`: Multi-project pipeline ingests upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-010 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6090,7 +6090,7 @@ jobs:
 
 **Source:** [`GL-010`](../providers/gitlab.md#gl-010) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-011`: include: local file pulled in MR-triggered pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-011 }
+### `GL-011`: include: local file pulled in MR-triggered pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-011 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6100,7 +6100,7 @@ jobs:
 
 **Source:** [`GL-011`](../providers/gitlab.md#gl-011) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-012`: Cache key derives from MR-controlled CI variable <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-012 }
+### `GL-012`: Cache key derives from MR-controlled CI variable <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-012 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6110,7 +6110,7 @@ jobs:
 
 **Source:** [`GL-012`](../providers/gitlab.md#gl-012) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-013`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-013 }
+### `GL-013`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-013 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -6122,7 +6122,7 @@ jobs:
 
 **Source:** [`GL-013`](../providers/gitlab.md#gl-013) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-014`: Self-managed runner without ephemeral tag <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-014 }
+### `GL-014`: Self-managed runner without ephemeral tag <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-014 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -6132,7 +6132,7 @@ jobs:
 
 **Source:** [`GL-014`](../providers/gitlab.md#gl-014) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-015`: Job has no `timeout`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-015 }
+### `GL-015`: Job has no `timeout`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-015 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -6144,7 +6144,7 @@ jobs:
 
 **Source:** [`GL-015`](../providers/gitlab.md#gl-015) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-016 }
+### `GL-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6160,7 +6160,7 @@ jobs:
 
 **Source:** [`GL-016`](../providers/gitlab.md#gl-016) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
+### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6172,7 +6172,7 @@ jobs:
 
 **Source:** [`GL-017`](../providers/gitlab.md#gl-017) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
+### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6184,7 +6184,7 @@ jobs:
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
+### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -6194,7 +6194,7 @@ jobs:
 
 **Source:** [`GL-019`](../providers/gitlab.md#gl-019) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-020`: CI_JOB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-020 }
+### `GL-020`: CI_JOB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-020 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6206,7 +6206,7 @@ jobs:
 
 **Source:** [`GL-020`](../providers/gitlab.md#gl-020) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
+### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6218,7 +6218,7 @@ jobs:
 
 **Source:** [`GL-021`](../providers/gitlab.md#gl-021) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
+### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6234,7 +6234,7 @@ jobs:
 
 **Source:** [`GL-022`](../providers/gitlab.md#gl-022) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
+### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6246,7 +6246,7 @@ jobs:
 
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
+### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6256,7 +6256,7 @@ jobs:
 
 **Source:** [`GL-024`](../providers/gitlab.md#gl-024) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
+### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6271,7 +6271,7 @@ jobs:
 
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
+### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6285,7 +6285,7 @@ jobs:
 
 **Source:** [`GL-026`](../providers/gitlab.md#gl-026) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
+### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6295,7 +6295,7 @@ jobs:
 
 **Source:** [`GL-027`](../providers/gitlab.md#gl-027) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
+### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6305,7 +6305,7 @@ jobs:
 
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
+### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -6315,7 +6315,7 @@ jobs:
 
 **Source:** [`GL-029`](../providers/gitlab.md#gl-029) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
+### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6325,7 +6325,7 @@ jobs:
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
+### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -6335,7 +6335,7 @@ jobs:
 
 **Source:** [`GL-031`](../providers/gitlab.md#gl-031) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-032`: tags: interpolates untrusted CI variable <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-032 }
+### `GL-032`: tags: interpolates untrusted CI variable <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-032 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6351,7 +6351,7 @@ jobs:
 
 **Source:** [`GL-032`](../providers/gitlab.md#gl-032) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-033`: Global before_script / after_script propagates taint to every job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-033 }
+### `GL-033`: Global before_script / after_script propagates taint to every job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-033 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6374,7 +6374,7 @@ for direct interpolation of the same attacker-controllable predefined variables 
 
 **Source:** [`GL-033`](../providers/gitlab.md#gl-033) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
+### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6386,7 +6386,7 @@ for direct interpolation of the same attacker-controllable predefined variables 
 
 **Source:** [`HELM-001`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
+### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -6408,7 +6408,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
+### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6425,7 +6425,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
+### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6435,7 +6435,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-004`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
+### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6449,7 +6449,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-005`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
+### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6463,7 +6463,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-006`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
+### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6473,7 +6473,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-007`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
+### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6487,7 +6487,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-008`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
+### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
 
 **Evidences:** [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6497,7 +6497,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-009`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
+### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6507,7 +6507,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-010`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
+### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -6517,7 +6517,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`IAM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
+### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6564,7 +6564,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
+### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6574,7 +6574,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
+### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6584,7 +6584,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
+### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6633,7 +6633,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
+### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6643,7 +6643,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
+### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6653,7 +6653,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
+### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -6663,7 +6663,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
+### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6673,7 +6673,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
+### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6683,7 +6683,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
+### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6693,7 +6693,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-002`](../providers/jenkins.md#jf-002) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-003`: Pipeline uses `agent any` (no executor isolation) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-003 }
+### `JF-003`: Pipeline uses `agent any` (no executor isolation) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-003 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -6703,7 +6703,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-003`](../providers/jenkins.md#jf-003) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-004`: AWS auth uses long-lived access keys via withCredentials <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-004 }
+### `JF-004`: AWS auth uses long-lived access keys via withCredentials <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-004 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -6715,7 +6715,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-004`](../providers/jenkins.md#jf-004) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
+### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -6725,7 +6725,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-005`](../providers/jenkins.md#jf-005) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
+### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -6735,7 +6735,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-006`](../providers/jenkins.md#jf-006) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
+### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6745,7 +6745,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-007`](../providers/jenkins.md#jf-007) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-008 }
+### `JF-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-008 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -6761,7 +6761,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-008`](../providers/jenkins.md#jf-008) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
+### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6771,7 +6771,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-010`: Long-lived AWS keys exposed via environment {} block <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-010 }
+### `JF-010`: Long-lived AWS keys exposed via environment {} block <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-010 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens).
 
@@ -6783,7 +6783,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-010`](../providers/jenkins.md#jf-010) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-011`: Pipeline has no `buildDiscarder` retention policy <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-011 }
+### `JF-011`: Pipeline has no `buildDiscarder` retention policy <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-011 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -6795,7 +6795,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-011`](../providers/jenkins.md#jf-011) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-012`: `load` step pulls Groovy from disk without integrity pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-012 }
+### `JF-012`: `load` step pulls Groovy from disk without integrity pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-012 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6805,7 +6805,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-012`](../providers/jenkins.md#jf-012) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-013`: copyArtifacts ingests another job's output unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-013 }
+### `JF-013`: copyArtifacts ingests another job's output unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-013 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6815,7 +6815,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-013`](../providers/jenkins.md#jf-013) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-014`: Agent label missing ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-014 }
+### `JF-014`: Agent label missing ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-014 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -6829,7 +6829,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-014`](../providers/jenkins.md#jf-014) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-015`: Pipeline has no `timeout` wrapper, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-015 }
+### `JF-015`: Pipeline has no `timeout` wrapper, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-015 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -6841,7 +6841,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-015`](../providers/jenkins.md#jf-015) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-016 }
+### `JF-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6857,7 +6857,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-016`](../providers/jenkins.md#jf-016) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
+### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6869,7 +6869,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-017`](../providers/jenkins.md#jf-017) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
+### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6881,7 +6881,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-019`: Groovy sandbox escape pattern detected <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-019 }
+### `JF-019`: Groovy sandbox escape pattern detected <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-019 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -6891,7 +6891,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-019`](../providers/jenkins.md#jf-019) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
+### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -6901,7 +6901,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-020`](../providers/jenkins.md#jf-020) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
+### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6913,7 +6913,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-021`](../providers/jenkins.md#jf-021) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
+### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -6929,7 +6929,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-022`](../providers/jenkins.md#jf-022) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
+### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -6941,7 +6941,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
+### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators, [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -6951,7 +6951,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-024`](../providers/jenkins.md#jf-024) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-025`: Kubernetes agent pod template runs privileged or mounts hostPath <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-025 }
+### `JF-025`: Kubernetes agent pod template runs privileged or mounts hostPath <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-025 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -6961,7 +6961,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-025`](../providers/jenkins.md#jf-025) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-026`: `build job:` trigger ignores downstream failure <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-026 }
+### `JF-026`: `build job:` trigger ignores downstream failure <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-026 }
 
 **Evidences:** [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -6971,7 +6971,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-026`](../providers/jenkins.md#jf-026) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-027`: `archiveArtifacts` does not record a fingerprint <span class="pg-sev pg-sev--low">LOW</span> { #detail-jf-027 }
+### `JF-027`: `archiveArtifacts` does not record a fingerprint <span class="pg-sev pg-sev--low">LOW</span> { #detail-jf-027 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6981,7 +6981,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-027`](../providers/jenkins.md#jf-027) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
+### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -6991,7 +6991,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-028`](../providers/jenkins.md#jf-028) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
+### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -7006,7 +7006,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
+### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -7020,7 +7020,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-030`](../providers/jenkins.md#jf-030) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
+### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -7030,7 +7030,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-031`](../providers/jenkins.md#jf-031) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-032`: Agent label interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-032 }
+### `JF-032`: Agent label interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-032 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -7046,7 +7046,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-032`](../providers/jenkins.md#jf-032) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
+### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -7060,7 +7060,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-033`](../providers/jenkins.md#jf-033) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-034`: Pipeline declares a password() build parameter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-034 }
+### `JF-034`: Pipeline declares a password() build parameter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-034 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -7074,7 +7074,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-034`](../providers/jenkins.md#jf-034) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
+### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -7084,7 +7084,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
+### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -7094,7 +7094,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
+### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -7104,7 +7104,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
+### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
 
 **Evidences:** [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -7114,7 +7114,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
+### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -7124,7 +7124,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
+### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -7134,7 +7134,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
+### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -7144,7 +7144,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
+### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -7154,7 +7154,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
+### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -7198,7 +7198,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-001`](../providers/maven.md#mvn-001) in the [maven provider](../providers/maven.md).
 
-#### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
+### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -7212,7 +7212,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-002`](../providers/maven.md#mvn-002) in the [maven provider](../providers/maven.md).
 
-#### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
+### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -7230,7 +7230,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
-#### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
+### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -7244,7 +7244,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-004`](../providers/maven.md#mvn-004) in the [maven provider](../providers/maven.md).
 
-#### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
+### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -7258,7 +7258,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-005`](../providers/maven.md#mvn-005) in the [maven provider](../providers/maven.md).
 
-#### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
+### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -7301,7 +7301,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-006`](../providers/maven.md#mvn-006) in the [maven provider](../providers/maven.md).
 
-#### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
+### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -7315,7 +7315,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-007`](../providers/maven.md#mvn-007) in the [maven provider](../providers/maven.md).
 
-#### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
+### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -7329,7 +7329,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-001`](../providers/oci.md#oci-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
+### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -7344,7 +7344,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
+### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -7358,7 +7358,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-003`](../providers/oci.md#oci-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-004`: Image layer references an arbitrary URL (foreign layer) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-004 }
+### `OCI-004`: Image layer references an arbitrary URL (foreign layer) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-004 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -7372,7 +7372,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-004`](../providers/oci.md#oci-004) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
+### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -7387,7 +7387,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-005`](../providers/oci.md#oci-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
+### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -7401,7 +7401,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
+### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
 
 **Evidences:** [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -7417,7 +7417,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
-#### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
+### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -7427,7 +7427,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
+### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -7437,7 +7437,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
+### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use, [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -7447,7 +7447,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-003`: CodeBuild security group allows 0.0.0.0/0 all-port egress <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-003 }
+### `PBAC-003`: CodeBuild security group allows 0.0.0.0/0 all-port egress <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-003 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -7457,7 +7457,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
+### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -7467,7 +7467,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
+### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
@@ -7477,7 +7477,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
+### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -7487,7 +7487,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
+### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -7497,7 +7497,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
+### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
 
@@ -7507,7 +7507,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
+### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -7517,7 +7517,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SCM-001`: Default branch has no protection rule <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-001 }
+### `SCM-001`: Default branch has no protection rule <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-001 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -7551,7 +7551,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-002`: Default branch protection does not require pull request reviews <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-002 }
+### `SCM-002`: Default branch protection does not require pull request reviews <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-002 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7584,7 +7584,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-003`: GitHub default code scanning is not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-003 }
+### `SCM-003`: GitHub default code scanning is not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-003 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -7617,7 +7617,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-003`](../providers/scm.md#scm-003) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-004`: GitHub secret scanning is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-004 }
+### `SCM-004`: GitHub secret scanning is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-004 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -7635,7 +7635,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-004`](../providers/scm.md#scm-004) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
+### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA).
 
@@ -7650,7 +7650,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-005`](../providers/scm.md#scm-005) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-006`: Default branch protection does not require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-006 }
+### `SCM-006`: Default branch protection does not require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-006 }
 
 **Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed.
 
@@ -7660,7 +7660,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-006`](../providers/scm.md#scm-006) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-007`: Default branch protection allows force-pushes <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-007 }
+### `SCM-007`: Default branch protection allows force-pushes <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-007 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -7670,7 +7670,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-007`](../providers/scm.md#scm-007) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
+### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7685,7 +7685,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-008`](../providers/scm.md#scm-008) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-009`: Default branch protection allows branch deletion <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-009 }
+### `SCM-009`: Default branch protection allows branch deletion <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-009 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -7695,7 +7695,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-009`](../providers/scm.md#scm-009) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
+### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7705,7 +7705,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-010`](../providers/scm.md#scm-010) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-011`: Default branch protection does not require CODEOWNERS reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-011 }
+### `SCM-011`: Default branch protection does not require CODEOWNERS reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-011 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7719,7 +7719,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-011`](../providers/scm.md#scm-011) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-012`: Default branch protection keeps stale reviews after a push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-012 }
+### `SCM-012`: Default branch protection keeps stale reviews after a push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-012 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7729,7 +7729,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-012`](../providers/scm.md#scm-012) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-013`: Default branch protection does not require conversation resolution <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-013 }
+### `SCM-013`: Default branch protection does not require conversation resolution <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-013 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7739,7 +7739,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-013`](../providers/scm.md#scm-013) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-014`: Default branch protection does not require approval of the most recent push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-014 }
+### `SCM-014`: Default branch protection does not require approval of the most recent push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-014 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7749,7 +7749,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-014`](../providers/scm.md#scm-014) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-015`: Secret scanning push protection is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-015 }
+### `SCM-015`: Secret scanning push protection is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-015 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -7764,7 +7764,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-015`](../providers/scm.md#scm-015) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
+### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified.
 
@@ -7779,7 +7779,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-016`](../providers/scm.md#scm-016) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-017`: Repository has no CODEOWNERS file <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-017 }
+### `SCM-017`: Repository has no CODEOWNERS file <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-017 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7793,7 +7793,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-017`](../providers/scm.md#scm-017) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-018`: Required PR reviews can be bypassed by named identities <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-018 }
+### `SCM-018`: Required PR reviews can be bypassed by named identities <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-018 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7807,7 +7807,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-018`](../providers/scm.md#scm-018) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-019`: Push restrictions allowlist names individual users <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-019 }
+### `SCM-019`: Push restrictions allowlist names individual users <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-019 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -7821,7 +7821,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-019`](../providers/scm.md#scm-019) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
+### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -7839,7 +7839,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-020`](../providers/scm.md#scm-020) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
+### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7853,7 +7853,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-021`](../providers/scm.md#scm-021) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-022`: Repo Actions permissions allow any source (no allow-list) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-022 }
+### `SCM-022`: Repo Actions permissions allow any source (no allow-list) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-022 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -7867,7 +7867,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-022`](../providers/scm.md#scm-022) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-023`: Deployment environment lacks required-reviewer protection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-023 }
+### `SCM-023`: Deployment environment lacks required-reviewer protection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-023 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators, [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply.
 
@@ -7881,7 +7881,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-023`](../providers/scm.md#scm-023) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-024`: Deployment environment can deploy from any branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-024 }
+### `SCM-024`: Deployment environment can deploy from any branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-024 }
 
 **Evidences:** [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -7895,7 +7895,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-024`](../providers/scm.md#scm-024) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-025`: Repo has write-enabled deploy keys (push backdoor) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-025 }
+### `SCM-025`: Repo has write-enabled deploy keys (push backdoor) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-025 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -7947,7 +7947,7 @@ GET /repos/acme/payments-api/keys
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
+### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -7976,7 +7976,7 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 **Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
+### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -7996,7 +7996,7 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 
 **Source:** [`SCM-027`](../providers/scm.md#scm-027) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-028`: Private repo allows forking <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-028 }
+### `SCM-028`: Private repo allows forking <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-028 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -8012,7 +8012,7 @@ If forks are genuinely needed for the development workflow, enforce ``Allow fork
 
 **Source:** [`SCM-028`](../providers/scm.md#scm-028) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-029`: Repository ruleset is in evaluate / disabled mode (not enforced) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-029 }
+### `SCM-029`: Repository ruleset is in evaluate / disabled mode (not enforced) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-029 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8033,7 +8033,7 @@ Note: the legacy-branch-protection rules in this pack (SCM-001..010) do NOT see 
 
 **Source:** [`SCM-029`](../providers/scm.md#scm-029) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-030`: Repository ruleset has bypass actor with bypass_mode: always <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-030 }
+### `SCM-030`: Repository ruleset has bypass actor with bypass_mode: always <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-030 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators, [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed, [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8049,7 +8049,7 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 **Source:** [`SCM-030`](../providers/scm.md#scm-030) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
+### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -8065,7 +8065,7 @@ If your team relies on auto-merge for throughput, the compensating controls are 
 
 **Source:** [`SCM-031`](../providers/scm.md#scm-031) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-032`: Active ruleset doesn't require a PR review (governance theater) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-032 }
+### `SCM-032`: Active ruleset doesn't require a PR review (governance theater) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-032 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -8083,7 +8083,7 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 
 **Source:** [`SCM-032`](../providers/scm.md#scm-032) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-033`: Active ruleset doesn't require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-033 }
+### `SCM-033`: Active ruleset doesn't require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-033 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators, [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -8099,7 +8099,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-033`](../providers/scm.md#scm-033) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-034`: Active ruleset doesn't block force-push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-034 }
+### `SCM-034`: Active ruleset doesn't block force-push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-034 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8113,7 +8113,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-034`](../providers/scm.md#scm-034) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-035`: Active ruleset doesn't block branch deletion <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-035 }
+### `SCM-035`: Active ruleset doesn't block branch deletion <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-035 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8127,7 +8127,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-035`](../providers/scm.md#scm-035) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-036`: Active ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-036 }
+### `SCM-036`: Active ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-036 }
 
 **Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed.
 
@@ -8141,7 +8141,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-036`](../providers/scm.md#scm-036) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-037`: Active ruleset's pull_request rule doesn't dismiss stale reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-037 }
+### `SCM-037`: Active ruleset's pull_request rule doesn't dismiss stale reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-037 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -8157,7 +8157,7 @@ The ruleset analog of SCM-012 (legacy branch-protection stale-review dismissal).
 
 **Source:** [`SCM-037`](../providers/scm.md#scm-037) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-038`: Active ruleset doesn't require linear history <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-038 }
+### `SCM-038`: Active ruleset doesn't require linear history <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-038 }
 
 **Evidences:** [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8173,7 +8173,7 @@ Merge commits aren't a direct attacker primitive — force-push (SCM-034) is the
 
 **Source:** [`SCM-038`](../providers/scm.md#scm-038) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-039`: Active ruleset doesn't pin a required workflow <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-039 }
+### `SCM-039`: Active ruleset doesn't pin a required workflow <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-039 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST), [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA).
 
@@ -8189,7 +8189,7 @@ Pin the workflow ref to either a long-lived branch the ruleset bypass actors don
 
 **Source:** [`SCM-039`](../providers/scm.md#scm-039) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-040`: Active ruleset doesn't gate on code scanning results <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-040 }
+### `SCM-040`: Active ruleset doesn't gate on code scanning results <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-040 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -8205,7 +8205,7 @@ If your org doesn't license GHAS (the underlying feature), this rule type isn't 
 
 **Source:** [`SCM-040`](../providers/scm.md#scm-040) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-041`: Active ruleset doesn't gate on a deployment environment <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-041 }
+### `SCM-041`: Active ruleset doesn't gate on a deployment environment <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-041 }
 
 **Evidences:** [`5.1.4`](#ctrl-5-1-4) Ensure deployment configuration manifests are reviewed before apply, [`5.2.1`](#ctrl-5-2-1) Ensure deployment environments are separated.
 
@@ -8221,7 +8221,7 @@ An empty environments list (``required_deployment_environments: []``) documents 
 
 **Source:** [`SCM-041`](../providers/scm.md#scm-041) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-042`: Active ruleset doesn't require merge queue <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-042 }
+### `SCM-042`: Active ruleset doesn't require merge queue <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-042 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
@@ -8237,7 +8237,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
+### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
 
 **Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed, [`1.1.17`](#ctrl-1-1-17) Ensure default branches' commits are protected from being deleted/rewritten.
 
@@ -8251,7 +8251,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-043`](../providers/scm.md#scm-043) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
+### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
 
 **Evidences:** [`1.1.6`](#ctrl-1-1-6) Ensure any change to code is signed.
 
@@ -8265,7 +8265,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-044`](../providers/scm.md#scm-044) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
+### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -8279,7 +8279,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-045`](../providers/scm.md#scm-045) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
+### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -8293,7 +8293,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-046`](../providers/scm.md#scm-046) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
+### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
 
 **Evidences:** [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
 
@@ -8307,7 +8307,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
 
-#### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
+### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -8317,7 +8317,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
+### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
 
 **Evidences:** [`2.4.2`](#ctrl-2-4-2) Ensure pipeline integrity, artifacts are signed by the pipeline, [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -8327,7 +8327,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
+### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -8337,7 +8337,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
+### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -8347,7 +8347,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
+### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
 
@@ -8357,7 +8357,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SSM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
+### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -8399,7 +8399,7 @@ $ aws ssm put-parameter \
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
+### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
 
@@ -8409,7 +8409,7 @@ $ aws ssm put-parameter \
 
 **Source:** [`SSM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `TAINT-001`: Untrusted input flows across step boundaries via step outputs <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-001 }
+### `TAINT-001`: Untrusted input flows across step boundaries via step outputs <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-001 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8425,7 +8425,7 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 **Source:** [`TAINT-001`](../providers/github.md#taint-001) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-002`: Untrusted input flows across jobs via ``jobs.<id>.outputs:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-002 }
+### `TAINT-002`: Untrusted input flows across jobs via ``jobs.<id>.outputs:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8441,7 +8441,7 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 **Source:** [`TAINT-002`](../providers/github.md#taint-002) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-003`: Untrusted input forwarded into reusable workflow ``with:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-003 }
+### `TAINT-003`: Untrusted input forwarded into reusable workflow ``with:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-003 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8457,7 +8457,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 
 **Source:** [`TAINT-003`](../providers/github.md#taint-003) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-004`: Untrusted input flows across jobs via dotenv artifact <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-004 }
+### `TAINT-004`: Untrusted input flows across jobs via dotenv artifact <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-004 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8473,7 +8473,7 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 **Source:** [`TAINT-004`](../providers/gitlab.md#taint-004) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
+### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8489,7 +8489,7 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 **Source:** [`TAINT-005`](../providers/buildkite.md#taint-005) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }
+### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8505,7 +8505,7 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 **Source:** [`TAINT-006`](../providers/tekton.md#taint-006) in the [Tekton provider](../providers/tekton.md).
 
-#### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }
+### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8601,7 +8601,7 @@ spec:
 
 **Source:** [`TAINT-007`](../providers/argo.md#taint-007) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `TAINT-008`: Untrusted input flows via GitLab ``extends:`` template inheritance <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-008 }
+### `TAINT-008`: Untrusted input flows via GitLab ``extends:`` template inheritance <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-008 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8617,7 +8617,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
+### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
 
 **Evidences:** [`1.3.4`](#ctrl-1-3-4) Ensure organization identity is required for contribution (no long-lived personal tokens), [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code.
 
@@ -8627,7 +8627,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
+### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -8637,7 +8637,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
+### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
 
 **Evidences:** [`2.1.6`](#ctrl-2-1-6) Ensure build workers have minimal network connectivity.
 
@@ -8647,7 +8647,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-003`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
+### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -8657,7 +8657,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
+### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -8667,7 +8667,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-003`: Tekton param interpolated unsafely in step script <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-003 }
+### `TKN-003`: Tekton param interpolated unsafely in step script <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-003 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 
@@ -8677,7 +8677,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-003`](../providers/tekton.md#tkn-003) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
+### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -8687,7 +8687,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-005`: Literal secret value in Tekton step env or param default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-005 }
+### `TKN-005`: Literal secret value in Tekton step env or param default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-005 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`2.3.4`](#ctrl-2-3-4) Ensure pipelines are scanned for secrets and sensitive data.
 
@@ -8699,7 +8699,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-005`](../providers/tekton.md#tkn-005) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-006`: Tekton run lacks an explicit timeout <span class="pg-sev pg-sev--low">LOW</span> { #detail-tkn-006 }
+### `TKN-006`: Tekton run lacks an explicit timeout <span class="pg-sev pg-sev--low">LOW</span> { #detail-tkn-006 }
 
 **Evidences:** [`2.2.2`](#ctrl-2-2-2) Ensure build workers are single-use.
 
@@ -8709,7 +8709,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-006`](../providers/tekton.md#tkn-006) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
+### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
 
@@ -8719,7 +8719,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-007`](../providers/tekton.md#tkn-007) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
+### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -8735,7 +8735,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
+### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked).
 
@@ -8745,7 +8745,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-009`](../providers/tekton.md#tkn-009) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
+### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
 
 **Evidences:** [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -8755,7 +8755,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-010`](../providers/tekton.md#tkn-010) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
+### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.4.1`](#ctrl-4-4-1) Ensure artifacts have provenance/SBOM metadata.
 
@@ -8765,7 +8765,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-011`](../providers/tekton.md#tkn-011) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
+### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
 
 **Evidences:** [`1.1.8`](#ctrl-1-1-8) Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA), [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
 
@@ -8775,7 +8775,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-012`](../providers/tekton.md#tkn-012) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
+### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened.
 
@@ -8789,7 +8789,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-013`](../providers/tekton.md#tkn-013) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
+### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
 
 **Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.5`](#ctrl-3-1-5) Ensure only trusted package managers and repositories are used.
 
@@ -8803,7 +8803,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-014`](../providers/tekton.md#tkn-014) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-015`: Workspace subPath interpolates a Task parameter (path traversal) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-015 }
+### `TKN-015`: Workspace subPath interpolates a Task parameter (path traversal) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-015 }
 
 **Evidences:** [`2.1.3`](#ctrl-2-1-3) Ensure the build environment is hardened, [`2.3.8`](#ctrl-2-3-8) Ensure pipeline configuration files are reviewed before execution.
 

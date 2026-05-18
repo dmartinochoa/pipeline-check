@@ -136,32 +136,43 @@ class GoatResult:
 # ── Manifest + per-goat IO ──────────────────────────────────────
 
 
-def _coerce_str_list(val: Any) -> list[str]:
+def _coerce_str_list(val: Any, *, field: str) -> list[str]:
     """Manifest fields like ``pipelines`` and ``args`` accept either
     a list or a single string. ``list(some_str)`` silently splits
     into characters, which would corrupt a scalar entry like
     ``pipelines: github`` without raising. Validate the shape
-    explicitly: wrap a string as a one-element list, pass a list
-    through with element-wise ``str()``, and treat anything else
-    as empty so a typo (e.g. a mapping) surfaces visibly later
-    rather than as a confusing pipeline_check usage error."""
+    explicitly: ``None`` is an explicit "field absent" signal,
+    a string is wrapped as a one-element list, a list passes
+    through with element-wise ``str()``. Anything else (mapping,
+    int, bool) is a manifest typo that should fail loudly so the
+    bench run aborts before subprocess time."""
+    if val is None:
+        return []
     if isinstance(val, str):
         return [val]
     if isinstance(val, list):
         return [str(x) for x in val]
-    return []
+    raise TypeError(
+        f"Manifest field {field!r} must be a string or list of "
+        f"strings, got {type(val).__name__}: {val!r}"
+    )
 
 
 def load_manifest(path: Path = MANIFEST) -> list[GoatSpec]:
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     out: list[GoatSpec] = []
     for entry in raw.get("goats", []):
+        slug = entry["slug"]
         out.append(GoatSpec(
-            slug=entry["slug"],
+            slug=slug,
             repo=entry["repo"],
             ref=str(entry.get("ref", "HEAD")),
-            pipelines=_coerce_str_list(entry.get("pipelines")),
-            extra_args=_coerce_str_list(entry.get("args")),
+            pipelines=_coerce_str_list(
+                entry.get("pipelines"), field=f"{slug}.pipelines",
+            ),
+            extra_args=_coerce_str_list(
+                entry.get("args"), field=f"{slug}.args",
+            ),
             description=str(entry.get("description", "")).strip(),
             skip=bool(entry.get("skip", False)),
             skip_reason=str(entry.get("skip_reason", "")).strip(),
@@ -402,10 +413,18 @@ def scan_goat(
     findings: list[dict[str, Any]] = []
     if non_jenkins:
         findings.extend(_run_scan(workdir, non_jenkins, extra))
-    for jf in _discover_files(workdir, "Jenkinsfile"):
+    jenkinsfiles = list(_discover_files(workdir, "Jenkinsfile"))
+    if not jenkinsfiles:
+        raise RuntimeError(
+            "Jenkins pipeline requested for "
+            f"{workdir} but no Jenkinsfile was found under the tree. "
+            "Either drop `jenkins` from the manifest pipelines: list "
+            "or pre-pin a specific file with --jenkinsfile-path."
+        )
+    for jf in jenkinsfiles:
         rel = jf.relative_to(workdir).as_posix()
         findings.extend(_run_scan(
-            workdir, ["jenkins"], ["--jenkinsfile-path", rel],
+            workdir, ["jenkins"], [*extra, "--jenkinsfile-path", rel],
         ))
     return findings
 
