@@ -277,6 +277,43 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `-000` degraded-mode discovery findings, secret-scanning posture
   per the existing carve-outs).
 
+- **Broadened SLSA Build Track to 80% catalog coverage, plus
+  GCB rule-numbering fix.** Cross-mapping pass, no new rule modules,
+  188 net-new entries. **Build.L3.NonFalsifiable** absorbs the
+  per-CI secret / cred / unpinned / untrusted-trigger surface
+  across CodeBuild (CB-001/05/06/08/09/10/11), CodePipeline (CP-04/
+  05/07), CircleCI (CC-005/09/13/18/19/22/26/29/30/31), Drone
+  (DR-001..011), and the GitHub Actions / GitLab / Bitbucket /
+  Azure DevOps / Jenkins long-lived-creds + deploy-gate + service-
+  image-unpinned + malicious-indicator gaps. The dep-supply-chain
+  pack (NPM-001..007/11, PYPI-001..006, MVN-001..007) lands on
+  L3.NonFalsifiable since each unpinned / non-registry /
+  compromised-version finding is a tenant-substitutable input.
+  **Build.L3.Isolated** absorbs **TAINT-001..008** (cross-step
+  influence on the build env), the Dockerfile env-bypass pack
+  (DF-005/12/21..30), TKN-013/15, ARGO-015, BK-15, GL-032/33,
+  ADO-030, JF-25/32/35, and the GCB tainted-substitution shell
+  pack. **L1.Provenance** picks up SIGN-001/002, LMB-001, CA-001,
+  ECR-005, JF-027 (archiveArtifacts fingerprint), HELM-007/010,
+  OCI-003/005, and the SBOM rule GCB-015. **L2.Signed** picks up
+  SCM-043 / SCM-044 (signed-commit posture). IAM extends to the
+  full IAM-001..008 NonFalsifiable surface. Terraform /
+  CloudFormation IaC-native rules (TF-001..003, CF-001..003)
+  land on L3.NonFalsifiable + L3.Isolated. **Bug fix:** the
+  existing GCB-008/009/014/015 mappings were inverted — the rule
+  IDs got renumbered at some point but the SLSA file's comments
+  + targets weren't updated. GCB-008 (vuln scanning) is no longer
+  mis-credited to L1.Provenance / L2.Signed; GCB-009 (signing) now
+  maps to L2.Signed; GCB-014 (logging disabled) is no longer
+  mis-mapped to L3.Isolated; GCB-015 (SBOM) now correctly maps
+  to L1.Provenance only; and the actual provenance rule GCB-017
+  is now mapped to [L1.Provenance, L2.Signed, L3.NonFalsifiable].
+  After: 413 mappings (was 225), all SLSA controls evidenced,
+  80% of the OWASP catalog. The 103 rules left unmapped are
+  scoped outside the Build track (vuln scanning, audit logs,
+  deploy env, AWS lifecycle hygiene, source-side SCM review
+  controls, container runtime hygiene, `-000` discovery findings).
+
 ## [1.0.5] - 2026-05-18
 
 ### Added
