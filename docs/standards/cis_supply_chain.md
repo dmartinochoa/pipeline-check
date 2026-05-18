@@ -24,7 +24,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`1.1.5`](#ctrl-1-1-5) | Ensure any change to code requires the review of additional strong authenticators | 18 | 7H · 9M · 2L |
 | [`1.1.6`](#ctrl-1-1-6) | Ensure any change to code is signed | 2 | 2M |
-| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 5 | 3M · 2L |
+| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 4 | 2M · 2L |
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 2 | 1M · 1L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 9 | 4H · 2M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 7 | 5H · 2M |
@@ -42,7 +42,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 21 | 18H · 2M · 1L |
 | [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 17 | 3H · 14M |
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 5 | 2C · 1H · 2M |
-| [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorisation | 1 | 1C |
+| [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 1 | 1C |
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 19 | 1H · 13M · 5L |
 | [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 10 | 3H · 6M · 1L |
 | [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 6 | 1H · 4M · 1L |
@@ -101,12 +101,11 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.1.7: Ensure any change to code is automatically scanned for risks (SAST) { #ctrl-1-1-7 }
 
-**Evidenced by 5 checks** across SCM.
+**Evidenced by 4 checks** across SCM.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
-| [`SCM-008`](#detail-scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-033`](#detail-scm-033) | Active ruleset doesn't require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-039`](#detail-scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-040`](#detail-scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
@@ -460,7 +459,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`S3-005`](#detail-s3-005) | Artifact bucket missing aws:SecureTransport deny | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-028`](#detail-scm-028) | Private repo allows forking | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 
-### 4.3.3: Ensure package registries use authentication and authorisation { #ctrl-4-3-3 }
+### 4.3.3: Ensure package registries use authentication and authorization { #ctrl-4-3-3 }
 
 **Evidenced by 1 check** across AWS.
 
@@ -1802,7 +1801,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
 
-**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorisation.
+**Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited, [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
 
 **How this is detected.** A wildcard-principal repo policy means anyone on the internet can pull images. Sometimes intentional (a publicly-distributed base image), but should be a deliberate exposure, typically via the ECR Public registry rather than a private repo with a public policy. The default for build-output images should never be public.
 
@@ -3030,7 +3029,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 #### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
 
-**Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators, [`1.1.7`](#ctrl-1-1-7) Ensure any change to code is automatically scanned for risks (SAST).
+**Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
 
 **How this is detected.** Reads ``required_status_checks.contexts`` (or the newer ``checks`` shape) from the branch protection payload. Fires when the field is missing or the contexts list is empty. Without required checks the merge gate degrades to human-only review; SCM-002 covers the review knob, this rule covers the automated-verification knob, and both should be on for high-trust default branches.
 

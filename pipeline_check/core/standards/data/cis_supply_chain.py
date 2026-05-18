@@ -39,7 +39,7 @@ STANDARD = Standard(
         # 4. Artifacts
         "4.1.1": "Ensure all artifacts on all releases are verified (signed, integrity-checked)",
         "4.2.1": "Ensure access to artifacts is limited",
-        "4.3.3": "Ensure package registries use authentication and authorisation",
+        "4.3.3": "Ensure package registries use authentication and authorization",
         "4.4.1": "Ensure artifacts have provenance/SBOM metadata",
         # 5. Deployment
         "5.1.4": "Ensure deployment configuration manifests are reviewed before apply",
@@ -262,7 +262,7 @@ STANDARD = Standard(
         "SCM-005":  ["1.1.8"],                      # Dependabot security updates off (SCA)
         "SCM-006":  ["1.1.6"],                      # signed commits not required
         "SCM-007":  ["1.1.17"],                     # force-push allowed
-        "SCM-008":  ["1.1.5", "1.1.7"],             # required status checks missing
+        "SCM-008":  ["1.1.5"],                      # required status checks missing (any CI gate, not SAST-specific)
         "SCM-009":  ["1.1.17"],                     # branch deletions allowed
         "SCM-010":  ["1.1.5"],                      # admin bypass allowed
         "SCM-011":  ["1.1.5"],                      # CODEOWNERS reviews not required

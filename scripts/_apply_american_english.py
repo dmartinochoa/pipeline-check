@@ -73,6 +73,7 @@ PAIRS = [
     ("authorise", "authorize"), ("authorised", "authorized"),
     ("authorises", "authorizes"), ("authorising", "authorizing"),
     ("unauthorised", "unauthorized"),
+    ("authorisation", "authorization"), ("authorisations", "authorizations"),
     ("rumour", "rumor"),
     ("serialise", "serialize"), ("serialised", "serialized"),
     ("signalled", "signaled"), ("signalling", "signaling"),

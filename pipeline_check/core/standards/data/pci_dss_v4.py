@@ -218,17 +218,18 @@ STANDARD = Standard(
         # two PCI requirements that demand authorized review before
         # code changes land. Access surfaces map to the 7.2.x family
         # (least privilege). Credential surfaces map to 8.2.1 (unique
-        # identifiers) and 8.2.2 (group/shared accounts). History
-        # protection maps to 10.3.2 (audit log integrity).
+        # identifiers) and 8.2.2 (group/shared accounts). 10.3.2
+        # (audit log integrity) is not used for git-history rewrites:
+        # commit history is not an audit log under PCI's definition.
         "SCM-001":  ["6.4.3", "6.5.1"],                  # default branch unprotected
         "SCM-002":  ["6.4.3", "6.5.1"],                  # required reviews missing
         "SCM-003":  ["6.3.1", "6.5.1"],                  # default code scanning disabled
         "SCM-004":  ["6.5.1", "8.2.1"],                  # secret scanning disabled
         "SCM-005":  ["6.3.1", "6.3.3"],                  # Dependabot security updates off
         "SCM-006":  ["8.2.1", "6.5.1"],                  # signed commits not required
-        "SCM-007":  ["6.4.3", "10.3.2"],                 # force-push allowed
+        "SCM-007":  ["6.4.3"],                           # force-push allowed
         "SCM-008":  ["6.4.3", "6.5.1"],                  # required status checks missing
-        "SCM-009":  ["6.4.3", "10.3.2"],                 # branch deletions allowed
+        "SCM-009":  ["6.4.3"],                           # branch deletions allowed
         "SCM-010":  ["7.2.1", "6.4.3"],                  # admin bypass allowed
         "SCM-011":  ["6.4.3"],                           # CODEOWNERS reviews not required
         "SCM-012":  ["6.4.3"],                           # stale reviews not dismissed
@@ -255,11 +256,11 @@ STANDARD = Standard(
         "SCM-031":  ["6.4.3"],                           # auto-merge enabled
         "SCM-032":  ["6.4.3"],                           # ruleset lacks PR review
         "SCM-033":  ["6.4.3", "6.5.1"],                  # ruleset lacks status_checks
-        "SCM-034":  ["6.4.3", "10.3.2"],                 # ruleset allows force_push
-        "SCM-035":  ["6.4.3", "10.3.2"],                 # ruleset allows deletion
+        "SCM-034":  ["6.4.3"],                           # ruleset allows force_push
+        "SCM-035":  ["6.4.3"],                           # ruleset allows deletion
         "SCM-036":  ["8.2.1", "6.5.1"],                  # ruleset lacks signed_commits
         "SCM-037":  ["6.4.3"],                           # ruleset stale-review dismissal
-        "SCM-038":  ["6.4.3", "10.3.2"],                 # ruleset lacks linear_history
+        "SCM-038":  ["6.4.3"],                           # ruleset lacks linear_history
         "SCM-039":  ["6.3.1", "6.4.3"],                  # ruleset lacks required_workflows
         "SCM-040":  ["6.3.1"],                           # ruleset lacks code_scanning gate
         "SCM-041":  ["6.4.3", "6.5.1"],                  # ruleset lacks deployment-env gate

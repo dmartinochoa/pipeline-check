@@ -387,7 +387,7 @@ can witness.
 
 The federal control catalog. The scanner evidences the AC, AU, CM,
 IA, SI, and SR family controls whose CI/CD-side state is visible
-in pipeline configuration. Use this page when an authorisation
+in pipeline configuration. Use this page when an authorization
 package asks for 800-53 control evidence; pair with NIST SSDF for
 SSDLC vocabulary.
 """,

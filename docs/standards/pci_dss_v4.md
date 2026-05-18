@@ -35,7 +35,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 25 | 9C · 10H · 5M · 1L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 8 | 1C · 3H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 5 | 1H · 2M · 2L |
-| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 25 | 1C · 6H · 15M · 3L |
+| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 20 | 1C · 4H · 14M · 1L |
 | [`10.3.3`](#ctrl-10-3-3) | Audit logs are promptly backed up to a centralized log server | 1 | 1L |
 
 ## Filter at runtime
@@ -382,7 +382,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### 10.3.2: Audit logs are protected from unauthorized modifications { #ctrl-10-3-2 }
 
-**Evidenced by 25 checks** across 9 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, Dockerfile, Helm, SCM, Tekton).
+**Evidenced by 20 checks** across 9 providers (AWS, Argo Workflows, Buildkite, CircleCI, Cloud Build, Dockerfile, Helm, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -403,12 +403,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`S3-002`](#detail-s3-002) | Artifact bucket server-side encryption not configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`S3-003`](#detail-s3-003) | Artifact bucket versioning not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`S3-005`](#detail-s3-005) | Artifact bucket missing aws:SecureTransport deny | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
-| [`SCM-007`](#detail-scm-007) | Default branch protection allows force-pushes | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
-| [`SCM-009`](#detail-scm-009) | Default branch protection allows branch deletion | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
-| [`SCM-034`](#detail-scm-034) | Active ruleset doesn't block force-push | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
-| [`SCM-035`](#detail-scm-035) | Active ruleset doesn't block branch deletion | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
-| [`SCM-038`](#detail-scm-038) | Active ruleset doesn't require linear history | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-009`](#detail-tkn-009) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-011`](#detail-tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
@@ -2564,7 +2559,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 #### `SCM-007`: Default branch protection allows force-pushes <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-007 }
 
-**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
 
 **How this is detected.** Reads ``allow_force_pushes.enabled`` from the branch protection payload. Fires when the value is True. The complementary deletion-protection knob is covered by ``SCM-009``; this rule focuses on the rewrite-history attack class because force-push is the primitive every post-incident rewrite uses to clean up after itself.
 
@@ -2589,7 +2584,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 #### `SCM-009`: Default branch protection allows branch deletion <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-009 }
 
-**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
 
 **How this is detected.** Reads ``allow_deletions.enabled`` from the branch protection payload. Fires when the value is True. Pairs with SCM-007 (force-push allowed) — the two flags together cover the complete rewrite-history attack class.
 
@@ -3001,7 +2996,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 #### `SCM-034`: Active ruleset doesn't block force-push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-034 }
 
-**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
 
 **How this is detected.** For every active ruleset, looks for an entry in the merged ``rules`` array with ``type: "non_fast_forward"``. Presence of the rule means force-pushes are blocked on the refs the ruleset targets. Passes silently when no rulesets are configured (legacy SCM-007 covers the gap).
 
@@ -3015,7 +3010,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 #### `SCM-035`: Active ruleset doesn't block branch deletion <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-035 }
 
-**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
 
 **How this is detected.** For every active ruleset, looks for an entry in the merged ``rules`` array with ``type: "deletion"``. Presence of the rule means deletion is blocked. Passes silently when no rulesets are configured (legacy SCM-009 covers the gap).
 
@@ -3059,7 +3054,7 @@ The ruleset analog of SCM-012 (legacy branch-protection stale-review dismissal).
 
 #### `SCM-038`: Active ruleset doesn't require linear history <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-038 }
 
-**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+**Evidences:** [`6.4.3`](#ctrl-6-4-3) Changes to systems are managed via documented change control.
 
 **How this is detected.** For every active ruleset, looks for an entry in the merged ``rules`` array with ``type: "required_linear_history"``. Presence means merge commits to the targeted refs are rejected (only fast-forward / rebase / squash integration is allowed). Passes silently when no rulesets are configured — linear history has no legacy branch-protection analog, so absence of rulesets means the gate simply doesn't exist (not that it's enforced elsewhere).
 

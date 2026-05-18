@@ -118,6 +118,8 @@ PAIRS: list[tuple[str, str]] = [
     ("authorises", "authorizes"),
     ("authorising", "authorizing"),
     ("unauthorised", "unauthorized"),
+    ("authorisation", "authorization"),
+    ("authorisations", "authorizations"),
     ("rumour", "rumor"),
     ("serialise", "serialize"),
     ("serialised", "serialized"),
