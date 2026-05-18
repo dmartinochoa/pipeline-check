@@ -198,12 +198,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   shapes → 1.5.1 + 2.3.4, CodeBuild VPC public subnet → 2.1.6).
   SCM-026 (webhook insecure transport / no HMAC) is reversed from
   its previous unmapped state and lands at 2.4.3 (unauthenticated
-  pipeline-exec trigger surface). After: 497 mappings (was 278),
-  all 25 controls evidenced, 96% of the OWASP catalog mapped. The
-  19 rules that remain unmapped are scoped outside the supply-chain
-  surface (the `-000` degraded-mode discovery findings, container
-  runtime hygiene DF-007 / OCI-006, and the AWS rotation / lifecycle
-  hygiene rules KMS-001 / SM-001).
+  pipeline-exec trigger surface). The 15 `-000` degraded-mode
+  discovery findings (CB-000, CP-000, CD-000, ECR-000, IAM-000,
+  PBAC-000, CT-000, CWL-000, EB-000, CA-000, CCM-000, LMB-000,
+  KMS-000, SM-000, SSM-000) land at 2.3.7 (pipeline audit logs) /
+  5.2.3 (deploy env audit), mirroring the OWASP CICD-SEC-10 +
+  ESF-C-AUDIT precedent — when the scanner cannot enumerate a
+  provider surface the visibility gap surfaces as an unobservable
+  pipeline / deployment audit trail, the same conceptual scope as
+  the CIS audit sub-controls. After: 512 mappings (was 278), all
+  25 controls evidenced, 99% of the OWASP catalog mapped. The 4
+  rules left unmapped are scoped outside the supply-chain surface
+  (DF-007 / OCI-006 container-runtime hygiene, KMS-001 / SM-001
+  key + secret rotation lifecycle).
 
 ## [1.0.5] - 2026-05-18
 

@@ -47,6 +47,30 @@ STANDARD = Standard(
         "5.2.3": "Ensure deployment environment activity is audited",
     },
     mappings={
+        # ── Degraded-mode findings (API access failures) ──────────
+        # When the scanner cannot enumerate a provider surface (IAM
+        # gap, transient API failure, surface absent), the rule
+        # emits a `-000` finding recording the visibility gap. CIS
+        # SSCS doesn't have a "scanner-coverage" control, but the
+        # gap surfaces as an unobservable pipeline / deployment
+        # audit trail — the same conceptual scope as 2.3.7 (pipeline
+        # audit logs) and 5.2.3 (deployment env audit). Mirrors the
+        # OWASP CICD-SEC-10 and ESF-C-AUDIT precedent.
+        "CB-000":   ["2.3.7"],                           # CodeBuild surface unobservable
+        "CP-000":   ["2.3.7"],                           # CodePipeline surface unobservable
+        "CD-000":   ["5.2.3"],                           # CodeDeploy (deploy env) unobservable
+        "ECR-000":  ["2.3.7"],                           # ECR registry surface unobservable
+        "IAM-000":  ["2.3.7"],                           # IAM (pipeline access) unobservable
+        "PBAC-000": ["2.3.7"],                           # PBAC boundary surface unobservable
+        "CT-000":   ["2.3.7", "5.2.3"],                  # CloudTrail meta-audit unobservable
+        "CWL-000":  ["2.3.7"],                           # CloudWatch Logs unobservable
+        "EB-000":   ["2.3.7"],                           # EventBridge pipeline-event unobservable
+        "CA-000":   ["2.3.7"],                           # CodeArtifact registry unobservable
+        "CCM-000":  ["2.3.7"],                           # CodeCommit source-audit unobservable
+        "LMB-000":  ["5.2.3"],                           # Lambda (deploy target) unobservable
+        "KMS-000":  ["2.3.7"],                           # KMS (secret store) unobservable
+        "SM-000":   ["2.3.7"],                           # Secrets Manager unobservable
+        "SSM-000":  ["2.3.7"],                           # SSM Parameter Store unobservable
         # CodeBuild
         "CB-001":   ["1.5.1", "2.3.4", "2.4.3"],         # plaintext secrets
         "CB-002":   ["2.1.3", "2.1.6"],                  # privileged mode / host network

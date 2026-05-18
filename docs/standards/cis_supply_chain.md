@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 488
+- **Distinct checks evidencing this standard:** 503
 - **Of those, autofixable with `--fix`:** 97
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -34,7 +34,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 14 | 2C · 7H · 5M |
 | [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 16 | 12M · 4L |
 | [`2.3.4`](#ctrl-2-3-4) | Ensure pipelines are scanned for secrets and sensitive data | 30 | 19C · 9H · 1M · 1L |
-| [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 13 | 2H · 6M · 5L |
+| [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 26 | 2H · 6M · 5L · 13I |
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 54 | 12C · 29H · 10M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 16 | 5H · 11M |
 | [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 35 | 8C · 16H · 11M |
@@ -46,7 +46,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 38 | 5H · 24M · 9L |
 | [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 18 | 4H · 13M · 1L |
 | [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 18 | 7H · 10M · 1L |
-| [`5.2.3`](#ctrl-5-2-3) | Ensure deployment environment activity is audited | 6 | 1H · 3M · 2L |
+| [`5.2.3`](#ctrl-5-2-3) | Ensure deployment environment activity is audited | 9 | 1H · 3M · 2L · 3I |
 
 ## Filter at runtime
 
@@ -558,23 +558,36 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.3.7: Ensure pipeline steps produce audit logs { #ctrl-2-3-7 }
 
-**Evidenced by 13 checks** across 4 providers (AWS, CircleCI, Cloud Build, Jenkins).
+**Evidenced by 26 checks** across 4 providers (AWS, CircleCI, Cloud Build, Jenkins).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CA-000`](#detail-ca-000) | CodeArtifact API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`CB-000`](#detail-cb-000) | CodeBuild API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CB-003`](#detail-cb-003) | Build logging not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CC-011`](#detail-cc-011) | No store_test_results step (test results not archived) | <span class="pg-sev pg-sev--low">LOW</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CCM-000`](#detail-ccm-000) | CodeCommit API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`CP-000`](#detail-cp-000) | CodePipeline API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`CT-000`](#detail-ct-000) | CloudTrail API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`CWL-000`](#detail-cwl-000) | CloudWatch Logs API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CWL-001`](#detail-cwl-001) | CodeBuild log group has no retention policy | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`CWL-002`](#detail-cwl-002) | CodeBuild log group not KMS-encrypted | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`EB-000`](#detail-eb-000) | EventBridge API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-000`](#detail-ecr-000) | ECR API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-006`](#detail-gcb-006) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-017`](#detail-gcb-017) | Image-producing build does not request SLSA provenance | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
+| [`IAM-000`](#detail-iam-000) | IAM API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`JF-011`](#detail-jf-011) | Pipeline has no `buildDiscarder` retention policy | <span class="pg-sev pg-sev--low">LOW</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`KMS-000`](#detail-kms-000) | KMS API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`PBAC-000`](#detail-pbac-000) | PBAC enumeration failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`SM-000`](#detail-sm-000) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
+| [`SSM-000`](#detail-ssm-000) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 
 ### 2.3.8: Ensure pipeline configuration files are reviewed before execution { #ctrl-2-3-8 }
 
@@ -1002,15 +1015,18 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.2.3: Ensure deployment environment activity is audited { #ctrl-5-2-3 }
 
-**Evidenced by 6 checks** across AWS.
+**Evidenced by 9 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CD-000`](#detail-cd-000) | CodeDeploy API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-000`](#detail-ct-000) | CloudTrail API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`LMB-000`](#detail-lmb-000) | Lambda API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 
 ## Check details
@@ -2579,6 +2595,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
+#### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CA-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
 
 **Evidences:** [`4.1.1`](#ctrl-4-1-1) Ensure all artifacts on all releases are verified (signed, integrity-checked), [`4.3.3`](#ctrl-4-3-3) Ensure package registries use authentication and authorization.
@@ -2618,6 +2644,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** Scope Allow statements to specific ``codeartifact:`` actions (e.g. ``codeartifact:ReadFromRepository``) and to specific package-group ARNs. Wildcard action + wildcard resource is the classic over-broad grant that lets a consumer also publish.
 
 **Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
 
@@ -3129,6 +3165,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-031`](../providers/circleci.md#cc-031) in the [CircleCI provider](../providers/circleci.md).
 
+#### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CCM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
 
 **Evidences:** [`1.1.5`](#ctrl-1-1-5) Ensure any change to code requires the review of additional strong authenticators.
@@ -3158,6 +3204,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** Move trigger targets into the same account as the repository or explicitly document the cross-account relationship. Cross-account triggers extend the blast radius of a repository compromise to whatever the target ARN can do.
 
 **Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
+
+**Evidences:** [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CD-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
 
@@ -3218,6 +3274,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
+
+#### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CP-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
 
@@ -3283,6 +3349,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CT-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs, [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
@@ -3322,6 +3398,16 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** Create a CloudWatch alarm on the ``AWS/CodeBuild`` namespace ``FailedBuilds`` metric (aggregated or per-project). Without one, repeated build failures during a compromise, or a runaway fork-PR build, won't reach on-call.
 
 **Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`CWL-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
 
@@ -3995,6 +4081,16 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`DR-011`](../providers/drone.md#dr-011) in the [Drone CI provider](../providers/drone.md).
 
+#### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`EB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
 **Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
@@ -4014,6 +4110,16 @@ Detection is value-only and case-sensitive against the documented variable names
 **Recommendation.** Replace wildcard target ARNs with specific resource ARNs. EventBridge targets with ``*`` route events to any resource that matches the prefix, frequently triggering unintended Lambda invocations or SNS sends.
 
 **Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`ECR-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
@@ -6401,6 +6507,16 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-010`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
+#### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`IAM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
 
 **Evidences:** [`2.4.3`](#ctrl-2-4-3) Ensure access to the pipeline execution environment is restricted.
@@ -6968,6 +7084,16 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
+#### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`KMS-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
@@ -6977,6 +7103,16 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Replace ``kms:*`` grants with specific actions needed by the caller (e.g. ``kms:Decrypt``, ``kms:GenerateDataKey``). Key-policy wildcard grants let any holder of the principal re-key, schedule deletion, or export material at will.
 
 **Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
+
+**Evidences:** [`5.2.3`](#ctrl-5-2-3) Ensure deployment environment activity is audited.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`LMB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
 
@@ -7280,6 +7416,16 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 - Test fixtures and intentionally-corrupt CTF images sometimes use degraded hashes for pedagogical reasons. Suppress on the specific path with an ignore-file when this is the deliberate shape.
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
+
+#### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`PBAC-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
 
@@ -8181,6 +8327,16 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`SM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
 
 **Evidences:** [`4.2.1`](#ctrl-4-2-1) Ensure access to artifacts is limited.
@@ -8190,6 +8346,16 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 **Recommendation.** Remove Allow statements whose Principal is ``*`` from every Secrets Manager resource policy, or scope them with a ``Condition`` restricting the source account/org (``aws:PrincipalOrgID``). A wildcard-principal policy allows any AWS account to call ``GetSecretValue`` on the secret.
 
 **Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
+
+**Evidences:** [`2.3.7`](#ctrl-2-3-7) Ensure pipeline steps produce audit logs.
+
+**How this is detected.** See [`AWS` provider documentation](../providers/aws.md) for the rule's detection mechanism.
+
+**Recommendation.** See [`AWS` provider documentation](../providers/aws.md) for the recommended remediation.
+
+**Source:** [`SSM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
 
