@@ -9,6 +9,7 @@ YAML loaders and the individual check implementations.
 """
 from __future__ import annotations
 
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -53,12 +54,12 @@ def _finding_map(findings):
 
 class TestGitHubFixtures:
     EXPECTED_IDS = (
-        {f"GHA-{i:03d}" for i in range(1, 56)}
+        {f"GHA-{i:03d}" for i in range(1, 59)}
         | {"TAINT-001", "TAINT-002", "TAINT-003"}
     )
 
     def _scan(self, filename: str):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         from pipeline_check.core.checks.github._action_reputation import (
             ActionRepoMetadata,
@@ -81,8 +82,8 @@ class TestGitHubFixtures:
         # date so it passes.
         is_secure = filename.startswith("secure")
         if is_secure:
-            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=1000)
-            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=180)
+            repo_now = datetime.now(tz=UTC) - timedelta(days=1000)
+            ref_now = datetime.now(tz=UTC) - timedelta(days=180)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=42,
@@ -93,8 +94,8 @@ class TestGitHubFixtures:
                 owner_type="Organization",
             )
         else:
-            repo_now = datetime.now(tz=timezone.utc) - timedelta(days=10)
-            ref_now = datetime.now(tz=timezone.utc) - timedelta(days=1)
+            repo_now = datetime.now(tz=UTC) - timedelta(days=10)
+            ref_now = datetime.now(tz=UTC) - timedelta(days=1)
             template = ActionRepoMetadata(
                 owner="x", repo="y",
                 contributor_count=1,
@@ -505,7 +506,7 @@ class TestArgoFixtures:
 
 @pytest.mark.parametrize("provider,fixture,loader,checker,expected", [
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
-     {f"GHA-{i:03d}" for i in range(1, 56)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
+     {f"GHA-{i:03d}" for i in range(1, 59)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
      {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",

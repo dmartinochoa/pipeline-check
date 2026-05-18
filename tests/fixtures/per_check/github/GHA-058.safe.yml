@@ -1,0 +1,9 @@
+name: agentic
+on: push
+jobs:
+  agentic:
+    runs-on: ubuntu-latest
+    environment: agentic-review
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: claude --allowedTools "Read,Grep" -p "summarize the readme"

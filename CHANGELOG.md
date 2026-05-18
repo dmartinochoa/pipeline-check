@@ -12,6 +12,79 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Supply-chain worm detection pack (GHA-056..058, AC-028..029).**
+  New GitHub Actions rules targeting the post-`tj-actions` wave of
+  worm-class attacks. `GHA-056` flags literal IOC strings from the
+  Sept 2025 Shai-Hulud npm worm and the Aug 2025 Nx `s1ngularity`
+  compromise (the `shai-hulud-workflow.yml` filename, the worm's
+  webhook.site UUID, repo names matching `Shai-Hulud` /
+  `Shai-Hulud Migration` / `s1ngularity-repository`), backed by a
+  new curated `_worm_indicators.py` registry mirroring the existing
+  `_compromised_actions.py` shape. `GHA-057` flags secret-scanner
+  output (TruffleHog, gitleaks) piped to network egress or invoked
+  on untrusted triggers (`pull_request_target`, `issue_comment`,
+  `workflow_run`), the harvest-leg primitive Shai-Hulud's postinstall
+  used. `GHA-058` flags agentic CLIs (`claude`, `gemini`, `q`,
+  `cursor-agent`, `aider`, `openhands`, `goose`) invoked with
+  permission-bypass flags (`--dangerously-skip-permissions`,
+  `--yolo`, `--trust-all-tools`, `--allowedTools '*'`), the
+  s1ngularity follow-up vector. `AC-028` correlates `NPM-004`
+  (install-time lifecycle scripts) with `GHA-048` (workflow
+  self-mutation) or `GHA-049` (cross-repo push) — the co-location
+  is the Shai-Hulud propagation topology. `AC-029` correlates an
+  attacker-influenced trigger (GHA-002 / GHA-009 / GHA-013) with a
+  long-lived publish credential (GHA-050 / GHA-005) and an
+  unguarded dep-install path (GHA-021 / GHA-029) — the lane both
+  the Ultralytics PyPI cache-poison (Dec 2024) and the Nx
+  s1ngularity compromise ran through.
+
+- **Compromised-package registry refresh (NPM-006, PYPI-006).**
+  `_compromised_packages.py` for both ecosystems now carries the
+  2023–2025 incident wave: Ledger Connect Kit 1.1.5–1.1.7 (Dec 2023),
+  Lottie Player 2.0.5–2.0.7 (Oct 2024), `@rspack/core` /
+  `@rspack/cli` / `vant` 2.x–4.x (Dec 2024), `@solana/web3.js`
+  1.95.6–1.95.7 (CVE-2024-54134), Ultralytics 8.3.41–8.3.46
+  (cache-poisoned PyPI release, Dec 2024), the `eslint-config-prettier`
+  CVE-2025-54313 family (`eslint-plugin-prettier`, `synckit`,
+  `@pkgr/core`, `napi-postinstall`), `nx` 20.9–21.8 (s1ngularity,
+  Aug 2025), and a curated subset of the Shai-Hulud Sept 2025
+  affected list (`@ctrl/*`, `@crowdstrike/*`, `ngx-bootstrap`,
+  `rxnt-*`). Operators wanting the long tail of Shai-Hulud IOCs
+  should cross-reference the Microsoft advisory cited in each entry.
+
+- **Exfil-channel IOC refresh (`_malicious.py`).** GHA-027's
+  exfil-channel pattern set now covers ngrok subdomains
+  (`*.ngrok.io`, `*.ngrok-free.app`, `*.ngrok.app`), Cloudflare
+  Quick Tunnels (`*.trycloudflare.com`), serveo SSH tunnels
+  (`*.serveo.net`), pipedream / requestbin / requestcatcher
+  collectors, and a wider secondary paste-site list (`dpaste.com`,
+  `0bin.net`, `ghostbin.co`, `paste.bingner.com`, `hastebin.com`,
+  `paste.rs`, `controlc.com`, `justpaste.it`).
+
+- **Maven package provider (`--pipeline maven`).** Static analysis of
+  `pom.xml` and `settings.xml` mirroring the npm / pypi pattern: seven
+  rules covering floating Maven version ranges (`[1.0,2.0)`, `LATEST`,
+  `RELEASE`), mutable `-SNAPSHOT` dependencies, plaintext-HTTP
+  repository URLs, dependencies that omit `<version>`, lax
+  `<checksumPolicy>` on non-Central repositories, known-compromised
+  Maven Central versions (curated registry seeded with Log4Shell /
+  Spring4Shell / Text4Shell), and `<settings.xml>` `<mirrorOf>*` /
+  `external:*` wildcard mirrors. Property substitution (`${...}`) is
+  resolved against the POM's `<properties>` block before each rule
+  evaluates. `<dependencyManagement>` entries are surfaced separately
+  so version-management blocks don't trigger consumption-side rules.
+  Brings the provider count to 22. Adds `--maven-path` and pom.xml
+  auto-detection.
+
+- **CIS GitHub Benchmark standard (`cis_github`).** Platform-side
+  posture mapping for a single GitHub org or repo, sections 1.1
+  (Code Changes), 1.4 (Third-Party), and 1.5 (Code Risks). Evidenced
+  directly by the existing `SCM-*` rule pack via the GitHub REST API,
+  plus a representative slice of `GHA-*` workflow rules anchoring
+  1.5.2 (CI/CD pipeline instructions). Adds `--standard cis_github`
+  filtering and a generated `docs/standards/cis_github.md` page.
+  Brings the standards count to 15.
+
 - **Smart `pipeline_check init`.** ``init`` now runs one scan against
   whatever pipeline it auto-detects, writes
   ``.pipeline-check-baseline.json`` capturing the current failing
@@ -555,6 +628,74 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
     are the standard loader-hijack escalation primitive.
 
 ### Changed
+
+- **Broadened PCI DSS v4.0 to full coverage.** Cross-mapping pass:
+  no new rule modules, only mapping changes plus 31 net-new entries
+  for AWS rules registered but not yet attached to a PCI family.
+  Fills **7.2.2** (job classification) by cross-mapping
+  PBAC-002 / TKN-007 / ARGO-003 / GCB-013 / GCB-020 (default /
+  shared service-account identities) plus CCM-001 (no approval
+  rule template) as the change-control surface. Lifts **10.3.3**
+  (centralized log backup) off single-rule status with CT-001/003
+  (trail = centralized destination) and CWL-001 (retention = backup
+  window). New entries also fill Req 10.x / 7.x / 8.x with CT, CWL,
+  CW, EB, IAM-007/008, KMS-002, LMB, SIGN, SM, SSM, CA, CCM,
+  ECR-006/007, PBAC-003/005. After: 13/13 controls covered, 0 thin,
+  227 mappings (was 196).
+
+- **Broadened NIST CSF 2.0 mappings on thin Detect / Respond /
+  Recover controls.** No new rule modules; cross-maps existing rules
+  to subcategories the registry already had signal for. **DE.CM-06**
+  (external-provider monitoring) picks up ECR-006 pull-through
+  upstream, CCM-003 cross-account trigger, and SCM-026 webhook.
+  **DE.AE-03** (multi-source correlation) picks up CT-001 / CT-003
+  multi-region trail and SCM-016 private vuln-reporting intake.
+  **RS.MA-01** (incident response) picks up CW-001 alarm and EB-001
+  event rule as the trigger surfaces. **RC.RP-01** (recovery) picks
+  up ECR-002 (mutable tags break recovery-by-digest). The GV.SC-08
+  (supplier incident planning) gap is documented inline; the control
+  is contractual / process and has no manifest signal to evidence
+  against.
+
+- **Broadened CIS AWS Foundations mappings on thin controls.** No
+  new rule modules; cross-maps four existing rules. **1.16**
+  (over-broad principal) picks up CCM-003 cross-account triggers
+  and EB-002 wildcard EventBridge targets — the same admin-privilege
+  shape the control calls out for IAM. **4.16** (Security Hub
+  posture) picks up CW-001 CodeBuild failure alarms and EB-001
+  pipeline-failure events, mirroring the existing ECR-scanning
+  mapping pattern. The two uncovered controls (1.17 support role,
+  4.3 root-account alarm) are documented inline so future
+  contributors know they need net-new rules, not mappings.
+
+- **Broadened CIS SSCS / Kubernetes / GitHub control coverage.**
+  Cross-mapping pass; only mapping changes plus a small set of new
+  entries for rules already in the registry but absent from each
+  standard's table.
+  - **CIS SSCS**: 220 → 278 mappings. 4.3.3, 1.1.6, 1.1.8, 1.5.1,
+    2.4.2, 4.4.1, 5.2.x audit, and 1.3.4 long-lived tokens
+    broadened. SCM-030 bypass also evidences signing. New OCI /
+    ATTEST / CT / CWL / SIGN / LMB / CA / EB entries fill
+    artifact-provenance and audit-logging surfaces.
+  - **CIS Kubernetes**: filled 5.1.4 (pod-create) and 5.7.1
+    (namespace boundaries) — the two previously uncovered controls.
+    RBAC broadening: K8S-020 / 021 / 042 now evidence the
+    wildcard / pod-create / bind+impersonate cluster of 5.1.x. The
+    SecurityContext umbrella 5.7.3 now covers every
+    securityContext-field rule.
+  - **CIS GitHub**: thin-control count 19 → 15. SCM-030 bypass now
+    evidences every ruleset-enforced control (signing, linear
+    history, admin enforcement, force-push, deletion). CODEOWNERS
+    pair (SCM-011 ↔ SCM-017) cross-coupled. SCM-008 strict status
+    checks also evidence the "branches up to date" knob.
+
+- **GHA-044 now detects `bun i` and `deno install`.** The
+  Direct-PPE rule already caught `bun install`; this extends it to
+  the documented `bun i` shorthand and Deno 2.x's `deno install`,
+  which resolves project deps from `deno.json` / `package.json` and
+  runs npm lifecycle hooks when `--allow-scripts` is set. Mirrors
+  the existing `npm run lint` exemption: `bun run` and `deno task`
+  target named scripts, not install-time hooks.
 
 - **Added SCM coverage to PCI DSS v4 and SLSA.** PCI DSS gets
   the full SCM range (40 rules); SLSA gets a narrow selection

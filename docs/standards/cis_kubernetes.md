@@ -14,9 +14,9 @@ controls require live cluster access and are out of scope.
 ## At a glance
 
 - **Controls in this standard:** 24
-- **Controls evidenced by at least one check:** 22 / 24
-- **Distinct checks evidencing this standard:** 31
-- **Of those, autofixable with `--fix`:** 11
+- **Controls evidenced by at least one check:** 24 / 24
+- **Distinct checks evidencing this standard:** 35
+- **Of those, autofixable with `--fix`:** 12
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
@@ -26,13 +26,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`5.1.1`](#ctrl-5-1-1) | Ensure that the cluster-admin role is only used where required | 1 | 1C |
-| [`5.1.2`](#ctrl-5-1-2) | Minimize access to secrets | 2 | 1C · 1H |
-| [`5.1.3`](#ctrl-5-1-3) | Minimize wildcard use in Roles and ClusterRoles | 1 | 1H |
-| [`5.1.4`](#ctrl-5-1-4) | Minimize access to create pods | 0 | — |
+| [`5.1.1`](#ctrl-5-1-1) | Ensure that the cluster-admin role is only used where required | 2 | 2C |
+| [`5.1.2`](#ctrl-5-1-2) | Minimize access to secrets | 4 | 2C · 2H |
+| [`5.1.3`](#ctrl-5-1-3) | Minimize wildcard use in Roles and ClusterRoles | 3 | 2C · 1H |
+| [`5.1.4`](#ctrl-5-1-4) | Minimize access to create pods | 3 | 2C · 1H |
 | [`5.1.5`](#ctrl-5-1-5) | Ensure that default service accounts are not actively used | 2 | 1H · 1M |
 | [`5.1.6`](#ctrl-5-1-6) | Ensure that Service Account Tokens are only mounted where necessary | 3 | 3M |
-| [`5.1.8`](#ctrl-5-1-8) | Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster | 1 | 1C |
+| [`5.1.8`](#ctrl-5-1-8) | Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster | 3 | 2C · 1H |
 | [`5.2.2`](#ctrl-5-2-2) | Minimize the admission of privileged containers | 1 | 1C |
 | [`5.2.3`](#ctrl-5-2-3) | Minimize the admission of containers wishing to share the host process ID namespace | 1 | 1H |
 | [`5.2.4`](#ctrl-5-2-4) | Minimize the admission of containers wishing to share the host IPC namespace | 1 | 1H |
@@ -45,10 +45,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`5.2.13`](#ctrl-5-2-13) | Minimize the admission of containers which use HostPorts | 2 | 2M |
 | [`5.3.2`](#ctrl-5-3-2) | Ensure that all Namespaces have NetworkPolicies defined | 2 | 2M |
 | [`5.4.1`](#ctrl-5-4-1) | Prefer using Secrets as files over Secrets as environment variables | 1 | 1C |
-| [`5.4.2`](#ctrl-5-4-2) | Consider external secret storage | 2 | 1C · 1H |
-| [`5.7.1`](#ctrl-5-7-1) | Create administrative boundaries between resources using namespaces | 0 | — |
+| [`5.4.2`](#ctrl-5-4-2) | Consider external secret storage | 3 | 2C · 1H |
+| [`5.7.1`](#ctrl-5-7-1) | Create administrative boundaries between resources using namespaces | 6 | 3H · 1M · 2L |
 | [`5.7.2`](#ctrl-5-7-2) | Ensure that the seccomp profile is set to docker/default in your Pod definitions | 1 | 1M |
-| [`5.7.3`](#ctrl-5-7-3) | Apply SecurityContext to your Pods and Containers | 5 | 2H · 2M · 1L |
+| [`5.7.3`](#ctrl-5-7-3) | Apply SecurityContext to your Pods and Containers | 11 | 1C · 6H · 3M · 1L |
 | [`5.7.4`](#ctrl-5-7-4) | The default namespace should not be used | 1 | 1L |
 
 ## Filter at runtime
@@ -70,32 +70,43 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 
 ### 5.1.1: Ensure that the cluster-admin role is only used where required { #ctrl-5-1-1 }
 
-**Evidenced by 1 check** across Kubernetes.
-
-| Check | Title | Severity | Provider | Fix |
-|-------|-------|----------|----------|-----|
-| [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-
-### 5.1.2: Minimize access to secrets { #ctrl-5-1-2 }
-
 **Evidenced by 2 checks** across Kubernetes.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
-| [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
-| [`K8S-037`](#detail-k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
-### 5.1.3: Minimize wildcard use in Roles and ClusterRoles { #ctrl-5-1-3 }
+### 5.1.2: Minimize access to secrets { #ctrl-5-1-2 }
 
-**Evidenced by 1 check** across Kubernetes.
+**Evidenced by 4 checks** across Kubernetes.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-037`](#detail-k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
+
+### 5.1.3: Minimize wildcard use in Roles and ClusterRoles { #ctrl-5-1-3 }
+
+**Evidenced by 3 checks** across Kubernetes.
+
+| Check | Title | Severity | Provider | Fix |
+|-------|-------|----------|----------|-----|
+| [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.1.4: Minimize access to create pods { #ctrl-5-1-4 }
 
-_No checks in this scanner currently evidence this control. Open an issue if your team would value coverage._
+**Evidenced by 3 checks** across Kubernetes.
+
+| Check | Title | Severity | Provider | Fix |
+|-------|-------|----------|----------|-----|
+| [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.1.5: Ensure that default service accounts are not actively used { #ctrl-5-1-5 }
 
@@ -118,11 +129,13 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### 5.1.8: Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster { #ctrl-5-1-8 }
 
-**Evidenced by 1 check** across Kubernetes.
+**Evidenced by 3 checks** across Kubernetes.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.2.2: Minimize the admission of privileged containers { #ctrl-5-2-2 }
 
@@ -226,16 +239,26 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### 5.4.2: Consider external secret storage { #ctrl-5-4-2 }
 
-**Evidenced by 2 checks** across Kubernetes.
+**Evidenced by 3 checks** across Kubernetes.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`K8S-017`](#detail-k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-037`](#detail-k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.7.1: Create administrative boundaries between resources using namespaces { #ctrl-5-7-1 }
 
-_No checks in this scanner currently evidence this control. Open an issue if your team would value coverage._
+**Evidenced by 6 checks** across Kubernetes.
+
+| Check | Title | Severity | Provider | Fix |
+|-------|-------|----------|----------|-----|
+| [`K8S-019`](#detail-k8s-019) | Workload deployed in the 'default' namespace | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-023`](#detail-k8s-023) | Namespace missing Pod Security Admission enforcement label | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-025`](#detail-k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-030`](#detail-k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-031`](#detail-k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-033`](#detail-k8s-033) | Namespace lacks ResourceQuota or LimitRange | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.7.2: Ensure that the seccomp profile is set to docker/default in your Pod definitions { #ctrl-5-7-2 }
 
@@ -247,13 +270,19 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### 5.7.3: Apply SecurityContext to your Pods and Containers { #ctrl-5-7-3 }
 
-**Evidenced by 5 checks** across Kubernetes.
+**Evidenced by 11 checks** across Kubernetes.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`K8S-005`](#detail-k8s-005) | Container securityContext.privileged: true | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-006`](#detail-k8s-006) | Container allowPrivilegeEscalation not explicitly false | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-007`](#detail-k8s-007) | Container runAsNonRoot not true / runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-008`](#detail-k8s-008) | Container readOnlyRootFilesystem not true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-009`](#detail-k8s-009) | Container capabilities not dropping ALL / adding dangerous caps | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-010`](#detail-k8s-010) | Container seccompProfile not RuntimeDefault or Localhost | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-023`](#detail-k8s-023) | Namespace missing Pod Security Admission enforcement label | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-031`](#detail-k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-035`](#detail-k8s-035) | Container securityContext.runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-039`](#detail-k8s-039) | Pod uses shareProcessNamespace: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-040`](#detail-k8s-040) | Container securityContext.procMount: Unmasked | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
@@ -307,7 +336,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 #### `K8S-005`: Container securityContext.privileged: true <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-005 }
 
-**Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers.
+**Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** ``privileged: true`` is the strongest possible escalation in Kubernetes. It overrides every other securityContext setting and is the single largest cluster-takeover vector after RBAC misconfiguration.
 
@@ -319,7 +348,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 #### `K8S-006`: Container allowPrivilegeEscalation not explicitly false <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-006 }
 
-**Evidences:** [`5.2.6`](#ctrl-5-2-6) Minimize the admission of containers with allowPrivilegeEscalation.
+**Evidences:** [`5.2.6`](#ctrl-5-2-6) Minimize the admission of containers with allowPrivilegeEscalation, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** The default for non-root containers is True (Pod Security Standard 'baseline' allows this; 'restricted' does not). An explicit ``false`` is required because Kubernetes treats an unset field as a deferral to the cluster admission controller, which may not enforce ``restricted``.
 
@@ -331,7 +360,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 #### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
 
-**Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers.
+**Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** A container is considered safe when EITHER its own securityContext OR the pod-level securityContext sets ``runAsNonRoot: true`` and a non-zero ``runAsUser``. An explicit ``runAsUser: 0`` always fails, even if ``runAsNonRoot`` is unset.
 
@@ -355,7 +384,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 #### `K8S-009`: Container capabilities not dropping ALL / adding dangerous caps <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-009 }
 
-**Evidences:** [`5.2.8`](#ctrl-5-2-8) Minimize the admission of containers with the NET_RAW capability, [`5.2.9`](#ctrl-5-2-9) Minimize the admission of containers with added capabilities.
+**Evidences:** [`5.2.8`](#ctrl-5-2-8) Minimize the admission of containers with the NET_RAW capability, [`5.2.9`](#ctrl-5-2-9) Minimize the admission of containers with added capabilities, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** Fails when the container does NOT drop ``ALL`` *or* when ``capabilities.add`` includes any of: SYS_ADMIN, NET_ADMIN, SYS_PTRACE, SYS_MODULE, DAC_READ_SEARCH, DAC_OVERRIDE, SYS_RAWIO, SYS_BOOT, BPF, PERFMON, or the literal ``ALL``.
 
@@ -372,7 +401,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 #### `K8S-010`: Container seccompProfile not RuntimeDefault or Localhost <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-010 }
 
-**Evidences:** [`5.7.2`](#ctrl-5-7-2) Ensure that the seccomp profile is set to docker/default in your Pod definitions.
+**Evidences:** [`5.7.2`](#ctrl-5-7-2) Ensure that the seccomp profile is set to docker/default in your Pod definitions, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** Pod-level ``securityContext.seccompProfile`` covers all containers in the pod. Either path passes this rule. The default of ``Unconfined`` (or unset, which inherits the node default, usually Unconfined) fails.
 
@@ -470,7 +499,7 @@ spec:
 
 #### `K8S-017`: Container env value carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-017 }
 
-**Evidences:** [`5.4.1`](#ctrl-5-4-1) Prefer using Secrets as files over Secrets as environment variables.
+**Evidences:** [`5.4.1`](#ctrl-5-4-1) Prefer using Secrets as files over Secrets as environment variables, [`5.4.2`](#ctrl-5-4-2) Consider external secret storage.
 
 **How this is detected.** Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS access keys outright, plus credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal. ``valueFrom`` entries are always safe (no inline value).
 
@@ -490,7 +519,7 @@ spec:
 
 #### `K8S-019`: Workload deployed in the 'default' namespace <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-019 }
 
-**Evidences:** [`5.7.4`](#ctrl-5-7-4) The default namespace should not be used.
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.4`](#ctrl-5-7-4) The default namespace should not be used.
 
 **How this is detected.** Severity is LOW because in a well-curated cluster the default namespace is empty by policy. If your cluster treats default as a sandbox you can suppress this rule via ``.pipelinecheckignore``.
 
@@ -500,7 +529,7 @@ spec:
 
 #### `K8S-020`: ClusterRoleBinding grants cluster-admin or system:masters <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-020 }
 
-**Evidences:** [`5.1.1`](#ctrl-5-1-1) Ensure that the cluster-admin role is only used where required, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
+**Evidences:** [`5.1.1`](#ctrl-5-1-1) Ensure that the cluster-admin role is only used where required, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
 
 **How this is detected.** The rule fires on a ``ClusterRoleBinding`` whose ``roleRef.name`` is ``cluster-admin``, ``admin``, or ``system:masters``. Subject type does not matter, even binding cluster-admin to a Group is a cluster-takeover risk.
 
@@ -517,7 +546,7 @@ spec:
 
 #### `K8S-021`: Role or ClusterRole grants wildcard verbs+resources <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-021 }
 
-**Evidences:** [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles.
+**Evidences:** [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
 
 **How this is detected.** Fires on any rule entry where BOTH ``verbs`` and ``resources`` contain a literal ``"*"``. A wildcard in only one of the two is still risky but is often a legitimate read-everything pattern (e.g. monitoring); this rule targets the strict superset 'do anything to everything'.
 
@@ -537,7 +566,7 @@ spec:
 
 #### `K8S-023`: Namespace missing Pod Security Admission enforcement label <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-023 }
 
-**Evidences:** [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** Pod Security Admission (PSA) replaced the deprecated PodSecurityPolicy in 1.25. The three levels are ``privileged``, ``baseline``, and ``restricted``; ``baseline`` is a sensible production default and ``restricted`` matches the spirit of K8S-005..010. ``kube-system`` is exempt by convention since control-plane pods may legitimately need elevated permissions.
 
@@ -548,6 +577,16 @@ spec:
 - Single-tenant clusters running only operator-managed workloads may apply PSA via an admission webhook instead. The label-based check can't see that.
 
 **Source:** [`K8S-023`](../providers/kubernetes.md#k8s-023) in the [Kubernetes provider](../providers/kubernetes.md).
+
+#### `K8S-025`: System priority class used outside kube-system <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-025 }
+
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
+
+**How this is detected.** The kubelet reserves the two ``system-*`` priority classes for its own pods (kube-proxy, CNI agents). Granting them to a user workload also grants the right to preempt and evict anything below 2000000000, which is every non-system pod on the cluster. Outside kube-system this is almost always a misconfiguration copy-pasted from a control-plane manifest.
+
+**Recommendation.** Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classes for control-plane workloads in ``kube-system``. Application pods that adopt them gain the right to evict normal workloads under resource pressure, which is a quiet path to a cluster-wide outage if the application has a bug or the attacker has any control over its spec.
+
+**Source:** [`K8S-025`](../providers/kubernetes.md#k8s-025) in the [Kubernetes provider](../providers/kubernetes.md).
 
 #### `K8S-028`: Container declares hostPort <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-028 }
 
@@ -577,9 +616,25 @@ spec:
 
 **Source:** [`K8S-029`](../providers/kubernetes.md#k8s-029) in the [Kubernetes provider](../providers/kubernetes.md).
 
+#### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
+
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
+
+**How this is detected.** Fires on a non-system workload whose ``spec.nodeSelector`` contains a control-plane role label, OR whose ``spec.tolerations`` carries an entry with a control-plane taint key. Either condition is sufficient to land the pod on the control plane (the toleration is what survives the node taint; the nodeSelector picks the node).
+
+**Recommendation.** Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.kubernetes.io/control-plane`` (or the legacy ``master`` spelling) from non-system workloads. A pod scheduled on a control-plane node shares the kernel with the API server, etcd, and kubelet credentials, credential theft from any such pod yields cluster-wide takeover. Application workloads belong on dedicated worker nodes; system add-ons that legitimately need control-plane scheduling should run as a DaemonSet in ``kube-system``.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Known false positives.**
+
+- Audit/log shippers and CNI agents in kube-system are exempt by namespace. A workload that legitimately needs to run on the control plane outside kube-system is rare enough to warrant an explicit ``.pipelinecheckignore`` rationale.
+
+**Source:** [`K8S-030`](../providers/kubernetes.md#k8s-030) in the [Kubernetes provider](../providers/kubernetes.md).
+
 #### `K8S-031`: Namespace missing PSA warn label <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-031 }
 
-**Evidences:** [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** Pod Security Admission supports three modes: ``enforce`` (reject), ``audit`` (log to API audit), and ``warn`` (return a kubectl warning). K8S-023 covers ``enforce``; this rule covers ``warn``. The convention from upstream PSA docs is to set ``warn`` to the next-strictest tier above your current ``enforce`` so an upgrade from baseline to restricted is a predictable rollout, not a surprise.
 
@@ -606,6 +661,16 @@ spec:
 
 **Source:** [`K8S-032`](../providers/kubernetes.md#k8s-032) in the [Kubernetes provider](../providers/kubernetes.md).
 
+#### `K8S-033`: Namespace lacks ResourceQuota or LimitRange <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-033 }
+
+**Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
+
+**How this is detected.** Without a ResourceQuota, a single namespace can consume the cluster's entire scheduling capacity, a fork bomb in a CronJob, a memory leak in a Deployment, or a cryptominer that landed via a fork-PR build can starve every other tenant. Without a LimitRange, individual pods without explicit ``resources:`` requests get a default of zero, the scheduler treats them as best-effort and packs them on any node, including ones already at memory pressure. The two work together: quota caps the aggregate, range caps the per-workload baseline. Cross-doc correlation: walks the manifest stream to match Namespace / workload / ResourceQuota / LimitRange across files.
+
+**Recommendation.** Apply a ``ResourceQuota`` *and* a ``LimitRange`` to every namespace that hosts application workloads. ResourceQuota caps the namespace's total CPU / memory / pod / object consumption; LimitRange enforces per-pod request / limit defaults so a workload that forgets to declare its own doesn't get unbounded scheduling. Together they bound the blast radius of a runaway, leaky, or attacker-driven pod explosion to a single namespace.
+
+**Source:** [`K8S-033`](../providers/kubernetes.md#k8s-033) in the [Kubernetes provider](../providers/kubernetes.md).
+
 #### `K8S-034`: ServiceAccount automountServiceAccountToken not explicitly false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-034 }
 
 **Evidences:** [`5.1.6`](#ctrl-5-1-6) Ensure that Service Account Tokens are only mounted where necessary.
@@ -622,7 +687,7 @@ spec:
 
 #### `K8S-035`: Container securityContext.runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-035 }
 
-**Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers.
+**Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
 **How this is detected.** K8S-007 covers ``runAsNonRoot: false`` (the boolean form). This rule covers the explicit numeric form: a container that sets ``runAsUser: 0`` runs as root regardless of ``runAsNonRoot`` being declared elsewhere. Kubernetes won't reject the spec, it just runs the container as root. The two rules are paired so neither shape slips through alone. The pod-level ``securityContext.runAsUser`` inherits to every container that doesn't override it; this rule fires on the *effective* UID, walking pod-level first then per-container override.
 
@@ -695,6 +760,16 @@ spec:
 **Recommendation.** Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
 
 **Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
+
+#### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
+
+**Evidences:** [`5.1.1`](#ctrl-5-1-1) Ensure that the cluster-admin role is only used where required, [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
+
+**How this is detected.** Kubernetes resolves authentication failures into the ``system:anonymous`` user (member of ``system:unauthenticated`` group) rather than rejecting the request outright, so any RBAC subject naming either of those values applies to requests with no Authorization header. The rule fires on both ``RoleBinding`` (namespace-scoped) and ``ClusterRoleBinding`` (cluster-scoped) subjects. Pairs with K8S-020: cluster-admin bound to a named SA is bad; cluster-admin bound to ``system:anonymous`` is cluster takeover by anyone with TCP/443 to the apiserver.
+
+**Recommendation.** Remove the binding's subject entry for ``system:anonymous`` or ``system:unauthenticated``. Anything bound to either subject is reachable without an authentication token, anyone who can hit the apiserver, including from inside an untrusted pod or from the public internet on an exposed apiserver, gets the bound verbs. If the workload genuinely needs unauthenticated read access (rare, usually only for OIDC discovery or the deprecated ``system:public-info-viewer`` shape), audit the bound ClusterRole's verbs+resources and confirm no write or secret-read verb is included.
+
+**Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ---
 

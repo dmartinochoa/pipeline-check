@@ -12,8 +12,8 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 22
 - **Controls evidenced by at least one check:** 22 / 22
-- **Distinct checks evidencing this standard:** 335
-- **Of those, autofixable with `--fix`:** 91
+- **Distinct checks evidencing this standard:** 338
+- **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
@@ -39,8 +39,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 12 | 1C · 1H · 10M |
 | [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) | Enforce artifact / tag immutability to preserve provenance | 8 | 4H · 1M · 3L |
 | [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) | Require explicit approval before production deployment | 14 | 3H · 10M · 1L |
-| [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) | Automated rollback on deployment failure or alarm | 1 | 1M |
-| [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 1 | 1M |
+| [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) | Automated rollback on deployment failure or alarm | 4 | 2H · 2M |
+| [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 4 | 2M · 2L |
 | [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 9 | 1H · 7M · 1L |
 | [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) | Restrict access to artifact storage and deployment pipelines | 5 | 2C · 3M |
 | [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 12 | 1C · 5H · 6M |
@@ -563,19 +563,25 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-ROLLBACK: Automated rollback on deployment failure or alarm { #ctrl-esf-c-rollback }
 
-**Evidenced by 1 check** across AWS.
+**Evidenced by 4 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-001`](#detail-cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CD-002`](#detail-cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-002`](#detail-ecr-002) | Image tags are mutable | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`S3-003`](#detail-s3-003) | Artifact bucket versioning not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 
 ### ESF-C-DEPLOY-MON: Monitor deployments with alarms / health checks { #ctrl-esf-c-deploy-mon }
 
-**Evidenced by 1 check** across AWS.
+**Evidenced by 4 checks** across 2 providers (AWS, Dockerfile).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`DF-007`](#detail-df-007) | No HEALTHCHECK directive declared | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 
 ### ESF-C-ENV-SEP: Separate deployment environments (dev / staging / prod) { #ctrl-esf-c-env-sep }
 
@@ -2214,7 +2220,7 @@ pipelines:
 
 #### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
 
-**Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
+**Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
 **How this is detected.** AllAtOnce shifts 100% of traffic to the new revision in one step. There's no gradient to halt on if a CloudWatch alarm trips mid-rollout, the bad revision is already serving every request. Canary / linear configs introduce the shift-then-watch shape that lets monitors catch a regression before it's universal.
 
@@ -2285,6 +2291,16 @@ pipelines:
 **Recommendation.** Migrate to owner=AWS, provider=CodeStarSourceConnection and reference a CodeConnections connection ARN.
 
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+
+**Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
+
+**How this is detected.** Failure-rate signals are how on-call learns about an unfamiliar build crashing in a loop, an attacker probing the build environment, or a CI quota being exhausted. CloudWatch captures the ``FailedBuilds`` metric automatically, the alarm is the missing fan-out.
+
+**Recommendation.** Create a CloudWatch alarm on the ``AWS/CodeBuild`` namespace ``FailedBuilds`` metric (aggregated or per-project). Without one, repeated build failures during a compromise, or a runaway fork-PR build, won't reach on-call.
+
+**Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
 
@@ -2395,6 +2411,18 @@ CMD ["python3", "/app/app.py"]
 **Recommendation.** Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the image layer history, even if the value is later overwritten, ``docker history --no-trunc`` reads the original. Use ``RUN --mount=type=secret`` for build-time secrets or runtime env injection (``docker run -e SECRET=…``) for runtime ones. Rotate any secret already exposed.
 
 **Source:** [`DF-006`](../providers/dockerfile.md#df-006) in the [Dockerfile provider](../providers/dockerfile.md).
+
+#### `DF-007`: No HEALTHCHECK directive declared <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-007 }
+
+**Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
+
+**How this is detected.** This is a defense-in-depth signal rather than an exploitation indicator, severity is LOW. A missing healthcheck doesn't create a vulnerability on its own, but downstream orchestrators (Kubernetes, ECS, Compose) cannot recover an unhealthy container they cannot detect, and that turns a soft failure (slow leak, deadlock) into a stale-process incident.
+
+**Recommendation.** Declare a ``HEALTHCHECK`` so the orchestrator can detect stuck or zombie containers. Example: ``HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://localhost/healthz || exit 1``. Skip this for builder/multi-stage intermediate images, only the runtime image needs one.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`DF-007`](../providers/dockerfile.md#df-007) in the [Dockerfile provider](../providers/dockerfile.md).
 
 #### `DF-008`: RUN invokes docker --privileged or escalates capabilities <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-008 }
 
@@ -2508,6 +2536,16 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
+#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+
+**Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
+
+**How this is detected.** Pipeline failure events are emitted to EventBridge automatically; the missing piece is a rule that pipes them to somewhere a human reads (SNS, Slack, PagerDuty). Without it, failures only surface via the CodePipeline console, which no one watches.
+
+**Recommendation.** Create an EventBridge rule matching ``detail-type: 'CodePipeline Pipeline Execution State Change'`` and ``state: FAILED``, and point it at an SNS topic or chat webhook. Without it, pipeline failures during an incident (a compromise triggering rollback, for example) go unnoticed.
+
+**Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
@@ -2530,7 +2568,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
 
-**Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
+**Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm.
 
 **How this is detected.** Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` can be re-pushed silently, the same tag points to different image content over time. Pinning by digest (``sha256:...``) in deployment manifests is the only durable reference; IMMUTABLE on the repo enforces the property registry-side so a forgotten digest reference doesn't drift.
 
@@ -4477,7 +4515,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 #### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
 
-**Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
+**Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm.
 
 **How this is detected.** Versioning makes overwrites and deletes recoverable: the previous content of an object survives until lifecycle expires it. Without versioning, an artifact overwrite (a bad pipeline run, a malicious replacement, a typo'd ``aws s3 cp``) is unrecoverable, the original bytes are gone.
 

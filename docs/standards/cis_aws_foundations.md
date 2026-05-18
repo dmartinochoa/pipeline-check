@@ -12,7 +12,7 @@ controls the AWS provider scans against a live account.
 
 - **Controls in this standard:** 14
 - **Controls evidenced by at least one check:** 12 / 14
-- **Distinct checks evidencing this standard:** 40
+- **Distinct checks evidencing this standard:** 44
 - **Of those, autofixable with `--fix`:** 0
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -24,7 +24,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`1.14`](#ctrl-1-14) | Ensure access keys are rotated every 90 days or less | 2 | 2H |
-| [`1.16`](#ctrl-1-16) | Ensure IAM policies that allow full '*:*' administrative privileges are not attached | 16 | 5C · 8H · 3M |
+| [`1.16`](#ctrl-1-16) | Ensure IAM policies that allow full '*:*' administrative privileges are not attached | 18 | 5C · 9H · 4M |
 | [`1.17`](#ctrl-1-17) | Ensure a support role has been created to manage incidents with AWS Support | 0 | — |
 | [`2.1.1`](#ctrl-2-1-1) | Ensure all S3 buckets employ encryption-at-rest | 1 | 1H |
 | [`2.1.2`](#ctrl-2-1-2) | Ensure S3 Bucket Policy is set to deny HTTP requests | 2 | 2M |
@@ -36,7 +36,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`3.7`](#ctrl-3-7) | Ensure CloudTrail logs are encrypted at rest using KMS CMKs | 8 | 2H · 6M |
 | [`3.8`](#ctrl-3-8) | Ensure rotation for customer-created symmetric CMKs is enabled | 2 | 2M |
 | [`4.3`](#ctrl-4-3) | Ensure a log metric filter and alarm exist for usage of the root account | 0 | — |
-| [`4.16`](#ctrl-4-16) | Ensure AWS Security Hub is enabled | 2 | 1H · 1M |
+| [`4.16`](#ctrl-4-16) | Ensure AWS Security Hub is enabled | 4 | 1H · 2M · 1L |
 
 ## Filter at runtime
 
@@ -66,12 +66,14 @@ pipeline_check --pipeline aws --standard cis_aws_foundations --standard owasp_ci
 
 ### 1.16: Ensure IAM policies that allow full '*:*' administrative privileges are not attached { #ctrl-1-16 }
 
-**Evidenced by 16 checks** across AWS.
+**Evidenced by 18 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CA-003`](#detail-ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CA-004`](#detail-ca-004) | CodeArtifact repo policy grants codeartifact:* with Resource '*' | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-003`](#detail-ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](#detail-iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -181,10 +183,12 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### 4.16: Ensure AWS Security Hub is enabled { #ctrl-4-16 }
 
-**Evidenced by 2 checks** across AWS.
+**Evidenced by 4 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-001`](#detail-ecr-001) | Image scanning on push not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-007`](#detail-ecr-007) | Inspector v2 enhanced scanning disabled for ECR | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 
@@ -242,6 +246,16 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+
+**Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
+
+**How this is detected.** A repo trigger pointing at an SNS topic or Lambda in a different account fires under the receiving account's permissions on every push. Sometimes this is the intended shape (a centralized notifications account), but a cross-account fan-out from a compromised repo can drive actions in the receiving account that the source-account owner can't directly observe.
+
+**Recommendation.** Move trigger targets into the same account as the repository or explicitly document the cross-account relationship. Cross-account triggers extend the blast radius of a repository compromise to whatever the target ARN can do.
+
+**Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
 
 **Evidences:** [`3.4`](#ctrl-3-4) Ensure CloudTrail trails are integrated with CloudWatch Logs.
@@ -292,6 +306,16 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CT-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
+#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+
+**Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
+
+**How this is detected.** Failure-rate signals are how on-call learns about an unfamiliar build crashing in a loop, an attacker probing the build environment, or a CI quota being exhausted. CloudWatch captures the ``FailedBuilds`` metric automatically, the alarm is the missing fan-out.
+
+**Recommendation.** Create a CloudWatch alarm on the ``AWS/CodeBuild`` namespace ``FailedBuilds`` metric (aggregated or per-project). Without one, repeated build failures during a compromise, or a runaway fork-PR build, won't reach on-call.
+
+**Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
 #### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
 
 **Evidences:** [`3.4`](#ctrl-3-4) Ensure CloudTrail trails are integrated with CloudWatch Logs.
@@ -311,6 +335,26 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Associate a customer-managed KMS key with every ``/aws/codebuild/*`` log group via ``associate-kms-key``. Logs often contain secret material accidentally echoed by builds; encrypting them with a CMK means the key policy controls who can read the logs, not just S3/CloudWatch IAM.
 
 **Source:** [`CWL-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+
+**Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
+
+**How this is detected.** Pipeline failure events are emitted to EventBridge automatically; the missing piece is a rule that pipes them to somewhere a human reads (SNS, Slack, PagerDuty). Without it, failures only surface via the CodePipeline console, which no one watches.
+
+**Recommendation.** Create an EventBridge rule matching ``detail-type: 'CodePipeline Pipeline Execution State Change'`` and ``state: FAILED``, and point it at an SNS topic or chat webhook. Without it, pipeline failures during an incident (a compromise triggering rollback, for example) go unnoticed.
+
+**Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
+
+#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+
+**Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
+
+**How this is detected.** Wildcard target ARNs (e.g. ``arn:aws:lambda:us-east-1:123456789012:function:*``) match every resource that fits the prefix. This is rarely intentional, usually a copy-paste from a more permissive resource ARN, and means the rule fans out to a much larger set of consumers than the author meant.
+
+**Recommendation.** Replace wildcard target ARNs with specific resource ARNs. EventBridge targets with ``*`` route events to any resource that matches the prefix, frequently triggering unintended Lambda invocations or SNS sends.
+
+**Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 #### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 

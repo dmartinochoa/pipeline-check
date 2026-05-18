@@ -15,7 +15,7 @@ charts that update on a faster cadence pass trivially.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -74,8 +74,9 @@ def _parse_generated(value: object) -> datetime | None:
     s = value.strip()
     if not s:
         return None
-    # ``Z`` -> ``+00:00`` so fromisoformat accepts it (3.10 doesn't
-    # parse ``Z`` natively; 3.11+ does, but we support 3.10 too).
+    # ``Z`` -> ``+00:00`` for fromisoformat. 3.11+ parses ``Z``
+    # natively, but the normalization is idempotent and keeps the
+    # branch ordering obvious.
     if s.endswith("Z") or s.endswith("z"):
         s = s[:-1] + "+00:00"
     try:
@@ -85,13 +86,13 @@ def _parse_generated(value: object) -> datetime | None:
     if dt.tzinfo is None:
         # Naive datetime, assume UTC. Helm always writes a tz, but
         # be defensive against hand-edited locks.
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt
 
 
 def check(ctx: HelmContext, *, _now: datetime | None = None) -> Finding:
     """Check is parameterised on ``_now`` so tests inject a frozen clock."""
-    now = _now or datetime.now(timezone.utc)
+    now = _now or datetime.now(UTC)
     offenders: list[str] = []
     locations: list[Location] = []
     for chart in ctx.charts:

@@ -7,7 +7,7 @@ PyYAML is installed; the report degrades gracefully without it.
 
 import html
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -1297,7 +1297,7 @@ def report_html(
     summary = score_result.get("summary", {})
 
     grade_color = _GRADE_COLOR.get(grade, "#6c757d")
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     # ``region`` defaults to ``us-east-1`` for every scan, but only AWS-
     # family providers (live AWS + Terraform/CloudFormation plans) actually

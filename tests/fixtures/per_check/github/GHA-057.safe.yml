@@ -1,0 +1,13 @@
+name: scan
+on: push
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: trufflehog filesystem . --json > findings.sarif
+      - uses: github/codeql-action/upload-sarif@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          sarif_file: findings.sarif

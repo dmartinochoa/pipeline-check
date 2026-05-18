@@ -16,6 +16,11 @@ same check can evidence controls in multiple standards at once.
     <p>CI/CD-relevant subset of the CIS AWS benchmark. IAM, S3, CloudTrail, KMS hardening.</p>
     <span class="pg-doc-card__meta">{{ standards.cis_aws_foundations.controls }} controls · {{ standards.cis_aws_foundations.checks }} checks evidenced</span>
   </a>
+  <a class="pg-doc-card" href="cis_github/">
+    <h3>CIS GitHub Benchmark</h3>
+    <p>Platform-side posture for a GitHub org or repo. Sections 1.1 (Code Changes), 1.4 (Third-Party), 1.5 (Code Risks).</p>
+    <span class="pg-doc-card__meta">{{ standards.cis_github.controls }} controls · {{ standards.cis_github.checks }} checks evidenced</span>
+  </a>
   <a class="pg-doc-card" href="cis_kubernetes/">
     <h3>CIS Kubernetes</h3>
     <p>CIS Kubernetes Benchmark, Section 5 (Policies). RBAC, Pod Security Standards, NetworkPolicy, Secrets, namespaces.</p>

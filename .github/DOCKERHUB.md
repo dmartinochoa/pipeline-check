@@ -3,9 +3,9 @@
 **Find security risks in your CI/CD pipelines before attackers do.**
 
 A read-only scanner for **19 CI/CD and infrastructure providers**, mapped to
-**14 compliance standards**, with **590+ checks** and **111 autofixers**.
+**15 compliance standards**, with **590+ checks** and **111 autofixers**.
 Every finding maps to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/),
-SLSA, NIST SSDF, PCI DSS, SOC 2, and nine more frameworks. Each scan is
+SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and eight more frameworks. Each scan is
 graded **A through D** so you can gate merges on the result.
 
 - **Repo:** https://github.com/dmartinochoa/pipeline-check
@@ -82,7 +82,7 @@ leaks, deploy approval gates, artifact signing, SBOM generation,
 container hardening, package integrity, timeout enforcement,
 vulnerability scanning, and TLS verification. A dataflow taint engine
 catches multi-step and cross-job propagation that single-rule scanners
-miss, and **36 attack chains** correlate findings into MITRE ATT&CK-mapped
+miss, and **38 attack chains** correlate findings into MITRE ATT&CK-mapped
 kill chains.
 
 ## Use in CI

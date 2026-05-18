@@ -11,7 +11,7 @@ fixture so the boto contract is exercised without a network call.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from tests.aws.rules.conftest import FakeClient
 
@@ -88,7 +88,7 @@ def _client_with_versions(
 
 
 def test_returns_per_version_dicts_for_one_repo(make_catalog):
-    published = datetime(2026, 5, 1, 12, 0, tzinfo=timezone.utc)
+    published = datetime(2026, 5, 1, 12, 0, tzinfo=UTC)
     client = _client_with_versions(
         packages_by_repo={
             ("d", "r"): [
@@ -156,7 +156,7 @@ def test_skips_non_published_versions(make_catalog):
 
 
 def test_only_external_filters_internal_origins(make_catalog):
-    published = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    published = datetime(2026, 5, 1, tzinfo=UTC)
     client = _client_with_versions(
         packages_by_repo={
             ("d", "r"): [
@@ -208,7 +208,7 @@ def test_cap_bounds_describe_call_count(make_catalog):
     described_keys: list[tuple] = []
     described_template = {
         "packageVersion": {
-            "publishedTime": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "publishedTime": datetime(2026, 1, 1, tzinfo=UTC),
             "origin": {"originType": "INTERNAL"},
         },
     }
@@ -250,7 +250,7 @@ def test_cap_bounds_describe_call_count(make_catalog):
 
 
 def test_iterates_multiple_repositories(make_catalog):
-    published = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    published = datetime(2026, 5, 1, tzinfo=UTC)
     client = _client_with_versions(
         packages_by_repo={
             ("d", "alpha"): [
@@ -295,7 +295,7 @@ def test_iterates_multiple_repositories(make_catalog):
 def test_namespace_threaded_through_when_present(make_catalog):
     """Maven / generic formats use a namespace; the primitive should
     propagate it through the list/describe calls and into the output."""
-    published = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    published = datetime(2026, 5, 1, tzinfo=UTC)
     client = _client_with_versions(
         packages_by_repo={
             ("d", "r"): [

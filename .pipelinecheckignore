@@ -26,6 +26,15 @@ GHA-024:.github/workflows/localstack-test.yml
 # immediately before, covering the actual dependency surface.
 GHA-021:.github/workflows/localstack-test.yml
 
+# ── scorecard.yml — OpenSSF Scorecard SARIF upload ──────────────────
+# Uploads the Scorecard SARIF result to code scanning and as a run
+# artifact. The artifact heuristics treat any ``upload-artifact``
+# use as a software release; a scan-result SARIF isn't a build.
+GHA-006:.github/workflows/scorecard.yml
+GHA-007:.github/workflows/scorecard.yml
+GHA-020:.github/workflows/scorecard.yml
+GHA-024:.github/workflows/scorecard.yml
+
 # ── python-app.yml — lint / type-check / test runner ────────────────
 # The hash-locked ``--require-hashes -r requirements-dev.txt`` install
 # covers the actual dependency surface; ruff / mypy ride that

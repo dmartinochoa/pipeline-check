@@ -78,44 +78,52 @@ STANDARD = Standard(
     },
     mappings={
         # ── 5.1 RBAC and Service Accounts ────────────────────────
-        "K8S-011":  ["5.1.5"],            # default ServiceAccount in workload
-        "K8S-012":  ["5.1.6"],            # automountServiceAccountToken
-        "K8S-020":  ["5.1.1", "5.1.8"],   # cluster-admin RoleBinding
-        "K8S-021":  ["5.1.3"],            # wildcard verbs in Role
-        "K8S-029":  ["5.1.5"],            # default-SA RoleBinding
-        "K8S-034":  ["5.1.6"],            # SA-side automount default
-        "K8S-036":  ["5.1.6"],            # SA imagePullSecret resolves
+        "K8S-011":  ["5.1.5"],                                   # default ServiceAccount in workload
+        "K8S-012":  ["5.1.6"],                                   # automountServiceAccountToken
+        # cluster-admin = wildcard at every verb incl. pods + bind/impersonate
+        "K8S-020":  ["5.1.1", "5.1.3", "5.1.4", "5.1.8"],
+        # wildcard verbs sweep secrets, pod-create, bind/impersonate/escalate
+        "K8S-021":  ["5.1.2", "5.1.3", "5.1.4", "5.1.8"],
+        "K8S-029":  ["5.1.5"],                                   # default-SA RoleBinding
+        "K8S-034":  ["5.1.6"],                                   # SA-side automount default
+        "K8S-036":  ["5.1.6"],                                   # SA imagePullSecret resolves
+        "K8S-042":  ["5.1.1", "5.1.2", "5.1.3", "5.1.4", "5.1.8"],  # anonymous binding = unauthenticated wildcard
         # K8S-018 / K8S-037 cover credential exposure paths that
         # implicitly bypass the "minimize access to secrets" intent —
         # if every Secret is in git or a ConfigMap holds credentials,
         # the access boundary collapses regardless of RBAC.
-        "K8S-018":  ["5.1.2", "5.4.2"],   # Secret literal in manifest
-        "K8S-037":  ["5.1.2", "5.4.2"],   # ConfigMap credential
+        "K8S-018":  ["5.1.2", "5.4.2"],                          # Secret literal in manifest
+        "K8S-037":  ["5.1.2", "5.4.2"],                          # ConfigMap credential
         # ── 5.2 Pod Security Standards ───────────────────────────
-        "K8S-005":  ["5.2.2"],            # privileged container
-        "K8S-003":  ["5.2.3"],            # hostPID
-        "K8S-004":  ["5.2.4"],            # hostIPC
-        "K8S-002":  ["5.2.5"],            # hostNetwork
-        "K8S-006":  ["5.2.6"],            # allowPrivilegeEscalation
-        "K8S-007":  ["5.2.7"],            # runAsNonRoot
-        "K8S-035":  ["5.2.7"],            # runAsUser: 0
-        "K8S-009":  ["5.2.8", "5.2.9"],   # capabilities (NET_RAW + added caps)
-        "K8S-013":  ["5.2.12"],           # hostPath
-        "K8S-014":  ["5.2.12"],           # sensitive hostPath
-        "K8S-028":  ["5.2.13"],           # host port
-        "K8S-022":  ["5.2.13"],           # SSH service host port
+        "K8S-005":  ["5.2.2", "5.7.3"],                          # privileged container (securityContext field)
+        "K8S-003":  ["5.2.3"],                                   # hostPID
+        "K8S-004":  ["5.2.4"],                                   # hostIPC
+        "K8S-002":  ["5.2.5"],                                   # hostNetwork
+        "K8S-006":  ["5.2.6", "5.7.3"],                          # allowPrivilegeEscalation (securityContext field)
+        "K8S-007":  ["5.2.7", "5.7.3"],                          # runAsNonRoot (securityContext field)
+        "K8S-035":  ["5.2.7", "5.7.3"],                          # runAsUser: 0 (securityContext field)
+        # capabilities (NET_RAW + added caps, securityContext field)
+        "K8S-009":  ["5.2.8", "5.2.9", "5.7.3"],
+        "K8S-013":  ["5.2.12"],                                  # hostPath
+        "K8S-014":  ["5.2.12"],                                  # sensitive hostPath
+        "K8S-028":  ["5.2.13"],                                  # host port
+        "K8S-022":  ["5.2.13"],                                  # SSH service host port
         # ── 5.3 NetworkPolicies ──────────────────────────────────
-        "K8S-032":  ["5.3.2"],            # default-deny missing
-        "K8S-038":  ["5.3.2"],            # allow-all rule (no peers)
+        "K8S-032":  ["5.3.2"],                                   # default-deny missing
+        "K8S-038":  ["5.3.2"],                                   # allow-all rule (no peers)
         # ── 5.4 Secrets Management ───────────────────────────────
-        "K8S-017":  ["5.4.1"],            # env-mounted credential literal
+        # env-credential literal: env-mounted AND skips external storage
+        "K8S-017":  ["5.4.1", "5.4.2"],
         # ── 5.7 General Policies ─────────────────────────────────
-        "K8S-019":  ["5.7.4"],            # workload in default namespace
-        "K8S-031":  ["5.7.3"],            # PSA warn label missing
-        "K8S-023":  ["5.7.3"],            # PSA enforce missing
-        "K8S-008":  ["5.7.3"],            # readOnlyRootFilesystem
-        "K8S-010":  ["5.7.2"],            # seccompProfile not docker/default
-        "K8S-039":  ["5.7.3"],            # shareProcessNamespace
-        "K8S-040":  ["5.7.3"],            # procMount: Unmasked
+        "K8S-019":  ["5.7.1", "5.7.4"],                          # default namespace = no admin boundary
+        "K8S-023":  ["5.7.1", "5.7.3"],                          # PSA enforce missing = no admission boundary
+        "K8S-031":  ["5.7.1", "5.7.3"],                          # PSA warn missing
+        "K8S-025":  ["5.7.1"],                                   # system priority class outside kube-system
+        "K8S-030":  ["5.7.1"],                                   # schedules onto control-plane node
+        "K8S-033":  ["5.7.1"],                                   # namespace without ResourceQuota/LimitRange
+        "K8S-008":  ["5.7.3"],                                   # readOnlyRootFilesystem
+        "K8S-010":  ["5.7.2", "5.7.3"],                          # seccompProfile not docker/default
+        "K8S-039":  ["5.7.3"],                                   # shareProcessNamespace
+        "K8S-040":  ["5.7.3"],                                   # procMount: Unmasked
     },
 )

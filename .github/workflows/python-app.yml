@@ -52,6 +52,30 @@ jobs:
         # ruff is hash-pinned in requirements-dev.txt.
         run: ruff check pipeline_check/ tests/
 
+  # Dependency vulnerability scan on every PR. ``release.yml`` runs the
+  # same check at tag time as a publish gate; this job catches a
+  # vulnerable transitive bump the moment it lands on ``dev`` rather
+  # than weeks later at release. Runs against the hash-locked runtime
+  # lockfile (``requirements.txt``), not the dev one, so the audit
+  # reflects what users actually install.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Vulnerability scan with pip-audit
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit --requirement requirements.txt --strict
+
   typecheck:
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -88,14 +112,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # 3.10 is supported by pyproject.toml (``requires-python = ">=3.10"``)
-        # but excluded from CI: the hash-locked install fails on 3.10
-        # because pytest 9 conditionally pulls ``tomli`` /
-        # ``exceptiongroup``, which the pip-compile that produced
-        # requirements-dev.txt didn't bake in (it ran on a newer
-        # interpreter). The unpinned-fallback path also fails on 3.10
-        # for transitive-resolution reasons. Re-add 3.10 once
-        # ``requirements-dev.txt`` is regenerated under Python 3.10.
+        # Floor matches ``requires-python`` in ``pyproject.toml``
+        # (3.11). 3.10 was dropped because the hash-locked install
+        # didn't resolve on 3.10 (pytest 9 conditionally pulls
+        # ``tomli`` / ``exceptiongroup``, which the newer-interpreter
+        # ``pip-compile`` that produced ``requirements-dev.txt``
+        # didn't bake in), and shipping a wheel for an untested
+        # interpreter is a supply-chain footgun.
         python-version: ["3.11", "3.12", "3.13"]
         include:
           # Windows smoke check on the version most dev laptops run.

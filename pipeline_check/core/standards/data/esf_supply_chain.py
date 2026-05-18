@@ -72,11 +72,14 @@ STANDARD = Standard(
         "CP-004":   ["ESF-D-TOKEN-HYGIENE"],
         # ── CodeDeploy ─────────────────────────────────────────────
         "CD-001":   ["ESF-C-ROLLBACK"],
-        "CD-002":   ["ESF-C-ENV-SEP", "ESF-C-APPROVAL"],
+        "CD-002":   ["ESF-C-ENV-SEP", "ESF-C-APPROVAL", "ESF-C-ROLLBACK"],
         "CD-003":   ["ESF-C-DEPLOY-MON"],
+        # ── CloudWatch + EventBridge (deploy monitoring) ──────────
+        "CW-001":   ["ESF-C-DEPLOY-MON"],   # no FailedBuilds alarm
+        "EB-001":   ["ESF-C-DEPLOY-MON"],   # no pipeline-failure event rule
         # ── ECR ────────────────────────────────────────────────────
         "ECR-001":  ["ESF-S-VULN-MGMT", "ESF-S-VERIFY-DEPS"],
-        "ECR-002":  ["ESF-S-IMMUTABLE", "ESF-D-SBOM"],
+        "ECR-002":  ["ESF-S-IMMUTABLE", "ESF-D-SBOM", "ESF-C-ROLLBACK"],   # mutable tags break rollback-by-digest
         "ECR-003":  ["ESF-S-TRUSTED-REG", "ESF-C-ARTIFACT-AUTHZ"],
         "ECR-004":  ["ESF-D-BUILD-ENV"],
         "ECR-005":  ["ESF-D-SIGN-ARTIFACTS"],
@@ -93,7 +96,8 @@ STANDARD = Standard(
         # ── S3 artifact bucket ─────────────────────────────────────
         "S3-001":   ["ESF-C-ARTIFACT-AUTHZ"],
         "S3-002":   ["ESF-D-SIGN-ARTIFACTS"],
-        "S3-003":   ["ESF-S-IMMUTABLE", "ESF-D-SBOM"],
+        # versioning = ability to recover previous state
+        "S3-003":   ["ESF-S-IMMUTABLE", "ESF-D-SBOM", "ESF-C-ROLLBACK"],
         "S3-004":   ["ESF-C-AUDIT"],
         "S3-005":   ["ESF-C-ARTIFACT-AUTHZ"],
         # ── GitHub Actions ─────────────────────────────────────────
@@ -334,6 +338,7 @@ STANDARD = Standard(
         "DF-004": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],      # curl-pipe
         "DF-005": ["ESF-D-INJECTION"],                             # shell-eval
         "DF-006": ["ESF-D-SECRETS"],                               # ENV credential
+        "DF-007": ["ESF-C-DEPLOY-MON"],                            # no HEALTHCHECK = no container-level health probe
         "DF-008": ["ESF-D-PRIV-BUILD"],                            # docker --privileged
         "DF-010": ["ESF-S-PIN-DEPS"],                              # apt upgrade
         "DF-012": ["ESF-D-PRIV-BUILD"],                            # RUN sudo

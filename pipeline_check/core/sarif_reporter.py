@@ -88,7 +88,7 @@ def _ordered_tags(standards: set[str]) -> list[str]:
 
 _SARIF_VERSION = "2.1.0"
 _SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
-_TOOL_URI = "https://github.com/dnlmrtn/pipeline-check"
+_TOOL_URI = "https://github.com/dmartinochoa/pipeline-check"
 
 
 # Severity → (SARIF level, GitHub security-severity score).

@@ -16,7 +16,7 @@ legitimate FP.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ...base import Finding, Severity
@@ -167,6 +167,6 @@ def _age_days(iso8601: str) -> int | None:
     except ValueError:
         return None
     if created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
-    delta = datetime.now(tz=timezone.utc) - created
+        created = created.replace(tzinfo=UTC)
+    delta = datetime.now(tz=UTC) - created
     return delta.days

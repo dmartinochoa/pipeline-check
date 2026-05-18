@@ -189,6 +189,9 @@ STANDARD = Standard(
         "GHA-053":  ["CICD-SEC-4"],                # if: predicate untrusted-context
         "GHA-054":  ["CICD-SEC-6"],                # checkout ssh-key persists
         "GHA-055":  ["CICD-SEC-6"],                # reusable outputs leak secret
+        "GHA-056":  ["CICD-SEC-1", "CICD-SEC-4"],  # known supply-chain worm IOC strings
+        "GHA-057":  ["CICD-SEC-4", "CICD-SEC-6"],  # secret-scanner output piped to egress
+        "GHA-058":  ["CICD-SEC-4", "CICD-SEC-7"],  # agentic CLI with permission-bypass flags
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -481,6 +484,14 @@ STANDARD = Standard(
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
+        # maven (pom.xml + settings.xml static analysis)
+        "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
+        "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency
+        "MVN-003":  ["CICD-SEC-8", "CICD-SEC-3"],  # plaintext-HTTP repository
+        "MVN-004":  ["CICD-SEC-3"],                # missing <version> element
+        "MVN-005":  ["CICD-SEC-3", "CICD-SEC-8"],  # lax repository checksumPolicy
+        "MVN-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
+        "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

@@ -1,7 +1,7 @@
 """IAM-007. IAM user access keys older than 90 days."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -32,7 +32,7 @@ _MAX_AGE_DAYS = 90
 
 
 def check(catalog: ResourceCatalog) -> list[Finding]:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     threshold = timedelta(days=_MAX_AGE_DAYS)
     findings: list[Finding] = []
     for user in catalog.iam_users():

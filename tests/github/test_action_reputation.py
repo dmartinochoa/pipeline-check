@@ -12,7 +12,7 @@ the fetcher itself with a fake ``SCMFetcher``.
 from __future__ import annotations
 
 import textwrap
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import yaml
@@ -73,7 +73,7 @@ def _meta(
 
 
 def _iso_days_ago(days: int) -> str:
-    dt = datetime.now(tz=timezone.utc) - timedelta(days=days)
+    dt = datetime.now(tz=UTC) - timedelta(days=days)
     # Strip microseconds; GitHub serializes seconds-precision.
     return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -315,7 +315,7 @@ class TestGHA042:
             steps:
               - uses: typo/checkout@v1
         """
-        dt = datetime.now(tz=timezone.utc) - timedelta(days=10)
+        dt = datetime.now(tz=UTC) - timedelta(days=10)
         ts = dt.replace(microsecond=0).isoformat()  # ends in +00:00
         k, m = _meta("typo", "checkout", created_at=ts)
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-042")
@@ -346,7 +346,7 @@ class TestGHA042:
             steps:
               - uses: borderline/action@v1
         """
-        dt = datetime.now(tz=timezone.utc) - timedelta(
+        dt = datetime.now(tz=UTC) - timedelta(
             days=gha042_young_action_repo.MIN_AGE_DAYS,
             seconds=1,
         )
@@ -828,7 +828,7 @@ class TestGHA047:
             steps:
               - uses: vendor/widget@v1
         """
-        dt = datetime.now(tz=timezone.utc) - timedelta(
+        dt = datetime.now(tz=UTC) - timedelta(
             days=gha047_fresh_action_ref.MIN_REF_AGE_DAYS,
             seconds=1,
         )

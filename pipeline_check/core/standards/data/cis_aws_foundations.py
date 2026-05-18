@@ -105,10 +105,26 @@ STANDARD = Standard(
         "PBAC-002": ["1.16"], # CodeBuild service role shared
         "PBAC-005": ["1.16"], # Pipeline stage role reuse
         "SM-002":  ["1.16"],  # Secrets Manager resource policy public
+        "CCM-003": ["1.16"],  # CodeCommit trigger SNS/Lambda in different account
+        "EB-002":  ["1.16"],  # EventBridge rule with wildcard target ARN
         # ── Credential rotation (1.14) ──
         # CIS 1.14 requires IAM access keys rotated every 90 days.
         # Secrets Manager rotation extends the same expectation to
         # the secret material the pipeline issues to applications.
         "SM-001":  ["1.14"],  # Secrets Manager no rotation
+        # ── Security Hub posture (4.16) ──
+        # CIS 4.16 asks for Security Hub on as the org's findings
+        # aggregator. ECR scanning checks already feed it (above);
+        # CodeBuild / CodePipeline failure-monitoring posture
+        # complements the same "detection capability is enabled"
+        # control, even though CIS scopes it broader than CI/CD.
+        "CW-001":  ["4.16"],  # CloudWatch alarm on FailedBuilds
+        "EB-001":  ["4.16"],  # EventBridge rule for pipeline failure
+        # ── Unmapped controls ──
+        # 1.17 (support role for incident management): needs a new
+        # IAM-* rule that checks for an AWSSupportAccess-bound role.
+        # 4.3  (log metric filter + alarm on root account usage):
+        # needs a new CloudWatch / CloudTrail metric-filter rule.
+        # Both gaps require net-new checks, not mappings.
     },
 )

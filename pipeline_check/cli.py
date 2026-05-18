@@ -156,6 +156,7 @@ class _GroupedCommand(click.Command):
             "--buildkite-path", "--tekton-path", "--argo-path",
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
+            "--maven-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -411,6 +412,97 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
 
 
+def _eager_print_list_chains() -> int:
+    """``--list-chains`` handler. Returns the exit code the CLI
+    should propagate to ``sys.exit``."""
+    from .core import chains as _chains_pkg
+    rules = _chains_pkg.list_rules()
+    if not rules:
+        click.echo("[list-chains] no attack chains registered.", err=True)
+        return 3
+    id_w = max(len(r.id) for r in rules)
+    sev_w = max(len(r.severity.value) for r in rules)
+    for r in sorted(rules, key=lambda x: x.id):
+        click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
+    return 0
+
+
+def _eager_print_explain_chain(chain_id: str) -> int:
+    """``--explain-chain <ID>`` handler. Returns the exit code."""
+    from .core import chains as _chains_pkg
+    # Distinct local name so mypy doesn't fold the list-typed
+    # ``list_rules()`` inference into the dict reassignment.
+    rules_by_id = {r.id.upper(): r for r in _chains_pkg.list_rules()}
+    target_id = chain_id.upper()
+    rule = rules_by_id.get(target_id)
+    if rule is None:
+        import difflib
+        rule_ids: list[str] = list(rules_by_id.keys())
+        suggestions = difflib.get_close_matches(target_id, rule_ids, n=3)
+        hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+        click.echo(
+            f"[explain-chain] unknown chain {chain_id!r}.{hint}",
+            err=True,
+        )
+        return 3
+    click.echo(f"{rule.id}, {rule.title}")
+    click.echo(f"  Severity: {rule.severity.value}")
+    if rule.providers:
+        click.echo(f"  Providers: {', '.join(rule.providers)}")
+    if rule.kill_chain_phase:
+        click.echo(f"  Kill chain: {rule.kill_chain_phase}")
+    if rule.mitre_attack:
+        click.echo(f"  MITRE ATT&CK: {', '.join(rule.mitre_attack)}")
+    click.echo("")
+    click.echo("Summary:")
+    click.echo(f"  {rule.summary}")
+    click.echo("")
+    click.echo("Recommendation:")
+    click.echo(f"  {rule.recommendation}")
+    if rule.references:
+        click.echo("")
+        click.echo("References:")
+        for ref in rule.references:
+            click.echo(f"  - {ref}")
+    return 0
+
+
+def _eager_print_standard_report(standard_id: str) -> None:
+    """``--standard-report <std>`` handler. Raises ``UsageError`` on
+    unknown standard so the CLI surfaces a clean argument error
+    instead of an exit code."""
+    report_std = _standards.get(standard_id)
+    if report_std is None:
+        available = ", ".join(_standards.available())
+        raise click.UsageError(
+            f"Unknown standard {standard_id!r}. "
+            f"Available: {available or 'none'}."
+        )
+    click.echo(f"{report_std.name} ,  {report_std.title} (v{report_std.version or 'n/a'})")
+    if report_std.url:
+        click.echo(f"  {report_std.url}")
+    click.echo("")
+    click.echo("Control -> check mapping:")
+    gaps: list[tuple[str, str]] = []
+    for ctrl_id in sorted(report_std.controls):
+        title = report_std.controls[ctrl_id]
+        check_ids = [
+            cid for cid, controls in report_std.mappings.items()
+            if ctrl_id in controls
+        ]
+        if check_ids:
+            joined = ", ".join(sorted(check_ids))
+            click.echo(f"  [{ctrl_id}] {title}")
+            click.echo(f"      checks: {joined}")
+        else:
+            gaps.append((ctrl_id, title))
+    if gaps:
+        click.echo("")
+        click.echo(f"Gaps ({len(gaps)} control(s) with no mapped check):")
+        for ctrl_id, title in gaps:
+            click.echo(f"  [{ctrl_id}] {title}")
+
+
 def _resolve_provider_path(
     provider_lc: str,
     *,
@@ -496,6 +588,7 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("dockerfile", ("Dockerfile", "Containerfile"), ()),
     ("npm", ("package.json", "package-lock.json"), ()),
     ("pypi", ("requirements.txt",), ()),
+    ("maven", ("pom.xml",), ()),
     (
         "cloudformation",
         (
@@ -849,7 +942,7 @@ def _install_completion_callback(
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
         "--argo-path, --oci-manifest, --drone-path, --npm-path, "
-        "--pypi-path); "
+        "--pypi-path, --maven-path); "
         "AWS scans the live account via boto3. For multi-provider "
         "scans (so cross-provider attack chains like XPC-001 fire) "
         "use ``--pipelines github,oci`` instead."
@@ -1078,6 +1171,16 @@ def _install_completion_callback(
         "Path to a requirements.txt or a directory containing one "
         "(required when --pipeline pypi). Auto-detects "
         "./requirements.txt and ./requirements/*.txt."
+    ),
+)
+@click.option(
+    "--maven-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a pom.xml / settings.xml or a directory containing "
+        "one (required when --pipeline maven). Auto-detects "
+        "./pom.xml."
     ),
 )
 @click.option(
@@ -1774,6 +1877,7 @@ def scan(
     helm_path: str | None,
     npm_path: str | None,
     pypi_path: str | None,
+    maven_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -1919,54 +2023,10 @@ def scan(
         return
 
     if list_chains:
-        from .core import chains as _chains_pkg
-        rules = _chains_pkg.list_rules()
-        if not rules:
-            click.echo("[list-chains] no attack chains registered.", err=True)
-            sys.exit(3)
-        id_w = max(len(r.id) for r in rules)
-        sev_w = max(len(r.severity.value) for r in rules)
-        for r in sorted(rules, key=lambda x: x.id):
-            click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
-        return
+        sys.exit(_eager_print_list_chains())
 
     if explain_chain_id:
-        from .core import chains as _chains_pkg
-        # Distinct name from the ``rules`` list a few lines above so mypy
-        # doesn't carry the list-typed inference across the reassignment.
-        rules_by_id = {r.id.upper(): r for r in _chains_pkg.list_rules()}
-        target_id = explain_chain_id.upper()
-        rule = rules_by_id.get(target_id)
-        if rule is None:
-            import difflib
-            rule_ids: list[str] = list(rules_by_id.keys())
-            suggestions = difflib.get_close_matches(target_id, rule_ids, n=3)
-            hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-            click.echo(
-                f"[explain-chain] unknown chain {explain_chain_id!r}.{hint}",
-                err=True,
-            )
-            sys.exit(3)
-        click.echo(f"{rule.id}, {rule.title}")
-        click.echo(f"  Severity: {rule.severity.value}")
-        if rule.providers:
-            click.echo(f"  Providers: {', '.join(rule.providers)}")
-        if rule.kill_chain_phase:
-            click.echo(f"  Kill chain: {rule.kill_chain_phase}")
-        if rule.mitre_attack:
-            click.echo(f"  MITRE ATT&CK: {', '.join(rule.mitre_attack)}")
-        click.echo("")
-        click.echo("Summary:")
-        click.echo(f"  {rule.summary}")
-        click.echo("")
-        click.echo("Recommendation:")
-        click.echo(f"  {rule.recommendation}")
-        if rule.references:
-            click.echo("")
-            click.echo("References:")
-            for ref in rule.references:
-                click.echo(f"  - {ref}")
-        return
+        sys.exit(_eager_print_explain_chain(explain_chain_id))
 
     if explain_id and ai_explain_id:
         # ``--ai-explain`` already runs the deterministic body before
@@ -1992,40 +2052,7 @@ def scan(
         ))
 
     if standard_report:
-        # Distinct name from the ``std`` loop variable above (line 1099)
-        # so mypy can narrow ``Standard | None`` to ``Standard`` after
-        # the None check without conflicting with the loop variable's
-        # narrower inferred type.
-        report_std = _standards.get(standard_report)
-        if report_std is None:
-            available = ", ".join(_standards.available())
-            raise click.UsageError(
-                f"Unknown standard {standard_report!r}. "
-                f"Available: {available or 'none'}."
-            )
-        click.echo(f"{report_std.name} ,  {report_std.title} (v{report_std.version or 'n/a'})")
-        if report_std.url:
-            click.echo(f"  {report_std.url}")
-        click.echo("")
-        click.echo("Control -> check mapping:")
-        gaps: list[tuple[str, str]] = []
-        for ctrl_id in sorted(report_std.controls):
-            title = report_std.controls[ctrl_id]
-            check_ids = [
-                cid for cid, controls in report_std.mappings.items()
-                if ctrl_id in controls
-            ]
-            if check_ids:
-                joined = ", ".join(sorted(check_ids))
-                click.echo(f"  [{ctrl_id}] {title}")
-                click.echo(f"      checks: {joined}")
-            else:
-                gaps.append((ctrl_id, title))
-        if gaps:
-            click.echo("")
-            click.echo(f"Gaps ({len(gaps)} control(s) with no mapped check):")
-            for ctrl_id, title in gaps:
-                click.echo(f"  [{ctrl_id}] {title}")
+        _eager_print_standard_report(standard_report)
         return
 
     if config_check:
@@ -2316,6 +2343,12 @@ def scan(
                 candidates=("requirements.txt",),
                 detect_label="requirements.txt",
             )
+        elif pipeline_lc == "maven":
+            maven_path = _resolve_provider_path(
+                "maven", flag="maven-path", value=maven_path,
+                candidates=("pom.xml",),
+                detect_label="pom.xml",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -2421,6 +2454,7 @@ def scan(
         drone_path=drone_path,
         npm_path=npm_path,
         pypi_path=pypi_path,
+        maven_path=maven_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -3169,6 +3203,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     "helm": ("helm_path", (".",)),
     "npm": ("npm_path", (".",)),
     "pypi": ("pypi_path", (".",)),
+    "maven": ("maven_path", ("pom.xml",)),
     "cloudformation": (
         "cfn_template",
         (

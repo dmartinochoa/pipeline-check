@@ -44,15 +44,18 @@ RULE = Rule(
     ),
     docs_note=(
         "Package managers and build tools execute code by design. "
-        "``npm install`` runs ``preinstall`` / ``install`` / "
-        "``postinstall`` from the PR's ``package.json``; ``pip install"
-        " .`` runs the PR's ``setup.py``; ``make`` runs the PR's "
-        "``Makefile``; ``mvn`` / ``gradle`` load plugins declared in "
-        "the PR's ``pom.xml`` / ``build.gradle``; ``cargo build`` "
-        "runs ``build.rs``. Under ``pull_request_target`` / "
-        "``workflow_run``, the surrounding context already has "
-        "secrets and a write-scope token, so the lifecycle hook is "
-        "the entire attack."
+        "``npm install`` / ``pnpm install`` / ``yarn`` / ``bun "
+        "install`` run ``preinstall`` / ``install`` / ``postinstall``"
+        " / ``prepare`` from the PR's ``package.json``; ``deno "
+        "install`` resolves the PR's ``deno.json`` / ``package.json`` "
+        "and (when ``--allow-scripts`` opts in) runs the same npm "
+        "lifecycle hooks; ``pip install .`` runs the PR's "
+        "``setup.py``; ``make`` runs the PR's ``Makefile``; ``mvn`` "
+        "/ ``gradle`` load plugins declared in the PR's ``pom.xml`` "
+        "/ ``build.gradle``; ``cargo build`` runs ``build.rs``. "
+        "Under ``pull_request_target`` / ``workflow_run``, the "
+        "surrounding context already has secrets and a write-scope "
+        "token, so the lifecycle hook is the entire attack."
     ),
     known_fp=(
         "Workflows that pin the workspace to a trusted ref before "
@@ -123,8 +126,9 @@ RULE = Rule(
 # Each entry: ``(label, regex)``. Regex must match at start of line
 # (after optional whitespace) so ``echo \"running npm install\"`` in
 # a comment doesn't fire. The patterns are deliberately narrow:
-# ``npm install`` / ``npm ci`` / ``npm i``, but not ``npm run lint``
-# (which doesn't run lifecycle scripts at install time).
+# ``npm install`` / ``npm ci`` / ``npm i`` and the bun / deno
+# equivalents, but not ``npm run lint`` / ``bun run dev`` / ``deno
+# task test`` (which target named scripts, not install-time hooks).
 _BUILD_TOOL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("npm install/ci",
      re.compile(r"^\s*(?:sudo\s+)?npm\s+(?:install|ci|i)(?:\s|$)")),
@@ -133,7 +137,15 @@ _BUILD_TOOL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("yarn install",
      re.compile(r"^\s*(?:sudo\s+)?yarn(?:\s+install)?(?:\s|$)")),
     ("bun install",
-     re.compile(r"^\s*(?:sudo\s+)?bun\s+install(?:\s|$)")),
+     re.compile(r"^\s*(?:sudo\s+)?bun\s+(?:install|i)(?:\s|$)")),
+    ("deno install",
+     # ``deno install`` (Deno 2.x, no args) resolves project deps
+     # from ``deno.json`` / ``package.json`` and, with ``--allow-
+     # scripts`` set, runs the same npm lifecycle hooks. The older
+     # ``deno install <url>`` global form caches a workspace-
+     # resolved script and registers it as a binary, same PR-
+     # controlled bytes either way.
+     re.compile(r"^\s*(?:sudo\s+)?deno\s+install(?:\s|$)")),
     ("pip install local",
      # ``pip install .`` / ``pip install -e .`` / ``pip install ./pkg``,
      # plus long-form variants: ``pip install --editable .``,

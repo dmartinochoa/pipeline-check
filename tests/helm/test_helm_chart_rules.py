@@ -392,12 +392,12 @@ class TestHELM007:
 # ──────────────────────────────────────────────────────────────────
 
 
-from datetime import datetime, timedelta, timezone  # noqa: E402
+from datetime import UTC, datetime, timedelta  # noqa: E402
 
 
 class TestHELM008:
 
-    NOW = datetime(2026, 5, 8, tzinfo=timezone.utc)
+    NOW = datetime(2026, 5, 8, tzinfo=UTC)
 
     def _lock(self, generated: str | None) -> dict[str, Any]:
         return {"generated": generated} if generated is not None else {}
@@ -422,7 +422,7 @@ class TestHELM008:
 
     def test_helm_lock_with_z_suffix(self):
         # Helm sometimes writes ``2024-01-02T15:04:05.000Z`` — the
-        # parser must accept the ``Z`` form on Python 3.10 too.
+        # parser must accept the ``Z`` form.
         ts = (self.NOW - timedelta(days=120)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
         ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
         assert not check_helm008(ctx, _now=self.NOW).passed

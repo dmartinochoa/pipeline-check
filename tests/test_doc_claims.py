@@ -37,9 +37,26 @@ REPO = Path(__file__).resolve().parent.parent
 
 # Files that are expected to carry numerical claims about coverage.
 # Add new ones here as the doc set grows.
+#
+# Two tiers:
+#   - DOCS_REQUIRING_PROVIDER_CLAIM: the canonical user-facing surfaces
+#     that MUST advertise the provider count ("21 providers"). A missing
+#     claim here is itself a doc regression worth failing on.
+#   - DOCS_WITH_CLAIMS: every file scanned for drift. A claim absent
+#     from one of these is fine; a claim present must agree with the
+#     registry. New scan targets land here without forcing a redundant
+#     provider claim in every file.
+DOCS_REQUIRING_PROVIDER_CLAIM = [
+    REPO / "README.md",
+    REPO / "docs" / "index.md",
+    REPO / "action.yml",
+]
 DOCS_WITH_CLAIMS = [
     REPO / "README.md",
     REPO / "docs" / "index.md",
+    REPO / "action.yml",
+    REPO / "pyproject.toml",
+    REPO / "mkdocs.yml",
 ]
 
 
@@ -181,15 +198,32 @@ def test_provider_count_matches_registry(doc: Path):
     expected = _count_providers()
     text = doc.read_text(encoding="utf-8")
     found = _findall(_PROVIDER_CLAIM, text)
-    assert found, (
-        f"{doc.relative_to(REPO)}: no '<N> providers' claim found. "
-        f"At least one is expected so this test can guard the count."
-    )
+    if not found:
+        # Files in the broader scan set aren't required to carry the
+        # claim; the canonical set is enforced by
+        # ``test_canonical_docs_carry_provider_claim`` below.
+        return
     drift = [n for n in found if n != expected]
     assert not drift, (
         f"{doc.relative_to(REPO)}: provider-count drift, claim(s) "
         f"{drift}, registry has {expected}. Update the doc or check "
         f"pipeline_check.core.providers."
+    )
+
+
+@pytest.mark.parametrize("doc", DOCS_REQUIRING_PROVIDER_CLAIM)
+def test_canonical_docs_carry_provider_claim(doc: Path):
+    """User-facing surfaces (README, docs home, marketplace action.yml)
+    must advertise the provider count so the registry test has
+    something to enforce. Catches the case where a doc is rewritten
+    and the count quietly drops out."""
+    text = doc.read_text(encoding="utf-8")
+    found = _findall(_PROVIDER_CLAIM, text)
+    assert found, (
+        f"{doc.relative_to(REPO)}: no '<N> providers' claim found. "
+        f"This file is canonical user-facing surface; add a "
+        f"'<count> providers' claim so the drift guard has a value "
+        f"to enforce."
     )
 
 

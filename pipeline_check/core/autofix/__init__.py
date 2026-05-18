@@ -86,8 +86,11 @@ def render_patch(path: str, before: str, after: str) -> str:
     )
 
 
-# Side-effect import: bringing the implementation module in runs every
+# Side-effect imports: bringing each fixer module in runs every
 # ``@register(...)`` decorator and populates ``_FIXERS``. Kept explicit
 # (rather than ``pkgutil.walk_packages``) so the failure mode of a bad
 # import is "package init crashes loudly", not "fixer silently absent".
+# Provider-keyed sibling modules import the shared ``_insert_comment_above``
+# helper from ``_impl``, so ``_impl`` must come first.
 from . import _impl as _impl  # noqa: F401, E402
+from . import helm as helm  # noqa: F401, E402

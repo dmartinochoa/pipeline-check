@@ -90,6 +90,25 @@ _REGISTRY: tuple[CompromisedPackage, ...] = (
             "https://github.com/advisories/GHSA-7gjg-3qcj-9jvg"
         ),
     ),
+
+    # ultralytics compromise (December 2024). GitHub Actions script
+    # injection via ``${{ github.head_ref }}`` was used to exfiltrate
+    # an Actions cache key and poison the cache so the next release
+    # pulled malicious code. PyPI Trusted Publishing did not save the
+    # release because the OIDC token was minted inside the already-
+    # compromised job. The four malicious wheels launched an XMRig
+    # Monero miner on import.
+    CompromisedPackage(
+        name="ultralytics",
+        malicious_versions=("8.3.41", "8.3.42", "8.3.45", "8.3.46"),
+        advisory=(
+            "ultralytics compromise (Dec 2024). GHA cache-poison via "
+            "branch-name script injection bypassed Trusted Publishing "
+            "OIDC; four wheels launched XMRig on import. "
+            "https://blog.pypi.org/posts/2024-12-11-ultralytics-attack"
+            "-analysis/"
+        ),
+    ),
 )
 
 

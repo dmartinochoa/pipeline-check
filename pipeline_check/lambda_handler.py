@@ -61,7 +61,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -128,7 +128,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     )
 
     report = report_json(findings, score_result, tool_version=__version__)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     s3_key: str | None = f"reports/{timestamp}/pipeline_check-report.json"
 
     # Persist to S3. ``report_s3_status`` lets downstream consumers
