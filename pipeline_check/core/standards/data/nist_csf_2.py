@@ -67,6 +67,9 @@ STANDARD = Standard(
         "RC.RP-01": "The recovery portion of the incident response plan is executed once initiated",
     },
     mappings={
+        # GV.SC-08 (supplier incident-response participation) is
+        # contractual / process; no manifest signal evidences it.
+        # Left unmapped on purpose.
         # ── GV.SC. Supply-chain risk management ────────────────────
         "GHA-001":  ["GV.SC-05", "GV.SC-07"],
         "GHA-021":  ["GV.SC-05"],
@@ -100,7 +103,7 @@ STANDARD = Standard(
         "CC-029":   ["GV.SC-05"],
         "GCB-001":  ["GV.SC-05"],
         "CB-009":   ["GV.SC-05"],
-        "ECR-006":  ["GV.SC-04", "GV.SC-07"],
+        "ECR-006":  ["GV.SC-04", "GV.SC-07", "DE.CM-06"],   # pull-through upstream = external provider
         "CA-002":   ["GV.SC-04", "GV.SC-07"],
         "GHA-018":  ["GV.SC-04"],
         "GL-018":   ["GV.SC-04"],
@@ -162,7 +165,7 @@ STANDARD = Standard(
         "GCB-002":  ["PR.AA-03"],
         "GCB-003":  ["PR.AA-01"],
         "GCB-007":  ["PR.AA-01"],
-        "CCM-003":  ["PR.AA-05"],
+        "CCM-003":  ["PR.AA-05", "DE.CM-06"],   # cross-account trigger = external sink
         "CA-004":   ["PR.AA-05"],
         "SM-001":   ["PR.AA-01"],
         "SM-002":   ["PR.AA-05"],
@@ -217,7 +220,7 @@ STANDARD = Standard(
         # CB-005 co-maps: outdated image evidences both SC-risk monitoring
         # (GV.SC-07) and software-maintained-commensurate-with-risk (PS-02).
         "CB-005":   ["GV.SC-07", "PR.PS-02"],
-        "ECR-002":  ["GV.SC-05", "PR.PS-02"],
+        "ECR-002":  ["GV.SC-05", "PR.PS-02", "RC.RP-01"],   # mutable tags also break recovery-by-digest
         "GHA-020":  ["PR.PS-02"],
         "GL-019":   ["PR.PS-02"],
         "BB-015":   ["PR.PS-02"],
@@ -229,9 +232,9 @@ STANDARD = Standard(
         "ECR-007":  ["PR.PS-02"],
         # PS-04: log records (co-map with DE.CM-09 monitoring)
         "CB-003":   ["PR.PS-04", "DE.CM-09"],
-        "CT-001":   ["PR.PS-04", "DE.CM-09"],
+        "CT-001":   ["PR.PS-04", "DE.CM-09", "DE.AE-03"],
         "CT-002":   ["PR.PS-04", "DE.CM-09", "DE.AE-03"],
-        "CT-003":   ["PR.PS-04", "DE.CM-09"],
+        "CT-003":   ["PR.PS-04", "DE.CM-09", "DE.AE-03"],   # multi-region trail = cross-region correlation
         "CWL-001":  ["PR.PS-04", "DE.CM-09"],
         "CWL-002":  ["PR.PS-04", "DE.CM-09"],
         "S3-004":   ["PR.PS-04", "DE.CM-01", "DE.AE-03"],
@@ -323,12 +326,21 @@ STANDARD = Standard(
         # CD-001 / CD-003 co-map: resilience + recovery / incident-mgmt.
         "CD-001":   ["PR.IR-03", "RC.RP-01"],
         "CD-003":   ["PR.IR-03", "RS.MA-01"],
+        # ECR-002 (mutable tags) already maps to GV.SC-05 + PR.PS-02
+        # above; mutable tags also break recovery-by-digest, evidence
+        # for RC.RP-01.
 
         # ── DE.CM / DE.AE. Monitoring (cross-domain inputs) ────────
-        "EB-001":   ["DE.CM-09"],
+        # CW-001 / EB-001 co-map: a missing alarm / event rule is
+        # both a monitoring gap (DE.CM-09) and a missing incident-
+        # response trigger (RS.MA-01).
+        "EB-001":   ["DE.CM-09", "RS.MA-01"],
         "EB-002":   ["DE.CM-06"],
-        "CW-001":   ["DE.CM-09"],
+        "CW-001":   ["DE.CM-09", "RS.MA-01"],
         "CB-007":   ["DE.CM-06"],
+        # CCM-003 / ECR-006 already map to GV.SC-* above; both are
+        # also external-service-provider monitoring surfaces
+        # (cross-account event sinks, pull-through cache upstreams).
 
         # ── Kubernetes, workload runtime + RBAC + network +
         # configuration management. The pack maps cleanly across
@@ -457,7 +469,7 @@ STANDARD = Standard(
         "SCM-013":  ["PR.PS-06"],               # conversation resolution not required
         "SCM-014":  ["PR.PS-06"],               # last-push approval not required
         "SCM-015":  ["PR.DS-01", "DE.CM-09"],   # secret scanning push protection off
-        "SCM-016":  ["RS.MA-01"],               # private vulnerability reporting off
+        "SCM-016":  ["RS.MA-01", "DE.AE-03"],   # private vulnerability reporting (intake + correlation)
         "SCM-017":  ["PR.PS-06"],               # CODEOWNERS file missing
         "SCM-018":  ["PR.PS-06", "PR.AA-05"],   # PR review bypass allowed
         "SCM-019":  ["PR.AA-05", "PR.PS-06"],   # push-restriction allowlist names users
@@ -468,7 +480,7 @@ STANDARD = Standard(
         "SCM-023":  ["PR.PS-06"],               # env missing reviewers
         "SCM-024":  ["PR.PS-01"],               # env branch policy missing
         "SCM-025":  ["PR.AA-01"],               # deploy keys write-enabled
-        "SCM-026":  ["PR.DS-02", "PR.AA-01"],   # webhook insecure / no HMAC
+        "SCM-026":  ["PR.DS-02", "PR.AA-01", "DE.CM-06"],   # webhook = external service integration
         "SCM-027":  ["PR.AA-05"],               # outside collaborator elevated
         "SCM-028":  ["PR.AA-05"],               # private repo allows forking
         # Ruleset enforcement

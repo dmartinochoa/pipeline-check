@@ -43,11 +43,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PR.IR-01`](#ctrl-pr-ir-01) | Networks and environments are protected from unauthorized logical access and usage | 39 | 12C · 12H · 14M · 1L |
 | [`PR.IR-03`](#ctrl-pr-ir-03) | Mechanisms are implemented to achieve resilience requirements in normal and adverse situations | 6 | 5M · 1L |
 | [`DE.CM-01`](#ctrl-de-cm-01) | Networks and network services are monitored to find potentially adverse events | 1 | 1L |
-| [`DE.CM-06`](#ctrl-de-cm-06) | External service provider activities and services are monitored | 2 | 1H · 1M |
+| [`DE.CM-06`](#ctrl-de-cm-06) | External service provider activities and services are monitored | 5 | 3H · 2M |
 | [`DE.CM-09`](#ctrl-de-cm-09) | Computing hardware and software, runtime environments, and their data are monitored | 15 | 3H · 8M · 4L |
-| [`DE.AE-03`](#ctrl-de-ae-03) | Information is correlated from multiple sources | 2 | 1M · 1L |
-| [`RS.MA-01`](#ctrl-rs-ma-01) | The incident response plan is executed once an incident is declared | 2 | 1M · 1L |
-| [`RC.RP-01`](#ctrl-rc-rp-01) | The recovery portion of the incident response plan is executed once initiated | 2 | 2M |
+| [`DE.AE-03`](#ctrl-de-ae-03) | Information is correlated from multiple sources | 5 | 1H · 2M · 2L |
+| [`RS.MA-01`](#ctrl-rs-ma-01) | The incident response plan is executed once an incident is declared | 4 | 2M · 2L |
+| [`RC.RP-01`](#ctrl-rc-rp-01) | The recovery portion of the incident response plan is executed once initiated | 3 | 1H · 2M |
 
 ## Filter at runtime
 
@@ -607,12 +607,15 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE.CM-06: External service provider activities and services are monitored { #ctrl-de-cm-06 }
 
-**Evidenced by 2 checks** across AWS.
+**Evidenced by 5 checks** across 2 providers (AWS, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CB-007`](#detail-cb-007) | CodeBuild webhook has no filter group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CCM-003`](#detail-ccm-003) | CodeCommit trigger targets SNS/Lambda in a different account | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-006`](#detail-ecr-006) | ECR pull-through cache rule uses an untrusted upstream | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`SCM-026`](#detail-scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 
 ### DE.CM-09: Computing hardware and software, runtime environments, and their data are monitored { #ctrl-de-cm-09 }
 
@@ -638,29 +641,35 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE.AE-03: Information is correlated from multiple sources { #ctrl-de-ae-03 }
 
-**Evidenced by 2 checks** across AWS.
+**Evidenced by 5 checks** across 2 providers (AWS, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`CT-001`](#detail-ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CT-002`](#detail-ct-002) | CloudTrail log-file validation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CT-003`](#detail-ct-003) | CloudTrail trail is not multi-region | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`S3-004`](#detail-s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### RS.MA-01: The incident response plan is executed once an incident is declared { #ctrl-rs-ma-01 }
 
-**Evidenced by 2 checks** across 2 providers (AWS, SCM).
+**Evidenced by 4 checks** across 2 providers (AWS, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-003`](#detail-cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
+| [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
 ### RC.RP-01: The recovery portion of the incident response plan is executed once initiated { #ctrl-rc-rp-01 }
 
-**Evidenced by 2 checks** across AWS.
+**Evidenced by 3 checks** across AWS.
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CD-001`](#detail-cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`ECR-002`](#detail-ecr-002) | Image tags are mutable | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`S3-003`](#detail-s3-003) | Artifact bucket versioning not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 
 ## Check details
@@ -2049,7 +2058,7 @@ pipelines:
 
 #### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
 
-**Evidences:** [`PR.AA-05`](#ctrl-pr-aa-05) Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed.
+**Evidences:** [`PR.AA-05`](#ctrl-pr-aa-05) Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed, [`DE.CM-06`](#ctrl-de-cm-06) External service provider activities and services are monitored.
 
 **How this is detected.** A repo trigger pointing at an SNS topic or Lambda in a different account fires under the receiving account's permissions on every push. Sometimes this is the intended shape (a centralized notifications account), but a cross-account fan-out from a compromised repo can drive actions in the receiving account that the source-account owner can't directly observe.
 
@@ -2123,7 +2132,7 @@ pipelines:
 
 #### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
-**Evidences:** [`PR.PS-04`](#ctrl-pr-ps-04) Log records are generated and made available for continuous monitoring, [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored.
+**Evidences:** [`PR.PS-04`](#ctrl-pr-ps-04) Log records are generated and made available for continuous monitoring, [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored, [`DE.AE-03`](#ctrl-de-ae-03) Information is correlated from multiple sources.
 
 **How this is detected.** CloudTrail is the only AWS-native source of record for management-plane API calls. A region with no active trail blinds incident responders: a pipeline compromise is invisible once the in-memory CloudWatch buffer rolls over.
 
@@ -2143,7 +2152,7 @@ pipelines:
 
 #### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
 
-**Evidences:** [`PR.PS-04`](#ctrl-pr-ps-04) Log records are generated and made available for continuous monitoring, [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored.
+**Evidences:** [`PR.PS-04`](#ctrl-pr-ps-04) Log records are generated and made available for continuous monitoring, [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored, [`DE.AE-03`](#ctrl-de-ae-03) Information is correlated from multiple sources.
 
 **How this is detected.** An attacker who knows your CloudTrail trail is regional deliberately operates from a different region. Multi-region trails capture management events from every region into a single trail, closing the gap without you having to enumerate which regions you actually use.
 
@@ -2153,7 +2162,7 @@ pipelines:
 
 #### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
 
-**Evidences:** [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored.
+**Evidences:** [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored, [`RS.MA-01`](#ctrl-rs-ma-01) The incident response plan is executed once an incident is declared.
 
 **How this is detected.** Failure-rate signals are how on-call learns about an unfamiliar build crashing in a loop, an attacker probing the build environment, or a CI quota being exhausted. CloudWatch captures the ``FailedBuilds`` metric automatically, the alarm is the missing fan-out.
 
@@ -2492,7 +2501,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
-**Evidences:** [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored.
+**Evidences:** [`DE.CM-09`](#ctrl-de-cm-09) Computing hardware and software, runtime environments, and their data are monitored, [`RS.MA-01`](#ctrl-rs-ma-01) The incident response plan is executed once an incident is declared.
 
 **How this is detected.** Pipeline failure events are emitted to EventBridge automatically; the missing piece is a rule that pipes them to somewhere a human reads (SNS, Slack, PagerDuty). Without it, failures only surface via the CodePipeline console, which no one watches.
 
@@ -2522,7 +2531,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
 
-**Evidences:** [`GV.SC-05`](#ctrl-gv-sc-05) Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts, [`PR.PS-02`](#ctrl-pr-ps-02) Software is maintained, replaced, and removed commensurate with risk.
+**Evidences:** [`GV.SC-05`](#ctrl-gv-sc-05) Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts, [`PR.PS-02`](#ctrl-pr-ps-02) Software is maintained, replaced, and removed commensurate with risk, [`RC.RP-01`](#ctrl-rc-rp-01) The recovery portion of the incident response plan is executed once initiated.
 
 **How this is detected.** Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` can be re-pushed silently, the same tag points to different image content over time. Pinning by digest (``sha256:...``) in deployment manifests is the only durable reference; IMMUTABLE on the repo enforces the property registry-side so a forgotten digest reference doesn't drift.
 
@@ -2552,7 +2561,7 @@ CMD ["python3", "/app/app.py"]
 
 #### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
 
-**Evidences:** [`GV.SC-04`](#ctrl-gv-sc-04) Suppliers are known and prioritized by criticality, [`GV.SC-07`](#ctrl-gv-sc-07) Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored.
+**Evidences:** [`GV.SC-04`](#ctrl-gv-sc-04) Suppliers are known and prioritized by criticality, [`GV.SC-07`](#ctrl-gv-sc-07) Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored, [`DE.CM-06`](#ctrl-de-cm-06) External service provider activities and services are monitored.
 
 **How this is detected.** AWS supports pull-through cache for ECR Public, Quay, K8s, GitHub Container Registry, GitLab, and Docker Hub. A rule pointing at ``registry-1.docker.io`` without an authenticated credential silently caches whatever the public namespace resolves to.
 
@@ -5345,7 +5354,7 @@ spec:
 
 #### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
 
-**Evidences:** [`RS.MA-01`](#ctrl-rs-ma-01) The incident response plan is executed once an incident is declared.
+**Evidences:** [`DE.AE-03`](#ctrl-de-ae-03) Information is correlated from multiple sources, [`RS.MA-01`](#ctrl-rs-ma-01) The incident response plan is executed once an incident is declared.
 
 **How this is detected.** Reads ``security_and_analysis.private_vulnerability_reporting.status`` from the repo metadata payload. Fires when the value is anything other than ``enabled``. Severity is LOW because the rule documents process readiness rather than a structural vulnerability — but having no private reporting channel means the next external researcher's report is either a public issue or nothing.
 
@@ -5526,7 +5535,7 @@ GET /repos/acme/payments-api/keys
 
 #### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
 
-**Evidences:** [`PR.AA-01`](#ctrl-pr-aa-01) Identities and credentials for authorized users, services, and hardware are managed, [`PR.DS-02`](#ctrl-pr-ds-02) The confidentiality, integrity, and availability of data-in-transit are protected.
+**Evidences:** [`PR.AA-01`](#ctrl-pr-aa-01) Identities and credentials for authorized users, services, and hardware are managed, [`PR.DS-02`](#ctrl-pr-ds-02) The confidentiality, integrity, and availability of data-in-transit are protected, [`DE.CM-06`](#ctrl-de-cm-06) External service provider activities and services are monitored.
 
 **How this is detected.** Reads ``GET /repos/{owner}/{repo}/hooks`` and flags any active webhook with one or more failure modes:
 
