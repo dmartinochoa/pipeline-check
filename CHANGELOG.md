@@ -175,6 +175,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **LSP diagnostics carry the upstream severity name in ``data``.**
+  ``finding_to_diagnostic`` now sets
+  ``Diagnostic.data = {"severity": finding.severity.name}`` (one of
+  ``CRITICAL`` / ``HIGH`` / ``MEDIUM`` / ``LOW`` / ``INFO``). The LSP
+  ``DiagnosticSeverity`` enum collapses CRITICAL + HIGH into a single
+  ``Error`` value, so a precise client-side filter (e.g. "critical
+  only" in an editor) needs the full upstream name on the wire. The
+  VS Code extension's v0.1.1
+  [pipelineCheck.severityThreshold](https://github.com/greylag-ci/pipeline-check-vscode)
+  knob reads this field; older clients that ignore ``data`` are
+  unaffected.
+
 - **LSP diagnostics now self-contain the fix and link to the rule
   doc.** ``finding_to_diagnostic`` and ``findings_to_diagnostics``
   accept the dispatched provider name and set

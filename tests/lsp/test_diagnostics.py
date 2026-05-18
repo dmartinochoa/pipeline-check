@@ -93,6 +93,19 @@ def test_code_description_omitted_when_provider_unknown() -> None:
     assert d.code_description is None
 
 
+def test_data_carries_upstream_severity_name() -> None:
+    # The LSP DiagnosticSeverity enum collapses CRITICAL + HIGH into
+    # a single Error value, so a client filtering on "critical only"
+    # needs the upstream severity name. Stuff it in Diagnostic.data
+    # under "severity" so the VS Code client middleware can read it.
+    crit = finding_to_diagnostic(_make_finding(severity=Severity.CRITICAL))
+    high = finding_to_diagnostic(_make_finding(severity=Severity.HIGH))
+    low = finding_to_diagnostic(_make_finding(severity=Severity.LOW))
+    assert crit.data == {"severity": "CRITICAL"}
+    assert high.data == {"severity": "HIGH"}
+    assert low.data == {"severity": "LOW"}
+
+
 def test_range_from_location_one_based_to_zero_based() -> None:
     finding = _make_finding(
         locations=[Location(

@@ -3,7 +3,11 @@
 The mapping is intentionally narrow:
 
   - Severity goes through a static table (CRITICAL/HIGH → Error,
-    MEDIUM → Warning, LOW → Information, INFO → Hint).
+    MEDIUM → Warning, LOW → Information, INFO → Hint). The
+    upstream pipeline-check severity name (e.g. ``"CRITICAL"``) is
+    also stuffed into ``Diagnostic.data["severity"]`` so a client
+    can filter precisely (the LSP enum collapses CRITICAL + HIGH
+    into a single ``Error`` value).
   - ``Finding.locations[0]`` (1-based line / column) becomes the LSP
     range (0-based by LSP convention).
   - ``Finding.check_id`` lands in ``Diagnostic.code`` so the client
@@ -102,6 +106,7 @@ def finding_to_diagnostic(
         ),
         source="pipeline-check",
         message=_compose_message(finding),
+        data={"severity": finding.severity.name},
     )
 
 
