@@ -52,7 +52,7 @@ STANDARD = Standard(
         "JF-018":   ["ING-1"],
         "CC-018":   ["ING-1"],
         "CA-002":   ["ING-1", "ING-3"],    # public upstream = no deny-list gate
-        "ECR-006":  ["ING-1"],             # untrusted pull-through upstream
+        "ECR-006":  ["ING-1", "ING-3"],    # untrusted upstream = can't deny-list at the registry boundary
         "GHA-029":  ["ING-1"],             # package source bypasses lockfile
         "GL-027":   ["ING-1"],
         "BB-027":   ["ING-1"],
@@ -84,6 +84,15 @@ STANDARD = Standard(
         "GHA-056":  ["SCA-3", "ING-3"],     # known worm IOC = denyable + malware-class
         "GHA-057":  ["SCA-3"],              # scanner-output-to-egress is malicious shape
         "GHA-058":  ["SCA-3"],              # AI-CLI bypass turns the runner into a scanner
+        # Known-compromised package / action references are the
+        # canonical deny-list signal: each finding is one entry on a
+        # curated deny-list of versions that should never be installed.
+        # Maps to SCA-3 (malware-class detection) + ING-3 (deny-list
+        # capability), same shape as GHA-056 above.
+        "GHA-040":  ["SCA-3", "ING-3"],     # known-compromised action ref
+        "NPM-006":  ["SCA-3", "ING-3"],     # compromised npm version
+        "PYPI-006": ["SCA-3", "ING-3"],     # compromised PyPI version
+        "MVN-006":  ["SCA-3", "ING-3"],     # compromised Maven version
         "GL-025":   ["SCA-3"],
         "BB-025":   ["SCA-3"],
         "ADO-026":  ["SCA-3"],
