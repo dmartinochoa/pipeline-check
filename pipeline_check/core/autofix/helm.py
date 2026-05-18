@@ -25,17 +25,36 @@ from ..checks.base import Finding
 from . import register
 from ._impl import _insert_comment_above
 
+
+def _todo_already_above(content: str, match_start: int, marker: str) -> bool:
+    """True when the line immediately above ``match_start`` already
+    carries ``marker``. Per-match dedup so a partial state (one TODO
+    landed by hand, others still missing) doesn't suppress the
+    remaining annotations."""
+    if match_start == 0:
+        return False
+    # Regex matches are anchored at ``^`` in MULTILINE mode, so the
+    # newline at content[match_start - 1] separates the previous line
+    # from the matched one. Find that previous line's bounds.
+    prev_line_end = match_start - 1
+    if prev_line_end < 0 or content[prev_line_end] != "\n":
+        return False
+    prev_line_start = content.rfind("\n", 0, prev_line_end) + 1
+    return marker in content[prev_line_start:prev_line_end]
+
+
 _TODO_HELM_001 = (
     "TODO(pipeline-check HELM-001): bump to ``apiVersion: v2`` and "
     "migrate any sibling ``requirements.yaml`` entries into the "
     "``dependencies:`` list, then run ``helm dependency update``"
 )
 
-# Match the top-level ``apiVersion: v1`` line in Chart.yaml. The
-# value capture deliberately rejects whitespace and ``#`` so an
-# inline comment doesn't trip the regex.
+# Match the top-level ``apiVersion: v1`` line in Chart.yaml. No
+# leading-whitespace allowance because a Chart.yaml apiVersion key
+# always sits at column 0; ``\s*`` here would also match a nested
+# ``spec.apiVersion`` or a ``- apiVersion`` list entry.
 _HELM_API_V1_RE = re.compile(
-    r"^(?P<indent>\s*)apiVersion\s*:\s*[\"']?v1[\"']?\s*(?:#[^\n]*)?$",
+    r"^apiVersion\s*:\s*[\"']?v1[\"']?\s*(?:#[^\n]*)?$",
     re.MULTILINE,
 )
 
@@ -44,16 +63,15 @@ _HELM_API_V1_RE = re.compile(
 def _fix_helm001_api_version(content: str, finding: Finding) -> str | None:
     """Insert a TODO above ``apiVersion: v1`` in Chart.yaml.
 
-    Idempotent via the marker check. Multiple matches in one file
-    (rare , a chart should have one ``apiVersion`` key) each get a
-    comment above them.
+    Per-match idempotent: a file-wide marker presence no longer
+    short-circuits, so a partially-annotated file still picks up the
+    remaining offenders.
     """
-    if _TODO_HELM_001 in content:
-        return None
     edits: list[tuple[int, str]] = []
     for m in _HELM_API_V1_RE.finditer(content):
-        indent = m.group("indent")
-        edits.append((m.start(), f"{indent}# {_TODO_HELM_001}\n"))
+        if _todo_already_above(content, m.start(), _TODO_HELM_001):
+            continue
+        edits.append((m.start(), f"# {_TODO_HELM_001}\n"))
     if not edits:
         return None
     return _insert_comment_above(content, edits)
@@ -66,11 +84,11 @@ _TODO_HELM_002 = (
 )
 
 # Match the ``dependencies:`` key at the top level of Chart.yaml.
-# Anchoring to BOL + a single ``dependencies`` key avoids matching
-# nested mappings (e.g. a ``spec.dependencies:`` field in some
-# chart-of-charts shapes).
+# Anchored at column 0 so a nested mapping (``spec.dependencies:`` in
+# chart-of-charts shapes, or a templating-time substitution) doesn't
+# attract a marker.
 _HELM_DEPENDENCIES_RE = re.compile(
-    r"^(?P<indent>\s*)dependencies\s*:\s*(?:#[^\n]*)?$",
+    r"^dependencies\s*:\s*(?:#[^\n]*)?$",
     re.MULTILINE,
 )
 
@@ -85,12 +103,11 @@ def _fix_helm002_dependencies_lock(content: str, finding: Finding) -> str | None
     specific failure mode in Chart.lock , the human action is the
     same in every case (``helm dependency update``).
     """
-    if _TODO_HELM_002 in content:
-        return None
     edits: list[tuple[int, str]] = []
     for m in _HELM_DEPENDENCIES_RE.finditer(content):
-        indent = m.group("indent")
-        edits.append((m.start(), f"{indent}# {_TODO_HELM_002}\n"))
+        if _todo_already_above(content, m.start(), _TODO_HELM_002):
+            continue
+        edits.append((m.start(), f"# {_TODO_HELM_002}\n"))
     if not edits:
         return None
     return _insert_comment_above(content, edits)
@@ -104,7 +121,9 @@ _TODO_HELM_003 = (
 
 # Match a ``repository: <url>`` line whose URL is on a non-HTTPS,
 # non-OCI, non-file scheme. Only the four common plaintext schemes
-# need to fire here; safe URLs simply don't match.
+# need to fire here; safe URLs simply don't match. The indent
+# capture stays here because dependency entries are nested under
+# ``dependencies:`` (unlike HELM-001/002 which target top-level keys).
 _HELM_PLAINTEXT_REPO_RE = re.compile(
     r"^(?P<indent>\s*)repository\s*:\s*[\"']?"
     r"(?:http|git|ftp|rsync)://[^\s\"'#]*"
@@ -120,10 +139,10 @@ def _fix_helm003_plaintext_repo(content: str, finding: Finding) -> str | None:
     Multiple deps on the same chart each get their own comment so a
     review with several offenders is unambiguous.
     """
-    if _TODO_HELM_003 in content:
-        return None
     edits: list[tuple[int, str]] = []
     for m in _HELM_PLAINTEXT_REPO_RE.finditer(content):
+        if _todo_already_above(content, m.start(), _TODO_HELM_003):
+            continue
         indent = m.group("indent")
         edits.append((m.start(), f"{indent}# {_TODO_HELM_003}\n"))
     if not edits:

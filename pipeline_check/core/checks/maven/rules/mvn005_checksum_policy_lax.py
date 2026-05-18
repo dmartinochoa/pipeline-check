@@ -54,7 +54,10 @@ _MAVEN_CENTRAL_URLS: frozenset[str] = frozenset({
 
 
 def _is_central(url: str) -> bool:
-    u = url.strip().rstrip("/")
+    # Lowercase before comparing so a mixed-case form like
+    # ``https://Repo1.Maven.Org/maven2`` is still recognized as Central
+    # (URL host comparison is case-insensitive).
+    u = url.strip().lower().rstrip("/")
     return f"{u}/" in _MAVEN_CENTRAL_URLS or u in {
         "https://repo.maven.apache.org/maven2",
         "https://repo1.maven.org/maven2",

@@ -13,7 +13,7 @@ from .._catalog import ResourceCatalog
 
 RULE = Rule(
     id="CA-004",
-    title="CodeArtifact repo policy grants codeartifact:* with Resource '*'",
+    title="CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'``",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-2",),
     cwe=("CWE-732",),

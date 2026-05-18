@@ -7,7 +7,7 @@ from ..base import PomFile, iter_real_dependencies
 
 RULE = Rule(
     id="MVN-004",
-    title="pom.xml dependency omits an explicit <version>",
+    title="pom.xml dependency omits an explicit ``<version>``",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
@@ -27,8 +27,11 @@ RULE = Rule(
         "Fires on any non-managed ``<dependency>`` whose "
         "``<version>`` element is absent or empty. Managed entries "
         "in ``<dependencyManagement>`` are the *source* of the "
-        "version; they are checked separately by MVN-001 / MVN-002 "
-        "for floating ranges and SNAPSHOTs but not by this rule."
+        "version and intentionally out of scope for the entire "
+        "Maven rule pack (MVN-001 / MVN-002 / MVN-004 all iterate "
+        "``iter_real_dependencies(...)``, which skips managed "
+        "entries) — a BOM-style version-management block is its "
+        "own surface and is audited via the inherited POM."
     ),
     known_fp=(
         "Spring Boot starters and other BOM-managed dependencies "

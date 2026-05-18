@@ -109,8 +109,12 @@ class TestMVN004:
         assert f.passed
 
     def test_managed_dependency_is_exempt(self):
-        # An entry inside <dependencyManagement> without <version> is
-        # NOT a real consumption; MVN-004 should pass.
+        # An entry inside <dependencyManagement> WITHOUT <version> is
+        # NOT a real consumption; MVN-004 should pass. The fixture
+        # must omit <version> to actually exercise the exemption
+        # branch — otherwise the test would still pass via the
+        # version-present path and the documented behavior is
+        # untested.
         text = (
             "<?xml version='1.0' encoding='UTF-8'?>\n"
             "<project xmlns='http://maven.apache.org/POM/4.0.0'>\n"
@@ -123,7 +127,6 @@ class TestMVN004:
             "      <dependency>\n"
             "        <groupId>org.example</groupId>\n"
             "        <artifactId>lib</artifactId>\n"
-            "        <version>1.0.0</version>\n"
             "      </dependency>\n"
             "    </dependencies>\n"
             "  </dependencyManagement>\n"
