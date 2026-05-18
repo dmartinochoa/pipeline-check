@@ -17,6 +17,7 @@ from pipeline_check.core.checks._primitives import (
     container_image,
     deploy_names,
     image_pinning,
+    image_ref,
     lockfile_integrity,
     remote_script_exec,
     secret_shapes,
@@ -225,6 +226,274 @@ class TestContainerImageClassify:
         info = container_image.classify(None)
         assert info.ref == ""
         assert info.pinned is True
+
+    def test_digest_pin_blanks_surface_tag_even_when_tag_also_present(self):
+        # ``python:3.11@sha256:<hex>`` has both a tag and a digest.
+        # The surface ``tag`` field is intentionally blanked when a
+        # digest pin wins; callers that need both fields read
+        # parse_image_ref directly.
+        info = container_image.classify("python:3.11@sha256:" + "a" * 64)
+        assert info.pinned is True
+        assert info.digest == "a" * 64
+        assert info.tag == ""
+
+    def test_aws_managed_image_has_blank_surface_registry(self):
+        # The AWS-managed shortform (``aws/codebuild/standard:7.0``)
+        # has no explicit registry, but even after Docker Hub default
+        # injection the surface registry is intentionally blank so
+        # legacy callers that branch on truthiness keep their
+        # semantics.
+        info = container_image.classify("aws/codebuild/standard:7.0")
+        assert info.aws_managed is True
+        assert info.registry == ""
+
+    def test_registry_without_dot_returns_blank_surface(self):
+        # ``localhost:5000/img:1`` is a registry by Docker rules, but
+        # the surface registry filter is "dot-bearing only" so the
+        # field comes back blank. Locks the legacy contract — a
+        # future loosening has to update this test.
+        info = container_image.classify("localhost:5000/img:1")
+        assert info.registry == ""
+
+    @pytest.mark.parametrize("host", [
+        "public.ecr.aws", "registry.k8s.io", "ghcr.io", "gcr.io",
+    ])
+    def test_trusted_registries_flagged(self, host):
+        info = container_image.classify(f"{host}/team/app:v1")
+        assert info.trusted_registry is True
+
+    def test_docker_hub_explicit_namespace_not_trusted(self):
+        # ``docker.io`` is NOT in the trusted set on purpose — Docker
+        # Hub hosts both vendor-signed and arbitrary user images and
+        # ``trusted_registry`` is a domain marker for "vendor-curated".
+        info = container_image.classify("docker.io/library/redis:7")
+        assert info.trusted_registry is False
+
+
+# ──────────────────────────────────────────────────────────────────
+# image_ref
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestImageRefParse:
+    def test_implicit_docker_hub_shortform(self):
+        ref = image_ref.parse_image_ref("alpine")
+        assert ref is not None
+        assert ref.registry == ""
+        assert ref.repository == "alpine"
+        assert ref.tag == ""
+        assert ref.digest_hex == ""
+        assert ref.canonical_registry == "docker.io"
+        assert ref.canonical_repository == "library/alpine"
+
+    def test_implicit_docker_hub_with_tag(self):
+        ref = image_ref.parse_image_ref("python:3.11")
+        assert ref is not None
+        assert ref.registry == ""
+        assert ref.repository == "python"
+        assert ref.tag == "3.11"
+        assert ref.canonical_repository == "library/python"
+
+    def test_explicit_namespace_no_registry(self):
+        # ``library/alpine`` has a slash but the first component is
+        # not host-shaped → no registry, repository stays two-segment.
+        ref = image_ref.parse_image_ref("library/alpine:3.20")
+        assert ref is not None
+        assert ref.registry == ""
+        assert ref.repository == "library/alpine"
+        assert ref.tag == "3.20"
+        # Canonical doesn't double-prefix ``library/``.
+        assert ref.canonical_repository == "library/alpine"
+
+    def test_explicit_registry(self):
+        ref = image_ref.parse_image_ref("ghcr.io/corp/builder:v1")
+        assert ref is not None
+        assert ref.registry == "ghcr.io"
+        assert ref.repository == "corp/builder"
+        assert ref.tag == "v1"
+        assert ref.canonical_registry == "ghcr.io"
+        assert ref.canonical_repository == "corp/builder"
+
+    def test_registry_with_port(self):
+        # ``registry.internal:5000/team/app:v1`` must split the port
+        # off the registry, not off the tag.
+        ref = image_ref.parse_image_ref("registry.internal:5000/team/app:v1")
+        assert ref is not None
+        assert ref.registry == "registry.internal:5000"
+        assert ref.repository == "team/app"
+        assert ref.tag == "v1"
+
+    def test_registry_with_port_no_tag(self):
+        ref = image_ref.parse_image_ref("registry.internal:5000/team/app")
+        assert ref is not None
+        assert ref.registry == "registry.internal:5000"
+        assert ref.repository == "team/app"
+        assert ref.tag == ""
+
+    def test_localhost_registry(self):
+        # ``localhost`` has no dot but Docker treats it as a registry.
+        ref = image_ref.parse_image_ref("localhost:5000/img:1")
+        assert ref is not None
+        assert ref.registry == "localhost:5000"
+        ref2 = image_ref.parse_image_ref("localhost/img:1")
+        assert ref2 is not None
+        assert ref2.registry == "localhost"
+
+    def test_aws_managed_shortform(self):
+        # ``aws/codebuild/standard:7.0`` — no registry, multi-segment repo.
+        # The AWS-managed verdict stays in ``container_image.classify()``.
+        ref = image_ref.parse_image_ref("aws/codebuild/standard:7.0")
+        assert ref is not None
+        assert ref.registry == ""
+        assert ref.repository == "aws/codebuild/standard"
+        assert ref.tag == "7.0"
+
+    def test_digest_pin(self):
+        ref = image_ref.parse_image_ref(
+            "ghcr.io/corp/builder@sha256:" + "a" * 64
+        )
+        assert ref is not None
+        assert ref.registry == "ghcr.io"
+        assert ref.repository == "corp/builder"
+        assert ref.tag == ""
+        assert ref.digest_algo == "sha256"
+        assert ref.digest_hex == "a" * 64
+        assert ref.is_digest_pinned is True
+
+    def test_tag_plus_digest(self):
+        ref = image_ref.parse_image_ref(
+            "python:3.11@sha256:" + "b" * 64
+        )
+        assert ref is not None
+        assert ref.repository == "python"
+        assert ref.tag == "3.11"
+        assert ref.digest_hex == "b" * 64
+        assert ref.is_digest_pinned is True
+
+    def test_uppercase_digest_rejected_per_oci_spec(self):
+        # Engine invariant: OCI mandates lowercase hex. Uppercase is
+        # detected as a boundary (so the suffix is peeled off the
+        # repository correctly) but is_digest_pinned must say False.
+        ref = image_ref.parse_image_ref(
+            "alpine@sha256:" + "A" * 64
+        )
+        assert ref is not None
+        assert ref.digest_algo == "sha256"
+        assert ref.digest_hex == "A" * 64
+        assert ref.is_digest_pinned is False
+        # And the repository is clean — no ``@sha256:...`` garbage left.
+        assert ref.repository == "alpine"
+
+    def test_truncated_digest_rejected(self):
+        ref = image_ref.parse_image_ref("alpine@sha256:" + "a" * 32)
+        assert ref is not None
+        assert ref.is_digest_pinned is False
+
+    def test_sha512_digest_accepted(self):
+        # Spec-legal alternative width.
+        ref = image_ref.parse_image_ref("alpine@sha512:" + "c" * 128)
+        assert ref is not None
+        assert ref.digest_algo == "sha512"
+        assert ref.is_digest_pinned is True
+
+    def test_at_sign_without_digest_shape_not_a_digest(self):
+        # ``foo@bar`` (no ``algo:hex`` after the @) — not a digest;
+        # the ``@`` ends up inside the repository name.
+        ref = image_ref.parse_image_ref("foo@bar")
+        assert ref is not None
+        assert ref.digest_algo == ""
+        assert ref.is_digest_pinned is False
+
+    def test_floating_tag_classification(self):
+        for tag_input in ("python:latest", "alpine:stable", "alpine:edge"):
+            ref = image_ref.parse_image_ref(tag_input)
+            assert ref is not None
+            assert ref.is_floating_tag is True
+
+    def test_version_tag_not_floating(self):
+        for tag_input in ("python:3.11", "node:20-bookworm", "app:v1.2.3-rc.1"):
+            ref = image_ref.parse_image_ref(tag_input)
+            assert ref is not None
+            assert ref.is_floating_tag is False
+
+    def test_no_tag_not_floating(self):
+        # A bare ref isn't floating — it's a separate state. Lets
+        # callers distinguish "missing tag" from "mutable tag" if
+        # they care.
+        ref = image_ref.parse_image_ref("alpine")
+        assert ref is not None
+        assert ref.is_floating_tag is False
+
+    @pytest.mark.parametrize("value", [None, 123, "", "   ", []])
+    def test_invalid_input_returns_none(self, value):
+        assert image_ref.parse_image_ref(value) is None
+
+    def test_host_with_trailing_slash_only_returns_none(self):
+        # ``ghcr.io/`` — registry boundary recognized but no repository
+        # follows. Treated as malformed rather than silently surfacing
+        # an empty repository name.
+        assert image_ref.parse_image_ref("ghcr.io/") is None
+
+    def test_digest_only_strip_leaves_no_repo_returns_none(self):
+        # If the entire body before the digest boundary is the
+        # registry host (``ghcr.io@sha256:...``), the post-strip body
+        # has no repository name. Must return None, not crash.
+        assert image_ref.parse_image_ref("ghcr.io/@sha256:" + "a" * 64) is None
+
+    def test_unknown_digest_algorithm_not_pinned_but_parsed(self):
+        # ``sha1`` is detected as a boundary algorithm (so the suffix
+        # gets stripped from the repository) but is_digest_pinned is
+        # False because sha1 isn't in the trusted widths map.
+        ref = image_ref.parse_image_ref("alpine@sha1:" + "a" * 40)
+        assert ref is not None
+        assert ref.digest_algo == "sha1"
+        assert ref.is_digest_pinned is False
+        # Repository surface stays clean.
+        assert ref.repository == "alpine"
+
+    def test_tag_in_middle_segment_not_split(self):
+        # Tag splitting only operates on the final path segment, so a
+        # colon inside a path component earlier in the repo path
+        # (theoretical, but possible in custom registries) doesn't
+        # accidentally become the tag.
+        ref = image_ref.parse_image_ref("ghcr.io/team/app:v1")
+        assert ref is not None
+        assert ref.tag == "v1"
+        assert ref.repository == "team/app"  # not "team/app:v1"
+
+
+# ──────────────────────────────────────────────────────────────────
+# image_pinning extra edge cases
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestImagePinningClassifyEdges:
+    def test_empty_string_treated_as_no_tag(self):
+        # parse_image_ref returns None for "", and the classifier
+        # preserves the legacy "fall through to NO_TAG" verdict so
+        # rules treat empties as unpinned without crashing.
+        assert image_pinning.classify("") is image_pinning.PinKind.NO_TAG
+
+    def test_non_string_input_treated_as_no_tag(self):
+        # The annotated signature says ``str``, but rules fish refs
+        # out of YAML where the static type is ``Any | None``. The
+        # primitive must accept the non-str case gracefully.
+        assert image_pinning.classify(None) is image_pinning.PinKind.NO_TAG  # type: ignore[arg-type]
+
+    def test_uppercase_sha256_hex_is_not_digest_pinned(self):
+        # Uppercase hex is detected as a boundary (so the suffix gets
+        # peeled) but is_digest_pinned is False per OCI spec, so the
+        # classifier falls through. With a tag of "", that's NO_TAG.
+        ref = "alpine@sha256:" + "A" * 64
+        assert image_pinning.classify(ref) is image_pinning.PinKind.NO_TAG
+
+    def test_short_digest_falls_back_to_no_tag(self):
+        # 32-char "sha256" is not a real OCI digest, so it doesn't
+        # count as DIGEST. Without a tag, the verdict is NO_TAG.
+        assert (
+            image_pinning.classify("alpine@sha256:" + "a" * 32)
+            is image_pinning.PinKind.NO_TAG
+        )
 
 
 # ──────────────────────────────────────────────────────────────────
