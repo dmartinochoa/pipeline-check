@@ -143,6 +143,19 @@ chain. Nothing leaves your machine. MIT licensed, no signup, no account.
 <a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a>
 </div>
 
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+</div>
+### Inline in your editor
+The Pipeline-Check VS Code extension drives the same rule registry as the CLI,
+surfaced as you edit workflow files. Install from the
+<a href="https://marketplace.visualstudio.com/items?itemName=greylag-ci.pipeline-check">VS Code Marketplace</a>
+or <a href="https://open-vsx.org/extension/greylag-ci/pipeline-check">Open VSX</a>;
+source lives at <a href="https://github.com/greylag-ci/pipeline-check-vscode">greylag-ci/pipeline-check-vscode</a>.
+<a class="pg-feature__link" href="usage/#editor-integration">Editor integration</a>
+</div>
+
 </div>
 </section>
 
