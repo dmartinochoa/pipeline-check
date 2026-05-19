@@ -64,15 +64,24 @@ def _pod_spec_patch_grants_priv(spec: dict[str, Any]) -> bool:
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    # Per-template anchor in the form ``<Kind>/<name>:<template>`` so
+    # AC-025 can intersect with ARGO-005's per-template anchors and
+    # confirm that the same template both runs privileged AND
+    # interpolates an unsafe param. Argo's check surface collapses
+    # the whole corpus into one Finding, so the anchor is the only
+    # per-template attribution available to the chain engine. Order-
+    # preserving dict for reproducibility.
+    anchor_templates: dict[str, None] = {}
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
             for container in iter_containers(tmpl):
                 sc = container.get("securityContext")
                 issues = _container_offenders(sc)
                 if issues:
+                    tname = template_name(tmpl, idx)
                     offenders.append(
                         f"{doc.kind}/{doc.name} "
-                        f"{template_name(tmpl, idx)}: {', '.join(issues)}"
+                        f"{tname}: {', '.join(issues)}"
                     )
                     # Anchor on securityContext when present, then the
                     # container, then the template, same precedence
@@ -83,6 +92,7 @@ def check(ctx: ArgoContext) -> Finding:
                         start_line=line, end_line=line,
                         doc_index=doc.doc_index,
                     ))
+                    anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
         spec = workflow_spec(doc)
         if _pod_spec_patch_grants_priv(spec):
             offenders.append(
@@ -95,6 +105,12 @@ def check(ctx: ArgoContext) -> Finding:
                 start_line=line, end_line=line,
                 doc_index=doc.doc_index,
             ))
+            # podSpecPatch privilege applies to every template in the
+            # workflow; fan out one anchor per template so reachability
+            # with ARGO-005 on any one of them lands on the same key.
+            for idx, tmpl in enumerate(iter_templates(doc)):
+                tname = template_name(tmpl, idx)
+                anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -115,4 +131,5 @@ def check(ctx: ArgoContext) -> Finding:
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_templates),
     )

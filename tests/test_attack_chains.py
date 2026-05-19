@@ -1900,6 +1900,50 @@ class TestChainAC025:
         assert "AC-025" in chain_ids
         assert "AC-021" not in chain_ids
 
+    def test_reachability_confirmed_when_template_anchors_intersect(self):
+        # The same template (``Workflow/build:main``) both runs
+        # privileged AND interpolates an unsafe param — the precise
+        # node-escape primitive.
+        out = chains_pkg.evaluate([
+            _f(
+                "ARGO-002",
+                self.WF,
+                job_anchors=("Workflow/build:main",),
+            ),
+            _f(
+                "ARGO-005",
+                self.WF,
+                job_anchors=("Workflow/build:main",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is True
+        assert "Workflow/build:main" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_templates_disjoint(self):
+        # Privileged template is ``init``, param-injection sink is
+        # ``deploy``. Both findings fire on the same workflow file
+        # but neither single template exposes the kernel-RCE shape.
+        out = chains_pkg.evaluate([
+            _f(
+                "ARGO-002",
+                self.WF,
+                job_anchors=("Workflow/build:init",),
+            ),
+            _f(
+                "ARGO-005",
+                self.WF,
+                job_anchors=("Workflow/build:deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC026:
     """AC-026 — Buildkite injection lands on auto-deploy step."""

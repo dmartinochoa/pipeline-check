@@ -186,6 +186,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-025 (Argo param injection + privileged
+  template).** `AC-025` now intersects `ARGO-002` ∩ `ARGO-005`
+  template anchors, mirroring the AC-023 Tekton port. Argo's
+  check surface also collapses every Workflow / WorkflowTemplate
+  / ClusterWorkflowTemplate finding into a single
+  ``resource="argo"`` row, so before this migration AC-025 fired
+  on whole-corpus co-occurrence. Both leg rules now populate
+  `Finding.job_anchors` with a template-scoped identifier in
+  the form ``<Kind>/<name>:<template>``. When ARGO-002's
+  privilege comes from ``spec.podSpecPatch: 'privileged: true'``
+  (workflow-wide rather than per-template), the rule fans out
+  one anchor per template in that workflow so reachability with
+  ARGO-005 on any one of them still lands on the same key.
+  Confirmed → `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared template(s).
+  Disjoint anchors fall back to the legacy co-occurrence signal.
+
 - **Reachability-aware AC-023 (Tekton param injection + privileged
   step).** `AC-023` now intersects `TKN-002` ∩ `TKN-003` job
   anchors. Tekton's check surface collapses every Task / ClusterTask

@@ -49,7 +49,7 @@ level config is easy to drift back over time.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -112,10 +112,56 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability: a shared template anchor (``<Kind>/<name>:<template>``)
+    # between ARGO-002 (privileged / root container) and ARGO-005
+    # (unsafe ``{{inputs.parameters.X}}`` in script / args / command)
+    # confirms the same template is BOTH the injection sink AND the
+    # privilege amplifier — the exact node-escape primitive. When
+    # the privilege comes from ``spec.podSpecPatch: 'privileged:
+    # true'`` (workflow-wide), ARGO-002 fans out an anchor per
+    # template in that workflow so reachability with ARGO-005 on
+    # any one of them still lands on the same key. Disjoint anchors
+    # still co-occur within the Argo corpus but don't compose into
+    # the single-template kernel-RCE shape; we keep the weaker
+    # co-occurrence signal there because both legs remain
+    # individually risky.
     grouped = group_by_resource(findings, ["ARGO-002", "ARGO-005"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["ARGO-002"], ck_map["ARGO-005"]]
+        argo002 = ck_map["ARGO-002"]
+        argo005 = ck_map["ARGO-005"]
+        triggers = [argo002, argo005]
+
+        priv_templates = set(argo002.job_anchors)
+        inj_templates = set(argo005.job_anchors)
+        shared = sorted(priv_templates & inj_templates)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{t}`" for t in shared)
+            reach_note = (
+                f"Privileged template and param-injection sink share "
+                f"template {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same template(s) "
+                f"({shared_repr}) BOTH run privileged AND interpolate "
+                f"``{{{{inputs.parameters.<name>}}}}`` unquoted. A "
+                f"crafted Workflow-submission param value executes "
+                f"as a shell command inside the kernel-privileged "
+                f"container in one go, no inter-template dataflow "
+                f"required."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the privileged "
+                "template and the param-injection sink live in "
+                "different templates of this Argo corpus. Each leg "
+                "is independently risky but neither single template "
+                "exposes the kernel-RCE primitive; treat as a "
+                "co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A template's ``script.source`` or container "
@@ -144,13 +190,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "don't break this chain. The escape route is the "
             "node, not the K8s API. Pass the param via ``env:`` "
             "or drop the privileged / root setting; either fix "
-            "alone breaks the chain."
+            "alone breaks the chain.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -160,5 +210,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

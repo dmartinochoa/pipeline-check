@@ -104,8 +104,14 @@ def _scan_text(text: str) -> list[str]:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    # Per-template anchor in the form ``<Kind>/<name>:<template>`` so
+    # AC-025 can intersect with ARGO-002's per-template anchors. The
+    # same template both running privileged AND interpolating an
+    # unsafe param is the precise node-escape primitive.
+    anchor_templates: dict[str, None] = {}
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
+            tname = template_name(tmpl, idx)
             for container in iter_containers(tmpl):
                 src = container.get("source")
                 if isinstance(src, str):
@@ -113,8 +119,9 @@ def check(ctx: ArgoContext) -> Finding:
                     if hits:
                         offenders.append(
                             f"{doc.kind}/{doc.name} "
-                            f"{template_name(tmpl, idx)} script: {hits[0]}"
+                            f"{tname} script: {hits[0]}"
                         )
+                        anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
                         continue
                 args = container.get("args")
                 if isinstance(args, list):
@@ -125,8 +132,9 @@ def check(ctx: ArgoContext) -> Finding:
                             if hits:
                                 offenders.append(
                                     f"{doc.kind}/{doc.name} "
-                                    f"{template_name(tmpl, idx)} args: {hits[0]}"
+                                    f"{tname} args: {hits[0]}"
                                 )
+                                anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
                                 found = True
                                 break
                     if found:
@@ -139,8 +147,9 @@ def check(ctx: ArgoContext) -> Finding:
                             if hits:
                                 offenders.append(
                                     f"{doc.kind}/{doc.name} "
-                                    f"{template_name(tmpl, idx)} command: {hits[0]}"
+                                    f"{tname} command: {hits[0]}"
                                 )
+                                anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
                                 break
     if not ctx.docs:
         return Finding(
@@ -161,4 +170,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_templates),
     )
