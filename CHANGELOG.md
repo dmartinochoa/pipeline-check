@@ -12,6 +12,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Org-wide fleet scanner (`pipeline_check fleet`) phase 1.** New
+  CLI subcommand that reads a YAML list of GitHub-style
+  ``owner/repo`` coordinates, shallow-clones each into a tmpdir,
+  runs the existing scan in a fresh subprocess so per-repo state
+  stays isolated, and writes a unified output tree:
+  ``<output-dir>/<owner>/<repo>/findings.json`` per repo plus a
+  top-level ``fleet.json`` aggregate and ``fleet.md`` digest
+  (org-wide severity totals + per-repo posture table ranked worst
+  → best + warnings). Closes the "do we even have visibility?"
+  roadmap gap without dragging in a SaaS posture-management tool.
+  Compounds with the existing ``pipeline_check history`` command:
+  the same fleet output directory can be re-rendered as a
+  static-HTML dashboard. A single repo's clone or scan failure
+  becomes a per-repo warning on the digest rather than aborting
+  the whole run; per-repo timeout (``--per-repo-timeout``,
+  default 600s) bounds any one stuck repo's blast radius. Phase
+  1 limits coordinates to GitHub-style ``owner/repo`` (GitLab
+  ``group/sub/project`` and Bitbucket ``workspace/slug`` are
+  deferred and rejected at parse time with an explicit error so
+  the user sees the limitation immediately). Deferred to phase 2:
+  ``--from-org`` SCM API enumeration, ``--include`` /
+  ``--exclude`` globs, ``--baseline-dir`` regression diffing,
+  per-repo SARIF / ``threats.md`` outputs, and forwarding
+  arbitrary ``pipeline_check`` flags to the per-repo subprocess.
+  Twenty new tests in ``tests/test_fleet.py`` cover repo-list
+  parsing (flat list / mapping-with-``repos`` / malformed YAML /
+  non-string / wrong-shape coordinate / GitLab-style rejection),
+  digest rendering (ranking, warnings, truncation), the
+  orchestrator's clone-failure / scan-failure / corrupt-findings
+  paths, and CLI integration via ``CliRunner``.
+
 - **Dedicated `docs/vscode.md` reference page for the VS Code
   extension.** Promotes editor coverage from a two-paragraph
   subsection of `usage.md` to a top-level docs page with install
