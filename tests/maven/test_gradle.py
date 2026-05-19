@@ -93,6 +93,69 @@ class TestParseGradle:
         pf = _parse_gradle("build.gradle.kts", body)
         assert pf.dependencies[0].artifact_id == "spring-beans"
 
+    def test_map_form_dependency_order_insensitive(self) -> None:
+        # Gradle named arguments are unordered (both Groovy and
+        # Kotlin DSL), so all six permutations must produce the
+        # same coordinate.
+        permutations = [
+            "group: 'org.example', name: 'lib', version: '1.0'",
+            "group: 'org.example', version: '1.0', name: 'lib'",
+            "name: 'lib', group: 'org.example', version: '1.0'",
+            "name: 'lib', version: '1.0', group: 'org.example'",
+            "version: '1.0', group: 'org.example', name: 'lib'",
+            "version: '1.0', name: 'lib', group: 'org.example'",
+        ]
+        for line in permutations:
+            body = textwrap.dedent(
+                f"""\
+                dependencies {{
+                    api {line}
+                }}
+                """
+            )
+            pf = _parse_gradle("build.gradle", body)
+            assert len(pf.dependencies) == 1, line
+            d = pf.dependencies[0]
+            assert (d.group_id, d.artifact_id, d.version) == (
+                "org.example", "lib", "1.0",
+            ), line
+
+    def test_map_form_kotlin_multiline_order_insensitive(self) -> None:
+        # Kotlin DSL commonly wraps map-style deps over several
+        # lines; named args still need to match in any order.
+        body = textwrap.dedent(
+            """\
+            dependencies {
+                api(
+                    version = "5.3.20",
+                    name = "spring-beans",
+                    group = "org.springframework",
+                )
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle.kts", body)
+        assert len(pf.dependencies) == 1
+        d = pf.dependencies[0]
+        assert (d.group_id, d.artifact_id, d.version) == (
+            "org.springframework", "spring-beans", "5.3.20",
+        )
+
+    def test_map_form_incomplete_drops_silently(self) -> None:
+        # Two-key shorthands ({group, name} or {group, version}) are
+        # parsed elsewhere; the map-form regex requires all three.
+        body = textwrap.dedent(
+            """\
+            dependencies {
+                api group: 'org.example', name: 'foo'
+                api group: 'org.example', version: '1.0'
+                api name: 'foo', name: 'foo', name: 'foo'
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert len(pf.dependencies) == 0
+
     def test_dedup_when_same_coordinate_appears_twice(self) -> None:
         body = textwrap.dedent(
             """\

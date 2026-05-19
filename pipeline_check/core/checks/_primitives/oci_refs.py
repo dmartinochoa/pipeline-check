@@ -76,15 +76,27 @@ def _iter_action_tags(step: dict[str, Any]) -> Iterable[str]:
 
 # ── Text-scan deploy / runtime mentions ───────────────────────────
 
-# Token shape: <host?>[/<path>]*[<repo>][:<tag>][@<digest>]. We
-# require either a "." in the first component (registry hostname),
-# a registry-port shape, or a "/" in the path so we don't match
-# bare words like ``latest``. Tokens captured here are validated
-# by oci_image() so the regex only needs to be a coarse pre-filter.
+# Token shape, two accepted forms:
+#
+#   explicit-host:  <host>/<repo>[/<sub>]*[:<tag>][@<digest>]
+#                   where <host> contains a literal "." or a
+#                   ":<port>" suffix (e.g. ``gcr.io``, ``localhost:5000``)
+#   implicit-host:  <repo>/<sub>[/<sub>]*[:<tag>][@<digest>]
+#                   no recognized host, at least two path segments
+#                   so Docker Hub refs like ``myorg/app:1.2`` and
+#                   ``library/redis:7.0`` match while bare words
+#                   like ``latest`` and ``python`` don't.
+#
+# Tokens captured here are validated by ``oci_image()`` so the
+# regex only needs to be a coarse pre-filter.
 _IMAGE_TOKEN_RE = re.compile(
     r"\b("
+    r"(?:"
     r"(?:[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\.[a-zA-Z0-9._-]+|:\d+))"
-    r"(?:/[a-zA-Z0-9._-]+)+"
+    r"/[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*"
+    r"|"
+    r"[a-zA-Z0-9][a-zA-Z0-9._-]*(?:/[a-zA-Z0-9._-]+)+"
+    r")"
     r"(?::[a-zA-Z0-9._-]+)?"
     r"(?:@sha[0-9]+:[a-fA-F0-9]+)?"
     r")"

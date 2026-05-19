@@ -1277,6 +1277,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **`_IMAGE_TOKEN_RE` now matches implicit-registry image refs.**
+  The OCI image-token pre-filter required either a dotted hostname
+  (``gcr.io/...``) or a registry-port shape (``localhost:5000/...``)
+  in the first component, so Docker Hub implicit refs like
+  ``myorg/app:1.2`` and ``library/redis:7.0`` were silently dropped
+  before reaching ``oci_image()``. Worked against AC-005
+  (build → deploy reachability) matching accuracy whenever the
+  workflow used Docker Hub names. Regex now accepts two shapes:
+  ``<host>/<repo>[/<sub>]*`` with explicit dotted/ported host, or
+  ``<seg>/<seg>[/<seg>]*`` with no host but at least two path
+  segments. Bare words (``latest``, ``python``) still don't match.
+  New ``tests/test_oci_refs.py`` pins both ends of the trade-off.
+
+- **Gradle map-style dependency parsing is now order-insensitive.**
+  ``_GRADLE_MAP_DEP_RE`` enforced ``group → name → version`` in
+  that exact order, but Gradle named arguments are unordered in
+  both Groovy and Kotlin DSL. Declarations like
+  ``api group: 'org.hibernate', version: '3.0.5', name: 'hibernate'``
+  or any other permutation were silently skipped, causing
+  ``MVN-*`` rules to miss real dependencies. Split the parser
+  into a window regex that locates three ``key: value`` pairs
+  followed by three per-key extractors that pull each coordinate
+  independently. All six permutations plus Kotlin DSL multi-line
+  are now covered by ``test_gradle.TestParseGradle``.
+
 - **Doc drift on Terraform / CloudFormation provider pages.**
   Published `docs/providers/terraform.md` and
   `docs/providers/cloudformation.md` carried stale OWASP tags:
