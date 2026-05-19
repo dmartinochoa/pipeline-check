@@ -10,6 +10,240 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Gradle `libs.versions.toml` version-catalog resolution.**
+  Closes the last open entry in the dependency-supply-chain
+  follow-ups section of the roadmap. ``_parse_versions_catalog``
+  walks the conventional ``gradle/libs.versions.toml`` file
+  (discovered by the same scan-root-bounded upward walk that
+  ``gradle.properties`` uses) and builds a ``{dotted_name:
+  (group, artifact, version)}`` index. Both library-entry shapes
+  Gradle accepts are supported:
+
+  - ``module = "group:artifact"`` (single-string form)
+  - ``group = "..." , name = "..."`` (two-field form)
+
+  Versions resolve through one of:
+
+  - ``version = "X"`` (inline literal)
+  - ``version.ref = "name"`` (alias into ``[versions]``)
+  - ``version = { strictly|require|prefer = "X" }`` (rich
+    constraint)
+
+  ``_parse_gradle`` then scans build scripts for
+  ``<config> libs.<dot.path>`` references (Groovy and Kotlin DSL
+  syntax both accepted, with optional parens) and synthesizes a
+  ``MavenDependency`` from the catalog entry the accessor resolves
+  to. ``libs.versions.X`` / ``libs.bundles.X`` / ``libs.plugins.X``
+  namespaces are deliberately skipped so accessing a version-only
+  ref doesn't materialize a phantom coordinate. MVN-001 (floating-
+  range) and MVN-006 (compromised package) now fire on catalog-
+  referenced pins in modern Gradle projects that hold every
+  version in ``libs.versions.toml``, the standard idiom in 2024+
+  Gradle builds.
+
+- **Gradle `gradle.properties` cross-file resolution.** Extends the
+  in-file ``${propName}`` resolution shipped earlier this cycle to
+  the sibling ``gradle.properties`` file. ``MavenContext.from_path``
+  walks upward from each ``build.gradle`` / ``build.gradle.kts``
+  file toward the scan root and merges every ``gradle.properties``
+  it finds along the way (closest-to-the-script wins on conflict,
+  matching Gradle's subproject-overrides-root semantics); in-file
+  ``ext { ... }`` / ``def`` / ``val`` declarations override the
+  cross-file map. The walk deliberately stops at the scan root so
+  ``~/.gradle/gradle.properties`` and other out-of-tree ancestors
+  are never read — pipeline-check stays a hermetic, repo-only
+  scanner. MVN-001 (floating-range) and MVN-008 (cooldown) now see
+  the literal version on Gradle multi-project layouts where the
+  versions live in the root ``gradle.properties``, the standard
+  setup in real-world projects. The remaining gap is the
+  ``libs.versions.toml`` version-catalog DSL (``libs.X.Y``
+  references in build scripts); that's the next follow-up.
+
+- **`pyproject.toml` parser for the pypi provider.** Brings the
+  existing PYPI-004 (VCS mutable ref) and PYPI-006 (compromised
+  package) rules to bear on modern Python repos that hold their
+  dependency surface in ``pyproject.toml`` rather than
+  ``requirements.txt``. ``_parse_pyproject_toml`` walks:
+
+  - **PEP 621**: ``[project].dependencies`` array of PEP 508
+    strings + ``[project.optional-dependencies]`` table of arrays.
+  - **Poetry**: ``[tool.poetry.dependencies]``,
+    ``[tool.poetry.dev-dependencies]``, and
+    ``[tool.poetry.group.<name>.dependencies]``; string,
+    table-with-version, table-with-git/url, and multi-constraint
+    list forms all supported. The special ``python`` entry is
+    dropped (runtime requirement, not a dep). ``rev`` is preferred
+    over ``tag`` / ``branch`` for git deps so a SHA-pinned
+    coordinate passes PYPI-004. Path / file deps are skipped
+    (local sources aren't a supply-chain surface).
+  - **PEP 518/517**: ``[build-system].requires``.
+
+  ``poetry.lock`` was already supported as a resolved lockfile;
+  this slot adds the manifest side for projects that don't commit
+  the lock. PYPI-001 (version pin) and PYPI-002 (hash pin) silent-
+  pass on ``pyproject.toml`` because manifests legitimately use
+  caret / tilde / range constraints (the resolved lockfile is
+  where the exact pin lands). Reuses the existing
+  ``RequirementsFile`` shape so PYPI-004 and PYPI-006 work
+  unchanged.
+
+- **Gradle in-file property resolution for MVN-001 / MVN-008.**
+  ``_parse_gradle`` now extracts user-declared properties from
+  every common in-file Gradle shape (``ext { foo = '1.0' }``
+  blocks, bare ``ext.foo = '1.0'`` lines, Groovy ``def foo = '1.0'``
+  declarations, Kotlin DSL ``val foo: String = "1.0"``
+  declarations) and substitutes ``$foo`` / ``${foo}`` references
+  in coordinate version strings before the rule pack sees them.
+  MVN-001 (floating-range / LATEST) and MVN-008 (cooldown via
+  ``--resolve-remote``) now see the literal version the Gradle
+  build actually pins on every project that holds its versions in
+  any of the above shapes. Last-write-wins on duplicate names,
+  matching Gradle's in-script semantics; undeclared references
+  are preserved verbatim so the rule still flags the dynamic-
+  version case as it did before. Cross-file resolution
+  (``gradle.properties``, ``libs.versions.toml`` version
+  catalogs, ``rootProject.ext.X`` indirection) stays out of scope
+  for this pass; the version-catalog leg is the next obvious
+  follow-up.
+
+- **GHA-060 + GL-035 + BB-031: pip install without
+  ``--require-hashes``.** Closes the PYPI-007 slot from the
+  dependency-supply-chain roadmap, mirroring the NPM-010 trilogy
+  (GHA-059 + GL-034 + BB-030) on the PyPI side. Fires MEDIUM once
+  per pipeline file when:
+
+  1. The pipeline runs a real ``pip install`` invocation (``pip
+     install``, ``pip3 install``, ``python -m pip install``) that
+     isn't a tooling-bootstrap on the allowlist;
+  2. No step in the pipeline passes ``--require-hashes`` AND no
+     step uses a hash-pinning manager (``uv sync`` / ``uv pip
+     install``, ``poetry install``, ``pipenv install --deploy``).
+
+  Tooling-bootstrap allowlist (silent-passes): ``pip install
+  --upgrade pip / setuptools / wheel / virtualenv / pip-tools``,
+  ``pip install pipx / pip-audit / cyclonedx-bom / semgrep`` and
+  the package-manager bootstraps themselves (``poetry``, ``uv``,
+  ``pipenv``, ``hatch``, ``build``, ``twine``).
+
+  Hash-pinned install is the PyPI equivalent of npm's
+  lockfile-integrity guarantee: it refuses to install any tarball
+  whose SHA-256 doesn't match a recorded entry. PyPI
+  maintainer-account compromises (ctx 2022,
+  requests-darwin-lite 2023) shipped malicious sdists / wheels
+  under existing version pins; ``--require-hashes`` would have
+  refused the swap.
+
+  Mapped across 13 standards (same set as the NPM-010 trilogy).
+  Brings the GHA pack to 63 rules, GitLab to 37, Bitbucket to 31.
+
+- **Yarn 2+ / Berry lockfile parser.** Closes the Berry gap on the
+  npm provider. ``NpmContext`` now sniffs the ``__metadata:`` block
+  inside ``yarn.lock`` and routes Berry bodies through
+  ``_parse_yarn_berry_lock`` + ``_synthesize_yarn_berry_lock``;
+  Classic bodies continue to flow through the existing yarn-1 path.
+  Both synthesizers project to the same npm-7+ ``packages`` shape,
+  so NPM-002 (missing integrity), NPM-003 (non-registry source),
+  NPM-006 (compromised version), and NPM-009 (new-transitive diff
+  via ``--npm-base-ref``) run on Berry locks with zero per-rule
+  changes.
+
+  Berry-specific surface mapped:
+
+  - ``resolution: "name@npm:1.2.3"`` → registry ``resolved``
+    URL on ``https://registry.yarnpkg.com``; ``checksum: <hex>`` →
+    ``integrity: sha512-<hex>`` (NPM-002 reads the presence signal,
+    not the encoding).
+  - ``workspace:`` / ``link:`` / ``portal:`` → ``file:`` resolved
+    with ``link: true`` so NPM-002 correctly skips entries that
+    have no tarball.
+  - ``patch:`` wraps a real resolution; the classifier unwraps
+    one level so the underlying ``npm:`` / ``git:`` / ``http:``
+    is what NPM-003 sees.
+  - ``git:host:owner/repo.git`` → ``git+ssh://`` so NPM-003's
+    transport-prefix classifier flags it.
+
+  Includes a defensive guard: a Berry body fed to the yarn-1 parser
+  (e.g. via a wrongly-flagged file) still won't poison NPM-* output
+  because the yarn-1 synthesizer already drops the ``__metadata``
+  entry by name; that guard stays.
+
+- **GL-034 + BB-030 npm install without audit-signatures (parity
+  with GHA-059).** Ports the GHA-059 detector to the GitLab CI and
+  Bitbucket Pipelines providers. Same shape: fires MEDIUM once per
+  pipeline file when an `npm`/`pnpm` install verb appears in any
+  job's script and `npm audit signatures` / `pnpm audit signatures`
+  does not. GitLab's check also recognizes installs / audits in
+  the document-level `before_script:` / `after_script:` so a
+  workflow-wide verification step counts for every job that
+  doesn't override it. Yarn / Bun-only pipelines pass silently in
+  both. Closes the NPM-010 roadmap slot across all three CI
+  providers (GHA + GitLab + Bitbucket) and brings the
+  GitLab pack to 36 rules and Bitbucket to 30.
+
+- **GHA-059 npm install without registry-signature verification.**
+  Closes the NPM-010 slot from the post-1.0 roadmap on the GitHub
+  Actions side. Fires once per workflow when at least one step runs
+  ``npm ci`` / ``npm install`` / ``npm i`` / ``pnpm install`` /
+  ``pnpm i`` / ``pnpm ci`` and no step anywhere in the same workflow
+  runs ``npm audit signatures`` or ``pnpm audit signatures``. Yarn /
+  Bun-only workflows pass silently because the ``audit signatures``
+  primitive is npm-CLI-specific (Yarn Berry's ``yarn npm audit``
+  does not yet verify registry trusted-publisher records). Severity
+  MEDIUM. Maps to OWASP CICD-SEC-3, ESF-S-VERIFY-DEPS, CWE-345, plus
+  the canonical supply-chain controls in the 12 other registered
+  standards.
+
+  Lockfile pinning (NPM-002, NPM-006) only guarantees the bytes
+  installed match the bytes the lockfile recorded; ``npm audit
+  signatures`` is what verifies those bytes were signed by the
+  registry's trusted publisher for that package. The Shai-Hulud /
+  TanStack / axios family of npm-worm compromises rode the gap
+  between the two: the lockfile faithfully pinned what the
+  maintainer's compromised account published, and integrity hashes
+  matched the malicious tarball. Registry trusted-publisher records
+  are the missing leg, and ``audit signatures`` is the gate that
+  consumes them.
+
+### Changed
+
+- **Docs site navigation regrouped under six intent-based tabs.**
+  The mkdocs nav had grown to ~15 top-level entries, one per page,
+  which overflowed Material's tab bar and read as a flat dump.
+  Pages are now grouped as **Home**, **Getting started** (Usage,
+  Configuration, CI gate, Output, Stability), **Coverage**
+  (Providers, Standards, Comparison, GOAT bench), **Concepts**
+  (Scoring model, Threat model, Attack chains), **Integrations**
+  (MCP, VS Code extension), and **Contributing**. No files moved,
+  so deep links from external sources still resolve.
+
+### Fixed
+
+- **Doc-accuracy sweep on hand-written prose.** The headline counts
+  and generated provider / standards pages were already lock-tested,
+  but several free-form prose claims had drifted from the live
+  registries. README's per-provider rows had stale counts for SCM
+  (42 → 47), npm (9 → 10, plus a "NPM-009..010 reserved" sentence
+  that NPM-009 had since invalidated), and Maven (7 → 8, missing
+  the MVN-008 cooldown entry). README's `--scm-platform` flag
+  description said "37-rule pack" instead of 47, and the
+  `--man [TOPIC]` list omitted the registered ``inventory`` and
+  ``explain`` topics. ``docs/stability.md`` named ``evaluate_gate``
+  and a nonexistent ``ReporterRegistry`` as part of the public
+  surface (the real ``__all__`` is twenty names long) and
+  referenced an unreal ``--gate-off`` flag. ``docs/vscode.md``
+  pointed at a non-existent ``--threatmodel`` flag (the real
+  invocation is ``--output threatmodel``). The
+  ``writing_a_custom_rule.md`` / ``writing_a_chain.md`` tutorials
+  still cited a "590+ checks across 19 providers" / "36 chain
+  examples" snapshot. And both ``docs/usage.md`` and
+  ``docs/config.md`` overstated the env-var / config-file surface
+  ("every CLI flag") relative to the actual ``_TOPLEVEL_KEYS`` /
+  ``_GATE_KEYS`` allowlist in ``pipeline_check/core/config.py``.
+  All thirteen prose sites now match the live registries and
+  ``__all__``.
+
 ## [1.1.0] - 2026-05-19
 
 ### Added

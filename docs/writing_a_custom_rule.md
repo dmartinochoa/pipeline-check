@@ -1,6 +1,6 @@
 # Writing a custom rule
 
-Pipeline-Check ships with a 590+ rule built-in catalog, but every
+Pipeline-Check ships with an 810+ rule built-in catalog, but every
 org has policies the catalog can't anticipate: an internal-only
 container registry, a banned dependency, a forbidden runner label.
 Custom rules fill that gap. Drop a YAML file under `--custom-rules

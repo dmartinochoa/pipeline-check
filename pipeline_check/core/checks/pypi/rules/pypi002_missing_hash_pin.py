@@ -68,6 +68,16 @@ def check(rf: RequirementsFile) -> Finding:
             description="pip-tools input file (.in); hashes live in the compiled output.",
             recommendation=RULE.recommendation, passed=True,
         )
+    if rf.path.endswith("pyproject.toml"):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=rf.path,
+            description=(
+                "pyproject.toml is a manifest; hashes live in the "
+                "resolved lockfile (poetry.lock / requirements.txt)."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     file_enforces_hashes = has_option(rf, "--require-hashes")
     offenders: list[str] = []
     locations: list[Location] = []

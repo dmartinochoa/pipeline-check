@@ -49,6 +49,34 @@ RULE = Rule(
         "``github.head_ref``, …); ``matrix.*`` and ``env.*`` "
         "references are intentionally not flagged.",
     ),
+    exploit_example=(
+        "# Vulnerable: workflow_dispatch input picks the runner. A\n"
+        "# caller who can dispatch the workflow picks ``prod-deploy``\n"
+        "# (or any other privileged self-hosted label the org owns)\n"
+        "# and the job runs with that fleet's inherited identity.\n"
+        "on:\n"
+        "  workflow_dispatch:\n"
+        "    inputs:\n"
+        "      runner:\n"
+        "        type: string\n"
+        "        required: true\n"
+        "jobs:\n"
+        "  run:\n"
+        "    runs-on: ${{ inputs.runner }}\n"
+        "    steps:\n"
+        "      - run: ./scripts/build\n"
+        "\n"
+        "# Safe: pin to a hard-coded label. If the choice really has\n"
+        "# to be parameterised, validate the input against an\n"
+        "# allowlist at job-level via a small if: guard before any\n"
+        "# step runs.\n"
+        "on: { workflow_dispatch: {} }\n"
+        "jobs:\n"
+        "  run:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: ./scripts/build"
+    ),
 )
 
 

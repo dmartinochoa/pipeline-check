@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-35 checks · 12 have an autofix patch (``--fix``).
+37 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,8 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-031](#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-032](#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-033](#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-034](#gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GL-035](#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -751,6 +753,72 @@ for direct interpolation of the same attacker-controllable predefined variables 
 **Recommended action**
 
 Move any setup logic that touches commit / MR metadata out of the document-root ``before_script:`` (and ``default.before_script:`` / ``default.after_script:``) and into a dedicated job that opts in via ``extends:`` or that runs on a known-safe trigger only. The global before-script runs verbatim before every job in the pipeline (including child pipelines launched by ``trigger:include:``); a single unquoted ``$CI_COMMIT_TITLE`` interpolation there is, in effect, that injection in N jobs at once. Quote the value defensively (``branch="$CI_COMMIT_REF_NAME"``) and copy it into a job-local variable before any further use.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GL-034: npm install without registry-signature verification step { #gl-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Fires once per pipeline file when:
+
+1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs an npm or pnpm install verb (``npm ci``, ``npm install``, ``npm i``, ``pnpm install``, ``pnpm i``, ``pnpm ci``);
+2. No job anywhere in the pipeline runs ``npm audit signatures`` or ``pnpm audit signatures``.
+
+Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primitive is npm-CLI-specific (Yarn Berry's ``yarn npm audit`` does not yet verify registry trusted-publisher records). Pairs with the per-package lockfile rules NPM-002 / NPM-006: NPM-002 / NPM-006 verify *what* the lockfile pinned, GL-034 verifies the lockfile pinned what the maintainer actually signed.
+
+**Known false-positive modes**
+
+- Pipelines that build against a private registry without trusted-publisher records (legacy Artifactory, self-hosted Verdaccio without sigstore) cannot run ``audit signatures`` meaningfully. Suppress on the specific pipeline with a rationale that names the private registry.
+
+**Seen in the wild**
+
+- Shai-Hulud npm worm (2026) / TanStack / axios patch-release compromises rode the gap between lockfile-pinned integrity and registry-signed-publisher provenance. ``npm audit signatures`` is the gate that consumes trusted-publisher records.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install. Lockfile pinning only guarantees the bytes installed match what the lockfile recorded; ``audit signatures`` is what verifies those bytes were signed by the maintainer the registry recognizes as the package's trusted publisher. Run it as a separate script line after ``npm ci`` and before any code from ``node_modules/`` executes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GL-035: pip install without `--require-hashes` verification { #gl-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Fires once per pipeline file when:
+
+1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs a real ``pip install`` (``pip install``, ``pip3 install``, ``python -m pip install``) that isn't a tooling-bootstrap exempted by the allowlist;
+2. No job uses ``--require-hashes`` AND no job uses a hash-pinning manager (``uv sync`` / ``uv pip install``, ``poetry install``, ``pipenv install --deploy``).
+
+Tooling-bootstrap allowlist (same as GHA-060).
+
+**Known false-positive modes**
+
+- Pipelines that build against a private index without SHA-256 hash records (legacy DevPI, self-hosted simple indexes without per-file hashes) cannot run ``--require-hashes`` meaningfully. Suppress on the specific pipeline with a rationale that names the private index.
+
+**Seen in the wild**
+
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins; ``--require-hashes`` would have refused the swap.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee: it refuses to install any tarball whose SHA-256 doesn't match a recorded entry.
 
 </div>
 

@@ -112,6 +112,11 @@ STANDARD = Standard(
         "GHA-056":  ["SCA-3", "ING-3"],     # known worm IOC = denyable + malware-class
         "GHA-057":  ["SCA-3"],              # scanner-output-to-egress is malicious shape
         "GHA-058":  ["SCA-3"],              # AI-CLI bypass turns the runner into a scanner
+        "GHA-059":  ["SCA-3"],              # npm install without registry-signature verification
+        "GHA-060":  ["SCA-3"],              # pip install without --require-hashes
+        "GL-034":   ["SCA-3"],              # npm install without registry-signature verification
+        "GL-035":   ["SCA-3"],              # pip install without --require-hashes
+        "BB-031":   ["SCA-3"],              # pip install without --require-hashes
         # Known-compromised package / action references are the
         # canonical deny-list signal: each finding is one entry on a
         # curated deny-list of versions that should never be installed.
@@ -189,6 +194,7 @@ STANDARD = Standard(
         "GHA-023":  ["UPD-1"],             # reusable workflow not SHA-pinned
         "GHA-051":  ["UPD-1"],             # services / container image unpinned
         "BB-029":   ["UPD-1"],             # step + service image not digest-pinned
+        "BB-030":   ["SCA-3"],             # npm install without registry-signature verification
 
         # ── UPD-2: automated update tool ───────────────────────────
         "GHA-022":  ["UPD-2"],

@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 187
+- **Distinct checks evidencing this standard:** 193
 - **Of those, autofixable with `--fix`:** 41
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 42 | 1C · 30H · 10M · 1L |
 | [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 9 | 3C · 3H · 3M |
 | [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 12 | 1H · 11M |
-| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 12 | 11C · 1H |
+| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 18 | 11C · 1H · 6M |
 | [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 51 | 29H · 17M · 5L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
 | [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 13 | 3H · 10M |
@@ -138,12 +138,14 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### SCA-3: L2: Scan OSS for malware { #ctrl-sca-3 }
 
-**Evidenced by 12 checks** across 8 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, maven).
+**Evidenced by 18 checks** across 8 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-026`](#detail-ado-026) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`BB-025`](#detail-bb-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-030`](#detail-bb-030) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-031`](#detail-bb-031) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`CB-011`](#detail-cb-011) | CodeBuild buildspec contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-026`](#detail-cc-026) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) |  |
 | [`GHA-027`](#detail-gha-027) | Workflow contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
@@ -151,7 +153,11 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-025`](#detail-gl-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-034`](#detail-gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-035`](#detail-gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-029`](#detail-jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 
@@ -1024,6 +1030,47 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 - Bitbucket-vendored helper images (``atlassian/`` namespace) are still treated as third-party, the registry can move the tag. Pin them too rather than suppressing the rule globally.
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
+
+### `BB-030`: npm install without registry-signature verification step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-030 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per ``bitbucket-pipelines.yml`` when:
+
+1. Some step's ``script:`` runs an npm or pnpm install verb (``npm ci``, ``npm install``, ``npm i``, ``pnpm install``, ``pnpm i``, ``pnpm ci``);
+2. No step anywhere in the file runs ``npm audit signatures`` or ``pnpm audit signatures``.
+
+Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primitive is npm-CLI-specific (Yarn Berry's ``yarn npm audit`` does not yet verify registry trusted-publisher records). Pairs with the per-package lockfile rules NPM-002 / NPM-006.
+
+**Recommendation.** Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install. Lockfile pinning only guarantees the bytes installed match the lockfile; ``audit signatures`` is what verifies those bytes were signed by the registry's trusted publisher for the package. Run it as a separate script line after ``npm ci`` and before any code from ``node_modules/`` executes.
+
+**Known false positives.**
+
+- Pipelines that build against a private registry without trusted-publisher records (legacy Artifactory, self-hosted Verdaccio without sigstore) cannot run ``audit signatures`` meaningfully. Suppress on the specific pipeline with a rationale that names the private registry.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026) / TanStack / axios patch-release compromises rode the gap between lockfile-pinned integrity and registry-signed-publisher provenance.
+
+**Source:** [`BB-030`](../providers/bitbucket.md#bb-030) in the [Bitbucket provider](../providers/bitbucket.md).
+
+### `BB-031`: pip install without `--require-hashes` verification <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-031 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per ``bitbucket-pipelines.yml`` when some step's ``script:`` runs a real ``pip install`` (excluding the tooling-bootstrap allowlist) AND no step in the file uses ``--require-hashes`` or a hash-pinning manager (``uv sync`` / ``poetry install`` / ``pipenv install --deploy``).
+
+**Recommendation.** Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee.
+
+**Known false positives.**
+
+- Pipelines that build against a private index without SHA-256 hash records cannot run ``--require-hashes`` meaningfully. Suppress with a rationale that names the private index.
+
+**Seen in the wild.**
+
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins.
+
+**Source:** [`BB-031`](../providers/bitbucket.md#bb-031) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
 
@@ -1941,6 +1988,40 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every git fetch in the job ignores certificate
+# validity. An attacker on the same network (corporate proxy,
+# hostile WiFi at a remote-dev's home, compromised mirror)
+# returns a MITM-substituted clone of the dependency. The
+# downstream build runs the attacker's code with the
+# workflow's full secret + token set in scope.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: git config --global http.sslVerify false
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+
+# Safe: install the missing CA chain so verification succeeds.
+# If the upstream really uses a private CA, ship its root in
+# the runner image rather than disabling verification for
+# every host the job talks to.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+```
+
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
@@ -2281,6 +2362,56 @@ jobs:
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-059`: npm install without registry-signature verification step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-059 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per workflow when:
+
+1. The workflow runs at least one npm / pnpm install command (``npm ci``, ``npm install``, ``npm i``, ``pnpm install``, ``pnpm i``, ``pnpm ci``);
+2. No step anywhere in the workflow runs ``npm audit signatures`` or ``pnpm audit signatures``.
+
+Yarn / Bun-only workflows pass silently because the ``audit signatures`` primitive is npm-CLI-specific (Yarn Berry's equivalent ``yarn npm audit`` does not yet verify registry trusted-publisher signatures; Bun has no equivalent step). The rule pairs with NPM-002 (lockfile entry missing integrity hash) and NPM-006 (known-compromised package version): NPM-002 / NPM-006 verify *what* the lockfile pinned, and GHA-059 verifies the lockfile pinned what the maintainer actually signed.
+
+**Recommendation.** Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install step. Lockfile pinning only guarantees the bytes installed match the bytes the lockfile recorded; ``audit signatures`` is what verifies those bytes were signed by the maintainer the registry recognizes as the package's trusted publisher. Without it, an attacker who compromises a maintainer account and republishes a tarball under the same version + integrity hash still passes the lockfile gate. Place the step after ``npm ci`` / ``pnpm install`` and before any code from ``node_modules/`` runs (``npm run build``, test, publish).
+
+**Known false positives.**
+
+- Workflows that build and test against a private registry without trusted-publisher records (legacy Artifactory, self-hosted Verdaccio without sigstore integration) cannot run ``npm audit signatures`` meaningfully — the registry has no signatures to verify against. Suppress this rule on the specific workflow with a rationale that names the private registry; revisit when the registry adds trusted-publisher support.
+- Workflows whose only install command is ``npm install --no-save`` for a one-off tool (linter, doc generator) without a lockfile in the repo. Suppress if signature verification adds no signal because nothing is pinned in the first place; the right fix is usually to add the lockfile, not suppress the rule.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026) / TanStack / axios patch-release compromises: each abused the gap between lockfile-pinned integrity and registry-signed-publisher provenance. The lockfile faithfully pinned what the maintainer's account published; ``npm audit signatures`` would have flagged that the bytes weren't signed by the trusted-publisher record on file with the registry.
+
+**Source:** [`GHA-059`](../providers/github.md#gha-059) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-060`: pip install without `--require-hashes` verification <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-060 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per workflow when:
+
+1. The workflow runs a real ``pip install`` invocation (``pip install``, ``pip3 install``, ``python -m pip install``, ``python3 -m pip install``) that isn't a tooling-bootstrap exempted by the allowlist;
+2. No invocation in the workflow passes ``--require-hashes`` AND no step uses a hash-pinning manager (``uv sync`` / ``uv pip install``, ``poetry install``, ``pipenv install --deploy``).
+
+Tooling-bootstrap allowlist (silent-passes): ``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``, ``pip install --upgrade pip-tools``, ``pip install pipx``, ``pip install pip-audit / cyclonedx-bom / semgrep``. These are the same shapes GL-022 / BB-022 exempt for the dep-update rule.
+
+Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the package-side: PYPI-002 verifies *what* the requirements file pinned, GHA-060 verifies the install command actually consumes those pins.
+
+**Recommendation.** Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``. The hash-pinned mode refuses to install any package whose downloaded tarball doesn't match a recorded SHA-256, which is the equivalent of npm's lockfile-integrity guarantee for PyPI. Generate the hashes with ``pip-compile --generate-hashes`` (from ``pip-tools``) or migrate to a package manager that hash-pins by default: ``uv sync`` (reads ``uv.lock``), ``poetry install`` (reads ``poetry.lock``), or ``pipenv install --deploy`` (reads ``Pipfile.lock``). The rule silent-passes when any of those managers runs in the same workflow.
+
+**Known false positives.**
+
+- Pipelines that build against a private index without SHA-256 hash records (legacy DevPI, self-hosted simple indexes without per-file hashes) cannot run ``--require-hashes`` meaningfully. Suppress on the specific workflow with a rationale that names the private index.
+- One-off tool installs that aren't on the allowlist but are genuinely bootstrap-only (e.g. ``pip install some-niche-linter``). The right fix is usually to install via the lockfile-managed venv; if not feasible, suppress on the specific step.
+
+**Seen in the wild.**
+
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins. ``--require-hashes`` would have refused the swapped artifact because the recorded SHA-256 wouldn't match the malicious tarball.
+
+**Source:** [`GHA-060`](../providers/github.md#gha-060) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
@@ -2469,6 +2600,52 @@ jobs:
 **Recommendation.** Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
+
+### `GL-034`: npm install without registry-signature verification step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-034 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per pipeline file when:
+
+1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs an npm or pnpm install verb (``npm ci``, ``npm install``, ``npm i``, ``pnpm install``, ``pnpm i``, ``pnpm ci``);
+2. No job anywhere in the pipeline runs ``npm audit signatures`` or ``pnpm audit signatures``.
+
+Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primitive is npm-CLI-specific (Yarn Berry's ``yarn npm audit`` does not yet verify registry trusted-publisher records). Pairs with the per-package lockfile rules NPM-002 / NPM-006: NPM-002 / NPM-006 verify *what* the lockfile pinned, GL-034 verifies the lockfile pinned what the maintainer actually signed.
+
+**Recommendation.** Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install. Lockfile pinning only guarantees the bytes installed match what the lockfile recorded; ``audit signatures`` is what verifies those bytes were signed by the maintainer the registry recognizes as the package's trusted publisher. Run it as a separate script line after ``npm ci`` and before any code from ``node_modules/`` executes.
+
+**Known false positives.**
+
+- Pipelines that build against a private registry without trusted-publisher records (legacy Artifactory, self-hosted Verdaccio without sigstore) cannot run ``audit signatures`` meaningfully. Suppress on the specific pipeline with a rationale that names the private registry.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026) / TanStack / axios patch-release compromises rode the gap between lockfile-pinned integrity and registry-signed-publisher provenance. ``npm audit signatures`` is the gate that consumes trusted-publisher records.
+
+**Source:** [`GL-034`](../providers/gitlab.md#gl-034) in the [GitLab CI provider](../providers/gitlab.md).
+
+### `GL-035`: pip install without `--require-hashes` verification <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-035 }
+
+**Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Fires once per pipeline file when:
+
+1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs a real ``pip install`` (``pip install``, ``pip3 install``, ``python -m pip install``) that isn't a tooling-bootstrap exempted by the allowlist;
+2. No job uses ``--require-hashes`` AND no job uses a hash-pinning manager (``uv sync`` / ``uv pip install``, ``poetry install``, ``pipenv install --deploy``).
+
+Tooling-bootstrap allowlist (same as GHA-060).
+
+**Recommendation.** Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee: it refuses to install any tarball whose SHA-256 doesn't match a recorded entry.
+
+**Known false positives.**
+
+- Pipelines that build against a private index without SHA-256 hash records (legacy DevPI, self-hosted simple indexes without per-file hashes) cannot run ``--require-hashes`` meaningfully. Suppress on the specific pipeline with a rationale that names the private index.
+
+**Seen in the wild.**
+
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins; ``--require-hashes`` would have refused the swap.
+
+**Source:** [`GL-035`](../providers/gitlab.md#gl-035) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
 

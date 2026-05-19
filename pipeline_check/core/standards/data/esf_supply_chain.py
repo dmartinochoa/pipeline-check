@@ -517,6 +517,8 @@ STANDARD = Standard(
         "GHA-056":  ["ESF-S-VERIFY-DEPS"],          # worm IOC strings
         "GHA-057":  ["ESF-D-SECRETS"],              # secret-scanner output → egress
         "GHA-058":  ["ESF-D-INJECTION"],            # agentic CLI permission-bypass
+        "GHA-059":  ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
+        "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure
@@ -524,9 +526,13 @@ STANDARD = Standard(
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted
         "GL-033":   ["ESF-D-INJECTION"],            # global before_script taint
+        "GL-034":   ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
+        "GL-035":   ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         # ── Bitbucket Pipelines extras ───────────────────────────
         "BB-028":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # OIDC step w/o env gate
         "BB-029":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # step + service image not pinned
+        "BB-030":   ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
+        "BB-031":   ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         # ── Azure DevOps Pipelines extras ────────────────────────
         "ADO-029":  ["ESF-C-APPROVAL"],             # service-conn job w/o env gate
         "ADO-030":  ["ESF-D-INJECTION"],            # pool interpolates untrusted

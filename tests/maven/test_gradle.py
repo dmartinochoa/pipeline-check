@@ -17,7 +17,10 @@ from pathlib import Path
 
 from pipeline_check.core.checks.maven.base import (
     MavenContext,
+    _discover_gradle_cross_file_properties,
     _parse_gradle,
+    _parse_gradle_properties,
+    _parse_versions_catalog,
 )
 from pipeline_check.core.checks.maven.pipelines import MavenChecks
 
@@ -208,11 +211,10 @@ class TestParseGradle:
             "http://internal.example.com/m2"
         )
 
-    def test_variable_substitution_left_unresolved(self) -> None:
-        # ${junitVersion} is preserved verbatim — MVN-001 will then
-        # flag it as a dynamic version since ${...} isn't a clean
-        # release-version literal. Documented limitation; resolving
-        # ``ext { junitVersion = "..." }`` is a follow-up.
+    def test_ext_block_substitution_resolved(self) -> None:
+        # ``ext { junitVersion = '4.13.2' }`` declares a property the
+        # later ``${junitVersion}`` reference in the coordinate
+        # string resolves against.
         body = textwrap.dedent(
             """\
             ext {
@@ -225,7 +227,122 @@ class TestParseGradle:
         )
         pf = _parse_gradle("build.gradle", body)
         assert len(pf.dependencies) == 1
-        assert pf.dependencies[0].version == "${junitVersion}"
+        assert pf.dependencies[0].version == "4.13.2"
+
+    def test_ext_dot_assignment_substitution_resolved(self) -> None:
+        # ``ext.junitVersion = '...'`` (bare, outside an ext { } block)
+        # is the other common Groovy shape.
+        body = textwrap.dedent(
+            """\
+            ext.junitVersion = '4.13.2'
+            dependencies {
+                testImplementation "junit:junit:$junitVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "4.13.2"
+
+    def test_def_assignment_substitution_resolved(self) -> None:
+        # Groovy ``def`` declarations also feed into the property map.
+        body = textwrap.dedent(
+            """\
+            def log4jVersion = '2.14.1'
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.14.1"
+
+    def test_kotlin_val_substitution_resolved(self) -> None:
+        # Kotlin DSL ``val`` (with or without a type annotation).
+        body = textwrap.dedent(
+            """\
+            val springVersion: String = "5.3.20"
+            dependencies {
+                api("org.springframework:spring-beans:$springVersion")
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle.kts", body)
+        assert pf.dependencies[0].version == "5.3.20"
+
+    def test_unbraced_dollar_reference_resolved(self) -> None:
+        # Gradle accepts both ``$prop`` and ``${prop}``; both should
+        # substitute identically.
+        body = textwrap.dedent(
+            """\
+            ext {
+                jacksonVersion = '2.15.0'
+            }
+            dependencies {
+                implementation "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.15.0"
+
+    def test_map_form_version_substitution_resolved(self) -> None:
+        # Map-form deps go through the same substitution pass.
+        body = textwrap.dedent(
+            """\
+            ext { springVersion = '5.3.20' }
+            dependencies {
+                api group: 'org.springframework', name: 'spring-beans', version: "$springVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "5.3.20"
+
+    def test_undeclared_property_left_unresolved(self) -> None:
+        # A reference to a property that isn't declared in this file
+        # (real-world: it lives in gradle.properties / version catalog
+        # / parent project, all out of scope for this pass) is
+        # preserved verbatim so the rule can decide how to handle it.
+        body = textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.example:foo:$mysteryVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "$mysteryVersion"
+
+    def test_last_write_wins_on_duplicate_property(self) -> None:
+        # If the same property is assigned twice, the later value
+        # wins (mirrors Gradle's in-script semantics).
+        body = textwrap.dedent(
+            """\
+            ext { logVer = '1.0.0' }
+            ext.logVer = '2.0.0'
+            dependencies {
+                implementation "org.example:foo:$logVer"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.0.0"
+
+    def test_properties_map_exposed_on_pomfile(self) -> None:
+        # Other consumers (e.g. iter_resolved_coordinates downstream)
+        # may inspect ``PomFile.properties`` directly; ensure the
+        # in-file extraction surfaces every declared name.
+        body = textwrap.dedent(
+            """\
+            ext {
+                aVer = '1'
+                bVer = "2"
+            }
+            def cVer = '3'
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.properties == {"aVer": "1", "bVer": "2", "cVer": "3"}
 
     def test_parsed_ok_always_true(self) -> None:
         # Even on garbage input (no dependencies / repositories
@@ -325,6 +442,397 @@ def test_build_gradle_kts_picked_up_by_loader(tmp_path: Path) -> None:
     pf = ctx.files[0]
     assert pf.dependencies[0].artifact_id == "commons-text"
     assert pf.repositories[0].url == "https://example.com/repo"
+
+
+# ── gradle.properties cross-file resolution ───────────────────────────
+
+
+class TestParseGradleProperties:
+    def test_basic_key_value(self) -> None:
+        body = textwrap.dedent(
+            """\
+            # Top-level comment
+            log4jVersion=2.17.1
+            springVersion = 5.3.20
+            """
+        )
+        props = _parse_gradle_properties(body)
+        assert props == {
+            "log4jVersion": "2.17.1",
+            "springVersion": "5.3.20",
+        }
+
+    def test_colon_separator_accepted(self) -> None:
+        body = "foo : 1.0\n"
+        assert _parse_gradle_properties(body) == {"foo": "1.0"}
+
+    def test_skips_blank_and_comment_lines(self) -> None:
+        body = textwrap.dedent(
+            """\
+
+            # comment
+            ! bang-comment
+            log4jVersion=2.17.1
+
+            """
+        )
+        assert _parse_gradle_properties(body) == {"log4jVersion": "2.17.1"}
+
+    def test_skips_lines_without_separator(self) -> None:
+        body = "junk-line\nfoo=bar\n"
+        assert _parse_gradle_properties(body) == {"foo": "bar"}
+
+
+def test_gradle_properties_in_same_dir_resolves(tmp_path: Path) -> None:
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    assert pf.dependencies[0].version == "2.17.1"
+
+
+def test_in_file_property_overrides_gradle_properties(tmp_path: Path) -> None:
+    # ``ext { ... }`` declarations win against ``gradle.properties``
+    # because in-script ext wins at Gradle runtime.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=1.0.0\n", encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            ext {
+                log4jVersion = '2.17.1'
+            }
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "2.17.1"
+
+
+def test_parent_gradle_properties_resolves_in_subproject(tmp_path: Path) -> None:
+    # Multi-project Gradle layout: ``gradle.properties`` sits at the
+    # root, the build script lives under a subproject directory.
+    # Walking upward from the build file finds the root file.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    assert pf.dependencies[0].version == "2.17.1"
+
+
+def test_subproject_gradle_properties_overrides_root(tmp_path: Path) -> None:
+    # If both root and subproject carry the same key,
+    # the subproject's file (closer to the build script) wins.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=1.0.0\n", encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "app" / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "2.17.1"
+
+
+def test_discover_walk_stops_at_scan_root(tmp_path: Path) -> None:
+    # A ``gradle.properties`` outside the scan root should NOT be
+    # read; the discovery walks upward only until it hits scan_root.
+    (tmp_path / "outside").mkdir()
+    (tmp_path / "outside" / "gradle.properties").write_text(
+        "leakedVersion=99.99.99\n", encoding="utf-8",
+    )
+    (tmp_path / "outside" / "project").mkdir()
+    project = tmp_path / "outside" / "project"
+    (project / "build.gradle").write_text(
+        "dependencies { implementation 'x:y:1' }", encoding="utf-8",
+    )
+    props = _discover_gradle_cross_file_properties(
+        project / "build.gradle", scan_root=project,
+    )
+    assert "leakedVersion" not in props
+
+
+# ── libs.versions.toml version-catalog resolution ─────────────────────
+
+
+class TestParseVersionsCatalog:
+    def test_module_form_with_version_ref(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+
+            [libraries]
+            junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "junit.jupiter": ("org.junit.jupiter", "junit-jupiter", "5.10.0"),
+        }
+
+    def test_module_form_with_inline_version(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "gson": ("com.google.code.gson", "gson", "2.10.1"),
+        }
+
+    def test_group_name_form(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            spring-boot = "3.1.0"
+
+            [libraries]
+            spring-boot-starter = { group = "org.springframework.boot", name = "spring-boot-starter", version.ref = "spring-boot" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "spring.boot.starter": (
+                "org.springframework.boot",
+                "spring-boot-starter",
+                "3.1.0",
+            ),
+        }
+
+    def test_rich_version_strictly_resolves(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version = { strictly = "1.9.0" } }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog["kotlin"] == (
+            "org.jetbrains.kotlin", "kotlin-stdlib", "1.9.0",
+        )
+
+    def test_unknown_version_ref_emits_placeholder(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            x = { module = "g:a", version.ref = "missing" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog["x"][2] == "${ref:missing}"
+
+    def test_bundles_and_plugins_skipped(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+            kotlin = "1.9.0"
+
+            [libraries]
+            junit-core = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+
+            [bundles]
+            testing = ["junit-core"]
+
+            [plugins]
+            kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        # Only the library entry made it; the plugin / bundle sections
+        # are silently dropped.
+        assert set(catalog.keys()) == {"junit.core"}
+
+    def test_invalid_toml_returns_empty(self) -> None:
+        catalog = _parse_versions_catalog("not = a [valid toml")
+        assert catalog == {}
+
+
+def test_libs_catalog_reference_resolves_to_coordinate(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+
+            [libraries]
+            junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                testImplementation libs.junit.jupiter
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    coords = {(d.group_id, d.artifact_id, d.version) for d in pf.dependencies}
+    assert ("org.junit.jupiter", "junit-jupiter", "5.10.0") in coords
+
+
+def test_libs_catalog_reference_resolves_with_kotlin_dsl(
+    tmp_path: Path,
+) -> None:
+    # Kotlin DSL wraps the catalog accessor in parens. The detector
+    # accepts both shapes.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [libraries]
+            gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle.kts").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation(libs.gson)
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    coords = {(d.group_id, d.artifact_id) for d in pf.dependencies}
+    assert ("com.google.code.gson", "gson") in coords
+
+
+def test_libs_catalog_compromised_coordinate_fires_mvn006(
+    tmp_path: Path,
+) -> None:
+    # A real Maven Central compromise referenced via the catalog
+    # still trips MVN-006, which is the whole point of resolving the
+    # accessor in the first place.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            log4j = "2.14.1"
+
+            [libraries]
+            log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation libs.log4j.core
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    findings = list(MavenChecks(ctx).run())
+    mvn006 = [f for f in findings if f.check_id == "MVN-006"]
+    assert mvn006 and not mvn006[0].passed
+    assert "log4j-core" in mvn006[0].description
+
+
+def test_libs_versions_accessor_does_not_synthesize_coordinate(
+    tmp_path: Path,
+) -> None:
+    # ``libs.versions.X`` returns the version literal only; resolving
+    # it as a coordinate would materialize a phantom dep. The
+    # detector skips this namespace.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            ext {
+                myVer = libs.versions.junit
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies == ()
+
+
+def test_libs_catalog_not_found_silent_pass(tmp_path: Path) -> None:
+    # No catalog → the build script's catalog accessors are left
+    # alone; no phantom coordinates materialize.
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation libs.junit.jupiter
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies == ()
 
 
 def test_build_gradle_skipped_under_build_dir(tmp_path: Path) -> None:

@@ -362,6 +362,8 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-056", "CICD-SEC-1"),
     CheckCase("GHA-057", "CICD-SEC-4"),
     CheckCase("GHA-058", "CICD-SEC-4"),
+    CheckCase("GHA-059", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GHA-060", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -371,11 +373,15 @@ CASES: list[CheckCase] = [
     CheckCase("GL-031", "CICD-SEC-2"),
     CheckCase("GL-032", "CICD-SEC-7"),
     CheckCase("GL-033", "CICD-SEC-4"),
+    CheckCase("GL-034", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GL-035", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("BB-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("BB-028", "CICD-SEC-2"),
     CheckCase("BB-029", "CICD-SEC-3"),
+    CheckCase("BB-030", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("BB-031", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
     CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

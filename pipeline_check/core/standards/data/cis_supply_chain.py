@@ -214,6 +214,8 @@ STANDARD = Standard(
         "GHA-056":  ["1.4.1", "2.1.3"],                  # known supply-chain worm IOC strings
         "GHA-057":  ["2.1.6", "1.5.1"],                  # secret-scanner output piped to egress
         "GHA-058":  ["2.1.3"],                           # agentic CLI with permission-bypass flags
+        "GHA-059":  ["1.4.1", "3.1.3"],                  # npm install without audit signatures
+        "GHA-060":  ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],
@@ -248,6 +250,8 @@ STANDARD = Standard(
         "GL-031":   ["1.3.4", "2.4.3", "5.2.1"],         # id_tokens missing audience/env binding
         "GL-032":   ["2.1.3"],                           # tags: interpolates untrusted variable
         "GL-033":   ["2.1.3", "2.3.8"],                  # global before_script taint
+        "GL-034":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
+        "GL-035":   ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
         # Bitbucket Pipelines
         "BB-001":   ["1.4.1", "3.1.5"],
         "BB-002":   ["2.1.3", "2.3.8"],
@@ -278,6 +282,8 @@ STANDARD = Standard(
         "BB-027":   ["1.4.1", "3.1.5"],                  # install bypasses registry integrity
         "BB-028":   ["1.3.4", "2.4.3", "5.2.1"],         # OIDC step w/o deployment-gated env
         "BB-029":   ["1.4.1", "3.1.3"],                  # step+service image not digest-pinned
+        "BB-030":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
+        "BB-031":   ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
         # Azure DevOps Pipelines
         "ADO-001":  ["1.4.1", "3.1.5"],
         "ADO-002":  ["2.1.3", "2.3.8"],

@@ -112,41 +112,38 @@ settings.xml / build.gradle(.kts) analysis plus the curated
 compromised-package registries (npm, PyPI, Maven Central), the
 ``files``-field secret-leak detector, the three-registry cooldown
 trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
-full lockfile-format coverage on the npm / pypi sides
+full lockfile + manifest-format coverage on the npm / pypi sides
 (``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
-``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic,
-``poetry.lock``, ``Pipfile.lock``), and the NPM-009 new-
-transitive-dep diff gate behind ``--npm-base-ref``.*
+``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic and
+yarn 2+ / Berry, ``poetry.lock``, ``Pipfile.lock``,
+``pyproject.toml`` PEP 621 + Poetry + PEP 518), the NPM-009
+new-transitive-dep diff gate behind ``--npm-base-ref``, the
+NPM-010 ``npm audit signatures``-missing detector ported across
+all three CI providers (GHA-059 / GL-034 / BB-030), the PYPI-007
+``pip install --require-hashes``-missing detector ported across
+the same three providers (GHA-060 / GL-035 / BB-031), Gradle
+``${propName}`` resolution against in-file ``ext {}`` /
+``ext.foo`` / Groovy ``def`` / Kotlin ``val`` declarations and
+sibling ``gradle.properties``, and ``libs.versions.toml``
+version-catalog resolution covering both the
+``module`` and ``group/name`` library shapes plus rich version
+constraints (``strictly`` / ``require`` / ``prefer``).*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
 
-- **NPM-010** — ``npm audit signatures`` step missing from CI.
-  Lockfile rules guarantee package contents match the recorded
-  hash; ``npm audit signatures`` is what verifies those hashes are
-  the ones the maintainer actually signed via the registry's
-  trusted-publisher records. Lockfile pinning without signature
-  verification is integrity theater. Belongs in the CI providers
-  (GHA / GitLab / Bitbucket) rather than the npm provider.
-- **Yarn 2+ / Berry lockfile parser.** Yarn 1 / Classic shipped via
-  ``_parse_yarn_lock`` + ``_synthesize_yarn_lock``; Berry locks
-  follow a different shape (``__metadata:`` header, ``checksum``
-  field instead of ``integrity``, ``resolution`` keys carrying
-  ``npm:`` / ``patch:`` / ``workspace:`` / ``portal:`` protocols)
-  and would slot in alongside the existing yarn-1 path as a
-  separate synthesizer. The yarn-1 synthesizer already short-
-  circuits on a stray ``__metadata`` header so a Berry lockfile
-  mistakenly fed in won't poison NPM-002 / NPM-003 / NPM-006
-  output. That guard stays once the Berry path lands.
-- **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry)
-  parser (``Pipfile.lock`` and ``poetry.lock`` already ship).
-  PYPI-007 publish-time hash verification step missing from CI.
-- **Gradle property resolution.** ``build.gradle(.kts)`` parsing
-  already ships under the maven provider (coordinate-string and
-  map-form deps + ``maven { url ... }`` repositories), but
-  ``${propName}`` and Gradle version-catalog references are left
-  unresolved on the first cut. Resolving them lifts MVN-001 /
-  MVN-008 hit rate on Gradle projects to Maven parity.
+- **PYPI extensions.** Both items shipped: the
+  ``pyproject.toml`` (PEP 621 / Poetry) manifest parser now feeds
+  the existing PYPI-004 / PYPI-006 rules; PYPI-007 (``pip install
+  --require-hashes`` missing from CI) shipped across the three CI
+  providers as GHA-060 / GL-035 / BB-031.
+- **Gradle multi-project indirection.** In-file ``${propName}``
+  resolution, sibling ``gradle.properties`` cross-file lookup, and
+  ``libs.versions.toml`` version-catalog resolution all ship. The
+  only remaining gap is ``rootProject.ext.X`` cross-project
+  indirection, which would need pipeline-check to learn
+  ``settings.gradle`` multi-project layout resolution. Rarer in
+  practice than the three shapes already shipped; deferred.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
 npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``
@@ -238,13 +235,25 @@ rules per cloud first, expand.
 
 ### Distribution beyond `pip install`
 
-Standalone shiv or PyInstaller binary attached to every GitHub
-release plus a ``ghcr.io/<owner>/pipeline-check`` container image.
-Removes the Python-install friction for shops whose CI containers
-don't ship Python (Go-shop CI, JVM-shop CI, container-only build
-environments). Pure packaging move, no rule code change. The
-marketplace ``action.yml`` already shipped is the GHA half of this;
-the binary + container image cover every other CI.
+The container image half shipped: ``ghcr.io/dmartinochoa/
+pipeline-check`` and ``docker.io/dmartinochoa/pipeline-check``
+publish on every ``v*.*.*`` tag via ``.github/workflows/docker-
+publish.yml``, multi-arch (linux/amd64 + linux/arm64), with Docker
+Scout vuln-scan gating the promote-to-release-tag step and SLSA
+provenance + SBOM attestations bound to the digest. Quarantine-
+then-promote ensures a vulnerable image never escapes a throwaway
+tag. Together with the marketplace ``action.yml``, this covers
+every CI environment that can run a container.
+
+A standalone binary (shiv / PyInstaller) was the other half of
+this item. Deferred with stated reasoning: the container image
+already serves the no-Python use case; a shiv ``.pyz`` still
+requires Python on the target so it adds little over ``pip
+install``; PyInstaller's interaction with boto3's dynamic service
+loading and pipeline-check's pkgutil-based plugin discovery is a
+known-fragile combination that would carry significant ongoing
+maintenance surface. Revisit if there's clear user demand for a
+no-Docker-no-Python distribution path.
 
 ### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
 
@@ -282,17 +291,27 @@ avoided that plumbing change.
 
 ### Reachability-aware attack chains
 
-The chain engine today fires on co-occurrence: an ``AC-NNN`` chain
-emits when both anchor rules emit findings, regardless of whether
-the same execution path connects them. The next iteration walks the
-dataflow graph between the two anchor findings and only fires when
-an executable connection exists.
+Phase 1 (shared-job intersection) shipped incrementally across the
+chain pack: 26 of the 40 chain rules now intersect their anchor
+findings' ``job_anchors`` sets, promote the chain confidence to
+HIGH when a shared job exists, and emit a "reachability
+unconfirmed, co-occurrence only" note when it doesn't. The
+remaining 14 chains have explicit "Reachability-model note" or
+"Reachability-model carve-out" comments documenting why
+shared-job reachability doesn't apply (cross-provider scope,
+chart-file co-occurrence, Dockerfile-level locality, repo-level
+worm topology). AC-001 is the canonical example.
 
-Cuts the chain-engine false-positive rate, promotes confidence on
-every path that does fire to HIGH, and reuses the TAINT engine's
-DAG (no separate machinery). Closes the biggest legitimate
-criticism of the AC-* family: that co-occurrence is a weaker claim
-than reachability.
+Phase 2 is the dataflow-DAG variant: walk the TAINT engine's DAG
+between the two anchor findings and only fire when an executable
+connection exists. This is the right paradigm for the cross-
+provider chains (XPC-NNN and AC-024 / AC-016 class) where
+shared-job has no meaning — the anchors live in different
+documents (CI workflow + AWS state, package.json + workflow,
+Helm chart + cluster RBAC). Requires extending TAINT findings to
+expose their source / sink coordinates on a cross-document
+graph; the v1.0.x TAINT engine carries this state per-workflow
+but doesn't yet expose it to the chain engine.
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 

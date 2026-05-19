@@ -1,0 +1,8 @@
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:0000000000000000000000000000000000000000000000000000000000000000
+        script:
+          - npm ci
+          - npm run build
+          - npm test

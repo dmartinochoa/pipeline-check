@@ -80,6 +80,21 @@ def check(rf: RequirementsFile) -> Finding:
             description="pip-tools input file (.in); ranges are expected.",
             recommendation=RULE.recommendation, passed=True,
         )
+    # ``pyproject.toml`` is a manifest; the resolved lockfile
+    # (``poetry.lock`` / compiled ``requirements.txt``) is where
+    # the exact pin lands, by design. Caret / tilde / range
+    # constraints in the manifest are the responsible Python
+    # idiom, not a pinning gap.
+    if rf.path.endswith("pyproject.toml"):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=rf.path,
+            description=(
+                "pyproject.toml is a manifest; the resolved lockfile "
+                "is where exact pins land."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     offenders: list[str] = []
     locations: list[Location] = []
     for line in iter_specs(rf):

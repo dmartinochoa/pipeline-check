@@ -54,6 +54,35 @@ RULE = Rule(
         "rule, the security exposure outweighs the cost of an "
         "alternative action.",
     ),
+    exploit_example=(
+        "# Vulnerable: the workflow re-enables the retired command\n"
+        "# channel. Any tool output containing ``::set-env::`` (a\n"
+        "# build log, a downloaded artifact, an upstream test runner)\n"
+        "# now injects environment variables into subsequent steps.\n"
+        "# A printed line\n"
+        "#   ::set-env name=LD_PRELOAD::/tmp/x.so\n"
+        "# from a compromised transitive dep silently rewires the\n"
+        "# linker on the next ``run:`` step.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    env:\n"
+        "      ACTIONS_ALLOW_UNSECURE_COMMANDS: \"true\"\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: ./scripts/build\n"
+        "\n"
+        "# Safe: don't set the override; use the file-redirect form\n"
+        "# for any env / PATH mutation the workflow legitimately needs.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: |\n"
+        "          echo \"BUILD_TAG=$(git rev-parse --short HEAD)\" >> \"$GITHUB_ENV\"\n"
+        "      - run: ./scripts/build"
+    ),
 )
 
 

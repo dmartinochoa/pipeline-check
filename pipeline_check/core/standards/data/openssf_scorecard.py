@@ -126,6 +126,8 @@ STANDARD = Standard(
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
         "BB-029":   ["Pinned-Dependencies"],                           # step + service image not digest-pinned
+        "BB-030":   ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
+        "BB-031":   ["Pinned-Dependencies"],                           # pip install without --require-hashes
         # Helm: stale Chart.lock is a pin-drift failure
         "HELM-008": ["Pinned-Dependencies"],                           # stale Chart.lock > 90 days
         # Cloud Build curl-pipe / TLS / pkg integrity surface
@@ -166,6 +168,8 @@ STANDARD = Standard(
         "GL-025":   ["Dangerous-Workflow"],                            # malicious activity
         "GL-026":   ["Dangerous-Workflow"],
         "GL-033":   ["Dangerous-Workflow"],                            # global before_script taint
+        "GL-034":   ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
+        "GL-035":   ["Pinned-Dependencies"],                           # pip install without --require-hashes
         "BB-002":   ["Dangerous-Workflow"],
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
@@ -236,6 +240,8 @@ STANDARD = Standard(
         "GHA-056":  ["Dangerous-Workflow"],                            # supply-chain worm IOC strings
         "GHA-057":  ["Dangerous-Workflow", "Token-Permissions"],       # secret-scanner output → egress
         "GHA-058":  ["Dangerous-Workflow"],                            # agentic CLI permission-bypass
+        "GHA-059":  ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
+        "GHA-060":  ["Pinned-Dependencies"],                           # pip install without --require-hashes
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule
         "ADO-010":  ["Dangerous-Workflow"],                            # cross-pipeline download

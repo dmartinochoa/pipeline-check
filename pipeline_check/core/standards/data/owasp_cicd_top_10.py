@@ -192,6 +192,8 @@ STANDARD = Standard(
         "GHA-056":  ["CICD-SEC-1", "CICD-SEC-4"],  # known supply-chain worm IOC strings
         "GHA-057":  ["CICD-SEC-4", "CICD-SEC-6"],  # secret-scanner output piped to egress
         "GHA-058":  ["CICD-SEC-4", "CICD-SEC-7"],  # agentic CLI with permission-bypass flags
+        "GHA-059":  ["CICD-SEC-3"],                # npm install without audit signatures
+        "GHA-060":  ["CICD-SEC-3"],                # pip install without --require-hashes
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
@@ -226,6 +228,8 @@ STANDARD = Standard(
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
+        "GL-034":   ["CICD-SEC-3"],                # npm install without audit signatures
+        "GL-035":   ["CICD-SEC-3"],                # pip install without --require-hashes
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
@@ -256,6 +260,8 @@ STANDARD = Standard(
         "BB-027":   ["CICD-SEC-3"],
         "BB-028":   ["CICD-SEC-2"],   # OIDC without deployment-gated environment
         "BB-029":   ["CICD-SEC-3"],   # step+service image pinning
+        "BB-030":   ["CICD-SEC-3"],   # npm install without audit signatures
+        "BB-031":   ["CICD-SEC-3"],   # pip install without --require-hashes
         # Azure DevOps Pipelines
         "ADO-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "ADO-002":  ["CICD-SEC-4"],
