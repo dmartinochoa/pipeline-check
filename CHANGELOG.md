@@ -186,6 +186,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Pipfile.lock parser via requirements-file synthesis.**
+  ``Pipfile.lock`` joins ``poetry.lock`` / ``requirements*.txt`` /
+  ``*.in`` in the pypi provider's recognized inputs; the loader
+  detects the filename and routes through a new
+  ``_parse_pipfile_lock`` helper that parses JSON via stdlib
+  ``json`` and walks both top-level buckets (``default``,
+  ``develop``). Registry entries become ``<name>==<version>``
+  bodies after stripping the leading ``==`` operator Pipfile.lock
+  bakes into the ``version`` field; git entries become PEP 508
+  direct URLs (``<name> @ git+<url>@<ref>``); per-entry
+  ``hashes`` flow through as ``--hash=sha256:...`` flags. The
+  file-level ``--require-hashes`` matches Pipenv's install-time
+  enforcement contract so PYPI-002 doesn't false-positive on a
+  Pipenv-locked project. PYPI-001 / PYPI-002 / PYPI-004 / PYPI-
+  006 fire without per-rule changes. Thirteen new tests in
+  ``tests/pypi/test_pipfile_lock.py`` exercise the parser
+  (default + develop walking, version normalization, git with /
+  without ref, malformed entries) and end-to-end firing through
+  ``PypiChecks`` on a real Pipfile.lock.
+
 - **poetry.lock parser via requirements-file synthesis.**
   ``poetry.lock`` joins ``requirements*.txt`` / ``*.in`` in the
   pypi provider's recognized inputs; the loader detects the

@@ -1,26 +1,28 @@
 """pypi context and base check.
 
 Loads pip ``requirements.txt`` / ``requirements*.txt`` / ``*.in``
-(pip-tools input) and ``poetry.lock`` files from disk. Each file
-becomes a :class:`RequirementsFile` exposing the original text plus
-a list of parsed :class:`RequirementLine` entries: one per logical
-requirement, with line continuations joined and comments stripped.
+(pip-tools input), ``poetry.lock``, and ``Pipfile.lock`` files
+from disk. Each file becomes a :class:`RequirementsFile` exposing
+the original text plus a list of parsed :class:`RequirementLine`
+entries: one per logical requirement, with line continuations
+joined and comments stripped.
 
 ``poetry.lock`` is read by parsing the TOML and synthesizing the
-same ``RequirementsFile`` shape (see :func:`_parse_poetry_lock`)
-so every existing ``PYPI-NNN`` rule applies without per-rule
-changes. Poetry enforces per-package hashes at install time when
-the lockfile is present, so synthesized files carry
-``--require-hashes`` in their top-level options for PYPI-002's
-sake; git-sourced packages get a ``foo @ git+<url>@<sha>``
-PEP-508-direct-URL body so PYPI-004 classifies the ref correctly.
+same ``RequirementsFile`` shape (see :func:`_parse_poetry_lock`);
+``Pipfile.lock`` is read by parsing the JSON the same way (see
+:func:`_parse_pipfile_lock`). Both enforce per-package hashes at
+install time, so synthesized files carry ``--require-hashes`` in
+their top-level options for PYPI-002's sake; git-sourced
+packages get a ``foo @ git+<url>@<sha>`` PEP-508-direct-URL body
+so PYPI-004 classifies the ref correctly.
 
-``pyproject.toml`` (PEP 621 / Poetry dependency declarations) and
-``Pipfile.lock`` stay out of scope for this pass — both warrant
-their own parsers, deferred.
+``pyproject.toml`` (PEP 621 / Poetry dependency declarations)
+stays out of scope for this pass — it's a manifest, not a
+resolved lockfile, and warrants its own parser, deferred.
 """
 from __future__ import annotations
 
+import json
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,10 +33,12 @@ from ..base import BaseCheck
 #: Recognized requirements-file shapes. Both ``requirements.txt`` style
 #: (resolved, hash-bearing) and ``*.in`` (pip-tools input, declarative)
 #: are scanned, the supply-chain signal is the same in both.
-#: ``poetry.lock`` joins the set via TOML parsing + synthesis
-#: (:func:`_parse_poetry_lock`).
+#: ``poetry.lock`` and ``Pipfile.lock`` join the set via TOML / JSON
+#: parsing + synthesis (:func:`_parse_poetry_lock`,
+#: :func:`_parse_pipfile_lock`).
 REQUIREMENTS_GLOBS: tuple[str, ...] = (
-    "requirements*.txt", "requirements/*.txt", "*.in", "poetry.lock",
+    "requirements*.txt", "requirements/*.txt", "*.in",
+    "poetry.lock", "Pipfile.lock",
 )
 
 
@@ -111,6 +115,15 @@ class PypiContext:
                 except Exception as exc:  # noqa: BLE001
                     warnings.append(
                         f"{f}: poetry.lock parse error: {exc}"
+                    )
+                    skipped += 1
+                    continue
+            elif f.name == "Pipfile.lock":
+                try:
+                    lines, options = _parse_pipfile_lock(text)
+                except Exception as exc:  # noqa: BLE001
+                    warnings.append(
+                        f"{f}: Pipfile.lock parse error: {exc}"
                     )
                     skipped += 1
                     continue
@@ -361,6 +374,114 @@ def _parse_poetry_lock(
         lines.append(RequirementLine(
             line_no=idx, body=body, flags=tuple(flags),
         ))
+    return tuple(lines), ("--require-hashes",)
+
+
+# ── Pipfile.lock synthesis ────────────────────────────────────────────
+
+
+def _hash_flags_from_pipfile_entry(entry: dict[str, Any]) -> list[str]:
+    """Return ``--hash=<algo>:<digest>`` flags from a Pipfile.lock entry.
+
+    Pipfile.lock writes ``hashes`` as a flat list of
+    ``"<algo>:<digest>"`` strings (always ``sha256``). The helper
+    skips empty / malformed entries silently so the synthesizer
+    doesn't break on a partially-rendered lockfile.
+    """
+    hashes = entry.get("hashes")
+    if not isinstance(hashes, list):
+        return []
+    out: list[str] = []
+    for h in hashes:
+        if isinstance(h, str) and ":" in h:
+            out.append(f"--hash={h}")
+    return out
+
+
+def _synthesize_body_for_pipfile_entry(
+    name: str,
+    entry: dict[str, Any],
+) -> str | None:
+    """Return the requirement body for one Pipfile.lock entry.
+
+    Registry-resolved entries → ``<name>==<version>`` (Pipfile.lock
+    stores ``version`` as ``"==1.2.3"`` so the literal already
+    carries the ``==``; we strip it before reattaching to keep the
+    body shape unambiguous to PYPI-001 / PYPI-006's parsers).
+
+    Git-sourced entries (``git`` key present) → ``<name> @
+    git+<url>@<ref>`` (PEP 508 direct URL) so PYPI-004 classifies
+    the ref. ``ref`` carries the resolved commit SHA when Pipenv
+    has performed an install; a branch / tag name is possible
+    before resolution and falls through verbatim — PYPI-004 then
+    flags it because it isn't a 40-char SHA.
+
+    URL- and path-sourced entries (``file``, ``path`` keys) fall
+    back to the ``<name>==<version>`` body so PYPI-001 / PYPI-006
+    still see a recoverable name. ``editable: true`` is preserved
+    on disk but doesn't change the rule layer's interpretation.
+
+    Returns ``None`` when the entry has no recoverable identity
+    (no version and no git URL).
+    """
+    git = entry.get("git")
+    if isinstance(git, str) and git:
+        ref = entry.get("ref")
+        if isinstance(ref, str) and ref:
+            return f"{name} @ git+{git}@{ref}"
+        return f"{name} @ git+{git}"
+    version = entry.get("version")
+    if isinstance(version, str) and version:
+        # Pipfile.lock stores ``"==1.2.3"``; strip the leading
+        # operator(s) before reattaching ``==`` for canonical shape.
+        stripped = version.lstrip("=<>~!").strip()
+        if stripped:
+            return f"{name}=={stripped}"
+    return None
+
+
+def _parse_pipfile_lock(
+    text: str,
+) -> tuple[tuple[RequirementLine, ...], tuple[str, ...]]:
+    """Parse a Pipfile.lock body and project it onto the
+    requirements-file shape.
+
+    Pipfile.lock is JSON with two top-level package buckets
+    (``default``, ``develop``) each mapping ``name`` to a record
+    carrying ``version`` (``"==1.2.3"``), ``hashes`` (list of
+    ``sha256:...`` strings), and source coordinates (``git`` /
+    ``ref`` / ``file`` / ``path``). The synthesizer walks both
+    buckets in order (default first, develop second) and emits one
+    :class:`RequirementLine` per entry. Line numbers are best-
+    effort: monotonic 1, 2, 3 across the union of buckets, so each
+    location stays distinguishable without a per-byte JSON-line
+    tracking pass.
+
+    ``--require-hashes`` is set at the file level because
+    Pipfile.lock always carries hashes (Pipenv refuses to write a
+    lockfile without them), so PYPI-002 sees the same enforcement
+    contract Pipenv enforces at ``pipenv install``.
+    """
+    raw = json.loads(text)
+    if not isinstance(raw, dict):
+        return ((), ("--require-hashes",))
+    lines: list[RequirementLine] = []
+    idx = 0
+    for bucket_name in ("default", "develop"):
+        bucket = raw.get(bucket_name)
+        if not isinstance(bucket, dict):
+            continue
+        for name, entry in bucket.items():
+            if not isinstance(name, str) or not isinstance(entry, dict):
+                continue
+            body = _synthesize_body_for_pipfile_entry(name, entry)
+            if body is None:
+                continue
+            idx += 1
+            flags = tuple(_hash_flags_from_pipfile_entry(entry))
+            lines.append(RequirementLine(
+                line_no=idx, body=body, flags=flags,
+            ))
     return tuple(lines), ("--require-hashes",)
 
 
