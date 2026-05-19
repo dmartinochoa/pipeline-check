@@ -1300,6 +1300,56 @@ class TestChainAC017:
         chain = next(c for c in out if c.chain_id == "AC-017")
         assert chain.confidence is Confidence.MEDIUM
 
+    def test_reachability_confirmed_when_repo_uri_matches(self):
+        # The workflow text references the same ECR repo URI that
+        # ECR-002 flagged as mutable. Tight reachability claim.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp"
+        repo_anchor = ResourceAnchor(kind="ecr_repo", identity=uri)
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, resource_anchors=(repo_anchor,)),
+            _f(
+                "ECR-002", self.REPO,
+                resource_anchors=(repo_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        chain = ac17[0]
+        assert chain.confirmed_reachable is True
+        assert uri in chain.reachability_note
+        assert chain.resources == [uri]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_to_cooccurrence_when_repos_disjoint(self):
+        # Workflow pushes to repo-A; ECR-002 flagged repo-B as
+        # mutable. Co-occurrence fallback preserves the legacy
+        # "cache poisoning + mutable tag somewhere" signal.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/repo-A",
+        )
+        b = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/repo-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, resource_anchors=(a,)),
+            _f(
+                "ECR-002", "repo-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        chain = ac17[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC018:
     """AC-018 — unpinned action lands on deploy job with no env gate."""
@@ -1438,6 +1488,59 @@ class TestChainAC019:
         ])
         chain = next(c for c in out if c.chain_id == "AC-019")
         assert chain.confidence is Confidence.LOW
+
+    def test_reachability_confirmed_when_lambda_runs_as_passrole_role(self):
+        # The LMB-003 Lambda's execution role IS the IAM-004
+        # wildcard-PassRole role. Single-step role-hop primitive.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        fn_anchor = ResourceAnchor(kind="lambda_fn", identity=self.LAMBDA)
+        out = chains_pkg.evaluate([
+            _f(
+                "LMB-003", "my-fn",
+                resource_anchors=(fn_anchor, role_anchor),
+            ),
+            _f(
+                "IAM-004", "ci-deploy",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac19 = [c for c in out if c.chain_id == "AC-019"]
+        assert len(ac19) == 1
+        chain = ac19[0]
+        assert chain.confirmed_reachable is True
+        assert self.ROLE in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_execution_role_differs_from_passrole(self):
+        # The Lambda runs as ``role-A``; the PassRole-* role is
+        # ``role-B``. Co-occurrence fallback at min confidence.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-B",
+        )
+        fn = ResourceAnchor(kind="lambda_fn", identity=self.LAMBDA)
+        out = chains_pkg.evaluate([
+            _f("LMB-003", "my-fn", resource_anchors=(fn, a)),
+            _f(
+                "IAM-004", "ci-deploy",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac19 = [c for c in out if c.chain_id == "AC-019"]
+        assert len(ac19) == 1
+        chain = ac19[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC020:

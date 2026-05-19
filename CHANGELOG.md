@@ -186,6 +186,44 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: AC-017 (cache poisoning + mutable ECR
+  tag).** `AC-017` now uses ``group_by_anchor`` on ``ecr_repo``.
+  ECR-002 emits the canonical registry URI from boto3's
+  ``describe_repositories.repositoryUri``; GHA-011 scans every
+  string in its workflow doc for the ``<acct>.dkr.ecr.<region>
+  .amazonaws.com/<repo>`` shape (covers ``docker push``,
+  ``docker/build-push-action`` ``tags:`` inputs, and ``aws ecr``
+  invocations alike) and emits one ``ecr_repo`` anchor per match.
+  Each matched repo URI composes ONE confirmed chain with
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  citing the URI, and that URI as the chain's resource. Falls
+  back to scan-level co-occurrence when no anchor matches
+  (templated tags, indirect push through an intermediate
+  registry, or the workflow doesn't touch ECR) so the legacy
+  "cache poisoning + mutable tag somewhere" signal survives.
+  AC-024 (OIDC drift + mutable ECR) stays on aggregate
+  co-occurrence by design — its threat model is explicitly the
+  cross-product, not a per-pair claim; the carve-out docstring
+  now notes that AC-017 is the per-pair variant for callers who
+  want the tighter signal.
+
+- **ResourceAnchor phase 1: AC-019 (Lambda env-secret + PassRole
+  *).** `AC-019` now uses ``group_by_anchor`` on ``iam_role``.
+  LMB-003 emits two anchors per finding — ``lambda_fn`` for the
+  function ARN and ``iam_role`` for the function's *execution*
+  role ARN (boto3's ``Role`` field); IAM-004 emits ``iam_role``
+  for its own role's ARN. A shared identity confirms the tight
+  pairing: the secret-leaking Lambda is itself running as the
+  wildcard-PassRole role, so anyone who exfils the env var
+  inherits the role-hop primitive in one execution context with
+  no separate principal-reach step. Confirmed → confidence
+  promoted to HIGH, narrative cites the shared role, resource is
+  the role ARN. Falls back to scan-level co-occurrence when the
+  Lambda's execution role and the PassRole-* role differ — the
+  original "account-wide leak + account-wide PassRole wildcard"
+  signal is still worth surfacing because the cross-principal
+  attack remains viable.
+
 - **ResourceAnchor phase 1: AC-016 pilot (OIDC role drift).**
   First cross-provider chain to consume the phase 0 `ResourceAnchor`
   foundation. **IAM-002** now emits an ``iam_role`` anchor from the
