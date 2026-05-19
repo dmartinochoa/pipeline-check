@@ -494,6 +494,7 @@ STANDARD = Standard(
         "MVN-005":  ["CICD-SEC-3", "CICD-SEC-8"],  # lax repository checksumPolicy
         "MVN-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
+        "MVN-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

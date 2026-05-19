@@ -481,7 +481,7 @@ pipeline_check/
         ├── scm/rules/         # SCM-001 .. SCM-047 — repo governance via the platform REST API (GitHub full pack incl. Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab + Bitbucket universal subset)
         ├── npm/rules/         # NPM-001 .. NPM-008 + NPM-011 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector + cooldown gate
         ├── pypi/rules/        # PYPI-001 .. PYPI-008 — requirements.txt supply-chain hygiene + curated compromised-package registry + cooldown gate
-        ├── maven/rules/       # MVN-001 .. MVN-007 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell)
+        ├── maven/rules/       # MVN-001 .. MVN-008 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell) + cooldown gate
         └── custom/            # YAML rule loader + predicate engine
 ```
 

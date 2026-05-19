@@ -106,26 +106,22 @@ release; landing order is open.
 
 ### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2 / maven v2)
 
-*Shipped so far: NPM-001..007, NPM-011, PYPI-001..006, MVN-001..007
-— static manifest / lockfile / .npmrc / pom.xml / settings.xml
-analysis plus the curated compromised-package registries (npm,
-PyPI, Maven Central) and the ``files``-field secret-leak detector
-(no network, refresh by PR with citing advisory).*
-The follow-up rules below require either a registry fetch behind
-``--resolve-remote`` or new infrastructure (lockfile diff against
-a base ref) and so are deferred:
+*Shipped so far: NPM-001..008 + NPM-011, PYPI-001..006 + PYPI-008,
+MVN-001..008 — static manifest / lockfile / .npmrc / pom.xml /
+settings.xml / build.gradle(.kts) analysis plus the curated
+compromised-package registries (npm, PyPI, Maven Central), the
+``files``-field secret-leak detector, and the three-registry
+cooldown trilogy (NPM-008 / PYPI-008 / MVN-008) behind
+``--resolve-remote``.*
+The follow-up rules below require either new infrastructure
+(lockfile diff against a base ref) or different ecosystem
+plumbing and so are deferred:
 
-- **NPM-008** — package-cooldown gate (analog of ``GHA-047`` for
-  npm). Fail when any direct dependency in ``package.json`` was
-  published within N days (default 7); same takedown-window
-  rationale as the action cooldown rule. Needs a registry-metadata
-  fetch behind ``--resolve-remote``, passes silently when the flag
-  is off.
 - **NPM-009** — transitive-dependency diff gate. When a CI run
   mutates the lockfile, fail if a new transitive dep appears that
   didn't exist in the base ref. The axios -> plain-crypto-js
   backdoor would have been caught here at PR review time. Pairs
-  with NPM-008 (cooldown) and the shipped NPM-006 (known-bad
+  with the shipped NPM-008 (cooldown) and NPM-006 (known-bad
   registry). Needs base-ref lockfile-diff infra.
 - **NPM-010** — ``npm audit signatures`` step missing from CI.
   Lockfile rules guarantee package contents match the recorded
@@ -137,20 +133,15 @@ a base ref) and so are deferred:
 - **yarn.lock + pnpm-lock.yaml parsers.** Coverage parity for the
   two non-npm lockfile formats; both ship distinct schemas that
   warrant separate parsers, deferred from the initial pack.
-- **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry),
-  ``Pipfile.lock``, and ``poetry.lock`` parsers. PYPI-007
-  publish-time hash verification step missing from CI. PYPI-008
-  cooldown gate (PyPI ``release_date`` from the JSON API behind
-  ``--resolve-remote``).
-- **MVN-008** — Maven artifact cooldown gate. Fail when any direct
-  dependency in ``pom.xml`` was published to Maven Central within
-  N days (default 7). Maven Central exposes per-version timestamps
-  via the search API (``search.maven.org/solrsearch/select``);
-  gates behind ``--resolve-remote`` for symmetry with ``GHA-047``
-  and the proposed ``NPM-008`` / ``PYPI-008``.
-- **Maven extensions.** ``build.gradle`` / ``build.gradle.kts``
-  parsers so Gradle projects get the same registry-side coverage
-  Maven projects already get from MVN-001..007.
+- **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry)
+  parser (``Pipfile.lock`` and ``poetry.lock`` already ship).
+  PYPI-007 publish-time hash verification step missing from CI.
+- **Gradle property resolution.** ``build.gradle(.kts)`` parsing
+  already ships under the maven provider (coordinate-string and
+  map-form deps + ``maven { url ... }`` repositories), but
+  ``${propName}`` and Gradle version-catalog references are left
+  unresolved on the first cut. Resolving them lifts MVN-001 /
+  MVN-008 hit rate on Gradle projects to Maven parity.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
 npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``
